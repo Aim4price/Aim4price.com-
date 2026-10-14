@@ -67,9 +67,9 @@ export const tutorials: Tutorial[] = [
   {
     "category": "start",
     "id": "first-asset",
-    "title": "Add your first asset",
+    "title": "Add an asset",
     "description": "Start with one vehicle or machine and build its record over time.",
-    "where": "Asset Register → Add Asset",
+    "where": "Asset Register / Add Asset",
     "steps": [
       "Choose Add Asset and follow the estimate or manual-entry route.",
       "Review the year, usage, condition and identifying details.",
@@ -80,15 +80,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Add your first asset",
     "question": "How do I start recording what I own?"
   },
   {
     "category": "start",
     "id": "capture",
-    "title": "Choose how to add your information",
+    "title": "Upload assistance",
     "description": "Record information yourself or submit documents for Aim4price capture.",
-    "where": "Asset Register → Add Asset; asset → Add cost",
+    "where": "Asset Register / Add Asset; asset / Add cost",
     "steps": [
       "Choose manual entry when you have the details ready.",
       "Choose the available Aim4price upload option when you need capture assistance.",
@@ -99,15 +99,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Choose how to add your information",
     "question": "Can I upload information myself or get help?"
   },
   {
     "category": "start",
     "id": "manage",
-    "title": "Find your way around an asset",
+    "title": "Manage an asset",
     "description": "Use the asset card as the starting point for everyday work.",
-    "where": "Asset card → Manage",
+    "where": "Asset card / Manage",
     "steps": [
       "Check the asset title and identifying details.",
       "Open Manage to find pricing, costs, maintenance and reports.",
@@ -118,15 +118,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Find your way around an asset",
     "question": "Where do I find everything for one asset?"
   },
   {
     "category": "assets",
     "id": "registers",
-    "title": "Organise assets into registers",
+    "title": "Asset registers",
     "description": "Keep groups of assets together without losing their individual records.",
-    "where": "Asset Register → register selector",
+    "where": "Asset Register / register selector",
     "steps": [
       "Open the register selector.",
       "Create or select the register for the assets you want to manage.",
@@ -137,15 +137,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Organise assets into registers",
     "question": "How do I keep different groups of assets organised?"
   },
   {
     "category": "assets",
     "id": "umbrellas",
-    "title": "Group assets into an umbrella",
+    "title": "Asset umbrellas",
     "description": "Bring related assets together for viewing and sharing.",
-    "where": "Asset Register → umbrella options",
+    "where": "Asset Register / umbrella options",
     "steps": [
       "Create an umbrella and give it a recognisable name.",
       "Select the assets that belong together.",
@@ -156,32 +156,32 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Group assets into an umbrella",
     "question": "Can I group related assets together?"
   },
   {
     "category": "assets",
     "id": "details",
-    "title": "Update asset details",
+    "title": "Asset details",
     "description": "Keep the year, usage, condition and serial / VIN accurate.",
-    "where": "Asset card → Manage → Update details; photos",
+    "where": "Asset card / Manage / Update details",
     "steps": [
       "Open the correct asset and choose its update-details action.",
       "Check the identifying details and current usage.",
       "Save your changes and review the asset card."
     ],
-    "example": "Record the latest hour reading and add a photo of the serial plate.",
+    "example": "Update the tractor’s hour reading after a week of work.",
     "note": "Available editing actions depend on your access.",
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Update asset details",
     "question": "How do I keep my asset details accurate?"
   },
   {
     "category": "assets",
     "id": "documents",
-    "title": "Keep documents together",
+    "title": "Documents",
     "description": "Find supporting paperwork without hunting through separate files.",
     "where": "Documents",
     "steps": [
@@ -194,15 +194,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/documents",
     "action": "Open Documents",
-    "keywords": "GPS location papers history documents",
+    "keywords": "documents paperwork invoices files folders",
     "question": "Where can I keep my asset paperwork?"
   },
   {
     "category": "assets",
     "id": "photos",
-    "title": "Manage asset photos",
+    "title": "Asset photos",
     "description": "Build a clear visual record of the machine, its identity and condition.",
-    "where": "Asset → photos",
+    "where": "Asset / photos",
     "steps": [
       "Open the correct asset’s photos.",
       "Add clear images or use the available edit, download and delete actions.",
@@ -213,15 +213,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Manage asset photos",
     "question": "How do I build a useful visual record?"
   },
   {
     "category": "assets",
     "id": "history",
-    "title": "Review asset history",
+    "title": "Asset history",
     "description": "See the recorded changes and work behind the asset’s current state.",
-    "where": "Asset → History",
+    "where": "Asset / History",
     "steps": [
       "Open History on the correct asset.",
       "Review the recorded events and available details.",
@@ -232,13 +232,13 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Review asset history",
     "question": "What has happened to this asset?"
   },
   {
     "category": "assets",
     "id": "map",
-    "title": "Find assets on the map",
+    "title": "Asset map",
     "description": "See assets with recorded locations together in one view.",
     "where": "Asset Map",
     "steps": [
@@ -251,15 +251,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-map",
     "action": "Open Asset Map",
-    "keywords": "gps location",
+    "keywords": "gps location Find assets on the map",
     "question": "Where are my assets located?"
   },
   {
     "category": "assets",
     "id": "status",
-    "title": "Record ownership, insurance and finance status",
+    "title": "Insurance & finance",
     "description": "Keep important asset status details visible alongside the record.",
-    "where": "Asset → status / details",
+    "where": "Asset / status / details",
     "steps": [
       "Open the asset’s available status controls.",
       "Record the relevant ownership, insurance, finance and licensing information.",
@@ -270,15 +270,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Record ownership, insurance and finance status",
     "question": "Which assets are insured, financed or licensed?"
   },
   {
     "category": "assets",
     "id": "licence",
-    "title": "Track licence renewals",
+    "title": "Licence renewals",
     "description": "Keep licensing details and renewal information with applicable assets.",
-    "where": "Asset → licensing details; register overview",
+    "where": "Asset / licensing details; register overview",
     "steps": [
       "Open the asset’s licensing information.",
       "Check the registration details and requested renewal information.",
@@ -289,13 +289,13 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "license renewal registration",
+    "keywords": "license renewal registration Track licence renewals",
     "question": "Which licence renewals need attention?"
   },
   {
     "category": "values",
     "id": "estimate",
-    "title": "Get an estimated value",
+    "title": "Estimated value",
     "description": "Build a useful starting point for understanding an asset’s value.",
     "where": "Get Estimate",
     "steps": [
@@ -308,15 +308,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/valuation",
     "action": "Get an estimate",
-    "keywords": "",
+    "keywords": " Get an estimated value",
     "question": "What could my asset be worth?"
   },
   {
     "category": "values",
     "id": "pricing",
-    "title": "Manage asset and replacement values",
+    "title": "Asset & replacement values",
     "description": "Keep your pricing information aligned with what you know.",
-    "where": "Asset → Manage → pricing options",
+    "where": "Asset / Manage / pricing options",
     "steps": [
       "Open the asset’s pricing options.",
       "Review the available values and update the relevant information.",
@@ -327,34 +327,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Manage asset and replacement values",
     "question": "How do I keep asset and replacement values current?"
   },
   {
     "category": "values",
-    "id": "ownership",
-    "title": "Understand depreciation and ownership costs",
-    "description": "Look beyond the purchase price when reviewing an asset.",
-    "where": "Asset → Manage → Reports",
-    "steps": [
-      "Review the saved asset values and costs first.",
-      "Choose the depreciation or ownership-cost report available for the asset.",
-      "Check its assumptions, dates and missing records before comparing results."
-    ],
-    "example": "Compare running costs with the asset’s value when considering replacement.",
-    "note": "Incomplete records can make a cost comparison misleading.",
-    "audience": "Owner",
-    "href": "/asset-register",
-    "action": "Open Asset Register",
-    "keywords": "",
-    "question": "What does owning this asset really cost?"
-  },
-  {
-    "category": "values",
     "id": "sale-transfer",
-    "title": "Record a sale or asset transfer",
+    "title": "Sales & transfers",
     "description": "Keep ownership changes and disposal records organised.",
-    "where": "Asset sale / transfer options; Account → asset transfers",
+    "where": "Asset sale / transfer options; Account / asset transfers",
     "steps": [
       "Open the relevant asset’s sale or transfer action.",
       "Check the asset, recipient and sale information requested.",
@@ -365,15 +346,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/account/asset-transfers",
     "action": "Open asset transfers",
-    "keywords": "",
+    "keywords": " Record a sale or asset transfer",
     "question": "How do I record a sale or transfer?"
   },
   {
     "category": "costs",
     "id": "manual-cost",
-    "title": "Add a cost manually",
+    "title": "Add a cost",
     "description": "Link an expense to the asset it belongs to.",
-    "where": "Asset → Add cost; Cost Ledger",
+    "where": "Asset / Add cost; Cost Ledger",
     "steps": [
       "Choose manual cost entry.",
       "Select the asset and enter the date, amount and expense details.",
@@ -384,15 +365,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/my-invoices",
     "action": "Open Cost Ledger",
-    "keywords": "",
+    "keywords": " Add a cost manually",
     "question": "How do I record an expense against an asset?"
   },
   {
     "category": "costs",
     "id": "invoice-capture",
-    "title": "Submit an invoice for capture",
+    "title": "Invoice capture",
     "description": "Use the invoice itself to start recording an expense.",
-    "where": "Asset → Add cost → Aim4price upload",
+    "where": "Asset / Add cost / Aim4price upload",
     "steps": [
       "Select the correct asset and upload a readable invoice.",
       "Review the submitted document and requested details.",
@@ -403,13 +384,13 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/my-invoices",
     "action": "Open Cost Ledger",
-    "keywords": "",
+    "keywords": " Submit an invoice for capture",
     "question": "Can Aim4price capture an invoice for me?"
   },
   {
     "category": "costs",
     "id": "invoice-drop",
-    "title": "Let a supplier drop an invoice",
+    "title": "Supplier invoices",
     "description": "Get paperwork to the right asset without sharing your whole account.",
     "where": "Drop invoice",
     "steps": [
@@ -422,15 +403,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/drop-invoice",
     "action": "Drop an invoice",
-    "keywords": "supplier mechanic paperwork",
+    "keywords": "supplier mechanic paperwork Let a supplier drop an invoice",
     "question": "Can my supplier send an invoice directly?"
   },
   {
     "category": "costs",
     "id": "budgets",
-    "title": "Review spending against a budget",
+    "title": "Budgets",
     "description": "Give planned spending a place alongside actual recorded costs.",
-    "where": "Cost Ledger → budgets",
+    "where": "Cost Ledger / budgets",
     "steps": [
       "Open the budget tools and choose the relevant scope.",
       "Enter the budget period and planned amounts.",
@@ -441,13 +422,13 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/budgets",
     "action": "Open budgets",
-    "keywords": "",
+    "keywords": " Review spending against a budget",
     "question": "Am I spending more than I planned?"
   },
   {
     "category": "costs",
     "id": "ledger",
-    "title": "Find and review recorded costs",
+    "title": "Cost Ledger",
     "description": "See saved expenses together and inspect their supporting entries.",
     "where": "Cost Ledger",
     "steps": [
@@ -460,15 +441,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/my-invoices",
     "action": "Open Cost Ledger",
-    "keywords": "invoice expenses spending",
+    "keywords": "invoice expenses spending Find and review recorded costs",
     "question": "Where can I find my recorded costs?"
   },
   {
     "category": "fuel",
     "id": "fuel-slip",
-    "title": "Record a fuel purchase",
+    "title": "Fuel purchases",
     "description": "Save the litres and cost from a fuel slip.",
-    "where": "Add fuel → Fuel slip",
+    "where": "Add fuel / Fuel slip",
     "steps": [
       "Choose Fuel slip when the fuel was bought from a station or supplier.",
       "Select the asset and enter the requested date, litres, cost and readings.",
@@ -479,15 +460,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/fuel",
     "action": "Open Fuel Ledger",
-    "keywords": "diesel petrol fill up",
+    "keywords": "diesel petrol fill up Record a fuel purchase",
     "question": "How do I record a fuel purchase?"
   },
   {
     "category": "fuel",
     "id": "fuel-storage",
-    "title": "Record fuel from storage",
+    "title": "Fuel from storage",
     "description": "Track fuel issued from a tank to an asset.",
-    "where": "Add fuel → From fuel storage",
+    "where": "Add fuel / From fuel storage",
     "steps": [
       "Choose the storage route rather than a purchase slip.",
       "Select the tank and receiving asset.",
@@ -498,15 +479,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/fuel",
     "action": "Open Fuel Ledger",
-    "keywords": "diesel tank",
+    "keywords": "diesel tank Record fuel from storage",
     "question": "How much fuel went from my tank into this asset?"
   },
   {
     "category": "fuel",
     "id": "tanks",
-    "title": "Manage fuel storage",
+    "title": "Fuel tanks",
     "description": "Keep tank records and fuel movements organised.",
-    "where": "Fuel Ledger → storage",
+    "where": "Fuel Ledger / storage",
     "steps": [
       "Open the storage view and select the relevant tank.",
       "Record the available delivery or issue information.",
@@ -517,15 +498,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/fuel",
     "action": "Open Fuel Ledger",
-    "keywords": "",
+    "keywords": " Manage fuel storage",
     "question": "How do I keep track of my fuel storage?"
   },
   {
     "category": "fuel",
     "id": "activities",
-    "title": "Record activities and review fuel use",
+    "title": "Saved Activities",
     "description": "Connect usage records to the work an asset performs.",
-    "where": "Fuel Ledger → activities and fuel records",
+    "where": "Fuel Ledger / activities and fuel records",
     "steps": [
       "Choose the asset and an activity appropriate to it.",
       "Enter the work period and readings requested.",
@@ -536,15 +517,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/fuel",
     "action": "Open Fuel Ledger",
-    "keywords": "saved activities work delivery ploughing",
+    "keywords": "saved activities work delivery ploughing Record activities and review fuel use",
     "question": "What work is my asset doing with its fuel?"
   },
   {
     "category": "maintenance",
     "id": "completed-work",
-    "title": "Record completed maintenance",
+    "title": "Completed maintenance",
     "description": "Keep a clear record of servicing, checks and repairs.",
-    "where": "Asset → Manage → Maintenance → Add maintenance",
+    "where": "Asset / Manage / Maintenance / Add maintenance",
     "steps": [
       "Choose the correct asset and maintenance action.",
       "Enter what was done, when it was done and the requested readings.",
@@ -555,15 +536,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/maintenance",
     "action": "Open Maintenance",
-    "keywords": "service mechanic repair",
+    "keywords": "service mechanic repair Record completed maintenance",
     "question": "How do I keep a record of servicing and repairs?"
   },
   {
     "category": "maintenance",
     "id": "schedule",
-    "title": "Schedule the next service",
+    "title": "Service schedules",
     "description": "Plan upcoming work by date or usage.",
-    "where": "Asset → Manage → Maintenance → scheduling",
+    "where": "Asset / Manage / Maintenance / scheduling",
     "steps": [
       "Choose the asset and work that needs to happen.",
       "Set the available date or usage-based scheduling options.",
@@ -574,15 +555,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/maintenance",
     "action": "Open Maintenance",
-    "keywords": "due reminders upcoming service",
+    "keywords": "due reminders upcoming service Schedule the next service",
     "question": "What needs servicing next?"
   },
   {
     "category": "maintenance",
     "id": "checklists",
-    "title": "Use maintenance checklists",
+    "title": "Checklists",
     "description": "Give recurring checks a clear place in each asset’s record.",
-    "where": "Asset → Manage → Maintenance → Checklists",
+    "where": "Asset / Manage / Maintenance / Checklists",
     "steps": [
       "Open the checklist for the correct asset.",
       "Review the relevant checks and record the available completion details.",
@@ -593,15 +574,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/maintenance",
     "action": "Open Maintenance",
-    "keywords": "",
+    "keywords": " Use maintenance checklists",
     "question": "How do I make routine checks easier to follow?"
   },
   {
     "category": "maintenance",
     "id": "problems",
-    "title": "Log and resolve problems",
+    "title": "Log problems",
     "description": "Keep faults visible until they have been dealt with.",
-    "where": "Asset → maintenance or problem actions",
+    "where": "Asset / maintenance or problem actions",
     "steps": [
       "Log the problem against the correct asset.",
       "Describe the symptom and add supporting information where available.",
@@ -612,15 +593,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/maintenance",
     "action": "Open Maintenance",
-    "keywords": "fault issue breakdown",
+    "keywords": "fault issue breakdown Log and resolve problems",
     "question": "What problems still need to be fixed?"
   },
   {
     "category": "maintenance",
     "id": "parts",
-    "title": "Save and find part numbers",
+    "title": "Part numbers",
     "description": "Keep useful parts references with the machine they belong to.",
-    "where": "Asset → Manage → Maintenance → Parts",
+    "where": "Asset / Manage / Maintenance / Parts",
     "steps": [
       "Open Parts on the correct asset.",
       "Choose the relevant component and record its part information.",
@@ -631,7 +612,7 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Save and find part numbers",
     "question": "Where did I save that part number?"
   },
   {
@@ -639,26 +620,26 @@ export const tutorials: Tutorial[] = [
     "id": "inside",
     "title": "Share inside Aim4price",
     "description": "Send an asset to a business or dealer through the platform.",
-    "where": "Asset or umbrella → Share → Inside Aim4price",
+    "where": "Asset or umbrella / Share / Inside Aim4price",
     "steps": [
-      "Choose the asset or umbrella to share.",
-      "Find the intended recipient and choose the access options offered.",
-      "Review the recipient and settings before confirming the share."
+      "Open Share on an asset or umbrella and choose Share inside Aim4price.",
+      "Find the recipient in the business directory. Use Business not listed if you need to invite them.",
+      "Choose the access settings, check the recipient and confirm the share."
     ],
     "example": "Share a tractor with a workshop to discuss upcoming repairs.",
     "note": "Only include the actions and reports the recipient needs.",
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Share inside Aim4price business directory invite business not listed",
     "question": "How do I work with a business through Aim4price?"
   },
   {
     "category": "sharing",
     "id": "outside",
-    "title": "Share through WhatsApp or email",
+    "title": "WhatsApp & email",
     "description": "Prepare asset information for a conversation outside Aim4price.",
-    "where": "Asset or umbrella → Share → Outside Aim4price",
+    "where": "Asset or umbrella / Share / Outside Aim4price",
     "steps": [
       "Choose the assets and information to include.",
       "Review the message, photos and available document options.",
@@ -669,15 +650,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "send email whatsapp photos PDF",
+    "keywords": "send email whatsapp photos PDF Share through WhatsApp or email",
     "question": "How do I send asset information by WhatsApp or email?"
   },
   {
     "category": "sharing",
     "id": "access-links",
-    "title": "Create and manage an access link",
+    "title": "Share links",
     "description": "Choose view-only access or allow specific actions.",
-    "where": "Share → Send link; History → link management",
+    "where": "Share / Send link; History / link management",
     "steps": [
       "Choose View only or select the permissions required.",
       "Select any additional reports you want the recipient to see.",
@@ -688,53 +669,34 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "permissions revoke read only",
+    "keywords": "permissions revoke read only Create and manage an access link",
     "question": "Can I choose exactly what someone can see or do?"
   },
   {
     "category": "sharing",
     "id": "received",
-    "title": "Work with an asset shared with you",
-    "description": "Contribute to a client’s record within the access they allow.",
+    "title": "Received assets",
+    "description": "Open an asset another owner has shared with you and use the access they have allowed.",
     "where": "Received link or shared enquiry",
     "steps": [
       "Open the shared asset and sign in or follow the free-account instructions.",
       "Review the available actions and asset identity.",
       "Add the permitted information, then check the saved result."
     ],
-    "example": "Add service details and photos to the tractor a client shared.",
-    "note": "Ask the owner if the action you need is unavailable. Shared access does not open their entire account.",
+    "example": "Review a machine shared by a neighbouring owner before discussing its condition.",
+    "note": "The shared link gives access only to the records and actions its owner selected.",
     "audience": "Owner",
     "href": "/shared-enquiries",
     "action": "Open shared enquiries",
-    "keywords": "",
+    "keywords": " Work with an asset shared with you",
     "question": "How do I work with an asset someone shared with me?"
-  },
-  {
-    "category": "sharing",
-    "id": "directory",
-    "title": "Find or invite a business",
-    "description": "Choose who should receive an asset or enquiry.",
-    "where": "Share inside Aim4price → business directory",
-    "steps": [
-      "Use the directory to find the intended business.",
-      "Check the business details before selecting it.",
-      "If it is missing, use Business not listed and review the invitation details."
-    ],
-    "example": "Find a specialist workshop before sharing the relevant asset.",
-    "note": "Check the recipient before sending information or an invitation.",
-    "audience": "Owner",
-    "href": "/asset-register",
-    "action": "Open Asset Register",
-    "keywords": "",
-    "question": "How do I find the right business to share with?"
   },
   {
     "category": "reports",
     "id": "valuation-report",
-    "title": "Download a valuation report",
+    "title": "Valuation reports",
     "description": "Present the saved asset details and valuation information together.",
-    "where": "Asset → Manage → Reports → valuation",
+    "where": "Asset / Manage / Reports / valuation",
     "steps": [
       "Check the asset details and pricing first.",
       "Choose the available valuation report and options.",
@@ -745,15 +707,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Download a valuation report",
     "question": "How do I present my asset’s valuation information?"
   },
   {
     "category": "reports",
     "id": "maintenance-report",
-    "title": "Review a maintenance report",
+    "title": "Maintenance reports",
     "description": "Bring completed work and maintenance information into one view.",
-    "where": "Asset → Manage → Reports → maintenance",
+    "where": "Asset / Manage / Reports / maintenance",
     "steps": [
       "Check that relevant work is recorded.",
       "Choose the maintenance report and available period or options.",
@@ -764,15 +726,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Review a maintenance report",
     "question": "Can I show the work recorded on this machine?"
   },
   {
     "category": "reports",
     "id": "fuel-report",
-    "title": "Download fuel records",
+    "title": "Fuel reports",
     "description": "Review purchases, storage movements and available fuel summaries.",
-    "where": "Fuel Ledger → Download",
+    "where": "Fuel Ledger / Download",
     "steps": [
       "Choose the relevant fuel view and reporting scope.",
       "Select the available PDF or spreadsheet format.",
@@ -783,15 +745,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/fuel",
     "action": "Open Fuel Ledger",
-    "keywords": "",
+    "keywords": " Download fuel records",
     "question": "How do I download my fuel records?"
   },
   {
     "category": "reports",
     "id": "map-report",
-    "title": "Download an asset map report",
+    "title": "Asset map reports",
     "description": "Put recorded asset locations into a report you can share.",
-    "where": "Asset Map → Download",
+    "where": "Asset Map / Download",
     "steps": [
       "Open Asset Map and select the relevant assets.",
       "Choose Download and review the available report options.",
@@ -802,15 +764,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-map",
     "action": "Open Asset Map",
-    "keywords": "",
+    "keywords": " Download an asset map report",
     "question": "Can I share a report of asset locations?"
   },
   {
     "category": "reports",
     "id": "depreciation-report",
-    "title": "Review a depreciation report",
+    "title": "Depreciation reports",
     "description": "See how the recorded assumptions affect an asset’s value over time.",
-    "where": "Asset → Manage → Reports → depreciation",
+    "where": "Asset / Manage / Reports / depreciation",
     "steps": [
       "Check the asset values and depreciation information.",
       "Open the available depreciation report.",
@@ -821,15 +783,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
+    "keywords": " Review a depreciation report",
     "question": "How does the report show value changing over time?"
   },
   {
     "category": "reports",
     "id": "ownership-report",
-    "title": "Review a cost-of-ownership report",
-    "description": "Bring recorded costs together to support a replacement or running-cost decision.",
-    "where": "Asset → Manage → Reports → ownership costs",
+    "title": "Ownership cost reports",
+    "description": "Review recorded ownership costs to help decide whether to keep, repair or replace an asset.",
+    "where": "Asset / Manage / Reports / ownership costs",
     "steps": [
       "Check that relevant asset costs have been recorded.",
       "Choose the ownership-cost report and available options.",
@@ -840,13 +802,13 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "",
-    "question": "How do I review my asset’s ownership costs?"
+    "keywords": " Review a cost-of-ownership report  Understand depreciation and ownership costs",
+    "question": "What does owning this asset really cost?"
   },
   {
     "category": "market",
     "id": "marketplace",
-    "title": "Explore the Marketplace",
+    "title": "Marketplace",
     "description": "Browse assets offered for sale and inspect the information available.",
     "where": "Marketplace",
     "steps": [
@@ -859,34 +821,34 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/marketplace",
     "action": "Open Marketplace",
-    "keywords": "",
+    "keywords": " Explore the Marketplace",
     "question": "What assets are available on the Marketplace?"
   },
   {
     "category": "market",
     "id": "discovery",
-    "title": "Discover assets and buying options",
-    "description": "Use Asset Discovery to explore the available asset information.",
+    "title": "Asset Discovery",
+    "description": "Explore machinery shared by other participating owners. Enabling participation also makes your eligible machinery discoverable.",
     "where": "Asset Discovery",
     "steps": [
-      "Open Asset Discovery.",
-      "Use the available categories, search and filters.",
-      "Review the asset details and available next actions."
+      "Open Asset Discovery and review the participation requirements.",
+      "Check Asset Exclusions before enabling participation.",
+      "Browse other participating owners’ assets and use the enquiry options for a machine that interests you."
     ],
-    "example": "Explore options for the type of machine your operation needs.",
-    "note": "Availability and information vary by asset.",
+    "example": "Explore machinery in the owner network and enquire whether an owner would consider a sale.",
+    "note": "Discovery participation is different from advertising an asset for sale on Marketplace. Review which assets are included.",
     "audience": "Owner",
     "href": "/asset-discovery",
     "action": "Open Asset Discovery",
-    "keywords": "",
-    "question": "How do I explore assets that might suit my needs?"
+    "keywords": " Discover assets and buying options",
+    "question": "Can I discover machinery through other owners?"
   },
   {
     "category": "market",
     "id": "sell",
     "title": "Sell with Aim4price",
     "description": "Understand the asset-sale service and its fees before discussing a sale.",
-    "where": "Footer → Asset Sale Fees",
+    "where": "Footer / Asset Sale Fees",
     "steps": [
       "Open the asset-sale fees page.",
       "Review how the service works and the published fee structure.",
@@ -897,15 +859,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/selling-fees",
     "action": "View asset sale fees",
-    "keywords": "",
+    "keywords": " Sell with Aim4price",
     "question": "How can Aim4price help me sell an asset?"
   },
   {
     "category": "connections",
     "id": "owner-app",
-    "title": "Use the Owner app",
+    "title": "Owner app",
     "description": "Reach your asset records while you are away from your desk.",
-    "where": "Account → Owner app",
+    "where": "Account / Owner app",
     "steps": [
       "Open the Owner app setup from Account.",
       "Follow the sign-in and device instructions provided.",
@@ -916,34 +878,34 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/account/owner-app",
     "action": "Open Owner app setup",
-    "keywords": "",
+    "keywords": " Use the Owner app",
     "question": "Can I manage my assets away from my desk?"
   },
   {
     "category": "connections",
     "id": "field-manager",
-    "title": "Set up a Field Manager",
+    "title": "Field Manager",
     "description": "Let a team member record the work they are authorised to handle.",
-    "where": "Account → Field Manager",
+    "where": "Account / Field Manager",
     "steps": [
-      "Open the Field Manager settings.",
-      "Review the user, assigned access and app setup instructions.",
-      "Check the available assets and actions with the team member."
+      "Open Field Manager from Account.",
+      "Set up the team member and review their assigned assets and permissions.",
+      "Follow the app setup instructions, then check that they can access the intended assets."
     ],
     "example": "Let a farm manager record fuel and maintenance on assigned machinery.",
-    "note": "Give each person only the access their work requires.",
+    "note": "Review access when responsibilities change or a team member leaves.",
     "audience": "Owner",
     "href": "/account/field-manager",
     "action": "Open Field Manager setup",
-    "keywords": "",
+    "keywords": " Set up a Field Manager team access permissions staff",
     "question": "Can my manager record work in the field?"
   },
   {
     "category": "connections",
     "id": "ai",
-    "title": "Ask AI questions about your records",
+    "title": "AI Connections",
     "description": "Connect a supported assistant to explore saved account information.",
-    "where": "Account → AI Connections",
+    "where": "Account / AI Connections",
     "steps": [
       "Choose Connect and follow the setup for an available assistant.",
       "Review the requested access and terms before approving.",
@@ -954,15 +916,15 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/account/ai-connect",
     "action": "Open AI Connections",
-    "keywords": "assistant chatgpt maintenance questions",
+    "keywords": "assistant chatgpt maintenance questions Ask AI questions about your records",
     "question": "Can I ask AI questions about my asset records?"
   },
   {
     "category": "connections",
     "id": "qr",
-    "title": "Use asset QR access",
+    "title": "Asset QR codes",
     "description": "Make the correct asset easier to open where work happens.",
-    "where": "Asset → QR code",
+    "where": "Asset / QR code",
     "steps": [
       "Open the QR code options for the relevant asset.",
       "Review the available QR access and PIN settings.",
@@ -973,26 +935,7 @@ export const tutorials: Tutorial[] = [
     "audience": "Owner",
     "href": "/asset-register",
     "action": "Open Asset Register",
-    "keywords": "qr pin scan",
+    "keywords": "qr pin scan Use asset QR access",
     "question": "Can I scan a code to open the right asset?"
-  },
-  {
-    "category": "connections",
-    "id": "team-access",
-    "title": "Manage team access",
-    "description": "Review who can work with your assets through the available account and app settings.",
-    "where": "Account → app and access settings",
-    "steps": [
-      "Open Account and the relevant app or access settings.",
-      "Review the people, assigned assets and available permissions.",
-      "Update access when responsibilities change."
-    ],
-    "example": "Limit a manager’s access to the work and assets they are responsible for.",
-    "note": "Review access regularly, especially when someone leaves the team.",
-    "audience": "Owner",
-    "href": "/account",
-    "action": "Open Account",
-    "keywords": "",
-    "question": "How do I manage my team’s access?"
   }
 ];

@@ -128,31 +128,50 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='tutorials'){
      const features='nav[aria-label="Owner features"] button';
-     assert.equal(await page.$$eval(features,els=>els.length),49);
+     assert.equal(await page.$$eval(features,els=>els.length),46);
      assert.match(await page.$eval('#owner-feature-title',e=>e.textContent),/How do I start/);
      assert.ok(await page.$('[aria-label="Video not yet available"]'));
      assert.equal(await page.$('video'),null,'No empty video players');
+     const list=await page.$eval('nav[aria-label="Owner features"]',e=>({scrolls:e.scrollHeight>e.clientHeight,overflow:getComputedStyle(e).overflowY}));
+     assert.ok(list.scrolls && list.overflow==='auto','Feature list scrolls independently');
+     assert.ok(await page.$$eval(features,els=>els.every(e=>getComputedStyle(e).whiteSpace==='nowrap'&&e.scrollWidth<=e.clientWidth)),'Feature labels fit on one line');
      await page.$$eval(features,els=>els[els.length-1].click());
-     await page.click('#owner-feature-panel summary');
-     assert.ok(await page.$('#owner-feature-panel details[open]'));
-     assert.match(await page.$eval('#owner-feature-panel',e=>e.textContent),/Where to find it/);
+     await page.click('[aria-controls="feature-guide"]');
+     assert.equal(await page.$eval('#feature-guide',e=>e.hidden),false);
+     await page.click('[aria-controls="feature-example"]');
+     assert.equal(await page.$eval('#feature-guide',e=>e.hidden),true,'Only one explanation opens at a time');
+     assert.equal(await page.$eval('#feature-example',e=>e.hidden),false);
      await page.screenshot({path:path.join(evidence,'owner-guide-'+width+'.png'),fullPage:false});
      await page.type('#tutorial-search','maintenance');
      const matches=await page.$$eval(features,els=>els.length);
-     assert.ok(matches>0&&matches<49);
+     assert.ok(matches>0&&matches<46);
      await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
      await page.waitForFunction(()=>document.body.textContent.includes('No matching owner features'));
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
-     assert.equal(await page.$$eval(features,els=>els.length),49);
-     await page.$$eval('[aria-label="Owner feature categories"] button',els=>els[1].click());
+     assert.equal(await page.$$eval(features,els=>els.length),46);
+     await page.select('#tutorial-category','start');
      assert.equal(await page.$$eval(features,els=>els.length),3);
-     await page.$$eval('button',els=>els.find(e=>e.textContent==='Next feature →').click());
+     await page.$$eval(features,els=>els[1].click());
      assert.equal(await page.$$eval(features,els=>els[1].getAttribute('aria-current')),'true');
-     await page.$$eval('button',els=>els.find(e=>e.textContent==='← Previous feature').click());
-     assert.equal(await page.$$eval(features,els=>els[0].getAttribute('aria-current')),'true');
-     await page.$$eval('[aria-label="Owner feature categories"] button',els=>els[0].click());
+     await page.select('#tutorial-category','all');
+     await page.$$eval(features,els=>els[0].click());
      await page.evaluate(()=>scrollTo(0,0));
+     assert.doesNotMatch(await page.$eval('#app',e=>e.textContent),/[→↗←]/,'No decorative arrows');
+     if(width>=1000)assert.ok(await page.$eval('#owner-feature-panel',e=>e.getBoundingClientRect().bottom<=innerHeight),'Collapsed panel fits desktop viewport');
      await page.screenshot({path:path.join(evidence,'owner-videos-'+width+'.png'),fullPage:false});
+     // Synthetic video URL exercises modal behaviour before real recordings exist.
+     await page.evaluate(()=>{require('app/tutorials/tutorial-content').tutorials[0].videoSrc='data:video/mp4;base64,';});
+     await page.$$eval(features,els=>els[1].click());
+     await page.$$eval(features,els=>els[0].click());
+     await page.click('button[aria-haspopup="dialog"]');
+     await page.waitForSelector('dialog[open] video');
+     await page.keyboard.press('Escape');
+     await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+     assert.match(await page.evaluate(()=>document.activeElement.textContent),/Watch video/);
+     await page.click('button[aria-haspopup="dialog"]');
+     await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Close video').click());
+     assert.equal(await page.$('dialog[open]'),null);
+
     }
     if(mode==='pricing'){
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
