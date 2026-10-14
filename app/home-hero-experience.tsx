@@ -665,7 +665,7 @@ export default function HomeHeroExperience({ variant, Preview = HomeAssetPreview
                       </h2>
                       <div className={styles.featureNarrativeCopy}>
                         <p>{feature.body}</p>
-                        <p>{feature.detail}</p>
+                        {feature.detail ? <p>{feature.detail}</p> : null}
                       </div>
                       {question === 'attention' && isActive && storyMode === 'features' ? (
                         <div className={styles.featureEndActions}>
