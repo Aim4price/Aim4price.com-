@@ -1,6 +1,5 @@
 'use client';
 import { type ExternalShareFileSource } from '../../lib/external-file-share';
-import AssetLinkAccessSummary from '../asset-register/AssetLinkAccessSummary';
 import AssetAccessSettingsDialog from '../asset-register/AssetAccessSettingsDialog';
 import assetStyles from '../../app/asset-register/page.module.css';
 import { DealerMaintenancePermissionPicker } from '../DealerMaintenanceAccessSettings';
@@ -112,7 +111,6 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         </>}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
-            <AssetLinkAccessSummary permissions={permissions} />
             <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
             <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>

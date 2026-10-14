@@ -39,13 +39,11 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
             <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
             <span className={layout.choiceTitle}>View only</span>
             <span className={layout.choiceDescription}>Share asset information without allowing changes.</span>
-            <span className={layout.choiceAction} aria-hidden="true">Continue <span>→</span></span>
           </button>}
           <button type="button" aria-label="Choose permissions" data-access-start className={layout.accessChoice} onClick={()=>setShowGuide(false)}>
             <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="9" cy="18" r="2" fill="currentColor"/></svg></span>
             <span className={layout.choiceTitle}>Choose permissions</span>
             <span className={layout.choiceDescription}>Allow specific updates or include additional reports.</span>
-            <span className={layout.choiceAction} aria-hidden="true">Choose access <span>→</span></span>
           </button>
         </div>
       </div> : children}</div>

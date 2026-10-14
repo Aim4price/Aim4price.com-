@@ -1,6 +1,5 @@
 'use client';
 import { useState } from 'react';
-import AssetLinkAccessSummary from './AssetLinkAccessSummary';
 import AssetAccessSettingsDialog from './AssetAccessSettingsDialog';
 import { DealerMaintenancePermissionPicker } from '../DealerMaintenanceAccessSettings';
 import { normalizeExternalPermissions, readOnlyAssetLinkPermissions, type ExternalSharePermissions } from '../../lib/external-share-permissions';
@@ -32,7 +31,6 @@ export default function ShareLinkSettings({token, subject, initialPermissions, o
             disabled={busy}
             onChange={value=>{setPermissions({...permissions,...normalizeExternalPermissions({...permissions,history:value.canViewHistory,suggestValue:value.canSuggestCurrentValue,updateDetails:value.canUpdateDetails,location:value.canAccessLocation,yearModel:value.canUpdateYear,usage:value.canUpdateUsage,condition:value.canUpdateCondition,addMaintenance:value.canAddMaintenance,viewParts:value.canViewParts,addParts:value.canAddParts,addPhotos:value.canAddPhotos,addCosts:value.canAddCosts,loggedProblems:value.canViewLoggedProblems,maintenanceReports:value.canViewMaintenanceReports,costOfOwnership:value.canViewCostOfOwnership,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice})});}}
           />
-    <AssetLinkAccessSummary permissions={permissions} />
     {error && <p role="alert">{error}</p>}
 
   </AssetAccessSettingsDialog>;

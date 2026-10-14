@@ -118,8 +118,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:'window.fixtureRoot.render(React.createElement(require("components/business-network/BusinessListingInvite").default,{sendLink:true,assetIds:["10000000-0000-4000-8000-000000000001"],reportAssets:[{id:"10000000-0000-4000-8000-000000000001",title:"2023 Toyota Hilux"}]}));'});
  await page.waitForSelector('[data-asset-link-dialog]');
  await page.screenshot({path:'/tmp/asset-link-access-choice.png'});
- await click('View only');await page.waitForSelector('dialog[open] [aria-label="Selected link access"]');
- assert.match(await page.$eval('[aria-label="Selected link access"]',node=>node.textContent),/No changes to the asset are allowed/);
+ await click('View only');await page.waitForSelector('dialog[open] [data-share-consent]');
+ assert.equal(await page.$('[aria-label="Selected link access"]'),null,'The repeated access summary is removed');
  assert.equal(await page.evaluate(()=>window.requests.filter(request=>String(request.url).includes('/api/asset-share-links/leads')).length),0,'Choosing access must not create a link');
  await page.screenshot({path:'/tmp/asset-link-access-review.png'});
  await click('Back');await page.waitForSelector('[data-access-start]');await click('Choose permissions');
@@ -145,14 +145,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });
  await page.waitForSelector('[data-access-start]');await click('Choose permissions');
  await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
- const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).click());
- const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).querySelector('input').checked);
+ const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.querySelector('strong')?.textContent === 'Update current value').click());
+ const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.querySelector('strong')?.textContent === 'Update current value').querySelector('input').checked);
  await toggleValue(); assert.equal(await valueChecked(),true,'Value permission responds to a card click');
  await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
  assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);
  await page.evaluate(()=>window.renderLinkSettings(window.savedPermissions));
  await page.waitForSelector('[data-access-start]');await click('Choose permissions');
- await page.waitForSelector('[data-permission-grid]');assert.equal(await valueChecked(),true,'Saved value permission loads checked');
+ await page.waitForSelector('[data-permission-grid]');assert.equal(await page.$('[aria-label="Selected link access"]'),null);assert.equal(await valueChecked(),true,'Saved value permission loads checked');
  const geometry=await page.$$eval('[data-permission-grid] label',nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),i=node.querySelector('input').getBoundingClientRect();return Math.abs((r.top+r.height/2)-(i.top+i.height/2));}));
  assert(geometry.every(offset=>offset<1),'Checkboxes are vertically centred in each card');
  await page.setViewport({width:1440,height:650});
