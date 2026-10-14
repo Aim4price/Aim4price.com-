@@ -1,0 +1,16 @@
+.section { width: min(var(--shell-max, 78rem), calc(100% - 2rem)); margin: 0 auto; padding: 3rem 0 5rem; color: #183e32; }
+.section header { margin-bottom: 2rem; }
+.section h2 { font-size: clamp(2.5rem, 4.5vw, 4rem); line-height: 1.08; letter-spacing: -.035em; margin: 0 0 1rem; }
+.section header p { font-size: 1.2rem; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
+.grid article { padding: clamp(1.3rem, 3vw, 2rem); background: #f4faf6; border: 1px solid #c9dfd1; border-radius: 1.3rem; }
+.label { color: #38614f; font-size: .85rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.grid h3 { font-size: 1.9rem; line-height: 1.15; margin: .85rem 0; }
+.grid p, .grid dd { line-height: 1.7; }
+.grid summary { cursor: pointer; font-weight: 800; padding: .8rem 0; }
+.grid a { display: inline-block; padding: .7rem 0; color: #165e3b; font-weight: 800; }
+.grid dt { font-weight: 800; }
+.grid dd { margin: 0 0 .7rem; }
+.grid blockquote { margin: 1rem 0; font-size: 1.3rem; }
+:global(html[data-theme="dark"]) .section > header { color: #f0faf3; }
+@media (max-width: 760px) { :global(html:not(:has([data-website-canvas]))) .grid { grid-template-columns: 1fr; } }

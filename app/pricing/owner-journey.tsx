@@ -22,7 +22,7 @@ function Choice({ selected, onClick, title, children }: { selected: boolean; onC
   </button>;
 }
 
-export default function PackageJourney({ onTitleChange, audience = 'owner' }: { onTitleChange?: (title: string) => void; audience?: 'owner' | 'dealer' }) {
+export default function PackageJourney({ onTitleChange, audience = 'owner', signedIn = false }: { signedIn?: boolean; onTitleChange?: (title: string) => void; audience?: 'owner' | 'dealer' }) {
   const dealer = audience === 'dealer';
   const firstStep = dealer ? 6 : 0;
   const [step, setStep] = useState(firstStep);
@@ -37,7 +37,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const heading = useRef<HTMLHeadingElement>(null);
   const plan = dealer ? { name: 'Dealer Partner', monthly: 199, yearly: 1999, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
-  const packagePrice = plan ? (yearly ? plan.yearly + (adminPlan?.price ?? 0) * 12 : plan.monthly + (adminPlan?.price ?? 0)) : null;
+  const packagePrice = plan ? (yearly ? plan.yearly : plan.monthly + (adminPlan?.price ?? 0)) : null;
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 5 ? setup === 'visit' || setup === 'inspection' : step === 1 ? setup !== null : admin !== null;
   const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customers’ asset registers?', 'Would you like help from Aim4price?', 'What would you like help setting up?'];
   const detailTitles = { funding: 'Client register billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help', billing: 'Good to know' };
@@ -195,8 +195,8 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <div className={styles.reviewTotal}>
           <div aria-live="polite">
             <p className={styles.label}>{plan ? `${plan.name} · up to ${plan.limit} active assets` : 'Enterprise · 301+ assets'}</p>
-            <p className={styles.price} data-owner-package-price>{packagePrice !== null ? money(packagePrice) : 'Custom quote'}{plan && <span>/{yearly ? 'year' : 'month'}{adminPlan ? ' total' : ''}</span>}</p>
-            {adminPlan && <p className={styles.totalCaption}>{yearly ? 'Includes 12 months of admin help, billed monthly.' : 'Includes your selected admin help.'}</p>}
+            <p className={styles.price} data-owner-package-price>{packagePrice !== null ? money(packagePrice) : 'Custom quote'}{plan && <span>/{yearly ? 'year' : 'month'}{adminPlan && !yearly ? ' total' : ' subscription'}</span>}</p>
+            {adminPlan && <p className={styles.totalCaption}>{yearly ? `Plus ${money(adminPlan.price)}/month for admin help, billed separately.` : 'Includes your selected admin help.'}</p>}
             {admin === 'custom' && <p className={styles.totalCaption}>Custom admin help quoted separately.</p>}
             <button type="button" className={styles.restart} onClick={() => { setEditing(true); move(0); }}>Change asset range</button>
           </div>
@@ -205,7 +205,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <p className={styles.included}>Self-service uploads and unlimited registers included within your asset limit.</p>
         {(setup !== 'self' || admin !== 'self') && <div className={styles.reviewRows} aria-label="Optional services">
           {setup !== 'self' && <div className={styles.reviewRow}><strong>{setupLabel}</strong><span>Separate quote</span><button type="button" onClick={() => setSetup('self')}>Remove</button></div>}
-          {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month${plan ? ' included' : ' admin'}` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
+          {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month${plan && !yearly ? ' included' : ' admin'}` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
           {plan && adminPlan && <p className={styles.packageTotal}>{yearly ? `${money(plan.yearly)}/year subscription + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
         </div>}
         <div className={styles.optionalHelp} aria-label="Optional help and pricing details">
@@ -245,7 +245,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
       <div className={styles.navigation}>
         {detail ? <button type="button" className={styles.secondary} onClick={() => move(3)}>Back to package</button> : <>
         {(dealer ? step !== firstStep && !editing : step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Dealer Partner · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
-        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { const next = editing && !dealer ? 3 : nextStep(); if (next === 3) setEditing(false); move(next); }}>{(editing && !dealer) || nextStep() === 3 ? editing ? 'Update package' : 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}><button type="button" className={styles.restart} onClick={() => { setEditing(false); setAssetBand(null); setSetup(dealer ? null : 'self'); setAdmin(dealer ? null : 'self'); setCustomers(null); setHelp(null); setYearly(false); move(firstStep); }}>Start again</button><Link href={`/auth?accountType=${audience}#signup`} className={styles.primary}>Sign up</Link></div>}
+        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { const next = editing && !dealer ? 3 : nextStep(); if (next === 3) setEditing(false); move(next); }}>{(editing && !dealer) || nextStep() === 3 ? editing ? 'Update package' : 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}><button type="button" className={styles.restart} onClick={() => { setEditing(false); setAssetBand(null); setSetup(dealer ? null : 'self'); setAdmin(dealer ? null : 'self'); setCustomers(null); setHelp(null); setYearly(false); move(firstStep); }}>Start again</button><Link href={signedIn ? "/contact-us" : `/auth?accountType=${audience}#signup`} className={styles.primary}>{signedIn ? "Discuss my package" : "Sign up"}</Link></div>}
         </>}
       </div>
     </div>

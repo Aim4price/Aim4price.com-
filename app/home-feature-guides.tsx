@@ -1,0 +1,14 @@
+import Link from 'next/link';
+import styles from './home-feature-guides.module.css';
+
+export default function HomeFeatureGuides() {
+  return <section className={styles.section} aria-labelledby="working-together-title">
+    <header><h2 id="working-together-title">Put your records to work.</h2><p>From one invoice to a useful history. Explore what you can do next.</p></header>
+    <div className={styles.grid}>
+      <article><span className={styles.label}>Sharing</span><h3>Give the right person the right access.</h3><p>Share an asset with a mechanic, insurer or adviser. You choose the records they can see and the actions they can take.</p><details><summary>See a simple example</summary><p>Share a tractor with your mechanic, choose the relevant maintenance permissions, then review the completed work in its history. Check the recipient and permissions before sending, and revoke access when it is no longer needed.</p><Link href="/asset-register">Open your register →</Link></details></article>
+      <article><span className={styles.label}>Invoice Drop</span><h3>Get the paperwork to the asset.</h3><p>A supplier can submit an invoice without needing access to your account. Match it to the right asset so the paperwork reaches the right place.</p><details><summary>How it works</summary><p>Identify the asset, attach the invoice and check the destination before submitting. The invoice goes through the capture process; submitting a document does not give the sender access to your records.</p><Link href="/drop-invoice">Drop an invoice →</Link></details></article>
+      <article><span className={styles.label}>Reports</span><h3>Turn saved records into a clear picture.</h3><p>Use reports to review an asset’s costs, fuel, maintenance and value. Open an asset, choose Manage, then Reports.</p><details><summary>What a report can show</summary><dl><div><dt>Costs</dt><dd>Recorded spending linked to the asset</dd></div><div><dt>Maintenance</dt><dd>Completed work and scheduled tasks</dd></div><div><dt>Fuel</dt><dd>Recorded fuel use and supporting entries</dd></div></dl><p>Available reports depend on the asset and your access. Review missing records and date ranges before sharing a report.</p><Link href="/asset-register">Explore your asset reports →</Link></details></article>
+      <article><span className={styles.label}>AI Connections</span><h3>Ask questions about your records.</h3><p>Connect a supported AI assistant from your account, review the requested access, and use plain language to explore your saved information.</p><details><summary>Try a useful question</summary><blockquote>“Which of my assets have maintenance due?”</blockquote><p>Check the answer against the saved records. Manage or disconnect authorised connections from Account → AI Connections.</p><Link href="/account/ai-connect">View AI Connections →</Link></details></article>
+    </div>
+  </section>;
+}
