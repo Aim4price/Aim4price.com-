@@ -76,7 +76,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function click(text){await page.$$eval('button',(nodes,text)=>nodes.find(n=>n.textContent===text).click(),text);}
  await click('Sign out user');assert.equal(requests.length,0);await click('Cancel');assert.equal(requests.length,0);await click('Sign out user');await click('Confirm sign out');await page.waitForFunction(()=>document.body.textContent.includes('User signed out.'));
  assert.deepEqual(requests,[{action:'sign-out',userId:'free'}]);await page.screenshot({path:'/tmp/sharing-usage-manage.png'});await page.keyboard.press('Escape');assert.equal(await page.$('dialog[open]'),null);
- await render('app/auth/auth-client',{},'/auth?accountType=dealer#signup');await page.waitForSelector('h1');await page.waitForSelector('[aria-label^="Choose your access"]');
+ await render('app/auth/auth-client',{},'/auth?accountType=dealer#signup');await page.waitForSelector('h1');await page.waitForSelector('[aria-label^="What would you like to use Aim4price for?"]');
+ assert.equal(await page.$('[aria-label^="Choose your access"]'),null,'Signup has no redundant access selector');
+ assert.ok(await page.$('a[href="/business/join"]'),'Shared-enquiry entry remains available');
  const geometry=await page.evaluate(()=>['What would you like to use Aim4price for?','Which best describes your work?'].map(label=>document.querySelector('[aria-label^="'+label+'"]')?.getBoundingClientRect().top));
  assert(Math.abs(geometry[0]-geometry[1])<2,'Account type and work controls align');
  await page.screenshot({path:'/tmp/sharing-signup-alignment.png',fullPage:true});
