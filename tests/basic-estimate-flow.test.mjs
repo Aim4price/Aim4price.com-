@@ -423,3 +423,22 @@ test('specification shortcut updates all three ranges and preserves the VAT basi
 });
 
 
+
+import { REPLACEMENT_SLIDER_STEP, replacementSliderAmount, replacementSliderMaximum } from '../lib/replacement-slider.ts';
+
+test('replacement slider uses clean R5,000 amounts and reachable upper limits in either VAT basis', () => {
+  assert.equal(REPLACEMENT_SLIDER_STEP, 5000);
+  for (const multiplier of [1, 1.15]) {
+    for (const price of [0, 1234, 9999, 145678.91, 2300000, 9123456.78]) {
+      const displayed = price * multiplier;
+      const selected = replacementSliderAmount(displayed);
+      const maximum = replacementSliderMaximum(displayed);
+      assert.equal(selected % 5000, 0);
+      assert.equal(maximum % 5000, 0);
+      assert.ok(maximum >= displayed && maximum >= selected);
+      assert.ok(Math.abs(selected - displayed) <= 2500);
+      const nextExVat = (selected + REPLACEMENT_SLIDER_STEP) / multiplier;
+      assert.ok(Math.abs(nextExVat * multiplier - selected - 5000) < 0.000001);
+    }
+  }
+});

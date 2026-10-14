@@ -14788,3 +14788,18 @@
   font-weight: 400;
   line-height: 1.4;
 }
+
+/* Readable choices throughout Get Estimate, including the result adjustment dialogs. */
+.basicLevelCard.basicLevelCard strong { font-size: 1.5rem; line-height: 1.25; }
+.basicLevelCard.basicLevelCard .choiceCardNote { font-size: 1.08rem; line-height: 1.5; }
+.conditionRouteModal .conditionRouteCard { padding: 1.35rem; min-height: 132px; }
+.conditionRouteModal .conditionRouteCopy strong { font-size: 1.4rem; }
+.conditionRouteModal .conditionRouteCopy small { font-size: 1.05rem; line-height: 1.5; }
+.detailsModal .detailsModalText,
+.popularityModal .popularityGuidance,
+.popularityModal .popularityModalSummary > p { font-size: 1.05rem; line-height: 1.5; }
+.popularityModal .popularityModalSummary > span,
+.popularityModal .popularityModalScale { font-size: 0.95rem; }
+.replacementPriceDialog .replacementFieldHint,
+.replacementPriceDialog .replacementSavedLink { font-size: 0.95rem; }
+.replacementPriceDialog .replacementInputActions button { font-size: 1rem; min-height: 50px; }
