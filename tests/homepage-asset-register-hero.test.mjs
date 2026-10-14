@@ -64,7 +64,8 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(hero, /data-story-mode=\{storyMode\}/);
   assert.match(hero, /data-active-question=\{activeQuestion\}/);
   assert.match(hero, /isAutoplaying && storyStepIndex >= FEATURE_START_INDEX/);
-  assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
+  assert.match(hero, /Preview = HomeAssetPreview/);
+  assert.match(hero, /<Preview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
 
   assert.match(hero, /const FEATURE_START_INDEX = 3/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 10000/);
@@ -134,7 +135,8 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
 
   assert.match(hero, /const handleQuestionChange[\s\S]*?claimManualControl\(\);[\s\S]*?setActiveQuestion\(question\);[\s\S]*?updateStoryStep\(FEATURE_START_INDEX \+ index\)/);
   assert.match(hero, /const handlePreviewInteraction = \(source: 'pointer' \| 'focus'\)[\s\S]*?source === 'focus'[\s\S]*?claimManualControl\(\)/);
-  assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}/);
+  assert.match(hero, /Preview = HomeAssetPreview/);
+  assert.match(hero, /<Preview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}/);
   assert.doesNotMatch(hero, /handlePlaybackToggle|onPlaybackToggle=|playbackId|setPlaybackId|key=\{playbackId\}/);
   assert.match(hero, /const handleRoleSkip = \(\) => \{[\s\S]*?claimManualControl\(\);[\s\S]*?\};/);
   const roleSkip = hero.slice(
@@ -147,7 +149,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
 
   assert.equal((hero.match(/className=\{styles\.storyHeroLogo\}/g) ?? []).length, 1);
   assert.match(hero, /className=\{styles\.storyHeroLogo\}[\s\S]*?src="\/brand\/aim4price-mark-black\.png"[\s\S]*?unoptimized[\s\S]*?className=\{styles\.storyHeroLogoImage\}/);
-  assert.match(hero, /<div ref=\{assetMotionRef\} className=\{styles\.assetStageMotion\}>[\s\S]*?<HomeAssetPreview/);
+  assert.match(hero, /<div ref=\{assetMotionRef\} className=\{styles\.assetStageMotion\}>[\s\S]*?<Preview/);
   assert.doesNotMatch(hero, /shouldRenderPreview|\{shouldRenderPreview \?/);
 
   const featureStories = hero.slice(
