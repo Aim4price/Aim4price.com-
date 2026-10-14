@@ -7634,6 +7634,19 @@ export default function AssetRegisterClient({
     ),
     [quoteAsset?.kind],
   );
+  const quoteTrackingAssetTitle = useMemo(() => {
+    if (!isFullRegisterQuoteLead) return quoteAsset?.title || 'Selected asset';
+    const sharedAssets = activeShareAssets.filter(asset => directoryInvitationAssetIds.includes(asset.id));
+    const count = directoryInvitationAssetIds.length;
+    const kind = sharedAssets.length === count && sharedAssets.every(asset => asset.kind === sharedAssets[0]?.kind)
+      ? sharedAssets[0]?.kind : undefined;
+    const labels: Partial<Record<AssetKind, [string, string]>> = {
+      vehicle: ['vehicle', 'vehicles'], tractor: ['tractor', 'tractors'],
+      property: ['property', 'properties'], tools: ['tool', 'tools'],
+    };
+    const label = (kind && labels[kind]) || ['asset', 'assets'];
+    return `${count} ${label[count === 1 ? 0 : 1]} · ${activeShareName}`;
+  }, [isFullRegisterQuoteLead, quoteAsset, activeShareAssets, directoryInvitationAssetIds, activeShareName]);
   const selectedQuotePartners = useMemo(() => {
     const selectedIds = new Set(selectedQuotePartnerIds);
     return quotePartners.filter((partner) => selectedIds.has(partner.userId));
@@ -19741,14 +19754,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {quoteAsset && isQuoteTrackingSettingsOpen ? (
-        <AssetAccessSettingsDialog title="Business/Dealer asset settings" assetTitle={quoteAsset.title} onClose={cancelQuoteTrackingSettings}>
-
-              <DealerMaintenancePermissionPicker
-                value={quoteTrackingPermissions}
-                onChange={setQuoteTrackingPermissions}
-              />
-
-              <div className={`${styles.formActions} ${styles.exportActions} ${styles.quoteTrackingSettingsActions}`}>
+        <AssetAccessSettingsDialog title="Business/Dealer asset settings" assetTitle={quoteTrackingAssetTitle} onClose={cancelQuoteTrackingSettings} footer={
+              <div data-access-actions className={`${styles.formActions} ${styles.exportActions} ${styles.quoteTrackingSettingsActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={cancelQuoteTrackingSettings}>
                   Cancel
                 </button>
@@ -19768,6 +19775,12 @@ export default function AssetRegisterClient({
                   Save asset settings
                 </button>
               </div>
+        }>
+              <DealerMaintenancePermissionPicker
+                value={quoteTrackingPermissions}
+                onChange={setQuoteTrackingPermissions}
+              />
+
         </AssetAccessSettingsDialog>
       ) : null}
 

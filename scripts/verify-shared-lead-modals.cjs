@@ -128,9 +128,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(!box.text.includes('Choose what this business/dealer can access'));
  assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),0,'Report permissions are selectable');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),0,'Permissions start off');
- await page.click('[data-asset-link-dialog] input[type=checkbox]');
+ await page.click('[data-asset-link-dialog] [data-permission-toolbar] input[type=checkbox]');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),15,'Select all enables all settings');
- await page.click('[data-asset-link-dialog] input[type=checkbox]');
+ await page.click('[data-asset-link-dialog] [data-permission-toolbar] input[type=checkbox]');
  assert.ok(await page.$$eval('[data-permission-grid] small',nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)*2+1 && node.scrollWidth<=node.clientWidth+1)), 'Settings descriptions fit within two lines without clipping');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});

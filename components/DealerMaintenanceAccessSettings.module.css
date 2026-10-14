@@ -419,8 +419,7 @@
 
 .permissionNote { margin: .35rem 0 0; color: var(--app-info, #607286); font-size: .8rem; line-height: 1.5; }
 
-.permissionToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding: .5rem 0; }
-.permissionToolbar p { margin: 0; color: var(--app-info, #607286); font-size: .9rem; }
+.permissionToolbar { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; padding: .15rem 0; }
 .permissionToolbar .selectAll { margin: 0; }
 .permissionGroups { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
 .permissionGroup { min-width: 0; margin: 0; padding: 0; border: 0; }
