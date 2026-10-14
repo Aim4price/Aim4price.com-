@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Aim4price — Asset Intelligence & Management. From fair agricultural machinery trade-in values to helping owners understand asset values, running costs and maintenance.",
+    "Aim4price - Asset Intelligence & Management. From fair agricultural machinery trade-in values to helping owners understand asset values, running costs and maintenance.",
 };
 
 export default async function AboutUsPage() {
@@ -25,7 +25,7 @@ export default async function AboutUsPage() {
         <div className={styles.shell}>
           <div className={styles.heroPanel}>
             <div className={styles.heroCopy}>
-              <p className={styles.pageLabel}>Aim4price — Asset Intelligence &amp; Management</p>
+              <p className={styles.pageLabel}>Aim4price - Asset Intelligence &amp; Management</p>
               <h1 id="about-title" className={styles.heroTitle}>
                 Why we started{" "}
                 <span>Aim4price.</span>
@@ -58,11 +58,6 @@ export default async function AboutUsPage() {
                   build a useful history and make more informed decisions about
                   maintaining, repairing or replacing what they own.
                 </p>
-                <p className={styles.storyFocus}>
-                  Today, our focus is asset intelligence and management: helping
-                  owners understand what they have, what it is worth and what it
-                  costs to own, so they can plan ahead and look after it better.
-                </p>
               </div>
             </div>
 
@@ -82,6 +77,12 @@ export default async function AboutUsPage() {
                 <p className={styles.founderName}>Kuyler Geldenhuys</p>
               </figcaption>
             </figure>
+
+            <p className={styles.storyFocus}>
+              Today, our focus is asset intelligence and management: helping
+              owners understand what they have, what it is worth and what it
+              costs to own, so they can plan ahead and look after it better.
+            </p>
           </div>
         </div>
       </section>
