@@ -2,6 +2,31 @@ import assert from 'node:assert/strict';
 import { readFile } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
 import { resolveCatalogueGuide } from '../lib/basic-catalogue-guide.ts';
+import { getBasicFamilyGuidance } from '../lib/basic-family-guidance.ts';
+import { BASIC_USAGE_FAMILIES } from '../lib/basic-usage-profiles.ts';
+
+test('family selection help covers the catalogue without changing family identities', () => {
+  const snapshot = JSON.stringify(BASIC_USAGE_FAMILIES);
+  for (const [sectorKey, familyKey, familyLabel] of BASIC_USAGE_FAMILIES) {
+    const guidance = getBasicFamilyGuidance({ sectorKey, familyKey, familyLabel });
+    assert.ok(guidance.length > 20 && guidance.length < 180, familyKey);
+  }
+  assert.equal(JSON.stringify(BASIC_USAGE_FAMILIES), snapshot);
+});
+
+test('selection help distinguishes similar names without cross-sector keyword collisions', () => {
+  const help = (sectorKey, familyKey, familyLabel = familyKey) => getBasicFamilyGuidance({ sectorKey, familyKey, familyLabel });
+  assert.match(help('agricultural', 'big_field_tractor'), /engine kW\/hp/);
+  assert.match(help('agricultural', 'small_field_tractor'), /lighter fieldwork/);
+  assert.match(help('construction', 'mini_excavator'), /operating weight/);
+  assert.match(help('industrial', 'electric_counterbalance_forklift'), /battery specification/);
+  assert.match(help('motor', 'double_cab_bakkie'), /Two full seating rows/);
+  assert.doesNotMatch(help('industrial', 'press_brake'), /tractor power/);
+  assert.doesNotMatch(help('industrial', 'truck_tyre_changer'), /truck body/);
+  assert.doesNotMatch(help('industrial', 'powered_roller_conveyor'), /compacts/);
+  assert.doesNotMatch(help('construction', 'trailer_boom_lift'), /Trailer only/);
+  assert.doesNotMatch(help('construction', 'skid_mounted_site_compressor'), /host is separate/);
+});
 
 import {
   BASIC_SPECIFICATION_LEVELS,
@@ -127,7 +152,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
 test('typed Brand and optional Model stay simple and user-facing', () => {
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. Test Brand"/);
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. Test Model"/);
-  assert.match(client, /Add as much brand and model detail as you can\. Aim4price will use it to build the strongest estimate possible\./);
+  assert.match(client, /Name your asset\. The starting price guide comes from its equipment type and specification level\./);
   assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
   assert.doesNotMatch(client, /Brand and model are stored with the estimate and Asset Register without creating catalogue records/);
@@ -176,7 +201,7 @@ test('Basic Specs uses modal cards for condition, popularity and extras', () => 
   assert.match(valuationStyles, /\.specChoiceModal[^\{]*\{[\s\S]*?scrollbar-width: thin/);
   assert.match(valuationStyles, /\.popularityModalStars[^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
 });
-test('Condition modal keeps the route choice minimal and shows Advanced questions one at a time', () => {
+test('Condition modal explains both routes and shows Advanced questions one at a time', () => {
   const conditionStart = client.indexOf('function renderBasicConditionModal()');
   const popularityStart = client.indexOf('function renderBasicPopularityModal()', conditionStart);
   const conditionBlock = client.slice(conditionStart, popularityStart);
@@ -185,9 +210,8 @@ test('Condition modal keeps the route choice minimal and shows Advanced question
   const chooserBlock = conditionBlock.slice(chooserStart, detailStart);
 
   assert.ok(conditionStart >= 0 && popularityStart > conditionStart);
-  assert.doesNotMatch(chooserBlock, /Choose one overall condition for the asset\./);
-  assert.doesNotMatch(chooserBlock, /Assess the important condition areas separately\./);
-  assert.doesNotMatch(chooserBlock, /Choose the amount of detail you know\. Both routes feed the same Aim4price estimate\./);
+  assert.match(chooserBlock, /Choose one overall condition rating for a quick assessment/);
+  assert.match(chooserBlock, /Assess working condition, wear, service history and repairs separately for a finer calculation/);
   assert.doesNotMatch(conditionBlock, /conditionModalBackButton/);
   assert.match(conditionBlock, /const advancedQuestionIndex = currentDetailedSectionIndex >= 0 \? currentDetailedSectionIndex : 0/);
   assert.match(conditionBlock, /Question \{advancedQuestionIndex \+ 1\} of \{advancedQuestionTotal\}/);
@@ -382,3 +406,4 @@ test('specification shortcut updates all three ranges and preserves the VAT basi
     }
   }
 });
+

@@ -14167,7 +14167,10 @@
   font-size: 1.16rem;
 }
 
-.conditionRouteModal .conditionRouteCopy small,
+.conditionRouteModal .conditionRouteCopy small {
+  display: block;
+}
+
 .conditionRouteModal .conditionRouteNote {
   display: none;
 }
@@ -14754,3 +14757,22 @@
 .estimateModeGrid .sectorLabelWrap { flex: 1; }
 .estimateModeGrid .estimateModeDescription { flex: 1; }
 .estimateModeGrid .sectorCardHint { margin-top: .3rem; }
+
+
+/* Keep selection help readable in both the website picker and compact apps. */
+.familySelectionHint {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--app-muted, #536d63);
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.popularityGuidance {
+  margin: 0.35rem 0 0.8rem;
+  color: var(--app-muted, #536d63);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}

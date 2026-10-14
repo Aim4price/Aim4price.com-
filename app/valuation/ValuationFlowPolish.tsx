@@ -31,6 +31,7 @@ type FamilyOption = {
   id: string;
   label: string;
   meta: string;
+  guidance: string;
   selected: boolean;
   searchText: string;
 };
@@ -75,6 +76,7 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
 }
 
 function optionLabelParts(button: HTMLButtonElement): { label: string; meta: string } {
+  if (button.dataset.familyLabel) return { label: button.dataset.familyLabel, meta: button.dataset.familyGroup ?? '' };
   const content = button.querySelector<HTMLElement>(':scope > span') ?? button.querySelector<HTMLElement>('span');
   const metaNode = content?.querySelector<HTMLElement>('small') ?? null;
   const metaRaw = metaNode?.textContent?.trim() ?? '';
@@ -99,6 +101,7 @@ function sameOptions(left: FamilyOption[], right: FamilyOption[]): boolean {
       && option.id === candidate.id
       && option.label === candidate.label
       && option.meta === candidate.meta
+      && option.guidance === candidate.guidance
       && option.selected === candidate.selected;
   });
 }
@@ -270,14 +273,16 @@ export default function ValuationFlowPolish() {
       const buttonMap = new Map<string, HTMLButtonElement>();
       const options = buttons.map((button, index) => {
         const { label, meta } = optionLabelParts(button);
+        const guidance = button.dataset.familyGuidance ?? '';
         const id = `family-option-${index}`;
         buttonMap.set(id, button);
         return {
           id,
           label,
           meta,
+          guidance,
           selected: button.className.includes('equipmentDropdownOptionActive') || button.getAttribute('aria-pressed') === 'true',
-          searchText: `${label} ${meta}`.toLowerCase(),
+          searchText: `${label} ${meta} ${guidance}`.toLowerCase(),
         } satisfies FamilyOption;
       });
 
@@ -489,6 +494,7 @@ export default function ValuationFlowPolish() {
                   <span className={styles.familyOptionCopy}>
                     <strong>{option.label}</strong>
                     {option.meta ? <small>{option.meta}</small> : null}
+                    {option.guidance ? <span className={styles.familyGuidance}>{option.guidance}</span> : null}
                   </span>
                 </button>
               ))}
@@ -506,3 +512,4 @@ export default function ValuationFlowPolish() {
     overlayHost,
   );
 }
+
