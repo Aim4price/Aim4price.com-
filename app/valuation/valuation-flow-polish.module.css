@@ -410,3 +410,13 @@
 .familyModal .familyModalHeader { padding: 0 0 20px; }
 .familyModal .familySearchRow { padding: 20px 0; }
 .familyModal .familyOptionsViewport { margin: 0; }
+
+
+.familyGuidance {
+  display: block;
+  color: #536d63;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: normal;
+}

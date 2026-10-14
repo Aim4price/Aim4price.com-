@@ -1,5 +1,6 @@
 'use client';
 import EstimateTools from './EstimateTools';
+import { getBasicFamilyGuidance } from '../../lib/basic-family-guidance';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -2114,7 +2115,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const filteredFamilies = useMemo(() => {
     const query = familySearch.trim().toLowerCase();
     const matches = families.filter((family) =>
-      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${family.basicCatalogue?.groupLabel ?? ''}`, familySearch),
+      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${family.basicCatalogue?.groupLabel ?? ''} ${getBasicFamilyGuidance(family)}`, familySearch),
     );
 
     if (!query) return matches;
@@ -5971,9 +5972,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       key={family.familyKey}
                       type="button"
                       className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
+                      data-family-label={family.familyLabel}
+                      data-family-group={family.basicCatalogue?.groupLabel ?? ''}
+                      data-family-guidance={getBasicFamilyGuidance(family)}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}</span>
+                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small></span>
                     </button>
                   ))
                 ) : (
@@ -6002,7 +6006,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.'}</p>
+          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Name your asset. The starting price guide comes from its equipment type and specification level.'}</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
@@ -6141,7 +6145,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Choose the current new replacement price for a comparable asset.'}</p>
+            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Use this starting guide, then adjust it to the new replacement price you feel fits a comparable asset.'}</p>
           </div>
           <button
             type="button"
@@ -7502,7 +7506,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const detailsIntro = basicEstimateActive
       ? compactAppMode
         ? 'Add the key details for this asset.'
-        : 'Add the simple family-driven information Aim4price needs for the estimate.'
+        : 'Work through each detail to see what affects your estimate.'
       : genericExactModelPath
         ? compactAppMode
           ? `Add year, ${usageTitle.toLowerCase()}, condition and popularity.`
@@ -7599,6 +7603,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteNumber}>1</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
+                    <small>Choose one overall condition rating for a quick assessment.</small>
                   </span>
                 </button>
 
@@ -7606,6 +7611,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteNumber}>2</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
+                    <small>Assess working condition, wear, service history and repairs separately for a finer calculation.</small>
                   </span>
                 </button>
               </div>
@@ -7800,11 +7806,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     function renderBasicPopularityModal() {
       const popularityLabels = [
         '',
-        'Difficult to sell',
-        'Below normal demand',
-        'Normal demand',
-        'Strong demand',
-        'Sought After',
+        'Very low popularity',
+        'Below-average popularity',
+        'Average popularity',
+        'Popular',
+        'Highly sought-after',
       ];
       const popularityLabel = popularityStepComplete ? popularityLabels[popularityStars] : 'Choose a rating to continue';
 
@@ -7817,12 +7823,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {!compactAppMode ? (
                   <>
                     <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Popularity</h3>
-                    <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Rate current market demand for this asset.</p>
+                    <p className={`${styles.detailsModalText} ${modalStyles.description}`}>How sought-after are this brand and model among buyers?</p>
                   </>
                 ) : null}
               </div>
               <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
+
+            <p className={styles.popularityGuidance}>Think about how sought-after the brand and model are, rather than this asset’s age or condition.</p>
 
             <div className={styles.popularityModalPanel}>
               <div className={styles.popularityModalSummary}>
@@ -7856,9 +7864,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
 
               <div className={styles.popularityScaleLabels} aria-hidden="true">
-                <span>Difficult to sell</span>
-                <span>Normal demand</span>
-                <span>Sought After</span>
+                <span>Low popularity</span>
+                <span>Average</span>
+                <span>Highly sought-after</span>
               </div>
             </div>
 
@@ -8307,7 +8315,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <span className={`${styles.specStepNumber} ${popularityStepComplete ? styles.specStepNumberDone : ''}`}>{popularityStepComplete ? '✓' : 4}</span>
               <span className={styles.specStepContent}>
                 <strong>Popularity</strong>
-                <small>{popularityStepComplete ? `${popularityStars} / 5 stars` : 'Rate current market demand for this asset.'}</small>
+                <small>{popularityStepComplete ? `${popularityStars} / 5 stars` : 'How sought-after are this brand and model among buyers?'}</small>
               </span>
               <span className={styles.specStepAction}>{popularityStepComplete ? 'Edit' : 'Add rating'}</span>
             </button>
@@ -8323,7 +8331,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     <span className={styles.currentEyebrow}>Step 4</span>
                   )}
                   <h3 className={styles.currentTitle}>Popularity</h3>
-                  <p className={styles.currentHint}>Rate current market demand for this asset.</p>
+                  <p className={styles.currentHint}>How sought-after are this brand and model among buyers?</p>
                 </div>
                 <span className={styles.selectedSummaryPill} data-selection-status={popularityStepComplete ? 'selected' : 'pending'}>
                   {popularityStepComplete ? `${popularityStars} / 5 stars` : 'Choose rating'}
@@ -8346,7 +8354,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </button>
                 ))}
               </div>
-              <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = Sought After.</small>
+              <small className={styles.advancedFieldHelp}>1 = low popularity · 3 = average · 5 = highly sought-after. Rate the brand and model, not this asset’s condition.</small>
             </div>
           ) : null}
 
@@ -9868,3 +9876,4 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
