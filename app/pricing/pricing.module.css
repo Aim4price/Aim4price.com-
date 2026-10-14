@@ -213,3 +213,25 @@
 .pricingIncluded h2, .accessExplanation h2 { font-size: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem); line-height: 1.15; margin: 0 0 1rem; }
 .accessExplanation h3 { font-size: 1.4rem; }
 .accessExplanation a { margin-top: 1rem; }
+
+/* Short, aligned explanations keep subscription terms easy to scan. */
+.heroDescription { margin: .85rem 0 0; color: #526b60; font-size: 1.1rem; line-height: 1.5; }
+:global(html[data-background='dark']) .heroDescription { color: #e3eee7; }
+.pricingIncluded { background: #fff; padding: 2rem; }
+.pricingIncluded h2 { margin-bottom: 1.5rem; font-size: 2rem; letter-spacing: -.035em; }
+.subscriptionDetails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.subscriptionDetail { min-width: 0; padding: 1.4rem; border: 1px solid #dce8e0; border-radius: 1rem; background: #f5f9f6; }
+.subscriptionDetail h3 { margin: 0 0 .5rem; color: #174d3a; font-size: 1.25rem; line-height: 1.3; }
+.subscriptionDetail p { margin: 0 0 1.1rem; color: #496357; font-size: .95rem; line-height: 1.5; min-height: 3em; }
+.subscriptionDetail ul { margin: 0; padding-left: 1.1rem; color: #29483b; font-size: .95rem; line-height: 1.65; }
+.subscriptionDetail li + li { margin-top: .75rem; }
+.subscriptionDetail li::marker { color: #4e8569; }
+.subscriptionBilling { display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: 1rem; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #dce8e0; }
+.subscriptionBilling strong { font-size: 1rem; line-height: 1.6; }
+.subscriptionBilling p { margin: 0; max-width: 48rem; color: #496357; font-size: .95rem; line-height: 1.65; }
+@media(max-width:760px) {
+ :global(html:not(:has([data-website-canvas]))) .subscriptionDetails,
+ :global(html:not(:has([data-website-canvas]))) .subscriptionBilling { grid-template-columns: 1fr; }
+ :global(html:not(:has([data-website-canvas]))) .pricingIncluded { padding: 1.25rem; }
+ :global(html:not(:has([data-website-canvas]))) .subscriptionDetail p { min-height: 0; }
+}
