@@ -6145,7 +6145,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Use this starting guide, then adjust it to the new replacement price you feel fits a comparable asset.'}</p>
+            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Adjust this guide to the new price of a comparable asset.'}</p>
           </div>
           <button
             type="button"
@@ -7603,7 +7603,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteNumber}>1</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
-                    <small>Choose one overall condition rating for a quick assessment.</small>
+                    <small>Rate overall condition for a quick estimate.</small>
                   </span>
                 </button>
 
@@ -7611,7 +7611,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteNumber}>2</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
-                    <small>Assess working condition, wear, service history and repairs separately for a finer calculation.</small>
+                    <small>Rate condition, wear, service and repairs for a finer calculation.</small>
                   </span>
                 </button>
               </div>
@@ -7823,14 +7823,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {!compactAppMode ? (
                   <>
                     <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Popularity</h3>
-                    <p className={`${styles.detailsModalText} ${modalStyles.description}`}>How sought-after are this brand and model among buyers?</p>
                   </>
                 ) : null}
               </div>
               <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
 
-            <p className={styles.popularityGuidance}>Think about how sought-after the brand and model are, rather than this asset’s age or condition.</p>
+            <p className={styles.popularityGuidance}>How popular are this brand and model? Age and condition are assessed separately.</p>
 
             <div className={styles.popularityModalPanel}>
               <div className={styles.popularityModalSummary}>
@@ -8983,9 +8982,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
             error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
           </div>
-          <section className={styles.saleabilitySummary} aria-label="General Saleability">
+          <section className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
-              <span>General Saleability</span>
+              <span>How easily could it sell?</span>
               <strong>{generalSaleability.score} / 100 · Grade {generalSaleability.grade}</strong>
               <p>{generalSaleability.gradeLabel} · Typical selling window {generalSaleability.naturalSellingWindow.replace(/[–—]/g, ' to ')}</p>
               <small>Selling time is indicative and may vary.</small>
