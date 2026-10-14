@@ -3,6 +3,9 @@ import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import styles from './selling-fees.module.css';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Selling fees',
   description: 'Clear machinery selling fees. Aim4price handles valuation, fair-price negotiations and sale coordination. Partners bring the buyer and share the agreed fee equally.',
