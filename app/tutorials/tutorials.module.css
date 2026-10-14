@@ -13,7 +13,7 @@
 .listHeading { display:flex; align-items:center; justify-content:space-between; padding:0 .6rem .8rem 0; }
 .listHeading h1 { font-size:1rem; margin:0; }
 .listHeading span { font-size:.8rem; color:#607666; }
-.featureList { height:23rem; min-height:0; flex:0 0 23rem; overflow-y:auto; overflow-x:hidden; padding-right:.7rem; scrollbar-width:thin; scrollbar-color:#83a68e #e4eee7; scrollbar-gutter:stable; overscroll-behavior:contain; }
+.featureList { height:23rem; min-height:23rem; flex:1 1 0px; overflow-y:auto; overflow-x:hidden; padding-right:.7rem; scrollbar-width:thin; scrollbar-color:#83a68e #e4eee7; scrollbar-gutter:stable; overscroll-behavior:contain; }
 .featureList::-webkit-scrollbar { width:8px; }
 .featureList::-webkit-scrollbar-track { background:#e4eee7; border-radius:10px; }
 .featureList::-webkit-scrollbar-thumb { background:#83a68e; border-radius:10px; border:2px solid #e4eee7; }
@@ -77,12 +77,13 @@ button.videoPreview { cursor:pointer; }
 .welcomeLink { width:calc(100% - .7rem); min-height:44px; margin:0 0 .65rem; padding:.65rem .8rem; text-align:left; border:1px solid #cbded2; border-radius:.65rem; background:#f0f6f2; color:#254f3a; font:inherit; font-size:.92rem; font-weight:650; cursor:pointer; }
 .welcomeLink[aria-current='true'] { background:#e0f0e5; border-color:#96baa2; color:#184c32; }
 .welcome { display:flex; flex-direction:column; flex:1; }
-.welcomePrompt { font-size:.95rem; font-weight:650; margin:0 0 .8rem; color:#315a42; }
-.welcomeSteps { display:grid; gap:.65rem; }
-.welcomeSteps button { display:grid; grid-template-columns:2.1rem minmax(0,1fr) auto; align-items:center; gap:.8rem; width:100%; padding:.9rem 1rem; border:1px solid #d3e3d9; border-radius:.8rem; background:#f0f7f2; color:#244c37; text-align:left; font:inherit; cursor:pointer; }
-.welcomeSteps button:hover { background:#e3f0e7; border-color:#9cbea8; }
-.stepNumber { display:grid; place-items:center; width:2rem; height:2rem; border-radius:.6rem; background:#dcece1; color:#2f6547; font-weight:700; font-size:.95rem; }
-.welcomeSteps strong { display:block; font-size:1rem; font-weight:700; }
-.welcomeSteps small { display:block; margin-top:.25rem; font-size:.83rem; line-height:1.5; color:#56735f; }
-.stepAction { font-size:.8rem; font-weight:650; }
-.welcomeHint { margin:1rem 0 0; padding-top:.9rem; border-top:1px solid #d9e6dd; color:#5a7463; font-size:.85rem; line-height:1.6; }
+
+.groupList button { display:flex; align-items:center; gap:.55rem; padding-left:.55rem; padding-right:.55rem; }
+.featureNumber { flex:0 0 1.6rem; color:#638470; font-size:.8rem; font-weight:650; font-variant-numeric:tabular-nums; text-align:center; }
+.introVideo,.introPlaceholder { display:block; width:100%; aspect-ratio:16/9; border-radius:1rem; background:#183c2e; }
+.introPlaceholder { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.8rem; padding:1.5rem; color:#eff8f2; text-align:center; background:radial-gradient(ellipse at top left,#376950,#15382b 75%); border:1px solid #47745b; }
+.introPlaceholder strong { font-size:1.35rem; line-height:1.4; }
+.introPlaceholder > span:last-child { color:#c4dacc; font-size:.9rem; }
+.introFilm { display:grid; place-items:center; width:4rem; height:4rem; border:1px solid #7da58c; border-radius:1rem; background:#ffffff0c; }
+.introFilm svg { width:2rem; height:2rem; }
+.introHint { margin:.8rem 0 0; font-size:.85rem; line-height:1.5; color:#5a7463; }

@@ -1,3 +1,6 @@
+// Set videoSrc to the hosted introduction recording when it is ready.
+export const ownerIntroduction: { videoSrc?: string; captionsSrc?: string } = {};
+
 export type FeatureCategory = { id: string; title: string; description: string; icon: string };
 export type Tutorial = { category: string; id: string; title: string; question: string; description: string; where: string; steps: string[]; example: string; note: string; audience: string; href: string; action: string; keywords: string; videoSrc?: string; captionsSrc?: string };
 // Add a hosted video and captions only when a recording is ready.

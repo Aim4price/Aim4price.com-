@@ -132,7 +132,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('#owner-feature-title',e=>e.textContent),'Welcome to Aim4price.');
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Welcome and list have equal heights');
      await page.screenshot({path:path.join(evidence,'owner-welcome-'+width+'.png'),fullPage:false});
-     await page.$$eval('#owner-feature-panel button',els=>els.find(e=>e.textContent.includes('Add your first asset')).click());
+     assert.ok(await page.$('[aria-label="Introduction video not yet available"]'));
+     assert.deepEqual(await page.$$eval(features,els=>els.map(e=>Number(e.firstElementChild.textContent))),Array.from({length:46},(_,i)=>i+1));
+     await page.$$eval(features,els=>els[0].click());
      assert.match(await page.$eval('#owner-feature-title',e=>e.textContent),/How do I start/);
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Feature and list have equal heights');
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Welcome · Start here').click());
@@ -169,6 +171,11 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.doesNotMatch(await page.$eval('#app',e=>e.textContent),/[→↗←]/,'No decorative arrows');
      if(width>=1000)assert.ok(await page.$eval('#owner-feature-panel',e=>e.getBoundingClientRect().bottom<=innerHeight),'Collapsed panel fits desktop viewport');
      await page.screenshot({path:path.join(evidence,'owner-videos-'+width+'.png'),fullPage:false});
+     await page.evaluate(()=>{require('app/tutorials/tutorial-content').ownerIntroduction.videoSrc='data:video/mp4;base64,';});
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Welcome · Start here').click());
+     assert.deepEqual(await page.$eval('video',e=>({autoplay:e.autoplay,muted:e.muted,inline:e.playsInline,controls:e.controls})),{autoplay:true,muted:true,inline:true,controls:true});
+     await page.$$eval(features,els=>els[0].click());
+     assert.equal(await page.$('video'),null,'Selecting a feature unmounts the introduction');
      // Synthetic video URL exercises modal behaviour before real recordings exist.
      await page.evaluate(()=>{require('app/tutorials/tutorial-content').tutorials[0].videoSrc='data:video/mp4;base64,';});
      await page.$$eval(features,els=>els[1].click());
