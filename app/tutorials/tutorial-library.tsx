@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import AssetModalSelect from '../../components/AssetModalSelect';
 import { useRef, useState } from 'react';
-import { featureCategories, tutorials } from './tutorial-content';
+import { featureCategories, tutorials, ownerIntroduction } from './tutorial-content';
 import styles from './tutorials.module.css';
 
 export default function TutorialLibrary() {
@@ -34,17 +34,12 @@ export default function TutorialLibrary() {
     {active ? <div className={styles.workspace}>
       <aside className={styles.listCard}><div className={styles.listHeading}><h1>Owner features</h1><span role="status">{visible.length} {visible.length === 1 ? 'feature' : 'features'}</span></div>
       <button className={styles.welcomeLink} type="button" aria-current={showWelcome ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={welcome}>Welcome · Start here</button>
-      <nav className={styles.featureList} aria-label="Owner features" tabIndex={0}><div className={styles.groupList}>{visible.map(item => <button type="button" key={item.id} aria-current={!showWelcome && active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => selectFeature(item.id)}>{item.title}</button>)}</div></nav></aside>
+      <nav className={styles.featureList} aria-label="Owner features" tabIndex={0}><div className={styles.groupList}>{visible.map(item => <button type="button" key={item.id} aria-current={!showWelcome && active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => selectFeature(item.id)}><span className={styles.featureNumber}>{tutorials.indexOf(item) + 1}</span><span>{item.title}</span></button>)}</div></nav></aside>
       <article id="owner-feature-panel" className={styles.panel} aria-labelledby="owner-feature-title">
         {showWelcome ? <div className={styles.welcome}>
-          <header><h2 id="owner-feature-title">Welcome to Aim4price.</h2><p className={styles.description}>Get to know your assets, keep their records up to date and use that information to make better decisions.</p></header>
-          <p className={styles.welcomePrompt}>Start with one asset, then build from there.</p>
-          <div className={styles.welcomeSteps}>
-            <button type="button" onClick={() => selectFeature('first-asset')}><span className={styles.stepNumber}>1</span><span><strong>Add your first asset</strong><small>Start with its details, photos and documents.</small></span><span className={styles.stepAction}>Start</span></button>
-            <button type="button" onClick={() => selectFeature('manual-cost')}><span className={styles.stepNumber}>2</span><span><strong>Record everyday work</strong><small>Build the history with costs, fuel and maintenance.</small></span><span className={styles.stepAction}>Explore</span></button>
-            <button type="button" onClick={() => selectFeature('ownership-report')}><span className={styles.stepNumber}>3</span><span><strong>Use your records</strong><small>Review costs, share information and plan what comes next.</small></span><span className={styles.stepAction}>Explore</span></button>
-          </div>
-          <p className={styles.welcomeHint}>Already know what you need? Choose a feature on the left or use the search above. Each guide explains the feature, with videos added as they become available.</p>
+          <header><h2 id="owner-feature-title">Welcome to Aim4price.</h2><p className={styles.description}>Watch the introduction, then choose a numbered feature from the list.</p></header>
+          {ownerIntroduction.videoSrc ? <video className={styles.introVideo} controls autoPlay muted playsInline preload="metadata" aria-label="Introduction to Aim4price video"><source src={ownerIntroduction.videoSrc} type="video/mp4" />{ownerIntroduction.captionsSrc && <track kind="captions" src={ownerIntroduction.captionsSrc} srcLang="en" label="English" default />}</video> : <div className={styles.introPlaceholder} aria-label="Introduction video not yet available"><span className={styles.introFilm} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg></span><strong>Your introduction to Aim4price</strong><span>Video coming soon</span></div>}
+          <p className={styles.introHint}>{ownerIntroduction.videoSrc ? 'Use the video controls to turn on sound. ' : ''}Choose any feature to open its video and quick guide.</p>
         </div> : <>
         <header><h2 id="owner-feature-title">{active.question}</h2><p className={styles.description}>{active.description}</p></header>
         <div className={styles.mediaRow}>{active.videoSrc ? <button ref={trigger} type="button" className={styles.videoPreview} aria-haspopup="dialog" onClick={() => dialog.current?.showModal()}><span className={styles.play} aria-hidden="true">▶</span><strong>Watch video</strong></button> : <div className={styles.videoPreview} aria-label="Video not yet available"><span className={styles.film} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg></span><strong>Video coming soon</strong></div>}<div><h3>{active.title}</h3><p>A short walkthrough of this feature.</p><Link className={styles.action} href={active.href}>{active.action}</Link></div></div>
