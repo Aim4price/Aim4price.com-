@@ -1,4 +1,4 @@
-.shell { width:min(calc(100% - 48px),82rem); margin:0 auto; padding:1rem 0; color:#173f32; height:calc(var(--website-visible-height,100dvh) - 5.75rem); min-height:0; display:flex; flex-direction:column; box-sizing:border-box; }
+.shell { width:min(calc(100% - 48px),82rem); margin:0 auto; padding:1rem 0; color:#173f32; height:calc(var(--website-visible-height,100dvh) - 5.75rem - 1px); min-height:0; display:flex; flex-direction:column; box-sizing:border-box; }
 .finder { flex-shrink:0; display:grid; grid-template-columns:minmax(0,1fr) 19rem; gap:1rem; padding:1rem 1.2rem; margin-bottom:1.2rem; border:1px solid #d7e5dc; border-radius:1.1rem; background:#f8fcfa; }
 .finder label { display:block; font-size:.85rem; font-weight:700; margin-bottom:.4rem; }
 .searchField > div { display:flex; align-items:center; gap:.7rem; background:white; border:1px solid #bdd5c7; border-radius:.65rem; padding:0 .8rem; }
@@ -94,3 +94,7 @@ button.videoPreview { cursor:pointer; }
  :global(html:not(:has([data-website-canvas]))) .workspace { flex:none; grid-template-rows:auto; }
  :global(html:not(:has([data-website-canvas]))) .introVideo,:global(html:not(:has([data-website-canvas]))) .introPlaceholder { height:auto; flex:none; aspect-ratio:16/9; }
 }
+
+/* This workspace fills the viewport; the global footer must not add a second page. */
+:global([data-website-canvas]):has(.shell) > :global(footer) { display:none; }
+:global(div):has(> :global(main) > .shell) { min-height:0; }
