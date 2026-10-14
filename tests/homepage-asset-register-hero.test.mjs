@@ -191,8 +191,8 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   const accountChoices = [...roleSelector.matchAll(/<article className=\{styles\.roleCard\}>\s*<h3>([^<]+)<\/h3>/g)]
     .map(([, label]) => label);
   assert.deepEqual(accountChoices, ['Owner', 'Dealer', 'Business']);
-  assert.equal((roleSelector.match(/href="\/pricing"/g) ?? []).length, 6);
-  assert.equal((roleSelector.match(/<Link href="\/pricing" className=\{styles\.roleAction\}>Find my package<\/Link>/g) ?? []).length, 3);
+  assert.equal((roleSelector.match(/href="\/pricing\?audience=(?:owner|dealer|business)"/g) ?? []).length, 6);
+  assert.equal((roleSelector.match(/<Link href="\/pricing\?audience=(?:owner|dealer|business)" className=\{styles\.roleAction\}>Find my package<\/Link>/g) ?? []).length, 3);
   assert.equal((roleSelector.match(/<Link\b/g) ?? []).length, 6);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
