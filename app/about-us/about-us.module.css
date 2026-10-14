@@ -9,12 +9,12 @@
 }
 
 .heroSection {
-  padding: 2.5rem 0;
+  padding: 3rem 0 1.5rem;
 }
 
 .heroPanel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 21rem;
+  grid-template-columns: minmax(0, 1fr) 20rem;
   align-items: start;
   column-gap: 3rem;
   row-gap: 2rem;
@@ -30,9 +30,9 @@
 }
 
 .pageLabel {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   color: var(--brand-700);
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1.5;
   font-weight: 650;
 }
@@ -40,7 +40,7 @@
 .heroTitle {
   margin: 0;
   color: var(--brand-900);
-  font-size: 3.15rem;
+  font-size: 3.25rem;
   line-height: 1.12;
   letter-spacing: -0.04em;
   font-weight: 800;
@@ -48,7 +48,6 @@
 }
 
 .heroTitle span {
-  display: block;
   color: #2b785b;
 }
 
@@ -144,23 +143,24 @@
 .founderName {
   margin: 0;
   color: var(--brand-900);
-  font-size: 1rem;
-  line-height: 1.45;
-  font-weight: 750;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  font-weight: 700;
+  text-wrap: balance;
 }
 
 .founderRole {
   margin: 0.35rem 0 0;
   color: #52645d;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
 .storyText {
-  margin-top: 1.65rem;
+  margin-top: 1.5rem;
   color: #44594f;
   font-size: 1.025rem;
-  line-height: 1.75;
+  line-height: 1.7;
   text-wrap: pretty;
 }
 
@@ -188,7 +188,6 @@
 }
 
 .storyFounder {
-  margin-top: 0.25rem;
   box-shadow: 0 5px 18px rgba(16, 42, 34, 0.04);
 }
 
@@ -197,7 +196,7 @@
 }
 
 .storyFounder .founderCaption {
-  padding: 1.25rem 1.4rem;
+  padding: 1.3rem 1.4rem;
 }
 
 .storyFounder .founderRole {
@@ -208,7 +207,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
-  padding-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
 }
 
 .valueCard {
@@ -224,7 +223,7 @@
   margin: 0;
   color: #44594f;
   font-size: 1.025rem;
-  line-height: 1.75;
+  line-height: 1.7;
   text-wrap: pretty;
 }
 
@@ -250,12 +249,12 @@
 }
 
 .directionSection {
-  padding-bottom: 2.5rem;
+  padding-bottom: 4rem;
 }
 
 .directionPanel {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   align-items: center;
   gap: 3rem;
   padding: 2.5rem 3rem;
@@ -267,17 +266,22 @@
 .sectionTitle {
   margin: 0 0 1rem;
   color: var(--brand-900);
-  font-size: 1.75rem;
-  line-height: 1.2;
+  font-size: 1.65rem;
+  line-height: 1.3;
   letter-spacing: -0.035em;
   font-weight: 750;
+  text-wrap: balance;
+}
+
+.valueSections > .valueCard:not(.lifecycleCard) > .sectionTitle {
+  min-height: 2.6em;
 }
 
 .directionCopy > p {
   margin: 0;
-  color: #52645d;
-  font-size: 1rem;
-  line-height: 1.75;
+  color: #44594f;
+  font-size: 1.025rem;
+  line-height: 1.7;
   text-wrap: pretty;
 }
 
@@ -295,8 +299,8 @@
 .directionClosing > p {
   margin: 0;
   color: var(--brand-900);
-  font-size: 1.4rem;
-  line-height: 1.4;
+  font-size: 1.15rem;
+  line-height: 1.6;
   letter-spacing: -0.025em;
   font-weight: 650;
   text-wrap: pretty;

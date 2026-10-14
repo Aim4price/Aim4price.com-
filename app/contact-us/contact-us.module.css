@@ -16,7 +16,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 20rem;
   align-items: center;
-  gap: 4rem;
+  gap: 3rem;
   padding: 3rem;
   border: 1px solid var(--line-strong);
   border-radius: 1.5rem;
@@ -41,15 +41,14 @@
   color: var(--brand-900);
   font-size: 3.25rem;
   line-height: 1.12;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.04em;
   font-weight: 800;
 }
 
 .heroText {
-  max-width: 34rem;
-  margin: 1.1rem 0 0;
+  margin: 1.5rem 0 0;
   color: #52645d;
-  font-size: 1.05rem;
+  font-size: 1.025rem;
   line-height: 1.7;
   text-wrap: pretty;
 }
@@ -124,7 +123,7 @@
 }
 
 .contactNote {
-  margin: 1.4rem 0 0;
+  margin: 1.5rem 0 0;
   padding-top: 1.25rem;
   border-top: 1px solid #e1e9e3;
   color: #52645d;
@@ -133,6 +132,7 @@
 }
 
 .textLink {
+  display: inline-block;
   color: var(--brand-700);
   font-weight: 650;
   text-decoration: underline;
@@ -181,6 +181,7 @@
   font-size: 1.05rem;
   line-height: 1.5;
   font-weight: 700;
+  text-wrap: balance;
 }
 
 .founderRole {
