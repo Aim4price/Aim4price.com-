@@ -59,7 +59,7 @@ export default async function AboutUsPage() {
                   alt="Kuyler Chris Geldenhuys, founder of Aim4price"
                   fill
                   priority
-                  sizes="420px"
+                  sizes="260px"
                   className={styles.portrait}
                 />
               </div>

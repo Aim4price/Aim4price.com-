@@ -8,10 +8,10 @@ const styles = readFileSync(new URL('../components/AppFooter.module.css', import
 test('footer links match the signed-in account type', () => {
   assert.match(footer, /label: 'Owner tools'[\s\S]*?\/asset-register[\s\S]*?\/maintenance[\s\S]*?\/fuel/);
   assert.match(footer, /label: 'Dealer tools'[\s\S]*?\/leads[\s\S]*?\/tracking[\s\S]*?\/dealer-costs/);
-  assert.match(footer, /label: 'Finance tools'[\s\S]*?My Leads/);
-  assert.match(footer, /label: 'Insurance tools'[\s\S]*?\/shared-registers/);
-  assert.match(footer, /label: 'Accountant tools'[\s\S]*?My Clients/);
-  assert.match(footer, /session\.accountSubtype === 'accountant'/);
+  assert.match(footer, /const publicWorkspace[\s\S]*?label: 'Explore'[\s\S]*?\/marketplace/);
+  assert.match(footer, /session\?\.accountType === 'owner'/);
+  assert.match(footer, /session\?\.accountType === 'dealer'/);
+  assert.match(footer, /return publicWorkspace/);
   assert.match(footer, /refreshCachedHeaderSession\(\)/);
 });
 

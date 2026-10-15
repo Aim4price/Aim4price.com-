@@ -130,7 +130,8 @@
     transform 160ms ease;
 }
 
-.navWindowButton::after {
+.navWindowButton::after,
+.themeToggle::after {
   content: attr(data-tooltip);
   position: absolute;
   left: 50%;
@@ -173,7 +174,9 @@
 }
 
 .navWindowButton:hover:not(:disabled)::after,
-.navWindowButton:focus-visible::after {
+.navWindowButton:focus-visible::after,
+.themeToggle:hover::after,
+.themeToggle:focus-visible::after {
   opacity: 1;
   visibility: visible;
   transform: translate(-50%, 0);
@@ -193,7 +196,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .navWindowButton::after {
+  .navWindowButton::after,
+  .themeToggle::after {
     transition: none;
   }
 }
@@ -4583,4 +4587,9 @@
 /* Background preference changes the page photo, never the header surface. */
 .header.header {
   background: #f7faf8 !important;
+}
+
+.themeToggle {
+  position: relative;
+  isolation: isolate;
 }

@@ -27,6 +27,7 @@ const publicWorkspace: FooterWorkspace = {
   links: [
     { href: '/valuation', label: 'Get Estimate' },
     { href: '/drop-invoice', label: 'Drop an Invoice' },
+    { href: '/marketplace', label: 'Marketplace' },
   ],
 };
 

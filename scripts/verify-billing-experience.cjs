@@ -156,7 +156,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const matches=await page.$$eval(features,els=>els.length);
      assert.ok(matches>0&&matches<46);
      await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
-     await page.waitForFunction(()=>document.body.textContent.includes('No matching owner features'));
+     await page.waitForFunction(()=>document.body.textContent.includes('No matching features'));
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
      assert.equal(await page.$$eval(features,els=>els.length),46);
      await page.click('[aria-label="Choose feature category"]');
