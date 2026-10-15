@@ -534,8 +534,10 @@ test('the Switch flow can move an asset into an available umbrella', async () =>
   ]);
 
   assert.match(client, /type AssetMoveDestination = 'register' \| 'umbrella'/);
-  assert.match(client, /label="Target umbrella"/);
-  assert.match(client, /Move to Umbrella/);
+  assert.match(client, /<MoveAssetDestinationPicker/);
+  const picker = await readFile(new URL('../components/asset-register/MoveAssetDestinationPicker.tsx', import.meta.url), 'utf8');
+  assert.match(picker, /Target umbrella/);
+  assert.match(picker, /Move to Umbrella/);
   assert.match(client, /buildAssetGroupsApiUrl\(undefined, combinedScope\)/);
   assert.match(client, /targetGroupId: targetGroup\.id/);
   assert.match(client, /group\.registerId === null \|\| !group\.members\.some/);

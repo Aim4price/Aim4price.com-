@@ -12,6 +12,7 @@ on:
       - "tests/**"
       - "scripts/verify-website-canvas.cjs"
       - "scripts/verify-umbrella-cards.cjs"
+      - "scripts/verify-move-asset-picker.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -36,6 +37,10 @@ jobs:
       - run: npm run typecheck
       - name: Canonical layout, overlays and native boundaries
         run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs tests/estimate-report-enhancement.test.mjs
+      - name: Move asset destination picker
+        run: |
+          node --test tests/move-asset-destination-picker.test.mjs
+          node scripts/verify-move-asset-picker.cjs
       - name: Approved report design contract
         run: npm run test:report-design
       - name: Shared workflow regression tests

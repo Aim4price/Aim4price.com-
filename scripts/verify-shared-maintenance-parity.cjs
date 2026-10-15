@@ -89,7 +89,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Shared parts fit mobile');await page.screenshot({path:'/tmp/shared-parts-icons-mobile.png'});
  await page.click('button[aria-label="Delete Engine filter"]');await click('Delete');await page.waitForFunction(()=>!document.body.textContent.includes('Engine filter'));
  await click('Cancel');await page.click('button[aria-label="Back to maintenance"]');await page.waitForSelector('[data-manage-action=viewParts]');
- await page.keyboard.press('Escape');await page.waitForSelector('[data-manage-action=maintenance]');
+ // Manage stays mounted but hidden while a child dialog is open. Wait for
+ // React's onDialogChange effect to restore it before checking visible dialogs.
+ await page.keyboard.press('Escape');
+ await page.waitForSelector('[data-manage-action=maintenance]', {visible:true});
  assert.equal(await page.$$eval('[role=dialog]',nodes=>nodes.filter(node=>node.getClientRects().length).length),1);
  await page.setViewport({width:1440,height:1000});
  console.log('PASS shared maintenance grouping, owner typography, parts editing/deletion and back navigation');
