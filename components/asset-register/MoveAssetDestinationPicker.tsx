@@ -82,7 +82,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
           </div>
           <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal">×</button>
         </header>
-        <div className={styles.body}>
+        <div className={`${styles.body} ${step === 'destination' ? styles.pickerBody : ''}`}>
           {step === 'choice' ? (
             <div className={styles.types} role="group" aria-label="Move destination">
               <button ref={choiceRef} type="button" disabled={props.busy} onClick={() => chooseDestination('register')}>
@@ -102,7 +102,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
             : visible.length ? <div className={styles.options} role="group" aria-label={isUmbrella ? 'Target umbrella' : 'Target asset register'}>
               {visible.map((option) => <button key={option.value} type="button" className={styles.option} aria-pressed={props.targetId === option.value} disabled={props.busy} onClick={() => props.onSelect(option.value)}>
-                <span className={styles.optionCopy}><strong>{option.label}</strong><small>{option.description}</small></span><span className={styles.selection}>{props.targetId === option.value ? 'Selected' : 'Select'}</span>
+                <span className={styles.optionCopy}><strong>{option.label}</strong><small>{option.description}</small></span><span className={styles.selection} aria-hidden="true">{props.targetId === option.value ? '✓' : ''}</span>
               </button>)}
             </div>
             : <div className={styles.empty}>
