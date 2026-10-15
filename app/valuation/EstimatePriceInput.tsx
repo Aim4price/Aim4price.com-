@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import modal from '../../components/estimate-modal.module.css';
+import { REPLACEMENT_SLIDER_STEP, replacementSliderAmount, replacementSliderMaximum } from '../../lib/replacement-slider';
 
 /** The caller always receives an ex-VAT amount; the input preserves editable decimals. */
 export default function EstimatePriceInput({ value, onChange, vatMode, label, sliderMax }: {
@@ -25,11 +26,12 @@ export default function EstimatePriceInput({ value, onChange, vatMode, label, sl
       }} />
     </div>
     {sliderMax != null && <div className={modal.sliderControl}>
-      <div className={modal.sliderLabels}><span>Drag to adjust</span><span>Or type the exact amount above</span></div>
+      <div className={modal.sliderLabels}><span>Adjust in R5,000 steps</span><span>Or type the exact amount above</span></div>
       <input aria-label={`${label} slider (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`}
-      type="range" min={0} max={Math.max(sliderMax, amount) * multiplier} step={100}
-      value={amount * multiplier} className={modal.adjustSlider}
-      onChange={event => { onChange(String(Number(event.target.value) / multiplier)); }} />
+      type="range" min={0} max={replacementSliderMaximum(Math.max(sliderMax, amount) * multiplier)} step={REPLACEMENT_SLIDER_STEP}
+      value={replacementSliderAmount(amount * multiplier)} className={modal.adjustSlider}
+      onChange={event => { onChange(String(replacementSliderAmount(Number(event.target.value)) / multiplier)); }} />
     </div>}
   </div>;
 }
+

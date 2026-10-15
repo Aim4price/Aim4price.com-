@@ -1,6 +1,6 @@
 'use client';
 import EstimateTools from './EstimateTools';
-import { getBasicFamilyGuidance } from '../../lib/basic-family-guidance';
+import { getBasicFamilyGuidance, getBasicFamilyGuideNote } from '../../lib/basic-family-guidance';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -5975,9 +5975,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       data-family-label={family.familyLabel}
                       data-family-group={family.basicCatalogue?.groupLabel ?? ''}
                       data-family-guidance={getBasicFamilyGuidance(family)}
+                      data-family-guide-note={getBasicFamilyGuideNote(family)}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small></span>
+                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small><small className={styles.familyGuideNote}>{getBasicFamilyGuideNote(family)}</small></span>
                     </button>
                   ))
                 ) : (
@@ -6145,7 +6146,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Adjust this guide to the new price of a comparable asset.'}</p>
+            <p className={styles.stepText}><strong>A starting guide for this equipment type.</strong> Adjust it to the new price of a comparable asset, considering brand, size and specification.</p>
           </div>
           <button
             type="button"
@@ -9091,7 +9092,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </section>
         </aside>
 
-        <p className={styles.resultDisclaimer}>Indicative estimate only. Not a certified valuation, inspection or guaranteed price.</p>
+        <p className={styles.resultDisclaimer}>Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.</p>
 
         <SaleabilityModal
           estimateStyle
@@ -9287,7 +9288,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               Please check your asset details and replacement price. Your estimate uses this information, and actual selling prices may vary.
             </p>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
-              Indicative estimate only. Not a certified valuation, inspection or guaranteed price.
+              Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.
             </small>
             <div className={`${styles.replacementNoticeActions} ${modalStyles.actions}`}>
               <button
@@ -9875,4 +9876,5 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 

@@ -1,8 +1,8 @@
-/* Shared Get Estimate modal styling. Individual dialogs retain their content widths. */
+/* Shared Get Estimate modal styling. Desktop dialogs use a generous shared width; phone sheets retain their responsive layout. */
 .surface.surface {
   box-sizing: border-box;
   font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 500;
   line-height: 1.55;
   padding: 28px;
@@ -27,7 +27,7 @@
 .surface.surface [data-estimate-modal-title] + p,
 .surface.surface .description {
   margin: 12px 0 0;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 500;
   line-height: 1.6;
   letter-spacing: 0;
@@ -42,7 +42,7 @@
   min-height: 46px;
   border-radius: 12px;
 }
-.surface.surface :is(label, legend) { font-size: 0.85rem; font-weight: 700; }
+.surface.surface :is(label, legend) { font-size: 1rem; font-weight: 700; }
 .surface.surface .close {
   box-sizing: border-box;
   flex: 0 0 44px;
@@ -127,3 +127,12 @@
 .sliderControl { display: grid; gap: 8px; padding: 6px 0; }
 .sliderLabels { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--app-muted, #617483); }
 .adjustSlider.adjustSlider { box-sizing: border-box; width: 100%; height: 28px; min-height: 28px; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; accent-color: #175644; cursor: pointer; }
+
+
+/* Use the canonical canvas dimensions so zoom scales the whole dialog consistently. */
+:global(html:has([data-website-canvas])) .surface.surface {
+  width: min(1080px, calc(var(--website-design-width, 100vw) - 48px));
+  max-width: calc(var(--website-design-width, 100vw) - 48px);
+  padding: 32px;
+}
+.surface.surface .sliderLabels { font-size: 0.95rem; }

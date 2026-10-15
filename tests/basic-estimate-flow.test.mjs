@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
 import { resolveCatalogueGuide } from '../lib/basic-catalogue-guide.ts';
-import { getBasicFamilyGuidance } from '../lib/basic-family-guidance.ts';
+import { getBasicFamilyGuidance, getBasicFamilyGuideNote } from '../lib/basic-family-guidance.ts';
 import { BASIC_USAGE_FAMILIES } from '../lib/basic-usage-profiles.ts';
 
 test('family selection help covers the catalogue without changing family identities', () => {
@@ -10,6 +10,10 @@ test('family selection help covers the catalogue without changing family identit
   for (const [sectorKey, familyKey, familyLabel] of BASIC_USAGE_FAMILIES) {
     const guidance = getBasicFamilyGuidance({ sectorKey, familyKey, familyLabel });
     assert.ok(guidance.length > 20 && guidance.length < 180, familyKey);
+    assert.doesNotMatch(guidance, /for an equivalent (asset|machine)/, `Generic fallback: ${familyKey}`);
+    const note = getBasicFamilyGuideNote({ sectorKey, familyKey, familyLabel });
+    assert.ok(note.length < 80, familyKey);
+    assert.match(note, /[Aa]djust/, familyKey);
   }
   assert.equal(JSON.stringify(BASIC_USAGE_FAMILIES), snapshot);
 });
@@ -30,6 +34,13 @@ test('selection help distinguishes similar names without cross-sector keyword co
   assert.doesNotMatch(help('industrial', 'powered_roller_conveyor'), /compacts/);
   assert.doesNotMatch(help('construction', 'trailer_boom_lift'), /Trailer only/);
   assert.doesNotMatch(help('construction', 'skid_mounted_site_compressor'), /host is separate/);
+  assert.match(help('construction', 'survey_gnss_rover'), /measurement function/);
+  assert.match(help('industrial', 'vehicle_diagnostic_scanner'), /vehicle coverage/);
+  assert.match(help('motor', 'fuel_tanker_trailer'), /Trailer only/);
+  assert.match(help('motor', 'ambulance'), /medical equipment/);
+  assert.match(help('industrial', 'air_receiver'), /pressure rating/);
+  assert.match(getBasicFamilyGuideNote({ familyKey: 'small_field_tractor', familyLabel: 'Small Field Tractor' }), /Sizes overlap/);
+  assert.doesNotMatch(getBasicFamilyGuideNote({ familyKey: 'unknown_future_family', familyLabel: 'New family' }), /Sizes overlap/);
 });
 
 import {
@@ -411,3 +422,23 @@ test('specification shortcut updates all three ranges and preserves the VAT basi
   }
 });
 
+
+
+import { REPLACEMENT_SLIDER_STEP, replacementSliderAmount, replacementSliderMaximum } from '../lib/replacement-slider.ts';
+
+test('replacement slider uses clean R5,000 amounts and reachable upper limits in either VAT basis', () => {
+  assert.equal(REPLACEMENT_SLIDER_STEP, 5000);
+  for (const multiplier of [1, 1.15]) {
+    for (const price of [0, 1234, 9999, 145678.91, 2300000, 9123456.78]) {
+      const displayed = price * multiplier;
+      const selected = replacementSliderAmount(displayed);
+      const maximum = replacementSliderMaximum(displayed);
+      assert.equal(selected % 5000, 0);
+      assert.equal(maximum % 5000, 0);
+      assert.ok(maximum >= displayed && maximum >= selected);
+      assert.ok(Math.abs(selected - displayed) <= 2500);
+      const nextExVat = (selected + REPLACEMENT_SLIDER_STEP) / multiplier;
+      assert.ok(Math.abs(nextExVat * multiplier - selected - 5000) < 0.000001);
+    }
+  }
+});

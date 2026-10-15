@@ -372,7 +372,7 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /Ready for your estimate\?/);
   assert.match(source, /I understand, get estimate/);
   const disclaimer = source.match(/<small id="replacement-notice-disclaimer"[^>]*>([\s\S]*?)<\/small>/)?.[1].trim();
-  assert.equal(disclaimer, 'Indicative estimate only. Not a certified valuation, inspection or guaranteed price.');
+  assert.equal(disclaimer, 'Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.');
   assert.doesNotMatch(source, /Check the replacement price and usage/);
   assert.doesNotMatch(source, /Important: check both values/);
   assert.doesNotMatch(source, /replacementNoticePriceExVat|replacementNoticeUsage|Current usage/);
@@ -443,3 +443,4 @@ test('Basic passenger family aliases match Advanced marketability at every age',
     assert.equal(calculateOlderPassengerCarMarketability({ sectorKey: 'motor', familyKey, baseYear: 2026, yearModel: 2000 }).factor, 1);
   }
 });
+
