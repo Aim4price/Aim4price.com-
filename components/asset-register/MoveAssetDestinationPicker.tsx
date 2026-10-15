@@ -8,6 +8,7 @@ type Option = { value: string; label: string; description?: string };
 
 type Props = {
   assetName: string;
+  assetDetails: string;
   sourceName: string;
   destination: Destination;
   onDestinationChange: (value: Destination) => void;
@@ -27,6 +28,8 @@ type Props = {
 
 export default function MoveAssetDestinationPicker(props: Props) {
   const [search, setSearch] = useState('');
+  const [step, setStep] = useState<'choice' | 'destination'>('choice');
+  const choiceRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const selected = props.options.find((option) => option.value === props.targetId);
@@ -36,16 +39,33 @@ export default function MoveAssetDestinationPicker(props: Props) {
 
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    searchRef.current?.focus();
     return () => previous?.focus();
   }, []);
+
+  useEffect(() => {
+    if (step === 'destination') searchRef.current?.focus();
+    else choiceRef.current?.focus();
+  }, [step]);
+
+  function chooseDestination(destination: Destination) {
+    props.onDestinationChange(destination);
+    setSearch('');
+    setStep('destination');
+  }
+
+  function goBack() {
+    if (props.busy) return;
+    props.onSelect('');
+    setSearch('');
+    setStep('choice');
+  }
 
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
       <div className={styles.backdrop} onClick={props.onClose} />
-      <div ref={dialogRef} className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="asset-register-move-title" aria-describedby="move-destination-description" aria-busy={props.busy}
+      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-move-title" aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') { event.stopPropagation(); props.onClose(); return; }
+          if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
           const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href]') ?? []);
           if (!nodes.length) { event.preventDefault(); return; }
@@ -55,20 +75,28 @@ export default function MoveAssetDestinationPicker(props: Props) {
           else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
         }}>
         <header className={styles.header}>
-          <div><h3 id="asset-register-move-title">Move asset</h3><p id="move-destination-description">Choose where this asset belongs.</p></div>
+          <div>
+            <h3 id="asset-register-move-title">{step === 'choice' ? 'Move this asset to' : isUmbrella ? 'Choose an umbrella' : 'Choose an asset register'}</h3>
+            <p className={styles.assetName}>{props.assetName}</p>
+            <p id="move-destination-description" className={styles.assetDetails}>{props.assetDetails}</p>
+          </div>
           <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal">×</button>
         </header>
         <div className={styles.body}>
-          <div className={styles.asset}><span>Moving</span><strong>{props.assetName}</strong><small>Current asset register: {props.sourceName}</small></div>
-          <div className={styles.types} role="group" aria-label="Move destination">
-            <button type="button" aria-pressed={!isUmbrella} disabled={props.busy} onClick={() => { props.onDestinationChange('register'); setSearch(''); }}>
-              <strong>Asset register</strong><span>Transfer this asset to another register.</span>
-            </button>
-            {props.canUseUmbrellas ? <button type="button" aria-pressed={isUmbrella} disabled={props.busy} onClick={() => { props.onDestinationChange('umbrella'); setSearch(''); }}>
-              <strong>Umbrella</strong><span>Group this asset while keeping its register.</span>
-            </button> : null}
-          </div>
-          <div className={styles.listHeading}><h4>{isUmbrella ? 'Choose an umbrella' : 'Choose an asset register'}</h4><span>{props.loading ? 'Loading' : `${visible.length} available`}</span></div>
+          {step === 'choice' ? (
+            <div className={styles.types} role="group" aria-label="Move destination">
+              <button ref={choiceRef} type="button" disabled={props.busy} onClick={() => chooseDestination('register')}>
+                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+                <strong>Asset Register</strong><small>Move to another asset register.</small>
+              </button>
+              {props.canUseUmbrellas ? <button type="button" disabled={props.busy} onClick={() => chooseDestination('umbrella')}>
+                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 18 0H3ZM12 3v16a2 2 0 0 0 4 0M8 12c0-5 2-9 4-9s4 4 4 9"/></svg></span>
+                <strong>Umbrella</strong><small>Group with assets under an umbrella.</small>
+              </button> : null}
+            </div>
+          ) : <>
+          <p className={styles.currentRegister}>Current asset register: <strong>{props.sourceName}</strong></p>
+          <div className={styles.listHeading}><h4>{isUmbrella ? 'Available umbrellas' : 'Available asset registers'}</h4><span>{props.loading ? 'Loading' : `${visible.length} available`}</span></div>
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
           {props.loading ? <p className={styles.empty} role="status">Loading umbrellas...</p>
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
@@ -82,13 +110,15 @@ export default function MoveAssetDestinationPicker(props: Props) {
                 : isUmbrella ? <p>No other umbrellas are available. Create one using the umbrella button beside an asset.</p>
                 : <><p>No other asset registers are available.</p><a href={props.managementHref}>Create an asset register</a></>}
             </div>}
+          </>}
         </div>
         <footer className={styles.footer}>
-          <div className={styles.confirmation} aria-live="polite">
+          {step === 'destination' ? <div className={styles.confirmation} aria-live="polite">
             {selected ? <><span>{isUmbrella ? 'Selected umbrella' : 'Selected asset register'}</span><strong>{selected.label}</strong><small>{isUmbrella ? 'The asset stays in its current register. An umbrella from another register becomes a combined umbrella.' : 'The asset leaves its current register. Membership of a register-specific umbrella is removed.'}</small></> : <span>Select a destination to continue.</span>}
             {props.error ? <p className={styles.error} role="alert">{props.error}</p> : null}
-          </div>
-          <div className={styles.actions}><button type="button" onClick={props.onClose} disabled={props.busy}>Cancel</button><button type="button" className={styles.primary} onClick={props.onMove} disabled={!selected || props.busy || props.loading || Boolean(props.loadError)}>{props.busy ? 'Moving...' : isUmbrella ? 'Move to Umbrella' : 'Move to register'}</button></div>
+          </div> : null}
+          <div className={styles.actions}>
+            {step === 'destination' ? <button type="button" onClick={goBack} disabled={props.busy}>Back</button> : null}<button type="button" onClick={props.onClose} disabled={props.busy}>Cancel</button>{step === 'destination' ? <button type="button" className={styles.primary} onClick={props.onMove} disabled={!selected || props.busy || props.loading || Boolean(props.loadError)}>{props.busy ? 'Moving...' : isUmbrella ? 'Move to Umbrella' : 'Move to register'}</button> : null}</div>
         </footer>
       </div>
     </div>
