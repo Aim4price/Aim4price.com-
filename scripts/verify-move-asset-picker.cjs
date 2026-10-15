@@ -7,7 +7,7 @@ const chromium = require(root + '/node_modules/@sparticuz/chromium');
 (async () => {
  fs.mkdirSync('.next/canvas-validation', { recursive: true });
  const js = ts.transpileModule(fs.readFileSync('components/asset-register/MoveAssetDestinationPicker.tsx','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 }}).outputText;
- const css = fs.readFileSync('components/asset-register/MoveAssetDestinationPicker.module.css','utf8');
+ const css = fs.readFileSync('components/asset-register/MoveAssetDestinationPicker.module.css','utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))');
  const browser = await puppeteer.launch({executablePath: process.env.CANVAS_BROWSER_PATH || await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
  try {
  const page = await browser.newPage();

@@ -38,8 +38,10 @@
 .actions .primary { background: var(--app-accent, #147052); color: #fff; border-color: transparent; }
 .error { margin: .35rem 0 0; color: var(--app-danger, #b42318); font-size: .85rem; }
 @media (max-width: 600px) {
-  .header, .body, .footer { padding: 1rem; }
-  .actions { width: 100%; }
-  .actions button { flex: 1; }
-  .header h3 { font-size: 1.4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .body,
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions button { flex: 1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header h3 { font-size: 1.4rem; }
 }
