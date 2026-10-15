@@ -15819,6 +15819,7 @@ export default function AssetRegisterClient({
           {assetRegisterMoveAsset ? (
             <MoveAssetDestinationPicker
               assetName={assetRegisterMoveAsset.title}
+              assetDetails={`Year model: ${assetRegisterMoveAsset.yearModel || 'Not recorded'} · Usage: ${buildAssetUsageValue(assetRegisterMoveAsset)} · Condition: ${conditionLabel(assetRegisterMoveAsset.condition)}`}
               sourceName={assetRegisters.find((register) => register.id === assetRegisterMoveSourceId)?.businessName || activeRegister?.businessName || 'Asset Register'}
               destination={assetRegisterMoveDestination}
               onDestinationChange={(destination) => {

@@ -13,32 +13,27 @@ const module = { exports: {} };
 new Function('module', 'exports', 'require', output)(module, module.exports, (name) => name.endsWith('.css') ? { default: {} } : require(name));
 const Picker = module.exports.default;
 const noop = () => {};
-const defaults = { assetName: 'Tractor', sourceName: 'Farm', destination: 'register', onDestinationChange: noop, options: [{ value: 'r2', label: 'Workshop', description: '4 assets' }], targetId: '', onSelect: noop, canUseUmbrellas: true, loading: false, loadError: '', error: '', busy: false, managementHref: '/asset-registers', onRetry: noop, onClose: noop, onMove: noop };
+const defaults = { assetName: 'Tractor', assetDetails: 'Year model: 2020 · Usage: 500 hours · Condition: Good', sourceName: 'Farm', destination: 'register', onDestinationChange: noop, options: [{ value: 'r2', label: 'Workshop', description: '4 assets' }], targetId: '', onSelect: noop, canUseUmbrellas: true, loading: false, loadError: '', error: '', busy: false, managementHref: '/asset-registers', onRetry: noop, onClose: noop, onMove: noop };
 const render = (props = {}) => renderToStaticMarkup(React.createElement(Picker, { ...defaults, ...props }));
 
-test('shows destinations directly and requires a valid selection before moving', () => {
+test('starts with asset details and two choices, without destination lists or search', () => {
   const html = render();
-  assert.match(html, /Workshop/);
-  assert.match(html, /Current asset register: Farm/);
-  assert.doesNotMatch(html, /<select|combobox/);
-  assert.match(html, /disabled="">Move to register/);
-  assert.match(render({ targetId: 'removed' }), /disabled="">Move to register/);
-  assert.doesNotMatch(render({ targetId: 'r2' }), /disabled="">Move to register/);
+  assert.match(html, /Move this asset to/);
+  assert.match(html, /Tractor/);
+  assert.match(html, /Year model: 2020/);
+  assert.match(html, /500 hours/);
+  assert.match(html, /Condition: Good/);
+  assert.match(html, /<strong>Asset Register<\/strong>/);
+  assert.match(html, /<strong>Umbrella<\/strong>/);
+  assert.doesNotMatch(html, /Workshop|type="search"|Move to register|Select a destination/);
 });
 
-test('explains umbrella scope and respects umbrella permissions', () => {
-  const html = render({ destination: 'umbrella', targetId: 'r2' });
-  assert.match(html, /Selected umbrella/);
-  assert.match(html, /asset stays in its current register/);
-  assert.match(html, /becomes a combined umbrella/);
-  assert.doesNotMatch(render({ canUseUmbrellas: false }), /<strong>Umbrella<\/strong>/);
+test('entry respects umbrella permissions', () => {
+  const html = render({ canUseUmbrellas: false });
+  assert.match(html, /<strong>Asset Register<\/strong>/);
+  assert.doesNotMatch(html, /<strong>Umbrella<\/strong>/);
 });
 
-test('loading, failures and pending moves cannot be submitted', () => {
-  assert.match(render({ loading: true, targetId: 'r2' }), /disabled="">Move to register/);
-  const failed = render({ loadError: 'Unavailable', targetId: 'r2' });
-  assert.match(failed, /Try again/);
-  assert.match(failed, /disabled="">Move to register/);
-  assert.match(render({ busy: true, targetId: 'r2' }), /disabled="">Moving/);
-  assert.match(render({ options: [] }), /Create an asset register/);
+test('entry never exposes a move action even when a previous target is supplied', () => {
+  assert.doesNotMatch(render({ targetId: 'r2' }), /Move to register|Selected asset register/);
 });
