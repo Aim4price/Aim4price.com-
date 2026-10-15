@@ -1,4 +1,5 @@
 'use client';
+import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import PhotoViewerActions from '../../components/PhotoViewerActions';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
@@ -6250,7 +6251,6 @@ export default function AssetRegisterClient({
   const [changingRegisterId, setChangingRegisterId] = useState('');
   const [registerSwitcherSearchTerm, setRegisterSwitcherSearchTerm] = useState('');
   const [assetRegisterMoveAsset, setAssetRegisterMoveAsset] = useState<RegisterAsset | null>(null);
-  const [assetRegisterMoveSearchTerm, setAssetRegisterMoveSearchTerm] = useState('');
   const [assetRegisterMoveDestination, setAssetRegisterMoveDestination] = useState<AssetMoveDestination>('register');
   const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
   const [assetRegisterMoveGroups, setAssetRegisterMoveGroups] = useState<AssetGroup[]>([]);
@@ -8039,7 +8039,6 @@ export default function AssetRegisterClient({
   function resetAssetRegisterMoveManager() {
     assetRegisterMoveGroupsRequestRef.current += 1;
     setAssetRegisterMoveAsset(null);
-    setAssetRegisterMoveSearchTerm('');
     setAssetRegisterMoveDestination('register');
     setAssetRegisterMoveTargetId('');
     setAssetRegisterMoveGroups([]);
@@ -8053,7 +8052,6 @@ export default function AssetRegisterClient({
     assetRegisterMoveGroupsRequestRef.current = requestId;
     setNotice(null);
     setAssetRegisterMoveAsset(asset);
-    setAssetRegisterMoveSearchTerm(asset.title);
     setAssetRegisterMoveDestination('register');
     setAssetRegisterMoveTargetId('');
     setAssetRegisterMoveGroups(assetGroups);
@@ -8143,6 +8141,10 @@ export default function AssetRegisterClient({
 
     const sourceRegisterId = assetRegisterMoveSourceId;
     const targetRegister = assetRegisterMoveTargets.find((register) => register.id === assetRegisterMoveTargetId) ?? null;
+    if (!targetRegister) {
+      setAssetRegisterMoveError('Choose an available asset register first.');
+      return;
+    }
     const assetValue = Number(assetRegisterMoveAsset.value) || 0;
     const assetReplacementValue = readAssetReplacementPriceExVat(assetRegisterMoveAsset) ?? 0;
 
@@ -15815,203 +15817,28 @@ export default function AssetRegisterClient({
           ) : null}
 
           {assetRegisterMoveAsset ? (
-            <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
-              <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetRegisterMoveManager} />
-
-              <div
-                className={`${styles.modalCard} ${styles.assetRegisterMoveModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="asset-register-move-title"
-              >
-                <div className={`${styles.modalHeader} ${styles.assetRegisterMoveModalHeader}`}>
-                  <div className={styles.modalHeaderText}>
-                    <h3 id="asset-register-move-title">Move Asset</h3>
-                    <p>Choose another Asset Register or an umbrella for this asset.</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
-                    onClick={closeAssetRegisterMoveManager}
-                    aria-label="Close move asset modal"
-                    disabled={isMovingAssetRegister}
-                  >
-                    <span aria-hidden="true">×</span>
-                  </button>
-                </div>
-
-                <div className={`${styles.assetRegisterMoveModalBody} ${styles.modalScrollBody}`}>
-                  <label className={styles.assetRegisterMoveSearchWrap}>
-                    <SearchIcon className={styles.assetRegisterMoveSearchIcon} />
-                    <input
-                      value={assetRegisterMoveSearchTerm}
-                      onChange={(event) => setAssetRegisterMoveSearchTerm(event.target.value)}
-                      placeholder="Search assets..."
-                      aria-label="Search selected asset"
-                      disabled={isMovingAssetRegister}
-                    />
-                  </label>
-
-                  {assetRegisterMoveAsset.title.toLowerCase().includes(assetRegisterMoveSearchTerm.trim().toLowerCase()) ? (
-                    <div className={styles.assetRegisterMoveRow}>
-                      <div className={styles.assetRegisterMoveCopy}>
-                        <strong>{assetRegisterMoveAsset.title}</strong>
-                        <div className={styles.assetRegisterMoveDetails}>
-                          <span>
-                            <b>Year model:</b>
-                            {assetRegisterMoveAsset.yearModel || '—'}
-                          </span>
-                          <span>
-                            <b>Usage:</b>
-                            {buildAssetUsageValue(assetRegisterMoveAsset)}
-                          </span>
-                          <span>
-                            <b>Condition:</b>
-                            {conditionLabel(assetRegisterMoveAsset.condition)}
-                          </span>
-                          <span className={styles.assetRegisterMovePrice}>
-                            <b>Current value:</b>
-                            {money(assetRegisterMoveAsset.value)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className={styles.assetRegisterMoveDestination}>
-                        <span className={styles.assetRegisterMoveDestinationLabel}>Move this asset to</span>
-                        <div
-                          className={styles.assetRegisterMoveDestinationTabs}
-                          role="group"
-                          aria-label="Move destination"
-                        >
-                          <button
-                            type="button"
-                            className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'register' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
-                            onClick={() => {
-                              setAssetRegisterMoveDestination('register');
-                              setAssetRegisterMoveTargetId('');
-                              setAssetRegisterMoveError('');
-                            }}
-                            aria-pressed={assetRegisterMoveDestination === 'register'}
-                            disabled={isMovingAssetRegister}
-                          >
-                            <ChangeRegisterIcon className={styles.buttonIcon} />
-                            <span>Asset Register</span>
-                          </button>
-                          {canManageAssetGroups ? (
-                            <button
-                              type="button"
-                              className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'umbrella' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
-                              onClick={() => {
-                                setAssetRegisterMoveDestination('umbrella');
-                                setAssetRegisterMoveTargetId('');
-                                setAssetRegisterMoveError('');
-                              }}
-                              aria-pressed={assetRegisterMoveDestination === 'umbrella'}
-                              disabled={isMovingAssetRegister}
-                            >
-                              <UmbrellaIcon className={styles.buttonIcon} />
-                              <span>Umbrella</span>
-                            </button>
-                          ) : null}
-                        </div>
-
-                        {assetRegisterMoveDestination === 'register' ? (
-                          assetRegisterMoveTargetOptions.length ? (
-                            <ModalSelect<string>
-                              label="Target Asset Register"
-                              value={assetRegisterMoveTargetId}
-                              options={assetRegisterMoveTargetOptions}
-                              onChange={(value) => {
-                                setAssetRegisterMoveTargetId(value);
-                                setAssetRegisterMoveError('');
-                              }}
-                              placeholder="Choose target register"
-                              className={styles.assetRegisterMoveTargetField}
-                              usePortal
-                            />
-                          ) : (
-                            <div className={styles.assetRegisterMoveNoTarget}>
-                              <p>Create another Asset Register before moving this asset.</p>
-                              <Link
-                                href={registerManagementHref}
-                                className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
-                                onClick={closeAssetRegisterMoveManager}
-                              >
-                                Create new Asset Register
-                              </Link>
-                            </div>
-                          )
-                        ) : isLoadingAssetRegisterMoveGroups ? (
-                          <div className={styles.assetRegisterMoveNoTarget} role="status">
-                            <p>Loading umbrellas...</p>
-                          </div>
-                        ) : assetRegisterMoveGroupLoadError ? (
-                          <div className={styles.assetRegisterMoveNoTarget} role="alert">
-                            <p>{assetRegisterMoveGroupLoadError}</p>
-                          </div>
-                        ) : assetRegisterMoveGroupOptions.length ? (
-                          <ModalSelect<string>
-                            label="Target umbrella"
-                            value={assetRegisterMoveTargetId}
-                            options={assetRegisterMoveGroupOptions}
-                            onChange={(value) => {
-                              setAssetRegisterMoveTargetId(value);
-                              setAssetRegisterMoveError('');
-                            }}
-                            placeholder="Choose an umbrella"
-                            className={styles.assetRegisterMoveTargetField}
-                            usePortal
-                          />
-                        ) : (
-                          <div className={styles.assetRegisterMoveNoTarget}>
-                            <p>No other umbrellas are available. Use the umbrella button beside an asset to create one first.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className={styles.assetRegisterMoveNoMatch}>
-                      No asset matches this search.
-                    </p>
-                  )}
-
-                  {assetRegisterMoveError ? (
-                    <p className={styles.assetRegisterMoveError} role="alert">
-                      {assetRegisterMoveError}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className={styles.assetRegisterMoveModalFooter}>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={closeAssetRegisterMoveManager}
-                    disabled={isMovingAssetRegister}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() => void handleMoveAssetRegister()}
-                    disabled={!assetRegisterMoveTargetId || isMovingAssetRegister}
-                  >
-                    {assetRegisterMoveDestination === 'umbrella'
-                      ? <UmbrellaIcon className={styles.buttonIcon} />
-                      : <ChangeRegisterIcon className={styles.buttonIcon} />}
-                    <span>
-                      {isMovingAssetRegister
-                        ? 'Moving...'
-                        : assetRegisterMoveDestination === 'umbrella'
-                          ? 'Move to Umbrella'
-                          : 'Move Asset'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <MoveAssetDestinationPicker
+              assetName={assetRegisterMoveAsset.title}
+              sourceName={assetRegisters.find((register) => register.id === assetRegisterMoveSourceId)?.businessName || activeRegister?.businessName || 'Asset Register'}
+              destination={assetRegisterMoveDestination}
+              onDestinationChange={(destination) => {
+                setAssetRegisterMoveDestination(destination);
+                setAssetRegisterMoveTargetId('');
+                setAssetRegisterMoveError('');
+              }}
+              options={assetRegisterMoveDestination === 'umbrella' ? assetRegisterMoveGroupOptions : assetRegisterMoveTargetOptions}
+              targetId={assetRegisterMoveTargetId}
+              onSelect={(id) => { setAssetRegisterMoveTargetId(id); setAssetRegisterMoveError(''); }}
+              canUseUmbrellas={canManageAssetGroups}
+              loading={assetRegisterMoveDestination === 'umbrella' && isLoadingAssetRegisterMoveGroups}
+              loadError={assetRegisterMoveDestination === 'umbrella' ? assetRegisterMoveGroupLoadError : ''}
+              error={assetRegisterMoveError}
+              busy={isMovingAssetRegister}
+              managementHref={registerManagementHref}
+              onRetry={() => void loadAssetRegisterMoveGroups(assetRegisterMoveGroupsRequestRef.current)}
+              onClose={closeAssetRegisterMoveManager}
+              onMove={() => void handleMoveAssetRegister()}
+            />
           ) : null}
 
           <section className={styles.assetSummaryCarousel} aria-label="Asset register summary">
