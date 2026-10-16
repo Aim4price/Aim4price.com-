@@ -135,7 +135,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
       </button>;
     })}</div>
   </>;
-  return <div className={styles.question} ref={questionRef}>
+  return <div className={styles.question} data-filter-active={value !== options[0]?.value} ref={questionRef}>
     <label id={`${id}-label`} htmlFor={id}>{label}</label>
     {searchable && !disabled ? <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setActive(0); }} placeholder={searchPlaceholder} aria-label={searchPlaceholder} /> : null}
     <button id={id} ref={triggerRef} type="button" className={styles.selectTrigger} disabled={disabled}
