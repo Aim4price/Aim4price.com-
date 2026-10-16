@@ -14,6 +14,7 @@ type Props = {
   titleId: string;
   subject: string;
   serialNumber?: string;
+  assetDetails?: string;
   disabled?: boolean;
   onClose: () => void;
   onSendLink: () => void;
@@ -22,10 +23,10 @@ type Props = {
 };
 
 /** Shared entry point; the existing sharing flows still own recipients and sending. */
-export default function ShareDestinationDialog({ assetIds=[], umbrellaId, kind, subject, serialNumber, disabled = false, onClose, onSendLink, onInside, onOutside }: Props) {
+export default function ShareDestinationDialog({ assetIds=[], umbrellaId, kind, subject, serialNumber, assetDetails, disabled = false, onClose, onSendLink, onInside, onOutside }: Props) {
   const [history,setHistory]=useState(false);
   return (
-    <AssetAccessSettingsDialog title={history ? 'Sharing history' : `Share ${kind === 'register' ? 'asset register' : kind}`} assetTitle={subject} onClose={()=>{if(!disabled) onClose();}}>
+    <AssetAccessSettingsDialog subjectHeader={!history} title={history ? 'Sharing history' : subject} assetTitle={history ? subject : assetDetails || `${assetIds.length} ${assetIds.length === 1 ? 'asset' : 'assets'}${kind === 'umbrella' ? ' in this umbrella' : kind === 'register' ? ' in this register' : ''}`} onClose={()=>{if(!disabled) onClose();}}>
         {history ? <ShareHistory assetIds={assetIds} umbrellaId={umbrellaId} subject={subject} onBack={()=>setHistory(false)}/> : <div className={styles.destinationBody}>
           {serialNumber && <p className={base.liveNote}>Serial: {serialNumber}</p>}
           {kind === 'umbrella' && <p className={base.liveNote}>Live links include assets added to this umbrella later. Removed assets stop appearing.</p>}
