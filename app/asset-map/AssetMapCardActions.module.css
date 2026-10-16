@@ -1,0 +1,83 @@
+.actions {
+  display: grid;
+  gap: .8rem;
+  padding-top: .15rem;
+}
+.primaryRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .7rem;
+}
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .6rem .75rem;
+  border: 1px solid #d7e4de;
+  border-radius: .8rem;
+  background: #f8fbf9;
+  color: #244b3e;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: .8rem;
+  font-weight: 750;
+  line-height: 1.35;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+.button svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: 0 0 auto;
+}
+.primaryRow .button {
+  justify-content: flex-start;
+  gap: .75rem;
+  padding: .7rem .85rem;
+  min-height: 3.4rem;
+  font-size: .9rem;
+  font-weight: 800;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  width: 2.05rem;
+  height: 2.05rem;
+  flex: 0 0 auto;
+  border-radius: .65rem;
+  background: rgba(255,255,255,.15);
+}
+.icon svg { width: 1.25rem; height: 1.25rem; }
+.button.update {
+  background: #17684e;
+  color: #fff;
+  border-color: #17684e;
+}
+.button.history {
+  background: #edf5fa;
+  color: #245776;
+  border-color: #c7dce9;
+}
+.history .icon { background: #dcecf6; }
+.secondaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  padding-top: .8rem;
+  border-top: 1px solid #e1e9e5;
+}
+.secondaryRow .button { flex: 1 1 8rem; }
+.button:hover:not(:disabled) { background: #eaf3ee; border-color: #a5c3b3; }
+.button.update:hover:not(:disabled) { background: #10563f; border-color: #10563f; }
+.button.history:hover:not(:disabled) { background: #e1eef7; border-color: #9abdd3; }
+.button:focus-visible { outline: 3px solid #64ad91; outline-offset: 3px; }
+.button:disabled { opacity: .55; cursor: wait; }
+@media (max-width: 540px) {
+  .primaryRow { grid-template-columns: minmax(0, 1fr); }
+  .primaryRow .button { min-height: 3rem; }
+}
