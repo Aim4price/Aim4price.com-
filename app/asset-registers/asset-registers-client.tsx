@@ -2709,7 +2709,7 @@ export default function AssetRegistersClient({
                   onClick={openCreateModal}
                 >
                   <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Asset Register</span>
+                  <span>Add Register</span>
                 </button>
 
                 <button
@@ -2748,7 +2748,7 @@ export default function AssetRegistersClient({
                   onClick={openCreateModal}
                 >
                   <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Asset Register</span>
+                  <span>Add Register</span>
                 </button>
               </div>
             ) : (
