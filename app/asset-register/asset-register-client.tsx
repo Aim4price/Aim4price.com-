@@ -12,6 +12,7 @@ import LeadActionDialog from '../../components/leads/LeadActionDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
+import cardLayout from '../../components/asset-register/AssetCardDetails.module.css';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import LicenceShareReview from '../../components/asset-register/LicenceShareReview';
 import { licenceShareMissingDetails } from '../../lib/licence-share-readiness';
@@ -6401,6 +6402,7 @@ export default function AssetRegisterClient({
   const pendingPhotoFilesRef = useRef<PendingPhotoFile[]>([]);
   const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
   const pendingDocumentCategoriesRef = useRef<WeakMap<File, AssetDocumentCategory>>(new WeakMap());
+  const [assetDocumentListId, setAssetDocumentListId] = useState<string | null>(null);
   const [documentUploadAsset, setDocumentUploadAsset] = useState<RegisterAsset | null>(null);
   const [vaultDocumentsByAssetId, setVaultDocumentsByAssetId] = useState<Record<string, UploadedVaultDocument[]>>({});
   const [vaultDocumentsLoadingByAssetId, setVaultDocumentsLoadingByAssetId] = useState<Record<string, boolean>>({});
@@ -8328,6 +8330,7 @@ export default function AssetRegisterClient({
     Boolean(activeAsset) ||
     Boolean(ownerAssetCommandPanel) ||
     Boolean(documentUploadAsset) ||
+    Boolean(assetDocumentListId) ||
     isQuoteModalOpen ||
     isQuoteTrackingSettingsOpen ||
     Boolean(deleteCandidateAsset) ||
@@ -8471,7 +8474,7 @@ export default function AssetRegisterClient({
 
       // AssetDocumentUploadModal owns its Escape handling. Leaving this layer in
       // place keeps the parent Manage command centre available when it closes.
-      if (documentUploadAsset || partsOpen) return;
+      if (documentUploadAsset || assetDocumentListId || partsOpen) return;
 
       if (ownerAssetCommandPanel) {
         setOwnerAssetCommandPanel(null);
@@ -8626,7 +8629,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -16586,7 +16589,7 @@ export default function AssetRegisterClient({
                         </div>
 
                         {isExpanded ? (
-                          <div className={styles.assetBody} id={`asset-panel-${asset.id}`}>
+                          <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>
                             {(() => {
                               const detailPhotos = getDetailPhotos(asset);
                               const detailPhotoIndex = getDetailPhotoIndex(asset);
@@ -16633,7 +16636,7 @@ export default function AssetRegisterClient({
 
                               return (
                                 <>
-                                  <div className={styles.previewWrap}>
+                                  <div className={`${styles.previewWrap} ${cardLayout.gallery}`}>
                                     <input
                                       id={mediaInputId(asset.id, 'photo')}
                                       type="file"
@@ -16686,7 +16689,7 @@ export default function AssetRegisterClient({
                                     >
                                       {hasRealPhotos && detailPhoto ? (
                                         <>
-                                          <img src={detailPhoto} alt={`${asset.title} photo ${detailPhotoIndex + 1}`} className={styles.previewImage} />
+                                          <img src={detailPhoto} alt={`${asset.title} photo ${detailPhotoIndex + 1}`} className={`${styles.previewImage} ${cardLayout.photo}`} />
 
                                           {hasMultiplePhotos ? (
                                             <>
@@ -16766,97 +16769,7 @@ export default function AssetRegisterClient({
                                     ) : null}
                                   </div>
 
-                                  <div className={styles.assetDocumentsPanel}>
-                                    <div className={styles.assetDocumentsCardShell}>
-                                      {canUseOwnerOnlyAssetActions ? (
-                                        <button
-                                          type="button"
-                                          className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
-                                          onClick={(event) => {
-                                            event.stopPropagation();
-                                            openAssetDocumentUpload(asset);
-                                          }}
-                                          data-asset-return-action="add-document"
-                                        >
-                                          <PlusIcon className={styles.buttonIcon} />
-                                          <span>Add document</span>
-                                        </button>
-                                      ) : null}
-
-                                      <div className={`${styles.assetDocumentsCard} ${styles.assetDocumentsVaultCard}`}>
-                                        <strong className={styles.assetDocumentsSavedCount}>
-                                          {isVaultDocumentsLoading
-                                            ? 'Loading Documents…'
-                                            : `${vaultDocuments.length} Documents`}
-                                        </strong>
-                                        {detailDocuments.length ? (
-                                          <small className={styles.assetDocumentsLegacyCount}>
-                                            {detailDocuments.length} earlier saved asset {detailDocuments.length === 1 ? 'file' : 'files'}
-                                          </small>
-                                        ) : null}
-                                        {canUseOwnerOnlyAssetActions ? (
-                                          <Link
-                                            href={`/documents?assetId=${encodeURIComponent(asset.id)}`}
-                                            className={styles.assetDocumentsViewAll}
-                                          >
-                                            View documents
-                                          </Link>
-                                        ) : (
-                                          <small className={styles.assetDocumentsOwnerNote}>Saved in the owner’s Documents Vault</small>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {vaultDocumentsError ? (
-                                      <div className={styles.assetDocumentsLoadError} role="status">
-                                        <span>{vaultDocumentsError}</span>
-                                        <button type="button" onClick={() => { void loadVaultDocuments(asset.id); }}>Retry</button>
-                                      </div>
-                                    ) : null}
-
-                                    {vaultDocuments.length || detailDocuments.length ? (
-                                      <div className={styles.assetDocumentList}>
-                                        {vaultDocuments.slice(0, 3).map((document) => (
-                                          <a
-                                            className={styles.assetDocumentLink}
-                                            key={`vault-${document.id}`}
-                                            href={assetVaultDocumentDownloadUrl(asset.id, document.id)}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            title={`Open ${document.fileName}`}
-                                          >
-                                            <DocumentIcon className={styles.buttonIcon} />
-                                            <span>{getAccountDocumentTypeLabel(document.documentType) ?? ACCOUNT_DOCUMENT_CATEGORY_LABELS[document.category]} · {document.title}</span>
-                                          </a>
-                                        ))}
-                                        {detailDocuments.slice(0, Math.max(0, 3 - vaultDocuments.length)).map((document, documentIndex) => (
-                                          <button
-                                            type="button"
-                                            className={styles.assetDocumentLink}
-                                            key={`legacy-${document.id}`}
-                                            onClick={() => { void openAssetDocument(document); }}
-                                            title={`Open ${document.fileName}`}
-                                          >
-                                            <DocumentIcon className={styles.buttonIcon} />
-                                            <span>Saved asset file · {displayDocumentName(document.fileName, documentIndex)}</span>
-                                          </button>
-                                        ))}
-                                        {vaultDocuments.length > 3 && canUseOwnerOnlyAssetActions ? (
-                                          <Link
-                                            href={`/documents?assetId=${encodeURIComponent(asset.id)}`}
-                                            className={`${styles.assetDocumentLink} ${styles.assetDocumentMoreLink}`}
-                                          >
-                                            <DocumentIcon className={styles.buttonIcon} />
-                                            <span>View all {vaultDocuments.length} files in Documents</span>
-                                          </Link>
-                                        ) : null}
-                                      </div>
-                                    ) : null}
-                                  </div>
-
-                                  <div className={styles.assetDetailDivider} aria-hidden="true" />
-
-                                  <div className={styles.assetDetailsPanel}>
+                                  <div className={`${styles.assetDetailsPanel} ${cardLayout.details}`}>
                                     <div className={styles.assetDetailsGrid}>
                                       <div className={styles.assetPrimaryDetails}>
                                         {asset.kind !== 'property' ? (
@@ -16997,6 +16910,72 @@ export default function AssetRegisterClient({
                                         </div>
                                       ) : null}
                                     </div>
+
+                                    <div className={cardLayout.documents}>
+                                      <button type="button" className={cardLayout.openDocuments}
+                                        onClick={() => setAssetDocumentListId(asset.id)}
+                                        aria-label={`View documents for ${asset.title}`} aria-haspopup="dialog">
+                                        <DocumentIcon className={styles.buttonIcon} />
+                                        <span>Documents</span>
+                                        <span className={cardLayout.count}>{isVaultDocumentsLoading ? '…' : vaultDocumentsError ? '!' : vaultDocuments.length + detailDocuments.length}</span>
+                                      </button>
+                                      {canUseOwnerOnlyAssetActions ? <button type="button" className={cardLayout.addDocument}
+                                        onClick={(event) => { event.stopPropagation(); openAssetDocumentUpload(asset); }}
+                                        data-asset-return-action="add-document">
+                                        <PlusIcon className={styles.buttonIcon} /><span>Add document</span>
+                                      </button> : null}
+                                    </div>
+                                    {assetDocumentListId === asset.id ? (
+                                      <AssetAccessSettingsDialog title="Documents" assetTitle={asset.title} onClose={() => setAssetDocumentListId(null)}>
+                                        <div className={cardLayout.documentContents}>
+                                          {isVaultDocumentsLoading ? <p role="status">Loading documents…</p> : null}
+                                          {!isVaultDocumentsLoading && !vaultDocumentsError && !vaultDocuments.length && !detailDocuments.length ? (
+                                            <p className={cardLayout.empty}>No documents saved for this asset yet.{canUseOwnerOnlyAssetActions ? ' Add a document to keep its records together.' : ''}</p>
+                                          ) : null}
+                                    {vaultDocumentsError ? (
+                                      <div className={styles.assetDocumentsLoadError} role="status">
+                                        <span>{vaultDocumentsError}</span>
+                                        <button type="button" onClick={() => { void loadVaultDocuments(asset.id); }}>Retry</button>
+                                      </div>
+                                    ) : null}
+
+                                    {vaultDocuments.length || detailDocuments.length ? (
+                                      <div className={styles.assetDocumentList}>
+                                        {vaultDocuments.map((document) => (
+                                          <a
+                                            className={styles.assetDocumentLink}
+                                            key={`vault-${document.id}`}
+                                            href={assetVaultDocumentDownloadUrl(asset.id, document.id)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            title={`Open ${document.fileName}`}
+                                          >
+                                            <DocumentIcon className={styles.buttonIcon} />
+                                            <span>{getAccountDocumentTypeLabel(document.documentType) ?? ACCOUNT_DOCUMENT_CATEGORY_LABELS[document.category]} · {document.title}</span>
+                                          </a>
+                                        ))}
+                                        {detailDocuments.map((document, documentIndex) => (
+                                          <button
+                                            type="button"
+                                            className={styles.assetDocumentLink}
+                                            key={`legacy-${document.id}`}
+                                            onClick={() => { void openAssetDocument(document); }}
+                                            title={`Open ${document.fileName}`}
+                                          >
+                                            <DocumentIcon className={styles.buttonIcon} />
+                                            <span>Saved asset file · {displayDocumentName(document.fileName, documentIndex)}</span>
+                                          </button>
+                                        ))}
+
+                                      </div>
+                                    ) : null}
+                                          {canUseOwnerOnlyAssetActions ? <div className={cardLayout.documentActions}>
+                                            <Link href={`/documents?assetId=${encodeURIComponent(asset.id)}`} className={styles.assetDocumentsViewAll}>Open Documents Vault</Link>
+                                            <button type="button" className={cardLayout.addDocument} onClick={() => { setAssetDocumentListId(null); openAssetDocumentUpload(asset); }}><PlusIcon className={styles.buttonIcon} /><span>Add document</span></button>
+                                          </div> : null}
+                                        </div>
+                                      </AssetAccessSettingsDialog>
+                                    ) : null}
                                   </div>
 
                                   {manualAssetNote ? (

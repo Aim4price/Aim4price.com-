@@ -1,0 +1,19 @@
+/* Scoped to expanded asset cards; the existing gallery and detail controls stay intact. */
+.body.body { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 1.25rem; align-items: stretch; }
+.body.body .details { grid-column: auto; min-width: 0; }
+.documents { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; padding: .55rem .65rem; border: 1px solid var(--app-info-line, #d0dfea); border-radius: 1rem; background: var(--app-surface, #fff); }
+.openDocuments, .addDocument { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 2.8rem; padding: .55rem .8rem; color: var(--app-text, #153e32); font: inherit; font-size: .9rem; font-weight: 800; cursor: pointer; }
+.openDocuments { flex: 1 1 auto; justify-content: flex-start; border: 0; border-radius: .75rem; background: transparent; }
+.count { display: inline-grid; place-items: center; min-width: 1.75rem; min-height: 1.75rem; padding: 0 .35rem; border-radius: .65rem; background: var(--app-info-soft, #eaf0f4); font-size: .8rem; }
+.addDocument { flex: 0 0 auto; border: 1px solid var(--app-line, #b8dccc); border-radius: .85rem; background: var(--app-surface-soft, #f4faf7); white-space: nowrap; }
+.openDocuments:hover, .addDocument:hover { background: var(--app-surface-soft, #edf6f1); }
+.openDocuments:focus-visible, .addDocument:focus-visible { outline: 3px solid var(--app-accent, #197458); outline-offset: 2px; }
+.documentContents { display: grid; gap: 1rem; min-width: 0; }
+.documentActions { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: .75rem; padding-top: .8rem; border-top: 1px solid var(--app-line, #dce5e0); }
+.empty { margin: 0; padding: 1.5rem 1rem; text-align: center; color: var(--app-muted, #64746a); font-size: .95rem; line-height: 1.6; }
+@media (max-width: 860px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .body.body { grid-template-columns: minmax(0, 1fr); }
+}
+
+.body.body .gallery { grid-template-rows: minmax(18rem, 1fr) auto; align-content: start !important; min-width: 0; }
+.body.body .photo { width: 100%; height: 100%; min-height: 18rem; max-height: 27rem; object-fit: cover; }
