@@ -2,6 +2,7 @@
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import PhotoViewerActions from '../../components/PhotoViewerActions';
+import photoActionsLayout from '../../components/PhotoViewerActions.module.css';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
@@ -17277,7 +17278,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePhotoViewer} />
 
           <div
-            className={styles.photoViewerModal}
+            className={`${styles.photoViewerModal} ${photoActionsLayout.viewer}`}
             role="dialog"
             aria-modal="true"
             aria-label={`${photoViewerAsset.title} photo viewer`}
