@@ -8,7 +8,9 @@ import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
 import { APP_THEME_SCRIPT } from '../lib/app-theme';
 import AppThemeSync from '../components/AppThemeSync';
+import HoverLabels from '../components/HoverLabels';
 import './globals.css';
+import './hover-labels.css';
 import '../public/app-theme.css';
 import './asset-register-view-tuning.css';
 
@@ -69,6 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <AppThemeSync />
+        <HoverLabels />
         <div className="appRoot">
           <SiteWorkspaceZoom footer={<AppFooter />} operational={<AdminWorkTrackerBar />}>
             <AppPatternBackground>{children}</AppPatternBackground>

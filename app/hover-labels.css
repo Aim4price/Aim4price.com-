@@ -1,0 +1,5 @@
+/* Keep fallback labels until the shared overlay has mounted. */
+html[data-hover-labels='true'] [data-tooltip]::before,
+html[data-hover-labels='true'] [data-tooltip]::after {
+  display: none !important;
+}

@@ -1,0 +1,22 @@
+.label {
+  position: fixed;
+  z-index: 2147483647;
+  pointer-events: none !important;
+  user-select: none;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 10px 15px;
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 10px;
+  background: #124c3c;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(4, 42, 34, .24);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 18px;
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
