@@ -381,7 +381,7 @@ type AssetStatusSection = 'finance' | 'insurance' | 'license';
 type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
-type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition' | 'replacement';
+type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition' | 'replacement' | 'notes';
 type OwnerAssetCommandPanel = 'maintenance' | null;
 type AssetModalReturnOrigin = {
   asset: RegisterAsset;
@@ -2971,6 +2971,7 @@ function assetYearLabel(asset: Pick<RegisterAsset, 'kind'>): string {
 }
 
 function canQuickEditAssetDetail(asset: RegisterAsset, target: AssetDetailEditTarget): boolean {
+  if (target === 'notes') return true;
   const isStock = asset.kind === 'stock';
   const isProperty = asset.kind === 'property';
   const isLand = isProperty && normalizePropertyAssetSubtype(
@@ -16979,8 +16980,21 @@ export default function AssetRegisterClient({
                                   </div>
 
                                   {manualAssetNote ? (
-                                    <div className={`${styles.noteStack} ${styles.assetManualNotePanel}`}>
-                                      <p className={styles.note}>{manualAssetNote}</p>
+                                    <div className={cardLayout.notesPanel}>
+                                      {canUseOwnerOnlyAssetActions ? (
+                                        <button type="button" className={cardLayout.notesButton}
+                                          onClick={(event) => openQuickAssetDetailEditor(asset, 'notes', event.currentTarget)}
+                                          data-asset-return-action="detail-notes"
+                                          aria-label={`Edit notes for ${asset.title}`} aria-haspopup="dialog">
+                                          <strong className={cardLayout.notesLabel}>Notes</strong>
+                                          <span className={cardLayout.notesText}>{manualAssetNote}</span>
+                                        </button>
+                                      ) : (
+                                        <div className={cardLayout.notesContent}>
+                                          <strong className={cardLayout.notesLabel}>Notes</strong>
+                                          <span className={cardLayout.notesText}>{manualAssetNote}</span>
+                                        </div>
+                                      )}
                                     </div>
                                   ) : null}
                                 </>
@@ -18386,7 +18400,7 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`}>
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`} data-asset-detail-edit-target="notes">
                         <span>Notes</span>
                         <textarea
                           rows={3}
