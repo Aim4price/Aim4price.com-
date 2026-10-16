@@ -18,7 +18,6 @@
 .choiceDialog { width: min(var(--website-dialog-reference-width, 100%), 48rem); }
 .header .assetName { color: var(--app-text, #12352d); font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.08; overflow-wrap: anywhere; }
 .header .assetDetails { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; }
-.currentRegister { margin: 0 0 .85rem; color: var(--app-muted, #64746a); font-size: .85rem; line-height: 1.5; overflow-wrap: anywhere; }
 .types { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; padding: .25rem 0; }
 .types button { min-height: 10rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; text-align: center; padding: 1.25rem; border: 1px solid var(--app-info-line, #d5e0ee); border-radius: 1rem; background: linear-gradient(135deg, var(--app-info-soft, #f4f7fb), var(--app-surface-soft, #f3f8f5)); color: inherit; box-shadow: 0 8px 20px rgba(18,45,37,.035); }
 .types button strong { font-size: 1.2rem; font-weight: 800; line-height: 1.3; }
