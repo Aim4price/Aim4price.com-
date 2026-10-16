@@ -2,6 +2,7 @@
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import AssetLocationHistoryDialog from '../../components/asset-register/AssetLocationHistoryDialog';
+import cardActions from "./AssetMapCardActions.module.css";
 import downloadStyles from "../../components/ReportDownload.module.css";
 
 import { currentWebsiteScale } from '../../lib/website-canvas';
@@ -193,6 +194,10 @@ function SearchIcon({ className }: IconProps) {
       />
     </svg>
   );
+}
+
+function LocationHistoryIcon({ className }: IconProps) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7.4M3 4v7h7"/><path d="M12 7v5l3 2"/></svg>;
 }
 
 function DownloadIcon({ className }: IconProps) {
@@ -2012,39 +2017,32 @@ export default function AssetMapClient() {
                         </span>
                       </div>
 
-                      <div className={styles.selectedActionRow}>
-                        <button type="button" aria-haspopup="dialog" className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'update'});}}><MapIcon className={styles.buttonIcon}/><span>Update location</span></button>
-                        <button type="button" aria-haspopup="dialog" className={`${styles.selectedActionButton} ${styles.selectedActionDownload}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><DownloadIcon className={styles.buttonIcon}/><span>Location history</span></button>
-                        <Link
-                          href={buildAssetRegisterHref(selectedAsset)}
-                          prefetch={true}
-                          className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`}
-                        >
-                          <RegisterIcon className={styles.buttonIcon} />
-                          <span>Asset Register</span>
-                        </Link>
-                        {selectedAssetGoogleMapsHref ? (
-                          <a
-                            href={selectedAssetGoogleMapsHref}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`${styles.selectedActionButton} ${styles.selectedActionMap}`}
-                          >
-                            <MapIcon className={styles.buttonIcon} />
-                            <span>Maps</span>
-                          </a>
-                        ) : null}
-                        {selectedAssetReportHref ? (
-                          <button
-                            type="button"
-                            disabled={isDownloading}
-                            onClick={() => void handleDownload(selectedAssetReportHref, "pdf")}
-                            className={`${styles.selectedActionButton} ${styles.selectedActionDownload}`}
-                          >
-                            <DownloadIcon className={styles.buttonIcon} />
-                            <span>{isDownloading ? "Preparing…" : "Download"}</span>
+                      <div className={cardActions.actions}>
+                        <div className={cardActions.primaryRow}>
+                          <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'update'});}}>
+                            <span className={cardActions.icon}><MapIcon /></span>
+                            <span>Update location</span>
                           </button>
-                        ) : null}
+                          <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.history}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}>
+                            <span className={cardActions.icon}><LocationHistoryIcon /></span>
+                            <span>Location history</span>
+                          </button>
+                        </div>
+                        <div className={cardActions.secondaryRow}>
+                          <Link href={buildAssetRegisterHref(selectedAsset)} prefetch={true} className={cardActions.button}>
+                            <RegisterIcon /><span>Asset Register</span>
+                          </Link>
+                          {selectedAssetGoogleMapsHref ? (
+                            <a href={selectedAssetGoogleMapsHref} target="_blank" rel="noreferrer" className={cardActions.button}>
+                              <MapIcon /><span>Google Maps</span>
+                            </a>
+                          ) : null}
+                          {selectedAssetReportHref ? (
+                            <button type="button" disabled={isDownloading} onClick={() => void handleDownload(selectedAssetReportHref, "pdf")} className={cardActions.button}>
+                              <DownloadIcon /><span>{isDownloading ? "Preparing…" : "Download report"}</span>
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>
