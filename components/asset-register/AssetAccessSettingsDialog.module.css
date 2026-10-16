@@ -124,3 +124,27 @@
 .dialog .body::-webkit-scrollbar-button:single-button { display: none !important; width: 0 !important; height: 0 !important; }
 
 .dialog [data-permission-toolbar] input { width: 1.05rem; height: 1.05rem; }
+
+/* Subject-first share header, matching the Manage asset typography and spacing. */
+.dialog.subjectDialog {
+  padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.6), 2.4rem) !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+}
+.dialog.subjectDialog .header {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1.25rem;
+  margin: 0 !important; padding: 0 0 1.25rem !important;
+}
+.dialog.subjectDialog .header > div { flex: 1; min-width: 0; }
+.dialog.subjectDialog .header h3 {
+  margin: 0 !important; color: var(--app-text, #12352d);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
+  font-weight: 800 !important; letter-spacing: -.04em; line-height: 1.08 !important;
+  white-space: normal; overflow-wrap: anywhere;
+}
+.dialog.subjectDialog .header p {
+  margin: .5rem 0 0 !important; color: var(--app-muted, #64746a);
+  font-size: .88rem !important; font-weight: 650 !important; line-height: 1.5 !important;
+  white-space: normal; overflow-wrap: anywhere;
+}
+.dialog.subjectDialog .body.body { padding: 1.25rem 0 0 !important; }
+.dialog.subjectDialog .body > div { padding-top: 0; }

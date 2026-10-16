@@ -19071,6 +19071,7 @@ export default function AssetRegisterClient({
           kind="asset"
           titleId="asset-quote-title"
           subject={quoteAsset?.title || 'Asset'}
+          assetDetails={quoteAsset ? `Year Model: ${quoteAsset.yearModel || 'Not recorded'} • Usage: ${buildAssetUsageValue(quoteAsset)} • Condition: ${conditionLabel(quoteAsset.condition)}` : undefined}
           serialNumber={quoteAsset?.serialNumber}
           disabled={isSendingQuoteLead}
           onClose={backFromShareModal}
