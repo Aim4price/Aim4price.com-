@@ -14,18 +14,22 @@ const headerStyles = readFileSync(new URL('../components/AppHeader.module.css', 
 
 test('quick add uses the searchable typed Documents Vault flow', () => {
   const panel = client.slice(
-    client.indexOf('<div className={styles.assetDocumentsPanel}>'),
-    client.indexOf('<div className={styles.assetDetailDivider}', client.indexOf('<div className={styles.assetDocumentsPanel}>')),
+    client.indexOf('<div className={cardLayout.documents}>'),
+    client.indexOf('{manualAssetNote ?', client.indexOf('<div className={cardLayout.documents}>')),
   );
 
   assert.match(panel, /openAssetDocumentUpload\(asset\)/);
-  assert.doesNotMatch(panel, /Asset documents/i);
+  assert.match(panel, /setAssetDocumentListId\(asset.id\)/);
+  assert.match(panel, /aria-haspopup="dialog"/);
+  assert.match(panel, /assetDocumentListId === asset.id/);
+  assert.match(panel, /<AssetAccessSettingsDialog title="Documents"/);
   assert.match(panel, /href=\{`\/documents\?assetId=/);
-  assert.match(panel, /vaultDocuments\.slice\(0, 3\)/);
-  assert.match(panel, /detailDocuments\.slice/);
-  assert.match(panel, /`\$\{vaultDocuments\.length\} Documents`/);
-  assert.match(panel, /earlier saved asset/);
-  assert.doesNotMatch(panel, /totalAssetDocuments/);
+  assert.match(panel, /vaultDocuments\.map/);
+  assert.match(panel, /detailDocuments\.map/);
+  assert.match(panel, /vaultDocuments.length \+ detailDocuments.length/);
+  assert.match(panel, /No documents saved for this asset yet/);
+  assert.match(panel, /canUseOwnerOnlyAssetActions/);
+  assert.doesNotMatch(panel, /slice\(0, 3\)/);
   assert.doesNotMatch(panel, /<ModalSelect/);
   assert.doesNotMatch(panel, /type="file"/);
 
