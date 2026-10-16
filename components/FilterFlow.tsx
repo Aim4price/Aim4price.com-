@@ -9,13 +9,15 @@ import AssetSerialNumber from './AssetSerialNumber';
 type FilterAssetPicker = { title: string; assets: Array<{ id: string; title: string; meta?: string; serialNumber?: string; selectedMethod?: string; categoryLabel?: string }> };
 
 /** Shared filter dialog: keep choices in the caller so Back never loses an answer. */
-export default function FilterFlow({ title, children, onClose, onClear, onApply, dialogRef }: {
+export default function FilterFlow({ title, children, onClose, onClear, onApply, dialogRef, overview = false, applyLabel = 'Apply filters' }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   onClear: () => void;
   onApply: () => void;
   dialogRef?: Ref<HTMLDivElement>;
+  overview?: boolean;
+  applyLabel?: string;
 }) {
   const titleId = useId();
   const steps = Children.toArray(children);
@@ -41,7 +43,7 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
     <div className={styles.overlay} data-website-overlay onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <div className={assetPicker ? `${styles.dialog} ${picker.modal}` : styles.dialog} data-asset-choice-modal={assetPicker ? "true" : undefined} ref={(node) => {
+      <div className={assetPicker ? `${styles.dialog} ${picker.modal}` : `${styles.dialog} ${overview ? styles.overviewDialog : ''}`} data-asset-choice-modal={assetPicker ? "true" : undefined} ref={(node) => {
         rootRef.current = node;
         if (typeof dialogRef === 'function') dialogRef(node);
         else if (dialogRef) (dialogRef as { current: HTMLDivElement | null }).current = node;
@@ -60,15 +62,15 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
           <button className={styles.close} type="button" onClick={onClose} aria-label="Close filters">×</button>
         </header>
         <div className={assetPicker ? picker.contents : styles.body} ref={bodyRef} tabIndex={-1} key={currentStep}>
-          {!assetPicker ? <p className={styles.progress}>Question {currentStep + 1} of {steps.length}</p> : null}
-          {assetQuestion ? cloneElement(assetQuestion, {onChange: (value: string) => {assetQuestion.props.onChange(value); if(currentStep < steps.length - 1) setStep(currentStep + 1);}}) : question}
+          {!assetPicker && !overview ? <p className={styles.progress}>Question {currentStep + 1} of {steps.length}</p> : null}
+          {overview ? <div className={styles.overviewGrid}>{steps}</div> : assetQuestion ? cloneElement(assetQuestion, {onChange: (value: string) => {assetQuestion.props.onChange(value); if(currentStep < steps.length - 1) setStep(currentStep + 1);}}) : question}
         </div>
         <footer className={styles.footer} data-asset-choice-footer={assetPicker ? "true" : undefined}>
           {assetPicker ? <>{currentStep > 0 ? <button type="button" onClick={()=>setStep(currentStep - 1)}>Back</button> : null}<button type="button" onClick={onClose}>Cancel</button></> : <>
-          <button type="button" className={styles.clear} onClick={() => { onClear(); onClose(); }}>Clear filters</button>
-          {currentStep > 0 ? <button type="button" onClick={() => setStep(currentStep - 1)}>Back</button> : null}
-          {currentStep === steps.length - 1 ? <button type="button" className={styles.apply} onClick={onApply}>Apply filters</button> : null}
-          {currentStep < steps.length - 1 ? <button type="button" className={styles.next} onClick={() => setStep(currentStep + 1)}>Next</button> : null}
+          <button type="button" className={styles.clear} onClick={() => { onClear(); if (!overview) onClose(); }}>Clear filters</button>
+          {!overview && currentStep > 0 ? <button type="button" onClick={() => setStep(currentStep - 1)}>Back</button> : null}
+          {overview || currentStep === steps.length - 1 ? <button type="button" className={styles.apply} onClick={onApply}>{applyLabel}</button> : null}
+          {!overview && currentStep < steps.length - 1 ? <button type="button" className={styles.next} onClick={() => setStep(currentStep + 1)}>Next</button> : null}
           </>}
         </footer>
       </div>
