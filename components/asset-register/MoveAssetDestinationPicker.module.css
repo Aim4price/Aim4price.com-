@@ -1,23 +1,23 @@
 .overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 1rem; }
 .backdrop { position: absolute; inset: 0; background: rgba(9, 29, 25, .66); backdrop-filter: blur(8px); }
-.dialog { position: relative; width: min(var(--website-dialog-reference-width, 100%), 48rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--app-line, #dce5e0); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #14392f); box-shadow: 0 24px 80px rgba(0,0,0,.22); }
-.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.5rem 1.75rem; border-bottom: 1px solid var(--app-line, #dce5e0); }
-.header h3 { margin: 0; font-size: 1.65rem; line-height: 1.2; letter-spacing: -.03em; }
-.header p { margin: .5rem 0 0; color: var(--app-muted, #64746a); font-size: .95rem; }
+.dialog { font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif; position: relative; width: min(var(--website-dialog-reference-width, 100%), 48rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--app-line, #dce5e0); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #14392f); box-shadow: 0 24px 80px rgba(0,0,0,.22); }
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.4rem 1.75rem 1.15rem; border-bottom: 1px solid var(--app-line, #dce5e0); }
+.header > div { min-width: 0; display: grid; gap: .35rem; }
+.header h3 { margin: 0 0 .25rem; color: var(--app-muted, #64746a); font-size: .9rem; font-weight: 650; line-height: 1.5; }
+.header p { margin: 0; color: var(--app-muted, #64746a); font-size: .95rem; }
 .dialog button, .search { font: inherit; }
 .dialog button { cursor: pointer; }
 .dialog button:disabled { opacity: .5; cursor: not-allowed; }
 .dialog button:focus-visible, .search:focus-visible, .dialog a:focus-visible { outline: 3px solid var(--app-accent, #147052); outline-offset: 3px; }
 .close { flex: 0 0 auto; width: 2.75rem; height: 2.75rem; border: 1px solid var(--app-line, #dce5e0); border-radius: .8rem; background: var(--app-surface-soft, #f4f8f6); color: inherit; font-size: 1.5rem !important; }
-.body { padding: 1.25rem 1.75rem 1.5rem; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
+.body { padding: 1.15rem 1.75rem; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
 .asset { display: grid; gap: .3rem; padding-bottom: 1.25rem; overflow-wrap: anywhere; }
 .asset > span, .confirmation > span { color: var(--app-muted, #64746a); font-size: .78rem; font-weight: 700; }
 .asset strong { font-size: 1.05rem; }
 .asset small, .option small, .confirmation small { color: var(--app-muted, #64746a); font-size: .82rem; line-height: 1.5; }
-.choiceDialog .header h3 { font-size: 2rem; }
 .choiceDialog { width: min(var(--website-dialog-reference-width, 100%), 48rem); }
-.header .assetName { color: var(--app-text, #17362c); font-size: 1.05rem; font-weight: 750; line-height: 1.45; overflow-wrap: anywhere; }
-.header .assetDetails { font-size: .9rem; line-height: 1.5; margin-top: .4rem; }
+.header .assetName { color: var(--app-text, #12352d); font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); font-weight: 800; letter-spacing: -0.04em; line-height: 1.08; overflow-wrap: anywhere; }
+.header .assetDetails { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; }
 .currentRegister { margin: 0 0 .85rem; color: var(--app-muted, #64746a); font-size: .85rem; line-height: 1.5; overflow-wrap: anywhere; }
 .types { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; padding: .25rem 0; }
 .types button { min-height: 10rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; text-align: center; padding: 1.25rem; border: 1px solid var(--app-info-line, #d5e0ee); border-radius: 1rem; background: linear-gradient(135deg, var(--app-info-soft, #f4f7fb), var(--app-surface-soft, #f3f8f5)); color: inherit; box-shadow: 0 8px 20px rgba(18,45,37,.035); }
@@ -53,7 +53,7 @@
 .option[aria-pressed=true] .selection { background: var(--app-accent, #147052); border-color: transparent; color: #fff; }
 .empty { text-align: center; padding: 1.5rem; color: var(--app-muted, #64746a); font-size: .9rem; line-height: 1.5; }
 .empty button, .empty a { color: inherit; background: transparent; border: 0; text-decoration: underline; padding: .75rem; }
-.footer { flex-shrink: 0; padding: 1.1rem 1.75rem; border-top: 1px solid var(--app-line, #dce5e0); display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; background: var(--app-surface-soft, #f7faf8); }
+.footer { flex-shrink: 0; padding: .9rem 1.75rem; border-top: 1px solid var(--app-line, #dce5e0); display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; background: var(--app-surface-soft, #f7faf8); }
 .confirmation { flex: 1 1 18rem; display: grid; gap: .25rem; overflow-wrap: anywhere; }
 .confirmation strong { font-size: .95rem; }
 .actions { display: flex; flex-wrap: wrap; gap: .65rem; }
@@ -66,5 +66,5 @@
   :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .actions { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .actions button { flex: 1; }
-  :global(:where(html:not(:has([data-website-canvas])))) .header h3 { font-size: 1.4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header h3 { font-size: .9rem; }
 }
