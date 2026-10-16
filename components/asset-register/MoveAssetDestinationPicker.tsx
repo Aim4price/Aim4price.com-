@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import styles from './MoveAssetDestinationPicker.module.css';
+import choiceStyles from './InsideShareDialog.module.css';
 
 type Destination = 'register' | 'umbrella';
 type Option = { value: string; label: string; description?: string };
@@ -84,13 +85,13 @@ export default function MoveAssetDestinationPicker(props: Props) {
         <div className={`${styles.body} ${step === 'destination' ? styles.pickerBody : ''}`}>
           {step === 'choice' ? (
             <div className={styles.types} role="group" aria-label="Move destination">
-              <button ref={choiceRef} type="button" disabled={props.busy} onClick={() => chooseDestination('register')}>
-                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
-                <strong>Asset Register</strong><small>Move to another asset register.</small>
+              <button ref={choiceRef} className={choiceStyles.card} data-tone="outside" type="button" disabled={props.busy} onClick={() => chooseDestination('register')}>
+                <span className={choiceStyles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span>
+                <span className={choiceStyles.copy}><strong>Asset Register</strong><small>Move to another asset register.</small></span>
               </button>
-              {props.canUseUmbrellas ? <button type="button" disabled={props.busy} onClick={() => chooseDestination('umbrella')}>
-                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 18 0H3ZM12 3v16a2 2 0 0 0 4 0M8 12c0-5 2-9 4-9s4 4 4 9"/></svg></span>
-                <strong>Umbrella</strong><small>Group with assets under an umbrella.</small>
+              {props.canUseUmbrellas ? <button className={choiceStyles.card} type="button" disabled={props.busy} onClick={() => chooseDestination('umbrella')}>
+                <span className={choiceStyles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 18 0H3ZM12 3v16a2 2 0 0 0 4 0M8 12c0-5 2-9 4-9s4 4 4 9"/></svg></span>
+                <span className={choiceStyles.copy}><strong>Umbrella</strong><small>Group with assets under an umbrella.</small></span>
               </button> : null}
             </div>
           ) : <>
