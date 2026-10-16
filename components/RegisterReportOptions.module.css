@@ -1,0 +1,44 @@
+.options {
+  display: grid;
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--app-line, #c9ded3);
+  border-radius: 1rem;
+  background: var(--app-surface-soft, #eef7f1);
+  color: var(--app-text, #173e2d);
+}
+
+.summary img {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.summary strong {
+  font-size: .95rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.summary p {
+  margin: .25rem 0 0;
+  color: var(--app-muted, #42604f);
+  font-size: .875rem;
+  line-height: 1.5;
+}
+
+/* Keep the shared dropdown readable against the report dialog. */
+.options button[role='combobox'] {
+  border-color: var(--app-accent, #3b8160);
+  background: var(--app-surface-soft, #f0f7f3);
+  font-weight: 750;
+}
