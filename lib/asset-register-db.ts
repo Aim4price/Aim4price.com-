@@ -171,6 +171,7 @@ export type UpdateAssetRegisterItemYearModelInput = {
 };
 
 export type UpdateAssetRegisterItemLocationInput = {
+  actorName?: string | null;
   assetId: string;
   latitude: number;
   longitude: number;
@@ -2997,7 +2998,7 @@ export async function updateAssetRegisterItemLocation(
         values (
           $1::uuid,
           'owner_session',
-          null,
+          $9::text,
           $7::text,
           null,
           null,
@@ -3012,10 +3013,10 @@ export async function updateAssetRegisterItemLocation(
           $5::timestamptz,
           now(),
           $6::double precision,
-          $5::timestamptz
+          now()
         )
       `,
-      [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote],
+      [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote, input.actorName || null],
     );
 
     if (!transaction) await client.query('COMMIT');
@@ -4003,3 +4004,4 @@ export async function saveApprovedAssetValue(client: import('pg').PoolClient, as
   if(!result.rows[0])throw new Error('Asset unavailable.');
   return mapAssetRegisterRow(result.rows[0]);
 }
+
