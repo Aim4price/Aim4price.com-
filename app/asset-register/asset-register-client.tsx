@@ -16279,7 +16279,7 @@ export default function AssetRegisterClient({
                                   {isCollapsed
                                     ? <ChevronDownIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />
                                     : <ChevronUpIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />}
-                                  <span>{isCollapsed ? 'View details' : 'Hide details'}</span>
+                                  <span>{isCollapsed ? 'Open' : 'Hide details'}</span>
                                 </button>
 
                                 {canManageAssetGroups ? (
