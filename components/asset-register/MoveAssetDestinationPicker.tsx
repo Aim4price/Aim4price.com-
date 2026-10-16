@@ -115,7 +115,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
         </div>
         <footer className={styles.footer}>
           {step === 'destination' ? <div className={styles.confirmation} aria-live="polite">
-            {selected ? <><span>{isUmbrella ? 'Selected umbrella' : 'Selected asset register'}</span><strong>{selected.label}</strong>{!isUmbrella ? <small>The asset leaves its current register. Membership of a register-specific umbrella is removed.</small> : null}</> : <span>Select a destination to continue.</span>}
+            {selected ? <><span>{isUmbrella ? 'Selected umbrella' : 'Selected asset register'}</span><strong>{selected.label}</strong></> : <span>Select a destination to continue.</span>}
             {props.error ? <p className={styles.error} role="alert">{props.error}</p> : null}
           </div> : null}
           <div className={styles.actions}>
