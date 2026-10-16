@@ -63,7 +63,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
       <div className={styles.backdrop} onClick={props.onClose} />
-      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-move-title" aria-describedby="move-destination-description" aria-busy={props.busy}
+      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={step === 'choice' ? 'asset-register-move-title' : 'move-asset-name'} aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
           if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
@@ -76,8 +76,8 @@ export default function MoveAssetDestinationPicker(props: Props) {
         }}>
         <header className={styles.header}>
           <div>
-            <h3 id="asset-register-move-title">{step === 'choice' ? 'Move this asset to' : isUmbrella ? 'Choose an umbrella' : 'Choose an asset register'}</h3>
-            <p className={styles.assetName}>{props.assetName}</p>
+            {step === 'choice' ? <h3 id="asset-register-move-title">Move this asset to</h3> : null}
+            <p id="move-asset-name" className={styles.assetName}>{props.assetName}</p>
             <p id="move-destination-description" className={styles.assetDetails}>{props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
           </div>
           <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal">×</button>
@@ -95,7 +95,6 @@ export default function MoveAssetDestinationPicker(props: Props) {
               </button> : null}
             </div>
           ) : <>
-          <p className={styles.currentRegister}>Current asset register: <strong>{props.sourceName}</strong></p>
           <div className={styles.listHeading}><h4>{isUmbrella ? 'Available umbrellas' : 'Available asset registers'}</h4><span>{props.loading ? 'Loading' : `${visible.length} available`}</span></div>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
