@@ -4,6 +4,7 @@ import downloadStyles from "../../components/ReportDownload.module.css";
 import { currentWebsiteScale } from '../../lib/website-canvas';
 
 import DropdownOverlay from "../../components/DropdownOverlay";
+import AssetMapRegisterDialog from "../../components/asset-register/AssetMapRegisterDialog";
 import {
   useCallback,
   useEffect,
@@ -689,7 +690,6 @@ export default function AssetMapClient() {
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isExportScopeMenuOpen, setIsExportScopeMenuOpen] = useState(false);
 
-  const filterDropdownRef = useRef<HTMLDivElement | null>(null);
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
   const exportScopeDropdownRef = useRef<HTMLDivElement | null>(null);
   const exportScopeTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -839,25 +839,6 @@ export default function AssetMapClient() {
   }, [isExportModalOpen, isExportScopeMenuOpen]);
 
   useEffect(() => {
-    if (!isFilterMenuOpen || typeof window === "undefined") {
-      return undefined;
-    }
-
-    const animationFrame = window.requestAnimationFrame(() => {
-      const menu = document.getElementById("asset-map-register-filter-menu");
-      const selectedItem = menu?.querySelector<HTMLElement>(
-        '[role="menuitemradio"][aria-checked="true"]',
-      );
-      const firstItem = menu?.querySelector<HTMLElement>(
-        '[role="menuitemradio"]',
-      );
-      (selectedItem ?? firstItem)?.focus();
-    });
-
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, [isFilterMenuOpen]);
-
-  useEffect(() => {
     if (!isExportScopeMenuOpen || typeof window === "undefined") {
       return undefined;
     }
@@ -890,17 +871,6 @@ export default function AssetMapClient() {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
-
-      if (
-        isFilterMenuOpen &&
-        filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(target) &&
-        !document
-          .getElementById("asset-map-register-filter-menu")
-          ?.contains(target)
-      ) {
-        setIsFilterMenuOpen(false);
-      }
 
       if (
         isExportScopeMenuOpen &&
@@ -1523,17 +1493,6 @@ export default function AssetMapClient() {
     exportScopeTriggerRef.current?.focus();
   }
 
-  function handlePageFilterMenuKeyDown(
-    event: ReactKeyboardEvent<HTMLDivElement>,
-  ) {
-    handleMenuNavigation(event);
-    if (event.key !== "Tab") return;
-
-    event.preventDefault();
-    setIsFilterMenuOpen(false);
-    focusAdjacentControl(document, filterTriggerRef.current, event.shiftKey);
-  }
-
   function handleExportScopeMenuKeyDown(
     event: ReactKeyboardEvent<HTMLDivElement>,
   ) {
@@ -1652,15 +1611,15 @@ export default function AssetMapClient() {
               </label>
 
               <div className={styles.topActionButtons}>
-                <div className={styles.filterDropdown} ref={filterDropdownRef}>
+                <div className={styles.filterDropdown}>
                   <button
                     ref={filterTriggerRef}
                     type="button"
                     className={`${styles.filterControl} ${styles.topActionButton} ${isFilterMenuOpen ? styles.filterControlOpen : ""}`}
                     onClick={() => setIsFilterMenuOpen((current) => !current)}
-                    aria-haspopup="menu"
+                    aria-haspopup="dialog"
                     aria-expanded={isFilterMenuOpen}
-                    aria-controls="asset-map-register-filter-menu"
+                    aria-controls={isFilterMenuOpen ? "asset-map-register-dialog" : undefined}
                     aria-label={`Filter: ${selectedFilterLabel}`}
                   >
                     <FilterIcon className={styles.buttonIcon} />
@@ -1669,33 +1628,16 @@ export default function AssetMapClient() {
                     </span>
                   </button>
                   {isFilterMenuOpen ? (
-                    <DropdownOverlay
-                      id="asset-map-register-filter-menu"
-                      className={styles.filterMenu}
-                      matchAnchorWidth={false}
-                      role="menu"
-                      aria-label="Filter mapped assets by asset register"
-                      onKeyDown={handlePageFilterMenuKeyDown}
-                    >
-                      {registerFilters.map((filter) => {
-                        const isSelected = filter.id === selectedRegisterId;
-
-                        return (
-                          <button
-                            key={filter.id}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={isSelected}
-                            tabIndex={isSelected ? 0 : -1}
-                            className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
-                            onClick={() => selectPageRegisterFilter(filter.id)}
-                          >
-                            <span>{filter.label}</span>
-                            {isSelected ? <strong>Selected</strong> : null}
-                          </button>
-                        );
-                      })}
-                    </DropdownOverlay>
+                    <AssetMapRegisterDialog
+                      options={registerFilters.map(filter => ({
+                        id: filter.id,
+                        label: filter.label,
+                        count: filterAssetsByRegister(mappedAssets, filter.id).length,
+                      }))}
+                      selectedId={selectedRegisterId}
+                      onSelect={selectPageRegisterFilter}
+                      onClose={() => setIsFilterMenuOpen(false)}
+                    />
                   ) : null}
                 </div>
                 <button
