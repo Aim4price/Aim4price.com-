@@ -1697,3 +1697,22 @@
 }
 .assetPickerModal .error { margin: 0 var(--picker-padding) 1rem; }
 .pickerCountNote { display: block; font-size: 0.78rem; }
+
+.deleteAcknowledgement {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 20px;
+  color: var(--app-text, #12352d);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.deleteAcknowledgement input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--app-danger, #ae302a);
+}

@@ -478,6 +478,7 @@ export default function AssetGroupManagerModal({
   mapBusy = false,
 }: Props) {
   const [name, setName] = useState('');
+  const [deleteAcknowledged, setDeleteAcknowledged] = useState(false);
   const [hasPrimaryAsset, setHasPrimaryAsset] = useState(false);
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [primaryAssetId, setPrimaryAssetId] = useState('');
@@ -512,6 +513,7 @@ export default function AssetGroupManagerModal({
         ]))
       : Object.fromEntries(initialMemberIds.map((assetId) => [assetId, true]));
 
+    setDeleteAcknowledged(false);
     setName(group?.name ?? defaultGroupName(anchorAsset));
     setHasPrimaryAsset(Boolean(initialPrimaryAssetId));
     setSelectedAssetIds(initialMemberIds);
@@ -873,13 +875,13 @@ export default function AssetGroupManagerModal({
                     <small className={styles.menuOptionSubtitle}>Reports for grouped assets.</small>
                   </span>
                 </button>
-                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')} data-download-option="true">
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => { setDeleteAcknowledged(false); setView('delete'); }} data-download-option="true">
                   <i className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
                     <TrashIcon className={styles.manageMenuIconGlyph} />
                   </i>
                   <span>
                     <strong>Remove umbrella</strong>
-                    <small className={styles.menuOptionSubtitle}>Ungroup without deleting assets.</small>
+                    <small className={styles.menuOptionSubtitle}>Permanently ungroup and end umbrella links.</small>
                   </span>
                 </button>
               </div>
@@ -981,14 +983,20 @@ export default function AssetGroupManagerModal({
                 <TrashIcon className={styles.deleteNoticeIcon} />
                 <div>
                   <strong>Remove {group.name}?</strong>
-                  <p>The umbrella will be removed, but all {group.members.length} grouped asset records, values, maintenance history, documents and photos will remain unchanged.</p>
+                  <p>Shared links to this umbrella will stop working. People using those links will lose access through them.</p>
+                  <p>This cannot be undone. To share the group again, you will need to rebuild the umbrella, create new links and send them to recipients. Reusing the same umbrella name will not restore the old links.</p>
+                  <p>All {group.members.length} asset records, values, maintenance history, documents and photos will remain.</p>
                 </div>
               </section>
+              <label className={styles.deleteAcknowledgement}>
+                <input type="checkbox" checked={deleteAcknowledged} onChange={(event) => setDeleteAcknowledged(event.target.checked)} disabled={busy} />
+                <span>I understand that umbrella links will stop working and I will need to rebuild and share the umbrella again.</span>
+              </label>
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
             </div>
             <footer className={styles.footer}>
-              <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => setView('menu')} disabled={busy}>Cancel</button>
-              <button type="button" className={accountStyles.dangerButton} onClick={() => void onDelete(group)} disabled={busy}>
+              <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => { setDeleteAcknowledged(false); setView('menu'); }} disabled={busy}>Keep umbrella</button>
+              <button type="button" className={accountStyles.dangerButton} onClick={() => { if (deleteAcknowledged && !busy) void onDelete(group); }} disabled={busy || !deleteAcknowledged}>
                 {busy ? 'Removing…' : 'Remove umbrella'}
               </button>
             </footer>
