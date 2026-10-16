@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import styles from './FilterFlow.module.css';
 import FilterFlow, { FilterQuestion } from './FilterFlow';
 
 export type FilterChoice<K extends string> = { value: K; label: string };
@@ -25,7 +26,7 @@ export default function AssetFilterDialog<K extends string>({ groups, selected, 
 }) {
   const [draft, setDraft] = useState(selected);
   const [draftSort, setDraftSort] = useState(sort);
-  return <FilterFlow title="Filter assets" onClose={onClose} onClear={() => {
+  return <FilterFlow overview applyLabel="Show matching assets" title="Filter assets" onClose={onClose} onClear={() => {
     setDraft([]);
     setDraftSort(sortOptions[0].value);
     onClear();
@@ -34,7 +35,29 @@ export default function AssetFilterDialog<K extends string>({ groups, selected, 
     onSortChange(draftSort);
     onClose();
   }}>
-    {groups.map((group) => <FilterQuestion key={group.label} label={group.label} value={draft.find((value) => group.options.some((option) => option.value === value)) ?? ''} options={[{ value: '', label: 'All assets' }, ...group.options]} onChange={(value) => setDraft((current) => replaceFilterGroup(current, group.options, value as K | ''))} />)}
-    <FilterQuestion label="How should assets be sorted?" value={draftSort} options={sortOptions} onChange={(value) => setDraftSort(value as K)} />
+    {groups.map((group) => <FilterQuestion key={group.label} label={group.label} value={draft.find((value) => group.options.some((option) => option.value === value)) ?? ''} options={[{ value: '', label: 'All' }, ...group.options]} onChange={(value) => setDraft((current) => replaceFilterGroup(current, group.options, value as K | ''))} />)}
+    <FilterQuestion label="Sort by" value={draftSort} options={sortOptions} onChange={(value) => setDraftSort(value as K)} />
   </FilterFlow>;
+}
+
+export function ActiveAssetFilters<K extends string>({ selected, sort, options, sortOptions, onRemove, onResetSort, onClear }: {
+  selected: K[];
+  sort: K;
+  options: FilterChoice<K>[];
+  sortOptions: FilterChoice<K>[];
+  onRemove: (value: K) => void;
+  onResetSort: () => void;
+  onClear: () => void;
+}) {
+  const sorted = sort !== sortOptions[0]?.value;
+  if (!selected.length && !sorted) return null;
+  return <div className={styles.activeFilters} role="group" aria-label="Active asset filters">
+    <span className={styles.activeLabel}>Showing</span>
+    {selected.map((value) => {
+      const label = options.find((option) => option.value === value)?.label ?? value;
+      return <button key={value} type="button" onClick={() => onRemove(value)} aria-label={`Remove filter: ${label}`}>{label}<span aria-hidden="true">×</span></button>;
+    })}
+    {sorted ? <button type="button" onClick={onResetSort} aria-label="Reset asset sorting">Sort: {sortOptions.find((option) => option.value === sort)?.label}<span aria-hidden="true">×</span></button> : null}
+    <button type="button" className={styles.clearAll} onClick={onClear}>Clear all</button>
+  </div>;
 }

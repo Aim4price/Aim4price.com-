@@ -37,7 +37,7 @@ import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
 import CardVatToggle from '../../components/CardVatToggle';
 import { attachHeaderNavDrag } from '../../lib/header-nav-drag';
 
-import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
+import AssetFilterDialog, { ActiveAssetFilters, replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import directoryStyles from '../../components/business-network/PartnerDirectory.module.css';
@@ -15695,6 +15695,16 @@ export default function AssetRegisterClient({
               </button>
             </div>
           </div>
+
+          <ActiveAssetFilters
+            selected={assetFilters}
+            sort={assetSort}
+            options={ASSET_FILTER_OPTIONS}
+            sortOptions={ASSET_SORT_OPTIONS}
+            onRemove={(value) => setAssetFilters((current) => current.filter((key) => key !== value))}
+            onResetSort={() => setAssetSort('all')}
+            onClear={clearAssetFilter}
+          />
 
           {isAssetFilterOpen ? (
             <AssetFilterDialog

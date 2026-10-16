@@ -65,3 +65,20 @@
 .selectMenu::-webkit-scrollbar-thumb { background: var(--app-surface-soft, #7ba28f); border: 3px solid var(--app-line, #fff); border-radius: 8px; }
 
 .dialog button, .dialog input { font-family: inherit; }
+
+/* Asset-register filters are presented together; other filter flows retain their steps. */
+.overviewDialog { width: min(var(--website-dialog-reference-width, 100%), 56rem); display: flex; flex-direction: column; overflow: hidden; }
+.overviewDialog .header, .overviewDialog .footer { flex-shrink: 0; }
+.overviewDialog .body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.overviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.15rem 1.5rem; }
+.overviewGrid .question { min-width: 0; align-content: start; gap: .5rem; }
+.overviewGrid .question label { font-size: .95rem; }
+.activeFilters { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin: .9rem 0 1.1rem; font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif; }
+.activeLabel { color: var(--app-muted, #64766d); font-size: .85rem; font-weight: 650; margin-right: .15rem; }
+.activeFilters button { display: inline-flex; align-items: center; gap: .65rem; padding: .5rem .75rem; border: 1px solid var(--app-line, #c8dcd3); border-radius: .65rem; background: var(--app-surface, #fff); color: var(--app-text, #173b30); font: inherit; font-size: .85rem; font-weight: 650; cursor: pointer; }
+.activeFilters button:hover { background: var(--app-surface-soft, #edf5f0); }
+.activeFilters button:focus-visible { outline: 3px solid var(--app-accent, #78b99a); outline-offset: 2px; }
+.activeFilters .clearAll { border-color: transparent; background: transparent; text-decoration: underline; text-underline-offset: .2em; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .overviewGrid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+}
