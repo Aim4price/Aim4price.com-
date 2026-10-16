@@ -63,7 +63,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
       <div className={styles.backdrop} onClick={props.onClose} />
-      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={step === 'choice' ? 'asset-register-move-title' : 'move-asset-name'} aria-describedby="move-destination-description" aria-busy={props.busy}
+      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="move-asset-name" aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
           if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
@@ -76,7 +76,6 @@ export default function MoveAssetDestinationPicker(props: Props) {
         }}>
         <header className={styles.header}>
           <div>
-            {step === 'choice' ? <h3 id="asset-register-move-title">Move this asset to</h3> : null}
             <p id="move-asset-name" className={styles.assetName}>{props.assetName}</p>
             <p id="move-destination-description" className={styles.assetDetails}>{props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
           </div>
@@ -116,7 +115,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
         </div>
         <footer className={styles.footer}>
           {step === 'destination' ? <div className={styles.confirmation} aria-live="polite">
-            {selected ? <><span>{isUmbrella ? 'Selected umbrella' : 'Selected asset register'}</span><strong>{selected.label}</strong><small>{isUmbrella ? 'The asset stays in its current register. An umbrella from another register becomes a combined umbrella.' : 'The asset leaves its current register. Membership of a register-specific umbrella is removed.'}</small></> : <span>Select a destination to continue.</span>}
+            {selected ? <><span>{isUmbrella ? 'Selected umbrella' : 'Selected asset register'}</span><strong>{selected.label}</strong>{!isUmbrella ? <small>The asset leaves its current register. Membership of a register-specific umbrella is removed.</small> : null}</> : <span>Select a destination to continue.</span>}
             {props.error ? <p className={styles.error} role="alert">{props.error}</p> : null}
           </div> : null}
           <div className={styles.actions}>
