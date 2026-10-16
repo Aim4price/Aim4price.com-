@@ -97,7 +97,10 @@ export default function MoveAssetDestinationPicker(props: Props) {
           ) : <>
           <p className={styles.currentRegister}>Current asset register: <strong>{props.sourceName}</strong></p>
           <div className={styles.listHeading}><h4>{isUmbrella ? 'Available umbrellas' : 'Available asset registers'}</h4><span>{props.loading ? 'Loading' : `${visible.length} available`}</span></div>
+          <div className={styles.searchWrap}>
+            <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
+          </div>
           {props.loading ? <p className={styles.empty} role="status">Loading umbrellas...</p>
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
             : visible.length ? <div className={styles.options} role="group" aria-label={isUmbrella ? 'Target umbrella' : 'Target asset register'}>
