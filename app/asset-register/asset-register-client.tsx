@@ -21,6 +21,8 @@ import ShareModalCloseButton from '../../components/asset-register/ShareModalClo
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
+import { FilterQuestion } from "../../components/FilterFlow";
+import exportReportStyles from "../../components/RegisterReportOptions.module.css";
 import ListPagination from '../../components/ListPagination';
 
 import AssetReportTypeIcon from '../../components/asset-register/AssetReportTypeIcon';
@@ -6515,7 +6517,7 @@ export default function AssetRegisterClient({
   const [exportEntityName, setExportEntityName] = useState('');
   const [exportStep, setExportStep] = useState<ExportStep>('format');
   const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
-  const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | ''>('');
+  const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | 'specific' | ''>('');
   const [selectedPdfAssetIds, setSelectedPdfAssetIds] = useState<string[]>([]);
   const [pdfAssetSearchTerm, setPdfAssetSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -8997,8 +8999,6 @@ export default function AssetRegisterClient({
     return () => window.cancelAnimationFrame(animationFrame);
   }, [isSummaryModalOpen]);
 
-  const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
-  const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
   const normalizedPdfAssetSearch = useMemo(() => normalizeRegisterSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
   const compactPdfAssetSearch = useMemo(() => normalizeCompactSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
   const visiblePdfAssets = useMemo(() => {
@@ -20912,50 +20912,36 @@ export default function AssetRegisterClient({
                   <>
                     {exportStep === 'pdf-report' ? (
                       <>
-                        <div className={styles.pdfReportSelector} data-download-report-selector="true">
-                          <div className={styles.pdfReportTopChoices} data-download-grid="true">
-                            <button
-                              type="button"
-                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption} ${pdfReportSelection === fullPdfReportOption.value ? styles.pdfReportOptionActive : ''}`}
-                              onClick={() => handlePdfReportChoice(fullPdfReportOption.value)}
-                              disabled={isExporting}
-                              aria-pressed={pdfReportSelection === fullPdfReportOption.value} data-download-option="true"
-                            ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
-                              <span className={styles.pdfReportOptionMain}>
-                                <strong>{fullPdfReportOption.label}</strong>
-                              </span>
-                            </button>
-
-                            <button
-                              type="button"
-                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption}`}
-                              onClick={openPdfAssetChooser}
-                              disabled={isExporting} data-download-option="true"
-                            ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
-                              <span className={styles.pdfReportOptionMain}>
-                                <strong>Choose Specific Assets</strong>
-                              </span>
-                            </button>
-                          </div>
-
-                          <div className={styles.pdfReportChoices} data-download-quick-reports="true">
-                            <CompactChoicePages reservedHeight={410} rowHeight={110} maxRows={2}>
-                            {quickPdfReportOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
-                                onClick={() => handlePdfReportChoice(option.value)}
-                                disabled={isExporting}
-                                aria-pressed={pdfReportSelection === option.value} data-download-option="true"
-                              ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
-                                <span className={styles.pdfReportOptionMain}>
-                                  <strong className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</strong>
-                                </span>
-                              </button>
-                            ))}
-
-                            </CompactChoicePages>
+                        <div className={exportReportStyles.options}>
+                          <FilterQuestion
+                            label="Include assets"
+                            value={pdfReportSelection || 'full'}
+                            options={[
+                              { value: 'full', label: 'Full asset register' },
+                              { value: 'specific', label: 'Choose specific assets' },
+                              ...PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full').map((option) => ({
+                                value: option.value,
+                                label: ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label,
+                              })),
+                            ]}
+                            onChange={(value) => {
+                              if (value === 'specific' || PDF_REPORT_OPTIONS.some((option) => option.value === value)) {
+                                setPdfReportSelection(value as PdfReportKind | 'specific');
+                              }
+                            }}
+                            searchable
+                            searchPlaceholder="Search report options"
+                            disabled={isExporting}
+                            disabledHint="Preparing your report…"
+                          />
+                          <div className={exportReportStyles.summary} aria-live="polite">
+                            <img src="/brand/pdf.png" alt="" />
+                            <div>
+                              <strong>PDF report</strong>
+                              <p>{pdfReportSelection === 'specific'
+                                ? 'Select the individual assets to include next.'
+                                : getPdfReportOption(pdfReportSelection || 'full').description}</p>
+                            </div>
                           </div>
                         </div>
 
@@ -21082,8 +21068,15 @@ export default function AssetRegisterClient({
                   Back
                 </button>
 
-                <button type="button" className={accountStyles.ghostButton} onClick={closeExportModal} disabled={isExporting}>
-                  Cancel
+                <button
+                  type="button"
+                  className={accountStyles.primaryButton}
+                  onClick={() => pdfReportSelection === 'specific' ? openPdfAssetChooser() : handlePdfReportChoice(pdfReportSelection || 'full')}
+                  disabled={isExporting || !assets.length}
+                  data-download-primary="true"
+                >
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>{isExporting ? 'Preparing report…' : pdfReportSelection === 'specific' ? 'Choose assets' : isAttachingExternalReport ? 'Add PDF report' : 'Download PDF'}</span>
                 </button>
               </div>
             ) : null}
@@ -21562,3 +21555,4 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+
