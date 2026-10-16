@@ -21,6 +21,7 @@ import ShareModalCloseButton from '../../components/asset-register/ShareModalClo
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
+import destinationStyles from "../../components/AddAssetDestination.module.css";
 import { FilterQuestion } from "../../components/FilterFlow";
 import exportReportStyles from "../../components/RegisterReportOptions.module.css";
 import ListPagination from '../../components/ListPagination';
@@ -17625,32 +17626,32 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddAssetDestinationModalOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetDestinationModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.addAssetDestinationModal}`}
+            className={`${styles.modalCard} ${downloadStyles.dialog}`}
+            data-download-dialog="true"
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-asset-destination-title"
           >
-            <div className={`${styles.modalHeader} ${styles.addAssetDestinationHeader}`}>
-              <div className={styles.modalHeaderText}>
+            <div data-download-header="true">
+              <div>
                 <h3 id="add-asset-destination-title">Choose asset register</h3>
                 <p>Where should this asset be saved?</p>
               </div>
 
               <button
                 type="button"
-                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAddAssetDestinationModal}
                 aria-label="Close Asset Register selection"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
-            <div className={styles.addAssetDestinationBody}>
+            <div data-download-body="true">
               <ModalSelect<string>
                 label="Asset Register"
                 value={addAssetTargetRegisterId}
@@ -17661,16 +17662,17 @@ export default function AssetRegisterClient({
                 }}
                 placeholder="Choose a register"
                 buttonLabel="Choose asset register"
-                menuClassName={styles.addAssetDestinationMenu}
-                className={styles.addAssetDestinationField}
+                menuClassName={destinationStyles.menu}
+                className={destinationStyles.field}
+                showDescriptions={false}
                 autoFocus
                 usePortal
               />
             </div>
 
-            <div className={styles.addAssetDestinationFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeAddAssetDestinationModal}>Cancel</button>
-              <button type="button" className={styles.primaryButton} onClick={continueAddAssetForRegister} disabled={!addAssetTargetRegisterId}>
+            <div data-download-footer="true">
+              <button type="button" onClick={closeAddAssetDestinationModal}>Cancel</button>
+              <button type="button" data-download-primary="true" onClick={continueAddAssetForRegister} disabled={!addAssetTargetRegisterId}>
                 <span>Continue</span>
               </button>
             </div>
@@ -21555,4 +21557,5 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+
 
