@@ -7101,7 +7101,7 @@ export default function AssetRegisterClient({
 
   async function handleDeleteAssetGroup(group: AssetGroup) {
     if (isSavingAssetGroup) return;
-    if (!window.confirm(`Remove “${group.name}”? The assets and their records will not be deleted.`)) return;
+    if (!window.confirm(`Remove “${group.name}”? Shared links to this umbrella will stop working. This cannot be undone: you will need to rebuild the umbrella and create and send new links. The assets and their records will not be deleted.`)) return;
 
     setIsSavingAssetGroup(true);
     setAssetGroupError('');
@@ -16198,15 +16198,6 @@ export default function AssetRegisterClient({
                                 >
                                   <FlagIcon className={styles.assetFlagIcon} />
                                 </button>
-                                <button
-                                  type="button"
-                                  className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
-                                  onClick={() => openAssetRegisterMoveManager(groupAnchorAsset)}
-                                  aria-label={`Move ${groupAnchorAsset.title} to another asset register`}
-                                  data-tooltip="Move asset"
-                                >
-                                  <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                                </button>
                                 {canManageAssetGroups ? (
                                   <button
                                     type="button"
@@ -16445,6 +16436,7 @@ export default function AssetRegisterClient({
                               <FlagIcon className={styles.assetFlagIcon} />
                             </button>
 
+                            {!assetGroup && !persistedAssetGroup ? (
                             <button
                               type="button"
                               className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
@@ -16454,6 +16446,7 @@ export default function AssetRegisterClient({
                             >
                               <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
                             </button>
+                            ) : null}
 
                             {canManageAssetGroups ? (
                               <button
