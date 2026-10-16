@@ -83,12 +83,9 @@
   :global(:where(html:not(:has([data-website-canvas])))) .overviewGrid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 }
 
-/* Keep the overview readable while giving each filter a restrained colour accent. */
+/* Keep the overview readable with a consistent green accent. */
 .overviewDialog .header { background: linear-gradient(110deg, var(--app-surface-soft, #edf6f1), var(--app-surface, #fff)); }
 .overviewGrid .question { --filter-tone: #197458; }
-.overviewGrid .question:nth-child(4n + 1) { --filter-tone: #2864a4; }
-.overviewGrid .question:nth-child(4n + 2) { --filter-tone: #986318; }
-.overviewGrid .question:nth-child(4n + 3) { --filter-tone: #7450a4; }
 .overviewGrid .question label { display: flex; align-items: center; gap: .55rem; font-size: 1rem; font-weight: 800; color: var(--app-text, #12352d); }
 .overviewGrid .question label::before { content: ''; width: .5rem; height: .5rem; flex: 0 0 .5rem; border-radius: 50%; background: var(--filter-tone); }
 .overviewGrid .question .selectTrigger {
@@ -111,3 +108,11 @@
   font-weight: 800;
 }
 .overviewGrid .question .selectTrigger:focus-visible { outline: 3px solid var(--filter-tone); outline-offset: 3px; }
+
+/* The menu is portalled outside the dialog, so its options stay sharp.
+   Keep the active control clear and preserve normal outside-click behaviour. */
+.overviewDialog:has(.selectTrigger[aria-expanded="true"]) .header,
+.overviewDialog:has(.selectTrigger[aria-expanded="true"]) .footer,
+.overviewDialog:has(.selectTrigger[aria-expanded="true"]) .question:not(:has(.selectTrigger[aria-expanded="true"])) {
+  filter: blur(3px);
+}
