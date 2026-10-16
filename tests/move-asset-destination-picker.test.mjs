@@ -20,7 +20,7 @@ test('starts with asset details and two choices, without destination lists or se
   const html = render();
   assert.match(html, /Move this asset to/);
   assert.match(html, /Tractor/);
-  assert.match(html, /Year model: 2020/);
+  assert.match(html, /Year Model: 2020 • Usage: 500 hours • Condition: Good/);
   assert.match(html, /500 hours/);
   assert.match(html, /Condition: Good/);
   assert.match(html, /<strong>Asset Register<\/strong>/);
