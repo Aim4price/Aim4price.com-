@@ -188,7 +188,7 @@ export function AssetShareDestinationPicker({
         <span className={choiceStyles.icon}><Aim4priceIcon /></span>
         <span className={choiceStyles.copy}>
           <strong>Inside Aim4price</strong>
-          <small>Share with a partner</small>
+          <small>Share with an Aim4price partner</small>
         </span>
       </button>
 
@@ -196,7 +196,7 @@ export function AssetShareDestinationPicker({
         <span className={choiceStyles.icon}><OutsideIcon /></span>
         <span className={choiceStyles.copy}>
           <strong>Outside Aim4price</strong>
-          <small>WhatsApp or email</small>
+          <small>Share via WhatsApp or Email</small>
         </span>
       </button>
     </div>
