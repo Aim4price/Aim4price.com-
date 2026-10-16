@@ -77,7 +77,3 @@
 .button.history:hover:not(:disabled) { background: #e1eef7; border-color: #9abdd3; }
 .button:focus-visible { outline: 3px solid #64ad91; outline-offset: 3px; }
 .button:disabled { opacity: .55; cursor: wait; }
-@media (max-width: 540px) {
-  .primaryRow { grid-template-columns: minmax(0, 1fr); }
-  .primaryRow .button { min-height: 3rem; }
-}
