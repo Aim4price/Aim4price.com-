@@ -63,7 +63,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
       <div className={styles.backdrop} onClick={props.onClose} />
-      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={step === 'choice' ? 'asset-register-move-title' : 'move-asset-name'} aria-describedby="move-destination-description" aria-busy={props.busy}
+      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="move-asset-name" aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
           if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
@@ -76,7 +76,6 @@ export default function MoveAssetDestinationPicker(props: Props) {
         }}>
         <header className={styles.header}>
           <div>
-            {step === 'choice' ? <h3 id="asset-register-move-title">Move this asset to</h3> : null}
             <p id="move-asset-name" className={styles.assetName}>{props.assetName}</p>
             <p id="move-destination-description" className={styles.assetDetails}>{props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
           </div>
