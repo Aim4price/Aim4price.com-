@@ -1,4 +1,7 @@
 "use client";
+import AssetLocationEditor from '../../components/AssetLocationEditor';
+import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
+import AssetLocationHistoryDialog from '../../components/asset-register/AssetLocationHistoryDialog';
 import downloadStyles from "../../components/ReportDownload.module.css";
 
 import { currentWebsiteScale } from '../../lib/website-canvas';
@@ -658,6 +661,9 @@ function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
 }
 
 export default function AssetMapClient() {
+  const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'}|null>(null);
+  const locationTrigger=useRef<HTMLButtonElement|null>(null);
+  function closeLocationDialog(){setLocationDialog(null);requestAnimationFrame(()=>locationTrigger.current?.focus());}
   const [assets, setAssets] = useState<AssetMapItem[]>([]);
   const [registerFilters, setRegisterFilters] = useState<
     RegisterFilterOption[]
@@ -934,7 +940,7 @@ export default function AssetMapClient() {
         }
       }
 
-      if (event.key !== "Escape") return;
+      if (locationDialog || event.key !== "Escape") return;
 
       if (isFilterMenuOpen || isExportScopeMenuOpen) {
         if (isExportScopeMenuOpen) {
@@ -965,6 +971,7 @@ export default function AssetMapClient() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
+    locationDialog,
     isFilterMenuOpen,
     isExportScopeMenuOpen,
     isExportModalOpen,
@@ -1567,6 +1574,15 @@ export default function AssetMapClient() {
 
   return (
     <main className={styles.page}>
+      {locationDialog?.view==='history'&&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
+      {locationDialog?.view==='update'&&<AssetAccessSettingsDialog title="Update location" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
+        <AssetLocationEditor key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
+          const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
+          const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
+          setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));
+          closeLocationDialog();
+        }}/>
+      </AssetAccessSettingsDialog>}
       <AppHeader active="asset-register" />
 
       <section className={styles.shell}>
@@ -1997,6 +2013,8 @@ export default function AssetMapClient() {
                       </div>
 
                       <div className={styles.selectedActionRow}>
+                        <button type="button" aria-haspopup="dialog" className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'update'});}}><MapIcon className={styles.buttonIcon}/><span>Update location</span></button>
+                        <button type="button" aria-haspopup="dialog" className={`${styles.selectedActionButton} ${styles.selectedActionDownload}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><DownloadIcon className={styles.buttonIcon}/><span>Location history</span></button>
                         <Link
                           href={buildAssetRegisterHref(selectedAsset)}
                           prefetch={true}
@@ -2278,3 +2296,4 @@ export default function AssetMapClient() {
     </main>
   );
 }
+

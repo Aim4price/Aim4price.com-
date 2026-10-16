@@ -1,0 +1,11 @@
+.content{display:grid;gap:1.2rem;color:var(--text,#17382f)}
+.summary{padding:1.1rem 1.2rem;background:rgba(38,150,110,.09);border:1px solid rgba(38,150,110,.22);border-radius:1rem}
+.summary strong{font-size:1.05rem;font-weight:800}.summary p,.empty p{margin:.45rem 0 0;line-height:1.6}
+.filters{display:flex;align-items:end;flex-wrap:wrap;gap:.85rem}.filters label{display:grid;gap:.45rem;font-size:.85rem;font-weight:750;flex:1;min-width:8rem}
+.filters input{width:100%;box-sizing:border-box;min-height:2.8rem;border:1px solid rgba(40,100,80,.4);border-radius:.7rem;padding:.55rem .75rem;background:var(--surface,#fff);color:inherit;font:inherit}
+.filters button{min-height:2.8rem;border:1px solid #287b60;background:#196348;color:white;border-radius:.7rem;padding:.65rem 1rem;font:inherit;font-weight:750;cursor:pointer}.filters button:disabled{opacity:.5;cursor:default}
+.filters input:focus-visible,.filters button:focus-visible,.list a:focus-visible{outline:3px solid #5abf98;outline-offset:3px}
+.map{height:17rem;border:1px solid rgba(40,100,80,.25);border-radius:1rem;overflow:hidden;isolation:isolate}
+.legend{display:flex;gap:.8rem;flex-wrap:wrap;font-size:.8rem}.legend span:first-child{color:#197153}.legend span:nth-child(2){color:#367b9c}.legend strong{margin-left:auto}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:.7rem;max-height:24rem;overflow:auto}.list li{padding:1rem;border:1px solid rgba(60,110,95,.22);border-radius:.9rem;background:rgba(80,140,120,.04)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}.row strong{font-size:.95rem;font-weight:800}.badge{font-size:.75rem;font-weight:750;background:rgba(38,150,110,.12);padding:.35rem .6rem;border-radius:.5rem}.list p{margin:.65rem 0 .3rem;font-weight:650}.list a{font-size:.9rem;color:inherit;text-underline-offset:3px}.list small{display:block;margin-top:.65rem;line-height:1.5;opacity:.8}.empty{padding:2rem 1rem;text-align:center;border:1px dashed rgba(40,100,80,.4);border-radius:1rem}.disclaimer{margin:0;font-size:.8rem;line-height:1.6;opacity:.8}

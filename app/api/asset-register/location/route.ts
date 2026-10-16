@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
   try {
     const item = await updateAssetRegisterItemLocation(session.user.id, {
       assetId,
+      actorName: session.user.name || session.user.email || null,
       latitude,
       longitude,
       gpsAccuracyMeters: gpsAccuracy.value,
@@ -166,3 +167,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Failed to update asset GPS position.' }, { status: 500 });
   }
 }
+
