@@ -18,7 +18,8 @@ const render = (props = {}) => renderToStaticMarkup(React.createElement(Picker, 
 
 test('starts with asset details and two choices, without destination lists or search', () => {
   const html = render();
-  assert.match(html, /Move this asset to/);
+  assert.doesNotMatch(html, /Move this asset to/);
+  assert.match(html, /aria-labelledby="move-asset-name"/);
   assert.match(html, /Tractor/);
   assert.match(html, /Year Model: 2020 • Usage: 500 hours • Condition: Good/);
   assert.match(html, /500 hours/);
