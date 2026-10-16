@@ -305,7 +305,8 @@
 }
 
 .menuOptionSubtitle {
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .manageModal {
