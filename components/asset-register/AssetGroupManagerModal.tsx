@@ -881,7 +881,7 @@ export default function AssetGroupManagerModal({
                   </i>
                   <span>
                     <strong>Remove umbrella</strong>
-                    <small className={styles.menuOptionSubtitle}>Permanently ungroup and end umbrella links.</small>
+                    <small className={styles.menuOptionSubtitle}>Permanently ungroup assets.<br />Shared umbrella links will stop working.</small>
                   </span>
                 </button>
               </div>
