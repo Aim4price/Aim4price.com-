@@ -21,7 +21,7 @@ import ShareModalCloseButton from '../../components/asset-register/ShareModalClo
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
-import destinationStyles from "../../components/AddAssetDestination.module.css";
+import AddAssetRegisterPicker from "../../components/asset-register/AddAssetRegisterPicker";
 import { FilterQuestion } from "../../components/FilterFlow";
 import exportReportStyles from "../../components/RegisterReportOptions.module.css";
 import ListPagination from '../../components/ListPagination';
@@ -6249,6 +6249,7 @@ export default function AssetRegisterClient({
   const [assetGroupDropTargetId, setAssetGroupDropTargetId] = useState<string | null>(null);
 
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [isCreatingAddAssetRegister, setIsCreatingAddAssetRegister] = useState(false);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
   const [activeRegisterId, setActiveRegisterId] = useState('');
@@ -9505,10 +9506,6 @@ export default function AssetRegisterClient({
     setNotice(null);
     setIsAssetFilterOpen(false);
 
-    if (!addAssetRegisterOptions.length) {
-      setNotice({ tone: 'warning', message: 'Create an Asset Register before adding an asset.' });
-      return;
-    }
 
     const currentRegisterId = String(activeRegister?.id || activeRegisterId || '').trim();
     setAddAssetTargetRegisterId(
@@ -9520,8 +9517,30 @@ export default function AssetRegisterClient({
   }
 
   function closeAddAssetDestinationModal() {
+    if (isCreatingAddAssetRegister) return;
     setIsAddAssetDestinationModalOpen(false);
     setAddAssetTargetRegisterId('');
+  }
+
+  async function createRegisterFromAddAsset(businessName: string) {
+    if (isCreatingAddAssetRegister) return;
+    setIsCreatingAddAssetRegister(true);
+    try {
+      const response = await fetch('/api/asset-registers', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessName, email: '', phone: '', addressLine1: '', logoUrls: [], showLogosOnRegister: true }),
+      });
+      const payload = await response.json().catch(() => null) as AssetRegisterApiResponse | null;
+      if (!response.ok || !payload?.ok || !payload.register || !Array.isArray(payload.registers)) {
+        throw new Error(extractApiError(payload, 'Failed to create asset register.'));
+      }
+      setAssetRegisters(payload.registers);
+      setAddAssetTargetRegisterId(payload.register.id);
+      setNotice(null);
+    } finally {
+      setIsCreatingAddAssetRegister(false);
+    }
   }
 
   function continueAddAssetForRegister() {
@@ -17626,58 +17645,15 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddAssetDestinationModalOpen ? (
-        <div className={`${styles.modalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetDestinationModal} />
-
-          <div
-            className={`${styles.modalCard} ${downloadStyles.dialog}`}
-            data-download-dialog="true"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-asset-destination-title"
-          >
-            <div data-download-header="true">
-              <div>
-                <h3 id="add-asset-destination-title">Choose asset register</h3>
-                <p>Where should this asset be saved?</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeAddAssetDestinationModal}
-                aria-label="Close Asset Register selection"
-              >
-                <span aria-hidden="true">×</span>
-              </button>
-            </div>
-
-            <div data-download-body="true">
-              <ModalSelect<string>
-                label="Asset Register"
-                value={addAssetTargetRegisterId}
-                options={addAssetRegisterOptions}
-                onChange={(value) => {
-                  setAddAssetTargetRegisterId(value);
-                  setNotice(null);
-                }}
-                placeholder="Choose a register"
-                buttonLabel="Choose asset register"
-                menuClassName={destinationStyles.menu}
-                className={destinationStyles.field}
-                showDescriptions={false}
-                autoFocus
-                usePortal
-              />
-            </div>
-
-            <div data-download-footer="true">
-              <button type="button" onClick={closeAddAssetDestinationModal}>Cancel</button>
-              <button type="button" data-download-primary="true" onClick={continueAddAssetForRegister} disabled={!addAssetTargetRegisterId}>
-                <span>Continue</span>
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddAssetRegisterPicker
+          options={addAssetRegisterOptions}
+          targetId={addAssetTargetRegisterId}
+          onSelect={(value) => { setAddAssetTargetRegisterId(value); setNotice(null); }}
+          onClose={closeAddAssetDestinationModal}
+          onContinue={continueAddAssetForRegister}
+          onCreate={createRegisterFromAddAsset}
+          busy={isCreatingAddAssetRegister}
+        />
       ) : null}
 
       {isAddChoiceModalOpen ? (
@@ -21557,5 +21533,6 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+
 
 
