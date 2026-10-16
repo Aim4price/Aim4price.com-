@@ -16436,7 +16436,6 @@ export default function AssetRegisterClient({
                               <FlagIcon className={styles.assetFlagIcon} />
                             </button>
 
-                            {!assetGroup && !persistedAssetGroup ? (
                             <button
                               type="button"
                               className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
@@ -16446,7 +16445,6 @@ export default function AssetRegisterClient({
                             >
                               <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
                             </button>
-                            ) : null}
 
                             {canManageAssetGroups ? (
                               <button
