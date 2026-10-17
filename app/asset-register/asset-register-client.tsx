@@ -1327,9 +1327,9 @@ const TEMPERATURE_SENSITIVE_STOCK_OPTIONS: Array<{ value: InsuranceFactAnswer; l
 ];
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
-  'The new lifetime usage percentage cannot be lower than the usage already saved on this asset. Please go to Settings to override this.';
+  'The new lifetime usage percentage cannot be lower than the usage already saved on this asset. Use Correct reading in Advanced settings to review this change.';
 const USAGE_READING_SETTINGS_ERROR =
-  'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
+  'The new usage reading cannot be lower than the reading already saved on this asset. Use Correct reading in Advanced settings to review this change.';
 const ASSET_SETTINGS_USAGE_COPY =
   'Correct the saved usage only when the current reading is wrong.';
 const USAGE_OVERRIDE_CONFIRMATION_TEXT =
@@ -1337,7 +1337,7 @@ const USAGE_OVERRIDE_CONFIRMATION_TEXT =
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
 type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice' | 'savingMap';
-type AssetSettingsView = 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage';
+type AssetSettingsView = 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage' | 'lifetime';
 type AssetUsageOverrideRequest = {
   mode: Exclude<AssetSettingsUsageMode, 'none'>;
   value: number;
@@ -6285,6 +6285,7 @@ export default function AssetRegisterClient({
   const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
   const [assetSettingsTypeDraft, setAssetSettingsTypeDraft] = useState<AssetKind>('equipment');
   const [assetSettingsUsageInput, setAssetSettingsUsageInput] = useState('');
+  const [assetLifetimeInput, setAssetLifetimeInput] = useState('');
   const [assetSettingsError, setAssetSettingsError] = useState('');
   const [isSavingAssetSettings, setIsSavingAssetSettings] = useState(false);
   const [assetSettingsLocationState, setAssetSettingsLocationState] = useState<AssetSettingsLocationState>('idle');
@@ -9111,8 +9112,14 @@ export default function AssetRegisterClient({
     return () => window.cancelAnimationFrame(animationFrame);
   }, [assetDetailFocusTarget, isAssetModalOpen, manualAssetStep]);
 
+  const lowerUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
+  const lowerUsageText = lowerUsageMode === 'percent' ? assetDraft.lifeWorkedPercent : assetDraft.hours;
+  const lowerUsageValue = parseAssetSettingsUsageInput(lowerUsageMode, lowerUsageText);
+  const savedUsageValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, lowerUsageMode) : null;
+  const hasLowerUsageDraft = lowerUsageValue !== null && savedUsageValue !== null && lowerUsageValue < savedUsageValue;
+
   useEffect(() => {
-    if (!isAssetModalOpen || !editingAssetId) {
+    if (!isAssetModalOpen || !editingAssetId || isAssetSettingsModalOpen || hasLowerUsageDraft) {
       if (assetAutosaveTimerRef.current) {
         clearTimeout(assetAutosaveTimerRef.current);
         assetAutosaveTimerRef.current = null;
@@ -9173,6 +9180,8 @@ export default function AssetRegisterClient({
   }, [
     assetAutosaveState,
     currentAssetAutosaveSignature,
+    isAssetSettingsModalOpen,
+    hasLowerUsageDraft,
     editingAssetId,
     isAssetModalOpen,
     isSavingAsset,
@@ -9830,8 +9839,66 @@ export default function AssetRegisterClient({
     setIsAssetSettingsModalOpen(true);
   }
 
+  function reviewLowerUsage(view: 'usage' | 'lifetime') {
+    if (!editingAsset || isSavingAsset || isAssetSettingsBusy) return;
+    setAssetSettingsError('');
+    setPendingUsageOverride(null);
+    setAssetSettingsUsageInput(lowerUsageText);
+    setAssetLifetimeInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(editingAsset) ?? ''));
+    setAssetSettingsView(view);
+    setIsAssetSettingsModalOpen(true);
+  }
+
+  function openAssetLifetimeView() {
+    if (!editingAsset || isAssetSettingsBusy) return;
+    setAssetLifetimeInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(editingAsset) ?? ''));
+    setAssetSettingsError('');
+    setAssetSettingsView('lifetime');
+  }
+
+  function applyUsageSettingsResult(item: RegisterAsset) {
+    const savedDraft = editingAsset ? buildDraftFromAsset(editingAsset) : null;
+    const nextDraft = buildDraftFromAsset(item);
+    syncUpdatedAsset(item);
+    // Retain unrelated unsaved edits; use the returned reading and valuation.
+    setAssetDraft(current => {
+      const merged = { ...nextDraft };
+      if (savedDraft) for (const key of Object.keys(current) as (keyof AssetDraft)[]) {
+        if (key === 'hours' || key === 'lifeWorkedPercent' || key === 'value') continue;
+        if (JSON.stringify(current[key]) !== JSON.stringify(savedDraft[key])) Object.assign(merged, { [key]: current[key] });
+      }
+      return merged;
+    });
+    assetAutosaveAttemptedSignatureRef.current = '';
+    setAssetAutosaveState('idle');
+  }
+
+  async function saveAssetLifetime() {
+    if (!isSavedAim4priceAsset(editingAsset) || isAssetSettingsBusy) return;
+    const lifetime = parseUsageAmountInput(assetLifetimeInput);
+    if (lifetime === null || !Number.isFinite(lifetime) || lifetime <= 0) {
+      setAssetSettingsError('Enter an expected lifetime greater than zero.'); return;
+    }
+    setIsSavingAssetSettings(true); setAssetSettingsError('');
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: editingAsset.id, selectedMethod: 'aim4price', advancedAssumptions: { maxLifetimeUsage: Math.round(lifetime) } }),
+      });
+      const data = await response.json() as AssetRegisterApiResponse;
+      if (!response.ok || !data.ok || !data.item) throw new Error(data.error || 'Could not update expected lifetime.');
+      applyUsageSettingsResult(data.item);
+      setNotice({ tone: 'success', message: 'Expected lifetime updated and asset value recalculated. Recorded usage is unchanged.' });
+      setIsAssetSettingsModalOpen(false); setAssetSettingsView('menu');
+    } catch (error) { setAssetSettingsError(error instanceof Error ? error.message : 'Could not update expected lifetime.'); }
+    finally { setIsSavingAssetSettings(false); }
+  }
+
   function openAssetSettingsModal() {
-    openAssetSettingsModalForAsset(editingAsset, 'menu');
+    if (!editingAsset || isSavingAsset) return;
+    setAssetSettingsError('');
+    setAssetSettingsView('menu');
+    setIsAssetSettingsModalOpen(true);
   }
 
   function closeAssetSettingsModal() {
@@ -10333,11 +10400,11 @@ export default function AssetRegisterClient({
       }
 
       const updatedUsageMode = getAssetSettingsUsageMode(data.item);
-      syncUpdatedAsset(data.item);
-      setAssetDraft(buildDraftFromAsset(data.item));
+      applyUsageSettingsResult(data.item);
       setAssetSettingsUsageInput(formatAssetSettingsUsageInput(data.item, updatedUsageMode));
       setNotice({ tone: 'success', message: getAssetSettingsUsageSuccessMessage(pendingUsageOverride.mode) });
-      closeAssetSettingsModal();
+      setIsAssetSettingsModalOpen(false);
+      setAssetSettingsView('menu');
     } catch (error) {
       setAssetSettingsError(error instanceof Error ? error.message : 'Failed to save usage override.');
     } finally {
@@ -17960,13 +18027,28 @@ export default function AssetRegisterClient({
                         type="button"
                         className={styles.manualSettingsButton}
                         onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
-                        aria-label={editingAsset ? 'Asset settings' : 'Change asset type'}
-                        title={editingAsset ? 'Asset settings' : 'Change asset type'}
+                        aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
+                        title={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                       >
                         <ManageIcon className={styles.buttonIcon} />
-                        <span>{editingAsset ? 'Settings' : 'Change type'}</span>
+                        <span>{editingAsset ? 'Advanced settings' : 'Change type'}</span>
                       </button>
                     </div>
+
+                    {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
+                      <section className={styles.assetSettingsSection} aria-label="Review lower usage reading">
+                        <div className={styles.assetSettingsSectionCopy}>
+                          <h4>This reading is lower than the saved reading</h4>
+                          <p>Saved: {formatAssetSettingsUsageDisplay(lowerUsageMode, savedUsageValue)}. Entered: {formatAssetSettingsUsageDisplay(lowerUsageMode, lowerUsageValue)}.</p>
+                          <p>If the saved reading is wrong, correct it below. If you expect the asset to last longer, update its expected lifetime instead. The lower reading has not been saved.</p>
+                        </div>
+                        <div className={styles.assetSettingsActions}>
+                          <button type="button" className={styles.primaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Correct reading</button>
+                          {shouldShowRevalueLifetimeInput(editingAsset) ? <button type="button" className={styles.secondaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('lifetime')}>Update lifetime expectancy</button> : null}
+                          <button type="button" className={styles.secondaryButton} onClick={() => { const saved = buildDraftFromAsset(editingAsset); setAssetDraft(current => ({ ...current, hours: saved.hours, lifeWorkedPercent: saved.lifeWorkedPercent })); setAssetAutosaveState('idle'); }}>Keep saved reading</button>
+                        </div>
+                      </section>
+                    ) : null}
 
                     <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`}>
                       <div className={styles.assetTitleRow}>
@@ -18695,10 +18777,13 @@ export default function AssetRegisterClient({
                   role="status"
                   aria-live="polite"
                 >
-                  {editingAsset ? assetAutosaveLabel : 'Saved when you finish'}
+                  {editingAsset ? hasLowerUsageDraft ? 'Lower reading needs review' : assetAutosaveLabel : 'Saved when you finish'}
                 </span>
 
                 <div className={styles.assetUpdateFooterActions}>
+                  {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
+                    <button type="button" className={styles.secondaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Review lower reading</button>
+                  ) : null}
                   {!assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
                     <button
                       type="button"
@@ -18759,7 +18844,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : 'Settings'}</h3>
+                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : 'Advanced settings'}</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
@@ -18767,7 +18852,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAssetSettingsModal}
-                aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close settings'}
+                aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close advanced settings'}
                 disabled={isAssetSettingsBusy}
               >
                 <span aria-hidden="true">×</span>
@@ -18787,7 +18872,7 @@ export default function AssetRegisterClient({
                     ? 'Back to map options'
                     : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
                       ? 'Back to Location'
-                      : 'Back to Settings'}</span>
+                      : 'Back to advanced settings'}</span>
                 </button>
               ) : null}
 
@@ -18836,6 +18921,13 @@ export default function AssetRegisterClient({
                     </>
                   ) : null}
 
+                  {isSavedAim4priceAsset(editingAsset) && shouldShowRevalueLifetimeInput(editingAsset) ? (
+                    <button type="button" className={styles.assetSettingsOptionButton} onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
+                      <TrendIcon className={styles.assetSettingsOptionIcon} />
+                      <span><strong>Update lifetime expectancy</strong><small>Set total expected hours or kilometres.</small></span>
+                    </button>
+                  ) : null}
+
                   {isSavedAim4priceAsset(editingAsset) ? (
                     <button
                       type="button"
@@ -18845,12 +18937,37 @@ export default function AssetRegisterClient({
                     >
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>Lifetime Expectancy</strong>
-                        <small>Override lifetime usage.</small>
+                        <strong>{assetSettingsUsageHeading(settingsUsageMode)}</strong>
+                        <small>Correct an incorrect saved reading.</small>
                       </span>
                     </button>
                   ) : null}
                 </div>
+              ) : null}
+
+              {assetSettingsView === 'lifetime' && isSavedAim4priceAsset(editingAsset) ? (
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection}`}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Valuation assumption</span>
+                    <h4>Update lifetime expectancy</h4>
+                    <p>Set the total {getLifetimeUnitLabel(getAssetUsageMetric(editingAsset))} this asset is expected to work over its whole life, including usage already recorded.</p>
+                  </div>
+                  <div className={styles.assetSettingsUsageComparison}>
+                    <div className={styles.assetSettingsUsageCurrent}>
+                      <span>Current expected lifetime</span>
+                      <strong>{formatPlainNumber(readAssetMaxLifetimeUsage(editingAsset))} {getLifetimeShortUnit(getAssetUsageMetric(editingAsset))}</strong>
+                    </div>
+                    <span aria-hidden="true" />
+                    <label className={`${styles.assetSettingsField} ${styles.assetSettingsUsageField}`}>
+                      <span>New total lifetime ({getLifetimeShortUnit(getAssetUsageMetric(editingAsset))})</span>
+                      <input type="text" inputMode="numeric" value={assetLifetimeInput} onChange={event => { setAssetLifetimeInput(formatUsageAmountInput(event.target.value)); setAssetSettingsError(''); }} />
+                    </label>
+                  </div>
+                  <p className={styles.assetSettingsUsageHint}>Recorded usage stays at {formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}. This changes the expected lifetime used for valuation and depreciation, not the meter reading. Saving recalculates the current asset value.</p>
+                  <div className={styles.assetSettingsActions}>
+                    <button type="button" className={styles.primaryButton} disabled={isAssetSettingsBusy} onClick={() => void saveAssetLifetime()}>{isSavingAssetSettings ? 'Saving…' : 'Save and recalculate'}</button>
+                  </div>
+                </section>
               ) : null}
 
               {['location','locationManual','locationMap'].includes(assetSettingsView) ? (
@@ -18912,7 +19029,7 @@ export default function AssetRegisterClient({
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Lifetime expectancy</span>
+                    <span>Reading correction</span>
                     <h4>{assetSettingsUsageHeading(settingsUsageMode)}</h4>
                     <p>{ASSET_SETTINGS_USAGE_COPY}</p>
                   </div>
@@ -18925,7 +19042,7 @@ export default function AssetRegisterClient({
                           <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
                         </div>
 
-                        <span className={styles.assetSettingsUsageArrow} aria-hidden="true">→</span>
+                        <span aria-hidden="true" />
 
                         <label className={`${styles.assetSettingsField} ${styles.assetSettingsUsageField}`}>
                           <span>{assetSettingsUsageInputLabel(settingsUsageMode)}</span>
@@ -18957,7 +19074,7 @@ export default function AssetRegisterClient({
                         </label>
                       </div>
 
-                      <p className={styles.assetSettingsUsageHint}>Changing this reading may affect the asset’s valuation history.</p>
+                      <p className={styles.assetSettingsUsageHint}>This corrects recorded usage, not expected lifetime. Saving recalculates the asset value and records the change in history.</p>
 
                       <div className={styles.assetSettingsActions}>
                         <button
@@ -18996,7 +19113,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-usage-override-confirm-title">Save usage override?</h3>
+                <h3 id="asset-usage-override-confirm-title">Confirm reading correction?</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
@@ -19013,13 +19130,18 @@ export default function AssetRegisterClient({
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
               <p className={styles.assetSettingsConfirmCopy}>{USAGE_OVERRIDE_CONFIRMATION_TEXT}</p>
+              <div className={styles.assetSettingsSection}>
+                <p>Saved reading: <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong></p>
+                <p>Corrected reading: <strong>{formatAssetSettingsUsageDisplay(pendingUsageOverride.mode, pendingUsageOverride.value)}</strong></p>
+              </div>
+              {assetSettingsError ? <p role="alert" className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
 
               <div className={styles.assetSettingsActions}>
                 <button type="button" className={styles.secondaryButton} onClick={cancelAim4priceUsageOverrideConfirmation} disabled={isSavingAssetSettings}>
                   Cancel
                 </button>
                 <button type="button" className={styles.primaryButton} onClick={() => void confirmAim4priceUsageOverrideSetting()} disabled={isSavingAssetSettings}>
-                  {isSavingAssetSettings ? 'Saving...' : 'Save override'}
+                  {isSavingAssetSettings ? 'Saving...' : 'Save correction'}
                 </button>
               </div>
             </div>

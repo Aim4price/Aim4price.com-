@@ -309,7 +309,7 @@ test('Manage map setup is a focused workflow without the Settings back button', 
 
   assert.match(client, /const isManageMapLocationFlow = assetModalReturnRef\.current\?\.origin === 'manage'[\s\S]*?assetModalReturnRef\.current\.action === 'manage-map-location'/);
   assert.match(settingsModal, /styles\.assetSettingsMapEntryModal/);
-  assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Settings'\}/);
+  assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Advanced settings'\}/);
   assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
   assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
   const editor = readFileSync(new URL('../components/AssetLocationEditor.tsx', import.meta.url), 'utf8');
