@@ -16927,10 +16927,28 @@ export default function AssetRegisterClient({
                                       ) : null}
 
                                       {registrationNumber ? (
-                                        <div className={styles.assetRegistrationNumberBubble}>
-                                          <span>Registration No</span>
-                                          <strong>{registrationNumber}</strong>
-                                        </div>
+                                        canUseOwnerOnlyAssetActions ? (
+                                          <button
+                                            type="button"
+                                            className={`${styles.assetRegistrationNumberBubble} ${styles.assetDetailRowButton}`}
+                                            onClick={(event) => {
+                                              event.stopPropagation();
+                                              openQuickAssetStatusEditor(asset, 'license', event.currentTarget);
+                                            }}
+                                            data-asset-return-action="registration-number"
+                                            data-tooltip="Update registration number"
+                                            aria-haspopup="dialog"
+                                            aria-label={`Update registration number for ${asset.title}. Current value: ${registrationNumber}`}
+                                          >
+                                            <span>Registration No</span>
+                                            <strong>{registrationNumber}</strong>
+                                          </button>
+                                        ) : (
+                                          <div className={styles.assetRegistrationNumberBubble}>
+                                            <span>Registration No</span>
+                                            <strong>{registrationNumber}</strong>
+                                          </div>
+                                        )
                                       ) : null}
                                     </div>
 
