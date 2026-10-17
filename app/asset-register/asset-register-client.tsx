@@ -16297,6 +16297,7 @@ export default function AssetRegisterClient({
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
                                     onClick={() => openAssetGroupShare(group)}
+                                      data-tooltip="Share umbrella"
                                     aria-label={`Share ${group.name}`}
                                   >
                                     <ShareIcon className={styles.buttonIcon} />
@@ -16323,6 +16324,7 @@ export default function AssetRegisterClient({
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardManageButton}`}
                                     onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
+                                      data-tooltip="Manage umbrella"
                                     disabled={!groupAnchorAsset}
                                     aria-label={`Edit ${group.name}`}
                                   >
@@ -16564,6 +16566,7 @@ export default function AssetRegisterClient({
                                   className={`${styles.expandButton} ${styles.updateEstimateInlineButton}`}
                                   disabled={busyRevalueAssetId === asset.id}
                                   onClick={() => void handleUpdateEstimate(asset)}
+                                      data-tooltip="Update estimate"
                                 >
                                   <TrendIcon className={styles.buttonIcon} />
                                   <span>{busyRevalueAssetId === asset.id ? 'Updating...' : 'Update estimate'}</span>
@@ -16575,6 +16578,7 @@ export default function AssetRegisterClient({
                                   type="button"
                                   className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
                                   onClick={() => openAssetQuoteOptions(asset)}
+                                      data-tooltip="Share asset"
                                 >
                                   <ShareIcon className={styles.buttonIcon} />
                                   <span>Share</span>
@@ -16602,6 +16606,7 @@ export default function AssetRegisterClient({
                                 type="button"
                                 className={`${styles.optionsButton} ${styles.cardManageButton}`}
                                 onClick={() => openActionDialog(asset)}
+                                      data-tooltip="Manage asset"
                               >
                                 <ManageIcon className={styles.buttonIcon} />
                                 <span>Manage</span>
@@ -16641,6 +16646,7 @@ export default function AssetRegisterClient({
                                       className={`${styles.assetDetailRow} ${styles.assetDetailRowButton}`}
                                       onClick={(event) => openQuickAssetDetailEditor(asset, target, event.currentTarget)}
                                       data-asset-return-action={`detail-${target}`}
+                                      data-tooltip={`Update ${label.toLowerCase()}`}
                                       aria-label={`Edit ${label.toLowerCase()} for ${asset.title}. Current value: ${displayedValue}`}
                                     >
                                       <span>{label}</span>
@@ -16724,6 +16730,7 @@ export default function AssetRegisterClient({
                                                   cycleDetailPhoto(asset, -1);
                                                 }}
                                                 aria-label="Show previous photo"
+                                      data-tooltip="Previous photo"
                                               >
                                                 <ChevronLeftIcon className={styles.buttonIcon} />
                                               </button>
@@ -16736,6 +16743,7 @@ export default function AssetRegisterClient({
                                                   cycleDetailPhoto(asset, 1);
                                                 }}
                                                 aria-label="Show next photo"
+                                      data-tooltip="Next photo"
                                               >
                                                 <ChevronRightIcon className={styles.buttonIcon} />
                                               </button>
@@ -16827,6 +16835,7 @@ export default function AssetRegisterClient({
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
                                             onClick={(event) => openQuickAssetStatusEditor(asset, 'finance', event.currentTarget)}
                                             data-asset-return-action="status-finance"
+                                      data-tooltip="Update finance details"
                                             aria-label={`Update finance status for ${asset.title}`}
                                           >
                                             <span>Financed</span>
@@ -16845,6 +16854,7 @@ export default function AssetRegisterClient({
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
                                             onClick={(event) => openQuickAssetStatusEditor(asset, 'insurance', event.currentTarget)}
                                             data-asset-return-action="status-insurance"
+                                      data-tooltip="Update insurance details"
                                             aria-label={`Update insurance status for ${asset.title}`}
                                           >
                                             <span>Insured</span>
@@ -16864,6 +16874,7 @@ export default function AssetRegisterClient({
                                               className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
                                               onClick={(event) => openQuickAssetStatusEditor(asset, 'license', event.currentTarget)}
                                               data-asset-return-action="status-license"
+                                      data-tooltip="Update license details"
                                               aria-label={`Update license status for ${asset.title}`}
                                             >
                                               <span>Licensed</span>
@@ -16883,6 +16894,7 @@ export default function AssetRegisterClient({
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
                                             onClick={(event) => openMappedStatusEditor(asset, event.currentTarget)}
                                             data-asset-return-action="status-mapped"
+                                      data-tooltip="Update asset location"
                                             aria-label={`Update mapped location status for ${asset.title}`}
                                           >
                                             <span>Mapped</span>
@@ -16904,6 +16916,7 @@ export default function AssetRegisterClient({
                                           className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`}
                                           onClick={(event) => openQuickAssetDetailEditor(asset, 'replacement', event.currentTarget)}
                                           data-asset-return-action="detail-replacement"
+                                      data-tooltip="Update replacement price"
                                           aria-label={`Edit replacement price for ${asset.title}`}
                                         >
                                           <span>Replacement Price</span>
@@ -16955,14 +16968,16 @@ export default function AssetRegisterClient({
                                     <div className={cardLayout.documents}>
                                       <button type="button" className={cardLayout.openDocuments}
                                         onClick={() => setAssetDocumentListId(asset.id)}
-                                        aria-label={`View documents for ${asset.title}`} aria-haspopup="dialog">
+                                        aria-label={`View documents for ${asset.title}`}
+                                      data-tooltip="View documents" aria-haspopup="dialog">
                                         <DocumentIcon className={styles.buttonIcon} />
                                         <span>Documents</span>
                                         <span className={cardLayout.count}>{isVaultDocumentsLoading ? '…' : vaultDocumentsError ? '!' : vaultDocuments.length + detailDocuments.length}</span>
                                       </button>
                                       {canUseOwnerOnlyAssetActions ? <button type="button" className={cardLayout.addDocument}
                                         onClick={(event) => { event.stopPropagation(); openAssetDocumentUpload(asset); }}
-                                        data-asset-return-action="add-document">
+                                        data-asset-return-action="add-document"
+                                      data-tooltip="Add document">
                                         <PlusIcon className={styles.buttonIcon} /><span>Add document</span>
                                       </button> : null}
                                     </div>
@@ -17025,6 +17040,7 @@ export default function AssetRegisterClient({
                                         <button type="button" className={cardLayout.notesButton}
                                           onClick={(event) => openQuickAssetDetailEditor(asset, 'notes', event.currentTarget)}
                                           data-asset-return-action="detail-notes"
+                                      data-tooltip="Update notes"
                                           aria-label={`Edit notes for ${asset.title}`} aria-haspopup="dialog">
                                           <strong className={cardLayout.notesLabel}>Notes</strong>
                                           <span className={cardLayout.notesText}>{manualAssetNote}</span>
