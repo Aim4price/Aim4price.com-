@@ -110,7 +110,16 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('[aria-label="History category"] button:nth-child(5)',node=>node.getAttribute('aria-pressed')),'true');
  await page.click('[aria-label="History category"] button:first-child');await page.waitForSelector('details');
  assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),0);
- assert.equal(await page.$eval('[aria-label="History entries"]',node=>node.scrollHeight>node.clientHeight),true);
+ // The modal body owns scrolling; expanded history must not create a nested scroller.
+ assert.equal(await page.$eval('[aria-label="History entries"]',node=>{
+  const body=node.closest('[role="dialog"]')?.querySelector(':scope > div');
+  return !!body && body.scrollHeight>body.clientHeight && ['auto','scroll'].includes(getComputedStyle(body).overflowY);
+ }),true);
+ assert.equal(await page.$eval('[aria-label="History entries"]',node=>getComputedStyle(node).overflowY),'visible');
+ assert.equal(await page.$eval('[role="dialog"] > footer',node=>{
+  const rect=node.getBoundingClientRect();
+  return rect.top>=0 && rect.bottom<=window.innerHeight;
+ }),true);
  await page.screenshot({path:'/tmp/asset-history-list.png'});
  await page.click('details:nth-of-type(1) summary');await page.click('details:nth-of-type(2) summary');
  assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),1);
