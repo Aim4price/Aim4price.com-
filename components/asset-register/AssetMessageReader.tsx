@@ -18,10 +18,10 @@ export default function AssetMessageReader({ title, assetTitle, className, child
       if (window.getSelection()?.toString()) return;
       event.stopPropagation(); show();
     }}>
+      <span aria-hidden="true" data-tooltip="Open message" className={styles.hoverAnchor} />
       {children}
-      <button ref={trigger} type="button" className={styles.readButton} aria-haspopup="dialog" aria-label={`Read message: ${title}`} onClick={event => { event.stopPropagation(); show(); }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        Read message
+      <button ref={trigger} type="button" className={styles.readButton} aria-haspopup="dialog" data-tooltip="Open message" aria-label={`Open message: ${title}`} onClick={event => { event.stopPropagation(); show(); }}>
+        Open message
       </button>
     </div>
     {open && createPortal(<div onClick={event => event.stopPropagation()}>
