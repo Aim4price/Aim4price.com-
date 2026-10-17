@@ -1,4 +1,5 @@
 'use client';
+import AssetMessageReader from '../../components/asset-register/AssetMessageReader';
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import PhotoViewerActions from '../../components/PhotoViewerActions';
@@ -17091,7 +17092,7 @@ export default function AssetRegisterClient({
                             const partnerNoteAuthor = openPartnerNote.partnerBusinessName || openPartnerNote.partnerName || 'Aim4price partner'; const partnerNoteToneClass = quoteToneClassForPartnerType(openPartnerNote.partnerType);
                             return (
                             <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
-                              <div className={styles.partnerNoteText}>
+                              <AssetMessageReader title={`Note from ${partnerNoteAuthor}`} assetTitle={asset.title} className={styles.partnerNoteText}>
                                 <strong>Note from {partnerNoteAuthor}</strong>
                                 <p>{openPartnerNote.noteText}</p>
                                 {openPartnerNote.attachment ? (
@@ -17105,7 +17106,7 @@ export default function AssetRegisterClient({
                                     <small>{openPartnerNote.attachment.fileName} · {formatByteSize(openPartnerNote.attachment.byteSize)}</small>
                                   </a>
                                 ) : null}
-                              </div>
+                              </AssetMessageReader>
                               {canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -17123,11 +17124,11 @@ export default function AssetRegisterClient({
                             const isMarkingMaintenanceAlertNoted = busyMaintenanceAlertId === maintenanceAlert.id;
                             return (
                             <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <div className={styles.partnerNoteText}>
+                              <AssetMessageReader title={maintenanceAlert.heading || 'Maintenance upcoming'} assetTitle={asset.title} className={styles.partnerNoteText}>
                                 <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
                                 <p>{maintenanceAlert.body}</p>
                                 {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
-                              </div>
+                              </AssetMessageReader>
                               {canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -17144,11 +17145,11 @@ export default function AssetRegisterClient({
 
                           {licenseRenewalAlert ? (
                             <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <div className={styles.partnerNoteText}>
+                              <AssetMessageReader title={licenseRenewalAlert.heading || 'License renewal upcoming'} assetTitle={asset.title} className={styles.partnerNoteText}>
                                 <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
                                 <p>{licenseRenewalAlert.body}</p>
                                 <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
-                              </div>
+                              </AssetMessageReader>
                               {canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -17166,11 +17167,11 @@ export default function AssetRegisterClient({
                             const isMarkingIssueNoteNoted = busyIssueNoteStatusId === latestIssueNoteStatus.id; const issueNoteMeta = [latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '', latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : ''].filter(Boolean).join(' · ');
                             return (
                             <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
-                              <div className={styles.partnerNoteText}>
+                              <AssetMessageReader title={'Open issue reported'} assetTitle={asset.title} className={styles.partnerNoteText}>
                                 <strong>Open issue reported</strong>
                                 <p>{latestIssueNoteStatus.note}</p>
                                 {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
-                              </div>
+                              </AssetMessageReader>
                               {canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -17189,7 +17190,7 @@ export default function AssetRegisterClient({
                             const isMarkingMaintenanceNoted = busyMaintenanceStatusId === latestMaintenanceStatus.id; const maintenanceDoneMeta = [latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '', latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : ''].filter(Boolean).join(' · '); const maintenancePhotoUrls = uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6); const maintenancePhotoCount = latestMaintenanceStatus.photoCount ?? maintenancePhotoUrls.length;
                             return (
                             <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
-                              <div className={styles.partnerNoteText}>
+                              <AssetMessageReader title={'Maintenance has been done'} assetTitle={asset.title} className={styles.partnerNoteText}>
                                 <strong>Maintenance has been done</strong>
                                 <p>{latestMaintenanceStatus.summary}</p>
                                 {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
@@ -17216,7 +17217,7 @@ export default function AssetRegisterClient({
                                   </small>
                                 ) : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
-                              </div>
+                              </AssetMessageReader>
                               {canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"

@@ -1,4 +1,5 @@
 'use client';
+import AssetMessageReader from '../asset-register/AssetMessageReader';
 import {useCallback,useEffect,useState} from 'react';
 import {createPortal} from '../WebsitePortal';
 import AssetActionIcon from '../asset-register/AssetActionIcon';
@@ -15,11 +16,11 @@ export default function SharedProblems({endpoint,assetTitle,onClose,notesOnly=fa
  const startResolve=(problem:AssetIssueNoteStatus)=>{setRequestId(crypto.randomUUID());setResolve(problem);};
  const list=items.map(problem=><div key={problem.id}><LeadProblemCard problem={problem}/>{canWrite&&!problem.notedAtIso&&<button className={styles.secondaryButton} type="button" onClick={()=>startResolve(problem)}>Resolved</button>}</div>);
  const banners=openProblems.map(problem=><div key={problem.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
-   <div className={styles.partnerNoteText}>
+   <AssetMessageReader title="Open issue reported" assetTitle={assetTitle} className={styles.partnerNoteText}>
      <strong>Open issue reported</strong>
      <p>{problem.note}</p>
      <small className={styles.issueNoteMeta}>{[problem.operatorName ? `By ${problem.operatorName}` : '', problem.createdAtIso ? new Intl.DateTimeFormat('en-ZA',{day:'numeric',month:'short',year:'numeric',timeZone:'Africa/Johannesburg'}).format(new Date(problem.createdAtIso)) : ''].filter(Boolean).join(' · ')}</small>
-   </div>
+   </AssetMessageReader>
    {canWrite&&<button className={styles.partnerNoteButton} type="button" onClick={()=>startResolve(problem)}>Resolved</button>}
  </div>);
  const confirmation=resolve&&createPortal(<LeadActionDialog title="Resolve problem" assetTitle={assetTitle} onClose={()=>setResolve(null)} busy={busy} footer={<><button className={styles.secondaryButton} disabled={busy} onClick={()=>setResolve(null)}>Cancel</button><button className={styles.primaryButton} disabled={busy} onClick={()=>void save()}>{busy?'Saving…':'Yes, resolved'}</button></>}><p>Are you sure this problem is resolved?</p><p>{resolve.note}</p>{error&&<p role="alert">{error}</p>}</LeadActionDialog>,document.body);
@@ -29,3 +30,4 @@ export default function SharedProblems({endpoint,assetTitle,onClose,notesOnly=fa
  {step==='choices'?<div className={styles.optionsGrid}>{canWrite&&<button className={styles.optionActionButton} onClick={()=>setStep('log')}><AssetActionIcon action="loggedProblems" className={styles.buttonIcon}/><span><strong>Log problem</strong></span></button>}<button className={styles.optionActionButton} onClick={()=>setStep('list')}><AssetActionIcon action="history" className={styles.buttonIcon}/><span><strong>Logged problems</strong></span></button></div>:step==='log'?<label className={styles.field}><span>Describe the problem</span><textarea rows={4} maxLength={4000} value={note} onChange={event=>setNote(event.target.value)} /></label>:loading?<p>Loading logged problems…</p>:items.length?list:<p>No logged problems.</p>}
  </LeadActionDialog>}{confirmation}</>;
 }
+
