@@ -18781,6 +18781,9 @@ export default function AssetRegisterClient({
                 </span>
 
                 <div className={styles.assetUpdateFooterActions}>
+                  {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
+                    <button type="button" className={styles.secondaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Review lower reading</button>
+                  ) : null}
                   {!assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
                     <button
                       type="button"
