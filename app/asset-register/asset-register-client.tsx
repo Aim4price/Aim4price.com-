@@ -1,4 +1,5 @@
 'use client';
+import advancedStyles from '../../components/asset-register/AdvancedSettings.module.css';
 import AssetMessageReader from '../../components/asset-register/AssetMessageReader';
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
 import AssetPartsModal from '../../components/AssetPartsModal';
@@ -1331,9 +1332,9 @@ const LIFETIME_PERCENT_SETTINGS_ERROR =
 const USAGE_READING_SETTINGS_ERROR =
   'The new usage reading cannot be lower than the reading already saved on this asset. Use Correct reading in Advanced settings to review this change.';
 const ASSET_SETTINGS_USAGE_COPY =
-  'Correct the saved usage only when the current reading is wrong.';
+  'Only correct an incorrect reading.';
 const USAGE_OVERRIDE_CONFIRMATION_TEXT =
-  'Are you sure you want to override the saved usage for this asset? This can lower the usage recorded for this saved Aim4price asset and may affect its valuation/depreciation history.';
+  'Confirm the corrected reading below. Saving recalculates value and records the change in history.';
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
 type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice' | 'savingMap';
@@ -18038,9 +18039,9 @@ export default function AssetRegisterClient({
                     {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
                       <section className={styles.assetSettingsSection} aria-label="Review lower usage reading">
                         <div className={styles.assetSettingsSectionCopy}>
-                          <h4>This reading is lower than the saved reading</h4>
+                          <h4>Lower reading needs review</h4>
                           <p>Saved: {formatAssetSettingsUsageDisplay(lowerUsageMode, savedUsageValue)}. Entered: {formatAssetSettingsUsageDisplay(lowerUsageMode, lowerUsageValue)}.</p>
-                          <p>If the saved reading is wrong, correct it below. If you expect the asset to last longer, update its expected lifetime instead. The lower reading has not been saved.</p>
+                          <p>Correct the reading or adjust expected lifetime. Nothing has been saved yet.</p>
                         </div>
                         <div className={styles.assetSettingsActions}>
                           <button type="button" className={styles.primaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Correct reading</button>
@@ -18837,7 +18838,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${styles.managementAccountModal} ${!['location', 'locationManual', 'locationMap'].includes(assetSettingsView) ? advancedStyles.dialog : ''} ${accountStyles.modalTheme} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
@@ -18859,7 +18860,7 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
               {assetSettingsView !== 'menu' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
                 <button
                   type="button"
@@ -18867,17 +18868,16 @@ export default function AssetRegisterClient({
                   onClick={goBackFromAssetSettingsSubView}
                   disabled={isAssetSettingsBusy}
                 >
-                  <span aria-hidden="true">←</span>
                   <span>{isManageMapLocationFlow
                     ? 'Back to map options'
                     : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
                       ? 'Back to Location'
-                      : 'Back to advanced settings'}</span>
+                      : 'Back'}</span>
                 </button>
               ) : null}
 
               {assetSettingsView === 'menu' ? (
-                <div className={`${styles.assetSettingsMenuGrid} ${isSavedManualAsset(editingAsset) ? styles.assetSettingsMenuGridManual : ''}`}>
+                <div className={`${styles.assetSettingsMenuGrid} ${advancedStyles.menu} ${isSavedManualAsset(editingAsset) ? styles.assetSettingsMenuGridManual : ''}`}>
                   <button
                     type="button"
                     className={styles.assetSettingsOptionButton}
@@ -18887,7 +18887,7 @@ export default function AssetRegisterClient({
                     <FlagIcon className={styles.assetSettingsOptionIcon} />
                     <span>
                       <strong>Location</strong>
-                      <small>Update GPS position.</small>
+                      <small>Update GPS.</small>
                     </span>
                   </button>
 
@@ -18924,7 +18924,7 @@ export default function AssetRegisterClient({
                   {isSavedAim4priceAsset(editingAsset) && shouldShowRevalueLifetimeInput(editingAsset) ? (
                     <button type="button" className={styles.assetSettingsOptionButton} onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
                       <TrendIcon className={styles.assetSettingsOptionIcon} />
-                      <span><strong>Update lifetime expectancy</strong><small>Set total expected hours or kilometres.</small></span>
+                      <span><strong>Lifetime expectancy</strong><small>Total working life.</small></span>
                     </button>
                   ) : null}
 
@@ -18937,8 +18937,8 @@ export default function AssetRegisterClient({
                     >
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>{assetSettingsUsageHeading(settingsUsageMode)}</strong>
-                        <small>Correct an incorrect saved reading.</small>
+                        <strong>Correct reading</strong>
+                        <small>Fix saved usage.</small>
                       </span>
                     </button>
                   ) : null}
@@ -18946,15 +18946,14 @@ export default function AssetRegisterClient({
               ) : null}
 
               {assetSettingsView === 'lifetime' && isSavedAim4priceAsset(editingAsset) ? (
-                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection}`}>
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Valuation assumption</span>
-                    <h4>Update lifetime expectancy</h4>
-                    <p>Set the total {getLifetimeUnitLabel(getAssetUsageMetric(editingAsset))} this asset is expected to work over its whole life, including usage already recorded.</p>
+                    <h4>Lifetime expectancy</h4>
+                    <p>Total expected {getLifetimeUnitLabel(getAssetUsageMetric(editingAsset))}, including usage already recorded.</p>
                   </div>
-                  <div className={styles.assetSettingsUsageComparison}>
+                  <div className={`${styles.assetSettingsUsageComparison} ${advancedStyles.comparison}`}>
                     <div className={styles.assetSettingsUsageCurrent}>
-                      <span>Current expected lifetime</span>
+                      <span>Current lifetime</span>
                       <strong>{formatPlainNumber(readAssetMaxLifetimeUsage(editingAsset))} {getLifetimeShortUnit(getAssetUsageMetric(editingAsset))}</strong>
                     </div>
                     <span aria-hidden="true" />
@@ -18963,7 +18962,7 @@ export default function AssetRegisterClient({
                       <input type="text" inputMode="numeric" value={assetLifetimeInput} onChange={event => { setAssetLifetimeInput(formatUsageAmountInput(event.target.value)); setAssetSettingsError(''); }} />
                     </label>
                   </div>
-                  <p className={styles.assetSettingsUsageHint}>Recorded usage stays at {formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}. This changes the expected lifetime used for valuation and depreciation, not the meter reading. Saving recalculates the current asset value.</p>
+                  <p className={styles.assetSettingsUsageHint}>Recorded usage stays at {formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}. Saving recalculates value.</p>
                   <div className={styles.assetSettingsActions}>
                     <button type="button" className={styles.primaryButton} disabled={isAssetSettingsBusy} onClick={() => void saveAssetLifetime()}>{isSavingAssetSettings ? 'Saving…' : 'Save and recalculate'}</button>
                   </div>
@@ -19027,16 +19026,15 @@ export default function AssetRegisterClient({
               ) : null}
 
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
-                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection}`}>
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Reading correction</span>
                     <h4>{assetSettingsUsageHeading(settingsUsageMode)}</h4>
                     <p>{ASSET_SETTINGS_USAGE_COPY}</p>
                   </div>
 
                   {settingsUsageMode !== 'none' ? (
                     <>
-                      <div className={styles.assetSettingsUsageComparison}>
+                      <div className={`${styles.assetSettingsUsageComparison} ${advancedStyles.comparison}`}>
                         <div className={styles.assetSettingsUsageCurrent}>
                           <span>Currently saved</span>
                           <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
@@ -19074,7 +19072,7 @@ export default function AssetRegisterClient({
                         </label>
                       </div>
 
-                      <p className={styles.assetSettingsUsageHint}>This corrects recorded usage, not expected lifetime. Saving recalculates the asset value and records the change in history.</p>
+                      <p className={styles.assetSettingsUsageHint}>Saving updates recorded usage, recalculates value and logs the correction.</p>
 
                       <div className={styles.assetSettingsActions}>
                         <button
@@ -19106,7 +19104,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={cancelAim4priceUsageOverrideConfirmation} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
+            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal} ${advancedStyles.dialog}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-usage-override-confirm-title"
@@ -19128,7 +19126,7 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
               <p className={styles.assetSettingsConfirmCopy}>{USAGE_OVERRIDE_CONFIRMATION_TEXT}</p>
               <div className={styles.assetSettingsSection}>
                 <p>Saved reading: <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong></p>
@@ -19175,7 +19173,7 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
               <p className={styles.assetSettingsConfirmCopy}>
                 The current manual asset will stay unchanged while you complete the estimate. It will only become an Aim4price valued asset after you click Save on the final result page.
               </p>
@@ -19770,7 +19768,7 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
               <p className={styles.assetSettingsConfirmCopy}>
                 Replacement price is now {money(replacementPriceRevaluePrompt.newReplacementPriceExVat)} excl. VAT. A higher or lower replacement price can change current value. Recalculate, or open value settings to preserve the current amount as the starting value for future depreciation.
               </p>

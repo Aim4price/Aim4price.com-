@@ -1,0 +1,49 @@
+/* Compact settings with a scroll fallback for short screens and zoom. */
+.dialog.dialog.dialog.dialog.dialog {
+  width: min(62rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 2rem))) !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem) !important;
+  padding: 1.5rem !important;
+  gap: 1rem !important;
+  overflow: hidden !important;
+}
+.dialog.dialog.dialog.dialog.dialog > div:first-child {
+  margin: 0 !important;
+  padding: 0 0 1rem !important;
+}
+.dialog.dialog.dialog.dialog.dialog h3 { font-size: 1.75rem !important; line-height: 1.2 !important; }
+.dialog.dialog.dialog.dialog.dialog .body {
+  min-height: 0; padding: 0 !important; gap: .85rem !important;
+  overflow-y: auto !important; scrollbar-width: none !important;
+  overscroll-behavior: contain;
+}
+.body.body.body::-webkit-scrollbar { display: none !important; width: 0; height: 0; }
+.dialog.dialog.dialog.dialog.dialog .body > button {
+  min-height: 2.5rem !important; padding: .5rem 1rem !important; margin: 0 !important;
+}
+.dialog.dialog.dialog.dialog.dialog .menu {
+  display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .8rem !important;
+}
+.dialog.dialog.dialog.dialog.dialog .menu > button {
+  min-height: 6rem !important; padding: 1rem 1.15rem !important; gap: .9rem !important;
+  border-radius: 1rem !important;
+}
+.dialog.dialog.dialog.dialog.dialog .menu > button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.dialog.dialog.dialog.dialog.dialog .menu > button > svg { width: 2.8rem !important; height: 2.8rem !important; padding: .6rem !important; }
+.dialog.dialog.dialog.dialog.dialog .menu strong { font-size: 1rem !important; line-height: 1.35 !important; }
+.dialog.dialog.dialog.dialog.dialog .menu small { font-size: .85rem !important; line-height: 1.4 !important; }
+.dialog.dialog.dialog.dialog.dialog .form { padding: 1rem !important; gap: .85rem !important; border-radius: 1rem !important; }
+.dialog.dialog.dialog.dialog.dialog .form h4 { font-size: 1.1rem !important; line-height: 1.35 !important; margin: 0 !important; }
+.dialog.dialog.dialog.dialog.dialog .form p { line-height: 1.5 !important; }
+.dialog.dialog.dialog.dialog.dialog .comparison { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: .85rem !important; }
+.dialog.dialog.dialog.dialog.dialog .comparison > span { display: none !important; }
+.dialog.dialog.dialog.dialog.dialog .comparison > div,
+.dialog.dialog.dialog.dialog.dialog .comparison > label { min-height: 5.5rem !important; padding: .85rem 1rem !important; gap: .4rem !important; }
+.dialog.dialog.dialog.dialog.dialog .comparison strong { font-size: 1.55rem !important; line-height: 1.2 !important; }
+.dialog.dialog.dialog.dialog.dialog .comparison input { min-height: 2.8rem !important; font-size: 1.05rem !important; }
+.dialog.dialog.dialog.dialog.dialog .form > div:last-child { padding-top: .85rem !important; margin: 0 !important; }
+.dialog.dialog.dialog.dialog.dialog .form button { min-height: 2.8rem !important; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog { padding: 1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog .menu,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog .comparison { grid-template-columns: minmax(0, 1fr) !important; }
+}
