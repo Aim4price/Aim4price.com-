@@ -7916,7 +7916,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
               <div className={styles.popularityModalStars} role="group" aria-label="Popularity from 1 to 5 stars">
                 {[1, 2, 3, 4, 5].map((star) => {
-                  const active = star <= popularityStars;
+                  const active = star === popularityStars;
                   const selected = popularityStars === star;
                   return (
                     <button
@@ -7931,7 +7931,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       aria-label={`${star} star${star === 1 ? '' : 's'}`}
                       aria-pressed={selected}
                     >
-                      <span className={styles.popularityModalStarGlyph} aria-hidden="true">★</span>
+                      <span className={styles.popularityModalStarGlyph} aria-hidden="true">{'★'.repeat(star)}</span>
                       <small>{star}</small>
                     </button>
                   );
