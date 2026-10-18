@@ -15245,3 +15245,21 @@
   :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementSliderReadout strong,
   :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementManualCard input { font-size: 1.75rem; }
 }
+
+/* Short, scannable guidance for the replacement-price input. */
+.replacementHelpModal { --estimate-modal-width: 720px; }
+.replacementHelpModal.replacementHelpModal.replacementHelpModal [data-estimate-modal-title] { font-size: 1.65rem; line-height: 1.25; letter-spacing: -.025em; }
+.replacementHelpModal .replacementHelpCopy { gap: 1rem; margin: 1.5rem 0; font-size: 1.05rem; line-height: 1.5; }
+.replacementHelpStep { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: start; gap: 1rem; padding: 1.15rem; border: 1px solid #d5e4dc; border-radius: 1rem; background: #f7faf8; }
+.replacementHelpStep h4 { margin: 0 0 .4rem; color: #173e30; font-size: 1.15rem; line-height: 1.35; font-weight: 750; }
+.replacementHelpStep p { color: #456052; }
+.replacementHelpIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: .85rem; color: #21664b; background: #e3f0e8; }
+.replacementHelpIcon svg { width: 1.6rem; height: 1.6rem; }
+.replacementHelpIconBlue { color: #346487; background: #e6f0f7; }
+.replacementHelpModal .replacementHelpNote { padding: .9rem 1.1rem; background: #edf6f0; font-size: 1rem; }
+.replacementHelpModal .replacementHelpActions { justify-content: flex-end; padding: 0; }
+.replacementHelpActions .primaryButton { margin: 0; min-height: 3rem; box-shadow: none; }
+@media (max-width: 540px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpStep { grid-template-columns: 2.5rem minmax(0, 1fr); padding: .9rem; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }
+}
