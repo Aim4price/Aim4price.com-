@@ -168,3 +168,39 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 
 .pairingCard:focus { outline: none; }
 .pairingCard:focus-visible { outline: 2px solid #77ac92; outline-offset: 3px; }
+
+/* Connected state keeps the next action and device controls together. */
+.setupPanel[data-tracker-connected] { gap: 1rem; }
+.connectedSummary { background: #fff; padding: 1.2rem; gap: 1.2rem; }
+.connectedIntro { display: flex; align-items: flex-start; gap: .8rem; }
+.connectedIntro p { margin-top: .35rem; font-size: .9rem; color: #536b61; }
+.successIcon,.emptyIcon { display: grid; place-items: center; flex-shrink: 0; background: #e4f1e9; color: #196348; border-radius: 50%; }
+.successIcon { width: 2.4rem; height: 2.4rem; }
+.successIcon svg { width: 1.5rem; height: 1.5rem; }
+.connectedSummary .connectionFacts { grid-template-columns: repeat(2,minmax(0,1fr)); gap: .75rem; }
+.connectedSummary .connectionFacts div { display: grid; gap: .45rem; padding: .85rem; background: #f1f6f3; border-radius: .8rem; }
+.connectionFacts dt { font-size: .8rem; }
+.connectionFacts dd { font-size: .9rem; overflow-wrap: anywhere; }
+.primaryAction svg,.movementActions svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+.setupPanel[data-tracker-connected] .setupDetails { margin: 0; padding: .25rem 0; }
+.setupPanel[data-tracker-connected] .disconnectRow { padding-top: .8rem; }
+.movementPanel { gap: 1rem; padding: 0; }
+.movementToolbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; }
+.movementActions { display:flex; gap:.65rem; }
+.movementActions button { gap:.5rem; }
+.panel .reportButton { background:#175b40; color:#fff; border-color:#175b40; }
+.panel button:disabled { cursor:default; }
+.panel :is(button,input,summary):focus-visible { outline:3px solid #77ac92; outline-offset:3px; }
+.periodCaption { font-size:.8rem; color:#5b7067; }
+.movementPanel .stats { grid-template-columns:repeat(4,minmax(0,1fr)); gap:.8rem; }
+.movementPanel .stats div { padding:1rem; border:1px solid #dce9e1; }
+.movementPanel .emptyState { display:grid; justify-items:center; gap:.7rem; padding:1.6rem; background:#f5f9f6; border:1px solid #d5e4da; }
+.emptyIcon { width:3rem; height:3rem; margin-bottom:.15rem; }
+.emptyIcon svg { width:1.6rem; height:1.6rem; }
+.emptyState p { max-width:48ch; color:#536b61; font-size:.9rem; }
+.emptyHint { font-size:.8rem; color:#65786e; }
+@media (max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .movementPanel .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ :global(:where(html:not(:has([data-website-canvas])))) .connectedSummary .connectionFacts { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .movementActions { flex-wrap:wrap; }
+}
