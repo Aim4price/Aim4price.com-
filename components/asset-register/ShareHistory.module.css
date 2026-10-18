@@ -28,3 +28,5 @@
 
 /* Scroll the history with breathing room around action rings. */
 .list { padding: 1.5rem; margin: -1.3rem; scroll-padding: 1.5rem; }
+
+.panel .backButton { gap: .6rem; padding: .55rem .9rem .55rem .65rem; }
