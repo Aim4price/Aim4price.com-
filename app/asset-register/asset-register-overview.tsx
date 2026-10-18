@@ -727,6 +727,14 @@ export default function AssetRegisterOverview() {
               {overviewItems.map((item) => (
                 <article
                   key={item.id}
+                  data-message-banner
+                  onClick={event => {
+                    if ((event.target as Element).closest('button, a, input, select, textarea')) return;
+                    if (window.getSelection()?.toString()) return;
+                    event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+                    setClearError('');
+                    setOpenItem(item);
+                  }}
                   className={`${registerStyles.assetCard} ${styles.overviewCard} ${
                     item.section === 'needs_attention'
                       ? styles.cardAttention
@@ -735,6 +743,7 @@ export default function AssetRegisterOverview() {
                         : styles.cardRecent
                   }`}
                 >
+                  <span aria-hidden="true" data-tooltip="Open message" className={styles.cardHoverHint} />
                   <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
                     {categoryIcon(item.category)}
                   </div>
@@ -803,10 +812,10 @@ export default function AssetRegisterOverview() {
       ) : null}
       {openItem && createPortal(
         <LeadActionDialog
-          title={openItem.headline}
-          assetTitle={openItem.assetTitle}
+          title={openItem.assetTitle}
+          assetTitle={openItem.headline}
           assetSubtitle={assetMeta(openItem)}
-          className={messageStyles.dialog}
+          className={`${messageStyles.dialog} ${styles.overviewDialog}`}
           busy={clearingId !== null}
           onClose={() => setOpenItem(null)}
           closeLabel="Close overview message"
@@ -823,15 +832,16 @@ export default function AssetRegisterOverview() {
             </button>
           </div>}
         >
-          <div className={messageStyles.message}>
+          <div className={styles.messagePanel}>
             <div className={styles.messageContext}>
               <span className={`${styles.categoryIcon} ${categoryClassName(openItem.category)}`}>{categoryIcon(openItem.category)}</span>
-              <span>{categoryLabel(openItem.category)} · {openItem.status}</span>
+              <span className={styles.messageCategory}>{categoryLabel(openItem.category)}</span>
+              <span className={styles.messageStatus}>{openItem.status}</span>
             </div>
             <p>{openItem.detail}</p>
             {openItem.meta ? <small>{openItem.meta}</small> : null}
           </div>
-          <p className={styles.messageHint}>Noted clears this update from Overview and keeps its history. It does not mark scheduled work as completed.</p>
+          <p className={styles.messageHint}>Noted removes this update from Overview and keeps its history. Scheduled work stays open.</p>
           {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
         </LeadActionDialog>, document.body
       )}

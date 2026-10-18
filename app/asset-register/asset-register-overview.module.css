@@ -155,6 +155,8 @@
 }
 
 .overviewCard {
+  position: relative;
+  cursor: pointer;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -163,10 +165,19 @@
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
-.overviewCard:hover {
-  transform: translateY(-1px);
-  border-color: var(--line-strong);
-  box-shadow: 0 16px 30px rgba(20, 36, 33, 0.055);
+.overviewCard:hover,
+.overviewCard:focus-within {
+  border-color: var(--brand-mid);
+  box-shadow: var(--action-hover-shadow, 0 0 0 4px rgba(22, 117, 77, .16), 0 8px 24px rgba(22, 117, 77, .18));
+  outline: 2px solid var(--action-hover-outline, rgba(22, 117, 77, .48));
+  outline-offset: 2px;
+}
+
+.cardHoverHint {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 .cardAttention {
@@ -573,3 +584,50 @@
 .messageAssetLink:focus-visible, .messageNotedButton:focus-visible { outline: 3px solid #229970; outline-offset: 3px; }
 .messageContext { align-items: center; color: var(--app-muted, #5c7067); font-size: .95rem; font-weight: 700; }
 .messageHint { margin: 1.5rem 0 0; color: var(--app-muted, #5c7067); font-size: .88rem; line-height: 1.6; }
+
+/* Overview messages keep the shared dialog controls and a comfortable reading width. */
+.overviewDialog.overviewDialog.overviewDialog {
+  width: min(48rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 40px))) !important;
+}
+.messagePanel {
+  padding: 1.5rem;
+  border: 1px solid var(--app-line, #c9ded4);
+  border-radius: 1.1rem;
+  background: var(--app-surface-soft, #f2f8f5);
+  color: var(--app-text, #193c2f);
+}
+.messageContext {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  margin-bottom: 1rem;
+}
+.messageContext .categoryIcon { flex: 0 0 auto; }
+.messageCategory { color: var(--app-text, #193c2f); font-weight: 750; }
+.messageStatus {
+  margin-left: auto;
+  padding: .35rem .7rem;
+  border: 1px solid var(--app-line, #c9ded4);
+  border-radius: .65rem;
+  background: var(--app-surface, #fff);
+  font-size: .85rem;
+}
+.messagePanel > p {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.messagePanel > small {
+  display: block;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--app-line, #c9ded4);
+  color: var(--app-muted, #5c7067);
+  font-size: .9rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.messageHint { margin-top: 1rem; }
