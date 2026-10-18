@@ -200,3 +200,15 @@
 
 .dialog.dialog .body.body:has([data-tracker-install]) { scrollbar-width:none; scrollbar-gutter:auto; }
 .dialog.dialog .body.body:has([data-tracker-install])::-webkit-scrollbar { display:none; }
+
+/* Keep tracker content comfortably clear of the scroll track. */
+.dialog.dialog .body.body:has([data-tracker-setup]) {
+  padding: 1.25rem 1.1rem 1rem .35rem !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #88aa99 #edf3ef;
+  scroll-padding-block: 1.25rem;
+}
+.dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar { width: 8px; }
+.dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar-track { background: #edf3ef; border-radius: 10px; margin-block: .75rem; }
+.dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar-thumb { background: #88aa99; border: 2px solid #edf3ef; border-radius: 10px; }
