@@ -1,7 +1,7 @@
 'use client';
 import EstimateTools from './EstimateTools';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
-import { getBasicFamilyGuidance, getBasicFamilyGuideNote } from '../../lib/basic-family-guidance';
+import { getBasicFamilyGuidance } from '../../lib/basic-family-guidance';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -5877,7 +5877,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      {isAvailable && !compactAppMode ? <span className={styles.sectorCardHint}>Start estimate →</span> : null}
+                      {isAvailable && !compactAppMode ? <span className={styles.sectorCardHint}>Start estimate</span> : null}
                     </span>
                   </span>
                 </button>
@@ -5907,9 +5907,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorLabelWrap}>
+                  <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('basic')}</span>
                   <strong className={styles.sectorLabel}>Basic</strong>
                   <span className={styles.estimateModeDescription}>Start here for an indicative value using the asset type, age, usage, condition and replacement price.</span>
-                  <span className={styles.sectorCardHint}>Start estimate →</span>
                 </span>
               </span>
             </button>
@@ -5931,9 +5931,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </span>
                 </span>
                 <span className={styles.sectorLabelWrap}>
+                  <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('advanced')}</span>
                   <strong className={styles.sectorLabel}>Advanced</strong>
                   <span className={styles.estimateModeDescription}>Use detailed equipment specifications and review the calculation breakdown. {breakdownAccess ? 'Available on your account.' : 'Available to accounts with Aim4price Exclusive access.'}</span>
-                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedHint}`} aria-hidden="true">Start estimate →</span>
                 </span>
               </span>
             </button>
@@ -6005,10 +6005,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       data-family-label={family.familyLabel}
                       data-family-group={family.basicCatalogue?.groupLabel ?? ''}
                       data-family-guidance={getBasicFamilyGuidance(family)}
-                      data-family-guide-note={getBasicFamilyGuideNote(family)}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small><small className={styles.familyGuideNote}>{getBasicFamilyGuideNote(family)}</small></span>
+                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small></span>
                     </button>
                   ))
                 ) : (
@@ -6077,6 +6076,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function renderEstimateChoiceIcon(kind: 'basic' | 'advanced' | BasicSpecificationLevel) {
+    return <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {kind === 'basic' ? <><rect x="7" y="4" width="18" height="24" rx="4"/><path d="M11 10h10M11 16h2m6 0h2M11 22h2m6 0h2"/></>
+        : kind === 'advanced' ? <><path d="M7 5v22M16 5v22M25 5v22"/><rect x="4" y="10" width="6" height="6" rx="2" fill="currentColor"/><rect x="13" y="19" width="6" height="6" rx="2" fill="currentColor"/><rect x="22" y="7" width="6" height="6" rx="2" fill="currentColor"/></>
+        : kind === 'entry' ? <><path d="m16 5 11 6v11l-11 6-11-6V11Z"/><path d="m5 11 11 6 11-6M16 17v11"/></>
+        : kind === 'standard' ? <><path d="m16 4 12 7-12 7-12-7Z"/><path d="m4 17 12 7 12-7M4 23l12 7 12-7"/></>
+        : <><path d="m16 3 4 3 5 1 1 5 3 4-3 4-1 5-5 1-4 3-4-3-5-1-1-5-3-4 3-4 1-5 5-1Z"/><path d="m10 16 4 4 8-8"/></>}
+    </svg>;
+  }
+
   function renderSpecificationChoices(selectedLevel: BasicSpecificationLevel | '', onSelect: (level: BasicSpecificationLevel) => void) {
     return (
         <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
@@ -6090,6 +6099,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 aria-pressed={selected}
                 onClick={() => onSelect(option.key)}
               >
+                <span className={styles.specificationLevelIcon}>{renderEstimateChoiceIcon(option.key)}</span>
                 <strong>{option.label}</strong>
                 <span className={styles.choiceCardNote}>{option.description}</span>
               </button>

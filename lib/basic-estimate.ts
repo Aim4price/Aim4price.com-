@@ -47,7 +47,7 @@ export const BASIC_SPECIFICATION_LEVELS: Array<{
   label: string;
   description: string;
 }> = [
-  { key: 'entry', label: 'Entry', description: 'Lower-cost / simpler specification.' },
+  { key: 'entry', label: 'Basic', description: 'Lower-cost / simpler specification.' },
   { key: 'standard', label: 'Standard', description: 'Typical mainstream specification.' },
   { key: 'premium', label: 'Quality', description: 'Higher specification / quality asset.' },
 ];

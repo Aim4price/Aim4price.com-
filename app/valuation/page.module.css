@@ -14803,3 +14803,55 @@
 .replacementPriceDialog .replacementFieldHint,
 .replacementPriceDialog .replacementSavedLink { font-size: 0.95rem; }
 .replacementPriceDialog .replacementInputActions button { font-size: 1rem; min-height: 50px; }
+
+/* Clear, balanced estimate choices with one action per card. */
+.estimateModeGrid .sectorBigCardContent {
+  min-height: 15rem;
+  padding: 3.25rem 2rem 2rem;
+  justify-content: center;
+}
+.estimateModeGrid .sectorLabelWrap {
+  flex: none;
+  gap: .75rem;
+}
+.estimateModeGrid .estimateModeDescription { flex: none; max-width: 30rem; }
+.estimateChoiceIcon {
+  display: grid;
+  place-items: center;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, .24);
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  margin-bottom: .3rem;
+}
+.estimateChoiceIcon svg { width: 1.85rem; height: 1.85rem; }
+.basicLevelGrid .basicLevelCard {
+  min-height: 12rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  text-align: center;
+  padding: 1.7rem 1.25rem;
+}
+.specificationLevelIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.1rem;
+  color: #175440;
+  background: #e8f2ed;
+  border: 1px solid #ccdfd5;
+}
+.specificationLevelIcon svg { width: 2rem; height: 2rem; }
+.basicLevelCard.choiceCardActive .specificationLevelIcon {
+  color: #fff;
+  background: #175440;
+  border-color: #175440;
+}
+.basicLevelGrid .basicLevelCard .choiceCardNote { max-width: 22rem; min-height: 3em; margin: 0; }

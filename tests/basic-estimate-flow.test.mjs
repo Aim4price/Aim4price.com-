@@ -81,9 +81,9 @@ test('Basic replacement guides only use family-level replacement bands', () => {
   assert.equal(guide, null, 'brand/model pricing must not be aggregated into a made-up family range');
 });
 
-test('Entry, Standard and Quality position broad family pricing without changing valuation directly', () => {
+test('Basic, Standard and Quality position broad family pricing without changing valuation directly', () => {
   assert.deepEqual(BASIC_SPECIFICATION_LEVELS.map(({ key, label }) => [key, label]), [
-    ['entry', 'Entry'],
+    ['entry', 'Basic'],
     ['standard', 'Standard'],
     ['premium', 'Quality'],
   ]);
@@ -133,7 +133,10 @@ test('family-aware condition labels and common extras stay deliberately small', 
 test('Basic Estimate exposes the requested six-step family-first flow and bypasses the legacy Path screen', () => {
   assert.match(client, /\{ step: 1, label: 'Equipment' \}[\s\S]*?\{ step: 2, label: 'Brand & Model' \}[\s\S]*?\{ step: 3, label: 'Level' \}[\s\S]*?\{ step: 4, label: 'Specs' \}[\s\S]*?\{ step: 5, label: 'Replacement' \}[\s\S]*?\{ step: 6, label: 'Value' \}/);
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);[\s\S]*?if \(step === 4\) return renderDetailsStep\(\);[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);/);
-  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>[\s\S]*?<span className=\{styles\.sectorCardHint\}>Start estimate →<\/span>/);
+  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>/);
+  const estimateChoices = client.slice(client.indexOf('if (!estimateExperience) {', client.indexOf('Choose sector')), client.indexOf('function renderBasicBrandModelStep'));
+  assert.doesNotMatch(estimateChoices, /Start estimate/);
+  assert.match(client, /renderEstimateChoiceIcon\('basic'\)/);
   const advancedCardStart = client.indexOf('estimateModeAdvancedCard');
   assert.notEqual(advancedCardStart, -1);
   const advancedCardChunk = client.slice(
@@ -144,9 +147,9 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(advancedCardChunk, /\bdisabled\b/);
   assert.match(advancedCardChunk, /aria-disabled=\{!breakdownAccess\}/);
   assert.match(advancedCardChunk, /disabled=\{!breakdownAccess\}/);
-  assert.match(advancedCardChunk, /estimateModeAdvancedHint/);
+  assert.match(advancedCardChunk, /renderEstimateChoiceIcon\('advanced'\)/);
   assert.match(advancedCardChunk, /aria-hidden="true"/);
-  assert.match(advancedCardChunk, /Start estimate →/);
+  assert.doesNotMatch(advancedCardChunk, /Start estimate/);
   assert.match(client, /Aim4price Exclusive/);
   assert.match(client, /styles\.estimateModeIntro/);
   assert.match(client, /styles\.estimateModeSectorLabel/);
