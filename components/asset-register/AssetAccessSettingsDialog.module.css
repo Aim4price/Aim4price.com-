@@ -148,3 +148,14 @@
 }
 .dialog.subjectDialog .body.body { padding: 1.25rem 0 0 !important; }
 .dialog.subjectDialog .body > div { padding-top: 0; }
+
+/* The location chooser fits naturally; retain scrolling on short screens without a visible bar. */
+.dialog.dialog .body.body:has(> [data-location-view="choice"]) {
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
+}
+.dialog.dialog .body.body:has(> [data-location-view="choice"])::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
