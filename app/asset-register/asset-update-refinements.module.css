@@ -166,7 +166,7 @@
   flex: 1 1 0%; width: 100% !important; max-width: none !important;
 }
 :global(:where(html:has([data-website-canvas]))) .compactGrid.compactGrid:has(.usageEditor) {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
 }
 .usageEditor.usageEditor {
   align-items: stretch !important;
@@ -187,4 +187,45 @@
 .usageEditor.usageEditor .usageTypeField button {
   width: 100% !important; min-width: 0 !important; min-height: 3.75rem !important;
   height: 3.75rem !important; box-sizing: border-box; margin: 0 !important;
+}
+
+/* Keep every Details row on the same three-column grid and label baseline. */
+.detailsStack .compactGrid.compactGrid,
+.detailsStack .valueGrid.valueGrid { gap: .9rem !important; align-items: stretch !important; }
+.detailsStack .compactGrid.compactGrid > label,
+.detailsStack .compactGrid.compactGrid > div,
+.detailsStack .valueGrid.valueGrid > .vatValueField {
+  padding: 1rem !important;
+  min-width: 0;
+  align-content: start !important;
+}
+.detailsStack .compactGrid.compactGrid > :not(.usageEditor),
+.detailsStack .valueGrid.valueGrid > .vatValueField {
+  display: grid !important;
+  grid-template-rows: 1rem 3.75rem !important;
+  gap: .6rem !important;
+}
+.detailsStack .usageEditor.usageEditor > .usageTypeField,
+.detailsStack .usageEditor.usageEditor > .usageReading {
+  grid-template-rows: 1rem 3.75rem !important;
+}
+.detailsStack .compactGrid.compactGrid > :not(.usageEditor) > span,
+.detailsStack .usageEditor.usageEditor > .usageTypeField > span,
+.detailsStack .usageEditor.usageEditor > .usageReading > span,
+.detailsStack .valueGrid.valueGrid > .vatValueField > span {
+  margin: 0 !important;
+  font-size: .78rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+}
+.detailsStack .compactGrid.compactGrid > :not(.usageEditor) > input,
+.detailsStack .compactGrid.compactGrid > :not(.usageEditor) > button,
+.detailsStack .vatValueRow > .priceButton,
+.detailsStack .vatValueRow > .currencyControl,
+.detailsStack .vatValueSelect > button {
+  height: 3.75rem !important;
+  min-height: 3.75rem !important;
+  box-sizing: border-box;
+  margin: 0 !important;
 }
