@@ -15,13 +15,12 @@ export default function SharedProblems({endpoint,assetTitle,onClose,notesOnly=fa
  const openProblems=items.filter(item=>!item.notedAtIso);
  const startResolve=(problem:AssetIssueNoteStatus)=>{setRequestId(crypto.randomUUID());setResolve(problem);};
  const list=items.map(problem=><div key={problem.id}><LeadProblemCard problem={problem}/>{canWrite&&!problem.notedAtIso&&<button className={styles.secondaryButton} type="button" onClick={()=>startResolve(problem)}>Resolved</button>}</div>);
- const banners=openProblems.map(problem=><div key={problem.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
-   <AssetMessageReader title="Open issue reported" assetTitle={assetTitle} className={styles.partnerNoteText}>
+ const banners=openProblems.map(problem=><div key={problem.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`} data-message-banner>
+   <AssetMessageReader title="Open issue reported" assetTitle={assetTitle} className={styles.partnerNoteText} actions={canWrite&&<button className={styles.partnerNoteButton} type="button" onClick={()=>startResolve(problem)}>Resolved</button>}>
      <strong>Open issue reported</strong>
      <p>{problem.note}</p>
      <small className={styles.issueNoteMeta}>{[problem.operatorName ? `By ${problem.operatorName}` : '', problem.createdAtIso ? new Intl.DateTimeFormat('en-ZA',{day:'numeric',month:'short',year:'numeric',timeZone:'Africa/Johannesburg'}).format(new Date(problem.createdAtIso)) : ''].filter(Boolean).join(' · ')}</small>
    </AssetMessageReader>
-   {canWrite&&<button className={styles.partnerNoteButton} type="button" onClick={()=>startResolve(problem)}>Resolved</button>}
  </div>);
  const confirmation=resolve&&createPortal(<LeadActionDialog title="Resolve problem" assetTitle={assetTitle} onClose={()=>setResolve(null)} busy={busy} footer={<><button className={styles.secondaryButton} disabled={busy} onClick={()=>setResolve(null)}>Cancel</button><button className={styles.primaryButton} disabled={busy} onClick={()=>void save()}>{busy?'Saving…':'Yes, resolved'}</button></>}><p>Are you sure this problem is resolved?</p><p>{resolve.note}</p>{error&&<p role="alert">{error}</p>}</LeadActionDialog>,document.body);
  if(notesOnly)return <>{openProblems.length>0&&<span hidden data-open-problems="true"/>}{detailsVisible&&<>{error&&<p role="alert">{error}</p>}{banners}{confirmation}</>}</>;

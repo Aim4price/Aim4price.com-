@@ -19,3 +19,15 @@
 .message > div { display: flex; flex-wrap: wrap; gap: .75rem; }
 .message > div a { display: block; width: 8rem; height: 7rem; overflow: hidden; border-radius: .75rem; border: 1px solid var(--app-line, #d4e4dc); }
 .message img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.actions { display: flex; justify-content: flex-end; gap: .75rem; width: 100%; }
+.actions.actions > button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 3rem; min-width: 8rem; margin: 0; padding: .75rem 1.5rem;
+  border: 1px solid #12684e; border-radius: .75rem;
+  background: #12684e; color: #fff; font: inherit; font-size: 1.05rem; font-weight: 750;
+  cursor: pointer;
+}
+.actions.actions > button:hover:not(:disabled) { background: #0d513d; }
+.actions.actions > button:focus-visible { outline: 3px solid #229970; outline-offset: 3px; }
+.actions.actions > button:disabled { opacity: .6; cursor: wait; }
