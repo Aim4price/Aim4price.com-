@@ -58,7 +58,7 @@
 
 .vatValueRow {
   display: grid;
-  grid-template-columns: minmax(7rem, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
   gap: 0.5rem;
 }
@@ -112,3 +112,41 @@
   border-radius: 0 !important; background: transparent !important;
   box-shadow: none !important; outline: none !important; font: inherit; line-height: 1.5;
 }
+
+/* Fill the card and reserve separate space for the VAT label and chevron. */
+.vatValueField.vatValueField .vatValueRow {
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: .75rem !important;
+}
+.vatValueField .vatValueSelect.vatValueSelect {
+  min-width: 8.5rem !important;
+  width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.vatValueField .vatValueSelect.vatValueSelect > button {
+  display: grid !important;
+  grid-template-columns: max-content 1.5rem !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  padding-inline: .75rem !important;
+  gap: .6rem !important;
+}
+.vatValueField .vatValueSelect.vatValueSelect > button > span {
+  min-width: max-content !important;
+}
+.vatValueField .vatValueSelect.vatValueSelect > button > svg {
+  position: static !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+.vatValueField .vatValueRow > .priceButton,
+.vatValueField .vatValueRow > .currencyControl { width: 100% !important; }
