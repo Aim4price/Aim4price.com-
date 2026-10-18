@@ -47,8 +47,8 @@
 .toolbar { gap: .85rem; margin-bottom: 1.1rem; }
 .search input { height: 3.25rem; border: 1.5px solid #a8c8b8; border-radius: .85rem; font-size: .95rem; background: var(--app-surface, #fff); }
 .search svg { top: 1rem; }
-.filters { gap: .45rem; }
-.filters button { padding: .5rem .8rem; border-color: var(--app-line, #d5dfda); border-radius: .65rem; background: var(--app-surface, #fff); font-size: .85rem; }
+.filters { gap: .5rem; width: 100%; }
+.filters button { flex: 1 1 7.5rem; min-width: 0; min-height: 2.75rem; padding: .65rem .8rem; border-color: var(--app-line, #d5dfda); border-radius: .65rem; background: var(--app-surface, #fff); font-size: .85rem; }
 .filters button[aria-pressed="true"] { background: #17513f; border-color: #17513f; color: #fff; }
 .list { max-height: none; overflow: visible; padding: 0; scrollbar-gutter: auto; }
 .event, .event:last-of-type { margin-bottom: .7rem; border: 1px solid var(--app-line, #d5dfda); border-radius: .9rem; background: var(--app-surface, #fff); }
