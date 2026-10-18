@@ -256,7 +256,7 @@ test('popularity, explicit extras and replacement-price confirmation are mandato
   assert.match(client, /if \(!basicExtraChoice\) return 'Confirm whether an extra is fitted\.'/);
   assert.match(client, /None fitted/);
   assert.match(client, /Other extra/);
-  assert.match(client, /Selected replacement price/);
+  assert.match(client, /Asset replacement price/);
   assert.match(client, /Or enter replacement price manually/);
   assert.doesNotMatch(client, /Replacement price required/);
   assert.doesNotMatch(client, /Aim4price does not yet have a reliable replacement-price range/);
@@ -313,7 +313,7 @@ test('Basic replacement slider keeps zero stable and preserves manual values abo
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
-test('Basic replacement VAT selector preserves an ex-VAT valuation basis and removes the redundant breakdown', () => {
+test('Basic replacement VAT selector preserves an ex-VAT valuation basis and shows the asset/extras total', () => {
   assert.match(client, /const \[basicReplacementVatMode, setBasicReplacementVatMode\] = useState<VatDisplayMode>\('excl'\);/);
   assert.match(client, /const basicBaseReplacementPriceExVat = basicReplacementEnteredPrice === null[\s\S]*?basicReplacementVatMode === 'incl'[\s\S]*?basicReplacementEnteredPrice \/ \(1 \+ VAT_RATE\)/);
 
@@ -335,9 +335,9 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and rem
   assert.match(replacementBlock, /currentDisplayPrice \* \(1 \+ VAT_RATE\)/);
   assert.match(replacementBlock, /currentDisplayPrice \/ \(1 \+ VAT_RATE\)/);
   assert.match(replacementBlock, /replacementVatLabel/);
-  assert.doesNotMatch(replacementBlock, /Asset replacement/);
+  assert.match(replacementBlock, /Asset replacement/);
   assert.doesNotMatch(replacementBlock, /Configured asset replacement/);
-  assert.doesNotMatch(replacementBlock, /replacementBreakdown/);
+  assert.match(replacementBlock, /renderReplacementBreakdown/);
 
   assert.match(valuationStyles, /\.replacementVatToggle/);
   assert.match(valuationStyles, /\.replacementVatToggle button\.replacementVatToggleActive/);

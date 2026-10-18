@@ -1,3 +1,4 @@
+import { normalizeEstimateReplacementPrice } from '../../../lib/estimate-replacement';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventsSafely, type AdminUsageEventInput } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
@@ -488,7 +489,7 @@ export async function POST(request: NextRequest) {
       const yearModelUnknown = parseBoolean(body.yearModelUnknown);
       const condition = normalizeGenericCondition(body.condition);
       const selectedMethod = normalizeGenericSelectedMethod(body.selectedMethod);
-      const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
+      const userReplacementPriceExVat = normalizeEstimateReplacementPrice(body.userReplacementPriceExVat);
       const userReplacementPriceYear = Number(body.userReplacementPriceYear);
       const resolvedReplacementPriceYear = userReplacementPriceExVat === null
         ? null

@@ -1,5 +1,6 @@
 'use client';
 import EstimateTools from './EstimateTools';
+import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import { getBasicFamilyGuidance, getBasicFamilyGuideNote } from '../../lib/basic-family-guidance';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
@@ -2021,10 +2022,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const basicReplacementEnteredPrice = parseMoneyInput(basicReplacementPrice);
   const basicBaseReplacementPriceExVat = basicReplacementEnteredPrice === null
     ? null
-    : Math.round(
+    : (
         basicReplacementVatMode === 'incl'
           ? basicReplacementEnteredPrice / (1 + VAT_RATE)
-          : basicReplacementEnteredPrice,
+          : basicReplacementEnteredPrice
       );
   const basicExtraReplacementPriceExVat = basicExtraChoice === 'family'
     ? parseMoneyInput(basicFamilyExtraReplacementPrice)
@@ -3408,7 +3409,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
-    setVatDisplayMode(getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
+    setVatDisplayMode(basicEstimateActive ? basicReplacementVatMode : getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
     setAdvancedPanelOpen(false);
     setAdvancedLifetimeUsage('');
     setAdvancedConditionFactorPercent('');
@@ -3864,6 +3865,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
+    let replacementParts: ReturnType<typeof splitReplacementTotal> | null = null;
+    if (basicEstimateActive) {
+      try {
+        replacementParts = splitReplacementTotal(priceExVat, basicExtraReplacementPriceExVat ?? 0);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Invalid replacement price.');
+        return;
+      }
+    }
+
     setReplacementRecalculateLoading(true);
     setMessage('');
     setError('');
@@ -3880,7 +3891,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           equipmentModelId: selectedGenericModel?.id ?? null,
           typedModelName: submittedGenericModelName,
           saveModelCandidate: shouldSaveGenericModelCandidate,
-          specsJson: enrichedSpecsJson,
+          specsJson: { ...enrichedSpecsJson, ...replacementParts },
           year: calculationYear,
           yearModelUnknown,
           usageAmount: usageNumber,
@@ -3894,6 +3905,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       const data = (await response.json()) as GenericValuationApiResponse;
       if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to recalculate with user replacement price.');
       setResultState({ kind: 'generic', result: data.result });
+      if (replacementParts) {
+        setBasicReplacementPrice(String(getVatDisplayValue(replacementParts.basic_asset_replacement_price_ex_vat, basicReplacementVatMode)));
+      }
+      setUserReplacementPrice(String(priceExVat));
       setReplacementPriceBasis('user');
       setSelectedMethod('aim4price');
       setSavedMarketplaceAssetId(null);
@@ -3972,7 +3987,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     setMessage('');
-    setVatDisplayMode(getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
+    setVatDisplayMode(basicEstimateActive ? basicReplacementVatMode : getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
     setAdvancedPanelOpen(false);
     setAdvancedError('');
     setValuationLoading(true);
@@ -4030,7 +4045,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setResultState({ kind: 'generic', result: data.result });
         setReplacementPriceBasis(basicEstimateActive ? 'user' : data.result.replacementPriceBasis ?? 'aim4price');
         if (basicEstimateActive && basicTotalReplacementPriceExVat) {
-          setUserReplacementPrice(String(Math.round(basicTotalReplacementPriceExVat)));
+          setUserReplacementPrice(String(basicTotalReplacementPriceExVat));
         }
         setSelectedMethod('aim4price');
         setReplacementPanelOpen(false);
@@ -4110,6 +4125,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ...conversionFields,
       ...marketplaceFields,
     };
+  }
+
+  function renderReplacementBreakdown(base: number | null, extra: number, total: number | null, mode: VatDisplayMode) {
+    return <div className={styles.currentCard} aria-label="Replacement price breakdown">
+      <p>Asset alone: <strong>{money(getVatDisplayValue(base, mode))}</strong></p>
+      <p>Selected extras: <strong>{money(getVatDisplayValue(extra, mode))}</strong></p>
+      <p>Total replacement price: <strong>{money(getVatDisplayValue(total, mode))}</strong> · {getVatDisplayLabel(mode)}</p>
+    </div>;
+  }
+
+  function renderResultReplacementBreakdown() {
+    if (!basicEstimateActive || resultState?.kind !== 'generic') return null;
+    const total = getCurrentResultReplacementPriceExVat();
+    const extra = Number(resultState.result.specsJson.basic_extra_replacement_price_ex_vat) || 0;
+    return renderReplacementBreakdown(total === null ? null : total - extra, extra, total, vatDisplayMode);
   }
 
   function getCurrentResultReplacementPriceExVat(): number | null {
@@ -4654,7 +4684,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setReplacementPanelOpen(false);
 
     if (!userReplacementPrice.trim() && currentReplacementPrice !== null && Number.isFinite(currentReplacementPrice) && currentReplacementPrice > 0) {
-      setUserReplacementPrice(String(Math.round(currentReplacementPrice)));
+      setUserReplacementPrice(String(currentReplacementPrice));
     }
   }
 
@@ -4673,16 +4703,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (nextReplacementPrice === null) {
-      setFinalSaveError('Enter a valid replacement price excluding VAT.');
+      setFinalSaveError('Enter a valid replacement price.');
       return;
     }
 
     setFinalSaveError('');
 
     if (resultState.kind === 'generic') {
-      await calculateGenericWithReplacementPrice(Math.round(nextReplacementPrice), setFinalSaveError);
+      await calculateGenericWithReplacementPrice(nextReplacementPrice, setFinalSaveError);
     } else {
-      await calculateTractorWithReplacementPrice(Math.round(nextReplacementPrice), setFinalSaveError);
+      await calculateTractorWithReplacementPrice(nextReplacementPrice, setFinalSaveError);
     }
   }
 
@@ -6134,7 +6164,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         const convertedPrice = nextMode === 'incl'
           ? currentDisplayPrice * (1 + VAT_RATE)
           : currentDisplayPrice / (1 + VAT_RATE);
-        setBasicReplacementPrice(String(Math.round(convertedPrice)));
+        setBasicReplacementPrice(String(convertedPrice));
       }
       setBasicReplacementVatMode(nextMode);
       setMessage('');
@@ -6146,7 +6176,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}><strong>A starting guide for this equipment type.</strong> Adjust it to the new price of a comparable asset, considering brand, size and specification.</p>
+            <p className={styles.stepText}><strong>A starting guide for this equipment type.</strong> Enter the new price of the asset alone, excluding any extras selected in Specs.</p>
           </div>
           <button
             type="button"
@@ -6194,7 +6224,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
           <div className={styles.replacementPriceStack}>
             <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
-              {!compactAppMode ? <span>Selected replacement price</span> : null}
+              {!compactAppMode ? <span>Asset replacement price</span> : null}
               <strong>{basicReplacementPrice !== null && !hasReplacementSliderInput ? 'Not set' : money(selectedReplacementPrice)}</strong>
               <small>{replacementVatLabel}</small>
             </div>
@@ -6281,9 +6311,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               }}
               placeholder="e.g. 1 850 000"
             />
-            {!compactAppMode ? <span className={styles.fieldHint}>You can always override the slider with the price you believe best represents the comparable new asset.</span> : null}
+            {!compactAppMode ? <span className={styles.fieldHint}>Enter the asset price only. Selected extras are added separately below.</span> : null}
           </label>
         </div>
+        {renderReplacementBreakdown(basicBaseReplacementPriceExVat, basicExtraReplacementPriceExVat ?? 0, basicTotalReplacementPriceExVat, basicReplacementVatMode)}
       </div>
     );
   }
@@ -8841,11 +8872,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             ) : null}
           </section> : null}
 
+          {renderResultReplacementBreakdown()}
           <div className={styles.resultCalculationPanel}>
           {(isGeneric && genericResult) || tractorResult ? (
             <section className={styles.resultReplacementSummary}>
               <div>
-                <span>Replacement price</span>
+                <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'}</span>
                 <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
                 <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
               </div>
@@ -8869,7 +8901,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
-                    Set the cost of a comparable new asset. Drag the slider or type an amount.
+                    {basicEstimateActive ? 'Set the total cost of the asset and selected extras. Extras are already included in this amount.' : 'Set the cost of a comparable new asset. Drag the slider or type an amount.'}
                   </p>
 
                   <div className={styles.replacementInputPanel}>
@@ -8881,7 +8913,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                     <div className={styles.replacementFieldsGrid}>
                       <label className={`${styles.field} ${styles.replacementField}`}>
-                        <span className={styles.fieldLabel}>Replacement price ({replacementModalVat === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
+                        <span className={styles.fieldLabel}>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} ({replacementModalVat === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
                         <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
                           label="Asset replacement price" sliderMax={replacementSliderMax} />
                         <small className={styles.replacementFieldHint}>Current price: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} {getVatDisplayLabel(replacementModalVat)}</small>
@@ -9478,28 +9510,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div className={styles.finalSaveSummaryGrid}>
               <div className={styles.finalSaveSummaryCard}>
-                <span>Current value excl. VAT</span>
-                <strong>{money(headlineValue)}</strong>
+                <span>Current value · {getVatDisplayLabel(vatDisplayMode)}</span>
+                <strong>{money(getVatDisplayValue(headlineValue, vatDisplayMode))}</strong>
               </div>
               <div className={styles.finalSaveSummaryCard}>
-                <span>Replacement price excl. VAT</span>
-                <strong>{money(finalSaveReplacementPrice)}</strong>
+                <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} · {getVatDisplayLabel(vatDisplayMode)}</span>
+                <strong>{money(getVatDisplayValue(finalSaveReplacementPrice, vatDisplayMode))}</strong>
               </div>
             </div>
 
+            {renderResultReplacementBreakdown()}
             <div className={styles.finalReplacementPanel}>
               <label className={styles.finalReplacementField}>
-                <span>Confirm or update replacement price excl. VAT</span>
-                <div className={styles.finalReplacementCurrencyInput}>
-                  <span>R</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={formatReplacementPriceInput(userReplacementPrice)}
-                    onChange={(event) => handleReplacementPriceInput(event, setUserReplacementPrice)}
-                    placeholder={finalSaveReplacementPrice ? String(Math.round(finalSaveReplacementPrice)) : 'Enter replacement price'}
-                  />
-                </div>
+                <span>Confirm or update {basicEstimateActive ? 'total replacement price' : 'replacement price'} ({getVatDisplayLabel(vatDisplayMode)})</span>
+                <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice}
+                  vatMode={vatDisplayMode} label="Replacement price" />
               </label>
               <button
                 type="button"

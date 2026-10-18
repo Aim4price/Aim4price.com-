@@ -1,3 +1,4 @@
+import { normalizeEstimateReplacementPrice } from '../../../lib/estimate-replacement';
 import { hasPrivateEstimateSettingsRequest } from '../../../lib/private-estimate-settings';
 import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
 import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
@@ -65,12 +66,7 @@ function normalizeUsageNumber(value: unknown, strict = false): number | null {
   return Number(value);
 }
 
-function normalizeReplacementPrice(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined') return null;
 
-  const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
-  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
-}
 
 
 async function getAdvancedAccessProfile() {
@@ -122,7 +118,7 @@ export async function POST(request: NextRequest) {
     const year = Number(body.year);
     const yearModelUnknown = parseBoolean(body.yearModelUnknown);
     const condition = normalizeCondition(body.condition);
-    const userReplacementPriceExVat = normalizeReplacementPrice(body.userReplacementPriceExVat);
+    const userReplacementPriceExVat = normalizeEstimateReplacementPrice(body.userReplacementPriceExVat);
     const userReplacementPriceYear = Number(body.userReplacementPriceYear);
     const resolvedReplacementPriceYear = userReplacementPriceExVat === null
       ? null
