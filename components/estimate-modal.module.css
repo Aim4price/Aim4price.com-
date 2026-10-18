@@ -131,7 +131,7 @@
 
 /* Use the canonical canvas dimensions so zoom scales the whole dialog consistently. */
 :global(html:has([data-website-canvas])) .surface.surface {
-  width: min(1080px, calc(var(--website-design-width, 100vw) - 48px));
+  width: min(var(--estimate-modal-width, 1080px), calc(var(--website-design-width, 100vw) - 48px));
   max-width: calc(var(--website-design-width, 100vw) - 48px);
   padding: 32px;
 }
