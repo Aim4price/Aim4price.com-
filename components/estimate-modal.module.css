@@ -43,7 +43,7 @@
   border-radius: 12px;
 }
 .surface.surface :is(label, legend) { font-size: 1rem; font-weight: 700; }
-.surface.surface .close {
+.surface.surface .close.close {
   box-sizing: border-box;
   flex: 0 0 44px;
   width: 44px;
@@ -53,12 +53,12 @@
   display: grid;
   place-items: center;
   border: 1px solid var(--app-info-line, #d2dfe4);
-  border-radius: 8px;
-  background: var(--app-surface-soft, #f5f9fa);
+  border-radius: 16px;
+  background: #f5f9f7;
   color: var(--app-text, #173e33);
   font: inherit;
-  font-size: 22px;
-  font-weight: 500;
+  font-size: 26px;
+  font-weight: 800;
   line-height: 1;
   box-shadow: none;
 }
@@ -136,3 +136,8 @@
   padding: 32px;
 }
 .surface.surface .sliderLabels { font-size: 0.95rem; }
+
+/* The same rounded close control throughout estimate dialogs. */
+.surface.surface .close.close { border-color: #d2dfd7; color: #234d3b; cursor: pointer; }
+.surface.surface .close.close:hover:not(:disabled) { background: #e8f3ec; border-color: #237454; }
+.surface.surface .close.close:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
