@@ -7384,7 +7384,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
             <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
-              Cancel
+              Back
             </button>
             <button type="button" className={styles.primaryButton} onClick={saveYearFromInput}>
               Continue
@@ -7401,7 +7401,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return (
       <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-        <div className={`${styles.detailsModal} ${modalStyles.surface}`}>
+        <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.usageDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               {!compactAppMode ? (
@@ -7461,6 +7461,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
               <input
                 className={styles.percentSlider}
+                aria-label="Worked percentage"
+                style={{ '--usage-progress': `${percentageValue}%` } as CSSProperties}
                 type="range"
                 min="0"
                 max="100"
@@ -7840,9 +7842,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div className={styles.conditionQuestionFlow}>
                   <div className={styles.conditionQuestionProgress}>
                     <div className={styles.conditionQuestionProgressTop}>
-                      <strong>{advancedQuestion?.label}</strong>
+                      <strong className={styles.advancedQuestionHeading}>{renderDetailIcon(advancedQuestionIndex === 0 ? 'specs' : advancedQuestionIndex === 1 ? 'model' : advancedQuestionIndex === 2 ? 'usage' : advancedQuestionIndex === 3 ? 'year' : 'extras')}<span>{advancedQuestion?.label}</span></strong>
                       <span>Question {advancedQuestionIndex + 1} of {advancedQuestionTotal}</span>
                     </div>
+                    <p className={styles.advancedQuestionHint}>{['How well does it work?', 'How sound are the body and structure?', 'How much usable life remains?', 'What service records are available?', 'What work is needed before use?'][advancedQuestionIndex]}</p>
                     <div className={styles.conditionQuestionProgressTrack} aria-hidden="true">
                       <span style={{ width: `${advancedQuestionProgress}%` }} />
                     </div>
@@ -8616,6 +8619,22 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function renderAssessmentOptionIcon(value: string) {
+    const tone = ['excellent', '75_100', 'complete_verified', 'ready'].includes(value) ? 'green'
+      : ['good', '50_75', 'owner_recorded', 'minor'].includes(value) ? 'teal'
+      : ['average', '25_50', 'partial', 'moderate'].includes(value) ? 'amber'
+      : value === 'unknown' || value === 'none' ? 'grey' : 'red';
+    return <span className={styles.assessmentChoiceIcon} data-tone={tone} aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        {tone === 'green' ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+          : tone === 'teal' ? <path d="m5 12 4 4L19 6" />
+          : tone === 'amber' ? <path d="M5 7h14M5 12h14M5 17h9" />
+          : tone === 'grey' ? <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>
+          : <><path d="m12 3 10 18H2ZM12 9v5M12 17h.01" /></>}
+      </svg>
+    </span>;
+  }
+
   function renderDealerAssessmentGroup(
     label: string,
     value: string,
@@ -8664,7 +8683,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 }
               }}
             >
-              {option.label}
+              {activeDetailsModal === 'condition' ? renderAssessmentOptionIcon(option.value) : null}
+              <span>{option.label}</span>
+              {activeDetailsModal === 'condition' ? <span className={styles.estimateSelectionCheck} aria-hidden="true">{value === option.value ? '✓' : ''}</span> : null}
             </button>
           ))}
         </div>

@@ -15044,3 +15044,67 @@
   box-shadow: inset 0 0 0 1px #237454;
   background: #edf7f1;
 }
+
+/* Roomier year and usage controls, with actions at opposite ends of the footer. */
+.yearDetailsModal .yearSliderReadout {
+  grid-row: 1 / 3; align-self: stretch; display: flex; flex-direction: column;
+  justify-content: center; gap: .7rem; padding: 1.4rem;
+}
+.yearDetailsModal .yearSliderReadout strong { font-size: 4.5rem; line-height: 1.05; }
+.yearDetailsModal .yearSliderReadout span,
+.yearDetailsModal .yearSliderReadout small { font-size: 1.1rem; line-height: 1.4; }
+.yearDetailsModal .yearSliderControl .fieldLabel,
+.yearDetailsModal .yearSliderMeta,
+.usageDetailsModal .fieldLabel { font-size: 1.1rem; }
+.yearDetailsModal .detailsModalActions,
+.usageDetailsModal .detailsModalActions,
+.conditionProgressiveModal .conditionDetailActions { justify-content: space-between; gap: 1.5rem; margin-top: .8rem; padding: 1.1rem 0 .35rem; }
+.yearDetailsModal .detailsModalActions > button,
+.usageDetailsModal .detailsModalActions > button { min-width: 8rem; min-height: 3.25rem; }
+.usageDetailsModal .modalInputField { padding: 1.2rem; gap: .8rem; }
+.usageDetailsModal .modalInputField input { min-height: 4rem; font-size: 1.5rem; font-weight: 650; }
+.usageDetailsModal .percentScale { align-items: center; gap: 1rem; font-size: 1.1rem; }
+.usageDetailsModal .percentScale strong { font-size: 2.6rem; line-height: 1.2; }
+.yearDetailsModal .yearRangeInput,
+.usageDetailsModal .percentSlider {
+  appearance: none; -webkit-appearance: none; width: 100%; height: 2.75rem;
+  padding: 0; margin: .5rem 0; border: 0; border-radius: 0; box-shadow: none; background: transparent; cursor: pointer;
+}
+.yearDetailsModal .yearRangeInput::-webkit-slider-runnable-track,
+.usageDetailsModal .percentSlider::-webkit-slider-runnable-track { height: .75rem; border-radius: 1rem; background: linear-gradient(to right, #1d634b 0 var(--usage-progress, var(--year-progress, 50%)), #dce9e1 var(--usage-progress, var(--year-progress, 50%)) 100%); }
+.yearDetailsModal .yearRangeInput::-moz-range-track,
+.usageDetailsModal .percentSlider::-moz-range-track { height: .75rem; border-radius: 1rem; background: #dce9e1; }
+.yearDetailsModal .yearRangeInput::-moz-range-progress,
+.usageDetailsModal .percentSlider::-moz-range-progress { height: .75rem; border-radius: 1rem; background: #1d634b; }
+.yearDetailsModal .yearRangeInput::-webkit-slider-thumb,
+.usageDetailsModal .percentSlider::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 2rem; height: 2rem; margin-top: -.625rem; border: 4px solid #fff; border-radius: 50%; background: #1d634b; box-shadow: 0 0 0 3px #c8ded2; }
+.yearDetailsModal .yearRangeInput::-moz-range-thumb,
+.usageDetailsModal .percentSlider::-moz-range-thumb { width: 1.5rem; height: 1.5rem; border: 4px solid #fff; border-radius: 50%; background: #1d634b; box-shadow: 0 0 0 3px #c8ded2; }
+.yearDetailsModal .yearRangeInput:focus-visible,
+.usageDetailsModal .percentSlider:focus-visible { outline: 2px solid #237454; outline-offset: 3px; border-radius: .5rem; }
+/* One question at a time, with the same light icon tiles as Basic condition. */
+.conditionProgressiveModal .conditionQuestionCard { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOptions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+  position: relative; display: flex; align-items: center; justify-content: flex-start;
+  gap: .8rem; padding: 1rem 2rem 1rem 1rem; min-height: 5.5rem;
+  border: 1px solid #cddfd5; border-radius: 1.1rem; background: #fff; color: #173e30;
+  font-size: 1.1rem; line-height: 1.3; text-align: left; white-space: normal;
+}
+.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOptionActive { background: #edf7f1; border-color: #237454; box-shadow: inset 0 0 0 1px #237454; }
+.assessmentChoiceIcon { display: grid; place-items: center; flex: 0 0 auto; width: 2.75rem; height: 2.75rem; border-radius: .85rem; background: #e4f4ec; color: #176a49; }
+.assessmentChoiceIcon svg { width: 1.5rem; height: 1.5rem; }
+.assessmentChoiceIcon[data-tone='teal'] { background: #e0f3ee; color: #136d63; }
+.assessmentChoiceIcon[data-tone='amber'] { background: #fff3d8; color: #906111; }
+.assessmentChoiceIcon[data-tone='red'] { background: #fbe9e7; color: #a43d36; }
+.assessmentChoiceIcon[data-tone='grey'] { background: #edf1ef; color: #617069; }
+.conditionProgressiveModal .conditionQuestionProgressTop .advancedQuestionHeading { display: flex; align-items: center; gap: .7rem; font-size: 1.1rem; white-space: normal; }
+.conditionProgressiveModal .advancedQuestionHeading .detailIcon { width: 2.5rem; height: 2.5rem; }
+.conditionProgressiveModal .advancedQuestionHeading > span:last-child { flex: 1; white-space: normal; }
+.advancedQuestionHint { margin: .4rem 0 .2rem; font-size: 1.05rem; line-height: 1.4; color: #536c60; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearDetailsModal .yearSliderReadout { grid-row: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOptions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption { flex-direction: column; align-items: flex-start; gap: .5rem; padding: .85rem; font-size: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionProgressTop { flex-wrap: wrap; }
+}
