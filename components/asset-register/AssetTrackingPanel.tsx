@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from 'next/dynamic';
 const LocationHistory = dynamic(() => import('./AssetLocationHistoryDialog'));
+import QrCodePreview from "../QrCodePreview";
+import { trackerPairingUrl } from "../../lib/asset-tracking-links";
 import TrackerInstallShareDialog from "./TrackerInstallShareDialog";
 import styles from "./AssetTrackingPanel.module.css";
 export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
@@ -98,7 +100,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
           <span className={styles.stepNumber}>2</span>
           <div className={styles.stepContent}>
             <h4>{device ? "Connect a replacement" : "Connect phone"}</h4>
-            <p>Create a code, enter it in the phone app, then tap Activate.</p>
+            <p>Create a code, then scan it with the equipment phone.</p>
             <button className={styles.primaryAction} disabled={busy} type="button" onClick={() => action("POST")}>
               {busy ? "Please wait…" : device ? "Pair replacement phone" : code ? "Create new code" : "Create pairing code"}
               <span aria-hidden="true">→</span>
@@ -109,8 +111,8 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {code && (
         <div className={styles.pairingCard} aria-live="polite">
           <div className={styles.codeHeading}><strong>Your pairing code</strong><span>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
-          {remaining>0?<><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></>:<p role="status">Create a new code to connect the phone.</p>}
-          <p>Enter this code on the equipment phone. Pairing a replacement disconnects the previous phone.</p>
+          {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div><h4 className={styles.scanTitle}>Scan to connect</h4><p>Use the phone’s camera, open Tracker, then tap Connect.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
+          <p>You can also enter the code in the app. Pairing a replacement disconnects the previous phone.</p>
         </div>
       )}
       {device&&<button type="button" onClick={()=>setReplace(false)}>Back to connected phone</button>}
@@ -118,12 +120,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {error && <p role="alert" className={styles.error}>{error}</p>}
       <div className={styles.setupFooter}>
         <p>Find recorded routes in <strong>Location history → Movement</strong>.</p>
-        <a className={styles.helpLink} href="https://github.com/Aim4price/Aim4price.com-/blob/main/docs/asset-tracking-pilot.md" target="_blank" rel="noreferrer">Setup help <span aria-hidden="true">↗</span></a>
       </div>
-      <details className={styles.setupDetails}>
-        <summary>About this pilot</summary>
-        <p>Records approximately every minute while moving. After 15 minutes stopped, saves a point every 10 minutes. After restarting the phone, open the app and tap Activate.</p>
-      </details>
       {device && <details className={styles.setupDetails}><summary>Manage device</summary><div className={styles.disconnectRow}><button type="button" onClick={()=>setReplace(true)}>Replace phone</button><button className={styles.disconnectAction} disabled={busy} type="button" onClick={() => action("DELETE")}>Disconnect phone</button><span>Saved routes will remain.</span></div></details>}
     </section>
   );

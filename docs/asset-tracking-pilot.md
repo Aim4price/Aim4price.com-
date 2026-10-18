@@ -55,3 +55,9 @@ The GitHub Actions **Asset tracking pilot** workflow builds and uploads `aim4pri
 Use one farm-owned phone and test a known route with screen locked, a 20-minute stop and resumed movement. Check stationary distance stays near zero. Disconnect mobile data, drive, restore connectivity and confirm capture times and route order. Repeat an upload, deactivate, revoke and re-pair. Check that the old device stops uploading. Swap power banks and restart the phone (then Activate). Measure a full day's data and battery usage before buying more equipment.
 
 Validated automatically: TypeScript, route maths, database-backed pairing/ingestion/revocation tests and Android compilation/lint. Physical-phone, heat, radio-coverage and battery-runtime validation are separate field tests.
+
+### Pairing QR (tracker 0.2)
+
+The pairing card now shows a QR code. Scan with the Android phone camera, tap **Open Tracker**, then **Connect** and **Activate**. Manual code entry remains available. The QR opens `/tracker/pair` with the short-lived code in the URL fragment, which is removed from the address bar after reading. It never connects or activates without the user tapping the app controls. Expiration and one-time use remain enforced by the pairing API.
+
+The bundled APK is updated to version code 2 and was verified with the same signing certificate as the previous bundled build, so existing installations can update in place. Older app versions can still pair by entering the code manually.

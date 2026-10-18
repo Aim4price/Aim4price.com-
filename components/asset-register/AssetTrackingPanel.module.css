@@ -126,7 +126,6 @@
 .pairingCard p { font-size: .85rem; color: #5b7067; }
 .setupFooter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding-top: 1rem; border-top: 1px solid #e0e8e3; }
 .setupFooter p { font-size: .85rem; color: #5b7067; }
-.setupPanel .helpLink { padding: .2rem 0; border: 0; border-radius: 0; background: transparent; gap: .35rem; font-size: .85rem; text-decoration: underline; text-underline-offset: 4px; }
 .setupDetails { margin-top: -.5rem; color: #65786e; font-size: .8rem; }
 .setupDetails summary { cursor: pointer; width: fit-content; padding: .2rem 0; }
 .setupDetails p { padding-top: .5rem; max-width: 65ch; }
@@ -155,3 +154,8 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 .connectedSummary dl div {display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
 .connectedSummary dt {color:#536b61;} .connectedSummary dd {margin:0;font-weight:650;}
 .codeActions {display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;}
+
+.pairingLayout { display:grid; grid-template-columns: 11rem minmax(0,1fr); gap:1.5rem; align-items:center; margin:1rem 0; }
+.pairingQr { padding:.4rem; border:1px solid #d3e3d9; border-radius:14px; background:white; }
+.scanTitle { margin:0 0 .5rem; font-size:1.2rem; }
+@media (max-width:600px) { :global(:where(html:not(:has([data-website-canvas])))) .pairingLayout { grid-template-columns:1fr; } :global(:where(html:not(:has([data-website-canvas])))) .pairingQr { width:11rem; margin:auto; } }

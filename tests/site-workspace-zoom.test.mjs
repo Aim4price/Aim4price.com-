@@ -63,11 +63,11 @@ test('Auto uses browser width without cancelling native zoom or adding height ti
   assert.doesNotMatch(await read('app/layout.tsx'), /userScalable:\s*false|maximumScale|minimumScale|width:\s*980/);
 });
 test('native product and operational routes are excluded with exact path boundaries', () => {
-  for (const prefix of ['/owner-app', '/dealer', '/field-manager', '/admin', '/scan', '/fuel-scan']) {
+  for (const prefix of ['/owner-app', '/dealer', '/field-manager', '/admin', '/scan', '/fuel-scan', '/tracker/pair']) {
     assert.equal(isNativeWorkspace(prefix), true);
     assert.equal(isNativeWorkspace(`${prefix}/nested/page`), true);
   }
-  for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help', '/business-network/accept', '/business-network/example', '/business-network/accept/', '/asset-share', '/asset-share/example-token']) assert.equal(isNativeWorkspace(route), false);
+  for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help', '/tracker', '/tracker/pair-help', '/business-network/accept', '/business-network/example', '/business-network/accept/', '/asset-share', '/asset-share/example-token']) assert.equal(isNativeWorkspace(route), false);
 });
 test('portrait phone entry strongly recommends landscape without locking orientation', async () => {
   assert.equal(WEBSITE_PHONE_SHORT_SIDE_MAX, 560);

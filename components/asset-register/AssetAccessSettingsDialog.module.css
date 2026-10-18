@@ -197,3 +197,6 @@
 .dialog.subjectDialog .body.body.body { padding-top: 1.6rem !important; }
 .dialog .accessChoices { padding: 1.5rem; margin: -1.5rem; }
 .dialog .footer { padding-inline: 1.5rem; margin-inline: -1.5rem; }
+
+.dialog.dialog .body.body:has([data-tracker-install]) { scrollbar-width:none; scrollbar-gutter:auto; }
+.dialog.dialog .body.body:has([data-tracker-install])::-webkit-scrollbar { display:none; }

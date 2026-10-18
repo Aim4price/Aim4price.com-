@@ -12,20 +12,29 @@ import org.json.*;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
+ String scannedCode="";
  TextView status;final Handler handler=new Handler(Looper.getMainLooper());
  final Runnable refresh=new Runnable(){public void run(){if(status!=null){var p=TrackerApi.prefs(MainActivity.this);status.setText((p.getBoolean("active",false)?"Tracking activated":"Tracking deactivated")+"\n"+p.getString("sync","No upload yet")+"\n"+p.getString("issue",""));}handler.postDelayed(this,3000);}};
- public void onCreate(Bundle b){super.onCreate(b);draw();}
+ public void onCreate(Bundle b){super.onCreate(b);readPairingIntent(getIntent());draw();}
  public void onResume(){super.onResume();draw();handler.post(refresh);}
  public void onPause(){handler.removeCallbacks(refresh);super.onPause();}
+ public void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readPairingIntent(intent);draw();}
+ void readPairingIntent(Intent intent){
+  android.net.Uri uri=intent.getData();
+  if(uri==null||!"aim4price-tracker".equals(uri.getScheme())||!"pair".equals(uri.getHost()))return;
+  String value=uri.getQueryParameter("code");
+  if(value!=null&&value.matches("[A-Fa-f0-9]{16}"))scannedCode=value.toUpperCase(java.util.Locale.ROOT);
+  intent.setData(null);
+ }
  void draw(){
   LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(28,64,28,32);box.setBackgroundColor(Color.rgb(245,249,246));setContentView(box);
   TextView title=new TextView(this);title.setText("Aim4price Tracker");title.setTextSize(27);title.setTextColor(Color.rgb(15,88,64));box.addView(title);
   var p=TrackerApi.prefs(this);TextView asset=new TextView(this);asset.setText(p.getString("title","Connect this phone to your equipment"));asset.setTextSize(19);asset.setPadding(0,24,0,24);box.addView(asset);
   status=new TextView(this);status.setTextSize(15);box.addView(status);
   if(p.getString("token","").isEmpty()){
-   EditText code=new EditText(this);code.setHint("Pairing code");code.setSingleLine(true);box.addView(code);
+   EditText code=new EditText(this);code.setHint("Pairing code");code.setSingleLine(true);code.setText(scannedCode);box.addView(code);
    TextView help=new TextView(this);help.setText("Get a code from the asset’s Advanced settings → Tracking device. While activated, this phone shares its location with that asset’s owner, including with the screen locked.");help.setPadding(0,20,0,20);box.addView(help);
-   Button pair=new Button(this);pair.setText("Connect");box.addView(pair);pair.setOnClickListener(v->{pair.setEnabled(false);String value=code.getText().toString().trim();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{JSONObject r=TrackerApi.post("/api/tracking/pair",new JSONObject().put("code",value).put("name",Build.MANUFACTURER+" "+Build.MODEL),null);new TrackerStore(this).clear();p.edit().putString("token",r.getString("token")).putString("title",r.getString("assetTitle")).putBoolean("active",false).remove("issue").apply();runOnUiThread(this::draw);}catch(Exception e){runOnUiThread(()->{status.setText(e.getMessage());pair.setEnabled(true);});}finally{executor.shutdown();}});});
+   Button pair=new Button(this);pair.setText("Connect");box.addView(pair);pair.setOnClickListener(v->{pair.setEnabled(false);String value=code.getText().toString().trim();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{JSONObject r=TrackerApi.post("/api/tracking/pair",new JSONObject().put("code",value).put("name",Build.MANUFACTURER+" "+Build.MODEL),null);new TrackerStore(this).clear();p.edit().putString("token",r.getString("token")).putString("title",r.getString("assetTitle")).putBoolean("active",false).remove("issue").apply();runOnUiThread(()->{scannedCode="";draw();});}catch(Exception e){runOnUiThread(()->{status.setText(e.getMessage());pair.setEnabled(true);});}finally{executor.shutdown();}});});
   }else{
    Button activate=new Button(this);activate.setText("Activate");box.addView(activate);activate.setOnClickListener(v->activate());
    Button stop=new Button(this);stop.setText("Deactivate");box.addView(stop);stop.setOnClickListener(v->{p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});});
