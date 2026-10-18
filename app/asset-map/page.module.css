@@ -1137,6 +1137,7 @@
 .selectedPhotoFrame {
   position: relative;
   min-width: 0;
+  border-radius: 0.95rem;
 }
 
 .selectedPhotoImage,
