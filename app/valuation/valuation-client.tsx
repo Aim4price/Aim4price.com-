@@ -8699,7 +8699,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setDetailedAssessmentError('');
                 if (compactAppMode && activeDetailsModal !== 'condition') {
                   setActiveDetailedAssessmentSection(nextSection);
-                  if (!nextSection && activeDetailsModal !== 'condition') scrollToDetailsCard('valuation-popularity-step');
+                  if (!nextSection) scrollToDetailsCard('valuation-popularity-step');
                 }
               }}
             >
