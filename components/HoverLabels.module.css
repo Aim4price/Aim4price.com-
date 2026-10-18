@@ -20,3 +20,20 @@
   overflow-wrap: anywhere;
 }
 
+
+/* A clear green halo without blurring text, shifting layout or intercepting clicks. */
+.activeControl {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .20), 0 4px 16px rgba(16, 185, 129, .18) !important;
+}
+
+/* Preserve each control's existing keyboard focus indicator. */
+.activeControl:not(:focus-visible) {
+  outline: 1px solid rgba(22, 163, 74, .72);
+  outline-offset: 1px;
+}
+
+@media (forced-colors: active) {
+  .activeControl:not(:focus-visible) {
+    outline: 2px solid Highlight;
+  }
+}

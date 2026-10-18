@@ -70,6 +70,10 @@ export default function HoverLabels() {
 
   useLayoutEffect(() => {
     if (!target || !text || !labelRef.current) return;
+    // Hidden hints belong to their clickable card; highlight the control, never the tooltip.
+    const control = target.getAttribute('aria-hidden') === 'true' ? target.parentElement : target;
+    const highlight = control && !control.matches(':disabled, [aria-disabled="true"]') ? control : null;
+    highlight?.classList.add(styles.activeControl);
     const anchor = target.getBoundingClientRect();
     const box = labelRef.current.getBoundingClientRect();
     const viewport = window.visualViewport;
@@ -89,6 +93,7 @@ export default function HoverLabels() {
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-tooltip'] });
     return () => {
       observer.disconnect();
+      highlight?.classList.remove(styles.activeControl);
       if (previous === null) target.removeAttribute('aria-describedby');
       else target.setAttribute('aria-describedby', previous);
     };
