@@ -11,3 +11,7 @@
 .hint{position:absolute;z-index:500;left:50%;bottom:1.75rem;transform:translateX(-50%);width:max-content;max-width:calc(100% - 2rem);box-sizing:border-box;padding:.5rem .8rem;border:1px solid #d0e1d7;border-radius:.7rem;background:rgba(255,255,255,.95);color:#174c39;font-size:.75rem;font-weight:700;text-align:center;pointer-events:none;box-shadow:0 4px 12px rgba(18,49,48,.1)}
 .status{position:absolute;z-index:600;inset:0;display:flex;align-items:center;justify-content:center;gap:.7rem;flex-direction:column;padding:2rem;text-align:center;background:#f0f6f2;color:#174c39;font-weight:700}.status button{font:inherit;padding:.5rem 1rem;border:1px solid #a4c9b6;border-radius:.7rem;background:white;color:inherit;cursor:pointer}
 .toolbar{display:flex;align-items:center;gap:1rem;justify-content:space-between;margin-bottom:.1rem}.toolbar button{width:auto;min-height:2.4rem;padding:.5rem 1rem;border:1px solid #c6dcd0;border-radius:.75rem;background:white;color:#245441;font:inherit;font-size:.85rem;font-weight:750;cursor:pointer}.toolbar span{font-size:.85rem;color:#466459;font-weight:650}.toolbar button:focus-visible{outline:3px solid #64ad91;outline-offset:2px}
+
+.frame .marker:focus { outline:none !important; box-shadow:none !important; }
+.frame .marker:focus .pin,.frame .marker:hover .pin { filter:drop-shadow(0 0 7px #429675); }
+.frame .marker:focus-visible .pin { filter:drop-shadow(0 0 3px white) drop-shadow(0 0 9px #176d50); }
