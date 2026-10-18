@@ -1,4 +1,5 @@
 'use client';
+import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
 import advancedStyles from '../../components/asset-register/AdvancedSettings.module.css';
 import AssetMessageReader from '../../components/asset-register/AssetMessageReader';
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
@@ -1338,7 +1339,7 @@ const USAGE_OVERRIDE_CONFIRMATION_TEXT =
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
 type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice' | 'savingMap';
-type AssetSettingsView = 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage' | 'lifetime';
+type AssetSettingsView = 'tracking' | 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage' | 'lifetime';
 type AssetUsageOverrideRequest = {
   mode: Exclude<AssetSettingsUsageMode, 'none'>;
   value: number;
@@ -18886,6 +18887,10 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
+                  <button type="button" className={styles.assetSettingsOptionButton} onClick={()=>setAssetSettingsView('tracking')} disabled={isAssetSettingsBusy}>
+                    <FlagIcon className={styles.assetSettingsOptionIcon}/><span><strong>Tracking device</strong><small>Connect an equipment phone.</small></span>
+                  </button>
+
                   {isSavedManualAsset(editingAsset) ? (
                     <>
                       <button
@@ -18939,6 +18944,8 @@ export default function AssetRegisterClient({
                   ) : null}
                 </div>
               ) : null}
+
+              {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel assetId={editingAsset.id}/> : null}
 
               {assetSettingsView === 'lifetime' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>

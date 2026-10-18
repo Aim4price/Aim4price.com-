@@ -1,0 +1,100 @@
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 0.5rem;
+  color: #183a30;
+}
+.panel p {
+  margin: 0;
+  line-height: 1.5;
+}
+.actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.panel button,
+.panel a {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #c5d9d0;
+  background: #f1f8f4;
+  color: #145c42;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.panel button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.code {
+  font-size: 1.4rem;
+  letter-spacing: 0.12em;
+  padding: 1rem;
+  background: #eef7f1;
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filters label {
+  display: grid;
+  gap: 0.35rem;
+}
+.filters input {
+  padding: 0.65rem;
+  border: 1px solid #c5d9d0;
+  border-radius: 10px;
+  font: inherit;
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.stats div {
+  background: #f1f8f4;
+  border-radius: 12px;
+  padding: 0.8rem;
+}
+.stats strong,
+.stats span {
+  display: block;
+}
+.stats strong {
+  font-size: 1.2rem;
+}
+.stats span {
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+.notice {
+  font-size: 0.9rem;
+  color: #496158;
+}
+.error {
+  color: #9a2929;
+}
+.tabs {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.tabs button[aria-pressed="true"] {
+  background: #145c42;
+  color: white;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

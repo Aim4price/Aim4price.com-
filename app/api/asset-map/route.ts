@@ -1,3 +1,4 @@
+import {latestTrackingPositions} from '../../../lib/asset-tracking';
 import { NextResponse } from "next/server";
 import { getServerSession } from "../../../lib/auth-session";
 import {
@@ -61,6 +62,8 @@ type AssetMapItem = {
   lastKnownLocationText: string;
   updatedAtIso: string;
   photos: string[];
+  trackingStatus?: string;
+  lastTrackedAtIso?: string;
 };
 
 function unauthorized() {
@@ -481,6 +484,17 @@ export async function GET() {
     const assets = registerBundles.flatMap(({ register, items }) =>
       items.map((item) => mapAssetForMap(item, register)),
     );
+    const byAsset=await latestTrackingPositions(session.user.id);
+    for(const asset of assets){
+      const point=byAsset.get(asset.id);if(!point)continue;
+      asset.trackingStatus=!point.last_seen_at?'Waiting':Date.now()-new Date(point.last_seen_at).getTime()>12*60000?'Offline':!point.active?'Deactivated':!point.captured_at||Date.now()-new Date(point.captured_at).getTime()>12*60000?'No recent GPS':point.motion==='stationary'?'Stopped':'Moving';
+      if(point.captured_at){asset.lastTrackedAtIso=new Date(point.captured_at).toISOString();
+        if(!asset.lastScannedAtIso||Date.parse(asset.lastTrackedAtIso)>=Date.parse(asset.lastScannedAtIso)){
+          asset.lastKnownLat=Number(point.latitude);asset.lastKnownLng=Number(point.longitude);asset.lastKnownLocationText='Tracking phone';
+          asset.updatedAtIso=asset.lastTrackedAtIso;
+        }
+      }
+    }
     const mappedAssets = assets.filter((asset) =>
       hasCoordinates(asset.lastKnownLat, asset.lastKnownLng),
     );

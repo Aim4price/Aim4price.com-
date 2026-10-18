@@ -1,3 +1,4 @@
+import {latestTrackingPositions} from '../../../../lib/asset-tracking';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextResponse } from "next/server";
 import { getServerSession } from "../../../../lib/auth-session";
@@ -794,6 +795,14 @@ async function loadScopedMappedAssets(
       registerIndex: register.index,
     })),
   );
+  const tracked=await latestTrackingPositions(userId);
+  for(const {item} of sourcedAssets){
+    const p=tracked.get(item.id);
+    if(p?.captured_at && (!item.lastScannedAtIso||new Date(p.captured_at).getTime()>=Date.parse(item.lastScannedAtIso))){
+      item.lastKnownLat=Number(p.latitude);item.lastKnownLng=Number(p.longitude);
+      item.lastKnownLocationText='Tracking phone · '+new Date(p.captured_at).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'});
+    }
+  }
   const numberedMappedAssets = numberSourcedAssets(sourcedAssets);
   const scopedAssets = selectedAssetMode
     ? filterSourcesBySelection(numberedMappedAssets, selection)
