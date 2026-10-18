@@ -9,18 +9,16 @@ function Icon({kind}:{kind:'share'|'copy'|'phone'}){return <svg viewBox="0 0 24 
 export default function TrackerInstallShareDialog({onClose}:{onClose:()=>void}){
  const [copied,setCopied]=useState(false),[error,setError]=useState('');
  async function copy(){setError('');try{await navigator.clipboard.writeText(INSTALL_URL);setCopied(true);}catch{setError('Select the link below and copy it manually.');}}
- return <AssetAccessSettingsDialog locationLayout title="Install Aim4price Tracker" assetTitle="Send the link or scan below on the equipment’s Android phone." onClose={onClose}>
+ return <AssetAccessSettingsDialog locationLayout title="Install Tracker" assetTitle="For the equipment’s Android phone." onClose={onClose}>
   <div className={styles.layout} data-tracker-install>
    <div className={styles.sharePanel}>
-    <div className={styles.intro}><span className={styles.phone}><Icon kind="phone"/></span><div><h4>Send to the phone</h4><p>Share directly with the person setting up the phone.</p></div></div>
-    <a className={`${styles.action} ${styles.whatsapp}`} href={`https://wa.me/?text=${encodeURIComponent(MESSAGE)}`} target="_blank" rel="noopener noreferrer"><Icon kind="share"/><span><strong>WhatsApp</strong><small>Choose who to send it to</small></span><b aria-hidden="true">↗</b></a>
-    <button className={styles.action} type="button" onClick={()=>void copy()}><Icon kind="copy"/><span><strong>{copied?'Link copied':'Copy link'}</strong><small>{copied?'Ready to paste into your message':'Paste into a message or email'}</small></span><b aria-hidden="true">{copied?'✓':'→'}</b></button>
+    <div className={styles.intro}><span className={styles.phone}><Icon kind="phone"/></span><div><h4>Send app link</h4></div></div>
+    <a className={`${styles.action} ${styles.whatsapp}`} href={`https://wa.me/?text=${encodeURIComponent(MESSAGE)}`} target="_blank" rel="noopener noreferrer"><Icon kind="share"/><span><strong>WhatsApp</strong></span><svg className={styles.chevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></a>
+    <button className={styles.action} type="button" onClick={()=>void copy()}><Icon kind="copy"/><span><strong>{copied?'Link copied':'Copy link'}</strong></span><svg className={styles.chevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={copied?"m5 12 4 4L19 6":"m9 5 7 7-7 7"}/></svg></button>
     <span className={styles.status} role="status" aria-live="polite">{copied?'Installation link copied.':''}</span>
     {error&&<div className={styles.fallback}><p role="alert">{error}</p><input aria-label="Installation link" readOnly value={INSTALL_URL} onFocus={event=>event.target.select()}/></div>}
    </div>
-   <div className={styles.qrPanel}><span className={styles.eyebrow}>Or use the phone’s camera</span><h4>Scan to install</h4><div className={styles.qr}><QrCodePreview value={INSTALL_URL} label="Scan to download Aim4price Tracker for Android"/></div><p>Scan this QR code to download the Android app.</p></div>
+   <div className={styles.qrPanel}><h4>Scan to install</h4><div className={styles.qr}><QrCodePreview value={INSTALL_URL} label="Scan to download Aim4price Tracker for Android"/></div><p>Use the phone’s camera</p></div>
   </div>
-  <div className={styles.nextStep}><span aria-hidden="true">✓</span><p><strong>Once installed</strong><br/>Return to Tracking device, create a pairing code and scan it with the phone.</p></div>
-  <p className={styles.note}>Version 0.3 · Open the downloaded file and choose Install or Update. If Android asks, allow installation from your browser.</p>
  </AssetAccessSettingsDialog>;
 }
