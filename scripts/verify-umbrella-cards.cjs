@@ -39,9 +39,19 @@ async function check(browser, url) {
       return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,priceY:p.y+p.height/2,flagY:f.y+f.height/2,umbrella: getComputedStyle(rail.lastElementChild).backgroundColor};
     }));console.log(width,JSON.stringify(geometry));
     for(const g of geometry) {
-      assert.equal(g.umbrella,'rgb(255, 246, 207)',`${g.title}: umbrella control uses the approved light yellow`);
       assert.ok(Math.abs(g.titleY-g.priceY)<8,`${g.title}: price alignment`);
       assert.ok(Math.abs(g.titleY-g.flagY)<8,`${g.title}: flag alignment`);
+    }
+    for (const selector of ['#asset-card-normal [class*="assetGroupButton"]', '[aria-label="Edit Asset umbrella"]']) {
+      await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+      await page.mouse.move(2, 2);
+      await delay(250);
+      const resting = await page.$eval(selector,e=>getComputedStyle(e).backgroundColor);
+      assert.notEqual(resting,'rgb(255, 246, 207)','umbrella control is not yellow at rest');
+      await page.hover(selector);
+      await page.waitForFunction(sel=>getComputedStyle(document.querySelector(sel)).backgroundColor==='rgb(255, 246, 207)',{},selector);
+      await page.mouse.move(2, 2);
+      await page.waitForFunction((sel,colour)=>getComputedStyle(document.querySelector(sel)).backgroundColor===colour,{},selector,resting);
     }
     assert.equal(await page.$eval('#asset-card-live [class*="marketplaceLiveStatus"]',e=>e.textContent),'Live on Marketplace');
     assert.equal(await page.$eval('[aria-label="Edit Asset umbrella"]',e=>e.getAttribute('data-tooltip')),'Edit umbrella');
@@ -58,7 +68,7 @@ async function check(browser, url) {
     const flagPoint=await page.$eval(flagSelector,e=>{const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
     await page.mouse.click(flagPoint.x,flagPoint.y);
     await page.waitForFunction(()=>document.querySelector('[aria-label="Unflag Asset umbrella"]'));
-    assert.equal(await page.$eval('#asset-card-normal [class*="assetGroupButton"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 246, 207)', 'standalone umbrella control uses the approved light yellow');
+    assert.equal(await page.$eval('#asset-card-normal [class*="assetGroupButton"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)', 'standalone umbrella control stays neutral at rest');
     const groupDetails = '[class*="assetGroupHeaderRow"] [class*="cardViewDetailsButton"]';
     const details = id => `#asset-card-${id} [class*="cardViewDetailsButton"]`;
     const isOpen = async id => page.$eval(details(id), e => e.getAttribute('aria-expanded') === 'true');
