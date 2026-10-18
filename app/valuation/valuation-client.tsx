@@ -6027,6 +6027,24 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function renderDetailIcon(kind: 'brand' | 'model' | 'year' | 'usage' | 'condition' | 'popularity' | 'extras' | 'specs', complete = false) {
+    return (
+      <span className={styles.detailIcon} data-kind={kind} aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+          {kind === 'brand' ? <><path d="M3 10V4h6l12 12-6 6Z" /><circle cx="7" cy="8" r="1" /></>
+            : kind === 'model' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 10h4M7 14h10M15 10h2" /></>
+            : kind === 'year' ? <><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4M17 3v4M3 11h18M8 15h2M14 15h2" /></>
+            : kind === 'usage' ? <><path d="M4 18a9 9 0 1 1 16 0M12 5v2M5 10l2 1M19 10l-2 1M12 15l4-5" /><circle cx="12" cy="16" r="2" /></>
+            : kind === 'condition' ? <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" /><path d="m8 12 3 3 5-6" /></>
+            : kind === 'popularity' ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+            : kind === 'extras' ? <><rect x="3" y="3" width="7" height="7" rx="2" /><rect x="14" y="3" width="7" height="7" rx="2" /><rect x="3" y="14" width="7" height="7" rx="2" /><path d="M17.5 14v7M14 17.5h7" /></>
+            : <><path d="M5 4v16M12 4v16M19 4v16" /><path d="M2 8h6M9 16h6M16 10h6" /></>}
+        </svg>
+        {complete ? <span className={styles.detailIconComplete}>✓</span> : null}
+      </span>
+    );
+  }
+
   function renderBasicBrandModelStep() {
     return (
       <div className={`${styles.stepBlock} ${styles.basicFamilyContextStage}`}>
@@ -6041,7 +6059,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Brand</span>
+            <span className={styles.identityFieldHeading}>{renderDetailIcon('brand')}<span className={styles.fieldLabel}>Brand</span></span>
             <input
               type="text"
               value={unlistedBrandName}
@@ -6050,13 +6068,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setBrandSlug(UNKNOWN_BRAND_SLUG);
                 resetResult();
               }}
-              placeholder="e.g. Test Brand"
+              placeholder="Enter the manufacturer"
               autoComplete="off"
             />
+            <small className={styles.identityFieldHint}>The name shown on the asset or manufacturer’s badge.</small>
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Model</span>
+            <span className={styles.identityFieldHeading}>{renderDetailIcon('model')}<span className={styles.fieldLabel}>Model</span></span>
             <input
               type="text"
               value={typedModelName}
@@ -6066,9 +6085,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setGenericModelMode(normalizeText(value) ? 'manual' : '');
                 resetResult();
               }}
-              placeholder="e.g. Test Model"
+              placeholder="Model name or number"
               autoComplete="off"
             />
+            <small className={styles.identityFieldHint}>Optional — leave blank if you do not know the model.</small>
           </label>
 
         </div>
@@ -7276,7 +7296,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div>
               {!compactAppMode ? (
                 <>
-                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
+                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('year')}<span>{getAssetNounTitle(selectedSector)} manufacturing year</span></h3>
                   <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Select the manufacturing year.</p>
                 </>
               ) : null}
@@ -7388,7 +7408,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div>
               {!compactAppMode ? (
                 <>
-                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
+                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('usage')}<span>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</span></h3>
                   <p className={`${styles.detailsModalText} ${modalStyles.description}`}>
                     {usageModalMode === 'hours' && showHoursInput
                       ? selectedUsageDisplayUnit === 'km'
@@ -7512,12 +7532,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
 
         <div className={styles.progressiveQuestionStack}>
-          {visibleQuestions.map((question, index) => {
+          {visibleQuestions.map((question) => {
             const answered = isSpecQuestionAnswered(question, specAnswers[question.specKey]);
             return (
               <div key={question.specKey} className={`${styles.progressiveQuestionCard} ${answered ? styles.progressiveQuestionCardDone : ''}`}>
                 <div className={styles.progressiveQuestionHeader}>
-                  <span className={`${styles.specStepNumber} ${answered ? styles.specStepNumberDone : ''}`}>{answered ? '✓' : index + 1}</span>
+                  {renderDetailIcon('specs', answered)}
                   <div className={styles.progressiveQuestionTitleWrap}>
                     <strong>{question.label}{question.isRequired ? ' *' : ''}</strong>
                     <span>{answered ? getSpecQuestionAnswerLabel(question, specAnswers[question.specKey]) : question.helpText ?? 'Choose the closest available answer.'}</span>
@@ -7635,7 +7655,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
-                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Condition</h3> : null}
+                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>Condition</span></h3> : null}
                 </div>
                 <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
               </div>
@@ -7774,7 +7794,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionOptionsModal} ${advancedCondition ? styles.conditionProgressiveModal : styles.conditionBasicModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
-                {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</h3> : null}
+                {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</span></h3> : null}
               </div>
               <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
@@ -7877,7 +7897,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div>
                 {!compactAppMode ? (
                   <>
-                    <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Popularity</h3>
+                    <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('popularity')}<span>Popularity</span></h3>
                   </>
                 ) : null}
               </div>
@@ -7955,7 +7975,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
-                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Extras</h3> : null}
+                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3> : null}
                 </div>
                 <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
               </div>
@@ -8018,7 +8038,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div>
                 {!compactAppMode ? (
                   <>
-                    <h3 data-estimate-modal-title className={styles.detailsModalTitle}>Extras</h3>
+                    <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3>
                     <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Choose the fitted extra that applies, or add another.</p>
                   </>
                 ) : null}
@@ -8175,7 +8195,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               setMessage('');
             }}
           >
-            <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
+            {renderDetailIcon('year', yearStepComplete)}
             <span className={styles.specStepContent}>
               <strong>{compactAppMode ? 'Manufacturing year' : `${getAssetNounTitle(selectedSector)} manufacturing year`}</strong>
               <small>{yearStepComplete ? getYearAnswerLabel() : compactAppMode ? 'Choose the year.' : 'Choose the manufacturing year to start.'}</small>
@@ -8189,7 +8209,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 id="valuation-usage-step"
                 className={`${styles.specStepCard} ${styles.specStepCardComplete} ${styles.basicUsageSkipped}`}
               >
-                <span className={`${styles.specStepNumber} ${styles.specStepNumberDone}`}>✓</span>
+                {renderDetailIcon('usage', true)}
                 <span className={styles.specStepContent}>
                   <strong>{usageTitle}</strong>
                   <small>Not required for this family. Aim4price will use year and condition without inventing a usage percentage.</small>
@@ -8203,7 +8223,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
                 onClick={() => openUsageModal(showHoursInput)}
               >
-                <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
+                {renderDetailIcon('usage', usageStepComplete)}
                 <span className={styles.specStepContent}>
                   <strong>{usageTitle}</strong>
                   <small>{usageStepComplete ? getUsageAnswerLabel(showHoursInput) : `Add ${usageTitle.toLowerCase()} to continue.`}</small>
@@ -8220,7 +8240,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               className={`${styles.specStepCard} ${conditionReady ? styles.specStepCardComplete : styles.specStepCardActive}`}
               onClick={openBasicConditionModal}
             >
-              <span className={`${styles.specStepNumber} ${conditionReady ? styles.specStepNumberDone : ''}`}>{conditionReady ? '✓' : 3}</span>
+              {renderDetailIcon('condition', conditionReady)}
               <span className={styles.specStepContent}>
                 <strong>Condition</strong>
                 <small>{conditionReady ? (detailedAssessmentOpen ? 'Advanced condition' : conditionLabel(condition)) : 'Choose Basic or Advanced condition.'}</small>
@@ -8366,7 +8386,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setActiveDetailsModal('popularity');
               }}
             >
-              <span className={`${styles.specStepNumber} ${popularityStepComplete ? styles.specStepNumberDone : ''}`}>{popularityStepComplete ? '✓' : 4}</span>
+              {renderDetailIcon('popularity', popularityStepComplete)}
               <span className={styles.specStepContent}>
                 <strong>Popularity</strong>
                 <small>{popularityStepComplete ? `${popularityStars} / 5 stars` : 'How sought-after are this brand and model among buyers?'}</small>
@@ -8425,7 +8445,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setActiveDetailsModal('extras');
               }}
             >
-              <span className={`${styles.specStepNumber} ${basicExtrasComplete ? styles.specStepNumberDone : ''}`}>{basicExtrasComplete ? '✓' : 5}</span>
+              {renderDetailIcon('extras', basicExtrasComplete)}
               <span className={styles.specStepContent}>
                 <strong>Extras</strong>
                 <small>{basicExtrasComplete ? basicExtrasSummary : 'Confirm fitted extras.'}</small>
