@@ -8866,17 +8866,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
-        <header className={styles.resultPageHeading}>
-          <h2>Your asset value</h2>
-          <p>Review your estimate, then choose what to do next.</p>
-        </header>
         <div className={styles.resultsMain}>
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             {isSalvageEstimate || !basicEstimateActive ? <div className={styles.resultHeroTopline}>
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
-            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h3>Estimated asset value</h3></div>
+            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2>Estimated asset value</h2></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
