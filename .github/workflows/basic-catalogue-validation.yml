@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'lib/basic-*.ts'
+      - 'lib/estimate-replacement.ts'
+      - 'tests/estimate-replacement-consistency.test.mjs'
+      - 'app/api/valuation-runs/route.ts'
       - 'lib/estimate-breakdown*.ts'
       - 'lib/valuation/dealer-assessment.ts'
       - 'lib/private-estimate-settings.ts'
@@ -40,7 +43,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Basic and shared valuation regressions
-        run: node --experimental-strip-types --test tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
+        run: node --experimental-strip-types --test tests/estimate-replacement-consistency.test.mjs tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
       - name: Private estimate breakdown regressions
         run: node --test tests/estimate-breakdown.test.cjs
       - run: npm run typecheck
