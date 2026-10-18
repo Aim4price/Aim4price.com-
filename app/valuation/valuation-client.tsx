@@ -6099,7 +6099,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 aria-pressed={selected}
                 onClick={() => onSelect(option.key)}
               >
-                <span className={styles.specificationLevelIcon}>{renderEstimateChoiceIcon(option.key)}</span>
+                <span className={styles.specificationLevelIcon} data-level={option.key}>{renderEstimateChoiceIcon(option.key)}</span>
                 <strong>{option.label}</strong>
                 <span className={styles.choiceCardNote}>{option.description}</span>
               </button>
@@ -7642,7 +7642,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
               <div className={styles.conditionRouteGrid}>
                 <button type="button" className={styles.conditionRouteCard} aria-label="Use Basic condition" onClick={() => chooseConditionRoute('basic')}>
-                  <span className={styles.conditionRouteNumber}>1</span>
+                  <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('basic')}</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
                     <small>Rate overall condition for a quick estimate.</small>
@@ -7650,7 +7650,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </button>
 
                 <button type="button" className={styles.conditionRouteCard} aria-label="Use Advanced condition" onClick={() => chooseConditionRoute('advanced')}>
-                  <span className={styles.conditionRouteNumber}>2</span>
+                  <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('advanced')}</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
                     <small>Rate condition, wear, service and repairs for a finer calculation.</small>
@@ -7799,7 +7799,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                             resetResult();
                           }}
                         >
-                          {option.label}
+                          <span className={styles.conditionChoiceIcon} data-condition={option.key} aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              {option.key === 'excellent' ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+                                : option.key === 'good' ? <path d="m5 12 4 4L19 6" />
+                                : option.key === 'fair' ? <path d="M5 7h14M5 12h14M5 17h9" />
+                                : option.key === 'used' ? <><path d="M4 7h16v14H4ZM8 7V3h8v4M8 12h8" /></>
+                                : <><path d="m12 3 10 18H2ZM12 9v5" /><path d="M12 17h.01" /></>}
+                            </svg>
+                          </span>
+                          <span className={styles.conditionChoiceCopy}>
+                            <strong>{option.label}</strong>
+                            <small>{option.key === 'excellent' ? 'Very little wear.' : option.key === 'good' ? 'Well maintained, with light wear.' : option.key === 'fair' ? 'Visible wear from regular use.' : option.key === 'used' ? 'Previously used equipment.' : 'Significant wear; needs inspection or repairs.'}</small>
+                          </span>
+                          <span className={styles.estimateSelectionCheck} aria-hidden="true">{selected ? '✓' : ''}</span>
                         </button>
                       );
                     })}
