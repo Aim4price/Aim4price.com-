@@ -301,17 +301,17 @@ function IconClose() {
 function IconAssetRegister() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
-      <path d="M8 8h8M8 12h8M8 16h5" />
+      <rect x="4" y="3" width="16" height="18" rx="2.5" />
+      <path d="M8 3v18M11 8h5M11 12h5M11 16h3" />
     </svg>
   );
 }
 
-function IconEstimate() {
+function IconAssetValue() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v18" />
-      <path d="M17 7.5c0-1.7-1.8-3-4.3-3S8.4 5.6 8.4 7.2c0 4.4 8.2 2.1 8.2 6.6 0 1.7-1.8 3-4.3 3s-4.5-1.2-4.5-3" />
+      <rect x="5" y="2.5" width="14" height="19" rx="2.5" />
+      <path d="M8 6h8v4H8zM8 14h1M12 14h1M16 14h.01M8 18h1M12 18h1M16 18h.01" />
     </svg>
   );
 }
@@ -3504,7 +3504,7 @@ export default function MarketplaceClient({
             {!isSignedIn ? (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create marketplace listing from</h2>
+                  <h2 id="create-listing-title">Create marketplace advert</h2>
                   <p>
                     Marketplace listings must be tied to a seller profile. You can browse listings as a guest, but you need
                     an account before you can create or publish a listing.
@@ -3514,7 +3514,7 @@ export default function MarketplaceClient({
                 <div className={styles.createListingGuestPanel}>
                   <strong>Seller information stays protected until account creation.</strong>
                   <span>
-                    Create an account to publish from an Aim4price estimate, or contact{' '}
+                    Create an account to publish from an Aim4price valuation, or contact{' '}
                     <span className={styles.marketplaceContactNoWrap}>{DEFAULT_MARKETPLACE_CONTACT_DISPLAY}</span>.
                   </span>
                 </div>
@@ -3531,27 +3531,27 @@ export default function MarketplaceClient({
             ) : (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create marketplace listing from</h2>
+                  <h2 id="create-listing-title">Create marketplace advert</h2>
                 </div>
 
                 <div className={styles.createListingChoiceGrid}>
                   <a href={ownerAppMode ? '/owner-app/assets' : '/asset-register'} className={styles.createListingChoiceCard}>
-                    <span className={styles.createListingChoiceIcon} aria-hidden="true">
+                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true">
                       <IconAssetRegister />
                     </span>
                     <span className={styles.createListingChoiceCopy}>
                       <strong>Asset Register</strong>
-                      <small>Choose an asset you already saved.</small>
+                      <small>Create an advert for an asset you have saved.</small>
                     </span>
                     <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
                   </a>
                   <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
-                    <span className={styles.createListingChoiceIcon} aria-hidden="true">
-                      <IconEstimate />
+                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingValueIcon}`} aria-hidden="true">
+                      <IconAssetValue />
                     </span>
                     <span className={styles.createListingChoiceCopy}>
-                      <strong>Estimate</strong>
-                      <small>Start with an asset estimate.</small>
+                      <strong>Aim4price Value</strong>
+                      <small>Value your asset, then create your advert.</small>
                     </span>
                     <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
                   </button>
