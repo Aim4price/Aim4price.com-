@@ -1,7 +1,32 @@
 plugins { id 'com.android.application' }
+def signingPath = System.getenv('TRACKER_KEYSTORE')
 android {
  namespace 'com.aim4price.tracker'
  compileSdk 35
- defaultConfig { applicationId 'com.aim4price.tracker.pilot'; minSdk 26; targetSdk 35; versionCode 4; versionName '0.4' }
+ defaultConfig { applicationId 'com.aim4price.tracker.pilot'; minSdk 26; targetSdk 35; versionCode 5; versionName '0.5' }
+ signingConfigs {
+  release {
+   if (signingPath) {
+    storeFile file(signingPath)
+    storePassword System.getenv('TRACKER_STORE_PASSWORD')
+    keyAlias System.getenv('TRACKER_KEY_ALIAS')
+    keyPassword System.getenv('TRACKER_KEY_PASSWORD')
+   }
+  }
+ }
+ buildTypes {
+  debug { applicationIdSuffix '.debug' }
+  release { debuggable false; signingConfig signingConfigs.release }
+ }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+// Never silently produce an unsigned or debug-signed release download.
+tasks.configureEach { task ->
+ if (task.name == 'preReleaseBuild') {
+  task.doFirst {
+   for (name in ['TRACKER_KEYSTORE', 'TRACKER_STORE_PASSWORD', 'TRACKER_KEY_ALIAS', 'TRACKER_KEY_PASSWORD']) {
+    if (!System.getenv(name)) throw new GradleException("Release signing requires ${name}")
+   }
+  }
+ }
 }

@@ -1,7 +1,7 @@
-name: Asset tracking pilot
+name: Asset tracking
 on:
   pull_request:
-    paths: ['android/tracker/**', 'app/tracker/**', 'public/downloads/aim4price-tracker*.apk', 'components/asset-register/TrackerInstallShareDialog*', 'lib/asset-tracking*', 'lib/asset-movement-report*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', '.github/workflows/asset-tracking-pilot.yml']
+    paths: ['android/tracker/**', 'app/tracker/**', 'public/downloads/aim4price-tracker*.apk', 'public/downloads/tracker-release.json', 'components/asset-register/TrackerInstallShareDialog*', 'lib/asset-tracking*', 'lib/asset-movement-report*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', '.github/workflows/asset-tracking-pilot.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,7 +33,8 @@ jobs:
         with:
           gradle-version: '8.9'
       - run: gradle -p android/tracker :app:assembleDebug :app:lintDebug
+      - run: python3 android/tracker/scripts/verify-release.py
       - uses: actions/upload-artifact@v4
         with:
-          name: aim4price-tracker-pilot-apk
+          name: aim4price-tracker-debug-only-apk
           path: android/tracker/app/build/outputs/apk/debug/app-debug.apk
