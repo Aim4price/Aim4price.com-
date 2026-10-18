@@ -4,30 +4,30 @@
 .body { padding: .25rem 1.5rem 1.25rem; }
 .body p { margin: .4rem 0; font-size: .9rem; line-height: 1.6; }
 .registerGuide { margin: .25rem 0 1rem; background: linear-gradient(135deg,#fff,#f3f9f5); box-shadow: 0 5px 16px rgba(22,65,46,.035); }
-.guideHeader { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; list-style: none; }
+.guideHeader { display: flex; align-items: center; gap: 1rem; padding: 1.5rem; list-style: none; }
 .guideHeader::-webkit-details-marker { display: none; }
-.guideMark { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; flex-shrink: 0; color: #17654c; background: #e9f5ee; border: 1px solid #cee5d8; border-radius: .8rem; }
-.guideMark svg { width: 1.4rem; height: 1.4rem; }
+.guideMark { display: grid; place-items: center; width: 3rem; height: 3rem; flex-shrink: 0; color: #17654c; background: #e9f5ee; border: 1px solid #cee5d8; border-radius: .8rem; }
+.guideMark svg { width: 1.6rem; height: 1.6rem; }
 .headerCopy { display: grid; gap: .3rem; min-width: 0; }
-.headerCopy strong { color: #173f32; font-size: 1.05rem; }
-.headerCopy > span { font-size: .85rem; font-weight: 500; color: #657d72; }
+.headerCopy strong { color: #173f32; font-size: 1.35rem; line-height: 1.25; font-weight: 800; }
+.headerCopy > span { font-size: 1rem; line-height: 1.5; font-weight: 500; color: #415f51; }
 .chevron { width: 1.15rem; height: 1.15rem; margin-left: auto; transition: transform .15s; }
 .guideHeader::marker { content: ''; }
-.guideToggle { margin-left: auto; flex-shrink: 0; padding: .45rem .75rem; border: 1px solid #d5e3dc; border-radius: .6rem; background: #fff; color: #315b48; font-size: .78rem; font-weight: 600; }
+.guideToggle { margin-left: auto; flex-shrink: 0; padding: .65rem 1rem; border: 1px solid #d5e3dc; border-radius: .6rem; background: #fff; color: #315b48; font-size: 1rem; font-weight: 700; }
 .guideHeader:hover .guideToggle { background: #eaf3ee; border-color: #b5d2c2; }
 .hideGuide { display: none; }
 .registerGuide[open] .showGuide { display: none; }
 .registerGuide[open] .hideGuide { display: inline; }
 .steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 0 0 1.25rem; padding: 0; list-style: none; }
-.steps li { display: flex; align-items: flex-start; gap: .85rem; padding: 1.25rem; background: #fff; border: 1px solid #dde9e2; border-radius: .85rem; }
-.stepNumber { display: grid; place-items: center; width: 1.85rem; height: 1.85rem; flex-shrink: 0; border-radius: 50%; background: #eaf5ee; color: #1c7053; font-size: .85rem; font-weight: 800; }
-.steps strong { display: block; padding-top: .15rem; font-size: .96rem; color: #173f32; }
-.steps p { margin: .65rem 0 0; font-size: .85rem; line-height: 1.6; color: #61766c; }
-.steps b { font-weight: 650; color: #315b48; }
+.steps li { display: flex; align-items: flex-start; gap: .85rem; padding: 1.4rem; background: #fff; border: 1px solid #dde9e2; border-radius: .85rem; }
+.stepNumber { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; flex-shrink: 0; border-radius: 50%; background: #eaf5ee; color: #1c7053; font-size: 1rem; font-weight: 800; }
+.steps strong { display: block; padding-top: .2rem; font-size: 1.15rem; line-height: 1.4; font-weight: 750; color: #173f32; }
+.steps p { margin: .65rem 0 0; font-size: 1rem; line-height: 1.6; font-weight: 500; color: #415b4e; }
+.steps b { font-weight: 750; color: #173f32; }
 .definitions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.25rem; }
-.body .definitions p { display: grid; align-content: start; gap: .4rem; margin: 0; padding: 1rem 1.25rem; min-width: 0; border-radius: .75rem; background: #eaf3ee; font-size: .85rem; line-height: 1.6; color: #52695e; }
-.definitions strong { color: #244d3c; font-size: .9rem; font-weight: 650; }
-.body .guideFootnote { margin: 1rem 0 0; color: #61766c; font-size: .8rem; }
+.body .definitions p { display: grid; align-content: start; gap: .4rem; margin: 0; padding: 1rem 1.25rem; min-width: 0; border-radius: .75rem; background: #eaf3ee; font-size: 1rem; line-height: 1.6; font-weight: 500; color: #415b4e; }
+.definitions strong { color: #173f32; font-size: 1.1rem; font-weight: 750; }
+.body .guideFootnote { margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px solid #d5e3dc; color: #415b4e; font-size: 1rem; font-weight: 500; }
 .accessSummary { background: #f3f8f5; }
 .accessSummary > summary { display: flex; align-items: center; gap: .7rem; padding: .8rem 1rem; list-style: none; }
 .accessSummary > summary::-webkit-details-marker { display: none; }
@@ -39,7 +39,7 @@
 .accessSummary .body { border-top: 1px solid #dce8e0; padding: .5rem 1rem .75rem; }
 .accessSummary .body p { font-size: .82rem; }
 @media (max-width: 720px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .guideHeader { display: grid; grid-template-columns: 2.7rem minmax(0, 1fr); padding: 1rem; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .guideHeader { display: grid; grid-template-columns: 3rem minmax(0, 1fr); padding: 1rem; gap: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .headerCopy { flex: 1; }
   :global(:where(html:not(:has([data-website-canvas])))) .guideToggle { grid-column: 2; justify-self: start; margin-left: 0; }
   :global(:where(html:not(:has([data-website-canvas])))) .registerGuide .body { padding: .25rem 1rem 1rem; }
