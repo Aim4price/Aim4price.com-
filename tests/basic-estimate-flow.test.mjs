@@ -168,8 +168,8 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
 });
 
 test('typed Brand and optional Model stay simple and user-facing', () => {
-  assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. Test Brand"/);
-  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. Test Model"/);
+  assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="Enter the manufacturer"/);
+  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="Model name or number"/);
   assert.match(client, /Name your asset\. The starting price guide comes from its equipment type and specification level\./);
   assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
@@ -204,9 +204,9 @@ test('Basic Specs uses modal cards for condition, popularity and extras', () => 
   assert.match(client, /chooseConditionRoute\('advanced'\)/);
   assert.match(client, /<strong>Basic<\/strong>/);
   assert.match(client, /<strong>Advanced<\/strong>/);
-  assert.match(client, /basicEstimateActive && usageStepComplete[\s\S]*?id="valuation-condition-step"[\s\S]*?conditionReady \? '✓' : 3/);
-  assert.match(client, /basicEstimateActive && conditionReady[\s\S]*?id="valuation-popularity-step"[\s\S]*?popularityStepComplete \? '✓' : 4/);
-  assert.match(client, /basicEstimateActive && popularityStepComplete[\s\S]*?id="valuation-extras-step"[\s\S]*?basicExtrasComplete \? '✓' : 5/);
+  assert.match(client, /basicEstimateActive && usageStepComplete[\s\S]*?id="valuation-condition-step"[\s\S]*?renderDetailIcon\('condition', conditionReady\)/);
+  assert.match(client, /basicEstimateActive && conditionReady[\s\S]*?id="valuation-popularity-step"[\s\S]*?renderDetailIcon\('popularity', popularityStepComplete\)/);
+  assert.match(client, /basicEstimateActive && popularityStepComplete[\s\S]*?id="valuation-extras-step"[\s\S]*?renderDetailIcon\('extras', basicExtrasComplete\)/);
   assert.match(client, /activeDetailsModal === 'condition' \? renderBasicConditionModal\(\)/);
   assert.match(client, /activeDetailsModal === 'popularity' \? renderBasicPopularityModal\(\)/);
   assert.match(client, /activeDetailsModal === 'extras' \? renderBasicExtrasModal\(\)/);

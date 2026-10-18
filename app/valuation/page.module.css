@@ -14949,3 +14949,70 @@
 .estimateModeGrid .estimateModeAdvancedCard .estimateChoiceIcon { color: #136d63; }
 .estimateModeGrid .sectorBigCard .estimateChoiceIcon svg { color: inherit; }
 .estimateModeGrid .sectorBigCard .estimateChoiceIcon svg * { color: inherit; }
+
+/* Readable detail cards: stable icons identify the detail, small ticks show completion. */
+.detailIcon {
+  position: relative; display: inline-grid; place-items: center; flex: 0 0 auto;
+  width: 3.25rem; height: 3.25rem; border-radius: 1rem;
+  background: #e4f4ec; color: #176a49;
+}
+.detailIcon svg { width: 1.65rem; height: 1.65rem; }
+.detailIcon[data-kind='model'], .detailIcon[data-kind='usage'] { background: #e8f2fb; color: #25648c; }
+.detailIcon[data-kind='condition'], .detailIcon[data-kind='specs'] { background: #e0f3ee; color: #136d63; }
+.detailIcon[data-kind='popularity'] { background: #fff3d8; color: #906111; }
+.detailIcon[data-kind='extras'] { background: #eeeafa; color: #685293; }
+.detailIconComplete {
+  position: absolute; bottom: -.2rem; right: -.2rem;
+  display: grid; place-items: center; width: 1.2rem; height: 1.2rem;
+  border: 2px solid #fff; border-radius: 50%; background: #237454; color: #fff;
+  font-size: .7rem; font-weight: 800; line-height: 1;
+}
+.basicIdentityCard.basicIdentityCard {
+  grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem;
+  padding: 0; border: 0; background: transparent; box-shadow: none;
+}
+.basicIdentityCard > .field {
+  display: flex; flex-direction: column; gap: .85rem; min-width: 0;
+  padding: 1.4rem; border: 1px solid #cddfd5; border-radius: 1.35rem; background: #fff;
+}
+.identityFieldHeading { display: flex; align-items: center; gap: .85rem; }
+.basicIdentityCard .fieldLabel { color: #173e30; font-size: 1.2rem; font-weight: 750; text-transform: none; letter-spacing: normal; }
+.identityFieldHint { color: #536c60; font-size: .95rem; line-height: 1.5; }
+.basicIdentityCard input { color: #173e30; background: #f5f9f7; border-color: #c5d9cd; min-height: 3.5rem; }
+.basicIdentityCard input::placeholder { color: #60766b; opacity: 1; }
+.specFlowStack { gap: .85rem; }
+.specFlowStack .specStepCard {
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+  gap: 1rem; padding: 1.15rem 1.3rem; min-height: 6rem;
+  border: 1px solid #cddfd5; border-radius: 1.25rem;
+  background: #fff; color: #173e30; box-shadow: none;
+}
+.specFlowStack .specStepCardActive { border-color: #8db8a1; background: #f7fbf8; }
+.specFlowStack .specStepCardComplete { background: #fff; }
+.specFlowStack .specStepCard:hover:not(:disabled) { background: #f2f9f5; border-color: #237454; box-shadow: none; transform: none; }
+.specFlowStack .specStepContent { gap: .35rem; }
+.specFlowStack .specStepContent strong { color: #173e30; font-size: 1.25rem; line-height: 1.35; }
+.specFlowStack .specStepContent small { color: #536c60; font-size: 1rem; line-height: 1.45; }
+.specFlowStack .specStepAction { color: #1e6148; background: #edf6f0; border: 1px solid #d5e5dc; border-radius: .75rem; padding: .5rem .85rem; }
+.specFlowStack .specStepCard:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
+.detailsModal .detailsModalTitle { display: flex; align-items: center; gap: .85rem; margin: 0; line-height: 1.2; }
+.detailsModal .detailsModalTitle > span:last-child { min-width: 0; }
+.detailsModal .detailsModalHeader { gap: 1rem; padding-bottom: 1.1rem; margin-bottom: .25rem; border-bottom: 1px solid #dce7e0; align-items: flex-start; }
+.detailsModal .detailsModalText { color: #536c60; margin-top: .65rem; line-height: 1.5; }
+.detailsModal .detailsModalActions { gap: .75rem; padding-top: 1rem; border-top: 1px solid #dce7e0; }
+.detailsModal .detailsModalTitle .detailIcon { width: 2.8rem; height: 2.8rem; border-radius: .85rem; }
+.progressiveQuestionHeader .detailIcon { width: 2.75rem; height: 2.75rem; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicIdentityCard.basicIdentityCard { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard { grid-template-columns: 2.75rem minmax(0, 1fr) auto; gap: .75rem; padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .detailIcon { width: 2.75rem; height: 2.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepContent strong { font-size: 1.1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepAction { padding: .4rem .6rem; font-size: .85rem; }
+}
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard.specStepCard { grid-template-columns: 2.75rem minmax(0, 1fr); row-gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard > .detailIcon { grid-column: 1; grid-row: 1 / 3; align-self: start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard > .specStepContent { grid-column: 2; grid-row: 1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard > .specStepAction { grid-column: 2; grid-row: 2; justify-self: start; min-width: 0; }
+}
+.specFlowStack .specStepContent { padding: 0; }
