@@ -15151,3 +15151,21 @@
 .questionSpinner { width: 1.4rem; height: 1.4rem; border: 3px solid #c9dfd2; border-top-color: #237454; border-radius: 50%; animation: estimateQuestionSpin .65s linear infinite; }
 @keyframes estimateQuestionSpin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .questionSpinner { animation: none; } }
+
+/* Guide attention to the first unanswered detail without shifting the cards. */
+.specFlowStack > .specStepCardActive {
+  animation: nextDetailPulse 2s ease-in-out infinite;
+}
+.specFlowStack > .specStepCardActive ~ .specStepCardActive {
+  animation: none;
+}
+@keyframes nextDetailPulse {
+  0%, 100% { border-color: #8db8a1; box-shadow: inset 0 0 0 1px transparent; }
+  50% { border-color: #237454; box-shadow: inset 0 0 0 2px rgb(35 116 84 / 28%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .specFlowStack > .specStepCardActive {
+    animation: none;
+    border-color: #237454;
+  }
+}
