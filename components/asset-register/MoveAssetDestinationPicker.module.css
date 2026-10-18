@@ -71,3 +71,19 @@
   gap: .85rem;
   padding: .25rem 0 .5rem;
 }
+
+/* A separate, rounded scroll lane keeps the register cards clear of the thumb. */
+.addRegisterBody .options {
+  padding: .3rem .8rem .65rem .25rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #759b8c var(--app-surface-soft, #edf3f0);
+}
+.addRegisterBody .options::-webkit-scrollbar { width: 14px; }
+.addRegisterBody .options::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf3f0); border-radius: 999px; }
+.addRegisterBody .options::-webkit-scrollbar-thumb { background: #759b8c; border: 3px solid var(--app-surface-soft, #edf3f0); border-radius: 999px; }
+.addRegisterBody .options::-webkit-scrollbar-thumb:hover { background: #416f5c; }
+.addRegisterBody .options::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+@supports selector(::-webkit-scrollbar) {
+  .addRegisterBody .options { scrollbar-width: auto; scrollbar-color: auto; }
+}

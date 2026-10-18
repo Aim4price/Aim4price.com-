@@ -1,4 +1,6 @@
 "use client";
+import CreateAssetRegisterModal from '../../components/asset-register/CreateAssetRegisterModal';
+
 import downloadStyles from "../../components/ReportDownload.module.css";
 
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -3743,115 +3745,7 @@ export default function AssetRegistersClient({
       ) : null}
 
       {isCreateModalOpen ? (
-        <div
-          className={styles.modalOverlay} data-website-overlay
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="add-register-title"
-        >
-          <form
-            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.createModalCard}`}
-            onSubmit={handleCreateRegister}
-          >
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 id="add-register-title">Create a new asset register</h2>
-                <p className={styles.modalIntro}>
-                  Add the business details for the register. Only the business
-                  name is required. Logos are added from the register card after creation.
-                </p>
-              </div>
-              <button
-                type="button"
-                className={styles.closeButton}
-                onClick={closeCreateModal}
-                disabled={isCreating}
-                aria-label="Close add asset register modal"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className={styles.formGrid}>
-              <label className={styles.field}>
-                <span>Business name</span>
-                <input
-                  value={createDraft.businessName}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      businessName: event.target.value,
-                    }))
-                  }
-                  placeholder="Example: Bashan Boerdery Pty Ltd"
-                  required
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Email</span>
-                <input
-                  type="email"
-                  value={createDraft.email}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                  placeholder="accounts@example.co.za"
-                />
-              </label>
-
-              <label className={styles.field}>
-                <span>Phone</span>
-                <input
-                  type="tel"
-                  value={createDraft.phone}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="082 000 0000"
-                />
-              </label>
-
-              <label className={`${styles.field} ${styles.fullField}`}>
-                <span>Address</span>
-                <textarea
-                  value={createDraft.addressLine1}
-                  onChange={(event) =>
-                    setCreateDraft((current) => ({
-                      ...current,
-                      addressLine1: event.target.value,
-                    }))
-                  }
-                  placeholder="Farm, town, province"
-                />
-              </label>
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button
-                type="button"
-                className={styles.modalCancelButton}
-                onClick={closeCreateModal}
-                disabled={isCreating}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={styles.modalPrimaryButton}
-                disabled={isCreating}
-              >
-                {isCreating ? "Creating..." : "Create register"}
-              </button>
-            </div>
-          </form>
-        </div>
+        <CreateAssetRegisterModal draft={createDraft} onChange={details => setCreateDraft(current => ({ ...current, ...details }))} onSubmit={handleCreateRegister} onClose={closeCreateModal} busy={isCreating} />
       ) : null}
 
       {deleteCandidateRegister ? (

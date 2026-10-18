@@ -9534,14 +9534,14 @@ export default function AssetRegisterClient({
     setAddAssetTargetRegisterId('');
   }
 
-  async function createRegisterFromAddAsset(businessName: string) {
+  async function createRegisterFromAddAsset(details: { businessName: string; email: string; phone: string; addressLine1: string }) {
     if (isCreatingAddAssetRegister) return;
     setIsCreatingAddAssetRegister(true);
     try {
       const response = await fetch('/api/asset-registers', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, email: '', phone: '', addressLine1: '', logoUrls: [], showLogosOnRegister: true }),
+        body: JSON.stringify({ ...details, logoUrls: [], showLogosOnRegister: true }),
       });
       const payload = await response.json().catch(() => null) as AssetRegisterApiResponse | null;
       if (!response.ok || !payload?.ok || !payload.register || !Array.isArray(payload.registers)) {
