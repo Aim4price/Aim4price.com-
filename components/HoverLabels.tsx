@@ -99,5 +99,5 @@ export default function HoverLabels() {
     };
   }, [target, text, id]);
 
-  return target && text ? <div ref={labelRef} id={id} role="tooltip" className={styles.label} style={{ left: position.left, top: position.top, visibility: position.ready ? 'visible' : 'hidden' }}>{text}</div> : null;
+  return target && text ? <div ref={labelRef} id={id} role="tooltip" className={`${styles.label} ${target.dataset.tooltipStyle === 'description' ? styles.description : ''}`} style={{ left: position.left, top: position.top, visibility: position.ready ? 'visible' : 'hidden' }}>{text}</div> : null;
 }

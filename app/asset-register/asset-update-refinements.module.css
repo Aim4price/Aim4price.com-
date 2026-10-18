@@ -88,3 +88,27 @@
 .vatValueSelect > button span {
   white-space: nowrap !important;
 }
+
+/* One surface per amount keeps the currency prefix and first digit clear. */
+.vatValueField.vatValueField { gap: .6rem !important; }
+.vatValueRow { gap: .65rem; }
+.priceButton.priceButton,
+.currencyControl.currencyControl {
+  display: flex !important; align-items: center; gap: .65rem !important;
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 3.75rem !important;
+  padding: .75rem .9rem !important; margin: 0 !important;
+  border: 1px solid var(--app-line, #bddbce) !important; border-radius: .9rem !important;
+  background: var(--app-surface, #fff) !important; color: var(--app-text, #174b39);
+  font: inherit; font-size: 1rem !important; text-align: left;
+}
+.priceButton { cursor: pointer; }
+.priceButton > span:first-child, .currencyControl > span:first-child { flex: 0 0 auto; font-weight: 800; }
+.priceButton > span:last-child { min-width: 0; overflow-wrap: anywhere; font-weight: 650; }
+.priceButton:disabled { opacity: .55; cursor: wait; }
+.priceButton:focus-visible, .currencyControl:focus-within { outline: 3px solid #82bba5; outline-offset: 2px; }
+.vatValueField.vatValueField .currencyControl.currencyControl input {
+  flex: 1; width: 0 !important; min-width: 0; min-height: 0 !important;
+  padding: 0 !important; margin: 0 !important; border: 0 !important;
+  border-radius: 0 !important; background: transparent !important;
+  box-shadow: none !important; outline: none !important; font: inherit; line-height: 1.5;
+}

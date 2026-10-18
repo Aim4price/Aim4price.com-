@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import TrackerInstallShareDialog from "./TrackerInstallShareDialog";
 import styles from "./AssetTrackingPanel.module.css";
 export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
+  const [showInstallShare,setShowInstallShare]=useState(false);
   const [device, setDevice] = useState<any>(null),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
@@ -50,6 +52,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
   }
   return (
     <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device">
+      {showInstallShare&&<TrackerInstallShareDialog onClose={()=>setShowInstallShare(false)}/>}
       <div className={styles.setupHeading}>
         <span className={styles.phoneIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 5h4M10 18.5h4"/></svg></span>
         <div><h3>{device ? "Equipment phone" : "Connect your equipment phone"}</h3>
@@ -62,12 +65,12 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         <div className={styles.setupStep}>
           <span className={styles.stepNumber}>1</span>
           <div className={styles.stepContent}>
-            <h4>Install the tracker</h4>
-            <p>Download and install Aim4price Tracker on the equipment’s Android phone.</p>
-            <a className={styles.secondaryAction} href="/downloads/aim4price-tracker-pilot.apk" download>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></svg>
-              Download Android app
-            </a>
+            <h4>Send the app to your phone</h4>
+            <p>Share the installation link with the equipment’s Android phone.</p>
+            <button type="button" className={styles.secondaryAction} aria-haspopup="dialog" onClick={()=>setShowInstallShare(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 13v7h16v-7"/></svg>
+              Send installation link
+            </button>
           </div>
         </div>
         <div className={styles.setupStep}>

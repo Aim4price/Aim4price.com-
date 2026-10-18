@@ -48,3 +48,22 @@
   :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog .menu,
   :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog .comparison { grid-template-columns: minmax(0, 1fr) !important; }
 }
+
+/* Distinct icon colours keep settings easy to scan. */
+.menu.menu.menu > button[data-settings-action="location"] > svg,
+.locationChoices.locationChoices button[data-location-action="map"] > svg {
+  color: #245f9a !important; background: #eaf4ff !important; border-color: #bcd8f2 !important;
+}
+.menu.menu.menu > button[data-settings-action="lifetime"] > svg,
+.locationChoices.locationChoices button[data-location-action="tracking"] > svg {
+  color: #7045a0 !important; background: #f2ecfb !important; border-color: #d9c8ee !important;
+}
+.menu.menu.menu > button[data-settings-action="reading"] > svg,
+.locationChoices.locationChoices button[data-location-action="manual"] > svg {
+  color: #996019 !important; background: #fff5e5 !important; border-color: #efd4a9 !important;
+}
+.menu.menu.menu > button[data-settings-action="type"] > svg,
+.locationChoices.locationChoices button[data-location-action="device"] > svg {
+  color: #146d68 !important; background: #e6f6f3 !important; border-color: #b5ded6 !important;
+}
+.locationChoices.locationChoices { gap: .8rem !important; padding: .35rem; }

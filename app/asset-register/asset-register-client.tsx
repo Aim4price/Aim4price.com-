@@ -2488,15 +2488,16 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
           options={[{ value: 'excluded', label: 'Excl. VAT' }, { value: 'included', label: 'Incl. VAT' }]}
           onChange={(mode) => { setVatMode(mode); setEntry(null); }}
         />
-        <div className={styles.manualCurrencyInput}>
-          <span>R</span>
+        {onOpen ? (
+          <button type="button" className={updateStyles.priceButton} disabled={disabled}
+            onClick={onOpen} aria-haspopup="dialog" aria-label={`Change ${label.replace(' *', '').toLowerCase()}`}>
+            <span aria-hidden="true">R</span><span>{displayedValue || placeholder}</span>
+          </button>
+        ) : (
+        <div className={`${styles.manualCurrencyInput} ${updateStyles.currencyControl}`}>
+          <span aria-hidden="true">R</span>
           <input
-            readOnly={!!onOpen}
             disabled={disabled}
-            onClick={onOpen}
-            role={onOpen?'button':undefined}
-            aria-haspopup={onOpen?'dialog':undefined}
-            onKeyDown={event=>{if(onOpen&&(event.key==='Enter'||event.key===' ')){event.preventDefault();onOpen();}}}
             aria-label={label.replace(' *', '')}
             type="text"
             inputMode="numeric"
@@ -2514,6 +2515,7 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
             placeholder={placeholder}
           />
         </div>
+        )}
       </div>
     </div>
   );
@@ -9991,7 +9993,7 @@ export default function AssetRegisterClient({
 
   function goBackFromAssetSettingsSubView() {
     if (isAssetSettingsBusy) return;
-    if (assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap') {
+    if (assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' || assetSettingsView === 'tracking') {
       setAssetSettingsView('location');
       clearAssetSettingsLocationFeedback();
       return;
@@ -18866,7 +18868,7 @@ export default function AssetRegisterClient({
                 >
                   <span>{isManageMapLocationFlow
                     ? 'Back to map options'
-                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
+                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' || assetSettingsView === 'tracking'
                       ? 'Back to Location'
                       : 'Back'}</span>
                 </button>
@@ -18877,26 +18879,24 @@ export default function AssetRegisterClient({
                   <button
                     type="button"
                     className={styles.assetSettingsOptionButton}
-                    onClick={openAssetSettingsLocationView}
+                    data-settings-action="location" onClick={openAssetSettingsLocationView}
                     disabled={isAssetSettingsBusy}
                   >
-                    <FlagIcon className={styles.assetSettingsOptionIcon} />
+                    <MapPinIcon className={styles.assetSettingsOptionIcon} />
                     <span>
                       <strong>Location</strong>
-                      <small>Update GPS.</small>
+                      <small>GPS and tracking device.</small>
                     </span>
                   </button>
 
-                  <button type="button" className={styles.assetSettingsOptionButton} onClick={()=>setAssetSettingsView('tracking')} disabled={isAssetSettingsBusy}>
-                    <FlagIcon className={styles.assetSettingsOptionIcon}/><span><strong>Tracking device</strong><small>Connect an equipment phone.</small></span>
-                  </button>
+
 
                   {isSavedManualAsset(editingAsset) ? (
                     <>
                       <button
                         type="button"
                         className={styles.assetSettingsOptionButton}
-                        onClick={openAssetSettingsTypeView}
+                        data-settings-action="type" onClick={openAssetSettingsTypeView}
                         disabled={isAssetSettingsBusy}
                       >
                         <OptionsIcon className={styles.assetSettingsOptionIcon} />
@@ -18922,7 +18922,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {isSavedAim4priceAsset(editingAsset) && shouldShowRevalueLifetimeInput(editingAsset) ? (
-                    <button type="button" className={styles.assetSettingsOptionButton} onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
+                    <button type="button" className={styles.assetSettingsOptionButton} data-settings-action="lifetime" onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
                       <TrendIcon className={styles.assetSettingsOptionIcon} />
                       <span><strong>Lifetime expectancy</strong><small>Total working life.</small></span>
                     </button>
@@ -18932,7 +18932,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.assetSettingsOptionButton}
-                      onClick={openAssetSettingsUsageView}
+                      data-settings-action="reading" onClick={openAssetSettingsUsageView}
                       disabled={isAssetSettingsBusy}
                     >
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
@@ -18972,7 +18972,7 @@ export default function AssetRegisterClient({
               ) : null}
 
               {['location','locationManual','locationMap'].includes(assetSettingsView) ? (
-                <AssetLocationEditor viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
+                <AssetLocationEditor onTracking={() => setAssetSettingsView('tracking')} viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
                   onSave={async input => { await persistAssetSettingsGpsPosition({...input,assetId:editingAsset.id,clientCapturedAt:new Date().toISOString()}); }} />
               ) : null}
 
@@ -19743,7 +19743,7 @@ export default function AssetRegisterClient({
         </AssetAccessSettingsDialog>
       ) : null}
 
-      {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialView={valueReviewInitial} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined);setValueReviewInitial(undefined);if(valueEditorReturn.current){openUpdater(valueEditorReturn.current);valueEditorReturn.current=null;}}} onSaved={item=>{if(item){syncUpdatedAsset(item);if(valueEditorReturn.current)valueEditorReturn.current=item;}void reloadValueRequests();}}/>,document.body)}
+      {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialView={valueReviewInitial} returnToDetails={!!valueEditorReturn.current} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined);setValueReviewInitial(undefined);if(valueEditorReturn.current){openUpdater(valueEditorReturn.current);setAssetUpdateMenuEnabled(true);setShowAssetUpdateMenu(false);valueEditorReturn.current=null;}}} onSaved={item=>{if(item){syncUpdatedAsset(item);if(valueEditorReturn.current)valueEditorReturn.current=item;}void reloadValueRequests();}}/>,document.body)}
       {replacementPriceRevaluePrompt ? (
         <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeReplacementPriceRevaluePrompt} />
