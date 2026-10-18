@@ -2122,3 +2122,9 @@
   background: linear-gradient(180deg, #fff 0%, #ffead7 100%);
   box-shadow: 0 18px 34px rgba(180, 107, 43, .12), inset 0 1px 0 #fff;
 }
+
+/* Leaflet's focus target is rectangular; highlight the pin silhouette instead. */
+.assetMapShell :global(.aim4priceMapMarker:focus) { outline:none !important; box-shadow:none !important; }
+.assetMapShell :global(.aim4priceMapMarker:focus .aim4priceMapMarkerPin),
+.assetMapShell :global(.aim4priceMapMarker:hover .aim4priceMapMarkerPin) { filter:drop-shadow(0 0 8px rgba(24,119,80,.65)); }
+.assetMapShell :global(.aim4priceMapMarker:focus-visible .aim4priceMapMarkerPin) { filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #176d50); }

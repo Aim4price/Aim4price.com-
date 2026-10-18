@@ -22,3 +22,21 @@
 
 .content { gap: .85rem; }
 .content > [aria-label="History type"] { padding:0 0 .85rem; margin:0; border-bottom:1px solid #dce7e1; }
+
+.historyToolbar { display:flex; align-items:flex-end; justify-content:space-between; gap:1.25rem; flex-wrap:wrap; padding-bottom:1rem; border-bottom:1px solid #dce7e1; }
+.historyToolbar > [aria-label="History type"] { padding:0; margin:0; flex-shrink:0; }
+.historyToolbar > .filters { flex:1; max-width:30rem; }
+.recordBody { display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-top:.6rem; }
+.recordBody p { margin:0 0 .35rem; }
+.recordBody small { margin-top:.4rem; }
+.recordBody .recordActions { margin:0; flex-shrink:0; }
+.list li { padding:1rem 1.15rem; background:#fff; scroll-margin-block:1rem; transition:background .2s,border-color .2s; }
+.list li[data-selected="true"] { background:#edf7f1; border-color:#277756; box-shadow:inset 4px 0 #277756; }
+.list li:focus { outline:none; }
+.list li:focus-visible { outline:2px solid #277756; outline-offset:-2px; }
+.badge { font-size:.72rem; font-weight:650; color:#536b61; background:#f0f5f2; }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar { align-items:stretch; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .filters { max-width:none; flex-basis:100%; }
+ :global(:where(html:not(:has([data-website-canvas])))) .recordBody { flex-direction:column; align-items:flex-start; }
+}

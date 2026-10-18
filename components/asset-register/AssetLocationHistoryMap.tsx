@@ -2,8 +2,9 @@
 import {useEffect,useRef,useState} from 'react';
 import {loadLeaflet} from '../../lib/asset-location-map';
 import styles from '../AssetLocationPickerMap.module.css';
-type Props={points:Array<{latitude:number;longitude:number;label:string}>;stops?:Array<{latitude:number;longitude:number;label:string}>;routeSegments?:Array<Array<{latitude:number;longitude:number}>>};
-export default function AssetLocationHistoryMap({points,routeSegments,stops}:Props){
+type Props={onSelectPoint?:(index:number)=>void;points:Array<{latitude:number;longitude:number;label:string}>;stops?:Array<{latitude:number;longitude:number;label:string}>;routeSegments?:Array<Array<{latitude:number;longitude:number}>>};
+export default function AssetLocationHistoryMap({points,routeSegments,stops,onSelectPoint}:Props){
+ const selectPoint=useRef(onSelectPoint);selectPoint.current=onSelectPoint;
  const node=useRef<HTMLDivElement>(null),runtime=useRef<any>(null);
  const [mode,setMode]=useState<'road'|'satellite'>('road'),[ready,setReady]=useState(false),[error,setError]=useState(''),[zoom,setZoom]=useState(5),[attempt,setAttempt]=useState(0);
  useEffect(()=>{let cancelled=false;let map:any;let observer:ResizeObserver|undefined;setReady(false);setError('');
@@ -24,7 +25,8 @@ export default function AssetLocationHistoryMap({points,routeSegments,stops}:Pro
    } else points.forEach((point,index)=>{
     const icon=L.divIcon({className:styles.marker,html:`<span class="${styles.pin}" style="background:${index===0?'#0f5840':'#367b9c'}"><b style="transform:rotate(45deg);color:white;font:800 12px Arial">${index+1}</b></span>`,iconSize:[38,48],iconAnchor:[19,48]});
     const popup=document.createElement('div');popup.textContent=point.label;
-    L.marker([point.latitude,point.longitude],{icon,zIndexOffset:points.length-index,title:point.label,alt:`Location ${index+1}`}).addTo(map).bindPopup(popup);
+    const marker=L.marker([point.latitude,point.longitude],{icon,zIndexOffset:points.length-index,title:point.label,alt:`Location ${index+1}`}).addTo(map);
+    if(selectPoint.current)marker.on("click",()=>selectPoint.current?.(index));else marker.bindPopup(popup);
    });
    map.fitBounds(points.map(point=>[point.latitude,point.longitude]),{padding:[45,55],maxZoom:16});
    map.on('zoomend',()=>setZoom(map.getZoom()));
@@ -39,7 +41,7 @@ export default function AssetLocationHistoryMap({points,routeSegments,stops}:Pro
   <div className={styles.layers} role="group" aria-label="Map style">{(['road','satellite'] as const).map(value=><button key={value} type="button" aria-pressed={mode===value} disabled={!ready} onClick={()=>setMode(value)}>{value==='road'?'Map':'Satellite'}</button>)}</div>
   <div className={styles.zoom} role="group" aria-label="Map zoom"><button type="button" aria-label="Zoom in" disabled={!ready||zoom>=19} onClick={()=>runtime.current?.map.zoomIn()}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg></button><button type="button" aria-label="Zoom out" disabled={!ready||zoom<=2} onClick={()=>runtime.current?.map.zoomOut()}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16"/></svg></button></div>
   {!ready&&<div className={styles.status} role={error?'alert':'status'}>{error||'Loading map…'}{error&&<button type="button" onClick={()=>setAttempt(n=>n+1)}>Try again</button>}</div>}
-  {ready&&<span className={styles.hint}>Select a point to see its date and details</span>}
+  {ready&&<span className={styles.hint}>{onSelectPoint?"Select a pin to jump to its record":"Select a point to see its date and details"}</span>}
  </div>;
 }
 
