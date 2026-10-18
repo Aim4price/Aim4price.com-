@@ -56,7 +56,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(hero, /documents, maintenance, budgets and costs connected/);
 
   assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Get started/);
-  assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
+  assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Value my asset/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors|Choose how you’ll use Aim4price|Agriculture|Construction|Industrial|Motor/);
   assert.match(hero, /useState\(0\)/);
   assert.match(hero, /useState<QuestionKey>\('worth'\)/);
@@ -163,7 +163,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
     'Know what ownership costs.',
     'Keep maintenance on track.',
     'set budgets',
-    'Get Estimate or manually',
+    'Value Asset or manually',
     'Automatic depreciation',
     'updated usage',
     'equipment-specific checklists',
