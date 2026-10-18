@@ -5,6 +5,8 @@ test('pairing QR keeps the credential in the fragment and targets the tracker ap
  const code='ABCDEF0123456789',url=new URL(trackerPairingUrl(code));
  assert.equal(url.pathname,'/tracker/pair');assert.equal(url.search,'');assert.equal(url.hash,`#${code}`);
  assert.equal(normalizeTrackerCode(' abcdef0123456789 '),code);
+ assert.equal(trackerPairingUrl('ABCD-EF01-2345-6789'),trackerPairingUrl(code));
+ assert.equal(trackerPairingIntent('ABCD-EF01-2345-6789'),trackerPairingIntent(code));
  assert.equal(trackerPairingIntent(code),`intent://pair?code=${code}#Intent;scheme=aim4price-tracker;package=com.aim4price.tracker.pilot;end`);
 });
 test('malformed pairing codes cannot inject an intent or URL',()=>{

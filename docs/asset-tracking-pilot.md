@@ -61,3 +61,11 @@ Validated automatically: TypeScript, route maths, database-backed pairing/ingest
 The pairing card now shows a QR code. Scan with the Android phone camera, tap **Open Tracker**, then **Connect** and **Activate**. Manual code entry remains available. The QR opens `/tracker/pair` with the short-lived code in the URL fragment, which is removed from the address bar after reading. It never connects or activates without the user tapping the app controls. Expiration and one-time use remain enforced by the pairing API.
 
 The bundled APK is updated to version code 2 and was verified with the same signing certificate as the previous bundled build, so existing installations can update in place. Older app versions can still pair by entering the code manually.
+
+### Live verification and tracker 0.3 — 18 October 2026
+
+Fixed two end-to-end failures missed by earlier component fixtures: generated pairing codes contain hyphens, and the Android client used the apex hostname (HTTP 405 for pairing) instead of the working `https://www.aim4price.com` API. QR normalization now accepts the actual server format.
+
+A temporary Railway job ran `scripts/verify-tracker-live.ts` against production PostgreSQL and the public HTTPS endpoints with a uniquely scoped test asset. Verified generated code/QR, one-time pairing, 24 saved readings, retry deduplication, latest map position, route/stop report data, revoked credentials and expired codes. All passed at 2026-10-18T17:15:47Z. Test records and the temporary service were removed. These were synthetic readings, not a physical GPS drive test.
+
+The 0.3 APK uses the same signing identity and package for in-place installation. The versioned download avoids confusion with cached older files; old download links also receive the current binary. Android installation still requires opening the downloaded APK and approving Update. The app has a branded layout, persistent pairing errors, version label and immediate first-fix upload. A real phone's locked-screen/background GPS behavior still needs physical validation.

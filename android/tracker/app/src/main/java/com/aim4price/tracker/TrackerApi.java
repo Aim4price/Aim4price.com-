@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.json.*;
 public class TrackerApi {
- static final String ORIGIN="https://aim4price.com";
+ static final String ORIGIN="https://www.aim4price.com";
  static android.content.SharedPreferences prefs(Context c){return c.getSharedPreferences("tracker",Context.MODE_PRIVATE);}
  static JSONObject post(String path,JSONObject body,String token)throws Exception{
   HttpURLConnection c=(HttpURLConnection)new URL(ORIGIN+path).openConnection();

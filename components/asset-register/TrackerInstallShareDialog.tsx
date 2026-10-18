@@ -21,6 +21,6 @@ export default function TrackerInstallShareDialog({onClose}:{onClose:()=>void}){
    <div className={styles.qrPanel}><span className={styles.eyebrow}>Or use the phone’s camera</span><h4>Scan to install</h4><div className={styles.qr}><QrCodePreview value={INSTALL_URL} label="Scan to download Aim4price Tracker for Android"/></div><p>Scan this QR code to download the Android app.</p></div>
   </div>
   <div className={styles.nextStep}><span aria-hidden="true">✓</span><p><strong>Once installed</strong><br/>Return to Tracking device, create a pairing code and scan it with the phone.</p></div>
-  <p className={styles.note}>If Android asks, allow your browser to install this app.</p>
+  <p className={styles.note}>Version 0.3 · Open the downloaded file and choose Install or Update. If Android asks, allow installation from your browser.</p>
  </AssetAccessSettingsDialog>;
 }
