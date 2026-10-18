@@ -1,5 +1,6 @@
 "use client";
 import LeadPhotoViewerModal from '../../components/LeadPhotoViewerModal';
+import AssetMapAssetDialog from '../../components/asset-register/AssetMapAssetDialog';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import AssetLocationHistoryDialog from '../../components/asset-register/AssetLocationHistoryDialog';
@@ -669,6 +670,7 @@ function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
 }
 
 export default function AssetMapClient() {
+  const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'}|null>(null);
   const [photoViewer,setPhotoViewer]=useState<{assetId:string;title:string;urls:string[];index:number}|null>(null);
   const photoTrigger=useRef<HTMLButtonElement|null>(null);
@@ -955,7 +957,7 @@ export default function AssetMapClient() {
         }
       }
 
-      if (locationDialog || photoViewer || event.key !== "Escape") return;
+      if (assetPickerOpen || locationDialog || photoViewer || event.key !== "Escape") return;
 
       if (isFilterMenuOpen || isExportScopeMenuOpen) {
         if (isExportScopeMenuOpen) {
@@ -986,6 +988,7 @@ export default function AssetMapClient() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
+    assetPickerOpen,
     photoViewer,
     locationDialog,
     isFilterMenuOpen,
@@ -1590,9 +1593,19 @@ export default function AssetMapClient() {
 
   return (
     <main className={styles.page}>
+      {assetPickerOpen && <AssetMapAssetDialog
+        assets={assets.map(asset => ({ id: asset.id, title: asset.title || 'Saved asset', subtitle: buildAssetMeta(asset), register: asset.registerLabel || asset.registerName, serial: asset.serialNumber, registration: asset.licenseRegistrationNumber, mapped: hasCoordinates(asset) }))}
+        onClose={() => { setAssetPickerOpen(false); requestAnimationFrame(() => locationTrigger.current?.focus()); }}
+        onSelect={id => {
+          const asset = assets.find(item => item.id === id);
+          if (!asset) return;
+          setAssetPickerOpen(false);
+          setLocationDialog({asset, view: 'update'});
+        }}
+      />}
       {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
       {locationDialog?.view==='history'&&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
-      {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title="Update location" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
+      {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <AssetLocationEditor trackingAssetId={locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
@@ -1647,6 +1660,11 @@ export default function AssetMapClient() {
               </label>
 
               <div className={styles.topActionButtons}>
+                <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton}`} aria-haspopup="dialog"
+                  disabled={dataStatus !== 'ready'} onClick={event => { locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
+                  <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12Z"/><path d="M9 9h6m-3-3v6"/></svg>
+                  <span>Add asset to map</span>
+                </button>
                 <div className={styles.filterDropdown}>
                   <button
                     ref={filterTriggerRef}

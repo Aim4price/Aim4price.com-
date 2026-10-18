@@ -108,7 +108,7 @@
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(22rem, calc(var(--website-design-vw) * 28), 29rem);
+  grid-template-columns: minmax(16rem, 1fr) minmax(36rem, 1.35fr);
   align-items: center;
   justify-content: stretch;
   gap: clamp(0.7rem, calc(var(--website-design-vw) * 1), 0.95rem);
@@ -174,7 +174,7 @@
 .topActionButtons {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1.3fr 1fr 1fr;
   align-items: stretch;
   justify-content: end;
   gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.9), 0.82rem);
