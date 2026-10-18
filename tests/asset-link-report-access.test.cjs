@@ -40,12 +40,20 @@ for(const [file,path,selector] of [
   '../../../../lib/asset-register-db':{getAssetRegisterItemById:async(owner,id)=>{assertOwner(owner);assert.equal(id,A);return item();},listAssetRegisterItems:async(owner,registerId)=>{assertOwner(owner);assert.equal(registerId,'register');return [item(),other];}},
   '../../../../lib/asset-registers':{getAssetRegisterForUser:async(owner,id)=>{assertOwner(owner);assert.equal(id,'register');return {id,name:'Register'};},listAssetRegisters:async owner=>{assertOwner(owner);return [{id:'register',name:'Register'}];}},
   '../../../../lib/asset-groups':{listAssetGroups:async()=>[]},
+  '../../../../lib/asset-tracking':{latestTrackingPositions:async owner=>{assertOwner(owner);return new Map([
+   [A,{latitude:-31.123456,longitude:24.654321,captured_at:'2026-10-18T08:00:00Z'}],
+   [other.id,{latitude:-29.987654,longitude:25.987654,captured_at:'2026-10-18T08:00:00Z'}],
+  ]);}},
   '../../../../lib/asset-groups-shared':{projectAssetGroupsToAssets:()=>new Map(),decorateAssetsWithGroups:items=>items,assetCountsTowardRegisterTotalFromMeta:()=>true},
   '../../../../lib/report-branding':{selectReportLogoUrl:()=>''},
   '../../../../lib/simple-xlsx':{createXlsxWorkbook:sheets=>Buffer.from(JSON.stringify(sheets))},
  });
  const get=()=>route.GET(new NextRequest(`https://example.test${path}?shareToken=token&format=xlsx&${selector}`));
  const first=await get();assert.equal(first.status,200);const firstData=await first.text();assert.match(firstData,/Live tractor one/);assert.doesNotMatch(firstData,/PRIVATE-ASSET/);
+ if(path==='/api/asset-map/report'){
+  assert.match(firstData,/-31\.123456/);assert.match(firstData,/24\.654321/);
+  assert.doesNotMatch(firstData,/-29\.987654|25\.987654/,'Other assets’ tracked positions remain private');
+ }
  title='Live tractor updated';const next=await get();assert.equal(next.status,200);const nextData=await next.text();assert.match(nextData,/Live tractor updated/);assert.doesNotMatch(nextData,/PRIVATE-ASSET|Live tractor one/);
 });
 

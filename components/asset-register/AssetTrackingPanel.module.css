@@ -94,7 +94,7 @@
   color: white;
 }
 @media (max-width: 600px) {
-  .stats {
+  :global(:where(html:not(:has([data-website-canvas])))) .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
