@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from './asset-register/ShareModalCloseButton';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { createPortal, WebsiteCanvasContext } from './WebsitePortal';
@@ -1879,9 +1880,7 @@ export default function AppHeader({
               ? `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
               : 'Asset-specific enquiry status.'}</p>
           </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label={`Close ${'Discovery enquiry'}`}>
-            ×
-          </button>
+          <ShareModalCloseButton onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry" />
         </div>
 
         <div className={styles.notificationDetailBody}>
@@ -1954,6 +1953,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'denied')}
               disabled={isProcessing}
             >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17" /></svg>
               {isProcessing ? 'Saving...' : 'No'}
             </button>
             <button
@@ -1962,6 +1962,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'approved')}
               disabled={isProcessing}
             >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
               {isProcessing ? 'Saving...' : 'Yes'}
             </button>
           </div>

@@ -4600,3 +4600,43 @@
   position: relative;
   isolation: isolate;
 }
+
+/* Discovery enquiry follows the shared Aim4price modal rhythm. */
+.notificationDiscoveryDetailModal.notificationDiscoveryDetailModal {
+  width: min(48rem, calc(var(--website-dialog-reference-width, 100%) - 2rem));
+  border-radius: 1.65rem;
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+}
+.notificationDiscoveryDetailModal .notificationDetailHeader {
+  padding: 1.6rem 1.75rem 1.25rem;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+.notificationDiscoveryDetailModal .notificationDetailHeader h2 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.notificationDiscoveryDetailModal .notificationDetailHeader p {
+  font-size: .95rem;
+  font-weight: 500;
+  line-height: 1.6;
+  margin-top: .65rem;
+}
+.notificationDiscoveryDetailModal .notificationDetailBody { padding: 1.25rem 1.75rem; }
+.notificationDiscoveryDetailModal .notificationDetailMetaGrid { gap: .9rem; }
+.notificationDiscoveryDetailModal .notificationDetailMetaCard {
+  min-height: 0;
+  padding: 1rem 1.1rem;
+  gap: .45rem;
+  border-radius: 1rem;
+  border-color: var(--app-line, #d9e7df);
+  background: var(--app-surface-soft, #f6faf7);
+  box-shadow: none;
+}
+.notificationDiscoveryDetailModal .notificationDetailMetaCard span { font-size: .72rem; font-weight: 650; letter-spacing: .04em; }
+.notificationDiscoveryDetailModal .notificationDetailMetaCard strong { font-size: 1rem; font-weight: 700; line-height: 1.45; }
+.notificationDiscoveryDetailModal .notificationDetailActions { padding: 1.1rem 1.75rem 1.5rem; gap: 1rem; }
+.notificationDiscoveryDetailModal .notificationDetailActions button { flex: 1; min-height: 3.25rem; gap: .65rem; }
+.notificationDiscoveryDetailModal .notificationDetailActions svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
