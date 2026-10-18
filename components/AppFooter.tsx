@@ -25,7 +25,7 @@ type FooterWorkspace = {
 const publicWorkspace: FooterWorkspace = {
   label: 'Explore',
   links: [
-    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/valuation', label: 'Value Asset' },
     { href: '/drop-invoice', label: 'Drop an Invoice' },
     { href: '/marketplace', label: 'Marketplace' },
   ],
@@ -35,7 +35,7 @@ const ownerWorkspace: FooterWorkspace = {
   label: 'Owner tools',
   links: [
     { href: '/asset-register', label: 'Asset Register' },
-    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/valuation', label: 'Value Asset' },
     { href: '/asset-map', label: 'Asset Map' },
     { href: '/my-invoices', label: 'Cost Ledger' },
     { href: '/maintenance', label: 'Maintenance' },
@@ -51,7 +51,7 @@ const dealerWorkspace: FooterWorkspace = {
     { href: '/leads', label: 'Leads' },
     { href: '/tracking', label: 'Maintenance' },
     { href: '/dealer-costs', label: 'Client Costs' },
-    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/valuation', label: 'Value Asset' },
     { href: '/marketplace', label: 'Marketplace' },
     { href: '/account', label: 'Account' },
   ],
