@@ -1,4 +1,5 @@
 'use client';
+import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import ListingAlertSettings from '../../components/ListingAlertSettings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
@@ -432,14 +433,16 @@ function ListingImage({
 function PriceWithVat({
   value,
   className = '',
+  included = false,
 }: {
+  included?: boolean;
   value: number;
   className?: string;
 }) {
   return (
     <span className={`${styles.priceWithVat} ${className}`.trim()}>
-      <span>{money(value)}</span>
-      <em>+ VAT</em>
+      <span>{money(value * (included ? 1.15 : 1))}</span>
+      <em>{included ? 'incl. VAT' : '+ VAT'}</em>
     </span>
   );
 }
@@ -863,7 +866,7 @@ function buildSearchText(listing: MarketplaceListing): string {
 
 function sortListings(items: MarketplaceListing[]): MarketplaceListing[] {
   return [...items].sort(
-    (a, b) => new Date(b.publishedAtIso).getTime() - new Date(a.publishedAtIso).getTime(),
+    (a, b) => (new Date(b.publishedAtIso).getTime() - new Date(a.publishedAtIso).getTime()) || a.id.localeCompare(b.id),
   );
 }
 
@@ -2164,6 +2167,7 @@ export default function MarketplaceClient({
   const [isLoadingListings, setIsLoadingListings] = useState(!initialListings);
   const [listingLoadError, setListingLoadError] = useState('');
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
+  const [vatIncluded, setVatIncluded] = useState(false);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
   const [editListingTarget, setEditListingTarget] = useState<MarketplaceListing | null>(null);
@@ -2778,6 +2782,7 @@ export default function MarketplaceClient({
   }
 
   function handleCardKeyDown(event: ReactKeyboardEvent<HTMLElement>, listing: MarketplaceListing) {
+    if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       openListing(listing);
@@ -3361,6 +3366,12 @@ export default function MarketplaceClient({
                       />
                       <DealRatingBadge listing={listing} />
                       {images.length > 1 ? <span className={styles.photoPill}>{images.length} photos</span> : null}
+                      <button type="button" className={`${styles.cardShareButton} ${styles.cardVatButton}`}
+                        aria-label={vatIncluded ? 'Show prices excluding VAT' : 'Show prices including VAT'}
+                        data-tooltip={vatIncluded ? 'Show excl. VAT' : 'Show incl. VAT'} aria-pressed={vatIncluded}
+                        onClick={event => { event.stopPropagation(); setVatIncluded(current => !current); }}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 18 12-12" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>
+                      </button>
                       <button
                         type="button"
                         className={styles.cardShareButton}
@@ -3369,13 +3380,14 @@ export default function MarketplaceClient({
                           openShareSheet(listing);
                         }}
                         aria-label="Share listing"
+                        data-tooltip="Share"
                       >
                         <IconShare />
                       </button>
                     </div>
 
                     <div className={styles.cardBody}>
-                      <PriceWithVat value={listing.askingPriceExVat} className={styles.cardPrice} />
+                      <PriceWithVat included={vatIncluded} value={listing.askingPriceExVat} className={styles.cardPrice} />
                       <h3>{listingDisplayTitle(listing)}</h3>
                       <p className={styles.cardLocation}>{formatLocation(listing)}</p>
                       <p className={styles.cardMeta}>
@@ -3564,7 +3576,7 @@ export default function MarketplaceClient({
             aria-labelledby="marketplace-listing-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing">
+            <button type="button" className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing" data-tooltip="Close listing">
               <IconClose />
             </button>
 
@@ -3597,7 +3609,7 @@ export default function MarketplaceClient({
                       type="button"
                       className={`${styles.galleryArrow} ${styles.galleryArrowLeft}`}
                       onClick={showPreviousImage}
-                      aria-label="Previous photo"
+                      aria-label="Previous photo" data-tooltip="Previous photo"
                     >
                       <IconChevronLeft />
                     </button>
@@ -3605,7 +3617,7 @@ export default function MarketplaceClient({
                       type="button"
                       className={`${styles.galleryArrow} ${styles.galleryArrowRight}`}
                       onClick={showNextImage}
-                      aria-label="Next photo"
+                      aria-label="Next photo" data-tooltip="Next photo"
                     >
                       <IconChevronRight />
                     </button>
@@ -3638,15 +3650,20 @@ export default function MarketplaceClient({
 
             <aside className={styles.modalDetails} tabIndex={0} aria-label="Listing details">
               <div className={styles.modalTitleArea}>
-                <PriceWithVat value={activeListing.askingPriceExVat} className={styles.modalPrice} />
+                <PriceWithVat included={vatIncluded} value={activeListing.askingPriceExVat} className={styles.modalPrice} />
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
                 <p>{formatLocation(activeListing)}</p>
               </div>
 
               <div className={styles.modalActionRow}>
-                <button type="button" className={styles.modalShareButton} onClick={() => openShareSheet(activeListing)}>
+                <button type="button" className={styles.modalShareButton} data-tooltip="Share" onClick={() => openShareSheet(activeListing)}>
                   <IconShare />
                   Share
+                </button>
+                <button type="button" className={styles.modalShareButton} aria-pressed={vatIncluded}
+                  data-tooltip={vatIncluded ? 'Show excl. VAT' : 'Show incl. VAT'} onClick={() => setVatIncluded(current => !current)}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 18 12-12" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>
+                  {vatIncluded ? 'Incl. VAT' : 'Excl. VAT'}
                 </button>
                 {activeListing.sourceUrl ? (
                   <a
@@ -3787,9 +3804,9 @@ export default function MarketplaceClient({
 
       {photoViewerOpen && activeListing && activeImages.length ? (
         <div className={styles.marketplacePhotoViewer} role="dialog" aria-modal="true" aria-label={`${listingDisplayTitle(activeListing)} photo viewer`}>
-          <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
+          <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer" />
           <div className={styles.marketplacePhotoViewerCard}>
-            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">
+            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer">
               <IconClose />
             </button>
             <ListingImage
@@ -3801,10 +3818,10 @@ export default function MarketplaceClient({
             />
             {activeImages.length > 1 ? (
               <>
-                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerPrevious}`} onClick={showPreviousImage} aria-label="Previous photo">
+                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerPrevious}`} onClick={showPreviousImage} aria-label="Previous photo" data-tooltip="Previous photo">
                   <IconChevronLeft />
                 </button>
-                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerNext}`} onClick={showNextImage} aria-label="Next photo">
+                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerNext}`} onClick={showNextImage} aria-label="Next photo" data-tooltip="Next photo">
                   <IconChevronRight />
                 </button>
               </>
@@ -3829,7 +3846,7 @@ export default function MarketplaceClient({
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.marketplaceSquareClose}`}
                 onClick={closeManageListingModal}
-                aria-label="Close marketplace listing manager"
+                aria-label="Close marketplace listing manager" data-tooltip="Close marketplace listing manager"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -3883,7 +3900,7 @@ export default function MarketplaceClient({
                 </span>
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Remove advert</strong>
-                  <small>Tell us what happened, then withdraw it from Marketplace and your showroom.</small>
+                  <small>Remove from Marketplace and your showroom.</small>
                 </span>
               </button>
             </div>
@@ -3914,10 +3931,7 @@ export default function MarketplaceClient({
 
             <div className={dealerStyles.editListingBody}>
               <MarketplacePhotoEditor photos={editListingDraft.photos} busy={listingPhotosBusy} onBusyChange={setListingPhotosBusy} disabled={isSavingListingEdit || listingPhotosBusy} onChange={photos => updateListingEditDraft({ photos })} />
-              <label className={dealerStyles.editListingField}>
-                <span>Asking price excluding VAT</span>
-                <GroupedCurrencyInput value={editListingDraft.askingPriceExVat} onValueChange={(value) => updateListingEditDraft({ askingPriceExVat: value })} />
-              </label>
+              <MarketplacePriceInput value={editListingDraft.askingPriceExVat} disabled={isSavingListingEdit || listingPhotosBusy} onChange={askingPriceExVat => updateListingEditDraft({ askingPriceExVat })} />
               <label className={dealerStyles.editListingField}>
                 <span>Description</span>
                 <textarea rows={4} value={editListingDraft.description} onChange={(event) => updateListingEditDraft({ description: event.target.value })} />
@@ -3977,7 +3991,7 @@ export default function MarketplaceClient({
             aria-labelledby="share-listing-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className={styles.shareCloseButton} onClick={closeShareSheet} aria-label="Close share dialog">
+            <button type="button" className={styles.shareCloseButton} onClick={closeShareSheet} aria-label="Close share dialog" data-tooltip="Close share dialog">
               <IconClose />
             </button>
 

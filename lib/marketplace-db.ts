@@ -306,6 +306,7 @@ export async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists seller_phone text,
       add column if not exists marketplace_notes text,
       add column if not exists marketplace_status text not null default 'draft',
+      add column if not exists marketplace_published_at timestamptz,
       add column if not exists marketplace_price_ex_vat numeric(14,2),
       add column if not exists marketplace_seller_name text,
       add column if not exists marketplace_seller_company text,
@@ -353,6 +354,16 @@ export async function ensureMarketplaceColumns(): Promise<void> {
 
     create index if not exists idx_marketplace_listings_status_updated
       on marketplace_listings(status, updated_at desc);
+  `);
+
+  // Freeze legacy live adverts using their earliest available listing date.
+  await db.query(`
+    update asset_register_items a
+    set marketplace_published_at = coalesce(
+      (select min(coalesce(l.published_at, l.created_at)) from marketplace_listings l where l.asset_register_item_id = a.id),
+      a.created_at
+    )
+    where a.marketplace_status = 'live' and a.marketplace_published_at is null
   `);
 
   await ensureListingAlertSchema();
@@ -707,7 +718,7 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         )
         values (
           $1, $2::uuid, 'live', $3, $4, $5, $6, $7, $8, nullif($9, ''), $10, nullif($11, ''),
-          $12, $13::jsonb, now(), $14, $15, $16, $17, $18, $19, $20, $21::jsonb, now(), now()
+          $12, $13::jsonb, coalesce((select marketplace_published_at from asset_register_items where id = $2::uuid), now()), $14, $15, $16, $17, $18, $19, $20, $21::jsonb, now(), now()
         )
       `,
       [
@@ -772,8 +783,10 @@ function buildMarketplaceListing(
     asNumber(pick(specs, ['yearModel', 'year_model', 'year']), new Date().getFullYear()),
   ));
   const hours = usageAmount;
-  const publishedAtIso =
-    asText(pick(row, ['updated_at', 'published_at', 'created_at'])) || new Date().toISOString();
+  const publishedDate = row.marketplace_published_at || row.published_at || row.created_at;
+  const publishedAtIso = publishedDate instanceof Date
+    ? publishedDate.toISOString()
+    : asText(publishedDate) || '1970-01-01T00:00:00.000Z';
   const askingPriceExVat = Math.round(
     asNumber(
       pick(row, [
@@ -948,7 +961,7 @@ export async function listPublishedMarketplaceAssetListings(options: {
         left join account_profiles p on p.user_id = a.user_id
         where coalesce(a.marketplace_status, 'draft') = 'live'
           and ($1::text is null or a.user_id = $1)
-        order by coalesce(a.updated_at, a.created_at) desc, a.id desc
+        order by coalesce(a.marketplace_published_at, a.created_at) desc, a.id desc
       `,
       [options.sellerUserId ?? null],
     ),
@@ -976,7 +989,7 @@ export async function listPublishedMarketplaceAssetListings(options: {
         where listing.asset_register_item_id is null
           and lower(coalesce(listing.status, '')) = 'live'
           and ($1::text is null or listing.user_id = $1)
-        order by coalesce(listing.published_at, listing.updated_at, listing.created_at) desc, listing.id desc
+        order by coalesce(listing.published_at, listing.created_at) desc, listing.id desc
       `,
       [options.sellerUserId ?? null],
     ),
@@ -989,7 +1002,7 @@ export async function listPublishedMarketplaceAssetListings(options: {
       listingSnapshot: true,
     })),
   ].sort((left, right) => (
-    new Date(right.publishedAtIso).getTime() - new Date(left.publishedAtIso).getTime()
+    (new Date(right.publishedAtIso).getTime() - new Date(left.publishedAtIso).getTime()) || left.id.localeCompare(right.id)
   ));
 }
 
@@ -1117,6 +1130,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   ];
   const updateAssignments = [
     "marketplace_status = 'live'",
+    "marketplace_published_at = coalesce(marketplace_published_at, now())",
     'seller_phone = $3',
     'marketplace_notes = $4',
     'marketplace_price_ex_vat = $5',
