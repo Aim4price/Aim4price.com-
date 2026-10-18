@@ -279,7 +279,7 @@ test("both Discovery views share one toolbar treatment and archived adverts avoi
   assert.match(client, /styles\.discoveryRefreshButton/);
   assert.doesNotMatch(client, /assetStyles\.filterTriggerButtonActive/);
   assert.match(client, /leadStyles\.leadRefreshIconActive/);
-  assert.match(client, /Photo unavailable/);
+  assert.match(read("components/RecentAdvertGallery.tsx"), /Photo unavailable/);
   assert.doesNotMatch(client, />A4P</);
 });
 
@@ -294,8 +294,8 @@ test("recent adverts reuse the normal Discovery card and detail structure", () =
     "assetStyles.assetBody",
     "leadStyles.leadAssetBody",
     "styles.discoveryLeadAssetBody",
-    "assetStyles.previewWrap",
-    "leadStyles.leadPreviewWrap",
+    "styles.discoveryMediaColumn",
+    "RecentAdvertGallery",
     "assetStyles.assetDetailDivider",
     "assetStyles.assetDetailsPanel",
     "styles.discoveryDetailsPanel",

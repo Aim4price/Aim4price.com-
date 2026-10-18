@@ -1,0 +1,10 @@
+.gallery { width: 100%; min-width: 0; display: grid; gap: .65rem; }
+.stage { position: relative; aspect-ratio: 4 / 3; border-radius: 1rem; overflow: hidden; background: #182b24; display: grid; place-items: center; }
+.stage img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: contain; }
+.stage p { color: #fff; padding: 1rem; }
+.nav { position: absolute; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid #d2e5d9; border-radius: 50%; background: #fff; color: #175640; cursor: pointer; }
+.nav svg { width: 1.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.previous { left: .5rem; } .next { right: .5rem; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--app-muted, #63766b); font-size: .9rem; }
+.footer button { min-height: 2.75rem; padding: .65rem 1.2rem; border: 1px solid #acd3bd; border-radius: .75rem; background: #edf8f1; color: #175640; font: inherit; font-weight: 750; cursor: pointer; }
+.gallery button:focus-visible { outline: 3px solid #298159; outline-offset: 3px; }

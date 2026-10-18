@@ -73,10 +73,18 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   for(const [width,compact] of [[1440,false],[390,true],[320,true]]){
    approved=false;fail=false;await open(width,compact);
    const trigger='button[aria-label="Open Toyota Hilux details"]';
-   await page.click(trigger);
+   await page.click('[data-discovery-card] h2, [data-discovery-card] h3');
    await page.waitForSelector('#discovery-details-fixture-1 [class*="discoveryLockedMedia"]');
    assert.equal(await page.$eval('#discovery-details-fixture-1 [class*="discoveryLockedMedia"] strong', e=>e.textContent), 'Private photos');
    assert.equal(await page.$('[role="dialog"]'),null,'details retain the inline design');
+   const centered = await page.$eval('[class*="discoveryPreviewLocked"]', box => {
+     const icon = box.querySelector('svg').getBoundingClientRect();
+     const copy = box.querySelector('[class*="discoveryLockedMedia"]').getBoundingClientRect();
+     const bounds = box.getBoundingClientRect();
+     return Math.abs((icon.top + copy.bottom) / 2 - (bounds.top + bounds.bottom) / 2) < 3 && copy.bottom <= bounds.bottom;
+   });
+   assert(centered, 'private photo icon and complete wording are centered');
+
    const state=await page.$eval('#discovery-details-fixture-1',details=>{
     const card=details.closest('[data-discovery-card]');
     const summary=card.querySelector('[class*="discoverySummaryBlur"]');
