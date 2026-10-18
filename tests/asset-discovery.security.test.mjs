@@ -191,7 +191,8 @@ test("non-contactable access clears and gates all private client state", () => {
   assert.match(accessTransition, /nextAccess\.accountType === "public"/);
   assert.match(accessTransition, /setExpandedAssetId\(null\)/);
   assert.match(accessTransition, /setDetailsByAssetId\(\{\}\)/);
-  assert.match(accessTransition, /setPhotoIndexByAssetId\(\{\}\)/);
+  // Gallery selection is local to the expanded card and unmounts when access is cleared.
+  assert.match(client, /<RecentAdvertGallery/);
   assert.match(accessTransition, /setPhotoModal\(null\)/);
   assert.match(accessTransition, /setActiveEnquiry\(null\)/);
   assert.match(client, /privateDiscoveryAccess && details\?\.photosUnlocked/);

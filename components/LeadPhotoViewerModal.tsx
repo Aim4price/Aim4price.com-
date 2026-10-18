@@ -1,5 +1,6 @@
 'use client';
 
+import styles from './LeadPhotoViewerModal.module.css';
 import PhotoViewerActions from './PhotoViewerActions';
 import { useEffect, useState } from 'react';
 import { createPortal } from './WebsitePortal';
@@ -142,12 +143,12 @@ export default function LeadPhotoViewerModal({
         </div>
 
         <PhotoViewerActions key={activeUrl} url={activeUrl} title={`${title}-photo-${safeIndex + 1}`} />
-        {loadedUrl !== activeUrl && failedUrl !== activeUrl && <p role="status" style={{margin:'.4rem 1rem'}}>Loading photo…</p>}
-        {failedUrl === activeUrl && <p role="alert" style={{margin:'.4rem 1rem'}}>Photo could not load. <button type="button" onClick={() => {setFailedUrl('');setRetry(value=>value+1);}}>Retry photo</button></p>}
+        {loadedUrl !== activeUrl && failedUrl !== activeUrl && <p role="status" className={styles.status}>Loading photo…</p>}
+        {failedUrl === activeUrl && <div role="alert" className={styles.error}><div><strong>Photo could not load</strong><span>Try again, or choose another photo.</span></div><button className={styles.retry} type="button" onClick={() => {setFailedUrl('');setRetry(value=>value+1);}}>Retry photo</button></div>}
         <div className={leadStyles.leadPhotoModalBody}>
           <div className={leadStyles.leadPhotoModalFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img key={`${activeUrl}-${retry}`} onLoad={() => {setLoadedUrl(activeUrl);setFailedUrl('');}} onError={() => setFailedUrl(activeUrl)} decoding="async" fetchPriority="high" src={activeUrl} alt={`${title} asset photo ${safeIndex + 1}`} />
+            <img style={failedUrl === activeUrl ? { visibility: "hidden" } : undefined} key={`${activeUrl}-${retry}`} onLoad={() => {setLoadedUrl(activeUrl);setFailedUrl('');}} onError={() => setFailedUrl(activeUrl)} decoding="async" fetchPriority="high" src={activeUrl} alt={`${title} asset photo ${safeIndex + 1}`} />
 
             {hasMultiplePhotos ? (
               <>

@@ -8,3 +8,8 @@
 .footer { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--app-muted, #63766b); font-size: .9rem; }
 .footer button { min-height: 2.75rem; padding: .65rem 1.2rem; border: 1px solid #acd3bd; border-radius: .75rem; background: #edf8f1; color: #175640; font: inherit; font-weight: 750; cursor: pointer; }
 .gallery button:focus-visible { outline: 3px solid #298159; outline-offset: 3px; }
+
+.unavailable { display: grid; gap: .6rem; padding: 3.5rem; color: #fff; text-align: center; }
+.unavailable strong { font-size: 1rem; }
+.unavailable span { font-size: .85rem; line-height: 1.4; }
+.unavailable button { border: 1px solid #b8d5c7; border-radius: .65rem; padding: .65rem 1rem; background: #edf8f1; color: #175640; font: inherit; font-weight: 750; cursor: pointer; }
