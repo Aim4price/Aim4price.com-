@@ -14618,7 +14618,7 @@
 .replacementNoticeDisclaimer { padding: 0; border: 0; background: transparent; }
 
 /* Final estimate: value first, supporting details below, actions together. */
-.finalEstimateLayout { gap: 22px; }
+.finalEstimateLayout { gap: 20px; }
 .finalEstimateLayout .resultsMain { gap: 16px; min-width: 0; }
 .finalEstimateLayout .resultHero { display: block; order: 0; padding: 24px; border-radius: 20px; }
 .finalEstimateLayout .resultMachineTitle { margin: 0 0 14px; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
@@ -14648,7 +14648,9 @@
 .finalEstimateLayout .saleabilitySummary small { display: block; margin-top: 9px; font-size: 0.72rem; color: var(--app-muted, #64746a); }
 .finalEstimateLayout .saleabilitySummary button { padding: 11px 18px; border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #174f3e); border: 1px solid var(--app-line, #b9d1c4); font-size: 0.82rem; box-shadow: none; }
 .finalEstimateLayout .advancedAccordion { order: 3; }
-.finalEstimateLayout .resultFinalActions { padding: 22px; border-radius: 20px; gap: 20px; }
+.finalEstimateLayout .advancedAccordion .resultAccordionToggle { padding: 18px 24px; }
+.finalEstimateLayout .advancedAccordion .resultAccordionTitleGroup { gap: 8px; }
+.finalEstimateLayout .resultFinalActions { padding: 24px; border-radius: 20px; gap: 20px; }
 .finalEstimateLayout .resultFinalActionsCopy h3 { font-size: 1.2rem; letter-spacing: -0.02em; margin: 0; }
 .finalEstimateLayout .resultFinalActionsButtons { display: flex; flex-direction: column; gap: 12px; }
 .finalEstimateLayout .resultFinalActionsButtons > button { min-height: 52px; padding: 13px 16px; border-radius: 12px; font-size: 0.88rem; }
@@ -15260,13 +15262,10 @@
 .replacementHelpModal .replacementHelpActions { justify-content: flex-end; padding: 0; }
 .replacementHelpActions .primaryButton { margin: 0; min-height: 3rem; box-shadow: none; }
 /* Value Asset result: a clear summary, one price breakdown, and distinct next actions. */
-.finalEstimateLayout .resultPageHeading { grid-column: 1 / -1; }
-.resultPageHeading h2 { margin: 0; color: var(--app-text, #173e33); font-size: 1.8rem; letter-spacing: -.035em; }
-.resultPageHeading p { margin: .5rem 0 0; color: var(--app-muted, #5c7166); font-size: 1rem; line-height: 1.5; }
-.finalEstimateLayout .resultHero { background: var(--app-surface-soft, #f0f8f3); border: 1px solid var(--app-line, #c9dfd2); padding: 28px; box-shadow: none; }
+.finalEstimateLayout .resultHero { background: var(--app-surface-soft, #f0f8f3); border: 1px solid var(--app-line, #c9dfd2); padding: 24px; box-shadow: none; }
 .resultHeroHeading, .resultSectionLabel { display: flex; align-items: center; gap: .8rem; }
 .resultHeroHeading { margin-bottom: 1rem; }
-.resultHeroHeading h3 { margin: 0; font-size: 1rem; font-weight: 750; }
+.resultHeroHeading h2 { margin: 0; font-size: 1rem; font-weight: 750; }
 .finalEstimateLayout .detailIcon { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; box-shadow: none; }
 .finalEstimateLayout .detailIcon svg { width: 22px; height: 22px; }
 .finalEstimateLayout .resultMachineTitle { font-size: 1.1rem; font-weight: 650; }
