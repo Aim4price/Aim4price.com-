@@ -2102,3 +2102,16 @@
 .selectedPhotoOpen:focus-visible { outline: 3px solid #237858; outline-offset: -4px; }
 .selectedPhotoOpenHint { position: absolute; bottom: .7rem; left: 50%; transform: translateX(-50%); padding: .4rem .7rem; border-radius: 999px; background: #123c30e6; color: white; font-size: .85rem; font-weight: 700; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s ease; }
 .selectedPhotoOpen:hover .selectedPhotoOpenHint, .selectedPhotoOpen:focus-visible .selectedPhotoOpenHint { opacity: 1; }
+
+/* Match the Cost Ledger's bronze Add Cost action. */
+.secondaryAction.addAssetAction {
+  color: #6d350f;
+  border-color: #e8a56a;
+  background: linear-gradient(180deg, #fffdfb 0%, #fff4ea 100%);
+}
+.secondaryAction.addAssetAction:hover:not(:disabled) {
+  color: #6d350f;
+  border-color: #dc8b48;
+  background: linear-gradient(180deg, #fff 0%, #ffead7 100%);
+  box-shadow: 0 18px 34px rgba(180, 107, 43, .12), inset 0 1px 0 #fff;
+}

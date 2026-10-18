@@ -1423,7 +1423,7 @@ export default function AssetMapClient() {
     exportFormat === "pdf" ? "Download PDF" : "Download XLSX";
   const selectedExportDescription =
     exportFormat === "pdf"
-      ? "Printable Asset Map Tracking report for the selected scope."
+      ? "Printable Asset Map & Tracking report for the selected scope."
       : "Excel GPS sheet with the latest saved coordinates for the selected scope.";
 
   const selectedAssetReportHref = selectedAsset
@@ -1621,11 +1621,11 @@ export default function AssetMapClient() {
       <section className={styles.shell}>
         <article
           className={styles.mapWorkspace}
-          aria-label="Asset Map Tracking workspace"
+          aria-label="Asset Map & Tracking workspace"
         >
           <header className={styles.panelHeader}>
             <div className={styles.pageTitleBlock}>
-              <h1>Asset Map Tracking</h1>
+              <h1>Asset Map &amp; Tracking</h1>
             </div>
 
             <form
@@ -1660,7 +1660,7 @@ export default function AssetMapClient() {
               </label>
 
               <div className={styles.topActionButtons}>
-                <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton}`} aria-haspopup="dialog"
+                <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.addAssetAction}`} aria-haspopup="dialog"
                   disabled={dataStatus !== 'ready'} onClick={event => { locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
                   <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12Z"/><path d="M9 9h6m-3-3v6"/></svg>
                   <span>Add asset to map</span>
@@ -1677,9 +1677,7 @@ export default function AssetMapClient() {
                     aria-label={`Filter: ${selectedFilterLabel}`}
                   >
                     <FilterIcon className={styles.buttonIcon} />
-                    <span className={styles.filterControlLabel}>
-                      {selectedFilterLabel}
-                    </span>
+                    <span className={styles.filterControlLabel}>Filter</span>
                   </button>
                   {isFilterMenuOpen ? (
                     <AssetMapRegisterDialog
@@ -2145,7 +2143,7 @@ export default function AssetMapClient() {
           >
             <header className={styles.exportModalHeader} data-download-header="true">
               <div>
-                <h2 id="asset-map-export-title">Export Asset Map Tracking</h2>
+                <h2 id="asset-map-export-title">Export Asset Map &amp; Tracking</h2>
               </div>
               <button
                 type="button"
