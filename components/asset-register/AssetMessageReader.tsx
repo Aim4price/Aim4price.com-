@@ -5,9 +5,9 @@ import { createPortal } from '../WebsitePortal';
 import LeadActionDialog from '../leads/LeadActionDialog';
 import styles from './AssetMessageReader.module.css';
 
-/** Reading a notice never acknowledges or resolves it. Keep those actions outside. */
-export default function AssetMessageReader({ title, assetTitle, className, children }: {
-  title: string; assetTitle: string; className?: string; children: ReactNode;
+/** Reading a notice never acknowledges or resolves it. Actions are explicit, both on the banner and in the reader. */
+export default function AssetMessageReader({ title, assetTitle, className, children, actions }: {
+  title: string; assetTitle: string; className?: string; children: ReactNode; actions?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -24,8 +24,13 @@ export default function AssetMessageReader({ title, assetTitle, className, child
         Open message
       </button>
     </div>
+    {actions}
     {open && createPortal(<div onClick={event => event.stopPropagation()}>
-      <LeadActionDialog title={title} assetTitle={assetTitle} onClose={() => setOpen(false)} closeLabel="Close message" className={styles.dialog}>
+      <LeadActionDialog title={title} assetTitle={assetTitle} onClose={() => setOpen(false)} closeLabel="Close message" className={styles.dialog} footer={actions ? <div className={styles.actions} onClick={event => {
+          // Close the reader before an action opens its existing confirmation flow.
+          const button = (event.target as Element).closest('button');
+          if (button && !button.disabled) setOpen(false);
+        }}>{actions}</div> : undefined}>
         <div className={styles.message}>{children}</div>
       </LeadActionDialog>
     </div>, document.body)}

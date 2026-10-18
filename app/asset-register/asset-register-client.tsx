@@ -17193,8 +17193,16 @@ export default function AssetRegisterClient({
                           {outstandingPartnerNotes(asset).map((openPartnerNote) => {
                             const partnerNoteAuthor = openPartnerNote.partnerBusinessName || openPartnerNote.partnerName || 'Aim4price partner'; const partnerNoteToneClass = quoteToneClassForPartnerType(openPartnerNote.partnerType);
                             return (
-                            <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
-                              <AssetMessageReader title={`Note from ${partnerNoteAuthor}`} assetTitle={asset.title} className={styles.partnerNoteText}>
+                            <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`} data-message-banner>
+                              <AssetMessageReader title={`Note from ${partnerNoteAuthor}`} assetTitle={asset.title} className={styles.partnerNoteText} actions={canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
+                                >
+                                  Noted
+                                </button>
+                              ) : null}>
                                 <strong>Note from {partnerNoteAuthor}</strong>
                                 <p>{openPartnerNote.noteText}</p>
                                 {openPartnerNote.attachment ? (
@@ -17209,15 +17217,6 @@ export default function AssetRegisterClient({
                                   </a>
                                 ) : null}
                               </AssetMessageReader>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
-                                >
-                                  Noted
-                                </button>
-                              ) : null}
                             </div>
                             );
                           })}
@@ -17225,13 +17224,8 @@ export default function AssetRegisterClient({
                           {noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).map((maintenanceAlert) => {
                             const isMarkingMaintenanceAlertNoted = busyMaintenanceAlertId === maintenanceAlert.id;
                             return (
-                            <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <AssetMessageReader title={maintenanceAlert.heading || 'Maintenance upcoming'} assetTitle={asset.title} className={styles.partnerNoteText}>
-                                <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
-                                <p>{maintenanceAlert.body}</p>
-                                {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
-                              </AssetMessageReader>
-                              {canUseOwnerOnlyAssetActions ? (
+                            <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`} data-message-banner>
+                              <AssetMessageReader title={maintenanceAlert.heading || 'Maintenance upcoming'} assetTitle={asset.title} className={styles.partnerNoteText} actions={canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
                                   className={styles.partnerNoteButton}
@@ -17240,19 +17234,18 @@ export default function AssetRegisterClient({
                                 >
                                   {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
                                 </button>
-                              ) : null}
+                              ) : null}>
+                                <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
+                                <p>{maintenanceAlert.body}</p>
+                                {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
+                              </AssetMessageReader>
                             </div>
                             );
                           })}
 
                           {licenseRenewalAlert ? (
-                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <AssetMessageReader title={licenseRenewalAlert.heading || 'License renewal upcoming'} assetTitle={asset.title} className={styles.partnerNoteText}>
-                                <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
-                                <p>{licenseRenewalAlert.body}</p>
-                                <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
-                              </AssetMessageReader>
-                              {canUseOwnerOnlyAssetActions ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`} data-message-banner>
+                              <AssetMessageReader title={licenseRenewalAlert.heading || 'License renewal upcoming'} assetTitle={asset.title} className={styles.partnerNoteText} actions={canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
                                   className={styles.partnerNoteButton}
@@ -17261,20 +17254,19 @@ export default function AssetRegisterClient({
                                 >
                                   {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
                                 </button>
-                              ) : null}
+                              ) : null}>
+                                <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
+                                <p>{licenseRenewalAlert.body}</p>
+                                <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
+                              </AssetMessageReader>
                             </div>
                           ) : null}
 
                           {noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).map((latestIssueNoteStatus) => {
                             const isMarkingIssueNoteNoted = busyIssueNoteStatusId === latestIssueNoteStatus.id; const issueNoteMeta = [latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '', latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : ''].filter(Boolean).join(' · ');
                             return (
-                            <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
-                              <AssetMessageReader title={'Open issue reported'} assetTitle={asset.title} className={styles.partnerNoteText}>
-                                <strong>Open issue reported</strong>
-                                <p>{latestIssueNoteStatus.note}</p>
-                                {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
-                              </AssetMessageReader>
-                              {canUseOwnerOnlyAssetActions ? (
+                            <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`} data-message-banner>
+                              <AssetMessageReader title={'Open issue reported'} assetTitle={asset.title} className={styles.partnerNoteText} actions={canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
                                   className={styles.partnerNoteButton}
@@ -17283,7 +17275,11 @@ export default function AssetRegisterClient({
                                 >
                                   {isMarkingIssueNoteNoted ? 'Saving…' : 'Resolved'}
                                 </button>
-                              ) : null}
+                              ) : null}>
+                                <strong>Open issue reported</strong>
+                                <p>{latestIssueNoteStatus.note}</p>
+                                {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
+                              </AssetMessageReader>
                             </div>
                             );
                           })}
@@ -17291,8 +17287,17 @@ export default function AssetRegisterClient({
                           {noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).map((latestMaintenanceStatus) => {
                             const isMarkingMaintenanceNoted = busyMaintenanceStatusId === latestMaintenanceStatus.id; const maintenanceDoneMeta = [latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '', latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : ''].filter(Boolean).join(' · '); const maintenancePhotoUrls = uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6); const maintenancePhotoCount = latestMaintenanceStatus.photoCount ?? maintenancePhotoUrls.length;
                             return (
-                            <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
-                              <AssetMessageReader title={'Maintenance has been done'} assetTitle={asset.title} className={styles.partnerNoteText}>
+                            <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`} data-message-banner>
+                              <AssetMessageReader title={'Maintenance has been done'} assetTitle={asset.title} className={styles.partnerNoteText} actions={canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingMaintenanceNoted}
+                                  onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
+                                >
+                                  {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}>
                                 <strong>Maintenance has been done</strong>
                                 <p>{latestMaintenanceStatus.summary}</p>
                                 {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
@@ -17320,16 +17325,6 @@ export default function AssetRegisterClient({
                                 ) : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
                               </AssetMessageReader>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  disabled={isMarkingMaintenanceNoted}
-                                  onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
-                                >
-                                  {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
-                                </button>
-                              ) : null}
                             </div>
                             );
                           })}
