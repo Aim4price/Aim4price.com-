@@ -8755,6 +8755,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function renderResultActionIcon(kind: 'save' | 'pdf' | 'advert') {
+    return <span className={styles.resultActionIcon} data-kind={kind} aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+        {kind === 'save' ? <><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z" /><path d="M7 3v6h10V3M7 21v-8h10v8" /></>
+          : kind === 'pdf' ? <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6M12 11v7m-3-3 3 3 3-3" /></>
+          : <><path d="m3 10 17-6v16L3 14v-4ZM7 15l2 6h4l-2-5M20 9l2-1M20 15l2 1" /></>}
+      </svg>
+    </span>;
+  }
+
   function renderResultStep() {
     if (!resultState) {
       return (
@@ -8856,13 +8866,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
+        <header className={styles.resultPageHeading}>
+          <h2>Your asset value</h2>
+          <p>Review your estimate, then choose what to do next.</p>
+        </header>
         <div className={styles.resultsMain}>
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             {isSalvageEstimate || !basicEstimateActive ? <div className={styles.resultHeroTopline}>
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
-            <h2 className={styles.resultMachineTitle}>Estimated asset value</h2>
+            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h3>Estimated asset value</h3></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -8901,20 +8915,22 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             ) : null}
             <div className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
-                <span>Year model</span>
+                {renderDetailIcon('year')}<span>Year model</span>
                 <strong>{yearSummary}</strong>
               </div>
               <div className={styles.resultFactCard}>
-                <span>Usage</span>
+                {renderDetailIcon('usage')}<span>Usage</span>
                 <strong>{usageSummary}</strong>
               </div>
               <div className={styles.resultFactCard}>
-                <span>Condition</span>
+                {renderDetailIcon('condition')}<span>Condition</span>
                 <strong>{appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition)}</strong>
               </div>
               <div className={styles.resultFactCard}>
-                <span>Popularity</span>
-                <strong>{appliedAdvancedAssumptions?.popularityStars ?? 3} / 5 stars</strong>
+                {renderDetailIcon('popularity')}<span>Popularity</span>
+                <strong className={styles.resultStars} aria-label={`${appliedAdvancedAssumptions?.popularityStars ?? 3} out of 5 stars`}>
+                  {Array.from({ length: 5 }, (_, index) => <svg key={index} aria-hidden="true" viewBox="0 0 24 24" fill={index < (appliedAdvancedAssumptions?.popularityStars ?? 3) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" /></svg>)}
+                </strong>
               </div>
             </div>
           </section>
@@ -8927,7 +8943,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               aria-expanded={advancedPanelOpen}
             >
               <span className={styles.resultAccordionTitleGroup}>
-                <strong>Advanced assumptions</strong>
+                <strong className={styles.resultSectionLabel}>{renderDetailIcon('specs')}Advanced assumptions</strong>
                 <small>
                   {canUseAdvancedAssumptions
                     ? customAdvancedAssumptionsApplied
@@ -8997,19 +9013,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             ) : null}
           </section> : null}
 
-          {renderResultReplacementBreakdown()}
           <div className={styles.resultCalculationPanel}>
           {(isGeneric && genericResult) || tractorResult ? (
             <section className={styles.resultReplacementSummary}>
-              <div>
-                <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'}</span>
-                <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
-                <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
+              <div className={styles.resultReplacementHeading}>
+                {renderDetailIcon('extras')}
+                <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
               </div>
               <button type="button" className={modalStyles.adjustButton}
                 aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; setUserReplacementPrice(String(price)); setReplacementSliderMax(Math.max(10000, price * 2)); setReplacementPanelOpen(true); }}>
-                Check / adjust
+                Adjust price
               </button>
+              {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : (
+                <div className={styles.resultReplacementAmount}>
+                  <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
+                  <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
+                </div>
+              )}
               <dialog ref={replacementPriceDialogRef} className={`${styles.replacementPriceDialog} ${modalStyles.surface}`}
                 aria-labelledby="replacement-price-dialog-title"
                 onClose={() => setReplacementPanelOpen(false)}
@@ -9142,7 +9162,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </div>
           <section className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
-              <span>How easily could it sell?</span>
+              <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
               <strong>{generalSaleability.score} / 100 · Grade {generalSaleability.grade}</strong>
               <p>{generalSaleability.gradeLabel} · Typical selling window {generalSaleability.naturalSellingWindow.replace(/[–—]/g, ' to ')}</p>
               <small>Selling time is indicative and may vary.</small>
@@ -9154,7 +9174,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <aside className={styles.resultsSide}>
           <section className={styles.resultFinalActions} aria-label="Estimate actions">
             <div className={styles.resultFinalActionsCopy}>
-              <h3>{conversionAssetId ? 'Save converted asset' : 'Save or share'}</h3>
+              <h3>{conversionAssetId ? 'Save converted asset' : 'What would you like to do?'}</h3>
               {conversionAssetId ? <p>Update the existing manual asset with this estimate.</p> : null}
             </div>
 
@@ -9167,7 +9187,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     onClick={() => void saveConversionToAssetRegister()}
                     disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null || !conversionPrefillLoaded}
                   >
-                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save'}
+                    {renderResultActionIcon('save')}<span className={styles.resultActionCopy}><strong>{saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save'}</strong><small>Update your existing asset</small></span>
                   </button>
                 ) : (
                   <div className={styles.resultSignedOutNotice}>
@@ -9185,7 +9205,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           onClick={saveToAssetRegister}
                           disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
                         >
-                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to My Assets'}
+                          {renderResultActionIcon('save')}<span className={styles.resultActionCopy}><strong>{saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to My Assets'}</strong><small>Keep and manage this asset</small></span>
                         </button>
                       ) : null}
 
@@ -9196,7 +9216,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           onClick={openDealerRegisterDestination}
                           disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
                         >
-                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                          {renderResultActionIcon('save')}<span className={styles.resultActionCopy}><strong>{saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}</strong><small>Keep and manage this asset</small></span>
                         </button>
                       ) : !compactAppMode ? (
                         <button
@@ -9205,7 +9225,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           onClick={saveToAssetRegister}
                           disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
                         >
-                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                          {renderResultActionIcon('save')}<span className={styles.resultActionCopy}><strong>{saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}</strong><small>Keep and manage this asset</small></span>
                         </button>
                       ) : null}
                     </>
@@ -9221,7 +9241,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     onClick={downloadValuationPdf}
                     disabled={pdfLoading || advancedRecalculateLoading || replacementRecalculateLoading || !resultState || headlineValue === null}
                   >
-                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+                    {renderResultActionIcon('pdf')}<span className={styles.resultActionCopy}><strong>{pdfLoading ? 'Preparing PDF...' : 'Download PDF'}</strong><small>Keep a copy of your estimate</small></span>
                   </button>
                   {breakdownAccess && activeBreakdown ? (
                     <label className={styles.breakdownPdfOption}>
@@ -9238,7 +9258,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         onClick={createAdFromEstimate}
                         disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || (isDealerAccount && !dealerOwnedRegister) || headlineValue === null}
                       >
-                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Creating ad...' : 'Create Ad'}
+                        {renderResultActionIcon('advert')}<span className={styles.resultActionCopy}><strong>{saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Creating ad...' : 'Create Ad'}</strong><small>Prepare a Marketplace listing</small></span>
                       </button>
                   ) : null}
                 </>
