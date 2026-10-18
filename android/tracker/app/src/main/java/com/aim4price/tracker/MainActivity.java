@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
  String scannedCode="", connectionError=""; boolean pairedScreen=false;
+ static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff64746a, SOFT=0xffeef5f0;
  TextView status;final Handler handler=new Handler(Looper.getMainLooper());
  final Runnable refresh=new Runnable(){public void run(){if(status!=null){var p=TrackerApi.prefs(MainActivity.this);if(pairedScreen!=!p.getString("token","").isEmpty()){draw();return;}status.setText((p.getString("token","").isEmpty() ? (connectionError.isEmpty()?"Ready to connect":connectionError) : (p.getBoolean("active",false)?"Tracking activated":"Tracking deactivated")+"\n"+p.getString("sync","No upload yet")+"\n"+p.getString("issue","")));}handler.postDelayed(this,3000);}};
  public void onCreate(Bundle b){super.onCreate(b);readPairingIntent(getIntent());draw();}
@@ -28,26 +29,35 @@ public class MainActivity extends Activity {
  }
  int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
  android.graphics.drawable.GradientDrawable surface(int color,int radius){var d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
- TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setPadding(0,dp(8),0,dp(8));return t;}
- void styleButton(Button b,boolean primary){b.setAllCaps(false);b.setTextSize(17);b.setTextColor(primary?Color.WHITE:Color.rgb(23,96,68));b.setBackground(surface(primary?Color.rgb(23,96,68):Color.rgb(231,242,235),14));var lp=new LinearLayout.LayoutParams(-1,dp(56));lp.setMargins(0,dp(12),0,0);b.setLayoutParams(lp);}
+ TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setTypeface(getResources().getFont(R.font.montserrat));t.setPadding(0,dp(8),0,dp(8));return t;}
+ void styleButton(Button b,boolean primary){b.setTypeface(getResources().getFont(R.font.montserrat),android.graphics.Typeface.BOLD);b.setAllCaps(false);b.setTextSize(17);b.setTextColor(primary?Color.WHITE:GREEN);b.setBackground(surface(primary?GREEN:SOFT,14));var lp=new LinearLayout.LayoutParams(-1,dp(56));lp.setMargins(0,dp(12),0,0);b.setLayoutParams(lp);}
  void draw(){
-  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setBackgroundColor(Color.rgb(242,247,244));LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(24),dp(36),dp(24),dp(28));scroll.addView(box);setContentView(scroll);
-  getWindow().setStatusBarColor(Color.rgb(242,247,244));getWindow().setNavigationBarColor(Color.rgb(242,247,244));getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-  box.addView(text("AIM4PRICE  /  EQUIPMENT TRACKING",12,Color.rgb(63,105,83)));
-  TextView title=new TextView(this);title.setText("Aim4price Tracker");title.setTextSize(30);title.setTypeface(null,android.graphics.Typeface.BOLD);title.setTextColor(Color.rgb(15,88,64));box.addView(title);
-  var p=TrackerApi.prefs(this);pairedScreen=!p.getString("token","").isEmpty();TextView asset=new TextView(this);asset.setText(p.getString("title","Connect this phone to your equipment"));asset.setTextSize(19);asset.setPadding(0,dp(16),0,dp(20));box.addView(asset);
-  status=new TextView(this);status.setTextSize(16);status.setTextColor(Color.rgb(35,79,57));status.setPadding(dp(16),dp(16),dp(16),dp(16));status.setBackground(surface(Color.rgb(227,239,231),14));box.addView(status);
+  ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);scroll.setBackgroundColor(SOFT);
+  LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(20),dp(24),dp(20),dp(28));scroll.addView(page);setContentView(scroll);
+  getWindow().setStatusBarColor(SOFT);getWindow().setNavigationBarColor(SOFT);getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
+  if(Build.VERSION.SDK_INT>=35)page.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(dp(20)+bars.left,dp(24)+bars.top,dp(20)+bars.right,dp(28)+bars.bottom);return insets;});
+  LinearLayout brand=new LinearLayout(this);brand.setGravity(Gravity.CENTER_VERTICAL);brand.setPadding(0,0,0,dp(24));
+  ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.aim4price_logo);logo.setContentDescription("Aim4price logo");logo.setScaleType(ImageView.ScaleType.FIT_CENTER);brand.addView(logo,new LinearLayout.LayoutParams(dp(62),dp(62)));
+  LinearLayout wordmark=new LinearLayout(this);wordmark.setOrientation(LinearLayout.VERTICAL);wordmark.setPadding(dp(14),0,0,0);
+  TextView name=text("Aim4price",25,INK);name.setTypeface(name.getTypeface(),android.graphics.Typeface.BOLD);name.setPadding(0,0,0,0);wordmark.addView(name);TextView caption=text("Equipment tracker",13,MUTED);caption.setPadding(0,dp(4),0,0);wordmark.addView(caption);brand.addView(wordmark);page.addView(brand);
+  var p=TrackerApi.prefs(this);pairedScreen=!p.getString("token","").isEmpty();
+  LinearLayout hero=new LinearLayout(this);hero.setOrientation(LinearLayout.VERTICAL);hero.setPadding(dp(20),dp(18),dp(20),dp(18));hero.setBackground(surface(GREEN,22));
+  hero.addView(text(pairedScreen?"CONNECTED ASSET":"PHONE SETUP",11,0xffd9e9df));
+  TextView title=text(pairedScreen?p.getString("title","Your equipment"):"Connect your phone",24,Color.WHITE);title.setTypeface(title.getTypeface(),android.graphics.Typeface.BOLD);hero.addView(title);
+  if(!pairedScreen)hero.addView(text("Keep this phone on the equipment.",14,0xffe0eee5));page.addView(hero);
+  LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(20),dp(20),dp(20),dp(20));var card=surface(Color.WHITE,22);card.setStroke(dp(1),0xffd7e4dc);box.setBackground(card);LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(-1,-2);cardParams.setMargins(0,dp(20),0,0);page.addView(box,cardParams);
+  status=text("",15,INK);status.setPadding(dp(14),dp(14),dp(14),dp(14));status.setBackground(surface(SOFT,12));box.addView(status);
   if(p.getString("token","").isEmpty()){
-   EditText code=new EditText(this);code.setHint("XXXX-XXXX-XXXX-XXXX");code.setTextSize(19);code.setPadding(dp(16),dp(14),dp(16),dp(14));code.setBackground(surface(Color.WHITE,12));code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);box.addView(text("Pairing code",16,Color.rgb(24,62,48)));code.setSingleLine(true);code.setText(scannedCode);box.addView(code);
-   TextView help=new TextView(this);help.setText("On Aim4price, open the asset’s Tracking device and create a code. Scan its QR with this phone’s camera, or enter the code above.");help.setTextSize(15);help.setTextColor(Color.rgb(85,109,96));help.setPadding(0,dp(16),0,dp(12));box.addView(help);
+   EditText code=new EditText(this);code.setHint("XXXX-XXXX-XXXX-XXXX");code.setTypeface(android.graphics.Typeface.MONOSPACE);code.setTextSize(19);code.setPadding(dp(16),dp(14),dp(16),dp(14));var input=surface(SOFT,12);input.setStroke(dp(1),0xffb9d1c2);code.setBackground(input);code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);TextView label=text("Pairing code",15,INK);label.setPadding(0,dp(24),0,dp(10));box.addView(label);code.setSingleLine(true);code.setText(scannedCode);box.addView(code);
+   TextView help=text("Scan the QR code on Aim4price, or enter your pairing code above.",13,MUTED);help.setPadding(0,dp(12),0,dp(8));box.addView(help);
    Button pair=new Button(this);pair.setText("Connect phone");box.addView(pair);styleButton(pair,true);pair.setOnClickListener(v->{String value=code.getText().toString().trim().replace("-","").toUpperCase(java.util.Locale.ROOT);if(!value.matches("[A-F0-9]{16}")){connectionError="Enter the full pairing code shown on Aim4price.";status.setText(connectionError);return;}pair.setEnabled(false);pair.setText("Connecting…");connectionError="Connecting…";var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{JSONObject r=TrackerApi.post("/api/tracking/pair",new JSONObject().put("code",value).put("name",Build.MANUFACTURER+" "+Build.MODEL),null);new TrackerStore(this).clear();p.edit().putString("token",r.getString("token")).putString("title",r.getString("assetTitle")).putBoolean("active",false).remove("issue").apply();runOnUiThread(()->{scannedCode="";connectionError="";draw();});}catch(Exception e){runOnUiThread(()->{connectionError=e.getMessage();status.setText(connectionError);pair.setText("Try again");pair.setEnabled(true);});}finally{executor.shutdown();}});});
   }else{
    Button activate=new Button(this);activate.setText("Activate tracking");box.addView(activate);styleButton(activate,true);activate.setOnClickListener(v->activate());
    Button stop=new Button(this);stop.setText("Deactivate tracking");box.addView(stop);styleButton(stop,false);stop.setOnClickListener(v->{p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});});
-   TextView note=new TextView(this);note.setTextSize(15);note.setTextColor(Color.rgb(85,109,96));note.setPadding(0,dp(24),0,0);note.setText("Keep this phone on the equipment. Allow unrestricted battery use in Android settings. After restarting the phone, open this app and tap Activate.");box.addView(note);
+   TextView note=text("Keep this phone on the equipment. Allow unrestricted battery use. After restarting, open Tracker and tap Activate.",13,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
   }
-  box.addView(text("Aim4price Tracker 0.3 • Android",13,Color.rgb(85,109,96)));
-  box.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",13,Color.rgb(85,109,96)));
+  TextView version=text("Aim4price Tracker · 0.4",12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
+  page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",13,Color.rgb(85,109,96)));
   handler.removeCallbacks(refresh);refresh.run();
  }
  void activate(){
