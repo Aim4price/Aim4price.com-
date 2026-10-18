@@ -9461,11 +9461,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={styles.replacementNoticeTitle}>
               <h2 data-estimate-modal-title id="replacement-notice-title">Ready for your estimate?</h2>
             </div>
-            <p id="replacement-notice-description" className={`${styles.replacementNoticeIntro} ${modalStyles.description}`}>
-              Aim4price uses your replacement price and asset details with its depreciation logic to calculate an estimated current value.
-              <br /><br />
-              <strong>You are responsible for entering the correct replacement price and VAT basis.</strong> A price that is too high or too low will affect your final estimate. Please check these before continuing.
-            </p>
+            <div id="replacement-notice-description" className={`${styles.replacementNoticeIntro} ${modalStyles.description}`}>
+              <p>Aim4price uses your replacement price and asset details.<br />Its depreciation logic calculates an estimated current value.</p>
+              <p><strong>You are responsible for entering the correct replacement price and VAT basis.</strong><br />A price that is too high or too low will affect your final estimate.</p>
+              <p>Please check these before continuing.</p>
+            </div>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
               Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.
             </small>
