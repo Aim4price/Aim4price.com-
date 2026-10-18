@@ -5842,8 +5842,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
-            <h2 className={styles.stepTitle}>Choose sector</h2>
-            {!compactAppMode ? <p className={styles.stepText}>Choose a sector to start your estimate.</p> : null}
+            <h2 className={styles.stepTitle}>What is your asset worth?</h2>
+            {!compactAppMode ? <p className={styles.stepText}>Choose sector to start valuing your asset.</p> : null}
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -8862,6 +8862,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
+            <h2 className={styles.resultMachineTitle}>Estimated asset value</h2>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -9418,7 +9419,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     || (!basicEstimateActive && step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))
                   }
                 >
-                  {preparingIdentity ? <span className={styles.identityProgress} role="status"><span className={styles.identitySpinner} aria-hidden="true" />Preparing next step…</span> : valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get Estimate' : 'Continue' : step === 4 ? 'Get Estimate' : 'Continue'}
+                  {preparingIdentity ? <span className={styles.identityProgress} role="status"><span className={styles.identitySpinner} aria-hidden="true" />Preparing next step…</span> : valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get my estimate' : 'Continue' : step === 4 ? 'Get my estimate' : 'Continue'}
                 </button>
               )}
             </div>
@@ -9465,7 +9466,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   void calculateValuation();
                 }}
               >
-                I understand, get estimate
+                I understand, get my estimate
               </button>
             </div>
           </section>
@@ -9726,7 +9727,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               ) : isDealerAccount ? (
                 <>
                   <strong>Dealer and auctioneer account.</strong>
-                  <span>Publish marketplace listings through Get Estimate after the value has been calculated.</span>
+                  <span>Publish marketplace listings through Value Asset after the value has been calculated.</span>
                 </>
               ) : (
                 <>
