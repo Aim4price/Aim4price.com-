@@ -40,3 +40,25 @@
  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .filters { max-width:none; flex-basis:100%; }
  :global(:where(html:not(:has([data-website-canvas])))) .recordBody { flex-direction:column; align-items:flex-start; }
 }
+
+.historyToolbar { gap:1.5rem; padding:.35rem 0 1.25rem; margin-bottom:.25rem; }
+.historyToolbar > [aria-label="History type"] { gap:.75rem; }
+.historyToolbar > [aria-label="History type"] button { min-height:2.9rem; padding:.75rem 1.2rem; }
+.historyToolbar > .filters { gap:1rem; }
+.historyToolbar > .filters label { gap:.6rem; }
+.historyToolbar > .filters input { min-height:2.9rem; }
+.recordActions { gap:.6rem; flex-wrap:wrap; }
+.recordActions .deleteAction { color:#a33c32; background:#fff7f5; border-color:#e7cdc8; }
+.deleteConfirm { display:grid; justify-items:center; gap:1.25rem; text-align:center; color:#183a30; padding:.5rem 0; }
+.deleteIcon { display:grid; place-items:center; width:3.5rem; height:3.5rem; border-radius:1rem; background:#fbece8; color:#a33c32; }
+.deleteIcon svg { width:1.8rem; height:1.8rem; }
+.deleteConfirm > strong { font-size:1.1rem; line-height:1.5; }
+.deleteRecord { display:grid; gap:.5rem; width:100%; box-sizing:border-box; padding:1rem; border:1px solid #dce7e1; background:#f1f6f3; border-radius:.9rem; }
+.deleteRecord span { font-size:.85rem; overflow-wrap:anywhere; }
+.deleteConfirm p { margin:0; color:#5b7067; font-size:.9rem; line-height:1.6; max-width:48ch; }
+.deleteConfirm .deleteError { color:#a33c32; }
+.confirmActions { display:flex; justify-content:flex-end; gap:.85rem; width:100%; padding-top:.5rem; }
+.confirmActions button { min-height:2.9rem; padding:.75rem 1.35rem; border:1px solid #c5d9d0; background:#f1f8f4; color:#145c42; border-radius:.75rem; font:inherit; font-weight:700; cursor:pointer; }
+.confirmActions .deleteButton { background:#a33c32; color:#fff; border-color:#a33c32; }
+.confirmActions button:disabled { opacity:.55; cursor:wait; }
+.confirmActions button:focus-visible { outline:3px solid #77ac92; outline-offset:3px; }

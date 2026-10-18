@@ -3,7 +3,8 @@ import {getServerSession} from '../../../../../lib/auth-session';
 import {getAssetRegisterAccountAccess} from '../../../../../lib/asset-register-account-access';
 import {getAssetRegisterItemById} from '../../../../../lib/asset-register-db';
 import {getDb} from '../../../../../lib/db';
-import {ensureFuelLedgerTables} from '../../../../../lib/fuel-ledger';
+import {ensureLocationHistorySchema,deleteLocationHistoryEntry} from '../../../../../lib/asset-location-history-db';
+import {isTrustedRequestOrigin} from '../../../../../lib/trusted-request-origin';
 import {businessJson,businessError} from '../../../../../lib/business-network-api';
 export const dynamic='force-dynamic';
 export async function GET(request:NextRequest,{params}:{params:{assetId:string}}){
@@ -19,10 +20,10 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
   if(entryId && (entryId.length>128 || !/^[a-zA-Z0-9_-]+$/.test(entryId)))return businessJson({error:'Invalid location record.'},400);
   const format=request.nextUrl.searchParams.get('format');
   if(format&&!['pdf','xlsx'].includes(format))return businessJson({error:'Choose PDF or Excel.'},400);
-  await ensureFuelLedgerTables();
+  await ensureLocationHistorySchema();
   const result=await getDb().query(`SELECT e.id,e.latitude,e.longitude,e.location_text AS note,e.operator_name AS actor,e.actor_type,e.activity_text,e.note AS event_note,e.gps_accuracy_meters AS accuracy,e.created_at AS recorded_at,e.client_captured_at AS captured_at
    FROM public.asset_scan_events e JOIN public.asset_register_items a ON a.id=e.asset_id
-   WHERE a.user_id=$1 AND a.id=$2::uuid AND e.latitude BETWEEN -90 AND 90 AND e.longitude BETWEEN -180 AND 180
+   WHERE a.user_id=$1 AND a.id=$2::uuid AND e.location_history_deleted_at IS NULL AND e.latitude BETWEEN -90 AND 90 AND e.longitude BETWEEN -180 AND 180
    AND ($3::date IS NULL OR e.created_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg'))
    AND ($4::date IS NULL OR e.created_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg'))
    AND ($5::text IS NULL OR e.id::text=$5)
@@ -43,3 +44,19 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
  }catch(error){return businessError(error);}
 }
 
+
+export async function DELETE(request:NextRequest,{params}:{params:{assetId:string}}){
+ try {
+  if(!isTrustedRequestOrigin(request.headers.get('origin'),request.nextUrl.origin))return businessJson({error:'Invalid request origin.'},403);
+  const session=await getServerSession({allowDealerApp:true});
+  if(!session||!await getAssetRegisterAccountAccess(session))return businessJson({error:'Sign in to manage location history.'},403);
+  const entryId=request.nextUrl.searchParams.get('entryId');
+  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if(!uuid.test(params.assetId)||!entryId||!uuid.test(entryId))return businessJson({error:'Invalid location record.'},400);
+  const asset=await getAssetRegisterItemById(session.user.id,params.assetId);
+  if(!asset)return businessJson({error:'Asset unavailable.'},404);
+  const deleted=await deleteLocationHistoryEntry(session.user.id,asset.id,entryId);
+  if(!deleted)return businessJson({error:'Location record unavailable.'},404);
+  return businessJson({ok:true});
+ }catch(error){return businessError(error);}
+}
