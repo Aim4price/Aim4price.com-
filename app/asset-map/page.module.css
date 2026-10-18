@@ -1523,13 +1523,13 @@
   left: calc(100% + 0.75rem);
   top: 50%;
   width: max-content;
-  padding: 0.45rem 0.65rem;
-  border-radius: 0.55rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.75rem;
   color: #fff;
   background: #124c3c;
   box-shadow: 0 8px 20px rgba(10, 47, 37, 0.2);
   font-family: var(--font-heading, "Montserrat"), sans-serif;
-  font-size: 0.72rem;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1.2;
   pointer-events: none;
@@ -2097,3 +2097,8 @@
 }
 .accountExportModal .exportSecondaryButton { color: #17362c; background: #f2f5f8; border-color: #d8e1ea; }
 .accountExportModal .exportPrimaryButton { color: #fff; background: linear-gradient(180deg, #1a5a45, #124233); border-color: transparent; }
+
+.selectedPhotoOpen { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: inherit; background: transparent; cursor: zoom-in; overflow: hidden; }
+.selectedPhotoOpen:focus-visible { outline: 3px solid #237858; outline-offset: -4px; }
+.selectedPhotoOpenHint { position: absolute; bottom: .7rem; left: 50%; transform: translateX(-50%); padding: .4rem .7rem; border-radius: 999px; background: #123c30e6; color: white; font-size: .85rem; font-weight: 700; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s ease; }
+.selectedPhotoOpen:hover .selectedPhotoOpenHint, .selectedPhotoOpen:focus-visible .selectedPhotoOpenHint { opacity: 1; }

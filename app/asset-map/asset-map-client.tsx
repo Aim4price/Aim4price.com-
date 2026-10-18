@@ -1,4 +1,5 @@
 "use client";
+import LeadPhotoViewerModal from '../../components/LeadPhotoViewerModal';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import AssetLocationHistoryDialog from '../../components/asset-register/AssetLocationHistoryDialog';
@@ -669,6 +670,9 @@ function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
 
 export default function AssetMapClient() {
   const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'}|null>(null);
+  const [photoViewer,setPhotoViewer]=useState<{assetId:string;title:string;urls:string[];index:number}|null>(null);
+  const photoTrigger=useRef<HTMLButtonElement|null>(null);
+  const closePhotoViewer=useCallback(()=>{setPhotoViewer(null);requestAnimationFrame(()=>photoTrigger.current?.focus());},[]);
   const locationTrigger=useRef<HTMLButtonElement|null>(null);
   function closeLocationDialog(){setLocationDialog(null);requestAnimationFrame(()=>locationTrigger.current?.focus());}
   const [assets, setAssets] = useState<AssetMapItem[]>([]);
@@ -947,7 +951,7 @@ export default function AssetMapClient() {
         }
       }
 
-      if (locationDialog || event.key !== "Escape") return;
+      if (locationDialog || photoViewer || event.key !== "Escape") return;
 
       if (isFilterMenuOpen || isExportScopeMenuOpen) {
         if (isExportScopeMenuOpen) {
@@ -978,6 +982,7 @@ export default function AssetMapClient() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
+    photoViewer,
     locationDialog,
     isFilterMenuOpen,
     isExportScopeMenuOpen,
@@ -1581,9 +1586,10 @@ export default function AssetMapClient() {
 
   return (
     <main className={styles.page}>
+      {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
       {locationDialog?.view==='history'&&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog title="Update location" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <AssetLocationEditor key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
+        <AssetLocationEditor trackingAssetId={locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
           setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));
@@ -1930,11 +1936,10 @@ export default function AssetMapClient() {
                     <div className={styles.selectedPhotoPanel}>
                       <div className={styles.selectedPhotoFrame}>
                         {selectedAssetPhoto ? (
-                          <img
-                            src={selectedAssetPhoto}
-                            alt={`${selectedAsset.title || "Selected asset"} photo ${selectedAssetSafePhotoIndex + 1}`}
-                            className={styles.selectedPhotoImage}
-                          />
+                          <button type="button" className={styles.selectedPhotoOpen} aria-label={`Open photos of ${selectedAsset.title}`} aria-haspopup="dialog" onClick={event=>{photoTrigger.current=event.currentTarget;setPhotoViewer({assetId:selectedAsset.id,title:selectedAsset.title,urls:selectedAssetPhotos,index:selectedAssetSafePhotoIndex});}}>
+                            <img src={selectedAssetPhoto} alt={`${selectedAsset.title || "Selected asset"} photo ${selectedAssetSafePhotoIndex + 1}`} className={styles.selectedPhotoImage}/>
+                            <span className={styles.selectedPhotoOpenHint}>Open photo</span>
+                          </button>
                         ) : (
                           <div className={styles.selectedPhotoPlaceholder}>
                             <strong>No photos uploaded</strong>
