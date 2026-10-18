@@ -272,7 +272,7 @@ test('Manage uses concise update copy and a dedicated recalculate icon', () => {
   assert.match(client, /function RecalculateIcon[\s\S]*?<path d="M3 3v5h5" \/>/);
 });
 
-test('Manage routes mapped assets to a focused map and unmapped assets to location setup', () => {
+test('Manage routes every asset to the focused map for location setup', () => {
   const coordinateGuard = client.slice(
     client.indexOf('function hasAssetGpsCoordinates'),
     client.indexOf('function formatAssetSettingsLastScanned'),
@@ -289,9 +289,9 @@ test('Manage routes mapped assets to a focused map and unmapped assets to locati
   assert.match(coordinateGuard, /Math\.abs\(latitude\) > 90 \|\| Math\.abs\(longitude\) > 180/);
   assert.match(coordinateGuard, /return latitude !== 0 \|\| longitude !== 0/);
   assert.match(coordinateGuard, /`\/asset-map\?assetId=\$\{encodeURIComponent\(asset\.id\)\}`/);
-  assert.match(ownerManage, /window\.location\.assign\(buildFocusedAssetMapHref\(asset\)\)/);
-  assert.match(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location', event\.currentTarget\)/);
-  assert.match(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
+  assert.match(ownerManage, /window\.location\.assign\(buildFocusedAssetMapHref\(activeAsset\)\)/);
+  assert.doesNotMatch(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location'/);
+  assert.doesNotMatch(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
   assert.match(ownerManage, /Add a GPS location\./);
   assert.match(settingsCloseFlow, /\['status-mapped', 'manage-map-location'\]\.includes/);
   assert.match(settingsCloseFlow, /returnOrigin\?\.origin === 'manage'/);
@@ -335,9 +335,21 @@ test('Asset Map selects the asset requested by the Manage action', () => {
   );
 
   assert.match(initialLoad, /new URLSearchParams\(window\.location\.search\)\.get\("assetId"\)/);
-  assert.match(initialLoad, /data\.assets\.find\(\(asset\) => asset\.id === requestedAssetId && hasCoordinates\(asset\)\)/);
+  assert.match(initialLoad, /data\.assets\.find\(\(asset\) => asset\.id === requestedAssetId\)/);
   assert.match(initialLoad, /setSelectedRegisterId\(ALL_REGISTER_FILTER_ID\)/);
   assert.match(initialLoad, /setSelectedCode\(requestedAsset\.publicAssetCode\)/);
+  const compiled = ts.transpileModule(initialLoad, {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+  const run = (mapped, initial=true, id='asset-1') => {
+    const result={}; const asset={id:'asset-1',publicAssetCode:'ABC',mapped};
+    new Function('initialLoad','window','data','hasCoordinates','nextRegisterFilters','ALL_REGISTER_FILTER_ID','setAssets','setDataStatus','setRegisterFilters','setSelectedRegisterId','setExportRegisterId','setSearch','setSelectedCode','setLocationDialog','setNotice',compiled)(initial,{location:{search:'?assetId='+id}},{assets:[asset]},a=>a.mapped,[],'all',()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},code=>result.code=code,dialog=>result.dialog=dialog,()=>{});
+    return result;
+  };
+  assert.equal(run(true).code,'ABC');
+  assert.equal(run(false).dialog.view,'update');
+  assert.equal(run(false).dialog.asset.id,'asset-1');
+  assert.deepEqual(run(false,false),{},'background refresh must not reopen setup');
+  assert.deepEqual(run(false,true,'missing'),{},'unknown assets must not open setup');
+
 });
 
 test('owner command layout is three columns wide, two medium and one mobile', () => {
