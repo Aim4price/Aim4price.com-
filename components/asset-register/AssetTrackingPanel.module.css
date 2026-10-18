@@ -98,3 +98,42 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.setupPanel { gap: 1.25rem; padding: .4rem 0 0; }
+.setupHeading { display: flex; align-items: center; gap: 1rem; }
+.phoneIcon { display: grid; place-items: center; flex: 0 0 3.5rem; height: 3.5rem; border-radius: 18px; background: #eaf3ee; color: #176346; border: 1px solid #d7e6dd; }
+.phoneIcon svg { width: 1.8rem; height: 1.8rem; }
+.setupHeading h3 { margin: 0 0 .3rem; font-size: 1.3rem; line-height: 1.25; font-weight: 750; letter-spacing: -.025em; color: #153e30; }
+.setupHeading p { color: #5b7067; font-size: .95rem; }
+.connectionStatus { margin-left: auto; padding: .4rem .7rem; border-radius: 999px; background: #eaf3ee; font-size: .85rem; font-weight: 650; }
+.setupSteps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.setupStep { display: flex; gap: .85rem; border: 1px solid #dce7e0; border-radius: 20px; background: #f8fbf9; padding: 1.25rem; }
+.stepNumber { display: grid; place-items: center; flex: 0 0 1.8rem; height: 1.8rem; border-radius: 50%; background: #e4eee7; color: #28563f; font-size: .85rem; font-weight: 750; }
+.stepContent { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: .65rem; }
+.stepContent h4 { margin: .1rem 0 0; font-size: 1.05rem; line-height: 1.4; color: #183e30; }
+.stepContent p { color: #5b7067; font-size: .92rem; padding-bottom: .25rem; }
+.setupPanel .primaryAction, .setupPanel .secondaryAction { box-sizing: border-box; gap: .6rem; justify-content: center; min-height: 2.9rem; margin-top: auto; font-size: .92rem; border-radius: 12px; line-height: 1.3; }
+.setupPanel .primaryAction { background: #175b40; color: white; border-color: #175b40; box-shadow: 0 3px 7px #173d3012; }
+.setupPanel .primaryAction:hover { background: #104b33; }
+.setupPanel .secondaryAction { background: #fff; }
+.setupPanel .secondaryAction:hover { background: #edf5ef; }
+.secondaryAction svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+.setupPanel :is(button,a,summary):focus-visible { outline: 3px solid #77ac92; outline-offset: 3px; }
+.pairingCard { border: 1px solid #cbded2; border-radius: 18px; background: #f0f7f2; padding: 1.1rem 1.3rem; }
+.codeHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: .9rem; }
+.codeHeading span { color: #5b7067; font-size: .8rem; }
+.pairingCode { display: block; padding: .85rem 0; font-size: 1.6rem; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 650; letter-spacing: .12em; overflow-wrap: anywhere; color: #164d35; }
+.pairingCard p { font-size: .85rem; color: #5b7067; }
+.setupFooter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding-top: 1rem; border-top: 1px solid #e0e8e3; }
+.setupFooter p { font-size: .85rem; color: #5b7067; }
+.setupPanel .helpLink { padding: .2rem 0; border: 0; border-radius: 0; background: transparent; gap: .35rem; font-size: .85rem; text-decoration: underline; text-underline-offset: 4px; }
+.setupDetails { margin-top: -.5rem; color: #65786e; font-size: .8rem; }
+.setupDetails summary { cursor: pointer; width: fit-content; padding: .2rem 0; }
+.setupDetails p { padding-top: .5rem; max-width: 65ch; }
+.disconnectRow { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; font-size: .8rem; color: #65786e; }
+.setupPanel .disconnectAction { color: #97463e; background: white; border-color: #e5d6d3; font-size: .85rem; padding: .5rem .8rem; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .setupSteps { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .setupHeading { flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .connectionStatus { margin-left: 0; }
+}
