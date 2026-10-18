@@ -87,3 +87,9 @@
 @supports selector(::-webkit-scrollbar) {
   .addRegisterBody .options { scrollbar-width: auto; scrollbar-color: auto; }
 }
+
+/* The add-asset chooser shares Change Asset Register chrome and available list space. */
+.addRegisterBody .options { max-height: none; }
+
+.addRegisterBody button { font-family: inherit; cursor: pointer; }
+.addRegisterBody button:disabled { opacity: .5; cursor: not-allowed; }
