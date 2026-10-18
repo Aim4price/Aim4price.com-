@@ -560,3 +560,16 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.messageActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; }
+.messageAssetLink, .messageNotedButton {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 3rem;
+  min-width: 9rem; padding: .75rem 1.25rem; border-radius: .75rem;
+  font: inherit; font-size: 1rem; font-weight: 750; text-decoration: none; cursor: pointer;
+}
+.messageAssetLink { border: 1px solid var(--app-line, #c9ded4); background: var(--app-surface-soft, #edf6f1); color: var(--app-text, #174b39); }
+.messageNotedButton { border: 1px solid #12684e; background: #12684e; color: #fff; }
+.messageNotedButton:disabled, .messageAssetLink[aria-disabled=true] { opacity: .55; cursor: wait; }
+.messageAssetLink:focus-visible, .messageNotedButton:focus-visible { outline: 3px solid #229970; outline-offset: 3px; }
+.messageContext { align-items: center; color: var(--app-muted, #5c7067); font-size: .95rem; font-weight: 700; }
+.messageHint { margin: 1.5rem 0 0; color: var(--app-muted, #5c7067); font-size: .88rem; line-height: 1.6; }
