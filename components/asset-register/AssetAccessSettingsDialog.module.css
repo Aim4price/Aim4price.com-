@@ -186,3 +186,14 @@
   padding: 1.25rem .35rem .35rem !important;
   margin: 0 -.35rem -.35rem;
 }
+
+/* A shared inset leaves room for rings on first/last cards and footer actions. */
+.dialog:not(.locationDialog) .body.body.body {
+  padding: 1.5rem !important;
+  margin: 0 -1.5rem -1.5rem;
+  scroll-padding: 1.5rem;
+}
+.dialog.guideDialog .body.body.body,
+.dialog.subjectDialog .body.body.body { padding-top: 1.6rem !important; }
+.dialog .accessChoices { padding: 1.5rem; margin: -1.5rem; }
+.dialog .footer { padding-inline: 1.5rem; margin-inline: -1.5rem; }

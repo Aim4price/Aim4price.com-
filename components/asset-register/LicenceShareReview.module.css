@@ -79,3 +79,5 @@
   :global(body:not(:has([data-website-canvas]))) .assetFooter,
   :global(body:not(:has([data-website-canvas]))) .footer { flex-direction: column; align-items: stretch; gap: 12px; }
 }
+
+.assets { padding: 1.5rem; scroll-padding: 1.5rem; }

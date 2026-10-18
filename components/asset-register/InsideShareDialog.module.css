@@ -49,3 +49,8 @@
 }
 
 .card strong { font-family: var(--font-heading, 'Montserrat'), sans-serif; }
+
+/* Keep the full rounded halo inside the scroll boundary. Nested pickers use their parent's scroll area. */
+.grid.grid { padding: 1.6rem 1.5rem 1.5rem; margin: 0 -1.5rem -1.5rem; scroll-padding: 1.5rem; }
+.grid.pickerGrid { padding: 1.5rem; margin: -1.5rem; overflow: visible; }
+.destinationBody.destinationBody { overflow: visible; }

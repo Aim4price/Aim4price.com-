@@ -1,4 +1,5 @@
 'use client';
+import ShareNextIcon from './ShareNextIcon';
 import {useState} from 'react';
 import ShareHistory from './ShareHistory';
 import { AssetShareDestinationPicker } from './AssetExternalShare';
@@ -29,7 +30,7 @@ export default function ShareDestinationDialog({ assetIds=[], umbrellaId, kind, 
     <AssetAccessSettingsDialog subjectHeader={!history} title={history ? 'Sharing history' : subject} assetTitle={history ? subject : assetDetails || `${assetIds.length} ${assetIds.length === 1 ? 'asset' : 'assets'}${kind === 'umbrella' ? ' in this umbrella' : kind === 'register' ? ' in this register' : ''}`} onClose={()=>{if(!disabled) onClose();}}>
         {history ? <ShareHistory assetIds={assetIds} umbrellaId={umbrellaId} subject={subject} onBack={()=>setHistory(false)}/> : <div className={styles.destinationBody}>
           <AssetShareDestinationPicker onSendLink={onSendLink} onInside={onInside} onOutside={onOutside} disabled={disabled} />
-          {(assetIds.length > 0 || umbrellaId) && <div className={base.historyActions}><button type="button" disabled={disabled} onClick={()=>setHistory(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2" /></svg><span>History</span><span className={base.historyHint}>Manage shared links</span><span aria-hidden="true">→</span></button></div>}
+          {(assetIds.length > 0 || umbrellaId) && <div className={base.historyActions}><button type="button" disabled={disabled} onClick={()=>setHistory(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7M12 7v5l3 2" /></svg><span>History</span><span className={base.historyHint}>Manage shared links</span><ShareNextIcon /></button></div>}
         </div>}
     </AssetAccessSettingsDialog>
   );

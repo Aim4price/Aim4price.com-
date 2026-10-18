@@ -1,4 +1,5 @@
 'use client';
+import ShareNextIcon from './ShareNextIcon';
 import { createAssetSharePdf } from '../../lib/asset-share-pdf';
 import { createAssetShareCards } from '../../lib/asset-share-cards';
 import ShareDisclaimer from './ShareDisclaimer';
@@ -494,7 +495,7 @@ export default function AssetExternalShare({
             <span className={styles.attachmentCopy}>
               <strong>{reportFiles.length ? 'Add another report' : 'Add report'}</strong>
             </span>
-            <span className={styles.addReportArrow} aria-hidden="true">›</span>
+            <ShareNextIcon />
           </button>
 
           {reportFiles.length ? (

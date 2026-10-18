@@ -1,4 +1,5 @@
 'use client';
+import ShareNextIcon from './ShareNextIcon';
 import { useId } from 'react';
 import ShareDisclosureDialog from './ShareDisclosureDialog';
 import styles from './LicenceShareReview.module.css';
@@ -34,7 +35,7 @@ export default function LicenceShareReview({ assets, onEdit, onContinue, onClose
           </dl>
           <div className={styles.assetFooter}>
             {asset.missing.length ? <p className={styles.missing}>Missing: {asset.missing.join(' and ')}</p> : <p className={styles.complete}>Licence details complete</p>}
-            <button type="button" onClick={() => onEdit(asset.id)}>{asset.missing.length ? 'Fill in licence details' : 'Edit licence details'}<span aria-hidden="true">→</span></button>
+            <button type="button" onClick={() => onEdit(asset.id)}>{asset.missing.length ? 'Fill in licence details' : 'Edit licence details'}<ShareNextIcon /></button>
           </div>
         </> : <p className={styles.excludedNote}>Not applicable · excluded from this request</p>}
       </section>)}
