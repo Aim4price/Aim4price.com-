@@ -37,3 +37,17 @@
     outline: 2px solid Highlight;
   }
 }
+
+/* Longer explanations use a calmer card treatment than short icon labels. */
+.description {
+  max-width: min(440px, calc(100% - 24px));
+  padding: 15px 22px;
+  border: 1px solid rgba(173, 225, 201, .45);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #195b47, #103e31);
+  box-shadow: 0 10px 28px rgba(4, 42, 34, .20), inset 0 1px 0 rgba(255, 255, 255, .08);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.55;
+  text-wrap: balance;
+}
