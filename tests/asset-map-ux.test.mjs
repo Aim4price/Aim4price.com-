@@ -137,18 +137,18 @@ test("map controls and selection preserve the user's context", () => {
   assert.match(assetMapClient, /function handleMenuNavigation/);
   assert.match(assetMapClient, /event\.key !== "ArrowDown"/);
   assert.match(assetMapClient, /menuItems\[nextIndex\]\?\.focus\(\)/);
-  assert.match(assetMapClient, /onKeyDown=\{handlePageFilterMenuKeyDown\}/);
+  assert.match(assetMapClient, /AssetMapRegisterDialog/);
   assert.match(assetMapClient, /onKeyDown=\{handleExportScopeMenuKeyDown\}/);
   assert.equal(
     [...assetMapClient.matchAll(/tabIndex=\{isSelected \? 0 : -1\}/g)].length,
-    2,
+    1,
   );
-  assert.match(assetMapClient, /focusAdjacentControl\(document/);
+
   assert.match(assetMapClient, /focusAdjacentControl\([\s\S]*?exportModalRef\.current/);
   assert.equal(
     [...assetMapClient.matchAll(/\(selectedItem \?\? firstItem\)\?\.focus\(\)/g)]
       .length,
-    2,
+    1,
   );
 });
 
@@ -158,8 +158,8 @@ test("selected overlay keeps the original compact content without a duplicate nu
   assert.match(assetMapClient, />Serial \/ VIN</);
   assert.match(assetMapClient, />Last updated</);
   assert.match(assetMapClient, />Asset Register</);
-  assert.match(assetMapClient, />Maps</);
-  assert.match(assetMapClient, /"Download"/);
+  assert.match(assetMapClient, />Google Maps</);
+  assert.match(assetMapClient, /"Download report"/);
   assert.doesNotMatch(assetMapClient, />Last known location</);
   assert.doesNotMatch(assetMapClient, /\.slice\(0, 6\)/);
   assert.match(

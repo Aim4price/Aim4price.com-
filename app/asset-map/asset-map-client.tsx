@@ -68,6 +68,8 @@ type AssetMapItem = {
   lastKnownLocationText: string;
   updatedAtIso: string;
   photos: string[];
+  trackingStatus?: string;
+  lastTrackedAtIso?: string;
 };
 
 type NumberedAssetMapItem = AssetMapItem & {
@@ -2013,6 +2015,7 @@ export default function AssetMapClient() {
                           <small>Last updated</small>
                           <strong>
                             {formatDate(selectedAsset.updatedAtIso)}
+                            {selectedAsset.trackingStatus ? ` · ${selectedAsset.trackingStatus}` : ""}
                           </strong>
                         </span>
                       </div>
