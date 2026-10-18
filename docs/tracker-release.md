@@ -4,7 +4,7 @@
 
 0.5 replaces the debug build with a dedicated RSA-3072 release certificate, disables debugging and separates future development installs with a `.debug` application ID suffix. The website download checksum and public certificate fingerprint are in `public/downloads/tracker-release.json`. No private signing material is committed.
 
-**Release gate:** preserve the signing keystore and password in an approved durable secret store before merging/distributing this version. The initial attempt to back them up to Railway shared variables was blocked by automatic approval review and requires the owner's explicit approval. The generated key currently exists only in the build workspace. Do not generate a different key for the next update.
+The original signing keystore and password were backed up on 18 October 2026, with explicit owner approval, to the production environment's shared variables in the Aim4price Railway project. `AIM4PRICE_TRACKER_RELEASE_KEYSTORE_B64`, `AIM4PRICE_TRACKER_RELEASE_PASSWORD` and `AIM4PRICE_TRACKER_RELEASE_ALIAS` are not linked to the website service. Restore these through the owner's Railway account for future signed builds; never generate a replacement key.
 
 Release signing improves the distribution build; it does not certify that Android will accept it or establish full field reliability. No physical-device installation, screen-lock or battery test has been completed for 0.5.
 

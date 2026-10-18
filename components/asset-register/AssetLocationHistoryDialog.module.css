@@ -19,3 +19,6 @@
 .downloadBar { display:flex; align-items:center; justify-content:space-between; gap:1rem; color:#49675a; }
 .downloadBar button { background:#196348; color:white; }
 .downloadBar button:disabled { opacity:.5; cursor:default; }
+
+.content { gap: .85rem; }
+.content > [aria-label="History type"] { padding:0 0 .85rem; margin:0; border-bottom:1px solid #dce7e1; }

@@ -80,7 +80,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
     async function copyCode(){try{await navigator.clipboard.writeText(code);setCopied(true);}catch{setError('Select the pairing code and copy it manually.');}}
   if(loading)return <p role="status">Loading tracking device…</p>;
   return (
-    <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device" data-tracker-setup>
+    <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device" data-tracker-setup data-tracker-connected={device && !replace ? true : undefined}>
       {showMovement&&<LocationHistory assetId={assetId} title={title} initialTab="movement" onClose={()=>setShowMovement(false)}/>}
       {showInstallShare&&<TrackerInstallShareDialog onClose={()=>setShowInstallShare(false)}/>}
       <div className={styles.setupHeading}>
@@ -91,12 +91,15 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         {device && <span className={styles.connectionStatus}>{device.status}</span>}
       </div>
       {device && !replace && <div className={styles.connectedSummary}>
-        <strong>✓ Phone connected</strong>
-        <p>{device.lastCapturedAt?'✓ First location received':'Waiting for the first location. Open the phone app, allow precise location and tap Activate.'}</p>
-        <dl><div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'}):'Not received yet'}</dd></div>
-        <div><dt>Last recorded location</dt><dd>{device.lastCapturedAt?`${Number(device.latitude).toFixed(5)}, ${Number(device.longitude).toFixed(5)}`:'Waiting for GPS'}</dd></div>
-        {device.lastCapturedAt&&<div><dt>Location captured</dt><dd>{new Date(device.lastCapturedAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})}</dd></div>}</dl>
-        <button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}>View movement →</button>
+        <div className={styles.connectedIntro}>
+          <span className={styles.successIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 12 4 4 8-8"/></svg></span>
+          <div><strong>Phone connected</strong><p>{device.lastCapturedAt?'Location received. View your route below.':'On the phone: allow precise location, then tap Activate outdoors.'}</p></div>
+        </div>
+        <dl className={styles.connectionFacts}>
+          <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
+          <div><dt>Latest GPS reading</dt><dd>{device.lastCapturedAt?new Date(device.lastCapturedAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Waiting for first location'}</dd></div>
+        </dl>
+        <button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports<span aria-hidden="true">→</span></button>
       </div>}
       {(!device||replace)&&<>
       <div className={styles.setupSteps}>
@@ -133,9 +136,9 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {device&&<button type="button" onClick={()=>setReplace(false)}>Back to connected phone</button>}
       </>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
-      <div className={styles.setupFooter}>
+      {!device && <div className={styles.setupFooter}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg><p>Routes: <strong>Location history → Movement</strong></p>
-      </div>
+      </div>}
       {device && <details className={styles.setupDetails}><summary>Manage device</summary><div className={styles.disconnectRow}><button type="button" onClick={()=>setReplace(true)}>Replace phone</button><button className={styles.disconnectAction} disabled={busy} type="button" onClick={() => action("DELETE")}>Disconnect phone</button><span>Saved routes will remain.</span></div></details>}
     </section>
   );
