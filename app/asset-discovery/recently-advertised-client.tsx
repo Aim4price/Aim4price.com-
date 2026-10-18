@@ -322,8 +322,15 @@ export default function RecentlyAdvertisedClient({
       setExpandedAdvertId(null);
       card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
     };
+    const onOutside = (event: MouseEvent) => {
+      if (sourcingRequest || document.querySelector("[data-recent-photo-open]") ||
+          (event.target as HTMLElement).closest('[role="dialog"], [data-website-overlay]')) return;
+      if (!card.contains(event.target as Node)) setExpandedAdvertId(null);
+    };
+    document.addEventListener("mousedown", onOutside);
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      document.removeEventListener("mousedown", onOutside);
       window.removeEventListener("keydown", onKeyDown);
       for (const { element, inert } of background) {
         element.classList.remove(styles.discoveryBackgroundBlur);
@@ -732,8 +739,20 @@ export default function RecentlyAdvertisedClient({
         <article
           key={advert.id}
           data-discovery-card
+          tabIndex={0}
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [role="dialog"], [data-website-overlay], [id^="recent-advert-"]')) return;
+            setExpandedAdvertId(isExpanded ? null : advert.id);
+          }}
+          onKeyDown={(event) => {
+            if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              setExpandedAdvertId(isExpanded ? null : advert.id);
+            }
+          }}
           className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard}`}
         >
+          <span aria-hidden="true" data-tooltip={isExpanded ? "Close" : "Open"} />
           <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
             <div className={`${styles.assetIdentity} ${isExpanded ? styles.discoverySummaryBlur : ""}`}>
               <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
@@ -771,8 +790,20 @@ export default function RecentlyAdvertisedClient({
       <article
         key={advert.id}
           data-discovery-card
+          tabIndex={0}
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [role="dialog"], [data-website-overlay], [id^="recent-advert-"]')) return;
+            setExpandedAdvertId(isExpanded ? null : advert.id);
+          }}
+          onKeyDown={(event) => {
+            if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+              event.preventDefault();
+              setExpandedAdvertId(isExpanded ? null : advert.id);
+            }
+          }}
         className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadStyles.leadThreadNew} ${isExpanded ? leadStyles.leadThreadOpen : ""}`}
       >
+        <span aria-hidden="true" data-tooltip={isExpanded ? "Close" : "Open"} />
         <div className={leadStyles.clientPanel}>
           <div className={leadStyles.clientPanelHeader}>
             <div className={`${leadStyles.clientIdentity} ${isExpanded ? styles.discoverySummaryBlur : ""}`}>
