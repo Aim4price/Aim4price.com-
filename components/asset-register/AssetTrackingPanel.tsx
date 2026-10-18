@@ -9,6 +9,7 @@ import styles from "./AssetTrackingPanel.module.css";
 export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
   const [showMovement,setShowMovement]=useState(false),[replace,setReplace]=useState(false),[title,setTitle]=useState('Tracked asset');
   const [expiresAt,setExpiresAt]=useState(0),[now,setNow]=useState(Date.now()),[copied,setCopied]=useState(false),[loading,setLoading]=useState(true);
+  const pairingCardRef=useRef<HTMLDivElement>(null);
   const pairingDevice=useRef<string|null|undefined>(undefined);
   const remaining=Math.max(0,Math.ceil((expiresAt-now)/1000));
   const [showInstallShare,setShowInstallShare]=useState(false);
@@ -16,6 +17,20 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {
+    if (!code) return;
+    const frame = requestAnimationFrame(() => {
+      const card = pairingCardRef.current;
+      if (!card) return;
+      card.focus({ preventScroll: true });
+      card.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        block: 'start',
+        inline: 'nearest',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [code]);
   const endpoint = `/api/asset-register/${encodeURIComponent(assetId)}/tracking`;
   useEffect(()=>{if(!code)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[code]);
   useEffect(() => {
@@ -65,7 +80,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
     async function copyCode(){try{await navigator.clipboard.writeText(code);setCopied(true);}catch{setError('Select the pairing code and copy it manually.');}}
   if(loading)return <p role="status">Loading tracking device…</p>;
   return (
-    <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device">
+    <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device" data-tracker-setup>
       {showMovement&&<LocationHistory assetId={assetId} title={title} initialTab="movement" onClose={()=>setShowMovement(false)}/>}
       {showInstallShare&&<TrackerInstallShareDialog onClose={()=>setShowInstallShare(false)}/>}
       <div className={styles.setupHeading}>
@@ -109,7 +124,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         </div>
       </div>
       {code && (
-        <div className={styles.pairingCard} aria-live="polite">
+        <div ref={pairingCardRef} className={styles.pairingCard} tabIndex={-1} role="region" aria-label="Your pairing code">
           <div className={styles.codeHeading}><strong>Your pairing code</strong><span>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
           {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div><h4 className={styles.scanTitle}>Scan to connect</h4><p>Use the phone’s camera, open Tracker, then tap Connect.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
           <p>Or enter this code in Tracker.{device && " Connecting replaces the current phone."}</p>
