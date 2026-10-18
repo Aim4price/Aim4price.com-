@@ -1,4 +1,5 @@
 'use client';
+import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import ListingAlertSettings from '../../components/ListingAlertSettings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
@@ -106,6 +107,7 @@ type PaginationItem = number | 'ellipsis-before' | 'ellipsis-after';
 type DealerListingView = 'browse' | 'mine';
 
 type MarketplaceEditDraft = {
+  photos: string[];
   askingPriceExVat: string;
   description: string;
   sellerName: string;
@@ -273,7 +275,7 @@ function IconPhoto() {
 
 function IconChevronLeft() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="m15 6-6 6 6 6" />
     </svg>
   );
@@ -281,7 +283,7 @@ function IconChevronLeft() {
 
 function IconChevronRight() {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="m9 6 6 6-6 6" />
     </svg>
   );
@@ -2165,6 +2167,7 @@ export default function MarketplaceClient({
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
   const [editListingTarget, setEditListingTarget] = useState<MarketplaceListing | null>(null);
+  const [listingPhotosBusy, setListingPhotosBusy] = useState(false);
   const [editListingDraft, setEditListingDraft] = useState<MarketplaceEditDraft | null>(null);
   const [isSavingListingEdit, setIsSavingListingEdit] = useState(false);
   const [listingEditError, setListingEditError] = useState('');
@@ -2863,6 +2866,7 @@ export default function MarketplaceClient({
     if (compactAppMode) {
       setEditListingTarget(listing);
       setEditListingDraft({
+        photos: getListingImages(listing),
         askingPriceExVat: String(Math.round(listing.askingPriceExVat || 0)),
         description: getListingNote(listing),
         sellerName: listing.sellerName || '',
@@ -2884,7 +2888,7 @@ export default function MarketplaceClient({
   }
 
   function closeListingEditModal() {
-    if (isSavingListingEdit) return;
+    if (isSavingListingEdit || listingPhotosBusy) return;
     setEditListingTarget(null);
     setEditListingDraft(null);
     setListingEditError('');
@@ -2895,7 +2899,7 @@ export default function MarketplaceClient({
   }
 
   async function saveListingEdit() {
-    if (!editListingTarget?.sourceAssetId || !editListingDraft || isSavingListingEdit) return;
+    if (!editListingTarget?.sourceAssetId || !editListingDraft || isSavingListingEdit || listingPhotosBusy) return;
 
     const askingPriceExVat = Math.round(
       Number(editListingDraft.askingPriceExVat.replace(/[^0-9.-]/g, '')) || 0,
@@ -2919,6 +2923,8 @@ export default function MarketplaceClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: editListingTarget.sourceAssetId,
+          photos: editListingDraft.photos,
+          replacePhotos: true,
           askingPriceExVat,
           marketplaceNotes: editListingDraft.description.trim(),
           sellerName: editListingDraft.sellerName.trim(),
@@ -3903,10 +3909,11 @@ export default function MarketplaceClient({
                 <span>Edit listing</span>
                 <h2 id="dealer-listing-edit-title">{listingDisplayTitle(editListingTarget)}</h2>
               </div>
-              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit} aria-label="Close listing editor">×</button>
+              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit || listingPhotosBusy} aria-label="Close listing editor">×</button>
             </header>
 
             <div className={dealerStyles.editListingBody}>
+              <MarketplacePhotoEditor photos={editListingDraft.photos} busy={listingPhotosBusy} onBusyChange={setListingPhotosBusy} disabled={isSavingListingEdit || listingPhotosBusy} onChange={photos => updateListingEditDraft({ photos })} />
               <label className={dealerStyles.editListingField}>
                 <span>Asking price excluding VAT</span>
                 <GroupedCurrencyInput value={editListingDraft.askingPriceExVat} onValueChange={(value) => updateListingEditDraft({ askingPriceExVat: value })} />
@@ -3945,8 +3952,8 @@ export default function MarketplaceClient({
             </div>
 
             <footer className={dealerStyles.editListingActions}>
-              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit}>Cancel</button>
-              <button type="button" className={dealerStyles.editListingSave} onClick={() => void saveListingEdit()} disabled={isSavingListingEdit}>
+              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit || listingPhotosBusy}>Cancel</button>
+              <button type="button" className={dealerStyles.editListingSave} onClick={() => void saveListingEdit()} disabled={isSavingListingEdit || listingPhotosBusy}>
                 {isSavingListingEdit ? 'Saving…' : 'Save changes'}
               </button>
             </footer>
