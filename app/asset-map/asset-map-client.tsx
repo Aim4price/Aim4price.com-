@@ -782,7 +782,7 @@ export default function AssetMapClient() {
           ? new URLSearchParams(window.location.search).get("assetId")?.trim() || null
           : null;
         const requestedAsset = requestedAssetId
-          ? data.assets.find((asset) => asset.id === requestedAssetId && hasCoordinates(asset)) ?? null
+          ? data.assets.find((asset) => asset.id === requestedAssetId) ?? null
           : null;
         setAssets(data.assets);
         setDataStatus("ready");
@@ -800,7 +800,11 @@ export default function AssetMapClient() {
         if (requestedAsset) {
           setSearch("");
           setSelectedRegisterId(ALL_REGISTER_FILTER_ID);
-          setSelectedCode(requestedAsset.publicAssetCode);
+          if (hasCoordinates(requestedAsset)) {
+            setSelectedCode(requestedAsset.publicAssetCode);
+          } else {
+            setLocationDialog({asset:requestedAsset,view:'update'});
+          }
         }
         setNotice(null);
       } catch (error) {
@@ -1593,6 +1597,9 @@ export default function AssetMapClient() {
           const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
           setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));
+          setSearch('');
+          setSelectedRegisterId(ALL_REGISTER_FILTER_ID);
+          setSelectedCode(locationDialog.asset.publicAssetCode);
           closeLocationDialog();
         }}/>
       </AssetAccessSettingsDialog>}

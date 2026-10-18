@@ -19909,17 +19909,7 @@ export default function AssetRegisterClient({
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       data-asset-return-action="manage-map-location"
-                      onClick={(event) => {
-                        const asset = activeAsset;
-                        if (hasAssetGpsCoordinates(asset)) {
-                          window.location.assign(buildFocusedAssetMapHref(asset));
-                          return;
-                        }
-
-                        rememberAssetModalReturn(asset, 'manage', 'manage-map-location', event.currentTarget);
-                        closeActionDialog();
-                        openAssetSettingsModalForAsset(asset, 'location');
-                      }}
+                      onClick={() => window.location.assign(buildFocusedAssetMapHref(activeAsset))}
                     >
                       <MapPinIcon className={styles.buttonIcon} />
                       <span>
