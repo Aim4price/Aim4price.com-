@@ -21,7 +21,7 @@ public class TrackingService extends Service implements LocationListener {
  public void onLocationChanged(Location location){
   long now=System.currentTimeMillis();if(!TrackerApi.prefs(this).getBoolean("active",false))return;
   if(!location.hasAccuracy()||location.getAccuracy()>50||now-location.getTime()>120000||location.getTime()>now+120000)return;
-  if(location.getTime()-lastFix<55000)return;lastFix=location.getTime();
+  if(location.getTime()-lastFix<55000)return;lastFix=location.getTime();TrackerApi.prefs(this).edit().putString("gps","GPS received: "+java.time.LocalTime.now().withNano(0)).apply();
   if(anchor==null){anchor=new Location(location);stationarySince=location.getTime();}
   float threshold=Math.max(10,Math.max(anchor.getAccuracy(),location.getAccuracy()));
   if(anchor.distanceTo(location)>threshold){anchor=new Location(location);stationarySince=location.getTime();}
@@ -37,8 +37,8 @@ public class TrackingService extends Service implements LocationListener {
   }catch(Exception e){p.edit().putString("issue","Could not save reading. Open the app to check storage.").apply();}});
  }
  void upload(){lastAttempt=System.currentTimeMillis();try{TrackerApi.flush(this,store);TrackerApi.prefs(this).edit().putString("issue","").apply();}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).remove("token").putString("issue",e.getMessage()).apply();stopSelf();}catch(Exception e){TrackerApi.prefs(this).edit().putString("issue",e.getMessage()).apply();}}
- public void onProviderDisabled(String provider){TrackerApi.prefs(this).edit().putString("issue","GPS is switched off.").apply();}
- public void onProviderEnabled(String provider){}
+ public void onProviderDisabled(String provider){TrackerApi.prefs(this).edit().putString("gps","GPS is switched off.").apply();}
+ public void onProviderEnabled(String provider){TrackerApi.prefs(this).edit().putString("gps","Waiting for GPS").apply();}
  public void onStatusChanged(String provider,int status,Bundle extras){}
  public IBinder onBind(Intent intent){return null;}
  public void onDestroy(){if(manager!=null)manager.removeUpdates(this);worker.shutdown();super.onDestroy();}

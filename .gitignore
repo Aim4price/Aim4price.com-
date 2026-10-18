@@ -7,3 +7,11 @@ node_modules
 .env.local
 node_modules
 .next
+
+# Android private signing material must never enter git.
+*.jks
+*.keystore
+*.p12
+android/tracker/local.properties
+android/tracker/.gradle/
+android/tracker/**/build/

@@ -15,7 +15,7 @@ public class MainActivity extends Activity {
  String scannedCode="", connectionError=""; boolean pairedScreen=false;
  static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff64746a, SOFT=0xffeef5f0;
  TextView status;final Handler handler=new Handler(Looper.getMainLooper());
- final Runnable refresh=new Runnable(){public void run(){if(status!=null){var p=TrackerApi.prefs(MainActivity.this);if(pairedScreen!=!p.getString("token","").isEmpty()){draw();return;}status.setText((p.getString("token","").isEmpty() ? (connectionError.isEmpty()?"Ready to connect":connectionError) : (p.getBoolean("active",false)?"Tracking activated":"Tracking deactivated")+"\n"+p.getString("sync","No upload yet")+"\n"+p.getString("issue","")));}handler.postDelayed(this,3000);}};
+ final Runnable refresh=new Runnable(){public void run(){if(status!=null){var p=TrackerApi.prefs(MainActivity.this);if(pairedScreen!=!p.getString("token","").isEmpty()){draw();return;}status.setText((p.getString("token","").isEmpty() ? (connectionError.isEmpty()?"Ready to connect":connectionError) : (p.getBoolean("active",false)?"Tracking activated":"Tracking deactivated")+"\n"+p.getString("sync","No upload yet")+"\n"+p.getString("gps","Waiting for GPS")+"\n"+p.getString("issue","")));}handler.postDelayed(this,3000);}};
  public void onCreate(Bundle b){super.onCreate(b);readPairingIntent(getIntent());draw();}
  public void onResume(){super.onResume();handler.removeCallbacks(refresh);handler.post(refresh);}
  public void onPause(){handler.removeCallbacks(refresh);super.onPause();}
@@ -54,9 +54,10 @@ public class MainActivity extends Activity {
   }else{
    Button activate=new Button(this);activate.setText("Activate tracking");box.addView(activate);styleButton(activate,true);activate.setOnClickListener(v->activate());
    Button stop=new Button(this);stop.setText("Deactivate tracking");box.addView(stop);styleButton(stop,false);stop.setOnClickListener(v->{p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});});
-   TextView note=text("Keep this phone on the equipment. Allow unrestricted battery use. After restarting, open Tracker and tap Activate.",13,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
+   Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName()))));
+   TextView note=text("Keep this phone on the equipment. In Phone settings, allow unrestricted battery use. After restarting, open Tracker and tap Activate.",13,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
   }
-  TextView version=text("Aim4price Tracker · 0.4",12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
+  TextView version=text("Aim4price Tracker · 0.5",12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
   page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",13,Color.rgb(85,109,96)));
   handler.removeCallbacks(refresh);refresh.run();
  }
@@ -64,7 +65,7 @@ public class MainActivity extends Activity {
   if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},1);return;}
   if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},2);return;}
   android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));return;}
-  var p=TrackerApi.prefs(this);if(!p.getBoolean("active",false))p.edit().putString("session",UUID.randomUUID().toString()).apply();p.edit().putBoolean("active",true).putString("issue","").apply();startForegroundService(new Intent(this,TrackingService.class));
+  var p=TrackerApi.prefs(this);if(!p.getBoolean("active",false))p.edit().putString("session",UUID.randomUUID().toString()).apply();p.edit().putBoolean("active",true).putString("issue","").apply();try{startForegroundService(new Intent(this,TrackingService.class));}catch(RuntimeException e){p.edit().putBoolean("active",false).putString("issue","Could not start. Check phone permissions and tap Activate again.").apply();}
  }
  public void onRequestPermissionsResult(int code,String[] permissions,int[] grants){super.onRequestPermissionsResult(code,permissions,grants);if(grants.length>0&&grants[0]==PackageManager.PERMISSION_GRANTED)activate();else status.setText("Location and notification permissions are needed. Enable them in Android app settings, then Activate.");}
 }

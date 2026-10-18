@@ -1,10 +1,10 @@
-# Aim4price Tracker pilot
+# Aim4price Tracker
 
-This Android-only pilot pairs one equipment phone to one asset. It adds a Movement tab to the existing Location history dialog; the Asset Map layout stays intact. No Play Store listing or Traccar subscription is required.
+This Android app pairs one equipment phone to one asset. It adds a Movement tab to the existing Location history dialog; the Asset Map layout stays intact. No Play Store listing or Traccar subscription is required.
 
 ## Install and pair
 
-1. On the equipment phone, download `/downloads/aim4price-tracker-pilot.apk` from Aim4price. Allow installation from your browser when Android asks. This is a signed **debug pilot** build for controlled testing, not a production distribution.
+1. On the equipment phone, download `/downloads/aim4price-tracker-pilot.apk` from Aim4price. Allow installation from your browser when Android asks. Version 0.5 is a non-debuggable release signed with the dedicated Aim4price certificate. Signing does not guarantee Play Protect approval. If Android reports the app as harmful or blocks it, capture the exact message for investigation; do not turn off Play Protect. See [release instructions](tracker-release.md) before replacing versions 0.4 or earlier.
 2. In the desktop Asset Register, open the asset → Advanced settings → Update location → Tracking device → Create pairing code.
 3. Enter that code in the Android app within 15 minutes. Pairing a replacement revokes the old device automatically.
 4. Tap Activate. Grant precise location and notification access, enable GPS, and set the app's battery usage to unrestricted in Android settings. Keep the phone on the equipment.
@@ -48,7 +48,7 @@ Requires JDK 17, Android SDK 35, build-tools 35 and Gradle 8.9:
 gradle -p android/tracker :app:assembleDebug :app:lintDebug
 ```
 
-The GitHub Actions **Asset tracking pilot** workflow builds and uploads `aim4price-tracker-pilot-apk`. The downloadable pilot APK is a specific tested build; CI artifacts do not automatically replace that website download. For production use, configure a private release signing key backed up outside the repository, register distribution where required and sign future APKs with that same key. Debug signing keys differ between build machines: incompatible pilot updates require uninstall/reinstall and pairing again, which deletes that phone's pending queue. Upload pending readings first.
+The **Asset tracking** workflow builds a development APK with a separate application ID and verifies the website APK against the release certificate, version, checksum and non-debuggable flag. CI debug artifacts must never replace the website download. Follow [release instructions](tracker-release.md) to build and sign website updates.
 
 ## Field acceptance test
 
