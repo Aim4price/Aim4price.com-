@@ -39,3 +39,19 @@ test('real meters and explicit Basic and not-applicable choices are preserved', 
   assert.deepEqual(resolveAssetUsage({ hours: 0, specsJson: { basic_catalogue_release: 'v1', usageBasis: 'reading', usageMetricType: 'wear_class' } }), { value: 0, metric: 'hours' });
   assert.deepEqual(resolveAssetUsage({ specsJson: { usageBasis: 'not_applicable', usageMetricType: 'wear_class' } }), { value: null, metric: 'not_applicable' });
 });
+
+test('confirmed usage changes override legacy family defaults and require a fresh reading', async () => {
+  const { confirmedUsageTypeChange } = await loadModule('asset-usage');
+  const old = {kind:'equipment', hours:5000, specsJson:{usageBasis:'reading', usageMetric:'hours'}};
+  const next = {kind:'equipment', hours:120, specsJson:{usageBasis:'reading', usageMetric:'km', usageTypeConfirmed:true}};
+  assert.deepEqual(confirmedUsageTypeChange(old,next,true), {metric:'km',value:120});
+  assert.equal(confirmedUsageTypeChange(old,next,false), null);
+  assert.equal(confirmedUsageTypeChange(old,{...old,hours:10},true), null, 'confirmation must not bypass same-unit decrease protection');
+  assert.throws(()=>confirmedUsageTypeChange(old,{...next,hours:null},true), /USAGE_TYPE_READING_REQUIRED/);
+  const percent={lifeWorkedPercent:35,specsJson:{usageBasis:'percent',usageTypeConfirmed:true}};
+  assert.deepEqual(confirmedUsageTypeChange(old,percent,true),{metric:'percentage',value:35});
+  assert.throws(()=>confirmedUsageTypeChange(old,{...percent,lifeWorkedPercent:101},true),/USAGE_TYPE_READING_REQUIRED/);
+  assert.deepEqual(confirmedUsageTypeChange(old,{hours:null,specsJson:{usageBasis:'not_applicable'}},true),{metric:'not_applicable',value:null});
+  assert.deepEqual(resolveAssetUsage({kind:'vehicle',hours:42,specsJson:{usageBasis:'reading',usageMetric:'hours',usageTypeConfirmed:true}}),{metric:'hours',value:42});
+  assert.deepEqual(resolveAssetUsage({...next, specsJson:{...next.specsJson,usageMetricType:'wear_class'}}),{metric:'km',value:120});
+});

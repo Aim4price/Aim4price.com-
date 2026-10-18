@@ -8,6 +8,7 @@ import PhotoViewerActions from '../../components/PhotoViewerActions';
 import photoActionsLayout from '../../components/PhotoViewerActions.module.css';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
+import AssetUsageTypeDialog, { USAGE_TYPE_OPTIONS } from '../../components/AssetUsageTypeDialog';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import ModalSelect, {type ModalSelectOption} from '../../components/AssetModalSelect';
 import AssetPaperworkFields, {type AssetStatusDraft} from '../../components/AssetPaperworkFields';
@@ -1394,17 +1395,6 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'fair', label: 'Fair' },
   { value: 'used', label: 'Used' },
   { value: 'serious', label: 'Requires attention' },
-];
-
-const EQUIPMENT_USAGE_OPTIONS: Array<{ value: AssetDraftUsageMetric; label: string; description: string }> = [
-  { value: 'hours', label: 'Hours', description: 'Use the machine hour meter.' },
-  { value: 'percentage', label: '%', description: 'Use estimated lifetime usage as a percentage.' },
-  { value: 'not_applicable', label: 'Not applicable', description: 'This asset does not have a useful usage reading.' },
-];
-
-const VEHICLE_USAGE_OPTIONS: Array<{ value: AssetDraftUsageMetric; label: string; description: string }> = [
-  { value: 'km', label: 'Kilometres', description: 'Use the current odometer reading.' },
-  { value: 'not_applicable', label: 'Not applicable', description: 'This vehicle does not have a useful usage reading.' },
 ];
 
 const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
@@ -2857,12 +2847,6 @@ function assetKindSupportsLicensing(kind: AssetKind): boolean {
 function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
   const normalized = String(value ?? '').trim().toLowerCase();
 
-  // Motor assets must always be treated as odometer/km based inside the register,
-  // even when older saved specs contain an incorrect hours-style usage label.
-  if (kind === 'vehicle') {
-    return 'km';
-  }
-
   if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
     return 'km';
   }
@@ -2871,7 +2855,7 @@ function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
     return 'hours';
   }
 
-  return 'hours';
+  return kind === 'vehicle' ? 'km' : 'hours';
 }
 
 function getAssetUsageMetric(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): UsageMetric {
@@ -2899,6 +2883,7 @@ function isPercentUsageModeValue(value: unknown): boolean {
 }
 
 function assetUsesPercentUsage(asset: RegisterAsset): boolean {
+  if (asset.specsJson?.usageTypeConfirmed) return resolveAssetUsage(asset).metric === 'percentage';
   if (resolveAssetUsage(asset).metric === 'percentage') return true;
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   const percent = getAssetLifeWorkedPercent(asset);
@@ -4746,7 +4731,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
     propertySize: asset.kind === 'property' ? readAssetPropertySize(asset) : '',
     hours: asset.kind === 'property' || assetUsesPercentUsage(asset) || assetUsesNotApplicableUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
-    usageMetric: assetUsesNotApplicableUsage(asset) ? 'not_applicable' : assetUsesPercentUsage(asset) ? 'percentage' : asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
+    usageMetric: assetUsesNotApplicableUsage(asset) ? 'not_applicable' : assetUsesPercentUsage(asset) ? 'percentage' : getAssetUsageMetric(asset),
     lifeWorkedPercent: !assetUsesPercentUsage(asset) || getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
   };
@@ -6302,6 +6287,8 @@ export default function AssetRegisterClient({
   const [assetSettingsMapLatInput, setAssetSettingsMapLatInput] = useState('');
   const [assetSettingsMapLngInput, setAssetSettingsMapLngInput] = useState('');
   const [assetSettingsMapLocationText, setAssetSettingsMapLocationText] = useState('');
+  const [usageTypeDialogOpen, setUsageTypeDialogOpen] = useState(false);
+  const [usageTypeChangeConfirmed, setUsageTypeChangeConfirmed] = useState(false);
   const [assetSettingsView, setAssetSettingsView] = useState<AssetSettingsView>('menu');
   const [pendingUsageOverride, setPendingUsageOverride] = useState<AssetUsageOverrideRequest | null>(null);
   const isAssetSettingsLocationBusy = assetSettingsLocationState !== 'idle';
@@ -9121,7 +9108,7 @@ export default function AssetRegisterClient({
   const lowerUsageText = lowerUsageMode === 'percent' ? assetDraft.lifeWorkedPercent : assetDraft.hours;
   const lowerUsageValue = parseAssetSettingsUsageInput(lowerUsageMode, lowerUsageText);
   const savedUsageValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, lowerUsageMode) : null;
-  const hasLowerUsageDraft = lowerUsageValue !== null && savedUsageValue !== null && lowerUsageValue < savedUsageValue;
+  const hasLowerUsageDraft = (!editingAsset || assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric) && lowerUsageValue !== null && savedUsageValue !== null && lowerUsageValue < savedUsageValue;
 
   useEffect(() => {
     if (!isAssetModalOpen || !editingAssetId || isAssetSettingsModalOpen || hasLowerUsageDraft) {
@@ -9199,22 +9186,22 @@ export default function AssetRegisterClient({
     ? 'Usage'
     : showPercentUsageField
       ? 'Usage %'
-      : assetFormKind === 'vehicle'
+      : assetDraft.usageMetric === 'km'
         ? 'Odometer reading'
         : showUsageHoursField
           ? 'Machine hours'
           : 'Usage';
   const usageFieldPlaceholder = showPercentUsageField
     ? 'Enter usage %'
-    : assetFormKind === 'vehicle'
+    : assetDraft.usageMetric === 'km'
       ? 'Enter kilometres'
       : 'Enter machine hours';
   const usageFieldHint = showPercentUsageField
     ? 'Saved as a usage percentage, not as machine hours.'
-    : assetFormKind === 'vehicle'
+    : assetDraft.usageMetric === 'km'
       ? 'Vehicle usage will show as kilometres across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
-  const usageTypeOptions = assetFormKind === 'vehicle' ? VEHICLE_USAGE_OPTIONS : EQUIPMENT_USAGE_OPTIONS;
+  const usageTypeOptions = USAGE_TYPE_OPTIONS;
 
   const activeAssetFilterLabel = useMemo(() => {
     return [...assetFilters, ...(assetSort === 'all' ? [] : [assetSort])].map((key) => ASSET_FILTER_OPTIONS.find((option) => option.value === key)?.label).filter(Boolean).join(' · ') || 'All Assets';
@@ -9680,6 +9667,8 @@ export default function AssetRegisterClient({
   }
 
   function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
+    setUsageTypeDialogOpen(false);
+    setUsageTypeChangeConfirmed(false);
     setAssetUpdateMenuEnabled(!focusTarget);
     setShowAssetUpdateMenu(!focusTarget);
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
@@ -10965,7 +10954,7 @@ export default function AssetRegisterClient({
     }
 
     const savedUsageReading = getAssetSavedUsageReading(editingAsset);
-    if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
+    if (editingAsset && assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
       if (showFeedback) {
         setNotice({
           tone: 'error',
@@ -10978,6 +10967,7 @@ export default function AssetRegisterClient({
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
     if (
       editingAsset &&
+      assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric &&
       hasLifeWorkedPercent &&
       currentLifeWorkedPercent !== null &&
       isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
@@ -12250,7 +12240,7 @@ export default function AssetRegisterClient({
     }
 
     const savedUsageReading = getAssetSavedUsageReading(editingAsset);
-    if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
+    if (editingAsset && assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
       if (showFeedback) {
         setNotice({
           tone: 'error',
@@ -12263,6 +12253,7 @@ export default function AssetRegisterClient({
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
     if (
       editingAsset &&
+      assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric &&
       hasLifeWorkedPercent &&
       currentLifeWorkedPercent !== null &&
       isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
@@ -12397,6 +12388,8 @@ export default function AssetRegisterClient({
       specsJson.lifetime_worked_percent = roundedLifeWorkedPercent;
     }
 
+    if (usageTypeChangeConfirmed) specsJson.usageTypeConfirmed = true;
+
     if (isPropertyAsset || assetDraft.usageMetric === 'not_applicable') {
       Object.assign(specsJson, {
         usageMetric: 'not_applicable', usage_metric: 'not_applicable',
@@ -12476,6 +12469,7 @@ export default function AssetRegisterClient({
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: hoursForSave,
+        usageTypeChangeConfirmed,
         usageMetric: isPropertyAsset || !showUsageHoursField ? null : assetDraft.usageMetric === 'km' ? 'km' : 'hours',
         lifeWorkedPercent: roundedLifeWorkedPercent,
         specsJson,
@@ -18365,14 +18359,8 @@ export default function AssetRegisterClient({
                               label="Usage type"
                               value={assetDraft.usageMetric}
                               options={usageTypeOptions}
-                              onChange={(usageMetric) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  usageMetric,
-                                  hours: usageMetric === 'hours' || usageMetric === 'km' ? current.hours : '',
-                                  lifeWorkedPercent: usageMetric === 'percentage' ? current.lifeWorkedPercent : '',
-                                }))
-                              }
+                              onRequestOpen={() => setUsageTypeDialogOpen(true)}
+                              onChange={() => setUsageTypeDialogOpen(true)}
                               className={updateStyles.usageTypeField}
                             />
                             <label className={updateStyles.usageReading}>
@@ -18393,7 +18381,7 @@ export default function AssetRegisterClient({
                                   placeholder={usageFieldPlaceholder}
                                 />
                               ) : assetFormUsageNotApplicable ? (
-                                <input value="Not applicable" disabled readOnly />
+                                <input value="Unknown" disabled readOnly />
                               ) : (
                                 <input
                                   type="text"
@@ -18890,6 +18878,11 @@ export default function AssetRegisterClient({
                   </button>
 
 
+
+                  {editingAsset.kind !== 'property' && editingAsset.kind !== 'stock' ? <button type="button" className={styles.assetSettingsOptionButton} data-settings-action="usage-type" disabled={isAssetSettingsBusy} onClick={() => { openUpdater(editingAsset, 'usage'); setUsageTypeDialogOpen(true); }}>
+                    <ManageIcon className={styles.assetSettingsOptionIcon}/>
+                    <span><strong>Change usage type</strong><small>Hours, kilometers or percentage.</small></span>
+                  </button> : null}
 
                   {isSavedManualAsset(editingAsset) ? (
                     <>
@@ -19743,6 +19736,10 @@ export default function AssetRegisterClient({
         </AssetAccessSettingsDialog>
       ) : null}
 
+      {usageTypeDialogOpen && isAssetModalOpen && <AssetUsageTypeDialog value={assetDraft.usageMetric} assetTitle={assetDraft.title || 'Asset usage'} onClose={() => setUsageTypeDialogOpen(false)} onConfirm={(usageMetric, reading) => {
+        setUsageTypeChangeConfirmed(true);
+        setAssetDraft(current => ({...current, usageMetric, hours: usageMetric === 'hours' || usageMetric === 'km' ? reading : '', lifeWorkedPercent: usageMetric === 'percentage' ? reading : ''}));
+      }}/>}
       {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialView={valueReviewInitial} returnToDetails={!!valueEditorReturn.current} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined);setValueReviewInitial(undefined);if(valueEditorReturn.current){openUpdater(valueEditorReturn.current);setAssetUpdateMenuEnabled(true);setShowAssetUpdateMenu(false);valueEditorReturn.current=null;}}} onSaved={item=>{if(item){syncUpdatedAsset(item);if(valueEditorReturn.current)valueEditorReturn.current=item;}void reloadValueRequests();}}/>,document.body)}
       {replacementPriceRevaluePrompt ? (
         <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>

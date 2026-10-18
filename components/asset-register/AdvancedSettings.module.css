@@ -67,3 +67,6 @@
   color: #146d68 !important; background: #e6f6f3 !important; border-color: #b5ded6 !important;
 }
 .locationChoices.locationChoices { gap: .8rem !important; padding: .35rem; }
+.menu.menu.menu > button[data-settings-action="usage-type"] > svg {
+  color: #245f9a !important; background: #eaf4ff !important; border-color: #bcd8f2 !important;
+}

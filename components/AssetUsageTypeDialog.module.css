@@ -1,0 +1,19 @@
+.confirm { display: grid; gap: 1.25rem; }
+.confirm p { margin: 0; font-size: 1rem; line-height: 1.6; }
+.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.comparison > div { display: grid; gap: .5rem; padding: 1.1rem; border: 1px solid var(--app-line, #c9ded4); border-radius: 1rem; background: var(--app-surface-soft, #edf7f1); }
+.comparison span, .reading small { color: var(--app-muted, #617269); font-size: .9rem; line-height: 1.5; }
+.comparison strong { font-size: 1.2rem; }
+.reading { display: grid; gap: .65rem; font-weight: 700; }
+.reading input { width: 100%; min-height: 3.5rem; padding: .85rem 1rem; border: 1px solid var(--app-line, #c9ded4); border-radius: .85rem; background: var(--app-surface, #fff); color: var(--app-text, #173c2d); font: inherit; }
+.reading small { font-weight: 500; }
+.actions { display: flex; justify-content: flex-end; gap: .85rem; width: 100%; }
+.actions button { min-height: 3rem; padding: .8rem 1.25rem; border: 1px solid var(--app-line, #c9ded4); border-radius: .8rem; background: var(--app-surface-soft, #edf7f1); color: var(--app-text, #173c2d); font: inherit; font-weight: 750; cursor: pointer; }
+.actions button:last-child { background: #176a49; border-color: #176a49; color: #fff; }
+.actions button:disabled { opacity: .45; cursor: not-allowed; }
+.actions button:focus-visible, .reading input:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
+.actions.actions { display: flex !important; justify-content: flex-end !important; width: 100% !important; max-width: none !important; }
+.actions.actions button { width: auto !important; flex: 0 0 auto; white-space: nowrap !important; }
+
+.dialog.dialog.dialog > footer { display: block !important; padding: 1rem 2rem 1.5rem !important; }
+.dialog.dialog.dialog > footer .actions { display: flex !important; justify-content: flex-end !important; width: 100% !important; margin: 0 !important; }

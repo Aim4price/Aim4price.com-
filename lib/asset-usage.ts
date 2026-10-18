@@ -214,7 +214,7 @@ export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
   // Older advanced estimates saved a placeholder meter alongside their family
   // wear-class metadata. That family uses percentage, even when usageBasis was
   // incorrectly persisted as reading. Basic estimates retain their chosen basis.
-  const legacyPercentageFamily = !specs.basic_catalogue_release && [
+  const legacyPercentageFamily = !specs.usageTypeConfirmed && !specs.basic_catalogue_release && [
     specs.usageMetricType, specs.usage_metric_type,
   ].some((value) => basisFromValue(value)?.basis === 'percentage');
   if (legacyPercentageFamily) return { value: percent, metric: 'percentage' };
@@ -263,3 +263,15 @@ export function formatResolvedAssetUsage(
   return `${value} ${usage.metric}`;
 }
 
+
+/** A unit change starts a new reading basis; it is never a numeric conversion. */
+export function confirmedUsageTypeChange(existing: AssetUsageInput, next: AssetUsageInput, confirmed: boolean): ResolvedAssetUsage | null {
+  if (!confirmed) return null;
+  const usage = resolveAssetUsage(next);
+  if (resolveAssetUsage(existing).metric === usage.metric) return null;
+  const raw = usage.metric === 'percentage' ? next.lifeWorkedPercent : next.hours;
+  if (usage.metric !== 'not_applicable' && (raw === null || raw === undefined || raw === '' || !Number.isFinite(Number(raw)) || Number(raw) < 0 || (usage.metric === 'percentage' && Number(raw) > 100))) {
+    throw new Error('USAGE_TYPE_READING_REQUIRED');
+  }
+  return usage;
+}

@@ -847,6 +847,7 @@ export async function PUT(request: NextRequest) {
   try {
     const item = await updateAssetRegisterItem(session.user.id, {
       assetId,
+      usageTypeChangeConfirmed: body.usageTypeChangeConfirmed === true,
       kind,
       title,
       value,
@@ -895,6 +896,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
     }
 
+    if (error instanceof Error && error.message === 'USAGE_TYPE_READING_REQUIRED') {
+      return NextResponse.json({ok: false, error: 'Enter a valid reading for the new usage type.'}, {status: 400});
+    }
     if (error instanceof Error && error.message === 'USAGE_READING_CANNOT_DECREASE') {
       return NextResponse.json({ ok: false, error: USAGE_READING_SETTINGS_ERROR }, { status: 400 });
     }
