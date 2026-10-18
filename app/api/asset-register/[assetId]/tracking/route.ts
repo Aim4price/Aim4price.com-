@@ -17,6 +17,7 @@ export async function GET(request: NextRequest, { params }: Context) {
     const access = await trackingOwner(request, params.assetId);
     if (access instanceof NextResponse) return access;
     return trackingJson({
+      assetTitle: access.asset.title,
       device: await trackingStatus(access.ownerId, params.assetId),
     });
   } catch {

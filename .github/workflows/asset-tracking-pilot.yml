@@ -1,7 +1,7 @@
 name: Asset tracking pilot
 on:
   pull_request:
-    paths: ['android/tracker/**', 'lib/asset-tracking*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', '.github/workflows/asset-tracking-pilot.yml']
+    paths: ['android/tracker/**', 'lib/asset-tracking*', 'lib/asset-movement-report*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', '.github/workflows/asset-tracking-pilot.yml']
   workflow_dispatch:
 permissions:
   contents: read

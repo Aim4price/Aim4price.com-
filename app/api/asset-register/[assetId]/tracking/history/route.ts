@@ -6,7 +6,7 @@ import {
 import { ensureTrackingTables } from "../../../../../../lib/asset-tracking";
 import { summarizeTracking } from "../../../../../../lib/asset-tracking-math";
 import { getDb } from "../../../../../../lib/db";
-import { createXlsxWorkbook } from "../../../../../../lib/simple-xlsx";
+import {buildMovementHtml,buildMovementWorkbook} from "../../../../../../lib/asset-movement-report";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
@@ -48,37 +48,15 @@ export async function GET(
       sessionId: p.session_id,
     }));
     const report = summarizeTracking(points);
-    if (request.nextUrl.searchParams.get("format") === "xlsx") {
-      const rows: any[][] = [
-        ["Aim4price movement report", access.asset.title],
-        ["From", from, "To", to],
-        ["Distance (km)", report.distanceKm],
-        ["Moving minutes", report.movingSeconds / 60],
-        ["Stationary minutes", report.stationarySeconds / 60],
-        ["Unobserved minutes", report.gapSeconds / 60],
-        ["Moving average (km/h)", report.averageMovingKmh],
-        ["GPS estimates; movement is not engine or working hours."],
-        [],
-        ["Captured at (UTC)", "Latitude", "Longitude", "Accuracy (m)"],
-        ...points.map((p) => [
-          p.capturedAt,
-          p.latitude,
-          p.longitude,
-          p.accuracy,
-        ]),
-      ];
-      return new NextResponse(
-        createXlsxWorkbook([{ name: "Movement", rows }]),
-        {
-          headers: {
-            "Content-Type":
-              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "Content-Disposition":
-              'attachment; filename="aim4price-movement.xlsx"',
-            "Cache-Control": "no-store",
-          },
-        },
-      );
+    const format = request.nextUrl.searchParams.get("format");
+    if(format && !['pdf','xlsx'].includes(format)) return trackingJson({error:'Choose PDF or Excel.'},400);
+    const options={title:access.asset.title,serial:access.asset.serialNumber||'',assetId:params.assetId,from:from!,to:to!,generatedAt:new Date()};
+    if(format==='xlsx') return new NextResponse(buildMovementWorkbook(report,options),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="aim4price-movement-${from}-${to}.xlsx"`,'Cache-Control':'private, no-store'}});
+    if(format==='pdf') {
+      const {getAssetRegisterReportLogoUrl}=await import('../../../../../../lib/asset-registers');
+      const {resolveReportLogoUrlForHtml}=await import('../../../../../../lib/report-logo');
+      const logoUrl=await resolveReportLogoUrlForHtml(await getAssetRegisterReportLogoUrl(access.ownerId).catch(()=>''),request.url);
+      return new NextResponse(buildMovementHtml(report,{...options,logoUrl}),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
     }
     return trackingJson(report);
   } catch {

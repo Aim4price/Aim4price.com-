@@ -58,7 +58,7 @@
 }
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
 }
 .stats div {
@@ -142,3 +142,16 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) section .locationChoices { grid-template-columns: 1fr !important; }
 }
+
+.actions button[aria-pressed="true"] {background:#176d50;color:white;border-color:#176d50;}
+.routeLegend {display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:#176d50;}
+.routeLegend span:last-child {color:#97601a;}
+.stopList {display:grid;gap:.75rem;padding-left:1.5rem;}
+.stopList li span {display:block;font-size:.85rem;margin-top:.25rem;}
+.emptyState {padding:2rem;text-align:center;border:1px dashed #b9d1c6;border-radius:1rem;}
+.connectedSummary {display:grid;gap:1rem;padding:1.25rem;border:1px solid #bdd9cb;background:#f2f9f5;border-radius:1rem;}
+.connectedSummary strong {font-size:1.1rem;}
+.connectedSummary dl {margin:0;display:grid;gap:.75rem;}
+.connectedSummary dl div {display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.connectedSummary dt {color:#536b61;} .connectedSummary dd {margin:0;font-weight:650;}
+.codeActions {display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;}

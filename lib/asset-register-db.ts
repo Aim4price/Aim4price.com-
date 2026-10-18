@@ -1,5 +1,5 @@
 import {installAssetHistoryTriggers} from './asset-history-schema';
-import { resolveAssetUsage as resolveSharedAssetUsage } from './asset-usage';
+import { resolveAssetUsage as resolveSharedAssetUsage, confirmedUsageTypeChange } from './asset-usage';
 import { hydrateLegacyValuationRow, normalizeSavedValuationMethod } from './asset-register-legacy-valuation';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
@@ -155,6 +155,7 @@ export type UpdateAssetRegisterItemInput = {
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
   allowUsageDecrease?: boolean;
+  usageTypeChangeConfirmed?: boolean;
 };
 
 export type UpdateAssetRegisterItemNamesInput = {
@@ -914,7 +915,12 @@ function buildManualSpecsJson(
   const hasUsageReading = Object.prototype.hasOwnProperty.call(input, 'hours')
     ? asNumber(input.hours) !== null
     : asNumber(specs.usageAmount ?? specs.usage_amount ?? specs.hours ?? specs.engine_hours) !== null;
-  const usageBasisSpecs = lifeWorkedPercent !== null && !hasUsageReading
+  const explicitUsage = specs.usageTypeConfirmed ? resolveSharedAssetUsage({kind, hours: input.hours, lifeWorkedPercent: input.lifeWorkedPercent, specsJson: specs}) : null;
+  const usageBasisSpecs = explicitUsage?.metric === 'not_applicable'
+    ? {usageMode: 'not_applicable', usage_mode: 'not_applicable', usageBasis: 'not_applicable', usage_basis: 'not_applicable'}
+    : explicitUsage?.metric === 'percentage'
+    ? buildPercentUsageSpecsJson({}, explicitUsage.value ?? 0)
+    : lifeWorkedPercent !== null && !hasUsageReading
     ? buildPercentUsageSpecsJson({}, lifeWorkedPercent)
     : buildReadingUsageSpecsJson({}, usageMetric);
 
@@ -3155,10 +3161,14 @@ export async function updateAssetRegisterItem(
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
   }
 
+  const usageChange = confirmedUsageTypeChange(existing, {
+    kind: nextKind, hours: input.hours, lifeWorkedPercent: input.lifeWorkedPercent,
+    specsJson: {...input.specsJson, ...(input.usageTypeChangeConfirmed ? {usageTypeConfirmed: true} : {})},
+  }, input.usageTypeChangeConfirmed === true);
   const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
   const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
   const nextYearModel = incomingYearModel;
-  const nextHours = existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
+  const nextHours = usageChange ? (usageChange.metric === 'hours' || usageChange.metric === 'km' ? incomingHours : null) : existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
   const incomingCondition = normalizeConditionForDb(input.condition);
   const existingCondition = normalizeConditionForDb(existing.condition);
   const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
@@ -3166,13 +3176,21 @@ export async function updateAssetRegisterItem(
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
   const baseLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
-  const nextLifeWorkedPercent =
+  const nextLifeWorkedPercent = usageChange ? (usageChange.metric === 'percentage' ? usageChange.value : null) :
     baseLifeWorkedPercent !== null &&
     existingLifeWorkedPercent !== null &&
     baseLifeWorkedPercent < existingLifeWorkedPercent &&
     baseLifeWorkedPercent >= existingLifeWorkedPercent - LIFE_WORKED_PERCENT_DECREASE_TOLERANCE
       ? existingLifeWorkedPercent
       : baseLifeWorkedPercent ?? existingLifeWorkedPercent;
+  if (usageChange) {
+    baseSpecsJson.usageTypeConfirmed = true;
+    for (const key of ['usageAmount', 'usage_amount', 'hours', 'engine_hours', 'km', 'kilometres', 'kilometers']) baseSpecsJson[key] = nextHours;
+    for (const key of ['lifeWorkedPercent', 'life_worked_percent', 'workedPercent', 'worked_percent', 'percentWorked', 'percent_worked', 'lifetimeWorkedPercent', 'lifetime_worked_percent', 'lifetimeUsedPercent', 'lifetime_used_percent']) baseSpecsJson[key] = nextLifeWorkedPercent;
+    const mode = usageChange.metric === 'percentage' ? 'percent' : usageChange.metric;
+    const basis = usageChange.metric === 'hours' || usageChange.metric === 'km' ? 'reading' : mode;
+    Object.assign(baseSpecsJson, {usageMode: mode, usage_mode: mode, usageBasis: basis, usage_basis: basis});
+  }
   const usagePreservedSpecsJson = nextLifeWorkedPercent === null
     ? baseSpecsJson
     : {
@@ -3184,12 +3202,12 @@ export async function updateAssetRegisterItem(
       };
   const fields: SqlField[] = [];
 
-  if (!input.allowUsageDecrease && incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
+  if (!input.allowUsageDecrease && !usageChange && incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
 
   if (
-    !input.allowUsageDecrease &&
+    !input.allowUsageDecrease && !usageChange &&
     nextLifeWorkedPercent !== null &&
     existingLifeWorkedPercent !== null &&
     nextLifeWorkedPercent < existingLifeWorkedPercent - LIFE_WORKED_PERCENT_DECREASE_TOLERANCE
@@ -3204,6 +3222,7 @@ export async function updateAssetRegisterItem(
     nextLifeWorkedPercent,
     nextCondition,
   });
+  if (usageChange && existing.valuationRunId && existing.selectedMethod !== 'manual') staleReasons.push('usage type changed');
   const nextSpecsJson = markValuationNeedsUpdate(usagePreservedSpecsJson, staleReasons, now);
   const licenseRenewalDateChanged =
     readLicenseRenewalDateFromSpecs(existing.specsJson) !== readLicenseRenewalDateFromSpecs(nextSpecsJson);

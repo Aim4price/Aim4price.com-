@@ -5,12 +5,14 @@ This Android-only pilot pairs one equipment phone to one asset. It adds a Moveme
 ## Install and pair
 
 1. On the equipment phone, download `/downloads/aim4price-tracker-pilot.apk` from Aim4price. Allow installation from your browser when Android asks. This is a signed **debug pilot** build for controlled testing, not a production distribution.
-2. In the desktop Asset Register, open the asset → Advanced settings → Tracking device → Create pairing code.
+2. In the desktop Asset Register, open the asset → Advanced settings → Update location → Tracking device → Create pairing code.
 3. Enter that code in the Android app within 15 minutes. Pairing a replacement revokes the old device automatically.
 4. Tap Activate. Grant precise location and notification access, enable GPS, and set the app's battery usage to unrestricted in Android settings. Keep the phone on the equipment.
-5. Open Asset Map → select the asset → Location history → Movement. Choose dates, refresh and download the Excel movement report.
+5. Open Asset Map → select the asset → Location history → Movement. Choose Today, Yesterday, Last 7 days or custom dates (up to 31 days), then Download report → PDF or Excel. PDF opens the standard print window; choose Save as PDF. It includes the route, recorded dots, start/end and observed stops. Excel contains summary, readings and stops sheets.
 
 The phone shows its asset, Activate/Deactivate and a small status. The Android tracking notification remains visible. After a phone reboot, open the app and tap Activate; the pilot posts a reminder but does not silently restart tracking. A force-stopped app also needs to be reopened.
+
+The setup panel confirms phone pairing separately from the first received location. It shows last contact and location capture time; View movement opens the asset’s Movement tab. Pairing codes have a copy button and expiry countdown. Replace/disconnect actions are under Manage device.
 
 ## Sampling, data and battery
 

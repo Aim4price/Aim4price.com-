@@ -38,6 +38,9 @@ test('licence review blocks incomplete assets and clearly excludes non-licensabl
   const React = require('react');
   const { renderToStaticMarkup } = require('react-dom/server');
   const Review = load('components/asset-register/LicenceShareReview.tsx', {
+    './ShareNextIcon': load('components/asset-register/ShareNextIcon.tsx', {
+      './ShareNextIcon.module.css': { default: {} },
+    }),
     './ShareDisclosureDialog': { default: ({ children }) => React.createElement('section', null, children) },
     './ShareDisclosureDialog.module.css': { default: {} }, './LicenceShareReview.module.css': { default: {} },
   }).default;

@@ -27,6 +27,10 @@ export function summarizeTracking(input: TrackingPoint[]) {
     stationarySeconds = 0,
     gapSeconds = 0,
     maxSpeed = 0;
+  const readings: Array<TrackingPoint & {speedKmh: number | null}> = [];
+  const stops: Array<{latitude:number;longitude:number;from:string;to:string;seconds:number}> = [];
+  let stop: typeof stops[number] | null = null;
+  const finishStop = () => { if (stop && stop.seconds >= 900) stops.push(stop); stop = null; };
   let previous: TrackingPoint | null = null,
     anchor: TrackingPoint | null = null;
   for (const point of points) {
@@ -40,11 +44,14 @@ export function summarizeTracking(input: TrackingPoint[]) {
       point.accuracy < 0 ||
       point.accuracy > 50
     ) {
+      finishStop();
       previous = null;
       anchor = null;
       continue;
     }
     if (!previous || !anchor) {
+      finishStop();
+      readings.push({...point,speedKmh:null});
       segments.push([point]);
       previous = anchor = point;
       continue;
@@ -58,11 +65,16 @@ export function summarizeTracking(input: TrackingPoint[]) {
     const stationary = metres <= threshold;
     if (!sameSession || seconds > (stationary ? 720 : 180)) {
       gapSeconds += seconds;
+      finishStop();
+      readings.push({...point,speedKmh:null});
       segments.push([point]);
       previous = anchor = point;
       continue;
     }
     if (stationary) {
+      readings.push({...point,speedKmh:0});
+      if (!stop) stop = {latitude:anchor.latitude,longitude:anchor.longitude,from:previous.capturedAt,to:point.capturedAt,seconds:0};
+      stop.to = point.capturedAt; stop.seconds += seconds;
       stationarySeconds += seconds;
       previous = point;
       continue;
@@ -70,10 +82,14 @@ export function summarizeTracking(input: TrackingPoint[]) {
     const speed = (distanceMeters(previous, point) / seconds) * 3.6;
     if (speed > 200) {
       gapSeconds += seconds;
+      finishStop();
+      readings.push({...point,speedKmh:null});
       segments.push([point]);
       previous = anchor = point;
       continue;
     }
+    finishStop();
+    readings.push({...point,speedKmh:speed});
     // Use the adjacent accepted points for distance/time; anchor only rejects GPS drift.
     const travelled = distanceMeters(previous, point);
     distance += travelled;
@@ -84,8 +100,11 @@ export function summarizeTracking(input: TrackingPoint[]) {
     segment.push(point);
     previous = anchor = point;
   }
+  finishStop();
   return {
     points,
+    readings,
+    stops,
     segments,
     distanceKm: distance / 1000,
     movingSeconds,

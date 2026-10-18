@@ -69,7 +69,9 @@ test('percentage usage is rendered without the word worked', () => {
 
   assert.match(formatter, /return `\$\{formatted\}%`/);
   assert.doesNotMatch(formatter, /worked/i);
-  assert.match(client, /value: 'percentage', label: '%'/);
+  const usageDialog = readFileSync(new URL('../components/AssetUsageTypeDialog.tsx', import.meta.url), 'utf8');
+  assert.match(client, /const usageTypeOptions = USAGE_TYPE_OPTIONS/);
+  assert.match(usageDialog, /value: 'percentage', label: 'Percentage'/);
   assert.match(client, /showPercentUsageField[\s\S]*?\? 'Usage %'/);
   assert.match(client, /projectionUsageMetaLabel = projectionUsageMetric === 'percent' \? 'Usage %'/);
   assert.doesNotMatch(client, /label: '% worked'|Lifetime worked %|Enter lifetime worked %|Worked %|current worked percentage/);
