@@ -1108,8 +1108,9 @@ export default function AppHeader({
   function revealNavLink(link: HTMLElement) {
     const viewport = navViewportRef.current;
     if (!viewport || !showNavWindowControls) return;
-    const left = link.offsetLeft;
-    const right = left + link.offsetWidth;
+    const gutter = (viewport.firstElementChild as HTMLElement | null)?.offsetLeft ?? 0;
+    const left = link.offsetLeft - gutter;
+    const right = left + link.offsetWidth + gutter * 2;
     if (left < viewport.scrollLeft) viewport.scrollTo({ left, behavior: 'instant' });
     else if (right > viewport.scrollLeft + viewport.clientWidth) {
       viewport.scrollTo({ left: right - viewport.clientWidth, behavior: 'instant' });
