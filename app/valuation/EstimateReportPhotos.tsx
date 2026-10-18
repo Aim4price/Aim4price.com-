@@ -189,7 +189,7 @@ export default function EstimateReportPhotos() {
     <section className={styles.reportPhotoCard} data-estimate-report-photos aria-label="Estimate report photos">
       <div className={styles.reportPhotoHeader}>
         <div>
-          <strong>Report photos</strong>
+          <strong><svg className={styles.cameraIcon} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="m8 5 2-2h4l2 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z" /><circle cx="12" cy="12" r="4" /></svg>Report photos</strong>
           <span title="Photos are used in your PDF and Create Ad, and saved only when you publish.">Optional · Up to {MAX_ESTIMATE_REPORT_PHOTOS} photos</span>
         </div>
         <button

@@ -15259,6 +15259,76 @@
 .replacementHelpModal .replacementHelpNote { padding: .9rem 1.1rem; background: #edf6f0; font-size: 1rem; }
 .replacementHelpModal .replacementHelpActions { justify-content: flex-end; padding: 0; }
 .replacementHelpActions .primaryButton { margin: 0; min-height: 3rem; box-shadow: none; }
+/* Value Asset result: a clear summary, one price breakdown, and distinct next actions. */
+.finalEstimateLayout .resultPageHeading { grid-column: 1 / -1; }
+.resultPageHeading h2 { margin: 0; color: var(--app-text, #173e33); font-size: 1.8rem; letter-spacing: -.035em; }
+.resultPageHeading p { margin: .5rem 0 0; color: var(--app-muted, #5c7166); font-size: 1rem; line-height: 1.5; }
+.finalEstimateLayout .resultHero { background: var(--app-surface-soft, #f0f8f3); border: 1px solid var(--app-line, #c9dfd2); padding: 28px; box-shadow: none; }
+.resultHeroHeading, .resultSectionLabel { display: flex; align-items: center; gap: .8rem; }
+.resultHeroHeading { margin-bottom: 1rem; }
+.resultHeroHeading h3 { margin: 0; font-size: 1rem; font-weight: 750; }
+.finalEstimateLayout .detailIcon { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; box-shadow: none; }
+.finalEstimateLayout .detailIcon svg { width: 22px; height: 22px; }
+.finalEstimateLayout .resultMachineTitle { font-size: 1.1rem; font-weight: 650; }
+.finalEstimateLayout .resultFactCard .detailIcon { width: 32px; height: 32px; background: transparent; border: 0; padding: 0; justify-content: flex-start; }
+.finalEstimateLayout .resultFactCard .detailIcon svg { width: 24px; height: 24px; }
+.resultStars { display: flex; align-items: center; gap: 2px; color: #ad771b; }
+.resultStars svg { width: 17px; height: 17px; flex: 0 1 17px; }
+.finalEstimateLayout .resultReplacementSummary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; padding: 24px; }
+.finalEstimateLayout .resultReplacementHeading { display: flex; align-items: center; gap: .85rem; min-width: 0; }
+.resultReplacementHeading h3 { margin: 0; font-size: 1rem; }
+.resultReplacementHeading p { margin: .35rem 0 0; font-size: .85rem; line-height: 1.5; color: var(--app-muted, #5c7166); }
+.finalEstimateLayout .resultReplacementSummary .replacementCostSummary { grid-column: 1 / -1; display: grid; grid-template-columns: 2fr 1fr; margin: 0; border: 0; border-top: 1px solid var(--app-line, #d5e4dc); border-radius: 0; padding-top: 20px; background: transparent; box-shadow: none; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostParts { padding: 0 18px 0 0; gap: 18px; align-content: start; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostParts > div { display: grid; gap: .6rem; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostParts dt,
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal > span { color: var(--app-muted, #5c7166); font-size: .8rem; font-weight: 600; line-height: 1.5; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostParts dd,
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal strong { color: var(--app-text, #173e33); font-size: 1.15rem; font-weight: 750; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: .6rem; padding: 0 0 0 18px; background: transparent; border: 0; border-left: 1px solid var(--app-line, #d5e4dc); }
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal small { font-size: .7rem; font-weight: 500; }
+.finalEstimateLayout .resultReplacementAmount { grid-column: 1 / -1; border-top: 1px solid var(--app-line, #d5e4dc); padding-top: 18px; }
+.finalEstimateLayout .resultSectionLabel { font-size: .95rem; }
+.finalEstimateLayout .resultSectionLabel .detailIcon { width: 32px; height: 32px; }
+.finalEstimateLayout .resultFinalActions { background: var(--app-surface, #fff); border: 1px solid var(--app-line, #d5e4dc); box-shadow: none; }
+.finalEstimateLayout .resultFinalActionsCopy h3 { font-size: 1.1rem; line-height: 1.4; }
+.finalEstimateLayout .resultFinalActionsButtons > button { display: flex; align-items: center; justify-content: flex-start; gap: 12px; padding: 16px; text-align: left; min-height: 82px; white-space: normal; }
+.resultActionIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex: 0 0 40px; background: #ffffff26; }
+.resultActionIcon svg { width: 23px; height: 23px; }
+.resultActionCopy { display: grid; gap: 5px; min-width: 0; }
+.resultActionCopy strong { font-size: .93rem; line-height: 1.35; }
+.resultActionCopy small { font-size: .76rem; font-weight: 400; line-height: 1.45; }
+.finalEstimateLayout .resultPdfActionButton, .finalEstimateLayout .resultAlternateActionButton { background: var(--app-surface, #fff); color: var(--app-text, #173e33); border: 1px solid var(--app-line, #d5e4dc); box-shadow: none; }
+.resultActionIcon[data-kind='pdf'] { background: #eaf3ff; color: #2868ab; }
+.resultActionIcon[data-kind='advert'] { background: #fff2df; color: #976321; }
+.finalEstimateLayout .resultFinalActionsButtons > button:hover:not(:disabled) { border-color: #619c7f; box-shadow: 0 3px 12px #174f3e12; }
+.finalEstimateLayout .resultFinalActionsButtons > button:focus-visible { outline: 3px solid #50a77d; outline-offset: 3px; }
+@media (max-width: 680px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultHero { padding: 20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultFactsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultFactCard { padding: 0; border: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary { padding: 20px; grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary > button { justify-self: start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostSummary { grid-template-columns: 1fr; gap: 20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostParts { padding: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostTotal { border-left: 0; border-top: 1px solid var(--app-line, #d5e4dc); padding: 16px 0 0; }
+}
+.finalEstimateLayout .resultFactCard .resultStars { color: #ad771b; }
+.finalEstimateLayout .resultReplacementSummary > button { padding: 10px 16px; min-height: 42px; border: 1px solid var(--app-line, #bdd4c7); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #174f3e); font-weight: 650; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal { position: relative; padding-bottom: 22px; }
+.finalEstimateLayout .resultReplacementSummary .replacementCostTotal small { position: absolute; bottom: 0; }
+.finalEstimateLayout .resultsSide { order: 1; }
+.finalEstimateLayout .resultDisclaimer { order: 2; }
+@media (max-width: 680px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultValue { font-size: 2.55rem; white-space: normal; overflow-wrap: anywhere; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultValueLineCompact .resultValue { font-size: 2.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultValueLineTight .resultValue { font-size: 1.9rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultVatToggle { min-width: 0; max-width: 100%; width: 100%; margin: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultVatToggleButton { min-width: 0; padding: 10px 8px; flex: 1; font-size: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostTotal { padding-bottom: 22px; }
+}
+
+
 @media (max-width: 540px) {
   :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpStep { grid-template-columns: 2.5rem minmax(0, 1fr); padding: .9rem; gap: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }

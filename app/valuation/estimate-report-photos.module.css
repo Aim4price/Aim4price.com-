@@ -160,3 +160,7 @@
 .reportPhotoHeader strong { font-size: 0.88rem; }
 .reportPhotoHeader span { font-size: 0.75rem; }
 .photoPreview button { border-radius: 6px; }
+
+.reportPhotoCard { order: 0; background: var(--app-surface-soft, #f6f9f7); box-shadow: none; border-color: var(--app-line, #d5e4dc); }
+.reportPhotoHeader strong { display: flex; align-items: center; gap: .5rem; color: var(--app-text, #183d32); }
+.cameraIcon { width: 22px; height: 22px; flex-shrink: 0; color: var(--app-muted, #5c7166); }
