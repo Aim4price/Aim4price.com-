@@ -1895,7 +1895,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const timer = window.setTimeout(() => {
       setActiveDetailedAssessmentSection(pendingAdvancedSection);
       setPendingAdvancedSection(null);
-    }, 400);
+    }, 700);
     return () => window.clearTimeout(timer);
   }, [pendingAdvancedSection, activeDetailsModal, conditionModalView]);
 
@@ -8267,7 +8267,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {!basicEstimateActive && usageStepComplete ? (
-            <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard}`}>
+            <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard} ${!conditionReady ? styles.specStepCardActive : ''}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 3 of 5' : 'Step 3'}</span>
@@ -8413,7 +8413,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {!basicEstimateActive && conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
-            <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard}`}>
+            <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard} ${!popularityStepComplete ? styles.specStepCardActive : ''}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   {compactAppMode ? (
