@@ -13,7 +13,7 @@ const date=(value:string)=>new Date(value).toLocaleString('en-ZA',{timeZone:'Afr
 export default function AssetLocationHistoryDialog({assetId,title,onClose,initialTab}:{assetId:string;title:string;onClose:()=>void;initialTab?:'observations'|'movement'}){
  const records=useRef(new Map<string,HTMLLIElement>());
  const [selectedRecord,setSelectedRecord]=useState<string|null>(null);
- function selectRecord(index:number){const item=items[index];if(!item)return;setSelectedRecord(item.id);const node=records.current.get(item.id);node?.focus({preventScroll:true});node?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});}
+ function selectRecord(index:number){const item=items[index];if(!item)return;setSelectedRecord(item.id);const node=records.current.get(item.id);node?.focus({preventScroll:true});const body=node?.closest('[data-location-history]')?.parentElement;if(node&&body)body.scrollTo({top:body.scrollTop+node.getBoundingClientRect().top-body.getBoundingClientRect().top-16,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
  const [exportEntry,setExportEntry]=useState<Entry|null>(null);
  const [tab,setTab]=useState<'observations'|'movement'>(initialTab||'observations');
  const [tabChosen,setTabChosen]=useState(Boolean(initialTab));
