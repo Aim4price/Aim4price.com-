@@ -587,10 +587,10 @@
 
 /* Overview messages keep the shared dialog controls and a comfortable reading width. */
 .overviewDialog.overviewDialog.overviewDialog {
-  width: min(48rem, calc(100vw - 2rem)) !important;
+  width: min(48rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 40px))) !important;
 }
 .messagePanel {
-  padding: clamp(1rem, 3vw, 1.5rem);
+  padding: 1.5rem;
   border: 1px solid var(--app-line, #c9ded4);
   border-radius: 1.1rem;
   background: var(--app-surface-soft, #f2f8f5);
@@ -631,9 +631,3 @@
   overflow-wrap: anywhere;
 }
 .messageHint { margin-top: 1rem; }
-@media (max-width: 560px) {
-  .overviewCard { grid-template-columns: auto minmax(0, 1fr); gap: .75rem; }
-  .cardActions { grid-column: 2; justify-self: end; margin-left: 0; }
-  .messageActions { gap: .6rem; }
-  .messageAssetLink, .messageNotedButton { min-width: 0; flex: 1; padding: .75rem; }
-}
