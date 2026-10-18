@@ -1,6 +1,6 @@
-export const TRACKER_INSTALL_URL = 'https://www.aim4price.com/downloads/aim4price-tracker-pilot.apk';
+export const TRACKER_INSTALL_URL = 'https://www.aim4price.com/downloads/aim4price-tracker-0.3.apk';
 export function normalizeTrackerCode(value: string): string | null {
-  const code = value.trim().toUpperCase();
+  const code = value.trim().replace(/-/g, '').toUpperCase();
   return /^[A-F0-9]{16}$/.test(code) ? code : null;
 }
 /** The fragment keeps this short-lived credential out of HTTP requests and referrers. */

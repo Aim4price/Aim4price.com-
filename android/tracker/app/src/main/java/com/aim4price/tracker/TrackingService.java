@@ -28,11 +28,12 @@ public class TrackingService extends Service implements LocationListener {
   boolean stopped=location.getTime()-stationarySince>=15*60000;
   if(stopped&&wasStopped&&location.getTime()-lastSaved<10*60000)return;
   wasStopped=stopped;
+  final boolean firstReading=lastSaved==0;
   lastSaved=location.getTime();var p=TrackerApi.prefs(this);String session=p.getString("session","");if(session.isEmpty()){session=UUID.randomUUID().toString();p.edit().putString("session",session).apply();}
   final String sid=session;worker.execute(()->{try{
    JSONObject point=new JSONObject().put("id",UUID.randomUUID().toString()).put("sessionId",sid).put("capturedAt",Instant.ofEpochMilli(location.getTime()).toString()).put("latitude",location.getLatitude()).put("longitude",location.getLongitude()).put("accuracy",location.getAccuracy()).put("motion",stopped?"stationary":"moving");
    if(!store.add(point)){p.edit().putBoolean("active",false).putString("issue","Offline queue full. Connect to upload readings before activating again.").apply();stopSelf();return;}
-   if(System.currentTimeMillis()-lastAttempt>=120000)upload();
+   if(firstReading||System.currentTimeMillis()-lastAttempt>=120000)upload();
   }catch(Exception e){p.edit().putString("issue","Could not save reading. Open the app to check storage.").apply();}});
  }
  void upload(){lastAttempt=System.currentTimeMillis();try{TrackerApi.flush(this,store);TrackerApi.prefs(this).edit().putString("issue","").apply();}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).remove("token").putString("issue",e.getMessage()).apply();stopSelf();}catch(Exception e){TrackerApi.prefs(this).edit().putString("issue",e.getMessage()).apply();}}

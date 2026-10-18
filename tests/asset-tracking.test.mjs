@@ -17,6 +17,7 @@ const compile = (s) =>
       },
     }).outputText,
   ).toString("base64");
+const {trackerPairingUrl}=await import(compile(readFileSync(new URL("../lib/asset-tracking-links.ts",import.meta.url),"utf8")));
 const { summarizeTracking } = await import(compile(source));
 const sessionId = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
 const base = Date.parse("2026-10-18T08:00:00Z");
@@ -102,6 +103,7 @@ let token;
 test("pairing checks ownership, expires, is one-time and stores only credential hashes", async () => {
   await assert.rejects(api.createPairing("intruder", asset));
   const code = await api.createPairing("owner", asset);
+  assert.ok(trackerPairingUrl(code),"real database pairing code must produce a QR URL");
   const paired = await api.pairDevice(code.replaceAll("-", ""), "Pilot");
   token = paired.token;
   await assert.rejects(api.pairDevice(code.replaceAll("-", ""), "Other"));
