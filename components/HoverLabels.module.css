@@ -23,12 +23,12 @@
 
 /* A clear green halo without blurring text, shifting layout or intercepting clicks. */
 .activeControl {
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, .20), 0 4px 16px rgba(16, 185, 129, .18) !important;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, .28), 0 4px 24px 4px rgba(6, 95, 70, .30) !important;
 }
 
 /* Preserve each control's existing keyboard focus indicator. */
 .activeControl:not(:focus-visible) {
-  outline: 1px solid rgba(22, 163, 74, .72);
+  outline: 2px solid rgba(21, 128, 61, .85);
   outline-offset: 1px;
 }
 
