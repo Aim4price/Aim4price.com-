@@ -3913,3 +3913,7 @@
   outline: 3px solid #64ad91;
   outline-offset: 3px;
 }
+
+/* Keep VAT beside Share without covering the photo count. */
+.cardShareButton.cardVatButton { right: 3.7rem; }
+.cardVatButton[aria-pressed='true'] { background: #e4f5eb; color: #17634a; border: 1px solid #8cbfa4; }

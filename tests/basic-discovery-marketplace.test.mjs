@@ -160,3 +160,28 @@ test('recent adverts resolve Basic snapshots and live fallbacks with public-safe
     assert.equal((await recent.listRecentMarketplaceAdverts({})).adverts.length, 0);
   } finally { await db.close(); }
 });
+
+test('marketplace dates stay fixed when an asset is edited', () => {
+  const { buildMarketplaceListing } = load('marketplace-db', null, '\nexports.buildMarketplaceListing = buildMarketplaceListing;');
+  const row = { id: 'asset', title: 'Tractor', marketplace_published_at: new Date('2026-01-02T00:00:00Z'), created_at: '2025-01-01T00:00:00Z', updated_at: '2026-10-19T00:00:00Z' };
+  assert.equal(buildMarketplaceListing(row, {}).publishedAtIso, '2026-01-02T00:00:00.000Z');
+  assert.equal(buildMarketplaceListing({ ...row, marketplace_published_at: undefined }, {}).publishedAtIso, '2025-01-01T00:00:00Z');
+});
+
+test('first-listing backfill and later publishes preserve advert order', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`create table asset_register_items (id uuid primary key, marketplace_status text, marketplace_published_at timestamptz, created_at timestamptz);
+      create table marketplace_listings (asset_register_item_id uuid, published_at timestamptz, created_at timestamptz);
+      insert into asset_register_items values ('00000000-0000-0000-0000-000000000001', 'live', null, '2025-01-01T00:00:00Z');
+      insert into marketplace_listings values ('00000000-0000-0000-0000-000000000001', '2026-02-01T00:00:00Z', '2026-02-01T00:00:00Z');`);
+    const source = readFileSync(new URL('../lib/marketplace-db.ts', import.meta.url), 'utf8');
+    const backfill = source.match(/update asset_register_items a\s+set marketplace_published_at[\s\S]+?where a.marketplace_status = 'live' and a.marketplace_published_at is null/)[0];
+    await db.exec(backfill);
+    const assignment = source.match(/"(marketplace_published_at = coalesce\(marketplace_published_at, now\(\)\))"/)[1];
+    await db.exec(`update asset_register_items set ${assignment}`);
+    await db.exec(backfill);
+    const result = await db.query('select marketplace_published_at from asset_register_items');
+    assert.equal(new Date(result.rows[0].marketplace_published_at).toISOString(), '2026-02-01T00:00:00.000Z');
+  } finally { await db.close(); }
+});

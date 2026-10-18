@@ -1,4 +1,5 @@
 'use client';
+import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
 import advancedStyles from '../../components/asset-register/AdvancedSettings.module.css';
@@ -21244,31 +21245,9 @@ export default function AssetRegisterClient({
                 <div className={styles.marketplaceBodyGrid}>
                   <div className={styles.marketplaceListingColumn}>
                     <section className={styles.marketplacePricePanel}>
-                      <label className={`${styles.field} ${styles.marketplacePriceField}`}>
-                        <span>Asking price excl. VAT</span>
-                        <div className={styles.marketplaceCurrencyInput}>
-                          <span className={styles.marketplaceCurrencyPrefix}>R</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={marketplaceDraft.askingPriceExVat}
-                            onChange={(event) =>
-                              setMarketplaceDraft((current) =>
-                                current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(event.target.value) } : current,
-                              )
-                            }
-                            onBlur={() =>
-                              setMarketplaceDraft((current) =>
-                                current ? { ...current, askingPriceExVat: formatMarketplacePriceInput(current.askingPriceExVat) } : current,
-                              )
-                            }
-                            placeholder="0"
-                            autoFocus
-                            aria-label="Marketplace price excluding VAT"
-                          />
-                        </div>
-                        <small className={styles.marketplacePriceHint}>The entered price is saved as the listing asking price excluding VAT.</small>
-                      </label>
+                      <MarketplacePriceInput value={marketplaceDraft.askingPriceExVat}
+                        disabled={isPublishingMarketplace || marketplacePhotosBusy}
+                        onChange={askingPriceExVat => setMarketplaceDraft(current => current ? { ...current, askingPriceExVat } : current)} />
                     </section>
 
                     <MarketplacePhotoEditor photos={marketplaceDraft.photos} busy={marketplacePhotosBusy} onBusyChange={setMarketplacePhotosBusy} disabled={marketplacePhotosBusy || isPublishingMarketplace}
