@@ -6,7 +6,7 @@ import registerStyles from '../asset-register/page.module.css';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 import downloadStyles from '../../components/ReportDownload.module.css';
-import Link from 'next/link';
+import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
@@ -71,10 +71,9 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const ready = !loading && !error;
 
   return <div className={styles.page}>
-    <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1></div></section>
+    <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1><WorkspaceViewSwitch label="Switch to Cost Ledger" href="/my-invoices?view=costs" /></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
-      <Link className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionBudgets}`} href="/my-invoices?view=costs"><Icon kind="ledger" />Switch to Cost Ledger</Link>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
       <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
     </section>

@@ -7697,3 +7697,17 @@
 .accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar { width: 8px; }
 .accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar-track { background: transparent; margin-block: 16px; }
 .accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar-thumb { background: #92b2a5; border: 2px solid white; border-radius: 12px; }
+
+/* Match the Asset Register title switch without crowding the page heading. */
+.pageTitleBlock { position: relative; }
+.pageTitleBlock h1 { padding-right: 7rem; }
+.titleViewSwitch {
+  position: absolute; inset: 0 1.75rem 0 auto;
+  display: flex; align-items: center;
+}
+.topActionButtons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .pageTitleBlock h1 { padding-right: 5.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .titleViewSwitch { right: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .topActionButtons { grid-template-columns: 1fr; }
+}
