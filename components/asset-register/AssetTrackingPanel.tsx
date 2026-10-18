@@ -70,8 +70,8 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {showInstallShare&&<TrackerInstallShareDialog onClose={()=>setShowInstallShare(false)}/>}
       <div className={styles.setupHeading}>
         <span className={styles.phoneIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 5h4M10 18.5h4"/></svg></span>
-        <div><h3>{device ? "Equipment phone" : "Connect equipment phone"}</h3>
-          <p>{device ? device.name : "Set up tracking in two steps."}</p>
+        <div><h3>{device ? "Equipment phone" : "Connect your phone"}</h3>
+          <p>{device ? device.name : "Use the Android phone kept on this asset."}</p>
         </div>
         {device && <span className={styles.connectionStatus}>{device.status}</span>}
       </div>
@@ -88,8 +88,8 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         <div className={styles.setupStep}>
           <div className={styles.stepLabel}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>Step 1</span></div>
           <div className={styles.stepContent}>
-            <h4>Install on phone</h4>
-            <p>Send Tracker to the Android phone.</p>
+            <h4>Install Tracker</h4>
+            <p>Send the app to your phone.</p>
             <button type="button" className={styles.secondaryAction} aria-haspopup="dialog" onClick={()=>setShowInstallShare(true)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 13v7h16v-7"/></svg>
               Share app link
@@ -100,7 +100,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
           <div className={styles.stepLabel}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><path d="M7 7h3v3H7zm7 0h3v3h-3zM7 14h3v3H7zm7 0h3v3h-3z"/></svg><span>Step 2</span></div>
           <div className={styles.stepContent}>
             <h4>{device ? "Connect a replacement" : "Connect phone"}</h4>
-            <p>Scan a pairing code with that phone.</p>
+            <p>Scan the code to link this asset.</p>
             <button className={styles.primaryAction} disabled={busy} type="button" onClick={() => action("POST")}>
               {busy ? "Please wait…" : device ? "Pair replacement phone" : code ? "Create new code" : "Create pairing code"}
               <span aria-hidden="true">→</span>
