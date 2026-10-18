@@ -2127,8 +2127,8 @@
   display: flex;
   min-height: 5.25rem;
   align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
+  justify-content: flex-start;
+  gap: 1rem;
   padding: 1rem 1.15rem;
   border: 1px solid var(--app-info-line, rgba(190, 211, 224, 0.92));
   border-radius: 1rem;
@@ -2171,11 +2171,39 @@
   line-height: 1.45;
 }
 
-.marketplaceManageChoiceArrow {
-  flex: 0 0 auto;
-  color: var(--app-text, #23634f);
-  font-size: 1.1rem;
-  font-weight: 800;
+/* Match the cost ledger's leading icon tiles without trailing arrows. */
+.marketplaceManageChoiceIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 3rem;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid;
+  border-radius: 0.9rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.marketplaceManageChoiceIcon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.marketplaceManageEditIcon {
+  color: #2563a6;
+  background: #edf5ff;
+  border-color: #bdd5f0;
+}
+
+.marketplaceManageDownloadIcon {
+  color: #986026;
+  background: #fff3df;
+  border-color: #e6c79a;
+}
+
+.marketplaceManageRemoveIcon {
+  color: #b13c34;
+  background: #fff0ee;
+  border-color: #e9c2bc;
 }
 
 .marketplaceManageChoiceCard:disabled {
@@ -2207,8 +2235,7 @@
   box-shadow: 0 20px 42px var(--app-shadow-colour, rgba(150, 25, 20, 0.1));
 }
 
-.marketplaceManageDeleteChoice .marketplaceManageChoiceCopy strong,
-.marketplaceManageDeleteChoice .marketplaceManageChoiceArrow { color: var(--app-danger, #9d3027); }
+.marketplaceManageDeleteChoice .marketplaceManageChoiceCopy strong { color: var(--app-danger, #9d3027); }
 
 /* === Standard white delete confirmation modal === */
 .marketplaceDeleteBackdrop {

@@ -3843,11 +3843,13 @@ export default function MarketplaceClient({
                 disabled={!manageListingTarget.sourceAssetId}
                 title={manageListingTarget.sourceAssetId ? 'Edit advert' : 'Editing requires a saved asset.'}
               >
+                <span className={`${styles.marketplaceManageChoiceIcon} ${styles.marketplaceManageEditIcon}`} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16l-1 4Z" /><path d="M13 20h8" /></svg>
+                </span>
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Edit advert</strong>
                   <small>Update the price, description and seller details.</small>
                 </span>
-                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">→</span>
               </button>
 
               <button
@@ -3856,11 +3858,13 @@ export default function MarketplaceClient({
                 onClick={() => void downloadManagedListing()}
                 disabled={isCreatingJpegAd}
               >
+                <span className={`${styles.marketplaceManageChoiceIcon} ${styles.marketplaceManageDownloadIcon}`} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8" cy="8" r="1.5" /><path d="m3 17 5-5 4 4 4-5 5 6" /></svg>
+                </span>
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Download JPEG</strong>
                   <small>{isDealerAccount && manageListingTarget.adBrand ? 'Save an advert using its Brand Kit.' : 'Save an advert using the standard Aim4price Marketplace design.'}</small>
                 </span>
-                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">↓</span>
               </button>
 
               <button
@@ -3868,11 +3872,13 @@ export default function MarketplaceClient({
                 className={`${styles.marketplaceManageChoiceCard} ${styles.marketplaceManageDeleteChoice}`}
                 onClick={openOutcomeListingModal}
               >
+                <span className={`${styles.marketplaceManageChoiceIcon} ${styles.marketplaceManageRemoveIcon}`} aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" /></svg>
+                </span>
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Remove advert</strong>
                   <small>Tell us what happened, then withdraw it from Marketplace and your showroom.</small>
                 </span>
-                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">→</span>
               </button>
             </div>
 
