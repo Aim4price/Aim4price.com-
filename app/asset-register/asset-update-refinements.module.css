@@ -22,7 +22,7 @@
 
 .usageEditor {
   display: grid !important;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   align-items: end !important;
   gap: 0.68rem !important;
 }
@@ -150,3 +150,41 @@
 }
 .vatValueField .vatValueRow > .priceButton,
 .vatValueField .vatValueRow > .currencyControl { width: 100% !important; }
+
+/* Explicit grid tracks prevent inherited start alignment from shrinking controls. */
+.valueGrid.valueGrid > .vatValueField.vatValueField {
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-content: stretch !important;
+  justify-items: stretch !important;
+  min-width: 0 !important;
+}
+.vatValueField.vatValueField .vatValueRow > .priceButton,
+.vatValueField.vatValueField .vatValueRow > .currencyControl {
+  width: 100% !important; max-width: none !important; justify-self: stretch !important;
+}
+.vatValueField.vatValueField .currencyControl.currencyControl input {
+  flex: 1 1 0%; width: 100% !important; max-width: none !important;
+}
+:global(:where(html:has([data-website-canvas]))) .compactGrid.compactGrid:has(.usageEditor) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr) !important;
+}
+.usageEditor.usageEditor {
+  align-items: stretch !important;
+}
+.usageEditor.usageEditor > .usageTypeField,
+.usageEditor.usageEditor > .usageReading {
+  display: grid !important; grid-template-rows: 1.1rem minmax(3.75rem, auto);
+  align-content: start !important; align-items: stretch !important; gap: .6rem !important;
+  margin: 0 !important; padding: 0 !important;
+}
+.usageEditor.usageEditor > .usageTypeField > span,
+.usageEditor.usageEditor > .usageReading > span {
+  margin: 0 !important; color: var(--app-info, #253746) !important;
+  font-size: .88rem !important; font-weight: 820 !important; line-height: 1.2 !important;
+  text-transform: uppercase; letter-spacing: 0;
+}
+.usageEditor.usageEditor .usageReading input,
+.usageEditor.usageEditor .usageTypeField button {
+  width: 100% !important; min-width: 0 !important; min-height: 3.75rem !important;
+  height: 3.75rem !important; box-sizing: border-box; margin: 0 !important;
+}
