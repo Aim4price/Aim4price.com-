@@ -111,7 +111,7 @@
 
 .costActionGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   justify-content: stretch;
   gap: clamp(0.78rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.25rem);
@@ -7179,3 +7179,7 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   align-self: flex-start;
   margin-bottom: 20px;
 }
+
+/* Leave the circular page switch breathing room inside the title card. */
+.pageTitleBlock > div { gap: 1.25rem; }
+.pageTitleBlock h1 { flex: 1; }

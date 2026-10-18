@@ -124,7 +124,7 @@ test('Cost Ledger exposes total-spend controls only to the direct owner experien
   }
 });
 
-test('owner Cost Ledger presents the four primary actions in the intended order', () => {
+test('owner Cost Ledger presents three primary actions and a header budget switch', () => {
   const actionGridLabel = costClient.indexOf('aria-label="Cost Ledger actions"');
   const actionGridStart = costClient.lastIndexOf('<section', actionGridLabel);
   const toolbarStart = costClient.indexOf('<section className={`${styles.invoiceToolbar}', actionGridStart);
@@ -137,7 +137,6 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
 
   const expectedActions = [
     ['Add Cost', /onClick=\{\(\) => openAddInvoiceModal\(\)\}/],
-    ['Switch to Budgets', /onClick=\{openBudgetManager\}/],
     ['Invoice Drop', /openInvoiceDropCodeManager\(\)/],
     ['Download', /onClick=\{openDownloadModal\}/],
   ];
@@ -149,17 +148,17 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
     previousActionIndex = actionIndex;
   }
 
-  assert.match(actionGrid, /ref=\{budgetManagerTriggerRef\}/);
+  assert.match(costClient, /WorkspaceViewSwitch label="Switch to Budgets" onClick=\{openBudgetManager\} buttonRef=\{budgetManagerTriggerRef\} count=\{budgetAttentionCount\}/);
   assert.match(actionGrid, /aria-haspopup="dialog"/);
   assert.match(costClient, /costBudgets\.filter\(\(budget\) => budget\.status !== 'on_track'\)\.length/);
-  assert.match(actionGrid, /budgetAttentionCount/);
+  assert.match(costClient, /count=\{budgetAttentionCount\}/);
   assert.match(actionGrid, /Add an asset first/);
   assert.match(actionGrid, /Add a saved asset before creating an Invoice Drop code/);
   assert.doesNotMatch(costClient, /styles\.invoiceDropCodeBanner/);
 
   assert.match(
     costStyles,
-    /\.costActionGrid\s*\{\s*display: grid;\s*grid-template-columns: repeat\(4, minmax\(0, 1fr\)\);/,
+    /\.costActionGrid\s*\{\s*display: grid;\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);/,
   );
   for (const styleName of ['costActionButton', 'costActionAdd', 'costActionBudgets', 'costActionContribution', 'costActionDownload']) {
     assert.match(costStyles, new RegExp(`\\.${styleName}\\b`), `missing .${styleName} owner-action styling`);
@@ -210,7 +209,7 @@ test('Cost Ledger title and actions match the Asset Register sizing contract', (
   );
   assert.match(
     costStyles,
-    /\.costActionGrid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*clamp\(0\.78rem,\s*calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.35\),\s*1\.25rem\);/,
+    /\.costActionGrid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*clamp\(0\.78rem,\s*calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.35\),\s*1\.25rem\);/,
   );
   assert.match(
     costStyles,

@@ -1,4 +1,5 @@
 'use client';
+import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import FuelWorkField from '../../components/FuelWorkField';
 import { openAssetQrLabel } from '../../lib/asset-qr-label';
@@ -3535,6 +3536,7 @@ export default function FuelClient({
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
                 <h1>{isSlipsPage ? 'FUEL SLIP TRACKING' : 'FUEL TRACKING SYSTEM'}</h1>
+                <div className={styles.titleViewSwitch}><WorkspaceViewSwitch label={isSlipsPage ? 'Switch to Storage Tanks' : 'Switch to Fuel Slips'} onClick={switchFuelView} /></div>
               </div>
 
               <div className={styles.topActions}>
@@ -3556,13 +3558,6 @@ export default function FuelClient({
                   >
                     <ExclusionIcon className={styles.buttonIcon} />
                     <span>Asset Exclusions</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
-                    onClick={switchFuelView}
-                  >
-                    {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}<span>{isSlipsPage ? 'Switch to Storage' : 'Switch to Fuel Slips'}</span>
                   </button>
                   <button
                     type="button"

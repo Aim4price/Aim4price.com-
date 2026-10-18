@@ -1,0 +1,63 @@
+.switchButton {
+  position: relative;
+  overflow: visible;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.65rem;
+  height: 3.65rem;
+  margin-left: auto;
+  border: 1.5px solid var(--app-info-line, rgba(185, 204, 217, 0.96));
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(20, 112, 82, 0.08)), transparent 40%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f5faf7) 100%);
+  color: var(--app-text, #0b3328);
+  box-shadow:
+    0 10px 22px var(--app-shadow-colour, rgba(15, 45, 38, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.switchButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: var(--app-line, rgba(20, 112, 82, 0.32));
+  background:
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(20, 112, 82, 0.12)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eaf8f1) 100%);
+  box-shadow:
+    0 14px 28px var(--app-shadow-colour, rgba(15, 45, 38, 0.105)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
+}
+
+.switchButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
+.switchButton:focus-visible {
+  outline: 3px solid var(--app-accent, rgba(20, 112, 82, 0.18));
+  outline-offset: 3px;
+}
+
+
+.switchButton { padding: 0; text-decoration: none; }
+.switchButton svg { width: 1.35rem; height: 1.35rem; flex: none; }
+.badge {
+  position: absolute; top: -.2rem; right: -.2rem; min-width: 1.25rem;
+  padding: .15rem .3rem; border: 1px solid #efaaaa; border-radius: 999px;
+  background: #fff0ed; color: #9c2525; font-size: .75rem; font-weight: 800; line-height: 1;
+}
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .switchButton {
+    width: 3.1rem; height: 3.1rem;
+  }
+}

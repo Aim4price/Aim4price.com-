@@ -1,4 +1,5 @@
 'use client';
+import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
@@ -3344,13 +3345,14 @@ export default function MyInvoicesClient({
           <section className={styles.pageTitleBlock}>
             <div>
               <h1>COST TRACKING SYSTEM</h1>
+              {canManageBudgets ? <WorkspaceViewSwitch label="Switch to Budgets" onClick={openBudgetManager} buttonRef={budgetManagerTriggerRef} count={budgetAttentionCount} /> : null}
             </div>
           </section>
         )}
 
         {!dealerMode ? (
           <section
-            className={`${styles.costActionGrid} ${canManageBudgets && canManageInvoiceDropCodes ? '' : styles.costActionGridCompact}`}
+            className={`${styles.costActionGrid} ${canManageInvoiceDropCodes ? '' : styles.costActionGridCompact}`}
             aria-label="Cost Ledger actions"
           >
             <button
@@ -3361,25 +3363,6 @@ export default function MyInvoicesClient({
               <span className={styles.plusMark} aria-hidden="true">+</span>
               <span>Add Cost</span>
             </button>
-
-            {canManageBudgets ? (
-              <button
-                ref={budgetManagerTriggerRef}
-                type="button"
-                className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionBudgets}`}
-                onClick={openBudgetManager}
-                aria-haspopup="dialog"
-                aria-label={budgetAttentionCount
-                  ? `Switch to Budgets, ${budgetAttentionCount} ${budgetAttentionCount === 1 ? 'alert' : 'alerts'} need attention`
-                  : 'Switch to Budgets'}
-              >
-                <LedgerIcon />
-                <span>Switch to Budgets</span>
-                {budgetAttentionCount ? (
-                  <strong className={styles.costActionAlert} aria-hidden="true">{budgetAttentionCount}</strong>
-                ) : null}
-              </button>
-            ) : null}
 
             {canManageInvoiceDropCodes ? (
               <button
