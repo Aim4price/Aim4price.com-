@@ -15160,8 +15160,8 @@
   animation: none;
 }
 @keyframes nextDetailPulse {
-  0%, 100% { border-color: #8db8a1; box-shadow: inset 0 0 0 1px transparent; }
-  50% { border-color: #237454; box-shadow: inset 0 0 0 2px rgb(35 116 84 / 28%); }
+  0%, 100% { border-color: #8db8a1; box-shadow: inset 0 0 0 1px transparent, 0 0 0 0 rgb(35 116 84 / 0%); }
+  50% { border-color: #176344; box-shadow: inset 0 0 0 3px rgb(35 116 84 / 65%), 0 0 0 6px rgb(35 116 84 / 18%); }
 }
 @media (prefers-reduced-motion: reduce) {
   .specFlowStack > .specStepCardActive {
@@ -15197,4 +15197,51 @@
   :global(:where(html:not(:has([data-website-canvas])))) .replacementCostParts > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .replacementCostParts dd { font-size: 1.35rem; white-space: nowrap; }
   :global(:where(html:not(:has([data-website-canvas])))) .replacementCostTotal { padding: 1.2rem; }
+}
+
+/* Consistent rhythm across the replacement-price slide. */
+.replacementStage { gap: 1.25rem; }
+.replacementStage .replacementHeading { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.5rem; align-items: start; }
+.replacementStage .replacementHeading .stepTitle { margin: 0 0 .6rem; }
+.replacementStage .replacementHeading .stepText { margin: 0; font-size: 1.1rem; line-height: 1.5; max-width: 48rem; }
+.replacementStage .changeSpecificationButton { font-size: 1rem; min-height: 3rem; padding: .75rem 1rem; }
+.replacementStage .replacementSliderPanel { padding: 1.5rem; margin: 0; gap: 1rem 1.5rem; border-radius: 1.25rem; }
+.replacementStage .replacementPriceStack { gap: .75rem; }
+.replacementStage .replacementSliderReadout { padding: 1.25rem; gap: .6rem; text-align: left; box-shadow: none; }
+.replacementStage .replacementSliderReadout span { font-size: 1.05rem; line-height: 1.4; font-weight: 650; text-transform: none; letter-spacing: normal; color: #e5f6ed; }
+.replacementStage .replacementSliderReadout strong { margin: 0; font-size: 2rem; line-height: 1.25; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+.replacementStage .replacementSliderReadout small { margin: 0; font-size: 1rem; font-weight: 500; color: #e5f6ed; }
+.replacementStage .replacementVatToggle { box-shadow: none; }
+.replacementStage .replacementVatToggle button { font-size: 1rem; font-weight: 650; min-height: 3rem; }
+.replacementStage .yearSliderControl .fieldLabel,
+.replacementStage .replacementManualCard .fieldLabel,
+.replacementStage .replacementCostParts dt,
+.replacementStage .replacementCostTotal > span { font-size: 1.1rem; line-height: 1.4; font-weight: 650; text-transform: none; letter-spacing: normal; }
+.replacementStage .yearSliderMeta,
+.replacementStage .yearFineTuneButton { font-size: 1rem; }
+.replacementStage .yearSliderControl { padding: 0; }
+.replacementStage .yearFineTuneRow { margin: 0; gap: 1rem; }
+.replacementStage .replacementManualCard { margin: 0; padding: 1.5rem; border-radius: 1.25rem; }
+.replacementStage .replacementManualCard .field { gap: .75rem; }
+.replacementStage .replacementManualCard input { font-size: 2rem; line-height: 1.25; font-weight: 700; padding: .8rem 1rem; }
+.replacementStage .replacementCostParts,
+.replacementStage .replacementCostTotal { padding: 1.5rem; }
+.replacementStage .replacementCostParts > div { gap: .6rem; }
+.replacementStage .replacementCostParts dd,
+.replacementStage .replacementCostTotal > strong { font-size: 2rem; line-height: 1.25; font-weight: 750; letter-spacing: -.025em; }
+.replacementStage .replacementCostTotal { align-items: center; }
+.replacementStage .replacementCostTotal small { font-size: 1rem; }
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementHeading { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .changeSpecificationButton { justify-self: start; }
+}
+@media (max-width: 540px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementSliderPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementManualCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementCostParts,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementCostTotal { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementCostParts dd,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementCostTotal > strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementSliderReadout strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStage .replacementManualCard input { font-size: 1.75rem; }
 }
