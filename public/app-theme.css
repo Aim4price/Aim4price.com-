@@ -106,7 +106,7 @@
     }
     :is(button, a[href], summary, [role='button'], input[type='button'], input[type='submit'], input[type='reset']):hover:not(:active):not(:focus-visible):not(:disabled):not([aria-disabled='true']):not([aria-hidden='true']):not([inert], [inert] *, [aria-disabled='true'] *) {
       outline: 2px solid var(--action-hover-outline) !important;
-      outline-offset: 1px !important;
+      outline-offset: var(--action-hover-outline-offset, 1px) !important;
     }
   }
   @media screen and (hover: hover) and (pointer: fine) and (forced-colors: active) {

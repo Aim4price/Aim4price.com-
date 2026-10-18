@@ -1,6 +1,7 @@
 .guide { border: 1px solid #d5e3dc; border-radius: 1rem; background: #f5faf7; color: #254e3e; }
-.guide summary { cursor: pointer; font-weight: 700; }
-.guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; border-radius: .65rem; }
+.guide summary { cursor: pointer; font-weight: 700; border-radius: inherit; }
+.guide[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; }
 .body { padding: .25rem 1.5rem 1.25rem; }
 .body p { margin: .4rem 0; font-size: .9rem; line-height: 1.6; }
 .registerGuide { margin: .25rem 0 1rem; background: linear-gradient(135deg,#fff,#f3f9f5); box-shadow: 0 5px 16px rgba(22,65,46,.035); }
