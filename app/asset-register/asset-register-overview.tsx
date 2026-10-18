@@ -749,24 +749,6 @@ export default function AssetRegisterOverview() {
                   </div>
 
                   <div className={styles.cardBody}>
-                    <div className={styles.cardContext}>
-                      <strong className={categoryClassName(item.category)}>{categoryLabel(item.category)}</strong>
-                      <span aria-hidden="true">•</span>
-                      <span>{item.umbrellaName || 'Standalone asset'}</span>
-                      <span aria-hidden="true">•</span>
-                      <span
-                        className={
-                          item.section === 'needs_attention'
-                            ? styles.statusAttention
-                            : item.section === 'coming_up'
-                              ? styles.statusUpcoming
-                              : styles.statusRecent
-                        }
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-
                     <h3 className={styles.assetTitle}>{item.assetTitle}</h3>
                     <strong className={styles.headline}>{item.headline}</strong>
                     <p className={styles.detail}>{item.detail}</p>
@@ -805,7 +787,9 @@ export default function AssetRegisterOverview() {
                 <strong>Go to assets</strong>
                 {!loading ? <small>{assets.length} asset{assets.length === 1 ? '' : 's'} in this register</small> : null}
               </span>
-              <span className={styles.goToAssetsArrow} aria-hidden="true">→</span>
+              <span className={styles.goToAssetsChevron} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="m9 6 6 6-6 6" /></svg>
+              </span>
             </button>
           </div>
         </section>

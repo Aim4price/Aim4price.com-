@@ -33,7 +33,7 @@ test('quick overview reuses the existing Asset Register alert payload', () => {
 test('umbrella member alerts stay visible without expanding the umbrella', () => {
   assert.match(overview, /group\.members\.forEach/);
   assert.match(overview, /umbrellaByAssetId\.set\(member\.assetId, group\.name\)/);
-  assert.match(overview, /item\.umbrellaName \|\| 'Standalone asset'/);
+  assert.doesNotMatch(overview, /Standalone asset/);
   assert.match(overview, /assetId: asset\.id/);
 });
 
@@ -77,7 +77,7 @@ test('overview starts directly with asset update cards and avoids extra heading 
   assert.doesNotMatch(overview, /umbrellaBadge/);
   assert.doesNotMatch(overview, /statusBadge/);
   assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
-  assert.match(overview, /className=\{styles\.cardContext\}/);
+  assert.doesNotMatch(overview, /className=\{styles\.cardContext\}/);
   assert.match(overview, /<section className=\{styles\.overview\} aria-label="Asset Register overview">/);
 });
 
