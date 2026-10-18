@@ -12,7 +12,7 @@ const [assetMapClient, assetMapStyles] = await Promise.all([
 ]);
 
 test("restores the initial Asset Map structure", () => {
-  assert.match(assetMapClient, /<h1>Asset Map Tracking<\/h1>/);
+  assert.match(assetMapClient, /<h1>Asset Map &amp; Tracking<\/h1>/);
   assert.match(assetMapClient, /className=\{styles\.topActions\}/);
   assert.match(assetMapClient, /styles\.assetSidebar/);
   assert.match(assetMapClient, /className=\{styles\.assetList\}/);

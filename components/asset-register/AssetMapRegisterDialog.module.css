@@ -8,3 +8,12 @@
 .header p { margin: .5rem 0 0; color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; }
 .dialog button:focus-visible { outline: 3px solid var(--app-accent, #147052); outline-offset: -3px; }
 .clear { padding: .75rem 1rem; border: 1px solid var(--app-line, #c8dcd3); border-radius: .8rem; background: var(--app-surface, #fff); color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+
+/* Keep complete rounded hover rings inside the scrolling viewport. */
+.dialog .list {
+  padding: 1.25rem;
+  margin: -1.25rem;
+  scroll-padding: 1.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: #829a92 transparent;
+}

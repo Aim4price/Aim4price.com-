@@ -42,7 +42,7 @@ export default function AssetMapRegisterDialog({ options, selectedId, onSelect, 
           <svg className={register.changeRegisterSearchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
           <input ref={searchRef} type="search" aria-label="Search asset registers" placeholder="Search asset registers..." value={search} onChange={event => setSearch(event.target.value)} />
         </label>
-        <div className={register.changeRegisterList} aria-label="Asset registers">
+        <div className={`${register.changeRegisterList} ${styles.list}`} aria-label="Asset registers">
           {visible.map(option => <button key={option.id} type="button"
             className={`${register.changeRegisterCard} ${option.id === selectedId ? register.changeRegisterCardActive : ''}`}
             aria-pressed={option.id === selectedId} onClick={() => onSelect(option.id)}>
