@@ -15263,3 +15263,10 @@
   :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpStep { grid-template-columns: 2.5rem minmax(0, 1fr); padding: .9rem; gap: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }
 }
+
+/* Keep modal actions at the content edge and confirmation copy in clear groups. */
+.replacementHelpModal .replacementHelpActions { width: 100%; box-sizing: border-box; justify-self: stretch; justify-content: flex-end; }
+.replacementHelpModal .replacementHelpActions .primaryButton { margin-inline-start: auto; margin-inline-end: 0; }
+.replacementNoticeModal .replacementNoticeIntro { display: grid; gap: 1rem; }
+.replacementNoticeModal .replacementNoticeIntro p { margin: 0; text-wrap: pretty; }
+.replacementNoticeModal .replacementNoticeDisclaimer { display: block; text-wrap: pretty; }
