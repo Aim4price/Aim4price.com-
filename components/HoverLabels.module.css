@@ -22,18 +22,18 @@
 
 
 /* A clear green halo without blurring text, shifting layout or intercepting clicks. */
-.activeControl {
-  box-shadow: 0 0 0 4px rgba(22, 163, 74, .28), 0 4px 24px 4px rgba(6, 95, 70, .30) !important;
+.activeControl:not(:disabled):not([aria-disabled='true']) {
+  box-shadow: var(--action-hover-shadow, 0 0 0 4px rgba(22, 163, 74, .28), 0 4px 24px 4px rgba(6, 95, 70, .30)) !important;
 }
 
 /* Preserve each control's existing keyboard focus indicator. */
-.activeControl:not(:focus-visible) {
-  outline: 2px solid rgba(21, 128, 61, .85);
+.activeControl:not(:focus-visible):not(:disabled):not([aria-disabled='true']) {
+  outline: 2px solid var(--action-hover-outline, rgba(21, 128, 61, .85));
   outline-offset: 1px;
 }
 
 @media (forced-colors: active) {
-  .activeControl:not(:focus-visible) {
+  .activeControl:not(:focus-visible):not(:disabled):not([aria-disabled='true']) {
     outline: 2px solid Highlight;
   }
 }
