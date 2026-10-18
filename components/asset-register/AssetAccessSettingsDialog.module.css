@@ -212,3 +212,8 @@
 .dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar { width: 8px; }
 .dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar-track { background: #edf3ef; border-radius: 10px; margin-block: .75rem; }
 .dialog.dialog .body.body:has([data-tracker-setup])::-webkit-scrollbar-thumb { background: #88aa99; border: 2px solid #edf3ef; border-radius: 10px; }
+
+.dialog.dialog .body.body:has([data-location-history]) { padding-right:1.5rem !important; scrollbar-width:thin; scrollbar-gutter:stable; scrollbar-color:#88aa99 #edf3ef; }
+.dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar { width:8px; }
+.dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar-track { background:#edf3ef; border-radius:10px; margin-block:1rem; }
+.dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar-thumb { background:#88aa99; border:2px solid #edf3ef; border-radius:10px; }

@@ -15,6 +15,8 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
   if(!asset)return businessJson({error:'Asset unavailable.'},404);
   const from=request.nextUrl.searchParams.get('from'),to=request.nextUrl.searchParams.get('to');
   if([from,to].some(d=>d&&(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!Number.isFinite(Date.parse(d))||new Date(d).toISOString().slice(0,10)!==d))||(from&&to&&from>to))return businessJson({error:'Choose a valid date range.'},400);
+  const entryId=request.nextUrl.searchParams.get('entryId');
+  if(entryId && (entryId.length>128 || !/^[a-zA-Z0-9_-]+$/.test(entryId)))return businessJson({error:'Invalid location record.'},400);
   const format=request.nextUrl.searchParams.get('format');
   if(format&&!['pdf','xlsx'].includes(format))return businessJson({error:'Choose PDF or Excel.'},400);
   await ensureFuelLedgerTables();
@@ -23,8 +25,10 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
    WHERE a.user_id=$1 AND a.id=$2::uuid AND e.latitude BETWEEN -90 AND 90 AND e.longitude BETWEEN -180 AND 180
    AND ($3::date IS NULL OR e.created_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg'))
    AND ($4::date IS NULL OR e.created_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg'))
-   ORDER BY e.created_at DESC,e.id DESC LIMIT 2001`,[session.user.id,asset.id,from||null,to||null]);
+   AND ($5::text IS NULL OR e.id::text=$5)
+   ORDER BY e.created_at DESC,e.id DESC LIMIT 2001`,[session.user.id,asset.id,from||null,to||null,entryId||null]);
   const items=result.rows.slice(0,2000).map(row=>({id:row.id,latitude:Number(row.latitude),longitude:Number(row.longitude),note:row.note||'',actor:row.actor||'Not recorded',accuracy:row.accuracy===null?null:Number(row.accuracy),recordedAt:row.recorded_at,capturedAt:row.captured_at,source:/manually/i.test(row.activity_text||'')?'Manual pin':/device GPS/i.test(row.event_note||'')?'Device GPS':'Recorded location (source unverified)'}));
+  if(entryId&&!items.length)return businessJson({error:'Location record unavailable.'},404);
   const truncated=result.rows.length>2000;
   if(!format)return businessJson({items,truncated});
   if(truncated)return businessJson({error:'Narrow the date range to 2 000 records or fewer for a complete report.'},409);

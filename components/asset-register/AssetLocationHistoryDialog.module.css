@@ -7,5 +7,15 @@
 .filters input:focus-visible,.filters button:focus-visible,.list a:focus-visible{outline:3px solid #5abf98;outline-offset:3px}
 .map{height:17rem;border:1px solid rgba(40,100,80,.25);border-radius:1rem;overflow:hidden;isolation:isolate}
 .legend{display:flex;gap:.8rem;flex-wrap:wrap;font-size:.8rem}.legend span:first-child{color:#197153}.legend span:nth-child(2){color:#367b9c}.legend strong{margin-left:auto}
-.list{list-style:none;margin:0;padding:0;display:grid;gap:.7rem;max-height:24rem;overflow:auto}.list li{padding:1rem;border:1px solid rgba(60,110,95,.22);border-radius:.9rem;background:rgba(80,140,120,.04)}
+.list{list-style:none;margin:0;padding:0;display:grid;gap:.7rem;}.list li{padding:1.2rem;border:1px solid rgba(60,110,95,.22);border-radius:.9rem;background:rgba(80,140,120,.04)}
 .row{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap}.row strong{font-size:.95rem;font-weight:800}.badge{font-size:.75rem;font-weight:750;background:rgba(38,150,110,.12);padding:.35rem .6rem;border-radius:.5rem}.list p{margin:.65rem 0 .3rem;font-weight:650}.list a{font-size:.9rem;color:inherit;text-underline-offset:3px}.list small{display:block;margin-top:.65rem;line-height:1.5;opacity:.8}.empty{padding:2rem 1rem;text-align:center;border:1px dashed rgba(40,100,80,.4);border-radius:1rem}.disclaimer{margin:0;font-size:.8rem;line-height:1.6;opacity:.8}
+
+.row strong { display:flex; align-items:center; gap:.7rem; }
+.recordNumber { display:grid; place-items:center; width:2rem; height:2rem; flex-shrink:0; border-radius:50%; background:#174c38; color:white; font-size:.85rem; }
+.recordActions { display:flex; justify-content:flex-end; margin-top:.75rem; }
+.recordActions button,.downloadBar button { display:inline-flex; align-items:center; gap:.5rem; padding:.65rem .9rem; border:1px solid #bdd5c8; border-radius:.75rem; background:white; color:#174c38; font:inherit; font-size:.85rem; font-weight:750; cursor:pointer; }
+.recordActions svg { width:1.1rem; height:1.1rem; }
+.recordActions button:focus-visible,.downloadBar button:focus-visible { outline:3px solid #5abf98; outline-offset:3px; }
+.downloadBar { display:flex; align-items:center; justify-content:space-between; gap:1rem; color:#49675a; }
+.downloadBar button { background:#196348; color:white; }
+.downloadBar button:disabled { opacity:.5; cursor:default; }

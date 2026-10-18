@@ -18,3 +18,15 @@ test('reports truncation explicitly',async()=>{const h=setup({rows:Array.from({l
 
 test('rejects unsupported export formats and never silently exports a truncated history',async()=>{const invalid=setup();assert.equal((await invalid.get('format=csv')).status,400);const many=setup({rows:Array.from({length:2001},(_,id)=>({id,latitude:1,longitude:2,accuracy:null}))});assert.equal((await many.get('format=xlsx')).status,409);});
 
+
+test('specific records stay scoped to the owner and asset',async()=>{
+ const h=setup({rows:[{id:'record-1',latitude:1,longitude:2,accuracy:null}]});
+ assert.equal((await h.get('entryId=record-1')).status,200);
+ const [,sql,params]=h.calls.find(c=>c[0]==='query');
+ assert.equal(params[4],'record-1');
+ assert.match(sql,/a.user_id=\$1 AND a.id=\$2/);
+ assert.match(sql,/e.id::text=\$5/);
+ assert.equal((await setup().get('entryId=missing-record')).status,404);
+ const invalid=setup();assert.equal((await invalid.get('entryId=%27bad')).status,400);
+ assert.equal(invalid.calls.filter(c=>c[0]==='query').length,0);
+});
