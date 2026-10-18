@@ -490,3 +490,20 @@ body:has([data-website-canvas]) { overflow-x: visible; }
 /* Match the outer gutters to the user's background preference. */
 html[data-background='dark'] body { background: #1d302b; }
 @media print { html[data-background='dark'] body { background: #fff; } }
+
+/* Embedded sharing and app-access pickers use the same rows as the map chooser. */
+[data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-row='true'] {
+  padding: 1.15rem !important;
+  border: 1px solid var(--app-line, #cbded4) !important;
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+}
+[data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-copy='true'] {
+  display: grid; gap: .4rem;
+}
+[data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-copy='true'] > strong {
+  font-size: 1.05rem !important; font-weight: 800 !important; line-height: 1.4 !important;
+}
+[data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-copy='true'] > small {
+  font-size: .9rem !important; font-weight: 650 !important; line-height: 1.5 !important;
+}

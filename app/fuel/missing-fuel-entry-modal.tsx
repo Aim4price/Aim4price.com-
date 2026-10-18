@@ -1,4 +1,5 @@
 'use client';
+import pickerStyles from '../../components/AssetPicker.module.css';
 import FuelWorkField from '../../components/FuelWorkField';
 import DateInput from '../../components/DateInput';
 
@@ -500,7 +501,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
       <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={onClose}>Done</button>
     </div>
   ) : (
-    <div className={styles.missingEntryFooter}>
+    <div className={styles.missingEntryFooter} data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>
       <div className={styles.missingEntryFooterSecondary}>
         {step !== 'asset' ? <button type="button" className={styles.secondaryButton} onClick={() => { setError(''); setUsageMenuOpen(false); setStep(step === 'review' ? 'details' : 'asset'); }} disabled={isSaving}>Back</button> : null}
         <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button>
@@ -511,13 +512,13 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
 
   return (
     <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
-      <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
-        <header className={styles.missingEntryHeader}>
+      <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${step === 'asset' && !saved ? pickerStyles.modal : ''}`} data-asset-choice-modal={step === 'asset' && !saved ? 'true' : undefined}>
+        <header className={styles.missingEntryHeader} data-asset-choice-header={step === 'asset' && !saved ? 'true' : undefined}>
           <div><h2 id="missing-fuel-title">Back Track Fuel</h2><p>{selectedAsset?.title ?? 'Choose an asset'}</p></div>
           <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><span aria-hidden="true">×</span></button>
         </header>
 
-        <div className={styles.missingEntryScrollBody}>
+        <div className={step === 'asset' && !saved ? pickerStyles.contents : styles.missingEntryScrollBody}>
           {saved ? (
             <section className={styles.missingEntrySuccess}>
               <span className={styles.successIcon}><CheckIcon /></span>
@@ -529,23 +530,20 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
               {error ? <div className={styles.missingEntryError} role="alert">{error}</div> : null}
 
               {step === 'asset' ? (
-                <section className={styles.missingAssetStep}>
-                  <div className={`${styles.pickerToolbar} ${styles.backtrackPickerToolbar}`}>
+                <section className={pickerStyles.contents}>
+                  <div className={`${styles.pickerToolbar} ${styles.backtrackPickerToolbar}`} data-asset-choice-toolbar="true">
                     <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search eligible assets" />
                     <button type="button" className={styles.secondaryButton} onClick={() => setSearch('')}>Clear</button>
                   </div>
-                  <div className={`${styles.assetList} ${styles.backtrackAssetList}`}>
+                  <div className={`${styles.assetList} ${styles.backtrackAssetList}`} data-asset-choice-list="true">
                     {filteredAssets.map((asset) => (
-                      <button key={asset.id} type="button" className={styles.assetRow} onClick={() => chooseAsset(asset)}>
-                        <span className={styles.assetInfo}>
+                      <button key={asset.id} type="button" className={styles.assetRow} data-asset-choice-row="true" onClick={() => chooseAsset(asset)}>
+                        <span className={styles.assetInfo} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <small>{assetPickerMeta(asset) || 'Asset details not set'}</small>
-                          <small>{assetPickerDetail(asset)}</small>
+                          <small data-asset-choice-meta="true">{assetPickerMeta(asset) || 'Asset details not set'}</small>
+                          <small data-asset-choice-secondary="true">{assetPickerDetail(asset)}</small>
                         </span>
-                        <span className={styles.assetValue}>
-                          <strong>{formatCurrency(asset.currentValue)}</strong>
-                          <small>current value</small>
-                        </span>
+                        <span data-asset-choice-value="true"><span className={pickerStyles.select}><i aria-hidden="true" /><strong>Select</strong></span></span>
                       </button>
                     ))}
                     {!filteredAssets.length ? <div className={styles.emptyState}>No matching included assets found.</div> : null}

@@ -5,6 +5,7 @@ import { createPortal } from '../WebsitePortal';
 import { useLeadDialog } from '../leads/useLeadDialog';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import ShareNextIcon from './ShareNextIcon';
+import picker from '../AssetPicker.module.css';
 import frame from './AssetMapRegisterDialog.module.css';
 import styles from './AssetMapAssetDialog.module.css';
 
@@ -34,18 +35,17 @@ export default function AssetMapAssetDialog({ assets, onSelect, onClose }: Props
 
   return createPortal(<div className={frame.overlay} data-website-overlay>
     <div className={frame.backdrop} onClick={onClose} />
-    <section ref={ref} tabIndex={-1} className={`${frame.dialog} ${styles.dialog}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-      <header className={frame.header}>
+    <section ref={ref} tabIndex={-1} className={`${frame.dialog} ${picker.modal}`} data-asset-choice-modal="true" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <header className={frame.header} data-asset-choice-header="true">
         <div><h2 id={titleId}>Choose asset to map</h2><p>Select a saved asset, then set its location.</p></div>
         <ShareModalCloseButton onClick={onClose} aria-label="Close asset picker" />
       </header>
-      <label className={styles.search}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+      <div data-asset-choice-toolbar="true">
         <input ref={searchRef} type="search" aria-label="Search assets" placeholder="Search name, register, serial or registration" value={search} onChange={event => setSearch(event.target.value)} />
-      </label>
-      <div className={styles.list} aria-label="Saved assets">
-        {visible.map(asset => <button key={asset.id} type="button" className={styles.asset} onClick={() => onSelect(asset.id)}>
-          <span className={styles.copy}><strong>{asset.title}</strong><span>{asset.subtitle}</span><small>{asset.register}{asset.serial ? ` · Serial / VIN: ${asset.serial}` : ''}</small><small className={asset.mapped ? styles.mapped : styles.unmapped}>{asset.mapped ? 'Already mapped' : 'No location saved'}</small></span>
+      </div>
+      <div className={styles.list} data-asset-choice-list="true" aria-label="Saved assets">
+        {visible.map(asset => <button key={asset.id} type="button" className={styles.asset} data-asset-choice-row="true" onClick={() => onSelect(asset.id)}>
+          <span className={styles.copy} data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.subtitle}</small><small data-asset-choice-secondary="true">{asset.register}{asset.serial ? ` · Serial / VIN: ${asset.serial}` : ''}</small><small className={asset.mapped ? styles.mapped : styles.unmapped}>{asset.mapped ? 'Already mapped' : 'No location saved'}</small></span>
           <ShareNextIcon />
         </button>)}
         {!visible.length && <div className={styles.empty}><strong>{assets.length ? 'No matching assets' : 'No saved assets yet'}</strong><p>{assets.length ? 'Try another name, register or serial number.' : 'Add an asset to your register before placing it on the map.'}</p>{query && <button type="button" className={frame.clear} onClick={() => setSearch('')}>Clear search</button>}</div>}

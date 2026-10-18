@@ -14,13 +14,13 @@ const scenarios = [
   ['capture', 'costs', ['+Add Cost', 'Upload for Aim4price capture']],
   ['budget', 'budgets', ['Add Budget', 'Choose assets']],
   ['recurring', 'costs', ['+Add Cost', 'Add recurring commitment', 'Choose assets']],
-  ['invoice-drop', 'costs', ['Invoice Drop', 'One asset', 'Next', 'Choose an asset']],
+  ['invoice-drop', 'costs', ['Invoice Drop', 'Specific asset', 'Next', 'Choose an asset']],
   ['maintenance', 'maintenance', ['+Add Maintenance']],
   ['checklist', 'maintenance', ['Checklists']],
   ['maintenance-report', 'maintenance', ['Download', 'Specific asset']],
-  ['exclusions', 'fuel', ['Exclusions']],
-  ['fuel-manual', 'fuel', ['Fuel Slips', 'Add fuel slip', 'Enter slip manually']],
-  ['fuel-capture', 'fuel', ['Fuel Slips', 'Add fuel slip', 'Upload for Aim4price capture']],
+  ['exclusions', 'fuel', ['Asset Exclusions']],
+  ['fuel-manual', 'fuel', ['Switch to Fuel Slips', 'Add fuel slip', 'Enter slip manually']],
+  ['fuel-capture', 'fuel', ['Switch to Fuel Slips', 'Add fuel slip', 'Upload for Aim4price capture']],
   ['export', 'register', ['Download', 'PDF report', 'Next', 'Choose Specific Assets']],
 ];
 const assets = Array.from({ length: 12 }, (_, i) => ({
@@ -119,6 +119,8 @@ async function appearance(page) {
       let reference;
       for (const [name, mode, clicks] of scenarios.filter(([name]) => !process.env.PICKER_SCENARIOS || name === 'manual' || process.env.PICKER_SCENARIOS.split(',').includes(name))) {
         await page.goto(`http://localhost:3036/picker-validation?mode=${mode}`, { waitUntil: 'networkidle2', timeout: 120000 });
+        await page.waitForFunction(() => !document.body.textContent.includes('Loading assets...'));
+        await delay(600);
         for (const label of clicks) await click(page, label);
         await page.waitForSelector('[data-asset-choice-row]');
         await page.evaluate(() => document.activeElement?.blur());
@@ -148,10 +150,9 @@ async function appearance(page) {
         }
         if (name === 'checklist') {
           await page.click('[data-asset-choice-row]');
-          await click(page, 'Service items');
-          await click(page, 'Inspection checks');
-          await click(page, 'Change asset');
-          assert.equal(await page.$$eval('[data-asset-choice-row]', rows => rows.length), 12);
+          await click(page, 'Service');
+          await click(page, 'Checks');
+          assert.equal(await page.$$eval('[data-asset-choice-row]', rows => rows.length), 0, 'Checklist asset selection advances to its checklist');
         }
         assert.deepEqual(errors, [], `${name}: browser errors`);
         console.log(`${mismatches.includes(`${name} at ${width}px`) ? 'FAIL' : 'PASS'} ${name} at ${width}px: design, search and selection`);
