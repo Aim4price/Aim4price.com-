@@ -3201,3 +3201,62 @@
 .recentAdvertDetailGrid { gap: .85rem; }
 .recentAdvertDetailGrid dt { font-weight: 500; }
 .recentAdvertDetailGrid dd { font-weight: 600; line-height: 1.5; }
+
+/* Compact, balanced Discovery details without the tall placeholder or nested field boxes. */
+.discoveryLeadAssetCard .discoveryMediaColumn {
+  align-self: start;
+  min-height: 0 !important;
+}
+.discoveryLeadAssetCard .discoveryPreviewStage {
+  min-height: 0 !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3;
+}
+.discoveryLeadAssetCard .discoveryPreviewLocked {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: .8rem;
+  height: 100%;
+  padding: 1.25rem;
+  background: var(--app-surface-soft, #edf5f0);
+}
+.discoveryLockIcon { width: 2.8rem; height: 2.8rem; color: var(--app-accent, #326c54); flex: none; }
+.discoveryLeadAssetCard .discoveryPreviewLocked > .discoveryLockedMedia {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  gap: .45rem;
+}
+.discoveryLeadAssetCard .discoveryPreviewLocked > .discoveryLockedMedia strong { font-size: 1rem; }
+.discoveryLeadAssetCard .discoveryPreviewLocked > .discoveryLockedMedia span { font-size: .85rem; line-height: 1.5; }
+.discoveryLeadAssetCard .discoveryDetailsPanel { border: 0; box-shadow: none; background: transparent; padding: 0; }
+.discoveryLeadAssetCard .discoveryDetailsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1.4rem; }
+.discoveryLeadAssetCard .discoveryDetailGroup { gap: 0; }
+.discoveryLeadAssetCard .discoveryDetailRow {
+  display: flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .3rem;
+  padding: .75rem 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--app-line, #dce8e0) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  min-height: 4.1rem !important;
+}
+.discoveryLeadAssetCard .discoveryDetailRow > span,
+.discoveryLeadAssetCard .discoveryDetailRow > strong {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: auto;
+}
+.discoveryLeadAssetCard .discoveryDetailRow > span { font-size: .72rem; letter-spacing: .04em; }
+.discoveryLeadAssetCard .discoveryDetailRow > strong { font-size: 1rem; font-weight: 700; line-height: 1.35; }
+.discoveryLeadAssetCard .discoveryAccessNote { margin-top: 1rem; padding: 1rem 1.15rem; }
+.discoveryLeadAssetCard .discoveryAccessNote strong { font-size: 1rem; }
+.discoveryLeadAssetCard .discoveryAccessNote span { font-size: .85rem; font-weight: 500; }
