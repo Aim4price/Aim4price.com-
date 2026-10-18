@@ -16,6 +16,8 @@
 }
 .panel button,
 .panel a {
+  display: inline-flex;
+  align-items: center;
   border: 1px solid #c5d9d0;
   background: #f1f8f4;
   color: #145c42;
