@@ -34,6 +34,7 @@ export type RecentMarketplaceAdvert = {
   publishedAtIso: string;
   priceExVat: number | null;
   imageUrl: string;
+  imageUrls: string[];
   marketplaceHref: string | null;
 };
 
@@ -413,7 +414,7 @@ function parseImages(value: unknown): string[] {
         all.indexOf(entry) === index &&
         (/^https:\/\//i.test(entry) || entry.startsWith('/')),
     )
-    .slice(0, 1);
+    .slice(0, 12);
 }
 
 function displayUsage(row: RecentAdvertRow): string {
@@ -553,6 +554,9 @@ function mapAdvert(
     publishedAtIso: iso(row.published_at),
     priceExVat: money(row.asking_price_ex_vat),
     imageUrl,
+    imageUrls: identityVisible && status === 'available'
+      ? [...new Set([imageUrl, ...parseImages(row.image_urls)].filter(Boolean))]
+      : [],
     marketplaceHref:
       identityVisible && status === 'available' && sourceAssetId
         ? `/marketplace/browse?listing=${encodeURIComponent(`asset-${sourceAssetId}`)}`

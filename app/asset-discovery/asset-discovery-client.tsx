@@ -895,8 +895,14 @@ export default function AssetDiscoveryClient({
       setExpandedAssetId(null);
       card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
     };
+    const onOutside = (event: MouseEvent) => {
+      if (photoModal || activeEnquiry || (event.target as HTMLElement).closest('[role="dialog"], [data-website-overlay]')) return;
+      if (!card.contains(event.target as Node)) setExpandedAssetId(null);
+    };
+    document.addEventListener("mousedown", onOutside);
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      document.removeEventListener("mousedown", onOutside);
       window.removeEventListener("keydown", onKeyDown);
       for (const { element, inert } of background) {
         element.classList.remove(styles.discoveryBackgroundBlur);
@@ -1422,6 +1428,7 @@ export default function AssetDiscoveryClient({
         type="button"
         className={compactAppMode ? compactClassName : desktopClassName}
         onClick={() => void toggleAssetDetails(asset)}
+        data-tooltip={isExpanded ? "Close" : "Open"}
         aria-expanded={isExpanded}
         aria-controls={`discovery-details-${asset.id}`}
         aria-label={
@@ -1621,7 +1628,7 @@ export default function AssetDiscoveryClient({
                     </div>
                   </div>
                 ) : (
-                  <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
+                  <div className={`${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
                     <svg className={styles.discoveryLockIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <rect x="5" y="10" width="14" height="11" rx="3" />
                       <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
@@ -2321,8 +2328,19 @@ export default function AssetDiscoveryClient({
               <article
                 key={asset.id}
                 data-discovery-card
+                tabIndex={0}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [id^="discovery-details-"]')) return;
+                  void toggleAssetDetails(asset);
+                }}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault(); void toggleAssetDetails(asset);
+                  }
+                }}
                 className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
               >
+                <span aria-hidden="true" data-tooltip={expandedAssetId === asset.id ? "Close" : "Open"} />
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={`${styles.assetIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>
                     <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
@@ -2350,6 +2368,16 @@ export default function AssetDiscoveryClient({
               <article
                 key={asset.id}
                 data-discovery-card
+                tabIndex={0}
+                onClick={(event) => {
+                  if ((event.target as HTMLElement).closest('button, a, input, select, textarea, [id^="discovery-details-"]')) return;
+                  void toggleAssetDetails(asset);
+                }}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault(); void toggleAssetDetails(asset);
+                  }
+                }}
                 className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${""} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
@@ -2357,6 +2385,7 @@ export default function AssetDiscoveryClient({
                     : ""
                 }`}
               >
+                <span aria-hidden="true" data-tooltip={expandedAssetId === asset.id ? "Close" : "Open"} />
                 <div className={leadStyles.clientPanel}>
                   <div className={leadStyles.clientPanelHeader}>
                     <div className={`${leadStyles.clientIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>

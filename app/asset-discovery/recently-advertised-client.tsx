@@ -1,4 +1,5 @@
 "use client";
+import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
 
@@ -36,6 +37,7 @@ type RecentAdvert = {
   publishedAtIso: string;
   priceExVat: number | null;
   imageUrl: string;
+  imageUrls?: string[];
   marketplaceHref: string | null;
   contactEligible: boolean;
 };
@@ -254,8 +256,13 @@ function formatPrice(value: number | null): string {
   }).format(value)} excl. VAT`;
 }
 
+function conditionLabel(value: string): string {
+  const label = clean(value);
+  return label ? label[0].toUpperCase() + label.slice(1) : "";
+}
+
 function advertMeta(advert: RecentAdvert): string {
-  return [clean(advert.year), clean(advert.usage), clean(advert.condition)]
+  return [clean(advert.year), clean(advert.usage), conditionLabel(advert.condition)]
     .filter(Boolean)
     .join(" · ") || "Equipment details available from the advertiser";
 }
@@ -283,7 +290,6 @@ export default function RecentlyAdvertisedClient({
   const [sourcingRequest, setSourcingRequest] = useState<SourcingRequest | null>(null);
   const [sourcingError, setSourcingError] = useState<string | null>(null);
   const [requestedAdvertIds, setRequestedAdvertIds] = useState<Set<string>>(() => new Set());
-  const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set());
   const sourcingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const sourcingDialogRef = useRef<HTMLDivElement | null>(null);
   const sourcingWasOpenRef = useRef(false);
@@ -311,7 +317,7 @@ export default function RecentlyAdvertisedClient({
       current = current.parentElement;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.key !== "Escape" || sourcingRequest) return;
+      if (event.defaultPrevented || event.key !== "Escape" || sourcingRequest || document.querySelector("[data-recent-photo-open]")) return;
       event.preventDefault();
       setExpandedAdvertId(null);
       card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
@@ -531,7 +537,7 @@ export default function RecentlyAdvertisedClient({
 
   function renderExpanded(advert: RecentAdvert) {
     if (expandedAdvertId !== advert.id) return null;
-    const hasSavedImage = Boolean(advert.imageUrl) && !failedImageIds.has(advert.id);
+
     const isLiveAdvert = advert.status === "available" && Boolean(advert.marketplaceHref);
     const canContactAdvert = advert.contactEligible && contactAccess === "allowed";
     const contactNoteId = `recent-advert-contact-note-${advert.id}`;
@@ -580,30 +586,9 @@ export default function RecentlyAdvertisedClient({
         )}
 
         <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
-          <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
-            <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
-              {hasSavedImage ? (
-                <img
-                  src={advert.imageUrl}
-                  alt={`${advert.title} Marketplace advert`}
-                  className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
-                  loading="lazy"
-                  onError={() => setFailedImageIds((current) => new Set(current).add(advert.id))}
-                />
-              ) : (
-                <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
-                  <div className={styles.discoveryLockedArtwork} aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-                  <div className={styles.discoveryLockedMedia}>
-                    <strong>Photo unavailable</strong>
-                    <span>No photo was saved with this Marketplace advert.</span>
-                  </div>
-                </div>
-              )}
-            </div>
+          <div className={styles.discoveryMediaColumn}>
+            <RecentAdvertGallery key={advert.id} id={advert.id} title={advert.title}
+              urls={advertiserIdentityVisible && advert.status === "available" ? (advert.imageUrls?.length ? advert.imageUrls : advert.imageUrl ? [advert.imageUrl] : []) : []} />
           </div>
 
           <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
@@ -627,7 +612,7 @@ export default function RecentlyAdvertisedClient({
               <div className={`${assetStyles.assetPrimaryDetails} ${styles.discoveryDetailGroup}`}>
                 {[
                   ["Usage", advert.usage],
-                  ["Condition", advert.condition],
+                  ["Condition", conditionLabel(advert.condition)],
                   ["Province", advert.province],
                   ["Price", formatPrice(advert.priceExVat)],
                 ].map(([label, value]) => (
@@ -733,6 +718,7 @@ export default function RecentlyAdvertisedClient({
         type="button"
         className={compactAppMode ? compactOpenClassName : desktopOpenClassName}
         onClick={() => setExpandedAdvertId(isExpanded ? null : advert.id)}
+        data-tooltip={isExpanded ? "Close" : "Open"}
         aria-expanded={isExpanded}
         aria-controls={`recent-advert-${advert.id}`}
         aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}

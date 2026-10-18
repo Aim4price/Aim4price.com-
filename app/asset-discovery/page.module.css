@@ -3260,3 +3260,36 @@
 .discoveryLeadAssetCard .discoveryAccessNote { margin-top: 1rem; padding: 1rem 1.15rem; }
 .discoveryLeadAssetCard .discoveryAccessNote strong { font-size: 1rem; }
 .discoveryLeadAssetCard .discoveryAccessNote span { font-size: .85rem; font-weight: 500; }
+
+/* Keep the lock and its complete message centered as one compact group. */
+.discoveryLeadAssetCard .discoveryPreviewLocked.discoveryPreviewLocked {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  gap: .65rem;
+}
+.discoveryLeadAssetCard .discoveryPreviewLocked > .discoveryLockedMedia.discoveryLockedMedia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+  max-width: 17rem;
+  text-align: center;
+  padding: 0;
+}
+.discoveryLeadAssetCard .discoveryPreviewLocked > .discoveryLockedMedia span {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.shell :global([data-discovery-card][tabindex]) { cursor: pointer; }
+.shell :global([data-discovery-card][tabindex]:focus-visible) { outline: 3px solid #247b54; outline-offset: 3px; }
