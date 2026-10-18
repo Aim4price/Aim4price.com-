@@ -1885,6 +1885,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
   const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
+  const [pendingAdvancedSection, setPendingAdvancedSection] = useState<string | null>(null);
+  useEffect(() => {
+    if (!pendingAdvancedSection) return;
+    if (activeDetailsModal !== 'condition' || conditionModalView !== 'advanced') {
+      setPendingAdvancedSection(null);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setActiveDetailedAssessmentSection(pendingAdvancedSection);
+      setPendingAdvancedSection(null);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [pendingAdvancedSection, activeDetailsModal, conditionModalView]);
+
   const [extrasModalView, setExtrasModalView] = useState<ExtrasModalView>('choose');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
@@ -7697,10 +7711,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       function showNextAdvancedQuestion(currentIndex: number) {
         const nextIndex = Math.min(currentIndex + 1, advancedQuestionTotal - 1);
         const nextSection = detailedAssessmentSections[nextIndex];
-        if (nextSection) setActiveDetailedAssessmentSection(nextSection.label);
+        if (nextSection) setPendingAdvancedSection(nextSection.label);
       }
 
       function goBackFromConditionDetail() {
+        setPendingAdvancedSection(null);
         if (advancedCondition && advancedQuestionIndex > 0) {
           const previousSection = detailedAssessmentSections[advancedQuestionIndex - 1];
           if (previousSection) setActiveDetailedAssessmentSection(previousSection.label);
@@ -7839,7 +7854,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </div>
                 </div>
               ) : (
-                <div className={styles.conditionQuestionFlow}>
+                <div className={styles.conditionQuestionFlow} aria-busy={Boolean(pendingAdvancedSection)}>
                   <div className={styles.conditionQuestionProgress}>
                     <div className={styles.conditionQuestionProgressTop}>
                       <strong className={styles.advancedQuestionHeading}>{renderDetailIcon(advancedQuestionIndex === 0 ? 'specs' : advancedQuestionIndex === 1 ? 'model' : advancedQuestionIndex === 2 ? 'usage' : advancedQuestionIndex === 3 ? 'year' : 'extras')}<span>{advancedQuestion?.label}</span></strong>
@@ -7853,6 +7868,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                   <div className={styles.conditionQuestionCard}>
                     {renderAdvancedConditionQuestion()}
+                    {pendingAdvancedSection ? <div className={styles.questionTransition} role="status"><span className={styles.questionSpinner} aria-hidden="true" /><span>Next question</span></div> : null}
                   </div>
                 </div>
               )}
@@ -7868,7 +7884,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button
                 type="button"
                 className={styles.primaryButton}
-                disabled={advancedCondition ? !detailedAssessmentComplete : !conditionStepComplete || detailedAssessmentOpen}
+                disabled={Boolean(pendingAdvancedSection) || (advancedCondition ? !detailedAssessmentComplete : !conditionStepComplete || detailedAssessmentOpen)}
                 onClick={saveConditionModal}
               >
                 Continue
@@ -7973,7 +7989,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         return (
           <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose extras type">
             <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-            <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
+            <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
                   {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3> : null}
@@ -7997,7 +8013,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     setActiveDetailsModal(null);
                   }}
                 >
-                  <span className={styles.conditionRouteNumber}>1</span>
+                  <span className={styles.extraRouteIcon} data-kind="none" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg></span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>No extras</strong>
                   </span>
@@ -8016,7 +8032,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     resetResult();
                   }}
                 >
-                  <span className={styles.conditionRouteNumber}>2</span>
+                  <span className={styles.extraRouteIcon} data-kind="add" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Extras</strong>
                   </span>
@@ -8034,7 +8050,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose fitted extras">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-          <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal}`}>
+          <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
                 {!compactAppMode ? (
@@ -8062,7 +8078,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     resetResult();
                   }}
                 >
-                  <strong>{basicFamilyExtra.label}</strong>
+                  {renderDetailIcon('extras')}<strong>{basicFamilyExtra.label}</strong>
                   <span className={styles.choiceCardNote}>Common family extra</span>
                 </button>
               ) : null}
@@ -8079,7 +8095,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   resetResult();
                 }}
               >
-                <strong>Other extra</strong>
+                {renderDetailIcon('extras')}<strong>Other extra</strong>
                 <span className={styles.choiceCardNote}>Add one other fitted extra</span>
               </button>
             </div>
@@ -8626,7 +8642,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       : value === 'unknown' || value === 'none' ? 'grey' : 'red';
     return <span className={styles.assessmentChoiceIcon} data-tone={tone} aria-hidden="true">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {tone === 'green' ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+        {['75_100', '50_75', '25_50', 'below_25'].includes(value) ? <><circle cx="12" cy="12" r="9" opacity=".25" /><circle cx="12" cy="12" r="9" pathLength="100" strokeWidth="3" strokeDasharray={`${value === '75_100' ? 90 : value === '50_75' ? 65 : value === '25_50' ? 40 : 15} 100`} transform="rotate(-90 12 12)" /></>
+          : ['complete_verified', 'partial', 'owner_recorded'].includes(value) ? <><path d="M6 3h9l4 4v14H6ZM14 3v5h5M9 12h6M9 16h4" /></>
+          : value === 'unknown' ? <><circle cx="12" cy="12" r="9" /><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01" /></>
+          : tone === 'green' ? <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
           : tone === 'teal' ? <path d="m5 12 4 4L19 6" />
           : tone === 'amber' ? <path d="M5 7h14M5 12h14M5 17h9" />
           : tone === 'grey' ? <><circle cx="12" cy="12" r="9" /><path d="M8 12h8" /></>
@@ -8674,10 +8693,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="button"
               className={`${styles.dealerAssessmentOption} ${value === option.value ? styles.dealerAssessmentOptionActive : ''}`}
               aria-pressed={value === option.value}
+              disabled={activeDetailsModal === 'condition' && Boolean(pendingAdvancedSection)}
               onClick={() => {
                 onChange(option.value);
                 setDetailedAssessmentError('');
-                if (compactAppMode) {
+                if (compactAppMode && activeDetailsModal !== 'condition') {
                   setActiveDetailedAssessmentSection(nextSection);
                   if (!nextSection && activeDetailsModal !== 'condition') scrollToDetailsCard('valuation-popularity-step');
                 }
