@@ -9993,7 +9993,7 @@ export default function AssetRegisterClient({
 
   function goBackFromAssetSettingsSubView() {
     if (isAssetSettingsBusy) return;
-    if (assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap') {
+    if (assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' || assetSettingsView === 'tracking') {
       setAssetSettingsView('location');
       clearAssetSettingsLocationFeedback();
       return;
@@ -18868,7 +18868,7 @@ export default function AssetRegisterClient({
                 >
                   <span>{isManageMapLocationFlow
                     ? 'Back to map options'
-                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
+                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' || assetSettingsView === 'tracking'
                       ? 'Back to Location'
                       : 'Back'}</span>
                 </button>
@@ -18879,26 +18879,24 @@ export default function AssetRegisterClient({
                   <button
                     type="button"
                     className={styles.assetSettingsOptionButton}
-                    onClick={openAssetSettingsLocationView}
+                    data-settings-action="location" onClick={openAssetSettingsLocationView}
                     disabled={isAssetSettingsBusy}
                   >
-                    <FlagIcon className={styles.assetSettingsOptionIcon} />
+                    <MapPinIcon className={styles.assetSettingsOptionIcon} />
                     <span>
                       <strong>Location</strong>
-                      <small>Update GPS.</small>
+                      <small>GPS and tracking device.</small>
                     </span>
                   </button>
 
-                  <button type="button" className={styles.assetSettingsOptionButton} onClick={()=>setAssetSettingsView('tracking')} disabled={isAssetSettingsBusy}>
-                    <FlagIcon className={styles.assetSettingsOptionIcon}/><span><strong>Tracking device</strong><small>Connect an equipment phone.</small></span>
-                  </button>
+
 
                   {isSavedManualAsset(editingAsset) ? (
                     <>
                       <button
                         type="button"
                         className={styles.assetSettingsOptionButton}
-                        onClick={openAssetSettingsTypeView}
+                        data-settings-action="type" onClick={openAssetSettingsTypeView}
                         disabled={isAssetSettingsBusy}
                       >
                         <OptionsIcon className={styles.assetSettingsOptionIcon} />
@@ -18924,7 +18922,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {isSavedAim4priceAsset(editingAsset) && shouldShowRevalueLifetimeInput(editingAsset) ? (
-                    <button type="button" className={styles.assetSettingsOptionButton} onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
+                    <button type="button" className={styles.assetSettingsOptionButton} data-settings-action="lifetime" onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
                       <TrendIcon className={styles.assetSettingsOptionIcon} />
                       <span><strong>Lifetime expectancy</strong><small>Total working life.</small></span>
                     </button>
@@ -18934,7 +18932,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.assetSettingsOptionButton}
-                      onClick={openAssetSettingsUsageView}
+                      data-settings-action="reading" onClick={openAssetSettingsUsageView}
                       disabled={isAssetSettingsBusy}
                     >
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
@@ -18974,7 +18972,7 @@ export default function AssetRegisterClient({
               ) : null}
 
               {['location','locationManual','locationMap'].includes(assetSettingsView) ? (
-                <AssetLocationEditor viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
+                <AssetLocationEditor onTracking={() => setAssetSettingsView('tracking')} viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
                   onSave={async input => { await persistAssetSettingsGpsPosition({...input,assetId:editingAsset.id,clientCapturedAt:new Date().toISOString()}); }} />
               ) : null}
 
