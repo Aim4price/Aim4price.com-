@@ -15264,6 +15264,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }
 }
 
+
 /* Value Asset result: a clear summary, one price breakdown, and distinct next actions. */
 .finalEstimateLayout .resultPageHeading { grid-column: 1 / -1; }
 .resultPageHeading h2 { margin: 0; color: var(--app-text, #173e33); font-size: 1.8rem; letter-spacing: -.035em; }
@@ -15332,3 +15333,10 @@
   :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultVatToggleButton { min-width: 0; padding: 10px 8px; flex: 1; font-size: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostTotal { padding-bottom: 22px; }
 }
+
+/* Keep modal actions at the content edge and confirmation copy in clear groups. */
+.replacementHelpModal .replacementHelpActions { width: 100%; box-sizing: border-box; justify-self: stretch; justify-content: flex-end; }
+.replacementHelpModal .replacementHelpActions .primaryButton { margin-inline-start: auto; margin-inline-end: 0; }
+.replacementNoticeModal .replacementNoticeIntro { display: grid; gap: 1rem; }
+.replacementNoticeModal .replacementNoticeIntro p { margin: 0; text-wrap: pretty; }
+.replacementNoticeModal .replacementNoticeDisclaimer { display: block; text-wrap: pretty; }
