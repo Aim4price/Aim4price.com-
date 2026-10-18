@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
     province?: unknown;
     area?: unknown;
     photos?: unknown;
-    replacePhotos?: unknown;
     brandKitId?: unknown;
     showDealRating?: unknown;
   };
@@ -179,9 +178,6 @@ export async function POST(request: NextRequest) {
   let sellerEmail = String(body.sellerEmail ?? '').trim();
   let province = String(body.province ?? '').trim();
   let area = String(body.area ?? '').trim();
-  if (body.replacePhotos === true && !Array.isArray(body.photos)) {
-    return marketplaceResponse({ ok: false, error: 'A photo list is required.' }, 400);
-  }
   const photoUrls = normalizePhotos(body.photos);
   const brandKitId = String(body.brandKitId ?? '').trim();
 
@@ -213,7 +209,6 @@ export async function POST(request: NextRequest) {
       province: province || null,
       area: area || null,
       photos: photoUrls,
-      replacePhotos: body.replacePhotos === true,
       brandKitId: accountType === 'dealer' ? brandKitId || null : null,
       allowBrandKit: accountType === 'dealer',
       showDealRating: body.showDealRating !== false,

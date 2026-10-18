@@ -1,5 +1,4 @@
 'use client';
-import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
 import advancedStyles from '../../components/asset-register/AdvancedSettings.module.css';
 import AssetMessageReader from '../../components/asset-register/AssetMessageReader';
@@ -1058,7 +1057,6 @@ type PricingRevaluePreview = {
 };
 
 type MarketplacePublishDraft = {
-  photos: string[];
   sellerName: string;
   sellerCompany: string;
   sellerPhone: string;
@@ -4794,7 +4792,6 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
     area: asset.marketplaceArea?.trim() || profile?.marketplaceLocation?.trim() || profile?.townCity?.trim() || '',
     askingPriceExVat: savedMarketplacePrice > 0 ? formatRegisterValueInput(savedMarketplacePrice) : '',
     description: savedListingNotes,
-    photos: normalizePhotos(asset.photos),
   };
 }
 
@@ -6428,7 +6425,6 @@ export default function AssetRegisterClient({
   const [acquisitionDetailsError, setAcquisitionDetailsError] = useState('');
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
-  const [marketplacePhotosBusy, setMarketplacePhotosBusy] = useState(false);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const groupFlagBusyRef = useRef<string | null>(null);
   const [busyFlagGroupId, setBusyFlagGroupId] = useState<string | null>(null);
@@ -11761,7 +11757,6 @@ export default function AssetRegisterClient({
   }
 
   function closeMarketplaceModal() {
-    if (marketplacePhotosBusy) return;
     setMarketplaceAsset(null);
     setMarketplaceDraft(null);
     setIsPublishingMarketplace(false);
@@ -12873,8 +12868,6 @@ export default function AssetRegisterClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: marketplaceAsset.id,
-          photos: marketplaceDraft.photos,
-          replacePhotos: true,
           askingPriceExVat,
           marketplaceNotes: marketplaceDraft.description.trim(),
           sellerPhone: marketplaceDraft.sellerPhone.trim(),
@@ -12893,7 +12886,6 @@ export default function AssetRegisterClient({
 
       const publishedAsset: RegisterAsset = {
         ...marketplaceAsset,
-        photos: marketplaceDraft.photos,
         sellerPhone: marketplaceDraft.sellerPhone.trim(),
         marketplaceNotes: marketplaceDraft.description.trim(),
         marketplaceStatus: data.marketplaceStatus ?? 'live',
@@ -15572,6 +15564,7 @@ export default function AssetRegisterClient({
       : assetSettingsLocationState === 'savingDevice'
         ? 'Saving location...'
         : 'Use current location';
+  const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
     ? isLiveOnMarketplace(marketplaceAsset)
@@ -21271,8 +21264,40 @@ export default function AssetRegisterClient({
                       </label>
                     </section>
 
-                    <MarketplacePhotoEditor photos={marketplaceDraft.photos} busy={marketplacePhotosBusy} onBusyChange={setMarketplacePhotosBusy} disabled={marketplacePhotosBusy || isPublishingMarketplace}
-                      onChange={photos => setMarketplaceDraft(current => current ? { ...current, photos } : current)} />
+                    <section className={styles.marketplacePhotosPanel}>
+                      <div className={styles.marketplacePanelHeading}>
+                        <span>Photos</span>
+                        <small>
+                          {marketplacePhotoUrls.length
+                            ? `${marketplacePhotoUrls.length} uploaded photo${marketplacePhotoUrls.length === 1 ? '' : 's'} will be shown on the listing.`
+                            : 'No photos are uploaded for this asset yet.'}
+                        </small>
+                      </div>
+
+                      {marketplacePhotoUrls.length ? (
+                        <div className={styles.marketplacePhotoPreview}>
+                          <img
+                            src={marketplacePhotoUrls[0]}
+                            alt={`${marketplaceAsset.title} main marketplace photo`}
+                            className={styles.marketplaceMainPhoto}
+                          />
+
+                          {marketplacePhotoUrls.length > 1 ? (
+                            <div className={styles.marketplacePhotoStrip} aria-label="Marketplace listing photos">
+                              {marketplacePhotoUrls.slice(0, 6).map((photoUrl, index) => (
+                                <img key={`${photoUrl}-${index}`} src={photoUrl} alt={`${marketplaceAsset.title} photo ${index + 1}`} />
+                              ))}
+                              {marketplacePhotoUrls.length > 6 ? <span>+{marketplacePhotoUrls.length - 6}</span> : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div className={styles.marketplaceNoPhotos}>
+                          <strong>No photos uploaded</strong>
+                          <span>Add photos in Update asset to show real asset photos on the marketplace.</span>
+                        </div>
+                      )}
+                    </section>
 
                     <label className={`${styles.field} ${styles.marketplaceNotesField}`}>
                       <span>Listing notes</span>
@@ -21356,7 +21381,7 @@ export default function AssetRegisterClient({
                 </div>
 
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
-                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={marketplacePhotosBusy || isPublishingMarketplace}>
+                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
                     Cancel
                   </button>
 
@@ -21365,7 +21390,7 @@ export default function AssetRegisterClient({
                       type="button"
                       className={`${styles.secondaryButton} ${styles.ownerMarketplaceRemoveButton}`}
                       onClick={() => handleRemoveFromMarketplace(marketplaceAsset)}
-                      disabled={marketplacePhotosBusy || isPublishingMarketplace}
+                      disabled={isPublishingMarketplace}
                     >
                       Remove listing
                     </button>
@@ -21374,7 +21399,7 @@ export default function AssetRegisterClient({
                   <button
                     type="submit"
                     className={styles.primaryButton}
-                    disabled={marketplacePhotosBusy || isPublishingMarketplace || (parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0) <= 0}
+                    disabled={isPublishingMarketplace || (parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0) <= 0}
                   >
                     {isPublishingMarketplace
                       ? 'Publishing...'
