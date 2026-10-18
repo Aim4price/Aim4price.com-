@@ -15179,12 +15179,12 @@
 .replacementCostTotal { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem 2rem; padding: 1.5rem 1.75rem; border-top: 1px solid #cddfd5; background: #edf6f0; }
 .replacementCostTotal > span { display: grid; gap: .4rem; font-size: 1.2rem; font-weight: 700; }
 .replacementCostTotal small { font-size: 1rem; color: #536c60; font-weight: 500; }
-.replacementCostTotal > strong { font-size: clamp(1.8rem, 3vw, 2.4rem); line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.replacementCostTotal > strong { font-size: clamp(1.8rem, calc(3 * var(--website-design-vw, 1vw)), 2.4rem); line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .replacementHelpButton { display: inline-flex; align-items: center; gap: .55rem; margin-top: .8rem; border: 0; padding: .5rem 0; background: transparent; color: #21664b; font: inherit; font-size: 1.05rem; font-weight: 650; cursor: pointer; text-align: left; }
 .replacementHelpButton svg { width: 1.4rem; height: 1.4rem; flex-shrink: 0; }
 .replacementHelpButton:hover { text-decoration: underline; text-underline-offset: .2rem; }
 .replacementHelpButton:focus-visible { outline: 3px solid #29805c; outline-offset: 4px; border-radius: .35rem; }
-.replacementHelpModal { width: min(38rem, calc(100vw - 2rem)); }
+.replacementHelpModal { width: min(38rem, calc(var(--website-design-width, 100vw) - 2rem)); }
 .replacementHelpCopy { display: grid; gap: 1rem; margin: 1.25rem 0; color: #334e41; font-size: 1.15rem; line-height: 1.6; text-align: left; }
 .replacementHelpCopy p { margin: 0; }
 .replacementHelpNote { padding: 1rem; background: #edf6f0; border-radius: .85rem; font-size: 1rem; }
@@ -15193,8 +15193,8 @@
 .replacementStage .replacementManualCard input { min-height: 3.75rem; font-size: 1.55rem; font-weight: 650; }
 .replacementStage .replacementManualCard .fieldHint { font-size: 1rem; line-height: 1.5; }
 @media (max-width: 540px) {
-  .replacementCostParts { grid-template-columns: 1fr; gap: 1rem; padding: 1.2rem; }
-  .replacementCostParts > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; }
-  .replacementCostParts dd { font-size: 1.35rem; white-space: nowrap; }
-  .replacementCostTotal { padding: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementCostParts { grid-template-columns: 1fr; gap: 1rem; padding: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementCostParts > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementCostParts dd { font-size: 1.35rem; white-space: nowrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementCostTotal { padding: 1.2rem; }
 }
