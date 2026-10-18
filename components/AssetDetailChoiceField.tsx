@@ -17,7 +17,7 @@ const conditionAppearance: Record<string, { description: string; tone: string; p
 };
 
 export default function AssetDetailChoiceField<T extends string>({
-  label, value, options, onChange, className = '', assetDetailEditTarget,
+  label, value, options, onChange, className = '', assetDetailEditTarget, onRequestOpen,
 }: {
   label: string;
   value: T | '';
@@ -25,6 +25,7 @@ export default function AssetDetailChoiceField<T extends string>({
   onChange: (value: T) => void;
   className?: string;
   assetDetailEditTarget?: string;
+  onRequestOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const labelId = useId();
@@ -34,7 +35,7 @@ export default function AssetDetailChoiceField<T extends string>({
   return <div className={`${fieldStyles.field} ${styles.field} ${className}`} data-asset-detail-edit-target={assetDetailEditTarget}>
     <span id={labelId}>{label}</span>
     <button type="button" className={styles.trigger} aria-labelledby={labelId}
-      aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+      aria-haspopup="dialog" aria-expanded={open} onClick={() => onRequestOpen ? onRequestOpen() : setOpen(true)}>
       <span>{selected?.label || `Choose ${label.toLowerCase()}`}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d={isCondition ? 'm12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6' : 'M4 7h16M4 17h16M8 4v6m8 4v6'} /></svg>
     </button>

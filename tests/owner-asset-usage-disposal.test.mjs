@@ -6,6 +6,7 @@ const usageSource = await readFile(new URL('../lib/asset-usage.ts', import.meta.
 const ownerApiSource = await readFile(new URL('../app/api/owner-app/assets/[assetId]/route.ts', import.meta.url), 'utf8');
 const ownerClientSource = await readFile(new URL('../app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx', import.meta.url), 'utf8');
 const assetRegisterSource = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
+const usageDialogSource = await readFile(new URL('../components/AssetUsageTypeDialog.tsx', import.meta.url), 'utf8');
 const ownerAssetListSource = await readFile(new URL('../app/owner-app/assets/owner-assets-client.tsx', import.meta.url), 'utf8');
 
 test('usage supports a deliberate not-applicable state', () => {
@@ -23,9 +24,11 @@ test('Owner App offers hours, percentage, and not applicable', () => {
 });
 
 test('desktop Update Asset offers the same compact usage choices and defaults property to N/A', () => {
-  assert.match(assetRegisterSource, /aria-label="Usage type"/);
-  assert.match(assetRegisterSource, /<option value="percentage">% worked<\/option>/);
-  assert.match(assetRegisterSource, /<option value="not_applicable">Not applicable<\/option>/);
+  assert.match(assetRegisterSource, /label="Usage type"/);
+  assert.match(assetRegisterSource, /onRequestOpen=\{\(\) => setUsageTypeDialogOpen\(true\)\}/);
+  assert.match(usageDialogSource, /value: 'percentage', label: 'Percentage'/);
+  assert.match(usageDialogSource, /value: 'not_applicable', label: 'Unknown'/);
+  assert.match(usageDialogSource, /Confirm change/);
   assert.match(assetRegisterSource, /nextKind === 'property'[\s\S]*\? 'not_applicable'/);
   assert.match(ownerAssetListSource, /asset\.usageMetric === 'not_applicable'.*'Not applicable'/);
 });
