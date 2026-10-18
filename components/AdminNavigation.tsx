@@ -240,7 +240,7 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                     onFocus={() => router.prefetch("/valuation")}
                     onClick={() => setIsOpen(false)}
                   >
-                    <strong>Get estimate</strong>
+                    <strong>Value Asset</strong>
                     <span aria-hidden="true">›</span>
                   </Link>
                 ) : null}

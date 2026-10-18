@@ -370,7 +370,7 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
   assert.match(source, /Ready for your estimate\?/);
-  assert.match(source, /I understand, get estimate/);
+  assert.match(source, /I understand, get my estimate/);
   const disclaimer = source.match(/<small id="replacement-notice-disclaimer"[^>]*>([\s\S]*?)<\/small>/)?.[1].trim();
   assert.equal(disclaimer, 'Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.');
   assert.doesNotMatch(source, /Check the replacement price and usage/);

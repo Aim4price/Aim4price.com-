@@ -5842,8 +5842,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
-            <h2 className={styles.stepTitle}>Choose sector</h2>
-            {!compactAppMode ? <p className={styles.stepText}>Choose a sector to start your estimate.</p> : null}
+            <h2 className={styles.stepTitle}>What is your asset worth?</h2>
+            {!compactAppMode ? <p className={styles.stepText}>Choose sector to start valuing your asset.</p> : null}
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -6224,7 +6224,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}>What would a comparable new asset cost today? Enter the asset price only; your selected extras are added below.</p>
+            <p className={styles.stepText}>What would a comparable new asset cost today?<br />Enter the asset price only; your selected extras are added below.</p>
             <button type="button" className={styles.replacementHelpButton} aria-haspopup="dialog" onClick={() => replacementHelpDialogRef.current?.showModal()}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg>
               How is this price used?
@@ -6383,7 +6383,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>{compactAppMode ? 'Enter asset price' : 'Enter your own asset price'} ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
+            <span className={styles.fieldLabel}>Enter the asset replacement price ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
             <input
               type="text"
               inputMode="decimal"
@@ -8862,6 +8862,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
+            <h2 className={styles.resultMachineTitle}>Estimated asset value</h2>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -9418,7 +9419,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     || (!basicEstimateActive && step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))
                   }
                 >
-                  {preparingIdentity ? <span className={styles.identityProgress} role="status"><span className={styles.identitySpinner} aria-hidden="true" />Preparing next step…</span> : valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get Estimate' : 'Continue' : step === 4 ? 'Get Estimate' : 'Continue'}
+                  {preparingIdentity ? <span className={styles.identityProgress} role="status"><span className={styles.identitySpinner} aria-hidden="true" />Preparing next step…</span> : valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get my estimate' : 'Continue' : step === 4 ? 'Get my estimate' : 'Continue'}
                 </button>
               )}
             </div>
@@ -9441,7 +9442,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <h2 data-estimate-modal-title id="replacement-notice-title">Ready for your estimate?</h2>
             </div>
             <p id="replacement-notice-description" className={`${styles.replacementNoticeIntro} ${modalStyles.description}`}>
-              Please check your asset details and replacement price. Your estimate uses this information, and actual selling prices may vary.
+              Aim4price uses your replacement price and asset details with its depreciation logic to calculate an estimated current value.
+              <br /><br />
+              <strong>You are responsible for entering the correct replacement price and VAT basis.</strong> A price that is too high or too low will affect your final estimate. Please check these before continuing.
             </p>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
               Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.
@@ -9463,7 +9466,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   void calculateValuation();
                 }}
               >
-                I understand, get estimate
+                I understand, get my estimate
               </button>
             </div>
           </section>
@@ -9724,7 +9727,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               ) : isDealerAccount ? (
                 <>
                   <strong>Dealer and auctioneer account.</strong>
-                  <span>Publish marketplace listings through Get Estimate after the value has been calculated.</span>
+                  <span>Publish marketplace listings through Value Asset after the value has been calculated.</span>
                 </>
               ) : (
                 <>
