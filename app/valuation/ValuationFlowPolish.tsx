@@ -31,8 +31,6 @@ type FamilyOption = {
   id: string;
   label: string;
   meta: string;
-  guidance: string;
-  guideNote: string;
   selected: boolean;
   searchText: string;
 };
@@ -102,8 +100,6 @@ function sameOptions(left: FamilyOption[], right: FamilyOption[]): boolean {
       && option.id === candidate.id
       && option.label === candidate.label
       && option.meta === candidate.meta
-      && option.guidance === candidate.guidance
-      && option.guideNote === candidate.guideNote
       && option.selected === candidate.selected;
   });
 }
@@ -275,18 +271,14 @@ export default function ValuationFlowPolish() {
       const buttonMap = new Map<string, HTMLButtonElement>();
       const options = buttons.map((button, index) => {
         const { label, meta } = optionLabelParts(button);
-        const guidance = button.dataset.familyGuidance ?? '';
-        const guideNote = button.dataset.familyGuideNote ?? '';
         const id = `family-option-${index}`;
         buttonMap.set(id, button);
         return {
           id,
           label,
           meta,
-          guidance,
-          guideNote,
           selected: button.className.includes('equipmentDropdownOptionActive') || button.getAttribute('aria-pressed') === 'true',
-          searchText: `${label} ${meta} ${guidance}`.toLowerCase(),
+          searchText: `${label} ${meta}`.toLowerCase(),
         } satisfies FamilyOption;
       });
 
@@ -496,9 +488,6 @@ export default function ValuationFlowPolish() {
                 >
                   <span className={styles.familyOptionCopy}>
                     <strong>{option.label}</strong>
-                    {option.meta ? <small>{option.meta}</small> : null}
-                    {option.guidance ? <span className={styles.familyGuidance}>{option.guidance}</span> : null}
-                    {option.guideNote ? <span className={styles.familyGuideNote}>{option.guideNote}</span> : null}
                   </span>
                 </button>
               ))}
