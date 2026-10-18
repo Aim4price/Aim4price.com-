@@ -15259,12 +15259,6 @@
 .replacementHelpModal .replacementHelpNote { padding: .9rem 1.1rem; background: #edf6f0; font-size: 1rem; }
 .replacementHelpModal .replacementHelpActions { justify-content: flex-end; padding: 0; }
 .replacementHelpActions .primaryButton { margin: 0; min-height: 3rem; box-shadow: none; }
-@media (max-width: 540px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpStep { grid-template-columns: 2.5rem minmax(0, 1fr); padding: .9rem; gap: .75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }
-}
-
-
 /* Value Asset result: a clear summary, one price breakdown, and distinct next actions. */
 .finalEstimateLayout .resultPageHeading { grid-column: 1 / -1; }
 .resultPageHeading h2 { margin: 0; color: var(--app-text, #173e33); font-size: 1.8rem; letter-spacing: -.035em; }
@@ -15333,6 +15327,13 @@
   :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultVatToggleButton { min-width: 0; padding: 10px 8px; flex: 1; font-size: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .finalEstimateLayout .resultReplacementSummary .replacementCostTotal { padding-bottom: 22px; }
 }
+
+
+@media (max-width: 540px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpStep { grid-template-columns: 2.5rem minmax(0, 1fr); padding: .9rem; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementHelpIcon { width: 2.5rem; height: 2.5rem; }
+}
+
 
 /* Keep modal actions at the content edge and confirmation copy in clear groups. */
 .replacementHelpModal .replacementHelpActions { width: 100%; box-sizing: border-box; justify-self: stretch; justify-content: flex-end; }
