@@ -23,7 +23,7 @@ test('Dealer App home mirrors the Owner App launcher without dropping dealer too
   assert.match(source, /label: 'Overview'/);
   assert.match(source, /label: 'Leads'/);
   assert.match(source, /label: 'Maintenance'/);
-  assert.match(source, /label: 'Get Estimate'/);
+  assert.match(source, /label: 'Value Asset'/);
   assert.match(source, /label: 'Discover Assets'/);
   assert.match(source, /label: 'Client Costs'/);
   assert.match(source, /label: 'Marketplace'/);
