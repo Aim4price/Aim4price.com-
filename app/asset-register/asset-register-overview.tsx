@@ -658,6 +658,7 @@ export default function AssetRegisterOverview() {
           type="button"
           className={`${styles.viewSwitchButton} ${activeView === 'overview' ? styles.viewSwitchButtonActive : ''}`}
           aria-pressed={activeView === 'overview'}
+          data-tooltip="See problems, notes and updates that need attention."
           onClick={() => selectView('overview')}
         >
           <span className={styles.viewSwitchIcon}>{overviewViewIcon()}</span>
@@ -672,6 +673,7 @@ export default function AssetRegisterOverview() {
           type="button"
           className={`${styles.viewSwitchButton} ${activeView === 'assets' ? styles.viewSwitchButtonActive : ''}`}
           aria-pressed={activeView === 'assets'}
+          data-tooltip="See all saved assets in this register."
           onClick={() => selectView('assets')}
         >
           <span className={styles.viewSwitchIcon}>{assetsViewIcon()}</span>
