@@ -20729,8 +20729,8 @@ export default function AssetRegisterClient({
       {bulkFinanceAssetPickerOpen && editingAsset ? (
         <div className={`${styles.modalOverlay} ${styles.bulkFinancePickerOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setBulkFinanceAssetPickerOpen(false)} />
-          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.exportAssetPickerModal} ${styles.bulkFinanceAssetPickerModal}`} role="dialog" aria-modal="true" aria-labelledby="bulk-finance-assets-title">
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.exportAssetPickerModal} ${styles.bulkFinanceAssetPickerModal} ${pickerStyles.modal}`} data-asset-choice-modal="true" role="dialog" aria-modal="true" aria-labelledby="bulk-finance-assets-title">
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-asset-choice-header="true">
               <div className={styles.modalHeaderText}>
                 <h3 id="bulk-finance-assets-title">Choose assets for bulk finance</h3>
                 <p>Select every asset covered by the same finance agreement.</p>
@@ -20739,10 +20739,10 @@ export default function AssetRegisterClient({
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
-            <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
-              <div className={styles.exportModalBody}>
-                <section className={styles.pdfAssetDownloadPanel} aria-label="Choose assets for bulk finance">
-                  <div className={styles.pdfAssetDownloadToolbar}>
+            <div className={pickerStyles.contents}>
+              <div className={pickerStyles.contents}>
+                <section className={pickerStyles.contents} aria-label="Choose assets for bulk finance">
+                  <div className={styles.pdfAssetDownloadToolbar} data-asset-choice-toolbar="true">
                     <input
                       className={styles.pdfAssetSearchInput}
                       type="search"
@@ -20756,31 +20756,27 @@ export default function AssetRegisterClient({
                       <button type="button" className={styles.secondaryButton} onClick={() => setBulkFinanceAssetIds([editingAsset.id])} disabled={bulkFinanceAssetIds.length <= 1}>Clear</button>
                     </div>
                   </div>
-                  <div className={styles.pdfAssetDownloadList}>
+                  <div className={styles.pdfAssetDownloadList} data-asset-choice-list="true">
                     {visibleBulkFinanceAssets.length ? visibleBulkFinanceAssets.map((asset) => {
                       const selected = bulkFinanceAssetIdSet.has(asset.id);
                       const required = asset.id === editingAsset.id;
                       return (
-                        <label key={asset.id} className={`${styles.pdfAssetDownloadRow} ${selected ? styles.pdfAssetDownloadRowSelected : ''} ${required ? styles.bulkFinanceCurrentAsset : ''}`}>
-                          <input className={styles.pdfAssetDownloadCheckboxInput} type="checkbox" checked={selected} onChange={() => toggleBulkFinanceAsset(asset.id)} disabled={required} />
-                          <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
-                          <span className={styles.pdfAssetDownloadCopy}>
+                        <label data-asset-choice-row="true" data-asset-choice-selected={selected} key={asset.id} className={`${styles.pdfAssetDownloadRow} ${selected ? styles.pdfAssetDownloadRowSelected : ''} ${required ? styles.bulkFinanceCurrentAsset : ''}`}>
+                          <input className={pickerStyles.checkbox} type="checkbox" checked={selected} onChange={() => toggleBulkFinanceAsset(asset.id)} disabled={required} />
+                          <span className={styles.pdfAssetDownloadCopy} data-asset-choice-copy="true">
                             <strong>{asset.title}</strong>
-                            <span>{buildAssetMeta(asset)}</span>
-                            <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}{required ? ' · Current asset' : ''}</small>
+                            <small data-asset-choice-meta="true">{buildAssetMeta(asset)}</small>
+                            <small data-asset-choice-secondary="true">{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}{required ? ' · Current asset' : ''}</small>
                           </span>
-                          <span className={styles.pdfAssetDownloadValue}>
-                            <strong>{money(asset.value)}</strong>
-                            <small>current value</small>
-                          </span>
+                          <span data-asset-choice-value="true"><span className={`${pickerStyles.select} ${pickerStyles.multi}`}><i aria-hidden="true">{selected ? '✓' : ''}</i><strong>{required ? 'Included' : selected ? 'Selected' : 'Select'}</strong></span></span>
                         </label>
                       );
                     }) : <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>}
                   </div>
                 </section>
-                <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`}>
+                <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`} data-asset-choice-footer="true">
                   <button type="button" className={styles.secondaryButton} onClick={() => setBulkFinanceAssetPickerOpen(false)}>Back</button>
-                  <button type="button" className={styles.primaryButton} onClick={() => setBulkFinanceAssetPickerOpen(false)}>{bulkFinanceAssetIds.length} selected · Done</button>
+                  <button type="button" className={styles.primaryButton} data-asset-choice-action="primary" onClick={() => setBulkFinanceAssetPickerOpen(false)}>{bulkFinanceAssetIds.length} selected · Done</button>
                 </div>
               </div>
             </div>

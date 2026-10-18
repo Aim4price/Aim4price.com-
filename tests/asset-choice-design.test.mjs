@@ -69,27 +69,26 @@ test('Maintenance asset search uses the Cost Tracking single-input toolbar', () 
   const costToolbarEnd = costClient.indexOf('</div>', costToolbarStart);
   const firstToolbarStart = maintenanceClient.indexOf(toolbarMarker);
   const firstToolbarEnd = maintenanceClient.indexOf('</div>', firstToolbarStart);
-  const secondToolbarStart = maintenanceClient.indexOf(toolbarMarker, firstToolbarEnd);
-  const secondToolbarEnd = maintenanceClient.indexOf('</div>', secondToolbarStart);
+
 
   assert.notEqual(costToolbarStart, -1);
   assert.notEqual(firstToolbarStart, -1);
-  assert.notEqual(secondToolbarStart, -1);
+  assert.match(maintenanceClient, /<ReportDownloadFlow/);
 
   for (const toolbar of [
     costClient.slice(costToolbarStart, costToolbarEnd),
     maintenanceClient.slice(firstToolbarStart, firstToolbarEnd),
-    maintenanceClient.slice(secondToolbarStart, secondToolbarEnd),
   ]) {
-    assert.match(toolbar, /<input[\s\S]*?placeholder="Search assets\.\.\."/);
+    assert.match(toolbar, /<input[\s\S]*?placeholder=[^>]*Search assets\.\.\./);
     assert.match(toolbar, /className=\{styles\.secondaryButton\}/);
     assert.doesNotMatch(toolbar, /type="search"|disabled=|pickerSearchField|<SearchIcon|pickerClearButton/);
   }
 
   const primaryMaintenanceToolbar = maintenanceClient.slice(firstToolbarStart, firstToolbarEnd);
-  const reportMaintenanceToolbar = maintenanceClient.slice(secondToolbarStart, secondToolbarEnd);
+  const reportPicker = read('../components/ReportDownloadFlow.tsx');
   assert.match(primaryMaintenanceToolbar, /value=\{pickerSearch\}[\s\S]*?setPickerSearch\(event\.target\.value\)[\s\S]*?setPickerSearch\(''\)/);
-  assert.match(reportMaintenanceToolbar, /value=\{downloadAssetSearch\}[\s\S]*?setDownloadAssetSearch\(event\.target\.value\)[\s\S]*?setDownloadAssetSearch\(''\)/);
+  assert.match(reportPicker, /data-asset-choice-toolbar/);
+  assert.match(reportPicker, /setSearch\(event.target.value\)/);
   assert.match(maintenanceStyles, /\.assetModal \.pickerToolbar\s*\{[\s\S]*?padding:\s*0 clamp\(1\.25rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.4\), 2rem\) 1rem;/);
   assert.match(maintenanceStyles, /\.maintenanceExportBody \.pickerToolbar\s*\{\s*padding:\s*0 0 1rem;/);
 });

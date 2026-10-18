@@ -1,4 +1,5 @@
 "use client";
+import pickerStyles from '../../components/AssetPicker.module.css';
 import CreateAssetRegisterModal from '../../components/asset-register/CreateAssetRegisterModal';
 
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -3489,7 +3490,7 @@ export default function AssetRegistersClient({
           aria-labelledby="qr-labels-title"
         >
           <section
-            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.qrLabelsModal}`}
+            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.qrLabelsModal} ${pickerStyles.modal}`}
             data-asset-choice-surface="true"
             data-asset-choice-modal="true"
           >

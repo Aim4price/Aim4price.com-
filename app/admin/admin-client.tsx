@@ -1,5 +1,6 @@
 "use client";
 
+import pickerStyles from '../../components/AssetPicker.module.css';
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { isAim4priceAdminEmail } from "../../lib/account-constants";
@@ -2515,7 +2516,7 @@ export default function AdminClient({
       {qrModal ? (
         <div className={styles.modalBackdrop}>
           <section
-            className={styles.qrModal}
+            className={`${styles.qrModal} ${pickerStyles.modal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-qr-modal-title"
