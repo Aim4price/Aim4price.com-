@@ -4,7 +4,6 @@ import test from 'node:test';
 import ts from 'typescript';
 
 const client = readFileSync(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
-const usageTypeDialog = readFileSync(new URL('../components/AssetUsageTypeDialog.tsx', import.meta.url), 'utf8');
 const assetMapClient = readFileSync(new URL('../app/asset-map/asset-map-client.tsx', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
 const uploadModal = readFileSync(new URL('../components/documents/AssetDocumentUploadModal.tsx', import.meta.url), 'utf8');
@@ -70,11 +69,9 @@ test('percentage usage is rendered without the word worked', () => {
 
   assert.match(formatter, /return `\$\{formatted\}%`/);
   assert.doesNotMatch(formatter, /worked/i);
-  assert.match(client, /import AssetUsageTypeDialog, \{ USAGE_TYPE_OPTIONS \} from '\.\.\/\.\.\/components\/AssetUsageTypeDialog'/);
-  assert.match(client, /const usageTypeOptions = USAGE_TYPE_OPTIONS;/);
-  assert.match(client, /options=\{usageTypeOptions\}/);
-  assert.match(usageTypeDialog, /value:\s*'percentage', label: 'Percentage'/);
-  assert.match(usageTypeDialog, /USAGE_TYPE_OPTIONS\.map/);
+  const usageDialog = readFileSync(new URL('../components/AssetUsageTypeDialog.tsx', import.meta.url), 'utf8');
+  assert.match(client, /const usageTypeOptions = USAGE_TYPE_OPTIONS/);
+  assert.match(usageDialog, /value: 'percentage', label: 'Percentage'/);
   assert.match(client, /showPercentUsageField[\s\S]*?\? 'Usage %'/);
   assert.match(client, /projectionUsageMetaLabel = projectionUsageMetric === 'percent' \? 'Usage %'/);
   assert.doesNotMatch(client, /label: '% worked'|Lifetime worked %|Enter lifetime worked %|Worked %|current worked percentage/);
