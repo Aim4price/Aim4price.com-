@@ -41486,11 +41486,9 @@ button.documentOpenLink {
 .assetNoticeStack:empty { display:none; }
 .assetNoticeStack > * { margin:0; }
 
-/* Yellow identifies umbrella controls; existing green borders and hover glows stay intact. */
+/* Yellow highlights hovered/focused umbrella controls, preserving their resting surfaces and green borders. */
 .page .toolbarUmbrellaButton:hover:not(:disabled),
 .page .toolbarUmbrellaButton:focus-visible,
-.page .assetGroupMemberActions .assetGroupButton:not(:disabled),
-.page .assetGroupMemberActions .assetGroupButton:not(:disabled):is(:hover, :focus-visible),
-.page .assetGroupUmbrella {
+.page .assetGroupMemberActions .assetGroupButton:not(:disabled):is(:hover, :focus-visible) {
   background: #fff6cf !important;
 }
