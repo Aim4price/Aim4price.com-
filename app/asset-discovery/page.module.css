@@ -3291,5 +3291,5 @@
   overflow: visible;
   text-overflow: clip;
 }
-:global([data-discovery-card][tabindex]) { cursor: pointer; }
-:global([data-discovery-card][tabindex]:focus-visible) { outline: 3px solid #247b54; outline-offset: 3px; }
+.shell :global([data-discovery-card][tabindex]) { cursor: pointer; }
+.shell :global([data-discovery-card][tabindex]:focus-visible) { outline: 3px solid #247b54; outline-offset: 3px; }
