@@ -251,35 +251,6 @@
   min-width: 0;
 }
 
-.cardContext {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.22rem 0.42rem;
-  color: var(--text-muted);
-  font-size: 0.79rem;
-  line-height: 1.4;
-}
-
-.cardContext strong {
-  font-weight: 850;
-}
-
-.statusAttention {
-  color: var(--danger-text);
-  font-weight: 800;
-}
-
-.statusUpcoming {
-  color: var(--blue-text);
-  font-weight: 800;
-}
-
-.statusRecent {
-  color: var(--brand-mid);
-  font-weight: 800;
-}
-
 .assetTitle {
   margin: 0.04rem 0 0;
   color: var(--text);
@@ -420,11 +391,11 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.78rem;
-  width: min(100%, 34rem);
-  min-height: 4rem;
-  padding: 0.62rem 0.72rem;
+  width: 100%;
+  min-height: 4.75rem;
+  padding: 1rem 1.15rem;
   border: 1px solid var(--brand-mid);
-  border-radius: 1.08rem;
+  border-radius: 1.5rem;
   color: #ffffff;
   background: linear-gradient(135deg, var(--brand-mid) 0%, var(--brand-dark) 100%);
   box-shadow: 0 12px 26px rgba(16, 56, 47, 0.14);
@@ -444,8 +415,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.55rem;
-  height: 2.55rem;
+  width: 2.8rem;
+  height: 2.8rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 0.86rem;
   color: #ffffff;
@@ -454,31 +425,41 @@
 
 .goToAssetsCopy {
   display: grid;
-  gap: 0.08rem;
+  gap: 0.25rem;
   min-width: 0;
 }
 
 .goToAssetsCopy strong {
-  font-size: 0.96rem;
+  font-size: 1.05rem;
   line-height: 1.2;
 }
 
 .goToAssetsCopy small {
   color: rgba(255, 255, 255, 0.72);
-  font-size: 0.76rem;
+  font-size: 0.85rem;
   font-weight: 650;
   line-height: 1.3;
 }
 
-.goToAssetsArrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.8rem;
-  height: 1.8rem;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 1.05rem;
-  font-weight: 850;
+.goToAssetsChevron {
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.goToAssetsChevron svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @keyframes overviewPulse {
