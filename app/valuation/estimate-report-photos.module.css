@@ -161,6 +161,6 @@
 .reportPhotoHeader span { font-size: 0.75rem; }
 .photoPreview button { border-radius: 6px; }
 
-.reportPhotoCard { order: 0; background: var(--app-surface-soft, #f6f9f7); box-shadow: none; border-color: var(--app-line, #d5e4dc); }
+.reportPhotoCard { order: 0; padding: 16px; margin-top: 4px; border: 1px solid var(--app-line, #d5e4dc); border-radius: 12px; background: var(--app-surface-soft, #f6f9f7); box-shadow: none; border-color: var(--app-line, #d5e4dc); }
 .reportPhotoHeader strong { display: flex; align-items: center; gap: .5rem; color: var(--app-text, #183d32); }
 .cameraIcon { width: 22px; height: 22px; flex-shrink: 0; color: var(--app-muted, #5c7166); }
