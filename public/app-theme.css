@@ -90,3 +90,31 @@
     }
   }
 }
+
+/* Shared hover feedback for website, workspace and offline app actions.
+   Important-layer rules keep legacy button styles from masking the halo. */
+@layer aim4price-action-hover {
+  @media screen {
+    :root {
+      --action-hover-shadow: 0 0 0 4px rgba(22, 163, 74, .28), 0 4px 24px 4px rgba(6, 95, 70, .30);
+      --action-hover-outline: rgba(21, 128, 61, .85);
+    }
+  }
+  @media screen and (hover: hover) and (pointer: fine) {
+    :is(button, a[href], summary, [role='button'], input[type='button'], input[type='submit'], input[type='reset']):hover:not(:active):not(:disabled):not([aria-disabled='true']):not([aria-hidden='true']):not([inert], [inert] *, [aria-disabled='true'] *) {
+      box-shadow: var(--action-hover-shadow) !important;
+    }
+    :is(button, a[href], summary, [role='button'], input[type='button'], input[type='submit'], input[type='reset']):hover:not(:active):not(:focus-visible):not(:disabled):not([aria-disabled='true']):not([aria-hidden='true']):not([inert], [inert] *, [aria-disabled='true'] *) {
+      outline: 2px solid var(--action-hover-outline) !important;
+      outline-offset: 1px !important;
+    }
+  }
+  @media screen and (hover: hover) and (pointer: fine) and (forced-colors: active) {
+    :is(button, a[href], summary, [role='button'], input[type='button'], input[type='submit'], input[type='reset']):hover:not(:active):not(:disabled):not([aria-disabled='true']):not([aria-hidden='true']):not([inert], [inert] *, [aria-disabled='true'] *) {
+      box-shadow: none !important;
+    }
+    :is(button, a[href], summary, [role='button'], input[type='button'], input[type='submit'], input[type='reset']):hover:not(:active):not(:focus-visible):not(:disabled):not([aria-disabled='true']):not([aria-hidden='true']):not([inert], [inert] *, [aria-disabled='true'] *) {
+      outline-color: Highlight !important;
+    }
+  }
+}
