@@ -11,9 +11,9 @@ async function main(){
  try{
   await fs.mkdir(fixture,{recursive:true});
   await fs.writeFile(path.join(fixture,'page.tsx'),`'use client';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import BusinessJoin from '../join/join-client';
-export default function Fixture(){const [saved,setSaved]=useState('');return <><BusinessJoin adminMode onAdminSaved={published=>setSaved(published?'Published without invitation':'Draft saved')}/><output data-saved>{saved}</output></>}
+export default function Fixture(){const [saved,setSaved]=useState('');const [ready,setReady]=useState(false);useEffect(()=>setReady(true),[]);return <><BusinessJoin adminMode onAdminSaved={published=>setSaved(published?'Published without invitation':'Draft saved')}/><output data-saved data-hydrated={ready}>{saved}</output></>}
 `);
   server=spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-p','3035'],{cwd:root,env:{...process.env,PGHOST:'127.0.0.1',PGPORT:'5432',PGUSER:'fixture',PGPASSWORD:'fixture-only',PGDATABASE:'fixture',BETTER_AUTH_SECRET:'local-fixture-secret-not-for-production'},stdio:['ignore','pipe','pipe']});
   await new Promise((resolve,reject)=>{const t=setTimeout(()=>reject(Error('Next startup timed out')),60000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(t);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));});
@@ -37,14 +37,16 @@ export default function Fixture(){const [saved,setSaved]=useState('');return <><
    return req.continue();
   });
   const click=async text=>assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===t&&!e.disabled);b?.click();return Boolean(b);},text),`Missing ${text}`);
-  const fill=async(label,value)=>{const h=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.firstChild?.textContent?.trim()===t)?.querySelector('input'),label);assert.ok(h.asElement(),`Missing ${label}`);await h.asElement().click({clickCount:3});await page.keyboard.press('Backspace');await h.asElement().type(value);await h.dispose();};
+  const fill=async(label,value)=>{const h=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.firstChild?.textContent?.trim()===t)?.querySelector('input'),label);assert.ok(h.asElement(),`Missing ${label}`);await h.asElement().focus();await h.asElement().evaluate(input=>input.select());await h.asElement().press('Backspace');await h.asElement().type(value);assert.equal(await h.asElement().evaluate(input=>input.value),value,`Could not fill ${label}`);await h.dispose();};
   const output=path.join(root,'.next/business-admin-entry-validation');await fs.mkdir(output,{recursive:true});
   for(const width of [1440,430]){
    failSearch=false;await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3035/business-network/admin-entry-validation',{waitUntil:'networkidle2'});
+   // Wait for React handlers, not only server-rendered inputs, before typing.
+   await page.waitForSelector('[data-hydrated="true"]');
    await fill('Phone','044 999 9999');
    console.log('Checking viewport',width);
-   await fill('Business name and town','S Haddad George');await page.keyboard.press('Enter');await page.waitForFunction(()=>document.body.textContent.includes('George, South Africa')).catch(async e=>{console.error(await page.evaluate(()=>document.body.innerText),errors);throw e;});
+   await fill('Business name and town','S Haddad George');await page.waitForFunction(()=>!document.querySelector('form[aria-label="Google business search"] button[type="submit"]').disabled);const searchInput=await page.$('[data-search-input]');await searchInput.press('Enter');await searchInput.dispose();await page.waitForFunction(()=>document.body.textContent.includes('George, South Africa')).catch(async e=>{console.error(await page.evaluate(()=>document.body.innerText),errors);throw e;});
    await click('Link this business');await page.waitForFunction(()=>document.body.textContent.includes('Google details loaded'));
    const value=label=>page.evaluate(t=>[...document.querySelectorAll('label')].find(e=>e.firstChild?.textContent?.trim()===t)?.querySelector('input')?.value,label);
    assert.equal(await value('Business name'),'S Haddad');assert.equal(await value('Town / city'),'George');assert.equal(await value('Phone'),'044 999 9999','Manual phone preserved');assert.equal(await value('Latitude'),'-33.96');assert.equal(await value('Website'),'https://example.com');assert.equal(await value('Request email'),'');
