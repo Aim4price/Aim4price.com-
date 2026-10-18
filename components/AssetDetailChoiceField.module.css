@@ -25,3 +25,36 @@
 .copy strong { font-size: 1.08rem; line-height: 1.4; font-weight: 750; }
 .copy small { color: var(--app-muted, #5c7067); font-size: .95rem; line-height: 1.5; }
 .check { color: #176a49; font-size: 1.2rem; font-weight: 800; }
+
+/* Condition choices form a compact, readable grid without a long scrolling list. */
+.conditionDialog.conditionDialog.conditionDialog {
+  width: min(48rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 40px))) !important;
+}
+.conditionChoices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; padding: .25rem; }
+.conditionChoices .choice {
+  position: relative;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: start;
+  gap: .8rem;
+  min-height: 7rem;
+  padding: 1rem;
+  padding-right: 2.3rem;
+}
+.conditionChoices .icon { width: 2.75rem; height: 2.75rem; }
+.conditionChoices .copy { gap: .4rem; }
+.conditionChoices .copy strong { font-size: 1rem; line-height: 1.35; }
+.conditionChoices .copy small { font-size: .88rem; line-height: 1.5; }
+.conditionChoices .check {
+  position: absolute; top: .85rem; right: .75rem;
+  display: grid; place-items: center; width: 1.25rem; height: 1.25rem;
+  border: 1px solid var(--app-line, #cbded3); border-radius: 50%; font-size: .8rem;
+}
+.conditionChoices .selected { border-color: #237454; box-shadow: inset 0 0 0 1px #237454; }
+.conditionChoices .selected .check { color: #fff; background: #237454; border-color: #237454; }
+.icon[data-tone=teal] { color: #136d63; background: #e0f3ee; }
+.icon[data-tone=amber] { color: #906111; background: #fff3d8; }
+.icon[data-tone=red] { color: #a43d36; background: #fbe9e7; }
+.icon[data-tone=grey] { color: #617069; background: #edf1ef; }
+@media (max-width: 560px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionChoices { grid-template-columns: minmax(0, 1fr); }
+}
