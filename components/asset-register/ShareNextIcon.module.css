@@ -1,0 +1,9 @@
+.icon.icon {
+  display: block; flex: 0 0 auto;
+  width: 2rem !important; height: 2rem !important;
+  padding: 0 !important; border: 0 !important;
+  color: inherit; background: transparent !important;
+  stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  pointer-events: none;
+}
+.icon circle { fill: var(--app-surface-soft, #edf6f1); }

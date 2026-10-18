@@ -25,3 +25,6 @@
 .error { color:var(--app-danger,#a33737); }
 .srOnly { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
 @media(max-width:640px) { :global(body:not(:has([data-website-canvas]))) .row { flex-wrap:wrap; } :global(body:not(:has([data-website-canvas]))) .actions { width:100%; } }
+
+/* Scroll the history with breathing room around action rings. */
+.list { padding: 1.5rem; margin: -1.3rem; scroll-padding: 1.5rem; }
