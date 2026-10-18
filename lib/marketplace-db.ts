@@ -1005,6 +1005,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   province?: string | null;
   area?: string | null;
   photos?: string[] | null;
+  replacePhotos?: boolean;
   brandKitId?: string | null;
   allowBrandKit?: boolean;
   showDealRating?: boolean;
@@ -1135,8 +1136,9 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   updateValues.push(input.showDealRating !== false);
   updateAssignments.push(`marketplace_show_deal_rating = $${updateValues.length}`);
 
-  if (incomingPhotos.length) {
-    const mergedPhotosJson = JSON.stringify(mergePhotoLists(buildPhotoList(row), incomingPhotos));
+  if (incomingPhotos.length || input.replacePhotos === true) {
+    if (input.replacePhotos && incomingPhotos.length > 12) throw new Error('This asset can have up to 12 photos.');
+    const mergedPhotosJson = JSON.stringify(input.replacePhotos ? [...new Set(incomingPhotos)] : mergePhotoLists(buildPhotoList(row), incomingPhotos));
 
     for (const column of getWritablePhotoColumns(row)) {
       updateValues.push(mergedPhotosJson);
