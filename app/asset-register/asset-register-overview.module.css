@@ -120,22 +120,6 @@
   color: rgba(255, 255, 255, 0.74);
 }
 
-.viewSwitchArrow {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  color: var(--text-muted);
-  font-size: 1.2rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.viewSwitchButtonActive .viewSwitchArrow {
-  color: rgba(255, 255, 255, 0.9);
-}
-
 .overview {
   display: grid;
   gap: 0.72rem;
@@ -441,6 +425,7 @@
   line-height: 1.3;
 }
 
+.viewSwitchChevron,
 .goToAssetsChevron {
   display: grid;
   place-items: center;
@@ -453,6 +438,7 @@
   pointer-events: none;
 }
 
+.viewSwitchChevron svg,
 .goToAssetsChevron svg {
   width: 1.2rem;
   height: 1.2rem;
@@ -460,6 +446,12 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.viewSwitchChevron {
+  border-color: #b8d6c9;
+  color: #17513f;
+  background: #edf6f1;
 }
 
 @keyframes overviewPulse {
@@ -612,3 +604,9 @@
   overflow-wrap: anywhere;
 }
 .messageHint { margin-top: 1rem; }
+
+/* The hint sits directly on the desktop background, outside the light cards. */
+:global(html[data-background='dark']) .overviewHint,
+:global(html[data-app-theme='dark']) .overviewHint {
+  color: #e0eee7;
+}

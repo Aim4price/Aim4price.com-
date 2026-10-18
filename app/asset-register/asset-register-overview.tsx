@@ -671,7 +671,7 @@ export default function AssetRegisterOverview() {
             <strong>Overview</strong>
             <small>{overviewSwitchDetail}</small>
           </span>
-          <span className={styles.viewSwitchArrow} aria-hidden="true">{activeView === 'overview' ? '✓' : '›'}</span>
+          <span className={styles.viewSwitchChevron} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="m9 6 6 6-6 6" /></svg></span>
         </button>
 
         <button
@@ -687,7 +687,7 @@ export default function AssetRegisterOverview() {
             <strong>Assets</strong>
             <small>{assetSwitchDetail}</small>
           </span>
-          <span className={styles.viewSwitchArrow} aria-hidden="true">{activeView === 'assets' ? '✓' : '›'}</span>
+          <span className={styles.viewSwitchChevron} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="m9 6 6 6-6 6" /></svg></span>
         </button>
       </div>
 
