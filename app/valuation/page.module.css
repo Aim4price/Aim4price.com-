@@ -15016,3 +15016,31 @@
   :global(:where(html:not(:has([data-website-canvas])))) .specFlowStack .specStepCard > .specStepAction { grid-column: 2; grid-row: 2; justify-self: start; min-width: 0; }
 }
 .specFlowStack .specStepContent { padding: 0; }
+
+/* Final picker refinements: clear colour coding and centred condition routes. */
+.basicLevelCard .specificationLevelIcon[data-level='standard'],
+.basicLevelCard.choiceCardActive .specificationLevelIcon[data-level='standard'] {
+  color: #25648c;
+  background: #e8f2fb;
+}
+.conditionRouteModal .conditionRouteCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .85rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+.conditionRouteModal .conditionRouteCopy {
+  align-self: center;
+  justify-items: center;
+  gap: .5rem;
+}
+.conditionRouteModal .conditionRouteCopy small { white-space: nowrap; }
+.equipmentDropdownMenu { padding: .3rem; }
+.equipmentDropdownMenu .equipmentDropdownOptionActive {
+  border-color: #237454;
+  box-shadow: inset 0 0 0 1px #237454;
+  background: #edf7f1;
+}

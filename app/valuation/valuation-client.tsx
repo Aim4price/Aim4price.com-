@@ -1,7 +1,6 @@
 'use client';
 import EstimateTools from './EstimateTools';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
-import { getBasicFamilyGuidance } from '../../lib/basic-family-guidance';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -2116,7 +2115,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const filteredFamilies = useMemo(() => {
     const query = familySearch.trim().toLowerCase();
     const matches = families.filter((family) =>
-      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${family.basicCatalogue?.groupLabel ?? ''} ${getBasicFamilyGuidance(family)}`, familySearch),
+      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${family.basicCatalogue?.groupLabel ?? ''}`, familySearch),
     );
 
     if (!query) return matches;
@@ -6004,10 +6003,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
                       data-family-label={family.familyLabel}
                       data-family-group={family.basicCatalogue?.groupLabel ?? ''}
-                      data-family-guidance={getBasicFamilyGuidance(family)}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}<small className={styles.familySelectionHint}>{getBasicFamilyGuidance(family)}</small></span>
+                      <span>{family.familyLabel}</span>
                     </button>
                   ))
                 ) : (
@@ -6088,7 +6086,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="Model name or number"
               autoComplete="off"
             />
-            <small className={styles.identityFieldHint}>Optional — leave blank if you do not know the model.</small>
+            <small className={styles.identityFieldHint}>Optional - leave blank if you do not know the model.</small>
           </label>
 
         </div>
@@ -7665,7 +7663,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('basic')}</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
-                    <small>Rate overall condition for a quick estimate.</small>
+                    <small>Rate overall condition.</small>
                   </span>
                 </button>
 
@@ -7673,7 +7671,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('advanced')}</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
-                    <small>Rate condition, wear, service and repairs for a finer calculation.</small>
+                    <small>Review wear and repairs.</small>
                   </span>
                 </button>
               </div>
