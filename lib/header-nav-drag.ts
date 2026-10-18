@@ -8,9 +8,10 @@ export function getHeaderNavScrollTolerance(element: HTMLElement) {
 export function snapHeaderNav(element: HTMLElement, direction: -1 | 0 | 1 = 0) {
   const max = Math.max(0, element.scrollWidth - element.clientWidth);
   const tolerance = getHeaderNavScrollTolerance(element);
+  const gutter = (element.firstElementChild as HTMLElement | null)?.offsetLeft ?? 0;
   const positions = Array.from(new Set([
     0,
-    ...Array.from(element.children, (link) => (link as HTMLElement).offsetLeft)
+    ...Array.from(element.children, (link) => (link as HTMLElement).offsetLeft - gutter)
       .filter((position) => position < max - tolerance),
     max,
   ]));

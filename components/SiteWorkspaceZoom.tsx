@@ -297,9 +297,16 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
             <div className={styles.zoomPanel}>
               <div className={styles.zoomHeading}>
                 <h2 id="website-zoom-title">Page size</h2>
-                <button type="button" aria-label="Close page size" onClick={() => setShowZoom(false)}>×</button>
+                <button type="button" className={styles.zoomClose} aria-label="Close page size" onClick={() => setShowZoom(false)}>×</button>
               </div>
-              <label className={styles.sliderLabel} htmlFor="website-zoom-slider">Adjust size <output>{percentage}%</output></label>
+              <label className={styles.sliderLabel} htmlFor="website-zoom-slider">Adjust page size</label>
+              <div className={styles.zoomStepper} role="group" aria-label="Adjust page size">
+                <button type="button" className={styles.stepButton} onClick={() => changeScale(-WEBSITE_SCALE_STEP)}
+                  disabled={scale <= WEBSITE_MIN_MANUAL_SCALE} aria-label="Decrease page size">−</button>
+                <output className={styles.zoomReadout} aria-live="polite">{percentage}%</output>
+                <button type="button" className={styles.stepButton} onClick={() => changeScale(WEBSITE_SCALE_STEP)}
+                  disabled={scale >= WEBSITE_MAX_MANUAL_SCALE} aria-label="Increase page size">+</button>
+              </div>
               <input id="website-zoom-slider" className={styles.zoomSlider} type="range"
                 min={WEBSITE_MIN_MANUAL_SCALE * 100} max={WEBSITE_MAX_MANUAL_SCALE * 100} step="1"
                 value={percentage} aria-valuetext={`${percentage} percent`}

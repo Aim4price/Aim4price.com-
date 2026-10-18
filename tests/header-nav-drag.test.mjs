@@ -214,3 +214,17 @@ test('cleanup removes listeners and the browser link drag is disabled while atta
   assert.equal(dispatch('click').defaultPrevented, false);
   assert.equal(dispatch('dragstart').defaultPrevented, false);
 });
+
+test('padded navigation keeps arrow stops aligned with the hover gutters', t => {
+  const { rail } = fixture(t);
+  rail.children = Array.from({ length: 10 }, (_, i) => ({ offsetLeft: 8 + i * 150 }));
+  rail.firstElementChild = rail.children[0];
+  rail.scrollLeft = 0;
+  snapHeaderNav(rail, 1);
+  assert.equal(rail.scrollLeft, 150);
+  snapHeaderNav(rail, -1);
+  assert.equal(rail.scrollLeft, 0);
+  rail.scrollLeft = 750;
+  snapHeaderNav(rail, 1);
+  assert.equal(rail.scrollLeft, rail.scrollWidth - rail.clientWidth);
+});
