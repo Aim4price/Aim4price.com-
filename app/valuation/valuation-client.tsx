@@ -1874,6 +1874,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   // null means not initialized; an empty string is an intentional user edit.
   const [basicReplacementPrice, setBasicReplacementPrice] = useState<string | null>(null);
   const specificationDialogRef = useRef<HTMLDialogElement>(null);
+  const replacementHelpDialogRef = useRef<HTMLDialogElement>(null);
   const [specificationDraft, setSpecificationDraft] = useState<BasicSpecificationLevel>('standard');
   const [basicReplacementVatMode, setBasicReplacementVatMode] = useState<VatDisplayMode>('excl');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
@@ -1895,7 +1896,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const timer = window.setTimeout(() => {
       setActiveDetailedAssessmentSection(pendingAdvancedSection);
       setPendingAdvancedSection(null);
-    }, 400);
+    }, 700);
     return () => window.clearTimeout(timer);
   }, [pendingAdvancedSection, activeDetailsModal, conditionModalView]);
 
@@ -4141,11 +4142,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function renderReplacementBreakdown(base: number | null, extra: number, total: number | null, mode: VatDisplayMode) {
-    return <div className={styles.currentCard} aria-label="Replacement price breakdown">
-      <p>Asset alone: <strong>{money(getVatDisplayValue(base, mode))}</strong></p>
-      <p>Selected extras: <strong>{money(getVatDisplayValue(extra, mode))}</strong></p>
-      <p>Total replacement price: <strong>{money(getVatDisplayValue(total, mode))}</strong> · {getVatDisplayLabel(mode)}</p>
-    </div>;
+    return <section className={styles.replacementCostSummary} aria-label="Replacement price breakdown">
+      <dl className={styles.replacementCostParts}>
+        <div><dt>Asset price</dt><dd>{money(getVatDisplayValue(base, mode))}</dd></div>
+        <div><dt>Selected extras</dt><dd>{money(getVatDisplayValue(extra, mode))}</dd></div>
+      </dl>
+      <div className={styles.replacementCostTotal}>
+        <span>Total replacement price<small>{getVatDisplayLabel(mode)}</small></span>
+        <strong>{money(getVatDisplayValue(total, mode))}</strong>
+      </div>
+    </section>;
   }
 
   function renderResultReplacementBreakdown() {
@@ -6218,7 +6224,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
-            <p className={styles.stepText}><strong>A starting guide for this equipment type.</strong> Enter the new price of the asset alone, excluding any extras selected in Specs.</p>
+            <p className={styles.stepText}>What would a comparable new asset cost today? Enter the asset price only; your selected extras are added below.</p>
+            <button type="button" className={styles.replacementHelpButton} aria-haspopup="dialog" onClick={() => replacementHelpDialogRef.current?.showModal()}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg>
+              How is this price used?
+            </button>
           </div>
           <button
             type="button"
@@ -6234,6 +6244,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             Change specification
           </button>
         </div>
+
+        <dialog
+          ref={replacementHelpDialogRef}
+          className={`${styles.specificationModal} ${styles.replacementHelpModal} ${modalStyles.surface}`}
+          data-website-overlay
+          aria-labelledby="replacement-help-title"
+          aria-describedby="replacement-help-description"
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return;
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.currentTarget.close();
+          }}
+        >
+          <div className={styles.specificationModalHeader}>
+            <h3 data-estimate-modal-title id="replacement-help-title">Every asset is different</h3>
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => replacementHelpDialogRef.current?.close()} aria-label="Close replacement price help">×</button>
+          </div>
+          <div id="replacement-help-description" className={styles.replacementHelpCopy}>
+            <p>Enter what you believe a comparable new asset would cost today.</p>
+            <p>Aim4price uses that price with its depreciation logic and your asset details to calculate an estimated current value.</p>
+            <p className={styles.replacementHelpNote}>Use the asset price only. Selected extras are added separately.</p>
+          </div>
+          <div className={styles.replacementHelpActions}>
+            <button type="button" className={styles.primaryButton} onClick={() => replacementHelpDialogRef.current?.close()}>Got it</button>
+          </div>
+        </dialog>
 
         <dialog
           ref={specificationDialogRef}
@@ -6341,7 +6377,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>{compactAppMode ? 'Enter price' : 'Or enter replacement price manually'} ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
+            <span className={styles.fieldLabel}>{compactAppMode ? 'Enter asset price' : 'Enter your own asset price'} ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
             <input
               type="text"
               inputMode="decimal"
@@ -8267,7 +8303,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {!basicEstimateActive && usageStepComplete ? (
-            <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard}`}>
+            <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard} ${!conditionReady ? styles.specStepCardActive : ''}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 3 of 5' : 'Step 3'}</span>
@@ -8413,7 +8449,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {!basicEstimateActive && conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
-            <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard}`}>
+            <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard} ${!popularityStepComplete ? styles.specStepCardActive : ''}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   {compactAppMode ? (
