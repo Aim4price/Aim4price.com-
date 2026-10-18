@@ -15,6 +15,7 @@ import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadActionDialog from '../../components/leads/LeadActionDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import AssetDetailsFields from '../../components/AssetDetailsFields';
+import AssetDetailChoiceField from '../../components/AssetDetailChoiceField';
 import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
 import cardLayout from '../../components/asset-register/AssetCardDetails.module.css';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
@@ -2494,7 +2495,7 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
             <span aria-hidden="true">R</span><span>{displayedValue || placeholder}</span>
           </button>
         ) : (
-        <div className={`${styles.manualCurrencyInput} ${updateStyles.currencyControl}`}>
+        <div className={updateStyles.currencyControl}>
           <span aria-hidden="true">R</span>
           <input
             disabled={disabled}
@@ -18339,7 +18340,7 @@ export default function AssetRegisterClient({
                           </label>
 
                           {showConditionField ? (
-                            <ModalSelect<AssetConditionValue>
+                            <AssetDetailChoiceField<AssetConditionValue>
                               label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
@@ -18360,7 +18361,7 @@ export default function AssetRegisterClient({
                             className={`${styles.field} ${updateStyles.usageEditor}`}
                             data-asset-detail-edit-target="usage"
                           >
-                            <ModalSelect<AssetDraftUsageMetric>
+                            <AssetDetailChoiceField<AssetDraftUsageMetric>
                               label="Usage type"
                               value={assetDraft.usageMetric}
                               options={usageTypeOptions}
@@ -18373,7 +18374,6 @@ export default function AssetRegisterClient({
                                 }))
                               }
                               className={updateStyles.usageTypeField}
-                              usePortal
                             />
                             <label className={updateStyles.usageReading}>
                               <span>{usageFieldLabel}</span>
@@ -18410,7 +18410,7 @@ export default function AssetRegisterClient({
                               )}
                             </label>
                           </div>}
-                          conditionControl={<ModalSelect<AssetConditionValue>
+                          conditionControl={<AssetDetailChoiceField<AssetConditionValue>
                               label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
