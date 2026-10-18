@@ -11,8 +11,9 @@
   padding: 0 0 1rem !important;
 }
 .dialog.dialog.dialog.dialog.dialog h3 { font-size: 1.75rem !important; line-height: 1.2 !important; }
+/* Leave room inside the scroll area for rounded hover and focus rings. */
 .dialog.dialog.dialog.dialog.dialog .body {
-  min-height: 0; padding: 0 !important; gap: .85rem !important;
+  min-height: 0; padding: .5rem !important; margin: -.5rem !important; gap: .85rem !important;
   overflow-y: auto !important; scrollbar-width: none !important;
   overscroll-behavior: contain;
 }
