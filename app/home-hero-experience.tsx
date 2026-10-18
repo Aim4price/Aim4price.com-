@@ -70,7 +70,7 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   worth: {
     title: 'Add your assets.',
-    body: 'Add your vehicles, machinery and equipment through Get Estimate or manually. Get an indicative estimate or enter a value you already have, then review it to make sure it makes sense for the asset.',
+    body: 'Add your vehicles, machinery and equipment through Value Asset or manually. Get an indicative estimate or enter a value you already have, then review it to make sure it makes sense for the asset.',
     detail: 'Save the asset to your register to start keeping its details, documents, maintenance and costs together. You can update its information as things change.',
   },
   have: {
@@ -599,7 +599,7 @@ export default function HomeHeroExperience({ variant, Preview = HomeAssetPreview
                       Get started
                     </a>)}
                     <Link href="/valuation" className={styles.secondaryCta}>
-                      Get a Free Estimate
+                      Value my asset
                     </Link>
                   </div>
                 </div>
@@ -695,7 +695,7 @@ export default function HomeHeroExperience({ variant, Preview = HomeAssetPreview
                   Get started
                 </a>)}
                 <Link href="/valuation" className={styles.secondaryCta}>
-                  Get a Free Estimate
+                  Value my asset
                 </Link>
               </div>
 
