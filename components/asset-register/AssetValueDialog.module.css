@@ -76,3 +76,14 @@
  :global(body:not(:has([data-website-canvas]))) .menuActions { grid-template-columns:1fr; }
  :global(body:not(:has([data-website-canvas]))) .toolbar { flex-wrap:wrap; }
 }
+
+.dialog .toolbar { padding: .25rem 0; gap: .85rem; }
+.dialog .toolbar .utilityButton {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  min-height: 3rem; padding: .7rem 1.1rem; border: 1px solid #c9dfd3;
+  border-radius: .8rem; background: #edf6f1; color: #20543f; font-weight: 750;
+}
+.dialog .toolbar .refreshButton { background: #edf5fc; border-color: #ccdeed; color: #255572; }
+.utilityButton svg, .suggestionFooter svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.suggestionFooter > button { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; }
+.dialog .field { gap: .65rem; }
