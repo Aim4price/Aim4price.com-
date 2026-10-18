@@ -1,4 +1,6 @@
 'use client';
+import LeadActionDialog from '../../components/leads/LeadActionDialog';
+import messageStyles from '../../components/asset-register/AssetMessageReader.module.css';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 
 import { createPortal } from '../../components/WebsitePortal';
@@ -472,6 +474,7 @@ export default function AssetRegisterOverview() {
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [openItem, setOpenItem] = useState<OverviewItem | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
   const clearingRef = useRef(false);
   const [clearError, setClearError] = useState('');
@@ -621,7 +624,8 @@ export default function AssetRegisterOverview() {
       await clearOverviewItem(item);
       // Refresh from the server so older outstanding notes can surface as well.
       overviewRequest.current?.abort();
-      setClearMessage(`${item.headline} cleared for ${item.assetTitle}.`);
+      setClearMessage(`${item.headline} noted for ${item.assetTitle}.`);
+      setOpenItem(null);
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
     } catch (clearFailure) {
       setClearError(clearFailure instanceof Error ? clearFailure.message : 'This update could not be cleared.');
@@ -687,7 +691,7 @@ export default function AssetRegisterOverview() {
 
       {activeView === 'overview' ? (
         <section className={styles.overview} aria-label="Asset Register overview">
-          <p className={styles.overviewHint}>Clear marks an update as noted. Its history stays saved; scheduled work is not marked completed.</p>
+          <p className={styles.overviewHint}>Open an update to read it, go to the asset or mark it as noted.</p>
           {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
           <span className={styles.screenReaderStatus} role="status">{clearMessage}</span>
           {loading ? (
@@ -763,23 +767,15 @@ export default function AssetRegisterOverview() {
                   </div>
 
                   <div className={styles.cardActions}>
-                    <a
-                      className={styles.viewAssetButton}
-                      href={buildAssetHref(item.assetId)}
-                      aria-label={`Open ${item.assetTitle}`}
-                      onClick={() => selectView('assets')}
-                    >
-                      Open
-                      <span aria-hidden="true">→</span>
-                    </a>
                     <button
                       type="button"
-                      className={styles.clearButton}
-                      disabled={clearingId !== null}
-                      aria-label={`Clear ${item.headline} for ${item.assetTitle}`}
-                      onClick={() => void handleClear(item)}
+                      className={styles.viewAssetButton}
+                      aria-label={`Open ${item.headline} for ${item.assetTitle}`}
+                      aria-haspopup="dialog"
+                      data-tooltip="Open message"
+                      onClick={() => { setClearError(''); setOpenItem(item); }}
                     >
-                      {clearingId === item.id ? 'Clearing…' : 'Clear'}
+                      Open
                     </button>
                   </div>
                 </article>
@@ -803,6 +799,40 @@ export default function AssetRegisterOverview() {
           </div>
         </section>
       ) : null}
+      {openItem && createPortal(
+        <LeadActionDialog
+          title={openItem.headline}
+          assetTitle={openItem.assetTitle}
+          assetSubtitle={assetMeta(openItem)}
+          className={messageStyles.dialog}
+          busy={clearingId !== null}
+          onClose={() => setOpenItem(null)}
+          closeLabel="Close overview message"
+          footer={<div className={styles.messageActions}>
+            <a className={styles.messageAssetLink} href={buildAssetHref(openItem.assetId)}
+              aria-disabled={clearingId !== null}
+              onClick={event => {
+                if (clearingId !== null) { event.preventDefault(); return; }
+                setOpenItem(null); selectView('assets');
+              }}>Go to asset</a>
+            <button type="button" className={styles.messageNotedButton}
+              disabled={clearingId !== null} onClick={() => void handleClear(openItem)}>
+              {clearingId === openItem.id ? 'Saving…' : 'Noted'}
+            </button>
+          </div>}
+        >
+          <div className={messageStyles.message}>
+            <div className={styles.messageContext}>
+              <span className={`${styles.categoryIcon} ${categoryClassName(openItem.category)}`}>{categoryIcon(openItem.category)}</span>
+              <span>{categoryLabel(openItem.category)} · {openItem.status}</span>
+            </div>
+            <p>{openItem.detail}</p>
+            {openItem.meta ? <small>{openItem.meta}</small> : null}
+          </div>
+          <p className={styles.messageHint}>Noted clears this update from Overview and keeps its history. It does not mark scheduled work as completed.</p>
+          {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
+        </LeadActionDialog>, document.body
+      )}
     </div>,
     portalHost,
   );
