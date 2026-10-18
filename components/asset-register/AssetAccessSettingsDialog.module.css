@@ -217,3 +217,13 @@
 .dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar { width:8px; }
 .dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar-track { background:#edf3ef; border-radius:10px; margin-block:1rem; }
 .dialog.dialog .body.body:has([data-location-history])::-webkit-scrollbar-thumb { background:#88aa99; border:2px solid #edf3ef; border-radius:10px; }
+
+/* Show the scroll track only once pairing expands the setup. Keep scrolling
+   available on short screens so the initial actions remain reachable. */
+.dialog.dialog .body.body:has([data-tracker-setup]):not(:has([data-tracker-pairing])) {
+  scrollbar-width: none;
+  scrollbar-gutter: auto;
+}
+.dialog.dialog .body.body:has([data-tracker-setup]):not(:has([data-tracker-pairing]))::-webkit-scrollbar {
+  display: none;
+}

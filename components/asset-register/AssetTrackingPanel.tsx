@@ -124,7 +124,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         </div>
       </div>
       {code && (
-        <div ref={pairingCardRef} className={styles.pairingCard} tabIndex={-1} role="region" aria-label="Your pairing code">
+        <div ref={pairingCardRef} data-tracker-pairing className={styles.pairingCard} tabIndex={-1} role="region" aria-label="Your pairing code">
           <div className={styles.codeHeading}><strong>Your pairing code</strong><span>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
           {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div><h4 className={styles.scanTitle}>Scan to connect</h4><p>Use the phone’s camera, open Tracker, then tap Connect.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
           <p>Or enter this code in Tracker.{device && " Connecting replaces the current phone."}</p>
