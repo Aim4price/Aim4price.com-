@@ -10,15 +10,15 @@ export default function AssetRegisterGuide({ empty = false }: { empty?: boolean 
     </summary>
     <div className={styles.body}>
       <ol className={styles.steps}>
-        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><strong>Add one asset</strong><p>Select <b>Add Asset</b>, get an estimate or enter your own value, then save.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><strong>Build its history</strong><p>Select <b>Manage</b> on the asset card to add costs, fuel and maintenance.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><strong>See the result</strong><p>Select <b>Reports</b> under <b>Manage</b> to review values, maintenance and ownership costs.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><strong>Add one asset</strong><p>Select <b>Add Asset</b>. Get an estimate or enter your own value, then save.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><strong>Build its history</strong><p>Open <b>Manage</b> to add costs, fuel and maintenance.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><strong>See the result</strong><p>Open <b>Manage</b>, then <b>Reports</b>, to review values and ownership costs.</p></div></li>
       </ol>
       <div className={styles.definitions}>
-        <p><strong>Register</strong><span>Your complete list of assets, such as all the equipment on your farm.</span></p>
-        <p><strong>Umbrella</strong><span>An optional group within your register, such as a tractor and planter. Each asset keeps its own records.</span></p>
+        <p><strong>Register</strong><span>Your complete asset list, such as all your farm equipment.</span></p>
+        <p><strong>Umbrella</strong><span>Group related assets, such as a tractor and planter. Each keeps its own records.</span></p>
       </div>
-      <p className={styles.guideFootnote}>Start with one asset. Grouping is optional. Your reports grow as you add records.</p>
+      <p className={styles.guideFootnote}>Start with one asset. Add records as you go. Grouping is optional.</p>
     </div>
   </details>;
 }
