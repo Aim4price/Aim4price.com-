@@ -70,8 +70,8 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {showInstallShare&&<TrackerInstallShareDialog onClose={()=>setShowInstallShare(false)}/>}
       <div className={styles.setupHeading}>
         <span className={styles.phoneIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 5h4M10 18.5h4"/></svg></span>
-        <div><h3>{device ? "Equipment phone" : "Connect your equipment phone"}</h3>
-          <p>{device ? device.name : "Keep a phone on this asset to record its location and routes."}</p>
+        <div><h3>{device ? "Equipment phone" : "Connect equipment phone"}</h3>
+          <p>{device ? device.name : "Set up tracking in two steps."}</p>
         </div>
         {device && <span className={styles.connectionStatus}>{device.status}</span>}
       </div>
@@ -86,21 +86,21 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {(!device||replace)&&<>
       <div className={styles.setupSteps}>
         <div className={styles.setupStep}>
-          <span className={styles.stepNumber}>1</span>
+          <div className={styles.stepLabel}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>Step 1</span></div>
           <div className={styles.stepContent}>
             <h4>Install on phone</h4>
-            <p>Share the installation link with the equipment’s Android phone.</p>
+            <p>Send Tracker to the Android phone.</p>
             <button type="button" className={styles.secondaryAction} aria-haspopup="dialog" onClick={()=>setShowInstallShare(true)}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 13v7h16v-7"/></svg>
-              Send installation link
+              Share app link
             </button>
           </div>
         </div>
         <div className={styles.setupStep}>
-          <span className={styles.stepNumber}>2</span>
+          <div className={styles.stepLabel}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/><path d="M7 7h3v3H7zm7 0h3v3h-3zM7 14h3v3H7zm7 0h3v3h-3z"/></svg><span>Step 2</span></div>
           <div className={styles.stepContent}>
             <h4>{device ? "Connect a replacement" : "Connect phone"}</h4>
-            <p>Create a code, then scan it with the equipment phone.</p>
+            <p>Scan a pairing code with that phone.</p>
             <button className={styles.primaryAction} disabled={busy} type="button" onClick={() => action("POST")}>
               {busy ? "Please wait…" : device ? "Pair replacement phone" : code ? "Create new code" : "Create pairing code"}
               <span aria-hidden="true">→</span>
@@ -112,14 +112,14 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         <div className={styles.pairingCard} aria-live="polite">
           <div className={styles.codeHeading}><strong>Your pairing code</strong><span>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
           {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div><h4 className={styles.scanTitle}>Scan to connect</h4><p>Use the phone’s camera, open Tracker, then tap Connect.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
-          <p>You can also enter the code in the app. Pairing a replacement disconnects the previous phone.</p>
+          <p>Or enter this code in Tracker.{device && " Connecting replaces the current phone."}</p>
         </div>
       )}
       {device&&<button type="button" onClick={()=>setReplace(false)}>Back to connected phone</button>}
       </>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
       <div className={styles.setupFooter}>
-        <p>Find recorded routes in <strong>Location history → Movement</strong>.</p>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg><p>Routes: <strong>Location history → Movement</strong></p>
       </div>
       {device && <details className={styles.setupDetails}><summary>Manage device</summary><div className={styles.disconnectRow}><button type="button" onClick={()=>setReplace(true)}>Replace phone</button><button className={styles.disconnectAction} disabled={busy} type="button" onClick={() => action("DELETE")}>Disconnect phone</button><span>Saved routes will remain.</span></div></details>}
     </section>

@@ -99,7 +99,7 @@
   }
 }
 
-.setupPanel { gap: 1.25rem; padding: .4rem 0 0; }
+.setupPanel { gap: 1.5rem; padding: .25rem 0 0; }
 .setupHeading { display: flex; align-items: center; gap: 1rem; }
 .phoneIcon { display: grid; place-items: center; flex: 0 0 3.5rem; height: 3.5rem; border-radius: 18px; background: #eaf3ee; color: #176346; border: 1px solid #d7e6dd; }
 .phoneIcon svg { width: 1.8rem; height: 1.8rem; }
@@ -107,11 +107,12 @@
 .setupHeading p { color: #5b7067; font-size: .95rem; }
 .connectionStatus { margin-left: auto; padding: .4rem .7rem; border-radius: 999px; background: #eaf3ee; font-size: .85rem; font-weight: 650; }
 .setupSteps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.setupStep { display: flex; gap: .85rem; border: 1px solid #dce7e0; border-radius: 20px; background: #f8fbf9; padding: 1.25rem; }
-.stepNumber { display: grid; place-items: center; flex: 0 0 1.8rem; height: 1.8rem; border-radius: 50%; background: #e4eee7; color: #28563f; font-size: .85rem; font-weight: 750; }
-.stepContent { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: .65rem; }
+.setupStep { display: flex; flex-direction: column; gap: 1rem; border: 1px solid #dce7e0; border-radius: 18px; background: #f8fbf9; padding: 1.25rem; }
+.stepLabel { display: flex; align-items: center; gap: .65rem; color: #526f60; font-size: .8rem; font-weight: 650; }
+.stepLabel svg { width: 2.5rem; height: 2.5rem; box-sizing: border-box; padding: .55rem; border-radius: 12px; background: #e7f1eb; color: #176346; }
+.stepContent { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: .45rem; flex: 1; }
 .stepContent h4 { margin: .1rem 0 0; font-size: 1.05rem; line-height: 1.4; color: #183e30; }
-.stepContent p { color: #5b7067; font-size: .92rem; padding-bottom: .25rem; }
+.stepContent p { color: #5b7067; font-size: .92rem; padding-bottom: .75rem; }
 .setupPanel .primaryAction, .setupPanel .secondaryAction { box-sizing: border-box; gap: .6rem; justify-content: center; min-height: 2.9rem; margin-top: auto; font-size: .92rem; border-radius: 12px; line-height: 1.3; }
 .setupPanel .primaryAction { background: #175b40; color: white; border-color: #175b40; box-shadow: 0 3px 7px #173d3012; }
 .setupPanel .primaryAction:hover { background: #104b33; }
@@ -124,7 +125,7 @@
 .codeHeading span { color: #5b7067; font-size: .8rem; }
 .pairingCode { display: block; padding: .85rem 0; font-size: 1.6rem; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 650; letter-spacing: .12em; overflow-wrap: anywhere; color: #164d35; }
 .pairingCard p { font-size: .85rem; color: #5b7067; }
-.setupFooter { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; padding-top: 1rem; border-top: 1px solid #e0e8e3; }
+.setupFooter { display: flex; align-items: center; gap: .65rem; padding-top: 1rem; border-top: 1px solid #e0e8e3; }
 .setupFooter p { font-size: .85rem; color: #5b7067; }
 .setupDetails { margin-top: -.5rem; color: #65786e; font-size: .8rem; }
 .setupDetails summary { cursor: pointer; width: fit-content; padding: .2rem 0; }
@@ -159,3 +160,11 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 .pairingQr { padding:.4rem; border:1px solid #d3e3d9; border-radius:14px; background:white; }
 .scanTitle { margin:0 0 .5rem; font-size:1.2rem; }
 @media (max-width:600px) { :global(:where(html:not(:has([data-website-canvas])))) .pairingLayout { grid-template-columns:1fr; } :global(:where(html:not(:has([data-website-canvas])))) .pairingQr { width:11rem; margin:auto; } }
+
+.stepContent > button { width: 100%; }
+.setupFooter > svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; color: #688071; }
+.backRow { margin: -.25rem 0 1.25rem; }
+.backRow button { display: inline-flex; align-items: center; gap: .5rem; padding: .4rem 0; border: 0; background: transparent; color: #526f60; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.backRow svg { width: 1rem; height: 1rem; }
+.backRow button:hover { color: #145c42; }
+.backRow button:focus-visible { outline: 3px solid #77ac92; outline-offset: 4px; border-radius: 4px; }
