@@ -1,5 +1,5 @@
 'use client';
-import AssetTrackingPanel from './asset-register/AssetTrackingPanel';
+import dynamic from 'next/dynamic';
 import trackingStyles from './asset-register/AssetTrackingPanel.module.css';
 import {useState} from 'react';
 import AssetLocationPickerMap from './AssetLocationPickerMap';
@@ -7,6 +7,10 @@ import mapStyles from './AssetLocationPickerMap.module.css';
 import AssetActionIcon from './asset-register/AssetActionIcon';
 import advancedStyles from './asset-register/AdvancedSettings.module.css';
 import styles from '../app/asset-register/page.module.css';
+// Shared location dialogs do not need the owner-only tracking and QR-code bundle.
+const AssetTrackingPanel = dynamic(() => import('./asset-register/AssetTrackingPanel'), {
+ loading: () => <p role="status">Loading tracking device…</p>,
+});
 export type AssetLocationValue={latitude:number|null;longitude:number|null;locationText:string|null};
 export type AssetLocationUpdate={latitude:number;longitude:number;locationText:string;gpsAccuracyMeters:number|null;source:'device'|'manual'};
 export default function AssetLocationEditor({location,onSave,viewMapHref,onTracking,trackingAssetId}:{trackingAssetId?:string;onTracking?:()=>void;viewMapHref?:string;location:AssetLocationValue;onSave:(value:AssetLocationUpdate)=>Promise<void>}) {
