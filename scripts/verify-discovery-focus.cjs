@@ -74,7 +74,8 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
    approved=false;fail=false;await open(width,compact);
    const trigger='button[aria-label="Open Toyota Hilux details"]';
    await page.click(trigger);
-   await page.waitForFunction(()=>document.querySelector('#discovery-details-fixture-1')?.textContent.includes('Photos are locked'));
+   await page.waitForSelector('#discovery-details-fixture-1 [class*="discoveryLockedMedia"]');
+   assert.equal(await page.$eval('#discovery-details-fixture-1 [class*="discoveryLockedMedia"] strong', e=>e.textContent), 'Private photos');
    assert.equal(await page.$('[role="dialog"]'),null,'details retain the inline design');
    const state=await page.$eval('#discovery-details-fixture-1',details=>{
     const card=details.closest('[data-discovery-card]');

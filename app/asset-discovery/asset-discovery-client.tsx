@@ -1541,7 +1541,7 @@ export default function AssetDiscoveryClient({
           <div className={styles.discoveryDetailsError}>{detailsError}</div>
         ) : details ? (
           <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
-            <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
+            <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap} ${styles.discoveryMediaColumn}`}>
               {hasMultiplePhotos ? (
                 <div className={`${assetStyles.previewThumbRow} ${leadStyles.leadPreviewThumbRow} ${styles.discoveryPreviewThumbRow}`}>
                   {photoUrls.map((photoUrl, index) => (
@@ -1622,14 +1622,13 @@ export default function AssetDiscoveryClient({
                   </div>
                 ) : (
                   <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
-                    <div className={styles.discoveryLockedArtwork} aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
+                    <svg className={styles.discoveryLockIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="5" y="10" width="14" height="11" rx="3" />
+                      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" />
+                    </svg>
                     <div className={styles.discoveryLockedMedia}>
-                      <strong>Photos are locked</strong>
-                      <span>No private image was sent to your browser.</span>
+                      <strong>Private photos</strong>
+                      <span>Available after the owner approves access.</span>
                     </div>
                   </div>
                 )}
@@ -1681,13 +1680,13 @@ export default function AssetDiscoveryClient({
                     ? "Photos open through an existing direct share."
                     : details.accessSource === "approved_enquiry"
                       ? "Owner-approved Discovery access."
-                      : "Request access to ask whether the owner is interested in selling."}
+                      : "Interested in this asset?"}
                 </strong>
                 <span>
                   {access?.accountType === "public"
                     ? "Photos and contact details stay private until the owner approves your request."
                     : statusDescription(asset) ||
-                    "No contact details are shared unless the owner approves your request."}
+                    "Request access to ask about buying. Contact details stay private until the owner approves."}
                 </span>
               </div>
 

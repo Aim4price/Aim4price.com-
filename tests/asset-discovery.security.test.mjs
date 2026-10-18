@@ -136,7 +136,7 @@ test("public Discovery opens with a dedicated contact-free projection", () => {
   assert.match(publicProjection, /PUBLIC_SAFE_PROVINCE_SQL/);
   assert.match(client, /access\?\.accountType === "public"/);
   assert.match(client, /Sign in to contact/);
-  assert.match(client, /No private image was sent to your browser/);
+  assert.match(client, /Available after the owner approves access/);
   assert.match(client, /discoveryPublicContactPreview/);
   assert.match(client, /toggleAssetDetails\(requestedAsset, data\.access\)/);
 });
@@ -205,7 +205,7 @@ test("locked cards render a static placeholder without a private image", () => {
     client.indexOf('className={styles.discoveryLockedMedia}'),
     client.indexOf("discoveryInlineContact"),
   );
-  assert.match(lockedBlock, /No private image was sent/);
+  assert.match(lockedBlock, /Available after the owner approves access/);
   assert.doesNotMatch(lockedBlock, /<img/);
 });
 
