@@ -6258,16 +6258,22 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           }}
         >
           <div className={styles.specificationModalHeader}>
-            <h3 data-estimate-modal-title id="replacement-help-title">Every asset is different</h3>
+            <h3 data-estimate-modal-title id="replacement-help-title">Which price should I enter?</h3>
             <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => replacementHelpDialogRef.current?.close()} aria-label="Close replacement price help">×</button>
           </div>
           <div id="replacement-help-description" className={styles.replacementHelpCopy}>
-            <p>Enter what you believe a comparable new asset would cost today.</p>
-            <p>Aim4price uses that price with its depreciation logic and your asset details to calculate an estimated current value.</p>
-            <p className={styles.replacementHelpNote}>Use the asset price only. Selected extras are added separately.</p>
+            <div className={styles.replacementHelpStep}>
+              <span className={styles.replacementHelpIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h8l10 10-7 7L3 10V4Z" /><circle cx="7.5" cy="7.5" r="1" /></svg></span>
+              <div><h4>Enter today’s new price</h4><p>What would a new asset with similar size and specifications cost today? Adjust the suggested price to suit your asset.</p></div>
+            </div>
+            <div className={styles.replacementHelpStep}>
+              <span className={`${styles.replacementHelpIcon} ${styles.replacementHelpIconBlue}`} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4v16h16M7 7l5 5 3-2 5 6M16 16h4v-4" /></svg></span>
+              <div><h4>We estimate its value today</h4><p>Aim4price applies depreciation using that price and the asset details you entered.</p></div>
+            </div>
+            <p className={styles.replacementHelpNote}><strong>Leave extras out.</strong> We add your selected extras separately.</p>
           </div>
           <div className={styles.replacementHelpActions}>
-            <button type="button" className={styles.primaryButton} onClick={() => replacementHelpDialogRef.current?.close()}>Got it</button>
+            <button type="button" className={styles.primaryButton} onClick={() => replacementHelpDialogRef.current?.close()}>Enter replacement price</button>
           </div>
         </dialog>
 
