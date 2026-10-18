@@ -1588,7 +1588,7 @@ export default function AssetMapClient() {
     <main className={styles.page}>
       {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
       {locationDialog?.view==='history'&&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
-      {locationDialog?.view==='update'&&<AssetAccessSettingsDialog title="Update location" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
+      {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title="Update location" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <AssetLocationEditor trackingAssetId={locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');

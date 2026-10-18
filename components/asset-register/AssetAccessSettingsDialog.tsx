@@ -7,8 +7,8 @@ import layout from './AssetAccessSettingsDialog.module.css';
 import styles from '../../app/asset-register/page.module.css';
 
 /** The same settings surface for inside sharing and asset links. */
-export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false}: {
-  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;
+export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false}: {
+  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;
 }) {
   const titleId=useId();
   const [showGuide,setShowGuide]=useState(linkSettings);
@@ -26,7 +26,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
   },[]);
   return createPortal(<div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay>
     <div className={styles.modalBackdrop} data-website-overlay onClick={dismiss}/>
-    <section ref={ref} tabIndex={-1} className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal} ${layout.dialog} ${showGuide ? layout.guideDialog : ''} ${subjectHeader ? layout.subjectDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-asset-link-dialog={linkSettings || undefined}>
+    <section ref={ref} tabIndex={-1} className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal} ${layout.dialog} ${locationLayout ? `${styles.assetSettingsLocationModal} ${layout.locationDialog}` : ''} ${showGuide ? layout.guideDialog : ''} ${subjectHeader ? layout.subjectDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-asset-link-dialog={linkSettings || undefined}>
       <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader} ${layout.header}`}>
         <div className={styles.modalHeaderText}><h3 id={titleId}>{title}</h3><p>{assetTitle}</p></div>
         <ShareModalCloseButton onClick={dismiss} aria-label={`Close ${title}`} />

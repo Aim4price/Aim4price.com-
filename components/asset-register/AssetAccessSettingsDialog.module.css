@@ -159,3 +159,30 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* Match Advanced settings' compact location chooser and its horizontal action cards. */
+.dialog.locationDialog {
+  width: min(46rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 2rem))) !important;
+  padding: 2rem !important;
+  border-radius: 1.55rem !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+}
+.dialog.locationDialog .header {
+  margin: 0 !important;
+  padding: 0 0 1.15rem !important;
+}
+.dialog.locationDialog .header h3 {
+  font-size: 2rem !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.04em;
+}
+.dialog.locationDialog .header p {
+  font-size: .88rem !important;
+  font-weight: 650;
+  color: var(--app-muted, #64746a);
+}
+.dialog.locationDialog .body.body {
+  padding: 1.25rem .35rem .35rem !important;
+  margin: 0 -.35rem -.35rem;
+}
