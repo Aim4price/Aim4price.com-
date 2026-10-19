@@ -1,0 +1,32 @@
+name: Asset revaluation validation
+on:
+  pull_request:
+    paths:
+      - 'lib/asset-revaluation-save.ts'
+      - 'lib/asset-register-revaluation.ts'
+      - 'lib/asset-register-db.ts'
+      - 'lib/asset-depreciation-timeline.ts'
+      - 'lib/valuation-runs.ts'
+      - 'lib/approved-value-baseline.ts'
+      - 'tests/asset-revaluation-save.test.cjs'
+      - 'tests/approved-value-baseline.test.cjs'
+      - '.github/workflows/asset-revaluation-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: asset-revaluation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/asset-revaluation-save.test.cjs tests/approved-value-baseline.test.cjs tests/asset-history.test.cjs tests/asset-saleability.test.cjs
