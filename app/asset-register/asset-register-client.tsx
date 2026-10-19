@@ -1,4 +1,6 @@
 'use client';
+import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
+import AssetMarketDetail from '../../components/asset-register/AssetMarketDetail';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
@@ -16756,7 +16758,7 @@ export default function AssetRegisterClient({
                                       data-tooltip={`Update ${label.toLowerCase()}`}
                                       aria-label={`Edit ${label.toLowerCase()} for ${asset.title}. Current value: ${displayedValue}`}
                                     >
-                                      <span>{label}</span>
+                                      <span className={cardLayout.detailLabel}><AssetDetailIcon kind={target}/>{label}</span>
                                       <strong title={title}>{displayedValue}</strong>
                                     </button>
                                   );
@@ -16764,7 +16766,7 @@ export default function AssetRegisterClient({
 
                                 return (
                                   <div className={styles.assetDetailRow}>
-                                    <span>{label}</span>
+                                    <span className={cardLayout.detailLabel}><AssetDetailIcon kind={target}/>{label}</span>
                                     <strong title={title}>{displayedValue}</strong>
                                   </div>
                                 );
@@ -16921,7 +16923,7 @@ export default function AssetRegisterClient({
                                         )}
                                         {asset.kind === 'property' ? (
                                           <div className={styles.assetDetailRow}>
-                                            <span>Size</span>
+                                            <span className={cardLayout.detailLabel}><AssetDetailIcon kind="size"/>Size</span>
                                             <strong title={propertySizeDisplay(asset)}>{propertySizeDisplay(asset)}</strong>
                                           </div>
                                         ) : (
@@ -17026,17 +17028,27 @@ export default function AssetRegisterClient({
                                       data-tooltip="Update replacement price"
                                           aria-label={`Edit replacement price for ${asset.title}`}
                                         >
-                                          <span>Replacement Price</span>
+                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span>
                                           <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </button>
                                       ) : (
                                         <div className={styles.assetReplacementPriceBubble}>
-                                          <span>Replacement Price</span>
+                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span>
                                           <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </div>
                                       )}
+
+                                      <AssetMarketDetail
+                                        saved={savedSaleability[asset.id]}
+                                        stale={!!savedSaleability[asset.id] && savedSaleability[asset.id].basis !== saleabilityBasis(asset)}
+                                        included={assetValueVatMode === 'included'}
+                                        loading={saleabilityLoading}
+                                        error={saleabilityLoadError}
+                                        canCalculate={canUseOwnerOnlyAssetActions}
+                                        onCalculate={() => { pricingReturnAssetRef.current = null; setSaleabilityAsset(asset); }}
+                                      />
 
                                       {insuredValueExVat !== null ? (
                                         <div className={styles.assetInsuredValueBubble}>
@@ -18360,7 +18372,7 @@ export default function AssetRegisterClient({
                           ) : null}
 
                           <label className={styles.field}>
-                            <span>Size</span>
+                            <span className={cardLayout.detailLabel}><AssetDetailIcon kind="size"/>Size</span>
                             <input
                               type="text"
                               value={assetDraft.propertySize}
