@@ -3931,3 +3931,6 @@
 }
 .accountCreateListingDialog .createListingRegisterIcon { color: #2563a6; background: #edf5ff; border-color: #bdd5f0; }
 .accountCreateListingDialog .createListingValueIcon { color: #986026; background: #fff3df; border-color: #e6c79a; }
+
+/* Owner shortcut sits beside the existing VAT and share actions. */
+.cardShareButton.cardEditButton { right: 6.85rem; }

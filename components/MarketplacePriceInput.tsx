@@ -3,10 +3,12 @@ import { useState } from 'react';
 import GroupedCurrencyInput, { parseCurrencyInput } from './GroupedCurrencyInput';
 import styles from './MarketplacePriceInput.module.css';
 
-export default function MarketplacePriceInput({ value, onChange, disabled = false }: {
-  value: string; onChange: (value: string) => void; disabled?: boolean;
+export default function MarketplacePriceInput({ value, onChange, disabled = false, vatIncluded, onVatIncludedChange }: {
+  value: string; onChange: (value: string) => void; disabled?: boolean; vatIncluded?: boolean; onVatIncludedChange?: (included: boolean) => void;
 }) {
-  const [included, setIncluded] = useState(false);
+  const [localIncluded, setLocalIncluded] = useState(false);
+  const included = vatIncluded ?? localIncluded;
+  const setIncluded = (next: boolean) => { setLocalIncluded(next); onVatIncludedChange?.(next); };
   const [entry, setEntry] = useState<{ canonical: string; text: string; included: boolean } | null>(null);
   const amount = parseCurrencyInput(value);
   const displayed = entry?.canonical === value && entry.included === included ? entry.text
