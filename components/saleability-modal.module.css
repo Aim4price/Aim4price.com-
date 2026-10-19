@@ -824,3 +824,19 @@
 .modal .actions > button { min-height: 46px; }
 .modal .result { gap: 12px; }
 .modal .resultHero, .modal .pricePlan { padding: 16px; }
+
+/* Keep VAT with the asking price and show the rating alongside the plan. */
+.modal .result { grid-template-columns: minmax(0, .7fr) minmax(0, 1.7fr); align-items: stretch; }
+.modal .resultHero { grid-template-columns: 1fr; align-content: center; justify-items: start; gap: 12px; }
+.modal .resultHero > strong { font-size: 2.4rem; }
+.modal .resultHero .resultLabel { font-size: .9rem; }
+.modal .pricePlan { min-width: 0; }
+.askingPriceRow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; }
+.modal .askingPrice { flex: 1 1 230px; min-width: 0; margin: 0; }
+.askingPriceRow > [role="group"] { margin-top: 0; }
+.modal .result .ratingDetails, .modal .result .valuationReminder { grid-column: 1 / -1; }
+.modal .result .valuationReminder { margin: 0; padding: 10px 14px; }
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .result { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .resultHero { grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; align-items: center; }
+}
