@@ -15343,3 +15343,18 @@
 .replacementNoticeModal .replacementNoticeIntro { display: grid; gap: 1rem; }
 .replacementNoticeModal .replacementNoticeIntro p { margin: 0; text-wrap: pretty; }
 .replacementNoticeModal .replacementNoticeDisclaimer { display: block; text-wrap: pretty; }
+
+/* Replacement dialog: fixed close control, inset scroll area and visible actions. */
+.replacementPriceDialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+.replacementPriceDialog .specificationModalHeader { flex: 0 0 auto; align-items: center; gap: 24px; padding-bottom: 16px; }
+.replacementPriceDialog .detailsModalTitle { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.replacementPriceDialog .specificationModalHeader > button { position: static; flex-shrink: 0; margin: 0; }
+.replacementPriceDialog > .resultAccordionBody { min-height: 0; overflow-y: auto; padding: 12px 12px 0 0; scrollbar-width: thin; scrollbar-color: #8cafa0 transparent; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.replacementPriceDialog > .resultAccordionBody::-webkit-scrollbar { width: 7px; }
+.replacementPriceDialog > .resultAccordionBody::-webkit-scrollbar-thumb { background: #8cafa0; border: 2px solid transparent; background-clip: padding-box; border-radius: 8px; }
+.replacementPriceDialog > .resultAccordionBody::-webkit-scrollbar-track { margin-block: 10px; }
+.replacementPriceDialog .replacementInputPanel { padding: 16px; gap: 16px; }
+.replacementPriceDialog .replacementFieldsGrid { gap: 12px; }
+.replacementPriceDialog .replacementInputActions { flex: 0 0 auto; margin-top: 12px; padding: 16px 0 4px; background: var(--app-surface, #fff); }
+.replacementPriceDialog .replacementInputActions { align-items: center; }
+.replacementPriceDialog .replacementInputActions > button { margin: 0; min-height: 46px; }

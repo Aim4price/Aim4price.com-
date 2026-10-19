@@ -30,7 +30,7 @@ export default function EstimatePriceInput({ value, onChange, vatMode, label, sl
       }} />
     </div>
     {sliderMax != null && <div className={modal.sliderControl}>
-      <div className={modal.sliderLabels}><span>Adjust in R5,000 steps</span><span>Or type the exact amount {expanded ? 'below' : 'above'}</span></div>
+      <div className={modal.sliderLabels}><span>Adjust in R5,000 steps</span><span>Type an exact amount {expanded ? 'below' : 'above'}</span></div>
       <input aria-label={`${label} slider (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`}
       type="range" min={0} max={maximum} step={REPLACEMENT_SLIDER_STEP}
       value={replacementSliderAmount(amount * multiplier)} className={modal.adjustSlider}
