@@ -132,7 +132,12 @@ async function check(browser, url) {
     await page.waitForSelector('#asset-card-member');
     assert.equal(await isOpen('member'),false,'reopening umbrella does not restore stale member details');
     await click(details('member'));
-    await click('#asset-card-member2 h2');
+    // Muted cards intentionally ignore pointer events. Center the row away
+    // from the sticky header before testing its outside-dismissal surface.
+    await page.$eval('#asset-card-member2 h2',e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+    const mutedPoint=await page.$eval('#asset-card-member2 h2',e=>{const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
+    assert.equal(await page.evaluate(({x,y})=>Boolean(document.elementFromPoint(x,y)?.closest('a, nav, header')),mutedPoint),false,'muted-card click is clear of navigation');
+    await page.mouse.click(mutedPoint.x,mutedPoint.y);
     assert.equal(await isOpen('member'),false,'clicking a muted card dismisses the focused asset');
     await outside();
     await click(groupDetails);
@@ -198,7 +203,7 @@ async function check(browser, url) {
     await click('[aria-label="Flag Asset umbrella"]');
     await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     await page.screenshot({path:path.join(output,`umbrella-flagged-${width}.png`)});
-    await page.reload({waitUntil:'networkidle2'});
+    await page.reload({waitUntil:'domcontentloaded',timeout:120000});
     await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     groups[0].isFlagged=false;
   }
