@@ -4,9 +4,21 @@
 .toggle { display: inline-flex; gap: 0.25rem; padding: 0.25rem; border: 1px solid #bfd6c9; border-radius: 0.8rem; background: #f1f7f4; }
 .toggle button { min-height: 2.75rem; padding: 0.5rem 0.8rem; border: 0; border-radius: 0.6rem; background: transparent; color: #426052; font: inherit; font-size: 0.88rem; font-weight: 750; cursor: pointer; }
 .toggle button[aria-pressed='true'] { color: #fff; background: #17634a; box-shadow: 0 2px 7px #123b3426; }
-.input { display: flex; align-items: center; gap: 0.8rem; min-width: 0; min-height: 6rem; padding: 1.1rem 1.25rem; border: 1px solid #8db5a3; border-radius: 1rem; background: var(--app-surface-soft, #edf6f1); }
+.input { display: flex; align-items: center; gap: 0.8rem; min-width: 0; min-height: 6.75rem; padding: 1.25rem 1.4rem; border: 1px solid #8db5a3; border-radius: 1rem; background: var(--app-surface, #fff); }
 .input span { color: var(--app-text, #143d34); font-size: 1.6rem; font-weight: 750; }
-.input input { width: 100%; min-width: 0; padding: 0 !important; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none !important; outline: none; color: var(--app-text, #143d34); font: inherit; font-size: 2rem !important; font-weight: 800; line-height: 1.3; }
+/* Outrank modal-wide text-field rules so the amount stays large and unobstructed. */
+.field .input input.amount {
+  flex: 1; width: 100%; min-width: 0; min-height: 3.75rem !important;
+  margin: 0 !important; padding: .15rem .25rem !important;
+  border: 0 !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important; outline: none;
+  color: var(--app-text, #143d34) !important; font-family: inherit !important;
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.5), 2.75rem) !important;
+  font-weight: 800 !important; line-height: 1.25 !important;
+  text-indent: 0 !important; letter-spacing: -.025em;
+}
+.input span { flex: none; }
+
 .input:focus-within { outline: 3px solid #23825b40; outline-offset: 3px; }
 .toggle button:focus-visible { outline: 3px solid #23825b; outline-offset: 2px; }
 .field p { margin: 0; color: var(--app-muted, #64746a); font-size: 0.9rem; line-height: 1.5; }
