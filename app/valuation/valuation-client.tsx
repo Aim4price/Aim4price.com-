@@ -4084,7 +4084,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setGuestValuationCount(incrementGuestValuationCount());
       }
       setStep(6);
-      scrollWizardToStart();
+      requestAnimationFrame(() => {
+        const heading = document.getElementById('valuation-result-heading');
+        heading?.focus({ preventScroll: true });
+        heading?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     } catch (error) {
       console.error(error);
       setMessage(error instanceof Error ? error.message : 'Failed to calculate estimate.');
@@ -5254,7 +5258,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function scrollWizardToStart() {
-    if (!compactAppMode) return;
 
     requestAnimationFrame(() => {
       document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6441,7 +6444,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="e.g. 1 850 000"
             />
             {requiredHint(!(basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0))}
-            {!compactAppMode ? <span className={styles.fieldHint}>Enter the asset price only. Selected extras are added separately below.</span> : null}
           </label>
         </div>
         {renderReplacementBreakdown(basicBaseReplacementPriceExVat, basicExtraReplacementPriceExVat ?? 0, basicTotalReplacementPriceExVat, basicReplacementVatMode)}
@@ -7320,6 +7322,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function openUsageModal(showHoursInput: boolean) {
     setUsageModalMode(showHoursInput && !(selectedFamily?.basicCatalogue && usageAmount === '' && lifeWorkedPercent !== '') ? 'hours' : 'percent');
+    if (!showHoursInput && lifeWorkedPercent === '') setLifeWorkedPercent('50');
     setActiveDetailsModal('usage');
     setMessage('');
   }
@@ -7378,7 +7381,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
-    const workedPercent = toPercentOrNull(lifeWorkedPercent) ?? 50;
+    const workedPercent = toPercentOrNull(lifeWorkedPercent);
+    if (workedPercent === null) {
+      setMessage('Enter a worked percentage from 0 to 100.');
+      return;
+    }
 
     setLifeWorkedPercent(String(workedPercent));
     setUsageAmount('');
@@ -7556,6 +7563,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 className={`${styles.unknownAnswerButton} ${styles.unknownDangerButton}`}
                 onClick={() => {
                   setUsageAmount('');
+                  if (lifeWorkedPercent === '') setLifeWorkedPercent('50');
                   setUsageModalMode('percent');
                 }}
               >
@@ -7605,7 +7613,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
               Cancel
             </button>
-            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)} disabled={usageModalMode === 'hours' && showHoursInput && (usageNumber === null || usageNumber < 0)}>
+            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)} disabled={usageModalMode === 'hours' && showHoursInput ? usageNumber === null || usageNumber < 0 : lifeWorkedPercentNumber === null}>
               Continue
             </button>
           </div>
@@ -8944,7 +8952,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
-            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2>Estimated asset value</h2></div>
+            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2 id="valuation-result-heading" tabIndex={-1}>Estimated asset value</h2></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -8992,7 +9000,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('condition')}<span>Condition</span>
-                <strong>{appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition)}</strong>
+                <strong>{appliedDealerAssessment ? getDealerOptionLabel(DEALER_MECHANICAL_OPTIONS, appliedDealerAssessment.mechanicalCondition) : conditionLabel(resultCondition)}</strong>
+                {appliedDealerAssessment ? <small>Working condition · detailed assessment</small> : null}
               </div>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('popularity')}<span>Popularity</span>
@@ -9470,9 +9479,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
-            <div onBlurCapture={() => setRequiredFeedback(true)} data-required-feedback={requiredFeedback || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
+            <div onBlurCapture={(event) => { if (!activeDetailsModal && event.target instanceof HTMLInputElement && !event.target.validity.valid) setRequiredFeedback(true); }} data-required-feedback={(!activeDetailsModal && requiredFeedback) || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
-              {nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={`${styles.requiredSummary} ${requiredFeedback ? styles.requiredHint : styles.fieldHint}`} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
+              {!activeDetailsModal && nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={`${styles.requiredSummary} ${requiredFeedback ? styles.requiredHint : styles.fieldHint}`} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 

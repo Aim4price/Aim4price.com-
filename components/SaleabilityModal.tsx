@@ -366,7 +366,7 @@ export default function SaleabilityModal({
                 </div>
                 <div className={styles.resultRows}>
                   <div><span>Likely selling range</span><strong>{displayMoney(plan.likelySellingRangeLowExVat)} – {displayMoney(plan.likelySellingRangeHighExVat)}</strong></div>
-                  <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
+                  <div><span>Timing with this plan</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
                 </div>
               <p className={styles.valuationReminder}>
                 Valuation: <strong>{displayMoney(valuationExVat)} {vatLabel}</strong> · selling-price guidance only.
@@ -377,11 +377,11 @@ export default function SaleabilityModal({
                 <summary>Rating details</summary>
                 <div className={styles.resultMeta}>
                   <div>
-                    <span>General rating</span>
+                    <span>General rating</span><small>Based on the asset details.</small>
                     <strong>{general.score} / 100</strong>
                   </div>
                   <div>
-                    <span>Market score</span>
+                    <span>Market score</span><small>Includes your market answers.</small>
                     <strong>{plan.marketScore} / 100</strong>
                   </div>
                   <div>
@@ -389,7 +389,7 @@ export default function SaleabilityModal({
                     <strong>{plan.grade} · {plan.gradeLabel}</strong>
                   </div>
                   <div>
-                    <span>Selling window</span>
+                    <span>Typical market window</span>
                     <strong>{plan.naturalSellingWindow}</strong>
                   </div>
                 </div>
