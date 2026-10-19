@@ -1,0 +1,21 @@
+/* Business-specific fields within the shared marketplace outcome shell. */
+.form { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.headerCopy { min-width: 0; overflow-wrap: anywhere; }
+.fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fields input { min-width: 0; padding: .8rem 1rem; font-size: 1.05rem; font-weight: 650; }
+.fields textarea { padding: .85rem 1rem; }
+.fields label > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .6rem; }
+.fields label > span small { margin: 0; font-weight: 500; }
+.answers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
+.transferFlow { display: grid; gap: 1rem; }
+.transferOption { display: grid; align-content: start; gap: .5rem; padding: 1rem; min-width: 0; border: 1px solid var(--app-line, #cfddd7); border-radius: .95rem; background: var(--app-surface, #fff); color: var(--app-text, #29453c); text-align: left; cursor: pointer; }
+.transferOption strong { font-size: 1rem; line-height: 1.4; }
+.transferOption small, .transferNote small { font-size: .9rem; line-height: 1.55; color: var(--app-muted, #62766d); }
+.transferOption:hover { border-color: var(--app-accent, #258361); }
+.transferOption:focus-visible { outline: 3px solid var(--app-accent, #258361); outline-offset: 2px; }
+.transferNote { display: grid; gap: .5rem; padding: 1rem; border: 1px solid var(--app-line, #c1d7cd); border-radius: 1rem; background: var(--app-surface-soft, #f0f7f3); }
+.notice { margin: 0; padding: 1rem; border: 1px solid var(--app-warning-line, #e1c496); border-radius: 1rem; background: var(--app-warning-soft, #fff9ee); color: var(--app-text, #29453c); font-size: .95rem; line-height: 1.6; }
+@media (max-width: 720px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .fields { grid-template-columns: minmax(0, 1fr); }
+}
+.transferOption[aria-pressed='true'] { border-color: var(--app-accent, #258361); background: var(--app-surface-soft, #eaf7f0); box-shadow: inset 0 0 0 1px var(--app-accent, #258361); }

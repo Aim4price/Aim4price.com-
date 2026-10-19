@@ -699,29 +699,19 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   assert.match(deleteHandler, /The asset could not be archived\. Please try again\./);
   assert.doesNotMatch(deleteHandler, /formatUnknownError\(error/);
   assert.match(client, /draft\.reason === 'mistake_duplicate'[\s\S]{0,100}\? \{ reason: draft\.reason \}/);
-  assert.match(disposalModal, /disposalDraft\.reason === 'mistake_duplicate' \? <p[\s\S]*?assetDisposalDeleteNotice[\s\S]*?: <div[\s\S]*?assetDisposalFields/);
+  assert.match(disposalModal, /disposalDraft\.reason === 'mistake_duplicate' \? <p[\s\S]*?disposalLayout\.notice[\s\S]*?: <div[\s\S]*?disposalLayout\.fields/);
   assert.match(disposalModal, /No price or disposal details are required\./);
 
   assert.match(client, /import groupModalStyles from '\.\.\/\.\.\/components\/asset-register\/AssetGroupManagerModal\.module\.css';/);
-  assert.match(disposalModal, /className=\{groupModalStyles\.backdrop\}/);
-  assert.match(disposalModal, /className=\{groupModalStyles\.dialog\}/);
-  assert.match(disposalModal, /<header className=\{groupModalStyles\.header\}>/);
+  assert.match(client, /import disposalStyles from '.*MarketplaceOutcomeModal\.module\.css'/);
+  for (const className of ['backdrop', 'dialog', 'header', 'closeButton', 'progress', 'progressCurrent', 'progressComplete', 'body', 'wizardBody', 'step', 'wizardActions', 'cancelButton', 'primaryButton']) {
+    assert.ok(disposalModal.includes(`disposalStyles.${className}`), `shared marketplace style: ${className}`);
+  }
+  assert.match(disposalModal, /className=\{disposalLayout\.form\}/);
   assert.match(disposalModal, /<h2 id="disposal-title">Sell or remove this asset<\/h2>/);
-  assert.match(disposalModal, /className=\{groupModalStyles\.body\}/);
-  assert.match(disposalModal, /className=\{groupModalStyles\.intro\}/);
-  assert.match(disposalModal, /groupModalStyles\.wizardProgressStep/);
-  assert.match(disposalModal, /groupModalStyles\.wizardProgressStepCurrent/);
-  assert.match(disposalModal, /groupModalStyles\.wizardProgressStepComplete/);
   assert.match(disposalModal, /<span>\{isComplete \? '✓' : item\.step\}<\/span>/);
-  assert.match(disposalModal, /groupModalStyles\.wizardBody/);
-  assert.match(disposalModal, /groupModalStyles\.stepCard/);
-  assert.match(disposalModal, /groupModalStyles\.stepNumber/);
-  assert.match(disposalModal, /groupModalStyles\.footer/);
-  assert.match(disposalModal, /groupModalStyles\.wizardFooter/);
-  assert.match(disposalModal, /styles\.assetDisposalFooter/);
-  assert.match(disposalModal, /groupModalStyles\.cancelButton/);
-  assert.match(disposalModal, /groupModalStyles\.saveButton/);
-  assert.doesNotMatch(disposalModal, /styles\.assetDisposalOverlay|styles\.assetDisposalModal|styles\.assetDisposalBody|styles\.assetDisposalActions/);
+  assert.ok(disposalModal.indexOf('disposalStyles.progress') < disposalModal.indexOf('disposalStyles.wizardBody'));
+  assert.doesNotMatch(disposalModal, /groupModalStyles\.(stepNumber|intro|wizardProgress)/);
 
   assert.match(groupModalStyles, /\.dialog \{[\s\S]*?width: min\(1120px, var\(--website-dialog-reference-width, 100%\)\);[\s\S]*?max-height: min\(880px, calc\((?:calc\(var\(--website-design-vh(?:, 1vh)?\) \* 100\)|calc\(var\(--website-visible-height(?:, 100vh)?\) \* 1\)) - 48px\)\);/);
   assert.match(groupModalStyles, /\.header \{[\s\S]*?padding: 28px 36px 24px;/);

@@ -26,10 +26,9 @@ test('acquisition editing lives inside Finance and no longer opens a separate ow
   assert.doesNotMatch(ownerRegister, /aria-labelledby="acquisition-details-title"/);
 });
 
-test('owner disposal uses a compact choice-card layout and short delete subtitle', () => {
-  assert.match(ownerRegister, /Remove or archive this asset safely\./);
-  assert.match(ownerRegister, /assetDisposalReasonGrid/);
-  assert.match(ownerRegister, /assetDisposalReasonButtonActive/);
-  assert.match(styles, /\.deleteAssetOptionSubtitle[\s\S]*?white-space: nowrap !important/);
-  assert.match(styles, /\.assetDisposalReasonGrid[\s\S]*?repeat\(3/);
+test('owner disposal reuses the marketplace choice-card layout', () => {
+  assert.match(ownerRegister, /disposalStyles\.reasonGrid/);
+  assert.match(ownerRegister, /disposalStyles\.optionSelected/);
+  assert.match(ownerRegister, /disposalStyles\.close/);
+  assert.match(ownerRegister, /disposalStyles\.wizardActions/);
 });
