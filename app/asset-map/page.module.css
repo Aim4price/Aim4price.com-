@@ -2162,3 +2162,16 @@
  :global(:where(html:not(:has([data-website-canvas])))) .selectedAssetMain { grid-template-columns:1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .selectedPhotoPanel:not(:has(img)) { display:none; }
 }
+
+/* Compact selected-asset card, matching the map card design. */
+.selectedAssetMain { grid-template-columns: minmax(140px,180px) minmax(0,1fr); gap:1.3rem; }
+.selectedAssetContent { gap:1rem; }
+.selectedAssetTitleGroup { gap:.45rem; }
+.selectedRegisterLabel { font-size:.88rem; font-weight:550; line-height:1.4; }
+.selectedPhotoImage,.selectedPhotoPlaceholder { height:180px; border-color:#dce9e2; background:#eff5f2; }
+.selectedPhotoPlaceholder { gap:.8rem; }
+.selectedPhotoPlaceholder svg { width:2.5rem; height:2.5rem; opacity:.8; }
+.selectedPhotoPlaceholder span { font-size:.85rem; font-weight:650; }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .selectedAssetMain { grid-template-columns:1fr; }
+}
