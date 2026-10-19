@@ -72,3 +72,33 @@
 .historySwitch button:hover:not([aria-pressed="true"]) { background:#fff; color:#185d46; }
 .historySwitch button:focus-visible { outline:3px solid #5abf98; outline-offset:2px; }
 .historySwitch svg { width:1.15rem; height:1.15rem; flex-shrink:0; }
+
+/* Tracking shares the saved-location cards; routes open only when requested. */
+.trackingHistory { display:grid; gap:1.1rem; min-width:0; }
+.trackingListHeading,.trackingListFooter { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.8rem; color:#5b7067; font-size:.85rem; }
+.trackingListHeading button,.trackingListFooter button,.trackingRoute button { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; padding:.65rem .9rem; border:1px solid #bdd5c8; border-radius:.75rem; background:#f4f9f6; color:#174c38; font:inherit; font-weight:700; cursor:pointer; }
+.trackingListHeading svg { width:1rem; height:1rem; }
+.trackingHistory button:focus-visible { outline:3px solid #5abf98; outline-offset:3px; }
+.trackingHistory button:disabled { opacity:.55; cursor:wait; }
+.trackingList { gap:1rem; }
+.trackingList .recordBody { margin-top:.8rem; gap:1.25rem; }
+.trackingList .recordActions { flex-shrink:1; }
+.trackingList .recordActions button { min-height:2.7rem; justify-content:center; }
+.trackingRoute { display:grid; gap:1rem; margin-top:1.25rem; padding-top:1.25rem; border-top:1px solid #dce7e1; }
+.trackingStats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.75rem; }
+.trackingStats > div { display:grid; gap:.35rem; padding:1rem; background:#eff6f2; border:1px solid #dae8df; border-radius:.8rem; }
+.trackingStats strong { font-size:1.05rem; color:#183e30; }
+.trackingStats span { font-size:.8rem; color:#536b61; line-height:1.4; }
+.trackingRoute > .disclaimer { margin:0; font-weight:400; }
+.trackingRoute summary { cursor:pointer; font-weight:700; color:#245d44; }
+.trackingStops { display:grid; gap:.6rem; padding-top:.6rem; }
+.trackingListFooter { padding-top:1rem; border-top:1px solid #dce7e1; }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingStats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingList .recordActions { width:100%; justify-content:flex-start; }
+}
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch { display:grid; grid-template-columns:1fr 1fr; width:100%; min-width:0; box-sizing:border-box; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch button { min-width:0; padding:.65rem .35rem; gap:.35rem; font-size:.8rem; white-space:normal; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingList .recordActions { display:grid; grid-template-columns:1fr; }
+}
