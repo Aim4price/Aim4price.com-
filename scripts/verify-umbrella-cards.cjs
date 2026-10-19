@@ -13,7 +13,7 @@ const user = { id:'canvas-fixture', name:'Canvas Test Owner', email:'canvas@exam
 const profile = { userId:user.id,name:user.name,displayName:user.name,email:user.email,accountType:'owner',accountSubtype:'',logoUrl:'',extraPhotoUrls:[],businessName:'Test farm',phone:'',province:'Gauteng',townCity:'Test town',addressLine1:'',addressLine2:'',websiteUrl:'',vatNumber:'',notes:'',marketplaceSellerName:'',marketplacePhone:'',marketplaceEmail:'',marketplaceLocation:'',partnerServices:'',partnerBrandFocus:'',partnerDescription:'',partnerDirectoryStatus:'inactive',partnerLatitude:null,partnerLongitude:null,partnerServiceRadiusKm:null,discoveryParticipationEnabled:false,partnerDirectoryEnabled:false,createdAtIso:null,updatedAtIso:null };
 const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
 async function check(browser, url) {
-  const page=await browser.newPage(); const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await browser.newPage(); page.on('framenavigated',frame=>{if(frame===page.mainFrame())console.log('PAGE',frame.url())}); page.on('console',m=>{if(/refresh|reload/i.test(m.text()))console.log('BROWSER',m.text())}); const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const make=(id,title,value,extra={})=>({id,userId:user.id,registerId:'canvas-register',title,kind:'tractor',value,selectedValueExVat:value,aim4priceValueExVat:value,replacementPriceExVat:500000,selectedMethod:'aim4price',specsJson:{},brandName:'New Holland',modelName:'TT4.90',equipmentFamilyKey:'tractor',equipmentFamilyLabel:'Tractors',yearModel:2022,hours:1276,condition:'good',note:'',serialNumber:'',marketplaceStatus:'draft',photos:[],documents:[],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z',...extra});
   const assets=[make('member','2018 Massey Ferguson 4708',194438),make('member2','Farm trailer',15000,{specsJson:{assetFlagged:true}}),make('normal','2022 New Holland TT4.90 4WD Openstation',327133,{latestIssueNoteStatus:{id:'issue-1',note:'Rear light needs checking',operatorName:'Test owner',createdAtIso:'2026-09-13T00:00:00Z'},latestMaintenanceStatus:{id:'maintenance-1',summary:'Changed engine oil',operatorName:'Test mechanic',createdAtIso:'2026-09-13T00:00:00Z',photoUrls:[]}}),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
   let groups=[{id:'umbrella',userId:user.id,registerId:'canvas-register',name:'Asset umbrella',valueMode:'separate',isFlagged:false,members:[{assetId:'member',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0},{assetId:'member2',role:'member',relationship:'works_with',countsTowardTotal:true,sortOrder:1}],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z'}];
@@ -156,7 +156,19 @@ async function check(browser, url) {
     assert.equal(layout.count,2,'issue and maintenance notices are present');
     assert.equal(layout.below,true,'expanded asset details precede every notice visually and in reading order');
     await page.screenshot({path:path.join(output,`asset-details-before-notices-${width}.png`)});
-    await page.click('#asset-card-normal [class*="cardManageButton"]');
+    const manageSelector='#asset-card-normal [class*="cardManageButton"]';
+    await page.waitForSelector(manageSelector,{visible:true});
+    await page.$eval(manageSelector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+    await page.waitForFunction(async selector=>{
+      const button=document.querySelector(selector);
+      if(!button)return false;
+      const before=button.getBoundingClientRect();
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const after=button.getBoundingClientRect();
+      return Math.abs(before.x-after.x)<.1&&Math.abs(before.y-after.y)<.1
+        &&button.contains(document.elementFromPoint(after.x+after.width/2,after.y+after.height/2));
+    },{},manageSelector);
+    await page.click(manageSelector);
     // Resolve and interact in one browser turn: canvas overlay mounting can
     // replace the node between separate waitForSelector and $eval calls.
     await page.waitForFunction(()=>{
