@@ -1,0 +1,7 @@
+.status { margin: .5rem 1rem; color: var(--app-muted, #526c61); font-size: .95rem; }
+.error { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin: .5rem 1rem; padding: 1rem 1.2rem; border: 1px solid #dfcbb0; border-radius: .85rem; background: #fff8ee; color: #67451e; }
+.error > div { display: grid; gap: .35rem; }
+.error strong { font-size: 1rem; }
+.error span { font-size: .9rem; line-height: 1.4; }
+.retry { min-height: 2.75rem; padding: .65rem 1.1rem; border: 1px solid #b9d2c5; border-radius: .65rem; background: #edf8f1; color: #175640; font: inherit; font-weight: 750; cursor: pointer; }
+.retry:focus-visible { outline: 3px solid #298159; outline-offset: 3px; }

@@ -2187,6 +2187,15 @@ function decodeDataImage(source: string): AssetDiscoveryPhoto | null {
 }
 
 function internalUploadId(source: string): string {
+  // Saved photos may contain a full website URL. Resolve these directly after
+  // Discovery access checks instead of fetching our protected upload route anonymously.
+  try {
+    const url = new URL(source);
+    if (url.protocol !== "https:" || !["aim4price.com", "www.aim4price.com"].includes(url.hostname.toLowerCase())) return "";
+    source = url.pathname;
+  } catch {
+    // Relative upload paths are the normal storage format.
+  }
   const bucketOnlyMatch =
     /^\/api\/asset-register\/uploads\/(bkt-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:[/?#]|$)/.exec(
       source,

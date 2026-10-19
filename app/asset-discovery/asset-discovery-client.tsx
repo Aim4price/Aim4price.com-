@@ -1,4 +1,5 @@
 "use client";
+import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import dialogStyles from "../../components/AccountDialog.module.css";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
@@ -615,9 +616,7 @@ export default function AssetDiscoveryClient({
   const [detailsByAssetId, setDetailsByAssetId] = useState<
     Record<string, DiscoveryAssetDetails>
   >({});
-  const [photoIndexByAssetId, setPhotoIndexByAssetId] = useState<
-    Record<string, number>
-  >({});
+
   const [photoModal, setPhotoModal] = useState<DiscoveryPhotoModal | null>(
     null,
   );
@@ -780,7 +779,7 @@ export default function AssetDiscoveryClient({
         ) {
           setExpandedAssetId(null);
           setDetailsByAssetId({});
-          setPhotoIndexByAssetId({});
+
           setPhotoModal(null);
           setDetailsErrorByAssetId({});
           setLoadingDetailsAssetId(null);
@@ -818,7 +817,7 @@ export default function AssetDiscoveryClient({
         setPagination(EMPTY_PAGINATION);
         setExpandedAssetId(null);
         setDetailsByAssetId({});
-        setPhotoIndexByAssetId({});
+
         setPhotoModal(null);
         setDetailsErrorByAssetId({});
         setLoadingDetailsAssetId(null);
@@ -1442,40 +1441,6 @@ export default function AssetDiscoveryClient({
     );
   }
 
-  function getDiscoveryPhotoIndex(assetId: string, photoCount: number): number {
-    if (!photoCount) return 0;
-    return Math.min(
-      Math.max(photoIndexByAssetId[assetId] ?? 0, 0),
-      photoCount - 1,
-    );
-  }
-
-  function selectDiscoveryPhoto(
-    assetId: string,
-    index: number,
-    photoCount: number,
-  ) {
-    if (!photoCount) return;
-    setPhotoIndexByAssetId((current) => ({
-      ...current,
-      [assetId]: Math.min(Math.max(index, 0), photoCount - 1),
-    }));
-  }
-
-  function cycleDiscoveryPhoto(
-    assetId: string,
-    direction: -1 | 1,
-    photoCount: number,
-  ) {
-    if (photoCount <= 1) return;
-    const currentIndex = getDiscoveryPhotoIndex(assetId, photoCount);
-    selectDiscoveryPhoto(
-      assetId,
-      (currentIndex + direction + photoCount) % photoCount,
-      photoCount,
-    );
-  }
-
   function openDiscoveryPhotoModal(
     asset: AssetDiscoveryAsset,
     photoUrls: string[],
@@ -1499,9 +1464,7 @@ export default function AssetDiscoveryClient({
       privateDiscoveryAccess && details?.photosUnlocked
         ? details.photoUrls
         : [];
-    const photoIndex = getDiscoveryPhotoIndex(asset.id, photoUrls.length);
-    const activePhotoUrl = photoUrls[photoIndex] ?? "";
-    const hasMultiplePhotos = photoUrls.length > 1;
+
 
     return (
       <div
@@ -1549,77 +1512,12 @@ export default function AssetDiscoveryClient({
         ) : details ? (
           <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
             <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap} ${styles.discoveryMediaColumn}`}>
-              {hasMultiplePhotos ? (
-                <div className={`${assetStyles.previewThumbRow} ${leadStyles.leadPreviewThumbRow} ${styles.discoveryPreviewThumbRow}`}>
-                  {photoUrls.map((photoUrl, index) => (
-                    <button
-                      type="button"
-                      key={`${asset.id}-discovery-photo-${index}`}
-                      className={`${assetStyles.previewThumbButton} ${leadStyles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ""}`}
-                      onClick={() => {
-                        selectDiscoveryPhoto(asset.id, index, photoUrls.length);
-                        openDiscoveryPhotoModal(asset, photoUrls, index);
-                      }}
-                      aria-label={`Open photo ${index + 1}`}
-                    >
-                      <img
-                        src={photoUrl}
-                        alt={`${assetDisplayName(asset)} thumbnail ${index + 1}`}
-                        className={`${assetStyles.previewThumbImage} ${leadStyles.leadPreviewThumbImage}`}
-                      />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              {photoUrls.length ? (
+                <RecentAdvertGallery id={`discovery-${asset.id}`} title={assetDisplayName(asset)} urls={photoUrls}
+                  onOpen={(index) => openDiscoveryPhotoModal(asset, photoUrls, index)} />
+              ) : <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
+                {details.photosUnlocked ? (
 
-              <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
-                {activePhotoUrl ? (
-                  <>
-                    <button
-                      type="button"
-                      className={leadStyles.leadPreviewOpenButton}
-                      onClick={() =>
-                        openDiscoveryPhotoModal(asset, photoUrls, photoIndex)
-                      }
-                      aria-label={`Open ${assetDisplayName(asset)} photo ${photoIndex + 1}`}
-                    >
-                      <img
-                        src={activePhotoUrl}
-                        alt={`${assetDisplayName(asset)} photo ${photoIndex + 1}`}
-                        className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
-                      />
-                      <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
-                    </button>
-
-                    {hasMultiplePhotos ? (
-                      <>
-                        <button
-                          type="button"
-                          className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
-                          onClick={() =>
-                            cycleDiscoveryPhoto(asset.id, -1, photoUrls.length)
-                          }
-                          aria-label="Show previous photo"
-                        >
-                          <ChevronLeftIcon className={assetStyles.buttonIcon} />
-                        </button>
-                        <button
-                          type="button"
-                          className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
-                          onClick={() =>
-                            cycleDiscoveryPhoto(asset.id, 1, photoUrls.length)
-                          }
-                          aria-label="Show next photo"
-                        >
-                          <ChevronRightIcon className={assetStyles.buttonIcon} />
-                        </button>
-                        <div className={assetStyles.previewCounter}>
-                          {photoIndex + 1} / {photoUrls.length}
-                        </div>
-                      </>
-                    ) : null}
-                  </>
-                ) : details.photosUnlocked ? (
                   <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder}`}>
                     <div className={assetStyles.previewPlaceholderBadges}>
                       <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
@@ -1639,7 +1537,7 @@ export default function AssetDiscoveryClient({
                     </div>
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
 
             <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
