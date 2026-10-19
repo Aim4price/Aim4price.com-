@@ -1,5 +1,5 @@
-import {summarizeTracking,type TrackingPoint} from './asset-tracking-math';
-export type JourneyPoint=TrackingPoint & {sampleId:string;deviceId:string};
+import {summarizeTracking,visibleTrackingPoints,type TrackingPoint} from './asset-tracking-math';
+export type JourneyPoint=TrackingPoint & {sampleId:string;deviceId:string;historyDeleted?:boolean};
 export type TrackingJourney={
  id:string;deviceId:string;sessionId:string;day:string;from:string;to:string;
  firstCapturedAt:string;lastCapturedAt:string;startAt:string;endAt:string;
@@ -12,7 +12,7 @@ const day=(v:string)=>new Date(Date.parse(v)+7200000).toISOString().slice(0,10);
  */
 export function trackingJourneys(input:JourneyPoint[]):TrackingJourney[]{
  const devices=new Map<string,JourneyPoint[]>();
- for(const p of input){const key=p.deviceId+'|'+p.sessionId;const list=devices.get(key)||[];list.push(p);devices.set(key,list);}
+ for(const p of visibleTrackingPoints(input)){const key=p.deviceId+'|'+p.sessionId;const list=devices.get(key)||[];list.push(p);devices.set(key,list);}
  const entries:TrackingJourney[]=[];
  for(const points of devices.values()){
   points.sort((a,b)=>Date.parse(a.capturedAt)-Date.parse(b.capturedAt)||a.sampleId.localeCompare(b.sampleId));

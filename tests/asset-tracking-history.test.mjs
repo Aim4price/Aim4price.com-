@@ -44,7 +44,7 @@ test('tracking history API validates dates, snapshots and access before mutation
  assert.equal(calls,0);assert.equal((await route.DELETE(req(valid),ctx)).status,200);assert.equal(calls,1);
  assert.equal((await route.GET(req('view=entries&from=2026-02-30'),ctx)).status,400);
  assert.equal((await route.GET(req('view=entries&from=2026-10-19&to=2026-10-18'),ctx)).status,400);
- const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/p\.history_deleted_at IS NULL/);
+ const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/visibleTrackingPoints/);
 });
 test('sessions remain separate on the same day, survive midnight, paginate ties and delete only the selected snapshot',async()=>{
  const db=new PGlite();
@@ -96,6 +96,9 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
  assert.equal(boundedReport.body.readings.length,1,'journey route uses exact capture bounds within an activation');
  const removed=await route.DELETE({nextUrl:new URL('https://example.test/history?'+bounded)},{params:{assetId:asset}});
  assert.equal(removed.status,200);
+ const deletedReport=await route.GET({nextUrl:new URL('https://example.test/history?'+bounded)},{params:{assetId:asset}});
+ assert.equal(deletedReport.body.readings.length,0);
+ assert.equal(deletedReport.body.points.length,0,'deleted coordinates must not leak into audit exports');
  assert.equal((await db.query("SELECT count(*)::integer AS n FROM asset_tracking_points WHERE sample_id='after-midnight' AND history_deleted_at IS NULL")).rows[0].n,1,'deleting one journey preserves another in the same activation');
  const journeyPage=await route.GET({nextUrl:new URL('https://example.test/history?'+new URLSearchParams({view:'journeys',from:'2026-10-18',to:'2026-10-19',snapshotAt:snapshot}))},{params:{assetId:asset}});
  assert.equal(journeyPage.status,200);

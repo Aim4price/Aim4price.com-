@@ -33,3 +33,10 @@ test('poor GPS is retained for audit but cannot join a route',()=>{
  assert.equal(entries.length,2);assert.equal(entries[0].gapBeforeSeconds,120);
  assert.equal(entries.reduce((sum,e)=>sum+e.readings,0),3);
 });
+test('deleted points never reappear or let neighbouring records join across removed history',()=>{
+ const entries=trackingJourneys([point(0,0),point(1,.001),point(2,.002,{historyDeleted:true}),point(3,.003),point(4,.004)]);
+ assert.equal(entries.length,2);assert.equal(entries.reduce((n,e)=>n+e.readings,0),4);
+ const visible=math.visibleTrackingPoints([point(0,0),point(1,.001,{historyDeleted:true}),point(2,.002)]);
+ assert.equal(visible.length,2);const report=math.summarizeTracking(visible);
+ assert.equal(report.distanceKm,0);assert.equal(report.gaps[0].reason,'Readings removed from history');
+});

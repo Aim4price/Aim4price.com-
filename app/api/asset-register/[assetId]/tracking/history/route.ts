@@ -4,7 +4,7 @@ import {
   trackingJson,
 } from "../../../../../../lib/asset-tracking-api";
 import { ensureTrackingTables } from "../../../../../../lib/asset-tracking";
-import { summarizeTracking } from "../../../../../../lib/asset-tracking-math";
+import { summarizeTracking, visibleTrackingPoints } from "../../../../../../lib/asset-tracking-math";
 import { getDb } from "../../../../../../lib/db";
 import {buildMovementHtml,buildMovementWorkbook} from "../../../../../../lib/asset-movement-report";
 import {validTrackingDay,validTrackingSnapshot,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor} from "../../../../../../lib/asset-tracking-history";
@@ -32,12 +32,12 @@ export async function GET(
       const snapshot=snapshotAt||new Date().toISOString();
       await ensureTrackingTables();
       const result=await getDb().query(`SELECT p.* FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id
-        WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.history_deleted_at IS NULL AND p.received_at<=$5::timestamptz
+        WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.received_at<=$5::timestamptz
         AND p.captured_at>=($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg')
         AND p.captured_at<(($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg')
         ORDER BY p.captured_at,p.sample_id LIMIT 100001`,[access.ownerId,params.assetId,from,to,snapshot]);
       if(result.rows.length>100000)return trackingJson({error:'Too many readings in this period. Choose fewer days to see every journey.'},400);
-      const all=trackingJourneys(result.rows.map(p=>({sampleId:p.sample_id,deviceId:p.device_id,sessionId:p.session_id,capturedAt:new Date(p.captured_at).toISOString(),latitude:Number(p.latitude),longitude:Number(p.longitude),accuracy:Number(p.accuracy)})));
+      const all=trackingJourneys(result.rows.map(p=>({historyDeleted:!!p.history_deleted_at,sampleId:p.sample_id,deviceId:p.device_id,sessionId:p.session_id,capturedAt:new Date(p.captured_at).toISOString(),latitude:Number(p.latitude),longitude:Number(p.longitude),accuracy:Number(p.accuracy)})));
       const before=request.nextUrl.searchParams.get('before');
       const index=before?all.findIndex(e=>e.id===before):-1;
       if(before&&index<0)return trackingJson({error:'History has changed. Refresh before loading more.'},409);
@@ -74,7 +74,7 @@ export async function GET(
       return trackingJson({ error: "Choose up to 31 calendar days." }, 400);
     await ensureTrackingTables();
     const r = await getDb().query(
-      `SELECT p.sample_id,p.received_at,p.device_id,p.captured_at,p.latitude,p.longitude,p.accuracy,p.session_id FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.history_deleted_at IS NULL AND ($8::timestamptz IS NULL OR p.captured_at >= $8::timestamptz) AND ($9::timestamptz IS NULL OR p.captured_at <= $9::timestamptz) AND ($6::uuid IS NULL OR (p.device_id=$6::uuid AND p.session_id=$7::uuid)) AND ($5::timestamptz IS NULL OR p.received_at <= $5::timestamptz) AND p.captured_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg') AND p.captured_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg') ORDER BY p.captured_at LIMIT 50001`,
+      `SELECT p.history_deleted_at,p.sample_id,p.received_at,p.device_id,p.captured_at,p.latitude,p.longitude,p.accuracy,p.session_id FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id WHERE d.owner_id=$1 AND d.asset_id=$2 AND ($8::timestamptz IS NULL OR p.captured_at >= $8::timestamptz) AND ($9::timestamptz IS NULL OR p.captured_at <= $9::timestamptz) AND ($6::uuid IS NULL OR (p.device_id=$6::uuid AND p.session_id=$7::uuid)) AND ($5::timestamptz IS NULL OR p.received_at <= $5::timestamptz) AND p.captured_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg') AND p.captured_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg') ORDER BY p.captured_at LIMIT 50001`,
       [access.ownerId, params.assetId, from, to, snapshotAt, deviceId, sessionId, contextAt||startAt, endAt],
     );
     if (r.rows.length > 50000)
@@ -82,7 +82,8 @@ export async function GET(
         { error: "Choose a shorter period to view the complete route." },
         400,
       );
-    const points = r.rows.map((p) => ({
+    const points = visibleTrackingPoints(r.rows.map((p) => ({
+      historyDeleted:!!p.history_deleted_at,
       capturedAt: new Date(p.captured_at).toISOString(),
       latitude: Number(p.latitude),
       longitude: Number(p.longitude),
@@ -92,7 +93,7 @@ export async function GET(
       sampleId: p.sample_id,
       context:!!startAt&&new Date(p.captured_at).toISOString()<startAt,
       receivedAt: p.received_at?new Date(p.received_at).toISOString():undefined,
-    }));
+    })));
     const report = summarizeTracking(points);
     const format = request.nextUrl.searchParams.get("format");
     if(format && !['pdf','xlsx'].includes(format)) return trackingJson({error:'Choose PDF or Excel.'},400);
