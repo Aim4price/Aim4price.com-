@@ -163,7 +163,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
     'Know what ownership costs.',
     'Keep maintenance on track.',
     'set budgets',
-    'Value Asset or manually',
+    'Value My Asset or manually',
     'Automatic depreciation',
     'updated usage',
     'equipment-specific checklists',

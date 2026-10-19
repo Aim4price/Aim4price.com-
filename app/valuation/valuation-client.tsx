@@ -9828,7 +9828,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               ) : isDealerAccount ? (
                 <>
                   <strong>Dealer and auctioneer account.</strong>
-                  <span>Publish marketplace listings through Value Asset after the value has been calculated.</span>
+                  <span>Publish marketplace listings through Value My Asset after the value has been calculated.</span>
                 </>
               ) : (
                 <>

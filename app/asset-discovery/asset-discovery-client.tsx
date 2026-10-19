@@ -1932,7 +1932,7 @@ export default function AssetDiscoveryClient({
                   href={ownerAppMode ? "/owner-app/valuation" : "/valuation"}
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
                 >
-                  Value Asset
+                  Value My Asset
                 </a>
               </>
             )}

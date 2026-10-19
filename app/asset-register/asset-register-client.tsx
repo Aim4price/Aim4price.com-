@@ -2178,6 +2178,22 @@ function TrendIcon({ className }: IconProps) {
   );
 }
 
+function ProjectionIcon({ kind }: { kind: string }) {
+  const paths: Record<string, string> = {
+    year: 'M4 5h16v16H4z M8 3v4 M16 3v4 M4 10h16 M8 14h3 M8 17h6',
+    inflation: 'M5 19 19 5 M7 5a2 2 0 1 0 0 4 2 2 0 0 0 0-4 M17 15a2 2 0 1 0 0 4 2 2 0 0 0 0-4',
+    usage: 'M4 19a9 9 0 1 1 16 0 M12 14l5-5 M8 19h8',
+    condition: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z M8 12l3 3 5-6',
+    excellent: 'm12 3 3 6 6 1-4.5 4.5L18 21l-6-3-6 3 1.5-6.5L3 10l6-1z',
+    good: 'm5 12 4 4L19 6',
+    fair: 'M5 7h14 M5 12h14 M5 17h14',
+    used: 'M14 6a4 4 0 0 0-5 5l-6 6 4 4 6-6a4 4 0 0 0 5-5l-3 2-3-3z',
+    serious: 'm12 3 10 18H2z M12 9v5 M12 17h.01',
+    value: 'M3 17 9 11l4 4 8-8 M14 7h7v7',
+  };
+  return <span className={styles.projectionIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[kind] ?? paths.value} /></svg></span>;
+}
+
 function SaleabilityIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -21441,9 +21457,8 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${styles.projectionQuestionModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>Estimate this asset’s future value.</p>
-                <PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} />
+                <h3 id="projection-title"><ProjectionIcon kind="value" />Future asset value</h3>
+                <p>{projectionAsset.title}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -21453,11 +21468,11 @@ export default function AssetRegisterClient({
 
             <div ref={projectionQuestionRef} tabIndex={-1} aria-label="Future price questions" className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
               <div className={styles.projectionSimpleBody}>
-                <p className={styles.projectionQuestionProgress} role="status">{projectionStep === 'result' ? 'Your future price' : `Question ${projectionStep} of 4`}</p>
+                <div className={styles.projectionProgress} hidden={projectionStep === 'result'}><p className={styles.projectionQuestionProgress} role="status">{projectionStep === 'result' ? 'Your future price' : `Question ${projectionStep} of 4`}</p><div className={styles.projectionProgressTrack} aria-hidden="true"><span style={{ width: `${projectionStep === 'result' ? 100 : projectionStep / 4 * 100}%` }} /></div></div>
                 {projectionStep !== 'result' ? (
                   <section key={projectionStep} className={styles.projectionSimpleCard}>
                     {projectionStep === 1 ? (<>
-                      <h4>Which year would you like to estimate?</h4>
+                      <h4><ProjectionIcon kind="year" />Which year would you like to estimate?</h4>
                     <ModalSelect<string>
                       label="Target year"
                       value={projectionForm.targetYear}
@@ -21468,7 +21483,7 @@ export default function AssetRegisterClient({
 
                     </>) : null}
                     {projectionStep === 2 ? (<>
-                      <h4>What annual inflation rate do you expect?</h4>
+                      <h4><ProjectionIcon kind="inflation" />What annual inflation rate do you expect?</h4>
                     <div className={styles.projectionQuickButtons}>
                       {PROJECTION_INFLATION_PRESETS.map((rate) => {
                         const isSelected = projectionForm.inflationRatePct === rate;
@@ -21481,13 +21496,13 @@ export default function AssetRegisterClient({
                             aria-pressed={isSelected}
                             onClick={() => advanceProjectionStep({ inflationRatePct: rate })}
                           >
-                            {rate}%
+                            <ProjectionIcon kind="inflation" /><strong>{rate}%</strong>
                           </button>
                         );
                       })}
                     </div>
                     <label className={styles.field}>
-                      <span>Inflation % p.a.</span>
+                      <span>Annual inflation (%)</span>
                       <input
                         type="number"
                         min="-50"
@@ -21501,7 +21516,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 3 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4>{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
+                        <h4><ProjectionIcon kind="usage" />{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
                         <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
                       </div>
                       <p id="projection-usage-help">{projectionUsageHelpText}</p>
@@ -21526,7 +21541,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 4 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4>What will its future condition be?</h4>
+                        <h4><ProjectionIcon kind="condition" />What will its future condition be?</h4>
                         <p>In {projectionForm.targetYear} · Current condition: {conditionLabel(projectionAsset.condition)}</p>
                       </div>
                     <div className={styles.projectionConditionGrid}>
@@ -21541,7 +21556,7 @@ export default function AssetRegisterClient({
                             aria-pressed={isSelected}
                             onClick={() => advanceProjectionStep({ targetCondition: option.key })}
                           >
-                            <strong>{option.label}</strong>
+                            <ProjectionIcon kind={option.key} /><strong>{option.label}</strong><span className={styles.projectionSelectionMark} aria-hidden="true">{isSelected ? '✓' : ''}</span>
                           </button>
                         );
                       })}
@@ -21554,18 +21569,18 @@ export default function AssetRegisterClient({
 
                 {projectionStep === 'result' && projectionResult ? (
                   <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
-                    <span>Projected future price</span>
+                    <span className={styles.projectionResultLabel}><ProjectionIcon kind="value" />Projected future price</span>
                     <strong>{pricingMoney(projectionResult.projected.retailExVat)}</strong>
-                    <p>{pricingVatLabel} value for {projectionResult.targetYear}.</p>
+                    <div className={styles.projectionResultBasis}><p>{pricingVatLabel} value for {projectionResult.targetYear}.</p><PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} /></div>
 
                     <div className={styles.projectionSimpleMeta}>
-                      <div><span>Current saved value</span><strong>{pricingMoney(projectionAsset.value)}</strong></div>
+                      <div><span className={styles.projectionMetaLabel}><ProjectionIcon kind="value" />Current saved value</span><strong>{pricingMoney(projectionAsset.value)}</strong></div>
                       <div>
-                        <span>Year</span>
+                        <span className={styles.projectionMetaLabel}><ProjectionIcon kind="year" />Year</span>
                         <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
                       </div>
                       <div>
-                        <span>{projectionUsageMetaLabel}</span>
+                        <span className={styles.projectionMetaLabel}><ProjectionIcon kind="usage" />{projectionUsageMetaLabel}</span>
                         <strong>
                           {projectionUsesPercentUsage
                             ? `${formatProjectionWorkedPercent(projectionCurrentWorkedPercent)} → ${formatProjectionWorkedPercent(projectionTargetWorkedPercent)}`
@@ -21573,17 +21588,18 @@ export default function AssetRegisterClient({
                         </strong>
                       </div>
                       <div>
-                        <span>Inflation</span>
+                        <span className={styles.projectionMetaLabel}><ProjectionIcon kind="inflation" />Inflation</span>
                         <strong>{formatPercent(projectionResult.inflationRatePct)} p.a.</strong>
                       </div>
                       <div>
-                        <span>Condition</span>
+                        <span className={styles.projectionMetaLabel}><ProjectionIcon kind="condition" />Condition</span>
                         <strong>{conditionLabel(projectionCurrentCondition)} → {conditionLabel(projectionTargetCondition)}</strong>
                         <small>
                           {projectionConditionRetainedPercent(projectionCurrentCondition)}% → {projectionConditionRetainedPercent(projectionTargetCondition)}% retained
                         </small>
                       </div>
                     </div>
+                  <p className={styles.projectionDisclaimer}>An estimate based on your assumptions, not a guaranteed selling price.</p>
                   </section>
                 ) : isLoadingProjection ? (
                   <div className={styles.projectionLoading}>Calculating future price...</div>

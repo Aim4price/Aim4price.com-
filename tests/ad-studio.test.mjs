@@ -910,7 +910,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   ]);
 
   const middlemanHeader = header.match(/if \(isMiddlemanAccountSubtype\(accountSubtype\)\) \{[\s\S]*?\n    \}/)?.[0] ?? '';
-  assert.match(middlemanHeader, /Value Asset/);
+  assert.match(middlemanHeader, /Value My Asset/);
   assert.match(middlemanHeader, /Ad Studio/);
   assert.match(middlemanHeader, /My Showroom/);
   assert.match(middlemanHeader, /Marketplace/);

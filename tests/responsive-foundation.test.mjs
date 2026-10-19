@@ -24,7 +24,7 @@ test('website header keeps desktop navigation while native callers retain compac
   assert.match(header, /if \(isCanonicalWebsite\) \{\s*setUsesCompactHeader\(false\);\s*return;/);
   assert.match(header, /window\.matchMedia\('\(max-width: 760px\)'\)/);
   assert.match(header, /NAV_WINDOW_SIZE/);
-  assert.match(header, /label: 'Value Asset'/);
+  assert.match(header, /label: 'Value My Asset'/);
   assert.match(header, /aria-label="Open manage menu"/);
   assert.match(header, /notificationBadgeText/);
   assertNoWebsiteReflow(await read('components/AppHeader.module.css'), 'AppHeader');
