@@ -90,10 +90,14 @@ export function summarizeTracking(input: TrackingPoint[]) {
     }
     finishStop();
     readings.push({...point,speedKmh:speed});
-    // Use the adjacent accepted points for distance/time; anchor only rejects GPS drift.
-    const travelled = distanceMeters(previous, point);
+    // Recover short slow-moving runs that only clear the GPS drift threshold after
+    // several ten-second fixes. Never reclassify a long parked period as movement.
+    const anchorSeconds=(Date.parse(point.capturedAt)-Date.parse(anchor.capturedAt))/1000;
+    const shortRun=anchorSeconds>seconds&&anchorSeconds<=60;
+    const travelled = shortRun?distanceMeters(anchor,point):distanceMeters(previous, point);
     distance += travelled;
-    movingSeconds += seconds;
+    movingSeconds += shortRun?anchorSeconds:seconds;
+    if(shortRun)stationarySeconds=Math.max(0,stationarySeconds-(anchorSeconds-seconds));
     maxSpeed = Math.max(maxSpeed, speed);
     const segment = segments[segments.length - 1];
     if (segment[segment.length - 1] !== previous) segment.push(previous);

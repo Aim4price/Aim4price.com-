@@ -9,12 +9,13 @@ public class TrackerStore extends SQLiteOpenHelper {
  public void onCreate(SQLiteDatabase db){db.execSQL("CREATE TABLE queue (id TEXT PRIMARY KEY, captured INTEGER NOT NULL, payload TEXT NOT NULL)");}
  public void onUpgrade(SQLiteDatabase db,int oldVersion,int newVersion){}
  public synchronized boolean add(JSONObject point)throws JSONException{
-  SQLiteDatabase db=getWritableDatabase();try(Cursor c=db.rawQuery("SELECT count(*) FROM queue",null)){c.moveToFirst();if(c.getLong(0)>=43200)return false;}
+  SQLiteDatabase db=getWritableDatabase();try(Cursor c=db.rawQuery("SELECT count(*) FROM queue",null)){c.moveToFirst();if(c.getLong(0)>=259200)return false;}
   ContentValues v=new ContentValues();v.put("id",point.getString("id"));v.put("captured",System.currentTimeMillis());v.put("payload",point.toString());db.insertOrThrow("queue",null,v);return true;
  }
  public synchronized JSONArray batch()throws JSONException{
   JSONArray result=new JSONArray();try(Cursor c=getReadableDatabase().rawQuery("SELECT payload FROM queue ORDER BY captured LIMIT 120",null)){while(c.moveToNext())result.put(new JSONObject(c.getString(0)));}return result;
  }
  public synchronized void acknowledge(JSONArray ids)throws JSONException{SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(int i=0;i<ids.length();i++)db.delete("queue","id=?",new String[]{ids.getString(i)});db.setTransactionSuccessful();}finally{db.endTransaction();}}
+ public synchronized int pending(){try(Cursor c=getReadableDatabase().rawQuery("SELECT count(*) FROM queue",null)){c.moveToFirst();return c.getInt(0);}}
  public synchronized void clear(){getWritableDatabase().delete("queue",null,null);}
 }

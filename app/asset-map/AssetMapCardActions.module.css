@@ -77,3 +77,24 @@
 .button.history:hover:not(:disabled) { background: #e1eef7; border-color: #9abdd3; }
 .button:focus-visible { outline: 3px solid #64ad91; outline-offset: 3px; }
 .button:disabled { opacity: .55; cursor: wait; }
+
+.primaryRow { grid-template-columns:1.25fr 1.15fr .65fr; gap:.65rem; }
+.primaryRow .button { justify-content:center; min-height:3rem; padding:.75rem .6rem; font-size:.85rem; }
+.status { display:flex; align-items:flex-start; gap:.7rem; padding:.85rem 1rem; border:1px solid #d3e5da; border-radius:.85rem; background:#f0f7f3; color:#234c3b; }
+.status > div { display:grid; gap:.3rem; }
+.status strong { font-size:.95rem; }
+.status span:not(.statusDot),.status small { font-size:.78rem; color:#536d60; line-height:1.5; }
+.statusDot { width:.55rem; height:.55rem; flex-shrink:0; border-radius:50%; margin-top:.35rem; background:#268661; }
+.status[data-warning="true"] { border-color:#ead9b9; background:#fff9ef; }
+.status[data-warning="true"] .statusDot { background:#a56a19; }
+.serial { margin:0; font-size:.75rem; color:#627568; }
+.options { display:grid; gap:.8rem; }
+.options button,.options a { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid #d3e3d9; border-radius:1rem; background:#f5faf7; color:#214d39; text-decoration:none; text-align:left; font:inherit; cursor:pointer; }
+.options svg { width:1.5rem; height:1.5rem; flex-shrink:0; }
+.options span { display:grid; gap:.35rem; }
+.options small { color:#607467; font-size:.85rem; }
+.options :is(button,a):hover { background:#eaf4ee; border-color:#9fc1ad; }
+.options :is(button,a):focus-visible { outline:3px solid #64ad91; outline-offset:3px; }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .primaryRow { grid-template-columns:1fr; }
+}

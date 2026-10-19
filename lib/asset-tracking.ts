@@ -24,7 +24,8 @@ export function ensureTrackingTables() {
  motion text NOT NULL CHECK(motion IN ('moving','stationary')),
  received_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(device_id,sample_id));
  ALTER TABLE public.asset_tracking_points ADD COLUMN IF NOT EXISTS history_deleted_at timestamptz;
- CREATE UNIQUE INDEX IF NOT EXISTS tracking_points_minute ON public.asset_tracking_points(device_id,date_trunc('minute',captured_at AT TIME ZONE 'UTC'));
+ CREATE UNIQUE INDEX IF NOT EXISTS tracking_points_ten_seconds ON public.asset_tracking_points(device_id,(floor(extract(epoch FROM captured_at AT TIME ZONE 'UTC') / 10)));
+ DROP INDEX IF EXISTS public.tracking_points_minute;
  CREATE INDEX IF NOT EXISTS tracking_points_time ON public.asset_tracking_points(device_id,captured_at DESC);
  `,
       )
