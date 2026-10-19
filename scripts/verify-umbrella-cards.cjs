@@ -45,14 +45,20 @@ async function check(browser, url) {
       const title=row.querySelector('h2'),panel=row.querySelector('[aria-label="Asset valuation"]'),price=row.querySelector(panel?'[aria-label="Asset valuation"] strong[aria-live="polite"]':'[class*="assetValueVatAmountRow"] strong'),rail=row.querySelector('[class*="assetSideActions"]');
       if(!price||!rail?.firstElementChild)throw new Error(`${title.textContent}: missing visible price or action rail`);
       const r=title.getBoundingClientRect(),p=price.getBoundingClientRect(),f=rail.firstElementChild.getBoundingClientRect(),v=panel?.getBoundingClientRect();
-      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:panel?.querySelector('[class*="valueContent"]')?.getBoundingClientRect().top,flagY:f.y+f.height/2};
+      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:panel?.getBoundingClientRect().top,summaryTop:row.querySelector('[class*="assetGroupSummary"]')?.getBoundingClientRect().top,flagY:f.y+f.height/2,actionY:(()=>{const a=row.querySelector('[class*="cardManageButton"]').getBoundingClientRect();return a.y+a.height/2})()};
     }));console.log(width,JSON.stringify(geometry));
     for(const g of geometry) {
       assert.ok(g.priceWidth>0&&g.priceHeight>0,`${g.title}: visible price`);
-      if(g.panelTop!==undefined)assert.ok(Math.abs(g.titleTop-g.panelTop)<8,`${g.title}: identity aligns with price below value tabs`);
-      else assert.ok(Math.abs(g.titleY-g.priceY)<8,`${g.title}: umbrella price alignment`);
-      assert.ok(Math.abs(g.titleY-g.flagY)<8,`${g.title}: flag alignment`);
+      if(g.panelTop!==undefined)assert.ok(Math.abs(g.titleTop-g.panelTop)<8,`${g.title}: identity aligns with value content`);
+      else assert.ok(Math.abs(g.titleTop-g.summaryTop)<8,`${g.title}: umbrella price alignment`);
+      assert.ok(Math.abs(g.actionY-g.flagY)<8,`${g.title}: footer control alignment`);
     }
+    const groupVat='[class*="assetGroupSummary"] [aria-label="Price VAT display"]';
+    await page.$$eval(`${groupVat} button`,buttons=>buttons[1].click());
+    assert.equal(await page.$eval(`${groupVat} button:last-child`,b=>b.getAttribute('aria-pressed')),'true');
+    await page.$$eval(`${groupVat} button`,buttons=>buttons[1].click());
+    assert.equal(await page.$eval(`${groupVat} button:last-child`,b=>b.getAttribute('aria-pressed')),'true','reselecting included VAT is idempotent');
+    await page.$$eval(`${groupVat} button`,buttons=>buttons[0].click());
     for (const selector of ['#asset-card-normal [class*="assetGroupButton"]', '[aria-label="Edit Asset umbrella"]']) {
       await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
       await page.mouse.move(2, 2);
@@ -164,9 +170,9 @@ async function check(browser, url) {
         const title=card.querySelector('h2').getBoundingClientRect();
         const content=card.querySelector('[class*="valueContent"]').getBoundingClientRect();
         const tabs=card.querySelector('[aria-label="Value basis"]').getBoundingClientRect();
-        return Math.abs(title.top-content.top)<8&&title.top>=tabs.bottom;
+        return Math.abs(title.top-content.top)<8&&tabs.top>=content.top;
       });
-      assert.ok(aligned,`${label}: identity stays aligned below tabs`);
+      assert.ok(aligned,`${label}: identity and price stay aligned with tabs below`);
       await page.$eval('#asset-card-normal',card=>card.scrollIntoView({block:'center',behavior:'instant'}));
       await page.screenshot({path:path.join(output,`asset-price-${label.replaceAll(' ','-')}-${width}.png`)});
     }
