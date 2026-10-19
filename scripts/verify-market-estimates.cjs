@@ -84,8 +84,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.evaluate(()=>document.body.textContent.includes('Update needed') && document.body.textContent.includes('Previous estimate')));
  assert(await page.evaluate(()=>!!document.querySelector('[data-detail-icon="alert"]')));
  assert.equal(await page.$eval('[aria-label="Estimated selling price"]',el=>getComputedStyle(el).backgroundColor),'rgb(255, 241, 242)');
- await page.click('[aria-label="About estimated selling price"]');
- assert(await page.evaluate(()=>document.querySelector('[role="note"]').textContent.includes('Actual offers may differ')));
+ assert.equal(await page.$('[aria-label="About estimated selling price"]'),null);
+ assert.equal(await page.$eval('[aria-label="Update needed: open saleability assessment"] strong',node=>node.textContent),'SALEABILITY');
+ assert(await page.evaluate(()=>!document.querySelector('[aria-label="Estimated selling price"]').textContent.includes('Open assessment')));
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  // A newly saved matching basis restores the normal presentation.
