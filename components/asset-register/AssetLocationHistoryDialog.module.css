@@ -62,3 +62,13 @@
 .confirmActions .deleteButton { background:#a33c32; color:#fff; border-color:#a33c32; }
 .confirmActions button:disabled { opacity:.55; cursor:wait; }
 .confirmActions button:focus-visible { outline:3px solid #77ac92; outline-offset:3px; }
+
+/* One compact view switch, balanced with the date filters. */
+.historyToolbar { justify-content:flex-start; gap:1.5rem; padding:.25rem 0 1rem; }
+.historyToolbar > .filters { max-width:none; flex:1; }
+.historyToolbar > .historySwitch { display:flex; align-items:stretch; gap:.25rem; padding:.3rem; border:1px solid #cfdfd7; border-radius:1rem; background:#edf4f0; }
+.historySwitch button { display:inline-flex; align-items:center; justify-content:center; gap:.55rem; min-height:2.9rem; padding:.7rem 1rem; border:1px solid transparent; border-radius:.75rem; background:transparent; color:#46695b; font:inherit; font-size:.9rem; font-weight:750; cursor:pointer; white-space:nowrap; }
+.historySwitch button[aria-pressed="true"] { color:#fff; background:#185d46; border-color:#185d46; box-shadow:0 3px 8px #174c3820; }
+.historySwitch button:hover:not([aria-pressed="true"]) { background:#fff; color:#185d46; }
+.historySwitch button:focus-visible { outline:3px solid #5abf98; outline-offset:2px; }
+.historySwitch svg { width:1.15rem; height:1.15rem; flex-shrink:0; }

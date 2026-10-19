@@ -824,3 +824,7 @@
 .modal .actions > button { min-height: 46px; }
 .modal .result { gap: 12px; }
 .modal .resultHero, .modal .pricePlan { padding: 16px; }
+
+/* Keep VAT display beside the prices it controls. */
+.planHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem 1.25rem; }
+.planHeader > [aria-label="Price VAT display"] { margin-top:0; }
