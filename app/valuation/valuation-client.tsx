@@ -9042,7 +9042,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
-                    What would a comparable new asset cost today?<br />{basicEstimateActive ? 'Adjust the total replacement price, including your selected extras. Do not add extras again.' : 'Adjust the asset replacement price. Selected extras are handled separately.'}
+                    {basicEstimateActive ? 'New replacement cost, including selected extras.' : 'New asset cost, excluding selected extras.'}
                   </p>
 
                   <div className={styles.replacementInputPanel}>
@@ -9055,13 +9055,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     <div className={styles.replacementFieldsGrid}>
                       <div className={`${styles.field} ${styles.replacementField}`}>
                         <EstimatePriceInput expanded value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
-                          label={basicEstimateActive ? 'Total replacement price · includes extras' : 'Asset replacement price'} sliderMax={replacementSliderMax} />
-                        <small className={styles.replacementFieldHint}>Price used in this estimate: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}</small>
+                          label={basicEstimateActive ? 'Total including extras' : 'Asset replacement price'} sliderMax={replacementSliderMax} />
+                        <small className={styles.replacementFieldHint}>Current: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}</small>
                       </div>
                       {isGeneric && genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ? <button
                         type="button" className={styles.replacementSavedLink} disabled={replacementRecalculateLoading}
                         onClick={() => setUserReplacementPrice(String(genericResult.aim4priceReplacementCalculation!.replacementPriceExVat))}>
-                        Restore saved {basicEstimateActive ? 'total' : 'asset'} price: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation.replacementPriceExVat, replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}
+                        Use saved {basicEstimateActive ? 'total' : 'asset'} price: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation.replacementPriceExVat, replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}
                       </button> : null}
                       {tractorResult && (frontPto || frontLoader || gpsEnabled || otherExtraEnabled) ? <details className={styles.replacementExtrasDisclosure}>
                         <summary>Adjust selected extras</summary><div className={styles.replacementFieldsGrid}>
@@ -9104,6 +9104,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         </div></details> : null}
                     </div>
                     {replacementModalError ? <p className={styles.resultActionError} role="alert">{replacementModalError}</p> : null}
+                  </div>
+                </div>
                     <div className={`${styles.replacementInputActions} ${modalStyles.actions}`}>
                       <button type="button" className={styles.secondaryButton}
                         disabled={replacementRecalculateLoading || advancedRecalculateLoading}
@@ -9142,8 +9144,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         {replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate estimate'}
                       </button>
                     </div>
-                  </div>
-                </div>
               </dialog>
             </section>
           ) : null}
