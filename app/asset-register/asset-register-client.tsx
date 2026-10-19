@@ -17031,7 +17031,6 @@ export default function AssetRegisterClient({
                                     </div>
 
                                     <div className={styles.assetValueBubbleStack}>
-                                      <div className={cardLayout.detailPricingToolbar}><span>Prices</span><PricingVatToggle included={assetValueVatMode === 'included'} onChange={(included) => setAssetValueVatModes(current => ({...current, [asset.id]: included ? 'included' : 'excluded'}))}/></div>
                                       {canUseOwnerOnlyAssetActions && canQuickEditAssetDetail(asset, 'replacement') ? (
                                         <button
                                           type="button"
