@@ -7543,12 +7543,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <input
                   type="text"
                   inputMode="numeric"
-                  {...requiredProps(toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}
+                  {...requiredProps(usageNumber === null || usageNumber < 0)}
                   value={usageAmount}
                   onChange={(event) => setUsageAmount(event.target.value)}
                   placeholder={selectedUsageDisplayUnit === 'km' ? 'e.g. 196000' : 'e.g. 3500'}
                 />
-                {requiredHint(toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}
+                {requiredHint(usageNumber === null || usageNumber < 0)}
               </label>
 
               <button
@@ -7605,7 +7605,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
               Cancel
             </button>
-            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)} disabled={usageModalMode === 'hours' && showHoursInput && (toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}>
+            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)} disabled={usageModalMode === 'hours' && showHoursInput && (usageNumber === null || usageNumber < 0)}>
               Continue
             </button>
           </div>
