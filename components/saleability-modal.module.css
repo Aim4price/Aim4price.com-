@@ -865,3 +865,10 @@
   font-size: .82rem;
   white-space: normal;
 }
+
+/* Match the footer to the modal surface and move the scroll lane off the text. */
+.modal.modal .actions { background: transparent; }
+.modal.modal .body {
+  margin-right: -12px;
+  padding-right: 20px;
+}
