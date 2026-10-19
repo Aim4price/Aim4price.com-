@@ -21,7 +21,7 @@ test('Brand and Model show a brief busy state before progressing and ignore dupl
   const steps = [], busy = [], callbacks = [];
   const timer = { current: null };
   const next = actualFunction('handleNext', {
-    identityTimerRef: timer, setMessage() {}, basicEstimateActive: true, step: 2,
+    identityTimerRef: timer, setMessage() {}, setRequiredFeedback() {}, nextRequiredMessage: () => null, basicEstimateActive: true, step: 2,
     normalizeText: s => s.trim(), unlistedBrandName: 'Kubota', typedModelName: 'M7',
     setBrandSlug() {}, UNKNOWN_BRAND_SLUG: 'unknown', setGenericModelMode() {},
     setPreparingIdentity: value => busy.push(value), setStep: value => steps.push(value),
@@ -81,3 +81,17 @@ test('publishing stores server URLs but exports and retries with the exact local
   assert.deepEqual(receipts[0].listing, downloads[0]);
 });
 
+
+
+test('incomplete answers reveal feedback and cannot begin the next-step transition', () => {
+  const feedback = [];
+  const next = actualFunction('handleNext', {
+    identityTimerRef: { current: null },
+    setRequiredFeedback: value => feedback.push(value),
+    nextRequiredMessage: () => 'Enter the brand name.',
+    setMessage: () => assert.fail('Incomplete answers must stop before progressing'),
+    setTimeout: () => assert.fail('Incomplete answers must not start a transition'),
+  });
+  next();
+  assert.deepEqual(feedback, [true]);
+});

@@ -261,7 +261,7 @@ export default function SaleabilityModal({
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className={`${styles.modal} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
+      <section className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div>
             <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2>
@@ -368,6 +368,9 @@ export default function SaleabilityModal({
                   <div><span>Likely selling range</span><strong>{displayMoney(plan.likelySellingRangeLowExVat)} – {displayMoney(plan.likelySellingRangeHighExVat)}</strong></div>
                   <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
                 </div>
+              <p className={styles.valuationReminder}>
+                Valuation: <strong>{displayMoney(valuationExVat)} {vatLabel}</strong> · selling-price guidance only.
+              </p>
               </section>
 
               <details className={styles.ratingDetails}>
@@ -392,9 +395,7 @@ export default function SaleabilityModal({
                 </div>
               </details>
 
-              <p className={styles.valuationReminder}>
-                Valuation: <strong>{displayMoney(valuationExVat)} {vatLabel}</strong> · selling-price guidance only.
-              </p>
+
             </div>
           ) : null}
         </div>
