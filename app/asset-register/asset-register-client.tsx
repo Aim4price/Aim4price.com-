@@ -50,7 +50,6 @@ import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 import PricingVatToggle from '../../components/PricingVatToggle';
 import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
-import CardVatToggle from '../../components/CardVatToggle';
 import { attachHeaderNavDrag } from '../../lib/header-nav-drag';
 
 import AssetFilterDialog, { ActiveAssetFilters, replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
@@ -16299,7 +16298,6 @@ export default function AssetRegisterClient({
                       const displayedGroupValue = groupValueVatMode === 'included'
                         ? Math.round(groupValueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
                         : groupValueExVat;
-                      const groupVatLabel = groupValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
                       const additionalAssetCount = Math.max(0, group.members.length - 1);
                       const canReceiveDraggedAsset = canDropAssetIntoGroup(draggingAssetId, group);
                       const isAssetGroupDropTarget = canReceiveDraggedAsset && assetGroupDropTargetId === group.id;
@@ -16317,7 +16315,7 @@ export default function AssetRegisterClient({
                           onDrop={(event) => void handleAssetGroupDrop(event, group)}
                           data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
                         >
-                          <section
+                          <section data-card-layout="shared"
                             className={`${styles.assetGroupHeader} ${styles.cardToggleSurface} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${attention?.total ? (attention.issues ? styles.umbrellaNeedsAttention : styles.umbrellaHasUpdates) : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
                             onClick={(event) => {
                               if (draggingAssetId || window.getSelection()?.toString()) return;
@@ -16330,36 +16328,6 @@ export default function AssetRegisterClient({
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
-                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions) ? (
-                              <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
-                                <button
-                                  type="button"
-                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${Boolean(group.isFlagged) ? styles.assetFlagButtonActive : ''}`}
-                                  onClick={() => void handleAssetGroupFlagToggle(group)}
-                                  disabled={!canManageAssetGroups || busyFlagGroupId !== null}
-                                  aria-label={`${Boolean(group.isFlagged) ? 'Unflag' : 'Flag'} ${group.name}`}
-                                  aria-pressed={Boolean(group.isFlagged)}
-                                  data-tooltip={Boolean(group.isFlagged) ? 'Unflag umbrella' : 'Flag umbrella'}
-                                >
-                                  <FlagIcon className={styles.assetFlagIcon} />
-                                </button>
-                                {canManageAssetGroups ? (
-                                  <button
-                                    type="button"
-                                    className={`${styles.assetGroupButton} ${styles.controlTooltip} ${styles.assetGroupButtonActive}`}
-                                    onClick={() => openAssetGroupEditor(group, groupAnchorAsset)}
-                                    aria-label={`Edit ${group.name}`}
-                                    data-tooltip="Edit umbrella"
-                                  >
-                                    <UmbrellaIcon className={styles.assetGroupButtonIcon} />
-                                  </button>
-                                ) : null}
-                              </div>
-                            ) : (
-                              <span className={styles.assetGroupUmbrella} aria-hidden="true">
-                                <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
-                              </span>
-                            )}
                             <div className={styles.assetGroupIdentity}>
                               <div>
                                 <h2>{group.name}</h2>
@@ -16393,14 +16361,47 @@ export default function AssetRegisterClient({
                                     <span className={styles.assetGroupValueLabel}>Combined value</span>
                                     <div className={styles.assetValueVatAmountRow}>
                                       <strong className={styles.assetGroupCombinedValue}>{money(displayedGroupValue)}</strong>
-                                      <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
+                                      <PricingVatToggle included={groupValueVatMode === 'included'} onChange={(included) => { if (included !== (groupValueVatMode === 'included')) handleAssetGroupValueVatToggle(group.id); }} />
                                     </div>
-                                    <span>{groupVatLabel}</span>
+                                    <span>Total of the grouped asset values</span>
                                   </div>
                                 </div>
                               </div>
 
-                              <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
+                            </div>
+<div className={styles.sharedCardFooter}><div className={styles.sharedCardUtilities}>
+                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions) ? (
+                              <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
+                                <button
+                                  type="button"
+                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${Boolean(group.isFlagged) ? styles.assetFlagButtonActive : ''}`}
+                                  onClick={() => void handleAssetGroupFlagToggle(group)}
+                                  disabled={!canManageAssetGroups || busyFlagGroupId !== null}
+                                  aria-label={`${Boolean(group.isFlagged) ? 'Unflag' : 'Flag'} ${group.name}`}
+                                  aria-pressed={Boolean(group.isFlagged)}
+                                  data-tooltip={Boolean(group.isFlagged) ? 'Unflag umbrella' : 'Flag umbrella'}
+                                >
+                                  <FlagIcon className={styles.assetFlagIcon} />
+                                </button>
+                                {canManageAssetGroups ? (
+                                  <button
+                                    type="button"
+                                    className={`${styles.assetGroupButton} ${styles.controlTooltip} ${styles.assetGroupButtonActive}`}
+                                    onClick={() => openAssetGroupEditor(group, groupAnchorAsset)}
+                                    aria-label={`Edit ${group.name}`}
+                                    data-tooltip="Edit umbrella"
+                                  >
+                                    <UmbrellaIcon className={styles.assetGroupButtonIcon} />
+                                  </button>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className={styles.assetGroupUmbrella} aria-hidden="true">
+                                <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
+                              </span>
+                            )}
+<span className={styles.assetSavedDateLabel}>{group.members.length} assets</span></div>
+<div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
                                 {canShareActiveRegister && !dealerRegisterMode ? (
                                   <button
                                     type="button"
@@ -16441,8 +16442,7 @@ export default function AssetRegisterClient({
                                     <span>Manage</span>
                                   </button>
                                 ) : null}
-                              </div>
-                            </div>
+                              </div></div>
                           </section>
                         </div>
                       );
@@ -16559,6 +16559,7 @@ export default function AssetRegisterClient({
                       >
                         <article
                           id={`asset-card-${asset.id}`}
+                          data-card-layout="shared"
                           className={`${styles.assetCard} ${styles.cardToggleSurface} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${costBudgetStatus ? styles.assetCardBudgetWarning : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                           data-cost-budget-status={costBudgetStatus || undefined}
                           onClick={(event) => {
@@ -16571,6 +16572,58 @@ export default function AssetRegisterClient({
                         <span aria-hidden="true" className={`${styles.controlTooltip} ${styles.cardToggleHint}`} data-tooltip={isExpanded ? 'Close Asset' : 'Open Asset'} />
                         <div className={`${styles.assetHeader} ${styles.marketValueHeader}`}>
                           <div className={styles.assetTitleBlock}>
+                            <h2>{asset.title}</h2>
+                            <p>{buildAssetMeta(asset)}</p>
+                            <div className={styles.assetMetaRow}>
+                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
+                            </div>
+
+                        {isFlagged || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
+                          <div className={styles.badgeRow}>
+                            {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>{flaggedUmbrella ? 'Flagged by umbrella' : 'Flagged'}</span> : null}
+                            {costBudgetStatus ? (
+                              <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
+                                {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
+                              </span>
+                            ) : null}
+                            {estimateNeedsUpdate ? (
+                              <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
+                            ) : null}
+                            {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
+                            {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
+                            {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
+                            {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
+                            {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
+                            {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
+                          </div>
+                        ) : null}
+                            {isLive ? (
+                              <span className={styles.marketplaceLiveStatus}><span aria-hidden="true" />Live on Marketplace</span>
+                            ) : null}
+
+                            {isManualValueAsset ? (
+                              <div className={styles.manualValueNotice} role="note">
+                                <span className={styles.manualValueNoticeIcon} aria-hidden="true">i</span>
+                                <span>Manual value is fixed — it will not automatically update by itself.</span>
+                              </div>
+                            ) : null}
+
+                          </div>
+
+                          <div className={styles.assetHeaderAside}>
+                            <AssetPriceSwitch value={asset.value} manual={isManualValueAsset}
+                              view={priceViews[asset.id]??'fair'} onViewChange={view=>setPriceViews(current=>({...current,[asset.id]:view}))}
+                              replacementPrice={readAssetReplacementPriceExVat(asset)} replacementParts={readReplacementParts(asset)}
+                              onEditReplacement={()=>openConfirmedValue(asset,'replacement')} onRecalculate={()=>isManualValueAsset?openConfirmedValue(asset,'override'):openPricingTool(asset,'recalculate')}
+                              included={assetValueVatMode==='included'} onVatChange={included=>setAssetValueVatModes(current=>({...current,[asset.id]:included?'included':'excluded'}))}
+                              saved={savedSaleability[asset.id]} stale={!!savedSaleability[asset.id]&&savedSaleability[asset.id].basis!==saleabilityBasis(asset)}
+                              canCalculate={canUseOwnerOnlyAssetActions} loading={saleabilityLoading} error={saleabilityLoadError}
+                              onCalculate={()=>openPricingTool(asset,'saleability')}/>
+
+
+                          </div>
+
+                        <div className={styles.sharedCardFooter}><div className={styles.sharedCardUtilities}>
                         {(canUseOwnerOnlyAssetActions) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
                             <button
@@ -16617,57 +16670,8 @@ export default function AssetRegisterClient({
                           </div>
                         ) : null}
 
-                            <h2>{asset.title}</h2>
-                            <p>{buildAssetMeta(asset)}</p>
-                            <div className={styles.assetMetaRow}>
-                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
-                              <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
-                            </div>
-
-                        {isFlagged || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
-                          <div className={styles.badgeRow}>
-                            {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>{flaggedUmbrella ? 'Flagged by umbrella' : 'Flagged'}</span> : null}
-                            {costBudgetStatus ? (
-                              <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
-                                {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
-                              </span>
-                            ) : null}
-                            {estimateNeedsUpdate ? (
-                              <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
-                            ) : null}
-                            {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
-                            {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
-                            {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
-                            {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
-                            {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
-                            {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
-                          </div>
-                        ) : null}
-                            {isLive ? (
-                              <span className={styles.marketplaceLiveStatus}><span aria-hidden="true" />Live on Marketplace</span>
-                            ) : null}
-
-                            {isManualValueAsset ? (
-                              <div className={styles.manualValueNotice} role="note">
-                                <span className={styles.manualValueNoticeIcon} aria-hidden="true">i</span>
-                                <span>Manual value is fixed — it will not automatically update by itself.</span>
-                              </div>
-                            ) : null}
-
-                          </div>
-
-                          <div className={styles.assetHeaderAside}>
-                            <AssetPriceSwitch value={asset.value} manual={isManualValueAsset}
-                              view={priceViews[asset.id]??'fair'} onViewChange={view=>setPriceViews(current=>({...current,[asset.id]:view}))}
-                              replacementPrice={readAssetReplacementPriceExVat(asset)} replacementParts={readReplacementParts(asset)}
-                              onEditReplacement={()=>openConfirmedValue(asset,'replacement')} onRecalculate={()=>isManualValueAsset?openConfirmedValue(asset,'override'):openPricingTool(asset,'recalculate')}
-                              included={assetValueVatMode==='included'} onVatChange={included=>setAssetValueVatModes(current=>({...current,[asset.id]:included?'included':'excluded'}))}
-                              saved={savedSaleability[asset.id]} stale={!!savedSaleability[asset.id]&&savedSaleability[asset.id].basis!==saleabilityBasis(asset)}
-                              canCalculate={canUseOwnerOnlyAssetActions} loading={saleabilityLoading} error={saleabilityLoadError}
-                              onCalculate={()=>openPricingTool(asset,'saleability')}/>
-
-
-                            <div className={`${styles.assetHeaderActions} ${''}`}>
+<span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span></div>
+<div className={`${styles.assetHeaderActions} ${''}`}>
                               {estimateNeedsUpdate && canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -16719,10 +16723,8 @@ export default function AssetRegisterClient({
                                 <ManageIcon className={styles.buttonIcon} />
                                 <span>Manage</span>
                               </button>
-                            </div>
-                          </div>
-
-                        </div>
+                            </div></div>
+</div>
 
                         {isExpanded ? (
                           <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>
