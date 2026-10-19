@@ -63,7 +63,15 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  if(!crypto.randomUUID)crypto.randomUUID=()=>String(Math.random());window.writes=[];window.data={asset:{id:'asset',title:'2023 Tractor',value:700000,replacementPrice:1000000,revision:'v1',manual:false},requests:[{id:'proposal',amount:800000,reason:'Inspected equipment',actor_name:'Example Dealer',status:'pending',submitted_value:700000}],history:[]};
  window.fetch=async(url,options)=>{if(!options?.method)return {ok:true,json:async()=>({...window.data,value:window.data.asset.value,manual:window.data.asset.manual,revision:window.data.asset.revision})};const b=JSON.parse(options.body);window.writes.push(b);if(b.action==='previewReset')return {ok:true,json:async()=>({revision:window.data.asset.revision,currentValue:window.data.asset.value,recalculatedValue:700000})};if(b.action==='resetAim4price'){window.data.asset.value=700000;window.data.asset.baseline=null;}if(b.action==='restoreManual')window.data.asset.value=600000;if(b.action==='suggest'&&window.data.asset.manual){window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true,direct:true})};}if(b.action==='previewReplacement')return {ok:true,json:async()=>({revision:'v1',currentValue:window.data.asset.value,recalculatedValue:960000})};if(b.action==='approve'){window.data.asset.value=800000;window.data.requests[0].status='approved';}if(b.action==='override')window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true})};};window.renderValue();
  });
- async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(b=>b.textContent===t).click(),text);}
+ // Action cards include descriptive copy; match the exact heading, not that copy.
+ async function click(text){
+  await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>!b.disabled&&(b.querySelector('strong')?.textContent??b.textContent).trim()===t),{},text);
+  await page.$$eval('button',(nodes,t)=>{
+   const matches=nodes.filter(b=>!b.disabled&&(b.querySelector('strong')?.textContent??b.textContent).trim()===t);
+   if(matches.length!==1)throw new Error(`Expected one enabled button for "${t}", found ${matches.length}`);
+   matches[0].click();
+  },text);
+ }
  async function fill(selector,value){await page.waitForSelector(selector);await page.$eval(selector,(n,v)=>{Object.getOwnPropertyDescriptor(n.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(n,v);n.dispatchEvent(new Event('input',{bubbles:true}));},value);}
  await click('Review suggestion');await page.waitForSelector('textarea');assert(await page.evaluate(()=>document.body.textContent.includes('Example Dealer')));await fill('textarea','Accept inspected value');await page.screenshot({path:'/tmp/value-approval.png'});await click('Approve value');await page.waitForFunction(()=>document.body.textContent.includes('Saved.'));assert.equal(await page.evaluate(()=>window.writes[0].proposalId),'proposal');
  await click('Change current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm value change');await page.waitForFunction(()=>window.data.asset.value===750000);
