@@ -4389,24 +4389,51 @@
   scrollbar-color: #759f91 #edf4f1;
 }
 
+/* Chromium needs the standard colours reset to use the rounded custom track. */
+@supports selector(::-webkit-scrollbar) {
+  .accountPopover {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
 .accountPopover::-webkit-scrollbar {
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 12px;
+  height: 12px;
 }
 
 .accountPopover::-webkit-scrollbar-track {
-  background: var(--app-surface-soft, #edf4f1);
+  margin-block: 16px;
+  background: #edf4f0;
+  border: 3px solid transparent;
+  background-clip: padding-box;
   border-radius: 999px;
 }
 
 .accountPopover::-webkit-scrollbar-thumb {
-  background: var(--app-surface-soft, #759f91);
-  border: 2px solid var(--app-line, #edf4f1);
+  min-height: 48px;
+  background: #648e7d;
+  border: 3px solid transparent;
+  background-clip: padding-box;
   border-radius: 999px;
 }
 
 .accountPopover::-webkit-scrollbar-thumb:hover {
-  background: #426f60;
+  background-color: #3f735d;
+}
+
+.accountPopover::-webkit-scrollbar-thumb:active {
+  background-color: #285840;
+}
+
+.accountPopover::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.accountPopover::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Standalone black Aim4price mark used in the global header. */
