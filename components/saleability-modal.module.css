@@ -872,3 +872,17 @@
   margin-right: -12px;
   padding-right: 20px;
 }
+
+/* Supporting information must remain readable on the light cards. */
+.modal.modal .resultMeta span,
+.modal.modal .resultMeta small,
+.modal.modal .resultRows span,
+.modal.modal .valuationReminder,
+.modal.modal .resultLabel {
+  color: #475f54;
+  opacity: 1;
+}
+.modal.modal .resultMeta small { display: block; font-size: .875rem; line-height: 1.45; }
+.modal.modal .resultMeta span,
+.modal.modal .resultRows span { font-size: .95rem; }
+.modal.modal .choice { border-color: #bdcec4; }

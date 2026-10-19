@@ -15395,3 +15395,49 @@
 }
 .specFlowStack .specStepContent { gap: .5rem; }
 .specFlowStack .specStepContent small { line-height: 1.55; }
+
+/* Live-flow readability: keep light surfaces, with clear text and selection states. */
+.stepContent .fieldHint,
+.stepContent .stepText,
+.stepContent .choiceCardNote,
+.specFlowStack .specStepContent small,
+.detailsModal .fieldLabel,
+.detailsModal .percentScale,
+.finalEstimateLayout .resultReplacementHeading p {
+  color: #475f54;
+  opacity: 1;
+  line-height: 1.55;
+}
+.stepContent .choiceCard,
+.stepContent .basicLevelCard,
+.conditionQuestionCard .dealerAssessmentOption {
+  border-color: #bdcec4;
+}
+.stepContent .choiceCard:not(.choiceCardActive):hover,
+.conditionQuestionCard .dealerAssessmentOption[aria-pressed='false']:hover {
+  border-color: #8ca99a;
+  box-shadow: none;
+  background: #f1f7f3;
+}
+.stepContent .choiceCardActive,
+.conditionQuestionCard .dealerAssessmentOption[aria-pressed='true'] {
+  border-color: #237454;
+  box-shadow: inset 0 0 0 1px #237454;
+}
+.basicLevelGrid .basicLevelCard:not(.choiceCardActive)::after { border-color: #8ca99a; }
+.primaryButton.primaryButton:disabled {
+  opacity: 1;
+  color: #5b6861;
+  background: #e3e9e5;
+  border-color: #ced8d1;
+  box-shadow: none;
+}
+.replacementStage .replacementSliderPanel,
+.replacementStage .replacementManualCard,
+.replacementStage .replacementCostParts,
+.replacementStage .replacementCostTotal { padding: 1rem 1.25rem; }
+.replacementStage .replacementManualCard .field { margin: 0; gap: .5rem; }
+.replacementStage .replacementManualCard { min-height: 0; }
+.replacementStage .replacementCostParts dd,
+.replacementStage .replacementCostTotal > strong { font-size: 1.75rem; }
+.resultHeroHeading h2 { scroll-margin-top: 120px; }
