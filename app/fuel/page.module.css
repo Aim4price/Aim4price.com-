@@ -3545,15 +3545,15 @@
 }
 
 .topExclusionsButton {
-  color: #79420c;
-  border-color: #e9c58f;
-  background: linear-gradient(180deg, #fffdf8 0%, #fff5df 100%);
+  color: var(--app-info, #164578);
+  border-color: var(--app-info-line, #91bbf1);
+  background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #f0f7ff));
 }
 
 .topExclusionsButton:hover:not(:disabled) {
-  color: #633507;
-  border-color: #d9aa64;
-  background: linear-gradient(180deg, #ffffff 0%, #ffedc9 100%);
+  color: var(--app-info, #164578);
+  border-color: var(--app-info-line, #6daee8);
+  background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #e7f3fd));
 }
 
 .exclusionChoice {

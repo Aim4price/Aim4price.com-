@@ -183,15 +183,15 @@
 }
 
 .costActionButton.costActionContribution {
-  color: var(--app-text, #145d43);
-  border-color: var(--app-line, rgba(123, 207, 159, 0.98));
-  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f0fbf5) 100%);
+  color: var(--app-info, #164578);
+  border-color: var(--app-info-line, #91bbf1);
+  background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #f0f7ff));
 }
 
 .costActionButton.costActionContribution:hover:not(:disabled) {
-  border-color: var(--app-line, #60bd88);
-  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e4f8ed) 100%);
-  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
+  color: var(--app-info, #164578);
+  border-color: var(--app-info-line, #6daee8);
+  background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #e7f3fd));
 }
 
 .costActionButton.costActionDownload {

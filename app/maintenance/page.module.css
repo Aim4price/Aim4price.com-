@@ -5103,7 +5103,7 @@
 .assetDetailsLine + .assetDetailsLine { margin-top: 0.2rem; }
 
 /* Match Fuel Tracking top-action dimensions, with search and filters below. */
-.maintenanceActions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(0.78rem, calc(var(--website-design-vw) * 1.35), 1.25rem); margin-bottom: clamp(1.05rem, calc(var(--website-design-vw) * 1.45), 1.35rem); }
+.maintenanceActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(0.78rem, calc(var(--website-design-vw) * 1.35), 1.25rem); margin-bottom: clamp(1.05rem, calc(var(--website-design-vw) * 1.45), 1.35rem); }
 .maintenanceActions .toolbarButton {
   width: 100%;
   min-width: 0;
@@ -5120,7 +5120,8 @@
 .maintenanceSearchToolbar .buttonIcon { width: 1.05rem; height: 1.05rem; flex: 0 0 auto; }
 .toolbarSchedulesButton { color: var(--app-info, #164578); border: 1px solid var(--app-info-line, #91bbf1); background: linear-gradient(var(--app-surface, #fff),var(--app-info-soft, #f0f7ff)); }
 .toolbarSchedulesButton[aria-pressed=true] { background: var(--app-info-soft, #eaf3ff); box-shadow: inset 0 0 0 1px var(--app-shadow-colour, #80afe8); }
-.toolbarChecklistsButton { color: var(--app-text, #126447); border: 1px solid var(--app-line, #9bdbb8); background: linear-gradient(var(--app-surface, #fff),var(--app-surface-soft, #f0fbf5)); }
+.toolbarChecklistsButton { color: var(--app-info, #164578); border: 1px solid var(--app-info-line, #91bbf1); background: linear-gradient(var(--app-surface, #fff),var(--app-info-soft, #f0f7ff)); }
+.toolbarChecklistsButton:hover:not(:disabled) { color: var(--app-info, #164578); border-color: var(--app-info-line, #6daee8); background: linear-gradient(var(--app-surface, #fff),var(--app-info-soft, #e7f3fd)); }
 .invoiceToolbar.maintenanceSearchToolbar { display: grid; grid-template-columns: minmax(0, 1fr) 11rem; align-items: stretch; gap: 1rem; }
 .maintenanceSearchToolbar .toolbarButton {
   width: 100%;
