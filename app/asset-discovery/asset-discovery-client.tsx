@@ -1511,7 +1511,7 @@ export default function AssetDiscoveryClient({
           <div className={styles.discoveryDetailsError}>{detailsError}</div>
         ) : details ? (
           <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
-            <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap} ${styles.discoveryMediaColumn}`}>
+            <div className={styles.discoveryMediaColumn}>
               {photoUrls.length ? (
                 <RecentAdvertGallery id={`discovery-${asset.id}`} title={assetDisplayName(asset)} urls={photoUrls}
                   onOpen={(index) => openDiscoveryPhotoModal(asset, photoUrls, index)} />

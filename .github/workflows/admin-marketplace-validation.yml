@@ -21,6 +21,7 @@ on:
       - 'app/api/asset-discovery/**'
       - 'app/asset-discovery/**'
       - 'scripts/verify-discovery-focus.cjs'
+      - 'scripts/verify-advertised-photos.cjs'
       - 'app/marketplace/sourcing-requests/**'
       - 'app/api/marketplace/route.ts'
       - 'app/api/marketplace/views/**'
@@ -133,7 +134,9 @@ jobs:
         run: npm run test:asset-discovery
 
       - name: Verify Discovery focus and dialogs
-        run: node scripts/verify-discovery-focus.cjs
+        run: |
+          node scripts/verify-discovery-focus.cjs
+          node scripts/verify-advertised-photos.cjs
 
       - name: Save Discovery browser evidence
         if: always()
