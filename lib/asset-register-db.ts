@@ -85,6 +85,7 @@ export type AssetRegisterItem = {
   marketplaceNotes: string;
   marketplaceStatus: string;
   marketplacePriceExVat: number | null;
+  marketplaceTitle?: string;
   marketplaceSellerName: string;
   marketplaceSellerCompany: string;
   marketplaceSellerEmail: string;
@@ -245,6 +246,7 @@ type AssetRegisterRow = {
   marketplace_notes: string | null;
   marketplace_status: string | null;
   marketplace_price_ex_vat: string | number | null;
+  marketplace_title?: string | null;
   marketplace_seller_name: string | null;
   marketplace_seller_company: string | null;
   marketplace_seller_email: string | null;
@@ -1788,6 +1790,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     marketplaceNotes: asText(row.marketplace_notes),
     marketplaceStatus: asText(row.marketplace_status) || 'draft',
     marketplacePriceExVat: asNumber(row.marketplace_price_ex_vat),
+    marketplaceTitle: asText(row.marketplace_title),
     marketplaceSellerName: asText(row.marketplace_seller_name),
     marketplaceSellerCompany: asText(row.marketplace_seller_company),
     marketplaceSellerEmail: asText(row.marketplace_seller_email),
@@ -1945,6 +1948,7 @@ function buildSelectList(schema: TableSchema): string {
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
   const marketplaceStatusColumn = resolveColumn(schema, 'marketplace_status', 'listing_status', 'status');
   const marketplacePriceColumn = resolveColumn(schema, 'marketplace_price_ex_vat', 'listing_price_ex_vat', 'asking_price_ex_vat');
+  const marketplaceTitleColumn = resolveColumn(schema, 'marketplace_title');
   const marketplaceSellerNameColumn = resolveColumn(schema, 'marketplace_seller_name', 'listing_seller_name');
   const marketplaceSellerCompanyColumn = resolveColumn(schema, 'marketplace_seller_company', 'listing_seller_company');
   const marketplaceSellerEmailColumn = resolveColumn(schema, 'marketplace_seller_email', 'listing_seller_email');
@@ -2044,6 +2048,7 @@ function buildSelectList(schema: TableSchema): string {
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
     marketplaceStatusColumn ? `${marketplaceStatusColumn} as marketplace_status` : `'draft'::text as marketplace_status`,
     marketplacePriceColumn ? `${marketplacePriceColumn} as marketplace_price_ex_vat` : 'null::numeric as marketplace_price_ex_vat',
+    marketplaceTitleColumn ? `${marketplaceTitleColumn} as marketplace_title` : 'null::text as marketplace_title',
     marketplaceSellerNameColumn ? `${marketplaceSellerNameColumn} as marketplace_seller_name` : 'null::text as marketplace_seller_name',
     marketplaceSellerCompanyColumn ? `${marketplaceSellerCompanyColumn} as marketplace_seller_company` : 'null::text as marketplace_seller_company',
     marketplaceSellerEmailColumn ? `${marketplaceSellerEmailColumn} as marketplace_seller_email` : 'null::text as marketplace_seller_email',

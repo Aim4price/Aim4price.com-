@@ -1,3 +1,4 @@
+import { normalizeMarketplaceTitle } from './marketplace-title';
 import { basicAssetFamily, basicAssetUsage } from './basic-asset-catalogue';
 import { ensureListingAlertSchema } from './listing-alert-schema';
 import { assetDisplayTitle } from './asset-display-title';
@@ -305,6 +306,7 @@ export async function ensureMarketplaceColumns(): Promise<void> {
     alter table asset_register_items
       add column if not exists seller_phone text,
       add column if not exists marketplace_notes text,
+      add column if not exists marketplace_title text,
       add column if not exists marketplace_status text not null default 'draft',
       add column if not exists marketplace_published_at timestamptz,
       add column if not exists marketplace_price_ex_vat numeric(14,2),
@@ -643,6 +645,8 @@ function formatMarketplaceUsageDetail(
 }
 
 function buildMarketplaceListingTitle(row: MarketplaceAssetRow, fallbackTitle?: string): string {
+  const customTitle = asText(row.marketplace_title);
+  if (customTitle) return customTitle;
   const { brandName, modelName } = deriveBrandAndModel(row);
   const baseTitle =
     asText(fallbackTitle) ||
@@ -1007,6 +1011,7 @@ export async function listPublishedMarketplaceAssetListings(options: {
 }
 
 export async function publishAssetRegisterItemToMarketplace(input: {
+  marketplaceTitle?: string;
   userId: string;
   assetId: string;
   askingPriceExVat?: number | null;
@@ -1024,6 +1029,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   showDealRating?: boolean;
   requireValuationSource?: boolean;
 }): Promise<MarketplaceListing> {
+  const marketplaceTitle = normalizeMarketplaceTitle(input.marketplaceTitle);
   await ensureMarketplaceColumns();
 
   const db = getDb();
@@ -1140,6 +1146,10 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     "marketplace_province = nullif($9, '')",
     "marketplace_area = nullif($10, '')",
   ];
+  if (marketplaceTitle !== undefined) {
+    updateValues.push(marketplaceTitle);
+    updateAssignments.push(`marketplace_title = $${updateValues.length}`);
+  }
   const incomingPhotos = Array.isArray(input.photos)
     ? input.photos.map((entry) => safeImage(entry)).filter(Boolean)
     : [];

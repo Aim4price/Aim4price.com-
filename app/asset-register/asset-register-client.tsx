@@ -766,6 +766,7 @@ type RegisterAsset = {
   licenseRegistrationNumber: string;
   financeNote: string;
   sellerPhone: string;
+  marketplaceTitle?: string;
   marketplaceNotes: string;
   marketplaceStatus: string;
   marketplacePriceExVat: number | null;
@@ -1059,6 +1060,7 @@ type PricingRevaluePreview = {
 };
 
 type MarketplacePublishDraft = {
+  title: string;
   photos: string[];
   sellerName: string;
   sellerCompany: string;
@@ -4782,6 +4784,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
   const savedListingNotes = asset.marketplaceNotes?.trim() || getManualAssetNote(asset.note);
 
   return {
+    title: asset.marketplaceTitle?.trim() || buildMarketplaceListingTitle(asset, true),
     sellerName:
       asset.marketplaceSellerName?.trim() ||
       profile?.marketplaceSellerName?.trim() ||
@@ -12847,6 +12850,10 @@ export default function AssetRegisterClient({
       return;
     }
 
+    if (!marketplaceDraft.title.trim()) {
+      setNotice({ tone: 'error', message: 'Enter a listing title.' });
+      return;
+    }
     const parsedPrice = parseMoneyInput(marketplaceDraft.askingPriceExVat);
     const askingPriceExVat = Math.round(parsedPrice ?? 0);
 
@@ -12874,6 +12881,7 @@ export default function AssetRegisterClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: marketplaceAsset.id,
+          marketplaceTitle: marketplaceDraft.title.trim(),
           photos: marketplaceDraft.photos,
           replacePhotos: true,
           askingPriceExVat,
@@ -12894,6 +12902,7 @@ export default function AssetRegisterClient({
 
       const publishedAsset: RegisterAsset = {
         ...marketplaceAsset,
+        marketplaceTitle: marketplaceDraft.title.trim(),
         photos: marketplaceDraft.photos,
         sellerPhone: marketplaceDraft.sellerPhone.trim(),
         marketplaceNotes: marketplaceDraft.description.trim(),
@@ -15573,7 +15582,6 @@ export default function AssetRegisterClient({
       : assetSettingsLocationState === 'savingDevice'
         ? 'Saving location...'
         : 'Use current location';
-  const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
     ? isLiveOnMarketplace(marketplaceAsset)
       ? 'Update marketplace listing'
@@ -21229,11 +21237,11 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
                 <section className={styles.marketplaceAssetSummary}>
-                  <div className={styles.marketplaceTitlePreview}>
+                  <label className={styles.marketplaceTitlePreview}>
                     <span>Listing title</span>
-                    <strong>{marketplaceListingTitle}</strong>
-                    <small>Year model, usage and condition are included in the marketplace title.</small>
-                  </div>
+                    <input className={styles.marketplaceTitleInput} aria-label="Listing title" value={marketplaceDraft.title} maxLength={160} required disabled={isPublishingMarketplace || marketplacePhotosBusy} onChange={event => setMarketplaceDraft(current => current ? { ...current, title: event.target.value } : current)} />
+                    <small>Shown on your advert. Your register name stays unchanged.</small>
+                  </label>
 
                   <div className={styles.marketplaceAssetSummaryValue}>
                     <span>Register value</span>

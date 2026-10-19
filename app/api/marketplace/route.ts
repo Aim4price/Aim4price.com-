@@ -1,3 +1,4 @@
+import { normalizeMarketplaceTitle } from '../../../lib/marketplace-title';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as {
     assetId?: unknown;
+    marketplaceTitle?: unknown;
     askingPriceExVat?: unknown;
     marketplaceNotes?: unknown;
     sellerPhone?: unknown;
@@ -204,6 +206,7 @@ export async function POST(request: NextRequest) {
     const listing = await publishAssetRegisterItemToMarketplace({
       userId: session.user.id,
       assetId,
+      marketplaceTitle: normalizeMarketplaceTitle(body.marketplaceTitle),
       askingPriceExVat: askingPriceExVat > 0 ? askingPriceExVat : null,
       marketplaceNotes: marketplaceNotes || null,
       sellerPhone: sellerPhone || null,
