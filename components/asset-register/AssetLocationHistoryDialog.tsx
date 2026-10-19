@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../DateInput';
 import AssetMovementHistory from './AssetMovementHistory';
 import trackingStyles from './AssetTrackingPanel.module.css';
 import {useEffect,useMemo,useState,useRef} from 'react';
@@ -48,7 +49,7 @@ export default function AssetLocationHistoryDialog({assetId,title,onClose,initia
  return <AssetAccessSettingsDialog title="Location history" assetTitle={title} onClose={onClose} footer={tab==='observations'?<div className={styles.downloadBar}><span>{items.length} saved locations</span><button type="button" disabled={busy||!!error||!items.length||truncated} onClick={()=>{setExportEntry(null);setExportOpen(true);}} aria-haspopup="dialog">Download history</button></div>:undefined}>
   <div className={styles.content} data-location-history>
    {tab==='movement'?<AssetMovementHistory assetId={assetId} title={title} historyTabs={historyTabs}/>:<>
-   <div className={styles.historyToolbar}>{historyTabs}<div className={styles.filters}><label>From<input type="date" value={from} max={to||undefined} onChange={e=>setFrom(e.target.value)}/></label><label>To<input type="date" value={to} min={from||undefined} onChange={e=>setTo(e.target.value)}/></label></div></div>
+   <div className={styles.historyToolbar}>{historyTabs}<div className={styles.filters}><label>From<DateInput value={from} max={to||undefined} onValueChange={value=>setFrom(value)}/></label><label>To<DateInput value={to} min={from||undefined} onValueChange={value=>setTo(value)}/></label></div></div>
    {busy?<p role="status">Loading location history…</p>:error?<div role="alert">{error} <button type="button" onClick={()=>setRetry(n=>n+1)}>Try again</button></div>:<>
     {truncated&&<p role="status">Showing the latest 2 000 records. Narrow the dates for a complete report.</p>}
     {items.length?<><AssetLocationHistoryMap points={points} onSelectPoint={selectRecord}/><div className={styles.legend}><span>● Latest in selected period</span><span>● Earlier observations</span><strong>{items.length.toLocaleString()} {items.length===1?'record':'records'}</strong></div>

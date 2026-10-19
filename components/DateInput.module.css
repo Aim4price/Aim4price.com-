@@ -61,3 +61,52 @@
 .calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: var(--app-surface, #fff); text-align: left; white-space: nowrap; font-size: .95rem; font-weight: 450; }
 .calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: var(--app-surface-soft, #edf6f0); outline: none; }
 .calendar .selectMenu button[aria-selected='true'] { background: var(--app-surface-soft, #dceee3); color: var(--app-text, #165540); font-weight: 600; }
+
+/* Shared Aim4price calendar: quiet date grid and clearly separated controls. */
+.dateDialog.dateDialog { width: min(36rem, calc(var(--website-visible-width, 100vw) - 2rem)); }
+.dateDialog .calendar { padding: 1.5rem; }
+.dialogHeader { padding-bottom: 1.2rem; margin-bottom: 1.3rem; }
+.heading { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+.headingIcon { display: grid; place-items: center; flex: 0 0 3.25rem; height: 3.25rem; border-radius: .85rem; background: var(--app-success-soft, #e2f0e8); color: var(--app-accent, #176346); }
+.headingIcon svg { width: 1.65rem; height: 1.65rem; }
+.dialogHeader h3 { font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
+.dialogHeader > button { display: grid; place-items: center; flex: 0 0 3rem; height: 3rem; padding: 0; border-radius: .75rem; }
+.dialogHeader > button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.navigation { gap: .8rem; margin-bottom: 1.2rem; }
+.navigation > button { flex-basis: 3rem; height: 3rem; border-radius: 50%; background: var(--app-surface-soft, #f3f8f5); }
+.selectors { gap: .6rem; }
+.calendar .selectTrigger { min-height: 3.1rem; font-size: 1.05rem; font-weight: 650; }
+.dateDialog .days { gap: .35rem; }
+.dateDialog .weekday { padding: .6rem 0; font-size: .85rem; font-weight: 700; }
+.dateDialog .days button { min-height: 3.25rem; border: 1px solid transparent; background: transparent; font-size: 1.15rem; font-weight: 600; border-radius: .75rem; }
+.dateDialog .days button[data-weekend='true'] { color: var(--app-muted, #718078); }
+.dateDialog .days button[aria-current='date'] { border: 1px solid var(--app-accent, #398562); }
+.dateDialog .days button[aria-pressed='true'] { background: #165540; border-color: #165540; color: #fff; font-weight: 800; box-shadow: 0 5px 14px #16554026; }
+.dateDialog .days button[aria-pressed='true']:hover { background: #104631; color: #fff; }
+.dateDialog .days button:disabled { background: transparent; border-color: transparent; color: var(--app-muted, #97a39b); opacity: .45; box-shadow: none; }
+.summary { margin-top: 1.2rem; padding-top: 1.1rem; gap: 1rem; }
+.selectedDate { display: grid; gap: .25rem; min-width: 0; }
+.selectedDate > span { color: var(--app-muted, #718078); font-size: .8rem; }
+.selectedDate > strong { font-size: 1.05rem; font-weight: 750; }
+.summary > button { display: flex; align-items: center; justify-content: center; gap: .5rem; flex: none; min-height: 3rem; padding: .7rem 1rem; background: var(--app-info-soft, #e8f3ff); border-color: var(--app-info-line, #bddafb); color: var(--app-info, #225c91); font-weight: 700; }
+.summary > button svg { width: 1.25rem; height: 1.25rem; }
+.summary > button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .calendar { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .heading { gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .headingIcon { flex-basis: 2.5rem; height: 2.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogHeader h3 { font-size: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigation { gap: .35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .selectors { gap: .3rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .selectRoot:last-child { flex-basis: 5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .calendar .selectTrigger { padding: .55rem .45rem; font-size: .9rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigation > button { flex-basis: 2.75rem; height: 2.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days { gap: .15rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days button { min-height: 2.75rem; font-size: 1rem; }
+}
+/* Keep the full four-digit year visible on compact screens. */
+.calendar .selectTrigger { gap: .35rem; }
+.selectRoot:last-child .selectTrigger > span { flex-shrink: 0; }
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .selectRoot:last-child { flex-basis: 5.3rem; }
+}

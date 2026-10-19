@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../DateInput';
 import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import AssetLocationHistoryMap from './AssetLocationHistoryMap';
 import {createPortal} from '../WebsitePortal';
@@ -19,7 +20,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
  const stops=useMemo(()=>(report?.stops||[]).map((s,i)=>({...s,label:`Stop ${i+1} · ${Math.round(s.seconds/60)} min · ${date(s.from)} to ${date(s.to)}`})),[report]);
  return <section className={`${styles.panel} ${styles.movementPanel}`}>
   {exportOpen&&createPortal(<ReportDownloadFlow title="Download tracking report" allLabel={title} assets={[{id:assetId,title,meta:`Tracking · ${from} to ${to} · South African time`}]} lockedAssetId={assetId} skipTimeline instantDownload onClose={()=>setExportOpen(false)} onDownload={selection=>downloadAssetMapReport(url+'&format='+selection.format,selection.format)}/>,document.body)}
-  <div className={historyStyles.historyToolbar}>{historyTabs}<div className={historyStyles.filters}><label>From<input type="date" value={from} max={to} onChange={e=>{setPreset('Custom');setFrom(e.target.value);}}/></label><label>To<input type="date" value={to} min={from} onChange={e=>{setPreset('Custom');setTo(e.target.value);}}/></label></div></div>
+  <div className={historyStyles.historyToolbar}>{historyTabs}<div className={historyStyles.filters}><label>From<DateInput value={from} max={to} onValueChange={value=>{setPreset('Custom');setFrom(value);}}/></label><label>To<DateInput value={to} min={from} onValueChange={value=>{setPreset('Custom');setTo(value);}}/></label></div></div>
   <div className={styles.movementToolbar}><div className={styles.actions} role="group" aria-label="Tracking period">{['Today','Yesterday','Last 7 days','Custom'].map(label=><button type="button" key={label} aria-pressed={preset===label} onClick={()=>{setPreset(label);if(label!=='Custom'){setFrom(offsetDate(label==='Yesterday'?-1:label==='Last 7 days'?-6:0));setTo(offsetDate(label==='Yesterday'?-1:0));}}}>{label}</button>)}</div>
   <div className={styles.movementActions}><button type="button" disabled={busy} onClick={()=>setRevision(n=>n+1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg>Refresh</button><button type="button" className={styles.reportButton} aria-haspopup="dialog" disabled={busy||!report?.readings.length} onClick={()=>setExportOpen(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg>Download report</button></div></div>
 
