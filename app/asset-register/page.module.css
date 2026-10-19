@@ -41500,3 +41500,50 @@ button.documentOpenLink {
   background: #fff; color: #173d2e; font: inherit; font-size: 1.15rem; font-weight: 700;
 }
 .marketplaceTitlePreview input.marketplaceTitleInput:focus { outline: 2px solid #39825f; outline-offset: 2px; }
+
+/* Future-value questions share Saleability's light cards and clear icon hierarchy. */
+.projectionQuestionModal.projectionQuestionModal { display:flex; flex-direction:column; overflow:hidden; padding:1.5rem !important; }
+.projectionQuestionModal .projectionModalHeader { flex:0 0 auto; align-items:flex-start; gap:1.25rem; padding-bottom:1rem !important; }
+.projectionQuestionModal .projectionModalHeader h3 { display:flex; align-items:center; gap:.85rem; font-size:1.7rem !important; line-height:1.25 !important; letter-spacing:-.025em !important; }
+.projectionQuestionModal .projectionModalHeader p { font-size:1rem !important; font-weight:500 !important; line-height:1.45 !important; overflow-wrap:anywhere; }
+.projectionQuestionModal .projectionScrollBody { flex:1 1 auto; min-height:0; overflow-y:auto; padding:1rem 1rem .25rem 0 !important; margin-right:-.5rem !important; overscroll-behavior:contain; }
+.projectionQuestionModal .pricingPreviewActions { flex:0 0 auto; margin:1rem 0 0 !important; padding:1rem 0 0 !important; background:transparent !important; gap:.75rem; }
+.projectionQuestionModal .projectionIcon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:2.5rem; height:2.5rem; border-radius:.75rem; background:#e4f2eb; color:#21664b; }
+.projectionQuestionModal .projectionIcon svg { width:1.4rem; height:1.4rem; }
+.projectionQuestionModal .projectionIcon[data-kind='year'],
+.projectionQuestionModal .projectionIcon[data-kind='usage'] { background:#e8f2fa; color:#346487; }
+.projectionQuestionModal .projectionIcon[data-kind='inflation'],
+.projectionQuestionModal .projectionIcon[data-kind='fair'] { background:#fff4d9; color:#8b671c; }
+.projectionQuestionModal .projectionIcon[data-kind='serious'],
+.projectionQuestionModal .projectionIcon[data-kind='used'] { background:#fbe9e7; color:#a94c42; }
+.projectionProgress { display:grid; gap:.65rem; }
+.projectionProgress[hidden] { display:none; }
+.projectionProgressTrack { height:5px; border-radius:5px; background:#e2ece6; overflow:hidden; }
+.projectionProgressTrack span { display:block; height:100%; border-radius:inherit; background:#247454; }
+.projectionQuestionModal .projectionSimpleCard { padding:1rem !important; gap:1rem; background:#f7faf8; border-color:#d2e1d8; box-shadow:none; }
+.projectionQuestionModal .projectionSimpleCard h4 { display:flex; align-items:center; gap:.75rem; font-size:1.15rem !important; line-height:1.4; }
+.projectionQuestionModal .projectionSimpleSectionHeader { gap:.7rem; }
+.projectionQuestionModal .projectionConditionGrid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; gap:.75rem; }
+.projectionQuestionModal .projectionConditionButton,
+.projectionQuestionModal .projectionPresetButton { display:flex; align-items:center; justify-content:flex-start; gap:.75rem; min-height:4.25rem; padding:.8rem !important; border:1px solid #c5d8cc !important; background:#fff !important; color:#173e30 !important; box-shadow:none !important; position:relative; }
+.projectionQuestionModal .projectionConditionButton strong { font-size:1rem; line-height:1.3; text-align:left; }
+.projectionQuestionModal .projectionConditionButtonActive,
+.projectionQuestionModal .projectionPresetButtonActive { border-color:#237454 !important; background:#eef7f1 !important; box-shadow:inset 0 0 0 1px #237454 !important; }
+.projectionQuestionModal .projectionConditionButton:hover,
+.projectionQuestionModal .projectionPresetButton:hover { transform:none; background:#f1f7f3 !important; }
+.projectionSelectionMark { margin-left:auto; color:#237454; font-size:1rem; }
+.projectionQuestionModal button:focus-visible { outline:3px solid #3e8968; outline-offset:3px; }
+.projectionQuestionModal .projectionSimpleResult { padding:1.25rem; gap:.8rem; box-shadow:none; }
+.projectionQuestionModal .projectionResultLabel,
+.projectionQuestionModal .projectionMetaLabel { display:flex; align-items:center; gap:.65rem; color:#405c50; }
+.projectionResultBasis { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.75rem; }
+.projectionResultBasis p { margin:0; color:#475f54; }
+.projectionQuestionModal .projectionSimpleMeta { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
+.projectionQuestionModal .projectionMetaLabel .projectionIcon { width:1.8rem; height:1.8rem; border-radius:.5rem; }
+.projectionQuestionModal .projectionMetaLabel .projectionIcon svg { width:1.1rem; height:1.1rem; }
+.projectionQuestionModal .projectionDisclaimer { margin:0; color:#475f54; font-size:.9rem; line-height:1.5; }
+@media(max-width:600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionConditionGrid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionQuickButtons { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionSimpleMeta { grid-template-columns:1fr; }
+}

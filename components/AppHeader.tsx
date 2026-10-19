@@ -203,7 +203,7 @@ const MOBILE_MENU_ID = 'app-header-mobile-menu';
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
-  { key: 'valuation', href: '/valuation', label: 'Value Asset' },
+  { key: 'valuation', href: '/valuation', label: 'Value My Asset' },
 ];
 
 const PUBLIC_NAV_ITEMS: NavItem[] = [
@@ -229,7 +229,7 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/valuation', label: 'Value Asset' },
+  { href: '/valuation', label: 'Value My Asset' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner', 'dealer'] },
@@ -246,7 +246,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 ];
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/valuation', label: 'Value Asset' },
+  { href: '/valuation', label: 'Value My Asset' },
   { href: '/ad-studio', label: 'Ad Studio' },
   { href: '/my-showroom', label: 'My Showroom' },
   { href: '/marketplace', label: 'Marketplace' },
@@ -285,7 +285,7 @@ function buildNavItems(
 
   if (accountType === 'business') return [
     { key: 'home', href: '/', label: 'Home' },
-    { key: 'valuation', href: '/valuation', label: 'Value Asset' },
+    { key: 'valuation', href: '/valuation', label: 'Value My Asset' },
     { key: 'leads', href: '/business', label: 'Shared enquiries' },
     { key: 'account', href: '/account', label: 'Account' },
   ];
@@ -297,7 +297,7 @@ function buildNavItems(
   if (accountType === 'dealer') {
     if (isMiddlemanAccountSubtype(accountSubtype)) {
       return [
-        { key: 'valuation', href: '/valuation', label: 'Value Asset' },
+        { key: 'valuation', href: '/valuation', label: 'Value My Asset' },
         { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
         { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
         { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
@@ -2513,7 +2513,7 @@ export default function AppHeader({
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
                                   : session?.sharingPlan === 'free' || session?.accountType === 'business' ? [
                                       { href: '/', label: 'Home' },
-                                      { href: '/valuation', label: 'Value Asset' },
+                                      { href: '/valuation', label: 'Value My Asset' },
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
                                       { href: '/pricing', label: 'Explore plans' },
