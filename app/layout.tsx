@@ -9,6 +9,7 @@ import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
 import { APP_THEME_SCRIPT } from '../lib/app-theme';
 import AppThemeSync from '../components/AppThemeSync';
 import HoverLabels from '../components/HoverLabels';
+import ScrollbarInteractionGuard from '../components/ScrollbarInteractionGuard';
 import './globals.css';
 import './hover-labels.css';
 import '../public/app-theme.css';
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
+        <ScrollbarInteractionGuard />
         <AppThemeSync />
         <HoverLabels />
         <div className="appRoot">
