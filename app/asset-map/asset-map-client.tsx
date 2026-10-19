@@ -1971,7 +1971,7 @@ export default function AssetMapClient() {
                           </button>
                         ) : (
                           <div className={styles.selectedPhotoPlaceholder}>
-                            <RegisterIcon/><span>No photo yet</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="16" cy="8" r="2"/><path d="m3 17 6-6 12 10"/></svg><span>No photo yet</span>
                           </div>
                         )}
 
@@ -2025,25 +2025,28 @@ export default function AssetMapClient() {
                         <div className={styles.selectedAssetIdentity}>
                           <div className={styles.selectedAssetTitleGroup}>
                             <h2>{selectedAsset.title || "Saved asset"}</h2>
-                            <p>{buildAssetMeta(selectedAsset)}</p>
                             {showCardRegisterLabel ? (
                               <span className={styles.selectedRegisterLabel}>
                                 {selectedAsset.registerLabel ||
                                   selectedAsset.registerName}
                               </span>
                             ) : null}
+                            <div className={cardActions.metadata}>
+                              <span aria-label={`Year: ${selectedAsset.yearModel ? formatYearModel(selectedAsset.yearModel) : 'Not saved'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>{selectedAsset.yearModel ? formatYearModel(selectedAsset.yearModel) : 'Year not saved'}</span>
+                              <span aria-label={`Usage: ${buildUsageDisplay(selectedAsset)}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19a10 10 0 1 1 16 0M12 5v2M5 12h2m10 0h2m-7 3 4-6"/><circle cx="12" cy="15" r="1"/></svg>{buildUsageDisplay(selectedAsset)}</span>
+                              <span aria-label={`Condition: ${formatCondition(selectedAsset.condition)}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg>{formatCondition(selectedAsset.condition)}</span>
+                            </div>
                           </div>
                         </div>
 
                       </div>
 
                       <div className={cardActions.status} data-warning={['Offline','No recent GPS','Waiting'].includes(selectedAsset.trackingStatus||'')}>
-                        <span className={cardActions.statusDot} aria-hidden="true"/>
+                        <svg className={cardActions.statusIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
                         <div><strong>{selectedAsset.trackingStatus==='No recent GPS'?'GPS signal missing':selectedAsset.trackingStatus==='Offline'?'Phone offline':selectedAsset.trackingStatus==='Waiting'?'Waiting for first location':selectedAsset.trackingStatus==='Deactivated'?'Tracking paused':selectedAsset.trackingStatus==='Stopped'?'Stationary':selectedAsset.trackingStatus||'Saved location'}</strong>
-                        <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:`Location saved: ${formatDate(selectedAsset.updatedAtIso)}`}</span>
+                        <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:formatDate(selectedAsset.updatedAtIso)}</span>
                         {selectedAsset.trackingStatus&&<small>Phone contact: {selectedAsset.lastTrackingContactAtIso?formatDate(selectedAsset.lastTrackingContactAtIso):'Not received yet'}</small>}</div>
                       </div>
-                      {selectedAsset.serialNumber&&<p className={cardActions.serial}>Serial / VIN · {selectedAsset.serialNumber}</p>}
                       <div className={cardActions.primaryRow}>
                         <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><LocationHistoryIcon/><span>Routes &amp; history</span></button>
                         <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'tracking'});}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg><span>Tracking device</span></button>
