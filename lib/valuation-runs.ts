@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { fetchEquipmentLinkForModelSelection } from './equipment-catalog';
 import { runServerValuation } from './server-valuation';
@@ -178,6 +179,7 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
 export async function saveValuationRunFromResult(
   input: SaveValuationRunInput,
   result: Result,
+  transaction?: PoolClient,
 ): Promise<SaveValuationRunResult> {
   const selectedMethod: MethodKey = 'aim4price';
   const selectedMethodValueExVat = getSelectedMethodValue(result, selectedMethod);
@@ -187,7 +189,7 @@ export async function saveValuationRunFromResult(
   const catalogLink = await fetchCatalogLink(String(result.model.id));
   if (!catalogLink) throw new Error('MODEL_NOT_FOUND');
 
-  const db = getDb();
+  const db = transaction ?? getDb();
   const marketListingIds = getMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'v1').trim() || 'v1';
   const gpsEnabled = Boolean(input.gpsEnabled);
@@ -306,13 +308,14 @@ function getGenericUsageMode(result: GenericValuationResult): 'percent' | 'hours
 
 export async function saveGenericValuationRunFromResult(
   input: SaveGenericValuationRunInput,
+  transaction?: PoolClient,
 ): Promise<SaveGenericValuationRunResult> {
   const selectedMethod: GenericSelectedMethod = 'aim4price';
   const selectedMethodValueExVat = getGenericSelectedMethodValue(input.result, selectedMethod);
   const selectedValueExVat = roundMoneyOrNull(input.selectedValueOverrideExVat) ?? selectedMethodValueExVat;
   if (selectedValueExVat === null) throw new Error('SELECTED_METHOD_NOT_AVAILABLE');
 
-  const db = getDb();
+  const db = transaction ?? getDb();
   const result = input.result;
   const marketListingIds = getGenericMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'generic-v1').trim() || 'generic-v1';

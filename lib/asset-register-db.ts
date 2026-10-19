@@ -2371,8 +2371,8 @@ function ensureRequiredFields(fields: SqlField[], schema: TableSchema, context: 
   }
 }
 
-async function fetchValuationRunRowById(userId: string, runId: number): Promise<GenericDbRow | null> {
-  const db = getDb();
+async function fetchValuationRunRowById(userId: string, runId: number, transaction?: import('pg').PoolClient): Promise<GenericDbRow | null> {
+  const db = transaction ?? getDb();
   const result = await db.query<GenericDbRow>(
     `
       select *
@@ -3304,6 +3304,7 @@ export async function updateAssetRegisterItem(
 
 
 export async function updateAssetRegisterItemFromValuation(input: {
+  transaction?: import('pg').PoolClient;
   userId: string;
   assetId: string;
   valuationRunId: number;
@@ -3321,16 +3322,16 @@ export async function updateAssetRegisterItemFromValuation(input: {
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
-  const db = getDb();
+  const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
   const valuationSchema = await getValuationRunsSchema();
-  const existing = await getAssetRegisterItemById(input.userId, input.assetId);
+  const existing = await getAssetRegisterItemById(input.userId, input.assetId, input.transaction);
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId, input.transaction);
 
   if (!valuationRow) {
     throw new Error('VALUATION_RUN_NOT_FOUND');
@@ -3437,6 +3438,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
 
   const item = mapAssetRegisterRow(row);
   await captureAssetDepreciationLogEntry({
+    transaction: input.transaction,
     previousAsset: existing,
     asset: item,
     eventType: 'automatic_revaluation_saved',
@@ -3461,6 +3463,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
 }
 
 export async function updateAssetRegisterItemFromGenericValuation(input: {
+  transaction?: import('pg').PoolClient;
   userId: string;
   assetId: string;
   valuationRunId: number;
@@ -3474,16 +3477,16 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
-  const db = getDb();
+  const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
   const valuationSchema = await getValuationRunsSchema();
-  const existing = await getAssetRegisterItemById(input.userId, input.assetId);
+  const existing = await getAssetRegisterItemById(input.userId, input.assetId, input.transaction);
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId);
+  const valuationRow = await fetchValuationRunRowById(input.userId, input.valuationRunId, input.transaction);
 
   if (!valuationRow) {
     throw new Error('VALUATION_RUN_NOT_FOUND');
@@ -3615,6 +3618,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
 
   const item = mapAssetRegisterRow(row);
   await captureAssetDepreciationLogEntry({
+    transaction: input.transaction,
     previousAsset: existing,
     asset: item,
     eventType: 'automatic_revaluation_saved',

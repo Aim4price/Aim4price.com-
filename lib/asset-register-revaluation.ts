@@ -1,3 +1,4 @@
+import { saveAssetRevaluation } from './asset-revaluation-save';
 import {applyApprovedValueBaseline} from './approved-value-baseline';
 import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
 import {
@@ -791,31 +792,36 @@ async function revalueTractorAsset(input: {
     };
   }
 
-  const saved = await saveValuationRunFromResult(
-    {
-      ...valuationInput,
-      selectedMethod,
-      selectedValueOverrideExVat: selectedValueExVat,
-      yearModelUnknown,
-      valuationVersion: 'v1-revalue',
+  const { saved, item } = await saveAssetRevaluation(input.asset, async (transaction) => {
+    const saved = await saveValuationRunFromResult(
+      {
+        ...valuationInput,
+        selectedMethod,
+        selectedValueOverrideExVat: selectedValueExVat,
+        yearModelUnknown,
+        valuationVersion: 'v1-revalue',
+        userId: input.userId,
+      },
+      result,
+      transaction,
+    );
+    const item = await updateAssetRegisterItemFromValuation({
+      transaction,
       userId: input.userId,
-    },
-    result,
-  );
-  const item = await updateAssetRegisterItemFromValuation({
-    userId: input.userId,
-    assetId: input.asset.id,
-    valuationRunId: saved.runId,
-    result,
-    selectedMethod,
-    selectedValueExVat,
-    year,
-    yearModelUnknown,
-    hours,
-    condition,
-    expectedUpdatedAtIso: input.asset.updatedAtIso,
-    saveReplacementPrice: input.saveReplacementPrice === true,
-    allowUsageDecrease: input.allowUsageDecrease === true,
+      assetId: input.asset.id,
+      valuationRunId: saved.runId,
+      result,
+      selectedMethod,
+      selectedValueExVat,
+      year,
+      yearModelUnknown,
+      hours,
+      condition,
+      expectedUpdatedAtIso: input.asset.updatedAtIso,
+      saveReplacementPrice: input.saveReplacementPrice === true,
+      allowUsageDecrease: input.allowUsageDecrease === true,
+    });
+    return { saved, item };
   });
 
   return {
@@ -987,23 +993,27 @@ async function revalueGenericAsset(input: {
     };
   }
 
-  const saved = await saveGenericValuationRunFromResult({
-    userId: input.userId,
-    result,
-    selectedMethod,
-    selectedValueOverrideExVat: selectedValueExVat,
-    valuationVersion: 'generic-v1-revalue',
-  });
-  const item = await updateAssetRegisterItemFromGenericValuation({
-    userId: input.userId,
-    assetId: input.asset.id,
-    valuationRunId: saved.runId,
-    result,
-    selectedMethod,
-    selectedValueExVat,
-    expectedUpdatedAtIso: input.asset.updatedAtIso,
-    saveReplacementPrice: input.saveReplacementPrice === true,
-    allowUsageDecrease: input.allowUsageDecrease === true,
+  const { saved, item } = await saveAssetRevaluation(input.asset, async (transaction) => {
+    const saved = await saveGenericValuationRunFromResult({
+      userId: input.userId,
+      result,
+      selectedMethod,
+      selectedValueOverrideExVat: selectedValueExVat,
+      valuationVersion: 'generic-v1-revalue',
+    }, transaction);
+    const item = await updateAssetRegisterItemFromGenericValuation({
+      transaction,
+      userId: input.userId,
+      assetId: input.asset.id,
+      valuationRunId: saved.runId,
+      result,
+      selectedMethod,
+      selectedValueExVat,
+      expectedUpdatedAtIso: input.asset.updatedAtIso,
+      saveReplacementPrice: input.saveReplacementPrice === true,
+      allowUsageDecrease: input.allowUsageDecrease === true,
+    });
+    return { saved, item };
   });
 
   return {

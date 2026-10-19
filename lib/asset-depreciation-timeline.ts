@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import {
   combineDepreciationUmbrellaAnnualSummaries,
@@ -114,6 +115,8 @@ export type DepreciationLogAssetInput = {
 };
 
 type CaptureAssetDepreciationLogEntryInput = {
+  /** Transactional callers require history failures to roll back the value save. */
+  transaction?: PoolClient;
   asset: DepreciationLogAssetInput;
   previousAsset?: DepreciationLogAssetInput | null;
   eventType: string;
@@ -529,8 +532,8 @@ function isDepreciationLogEntry(entry: AssetDepreciationLogEntry): boolean {
   return entry.metadataJson.updateLog === true || asText(entry.metadataJson.capturedBy).toLowerCase() === 'asset-depreciation-log';
 }
 
-async function assetAlreadyHasDepreciationLogEntry(userId: string, assetRegisterItemId: string): Promise<boolean> {
-  const db = getDb();
+async function assetAlreadyHasDepreciationLogEntry(userId: string, assetRegisterItemId: string, transaction?: PoolClient): Promise<boolean> {
+  const db = transaction ?? getDb();
   const result = await db.query<{ exists: number }>(
     `
       select 1 as exists
@@ -550,6 +553,7 @@ export async function captureAssetDepreciationLogEntry(input: CaptureAssetDeprec
     const nextValues = buildLogValues(input.asset);
 
     if (!nextValues.userId || !nextValues.assetRegisterItemId || nextValues.newValueExVat === null) {
+      if (input.transaction) throw new Error('INVALID_DEPRECIATION_LOG_ASSET');
       return null;
     }
 
@@ -564,7 +568,7 @@ export async function captureAssetDepreciationLogEntry(input: CaptureAssetDeprec
         return null;
       }
 
-      if (await assetAlreadyHasDepreciationLogEntry(nextValues.userId, nextValues.assetRegisterItemId)) {
+      if (await assetAlreadyHasDepreciationLogEntry(nextValues.userId, nextValues.assetRegisterItemId, input.transaction)) {
         return null;
       }
     } else if (depreciationRelevantReasons.length === 0) {
@@ -590,7 +594,7 @@ export async function captureAssetDepreciationLogEntry(input: CaptureAssetDeprec
       logEventReasons: depreciationRelevantReasons,
     };
 
-    const db = getDb();
+    const db = input.transaction ?? getDb();
     const inserted = await db.query<AssetDepreciationSnapshotRow>(
       `
         insert into public.asset_depreciation_snapshots (
@@ -690,8 +694,10 @@ export async function captureAssetDepreciationLogEntry(input: CaptureAssetDeprec
       ],
     );
 
+    if (input.transaction && !inserted.rows[0]) throw new Error('DEPRECIATION_LOG_SAVE_FAILED');
     return inserted.rows[0] ? mapSnapshotRow(inserted.rows[0]) : null;
   } catch (error) {
+    if (input.transaction) throw error;
     console.error('asset depreciation log capture failed', error);
     return null;
   }
