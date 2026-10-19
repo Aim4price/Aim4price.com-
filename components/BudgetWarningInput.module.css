@@ -1,0 +1,13 @@
+.field { display: grid; align-content: start; gap: .45rem; min-width: 0; }
+.label { color: var(--app-text, #29453c); font-size: .95rem; font-weight: 750; }
+.control { display: grid; grid-template-columns: 3rem minmax(0,1fr) 3rem; align-items: center; gap: .5rem; padding: .35rem; min-height: 3.65rem; border: 1px solid var(--app-info-line, #b8cfd8); border-radius: 1.05rem; background: var(--app-surface, #fff); }
+.control:focus-within { border-color: var(--app-accent, #197454); box-shadow: 0 0 0 3px var(--app-shadow-colour, #19745418); }
+.control button { display: grid; place-items: center; width: 3rem; min-height: 3rem; padding: 0; border-radius: .75rem; border: 1px solid var(--app-line, #c6ddd1); background: var(--app-surface-soft, #edf7f1); color: var(--app-text, #17654d); cursor: pointer; }
+.control button svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.control button:hover:not(:disabled) { border-color: var(--app-accent, #197454); }
+.control button:disabled { opacity: .4; cursor: default; }
+.control button:focus-visible { outline: 2px solid var(--app-accent, #197454); outline-offset: 2px; }
+.reading { display: flex; align-items: center; justify-content: center; gap: .3rem; min-width: 0; color: var(--app-text, #174e3c); font-size: 1.35rem; font-weight: 800; }
+.reading input { width: 3.5ch; min-width: 0; min-height: 3rem; margin: 0; padding: 0; border: 0; border-radius: .4rem; outline: 0; background: transparent; color: inherit; font: inherit; text-align: center; appearance: textfield; -moz-appearance: textfield; }
+.reading input::-webkit-inner-spin-button, .reading input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.field small { color: var(--app-muted, #637a70); font-size: .8rem; line-height: 1.5; }
