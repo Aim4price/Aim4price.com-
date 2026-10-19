@@ -1,5 +1,4 @@
 'use client';
-import AssetPriceSwitch, {type AssetPriceView} from '../../components/asset-register/AssetPriceSwitch';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
@@ -6507,7 +6506,6 @@ export default function AssetRegisterClient({
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [assetGroupValueVatModes, setAssetGroupValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
-  const [priceViews,setPriceViews] = useState<Record<string,AssetPriceView>>({});
   const [savedSaleability,setSavedSaleability] = useState<Record<string,SavedSaleability>>({});
   const [saleabilityLoading,setSaleabilityLoading] = useState(true);
   const [saleabilityLoadError,setSaleabilityLoadError] = useState(false);
@@ -16614,7 +16612,7 @@ export default function AssetRegisterClient({
                             ) : null}
                           </div>
                         ) : null}
-                        <div className={`${styles.assetHeader} ${styles.marketValueHeader}`}>
+                        <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
@@ -16656,15 +16654,17 @@ export default function AssetRegisterClient({
                           </div>
 
                           <div className={styles.assetHeaderAside}>
-                            <AssetPriceSwitch value={asset.value} manual={isManualValueAsset}
-                              view={priceViews[asset.id]??'fair'} onViewChange={view=>setPriceViews(current=>({...current,[asset.id]:view}))}
-                              replacementPrice={readAssetReplacementPriceExVat(asset)} replacementParts={readReplacementParts(asset)}
-                              onEditReplacement={()=>openConfirmedValue(asset,'replacement')} onRecalculate={()=>isManualValueAsset?openConfirmedValue(asset,'override'):openPricingTool(asset,'recalculate')}
-                              included={assetValueVatMode==='included'} onVatChange={included=>setAssetValueVatModes(current=>({...current,[asset.id]:included?'included':'excluded'}))}
-                              saved={savedSaleability[asset.id]} stale={!!savedSaleability[asset.id]&&savedSaleability[asset.id].basis!==saleabilityBasis(asset)}
-                              canCalculate={canUseOwnerOnlyAssetActions} loading={saleabilityLoading} error={saleabilityLoadError}
-                              onCalculate={()=>openPricingTool(asset,'saleability')}/>
-
+                            <div className={styles.valueBlock}>
+                              <div className={styles.assetValueVatDisplay}>
+                                <div className={styles.assetValueVatText}>
+                                  <div className={styles.assetValueVatAmountRow}>
+                                    <strong>{money(displayedAssetValue)}</strong>
+                                    <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
+                                  </div>
+                                  <span>{assetValueVatLabel}</span>
+                                </div>
+                              </div>
+                            </div>
 
                             <div className={`${styles.assetHeaderActions} ${''}`}>
                               {estimateNeedsUpdate && canUseOwnerOnlyAssetActions ? (
@@ -20216,7 +20216,6 @@ export default function AssetRegisterClient({
             const data=await response.json();
             if(!response.ok)throw Error(data.error||'Could not save assessment.');
             setSavedSaleability(current=>({...current,[assetId]:data.assessment}));
-            setPriceViews(current=>({...current,[assetId]:'market'}));
           }}
         />
       ) : null}

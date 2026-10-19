@@ -23,9 +23,8 @@ test('asset quick actions retain the original side rail', () => {
 });
 
 test('asset and umbrella prices retain independent VAT controls', () => {
-  assert.match(client, /<AssetPriceSwitch[\s\S]*?included=\{assetValueVatMode\s*===\s*'included'\}/);
-  const pricing = readFileSync(new URL('../components/asset-register/AssetPriceSwitch.tsx', import.meta.url), 'utf8');
-  assert.match(pricing, /<PricingVatToggle included=\{included\} onChange=\{onVatChange\}/);
+  assert.match(client, /<CardVatToggle included=\{assetValueVatMode === 'included'\}/);
+  assert.doesNotMatch(client, /<AssetPriceSwitch/);
   assert.match(client, /<CardVatToggle included=\{groupValueVatMode === 'included'\}/);
   assert.match(client, /assetGroupValueVatModes\[group.id\] \?\? registerValueVatMode/);
   assert.match(client, /setAssetGroupValueVatModes\(\{\}\)/);
