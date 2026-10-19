@@ -18,6 +18,8 @@ async function check(browser, url) {
   const assets=[make('member','2018 Massey Ferguson 4708',194438),make('member2','Farm trailer',15000,{specsJson:{assetFlagged:true}}),make('normal','2022 New Holland TT4.90 4WD Openstation',327133,{latestIssueNoteStatus:{id:'issue-1',note:'Rear light needs checking',operatorName:'Test owner',createdAtIso:'2026-09-13T00:00:00Z'},latestMaintenanceStatus:{id:'maintenance-1',summary:'Changed engine oil',operatorName:'Test mechanic',createdAtIso:'2026-09-13T00:00:00Z',photoUrls:[]}}),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
   let groups=[{id:'umbrella',userId:user.id,registerId:'canvas-register',name:'Asset umbrella',valueMode:'separate',isFlagged:false,members:[{assetId:'member',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0},{assetId:'member2',role:'member',relationship:'works_with',countsTowardTotal:true,sortOrder:1}],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z'}];
   await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth}); localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'auto'}));});
+  // Locator clicks wait for a stable, enabled target after canvas scrolling.
+  const click = selector => page.locator(selector).click();
   await page.setRequestInterception(true);
   page.on('request',request=>{
     const target=new URL(request.url());
@@ -32,6 +34,9 @@ async function check(browser, url) {
     await page.setViewport({width,height:1100,deviceScaleFactor:1});
     await page.goto(url+'/canvas-validation?page=register',{waitUntil:'networkidle2',timeout:120000});
     await page.waitForSelector('[data-asset-group-id="umbrella"]');
+    // Smooth root scrolling can move a target between Puppeteer's hit test
+    // and pointer dispatch, especially on slower CI runners.
+    await page.addStyleTag({content:'html { scroll-behavior: auto !important; }'});
     await page.$eval('[data-asset-group-id="umbrella"]',e=>e.scrollIntoView({block:'start'}));
     await page.screenshot({path:path.join(output,`umbrella-design-${width}.png`)});
     const geometry=await page.evaluate(()=>[...document.querySelectorAll('[class*="assetGroupHeaderRow"], [class*="assetCardRow"]')].filter(e=>e.querySelector('h2')).map(row=>{
@@ -59,9 +64,9 @@ async function check(browser, url) {
     }
     assert.equal(await page.$eval('#asset-card-live [class*="marketplaceLiveStatus"]',e=>e.textContent),'Live on Marketplace');
     assert.equal(await page.$eval('[aria-label="Edit Asset umbrella"]',e=>e.getAttribute('data-tooltip')),'Edit umbrella');
-    await page.click('[aria-label="Edit Asset umbrella"]');
+    await click('[aria-label="Edit Asset umbrella"]');
     await page.waitForFunction(()=>document.querySelector('#asset-group-title')?.textContent.includes('Edit umbrella'));
-    await page.click('[aria-label="Close umbrella manager"]');
+    await click('[aria-label="Close umbrella manager"]');
     const flagSelector = `[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`;
     await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
     await page.$eval(flagSelector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
@@ -80,7 +85,7 @@ async function check(browser, url) {
       // Use an inert fixture target: viewport coordinates can hit a navigation
       // link after a card expansion changes the canvas scroll position.
       await page.evaluate(()=>{const target=document.createElement('div');target.id='outside-card-test-target';target.style.cssText='position:fixed;left:2px;bottom:2px;width:12px;height:12px;z-index:2147483647';document.body.append(target);});
-      await page.click('#outside-card-test-target');
+      await click('#outside-card-test-target');
       await page.$eval('#outside-card-test-target',e=>e.remove());
       await delay(100);
     };
@@ -96,24 +101,24 @@ async function check(browser, url) {
     await delay(180);
     const supportsHover = await page.evaluate(()=>matchMedia('(hover: hover) and (pointer: fine)').matches);
     assert.equal(await page.$eval('[class*="assetGroupHeader"] > [class*="cardToggleHint"]',e=>getComputedStyle(e,'::after').opacity),supportsHover?'1':'0','hover hints follow device pointer capabilities');
-    await page.click(umbrellaTitle);
+    await click(umbrellaTitle);
     await page.waitForSelector('#asset-card-member');
     assert.equal(await page.$eval(groupDetails,e=>e.getAttribute('data-tooltip')),'Close Umbrella');
-    await page.click(umbrellaTitle);
+    await click(umbrellaTitle);
     await page.waitForFunction(()=>!document.querySelector('#asset-card-member'));
-    await page.click(umbrellaTitle);
+    await click(umbrellaTitle);
     await page.waitForSelector('#asset-card-member');
     for (const id of ['member','member2']) {
       assert.equal(await page.$eval(`#asset-card-${id} [class*="assetFlagButton"]`, e=>e.getAttribute('aria-pressed')),'true');
       assert.equal(await red(`#asset-card-${id}`),'rgb(223, 67, 77)');
     }
-    await page.click(details('member'));
+    await click(details('member'));
     await page.waitForFunction(()=>document.querySelector('#asset-card-member [aria-expanded="true"]'));
     assert.equal(await red('#asset-card-member'),'rgb(223, 67, 77)');
-    await page.click('#asset-card-member h2');
+    await click('#asset-card-member h2');
     assert.equal(await isOpen('member'),false,'card click closes member details');
     assert.equal(await page.$eval(details('member'),e=>e.getAttribute('data-tooltip')),'Open Asset');
-    await page.click('#asset-card-member h2');
+    await click('#asset-card-member h2');
     assert.equal(await isOpen('member'),true,'card click opens member details');
     assert.equal(await page.$eval(details('member'),e=>e.getAttribute('data-tooltip')),'Close Asset');
     await page.screenshot({path:path.join(output,`umbrella-red-expanded-${width}.png`)});
@@ -121,16 +126,16 @@ async function check(browser, url) {
     assert.equal(await isOpen('member'),false,'outside closes member details first');
     await outside();
     assert.equal(await page.$('#asset-card-member'),null,'next outside click closes umbrella');
-    await page.click(groupDetails);
+    await click(groupDetails);
     await page.waitForSelector('#asset-card-member');
     assert.equal(await isOpen('member'),false,'reopening umbrella does not restore stale member details');
-    await page.click(details('member'));
-    await page.click('#asset-card-member2 h2');
+    await click(details('member'));
+    await click('#asset-card-member2 h2');
     assert.equal(await isOpen('member'),false,'clicking a muted card dismisses the focused asset');
     await outside();
-    await page.click(groupDetails);
+    await click(groupDetails);
     await page.waitForSelector('#asset-card-member');
-    await page.click('#asset-card-member [class*="assetFlagButton"]');
+    await click('#asset-card-member [class*="assetFlagButton"]');
     await page.waitForSelector('[aria-label="Flag Asset umbrella"]');
     assert.equal(await page.$eval('#asset-card-member [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'false');
     assert.equal(await page.$eval('#asset-card-member2 [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'true','unflagging umbrella preserves individual flags');
@@ -148,12 +153,12 @@ async function check(browser, url) {
     assert.equal(await page.$eval(pricePanel,e=>e.textContent.includes('What could it sell for?')),true,'missing market estimate has a clear empty state');
     await choosePrice('Fair value');
     assert.equal(await page.$eval(value,e=>e.hasAttribute('role')||e.hasAttribute('tabindex')),false,'displayed value is not an edit shortcut');
-    await page.click(value);
+    await click(value);
     assert.equal(await page.$('[role="dialog"]'),null,'clicking the value does not open a value editor');
     await page.waitForFunction(()=>document.querySelector('#asset-card-normal [aria-expanded="true"]'));
-    await page.click('#asset-card-normal h2');
+    await click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),false,'card click closes standalone details');
-    await page.click('#asset-card-normal h2');
+    await click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),true,'card click opens standalone details');
     const layout = await page.$eval('#asset-card-normal',card=>{
       const details=card.querySelector('#asset-panel-normal');
@@ -175,7 +180,7 @@ async function check(browser, url) {
       return Math.abs(before.x-after.x)<.1&&Math.abs(before.y-after.y)<.1
         &&button.contains(document.elementFromPoint(after.x+after.width/2,after.y+after.height/2));
     },{},manageSelector);
-    await page.click(manageSelector);
+    await click(manageSelector);
     // Resolve and interact in one browser turn: canvas overlay mounting can
     // replace the node between separate waitForSelector and $eval calls.
     await page.waitForFunction(()=>{
@@ -188,7 +193,7 @@ async function check(browser, url) {
     await page.keyboard.press('Escape');
     await outside();
     assert.equal(await isOpen('normal'),false,'outside closes standalone details');
-    await page.click('[aria-label="Flag Asset umbrella"]');
+    await click('[aria-label="Flag Asset umbrella"]');
     await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     await page.screenshot({path:path.join(output,`umbrella-flagged-${width}.png`)});
     await page.reload({waitUntil:'networkidle2'});
