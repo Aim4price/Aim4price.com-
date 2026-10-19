@@ -133,6 +133,18 @@ async function appearance(page) {
           catch (error) { mismatches.push(`${name} at ${width}px`); console.error(error.message); }
         }
         assert.equal(await page.$$eval('[data-asset-choice-row]', rows => rows.length), 12);
+        const scrollLayout = await page.evaluate(() => {
+          const toolbar = document.querySelector('[data-asset-choice-toolbar]');
+          const list = document.querySelector('[data-asset-choice-list]');
+          const before = toolbar.getBoundingClientRect();
+          list.scrollTop = 160;
+          const after = toolbar.getBoundingClientRect();
+          const separated = list.getBoundingClientRect().top >= after.bottom - 1;
+          list.scrollTop = 0;
+          return { separated, toolbarMoved: Math.abs(after.top - before.top) > 1 };
+        });
+        assert.equal(scrollLayout.separated, true, `${name}: list stays below search toolbar`);
+        assert.equal(scrollLayout.toolbarMoved, false, `${name}: search toolbar stays fixed while list scrolls`);
         await page.screenshot({ path: path.join(output, `${name}-${width}.png`) });
         const search = '[data-asset-choice-toolbar] input';
         await page.type(search, 'SKB 2');
