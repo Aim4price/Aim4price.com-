@@ -78,14 +78,21 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.evaluate(()=>window.detailCalculated),1);
  await page.evaluate(()=>window.renderMarketDetail({priceExVat:425000,assessedAt:'2026-10-19T10:00:00Z'},{included:true,stale:true}));
  await page.waitForFunction(()=>document.querySelector('[aria-label="Estimated selling price"] [aria-live="polite"]')?.textContent.replace(/\D/g,'')==='488750');
- await page.focus('[aria-label="Open saleability assessment"]');
+ await page.focus('[aria-label="Update needed: open saleability assessment"]');
  await page.keyboard.press('Enter');
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
- assert(await page.evaluate(()=>document.body.textContent.includes('Review needed')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Update needed') && document.body.textContent.includes('Previous estimate')));
+ assert(await page.evaluate(()=>!!document.querySelector('[data-detail-icon="alert"]')));
+ assert.equal(await page.$eval('[aria-label="Estimated selling price"]',el=>getComputedStyle(el).backgroundColor),'rgb(255, 241, 242)');
  await page.click('[aria-label="About estimated selling price"]');
  assert(await page.evaluate(()=>document.querySelector('[role="note"]').textContent.includes('Actual offers may differ')));
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ // A newly saved matching basis restores the normal presentation.
+ await page.evaluate(()=>window.renderMarketDetail({priceExVat:430000,assessedAt:'2026-10-19T11:00:00Z'},{stale:false}));
+ await page.waitForSelector('[aria-label="Open saleability assessment"]');
+ assert(await page.evaluate(()=>!document.body.textContent.includes('Update needed') && !document.body.textContent.includes('Previous estimate')));
+ assert.equal(await page.$eval('[aria-label="Estimated selling price"]',el=>getComputedStyle(el).backgroundColor),'rgb(240, 247, 255)');
  await page.evaluate(()=>window.renderMarketDetail(undefined,{error:true}));
  await page.waitForFunction(()=>document.body.textContent.includes('Unavailable'));
  assert(await page.evaluate(()=>document.querySelector('[aria-label="Open saleability assessment"]').disabled));
