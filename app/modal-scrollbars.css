@@ -1,0 +1,76 @@
+/* Layered important rules take precedence over older per-modal scrollbar
+ * overrides, regardless of CSS-module loading order. */
+@layer modal-scrollbars {
+/* Shared treatment for existing modal scroll areas, including nested lists and
+ * portalled selectors. Keep each component's overflow and sizing decisions. */
+:root {
+  --modal-scrollbar-track: #edf3ef;
+  --modal-scrollbar-thumb: #648e7d;
+  --modal-scrollbar-hover: #3f735d;
+  --modal-scrollbar-active: #285840;
+}
+
+html[data-background='dark'],
+html[data-app-theme='dark'] {
+  --modal-scrollbar-track: #203a30;
+  --modal-scrollbar-thumb: #8eb6a4;
+  --modal-scrollbar-hover: #afd5c2;
+  --modal-scrollbar-active: #c9e8d9;
+}
+
+body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true']),
+body :is(dialog, [role='dialog'], [aria-modal='true']) * {
+  scrollbar-width: auto !important;
+  scrollbar-color: var(--modal-scrollbar-thumb) var(--modal-scrollbar-track) !important;
+}
+
+/* Chrome/Safari need the standard colour reset so their custom scrollbar
+ * dimensions are honoured. Firefox uses its full native width above. */
+@supports selector(::-webkit-scrollbar) {
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true']),
+  body :is(dialog, [role='dialog'], [aria-modal='true']) * {
+    scrollbar-color: auto !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar-track,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar-track {
+    background: var(--modal-scrollbar-track) !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+    border-radius: 999px !important;
+    margin: 8px !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar-thumb,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar-thumb {
+    background: var(--modal-scrollbar-thumb) !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+    border-radius: 999px !important;
+    min-height: 56px !important;
+    min-width: 56px !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar-thumb:hover,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--modal-scrollbar-hover) !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar-thumb:active,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar-thumb:active {
+    background-color: var(--modal-scrollbar-active) !important;
+  }
+
+  body :is(dialog, [role='dialog'], [aria-modal='true'], [data-dropdown-overlay='true'], [data-dropdown-overlay-portal='true'], [data-asset-choice-list='true'])::-webkit-scrollbar-corner,
+  body :is(dialog, [role='dialog'], [aria-modal='true']) *::-webkit-scrollbar-corner {
+    background: transparent !important;
+  }
+}
+
+}
