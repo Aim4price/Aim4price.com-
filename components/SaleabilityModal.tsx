@@ -266,7 +266,6 @@ export default function SaleabilityModal({
           <div>
             <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2>
             <p>{assetTitle}</p>
-            {step === 'result' ? <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} /> : null}
           </div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
@@ -357,10 +356,13 @@ export default function SaleabilityModal({
                 <div className={styles.planHeader}>
                   <h3 className={styles.resultLabel}><SaleIcon kind="priority" />Your selling plan</h3>
                 </div>
+                <div className={styles.askingPriceRow}>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
                   <strong>{displayMoney(plan.recommendedAskingPriceExVat)}</strong>
                   <em>{vatLabel}</em>
+                </div>
+                  <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
                 </div>
                 <div className={styles.resultRows}>
                   <div><span>Likely selling range</span><strong>{displayMoney(plan.likelySellingRangeLowExVat)} – {displayMoney(plan.likelySellingRangeHighExVat)}</strong></div>
