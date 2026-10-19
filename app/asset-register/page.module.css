@@ -41492,3 +41492,10 @@ button.documentOpenLink {
 .page .assetGroupMemberActions .assetGroupButton:not(:disabled):is(:hover, :focus-visible) {
   background: #fff6cf !important;
 }
+
+.marketplaceTitlePreview input.marketplaceTitleInput {
+  width: 100%; min-width: 0; min-height: 3.4rem; box-sizing: border-box;
+  padding: .8rem 1rem; border: 1px solid #9cbead; border-radius: .8rem;
+  background: #fff; color: #173d2e; font: inherit; font-size: 1.15rem; font-weight: 700;
+}
+.marketplaceTitlePreview input.marketplaceTitleInput:focus { outline: 2px solid #39825f; outline-offset: 2px; }
