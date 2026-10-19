@@ -1,35 +1,85 @@
 'use client';
 import DateInput from '../DateInput';
-import {useEffect,useMemo,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import AssetLocationHistoryMap from './AssetLocationHistoryMap';
+import AssetAccessSettingsDialog from './AssetAccessSettingsDialog';
 import {createPortal} from '../WebsitePortal';
 import ReportDownloadFlow from '../ReportDownloadFlow';
 import {downloadAssetMapReport} from '../../lib/asset-map-download';
 import type {MovementReport} from '../../lib/asset-movement-report';
+import type {TrackingHistoryEntry,TrackingHistoryPage} from '../../lib/asset-tracking-history';
 import styles from './AssetTrackingPanel.module.css';
 import historyStyles from './AssetLocationHistoryDialog.module.css';
-const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-const offsetDate=(days:number)=>new Date(Date.parse(today()+'T12:00:00Z')+days*86400000).toISOString().slice(0,10);
 const date=(v:string)=>new Date(v).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'});
+const dayLabel=(v:string)=>new Date(v+'T12:00:00+02:00').toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'long',year:'numeric'});
+const time=(v:string)=>new Date(v).toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg',hour:'2-digit',minute:'2-digit'});
+function Icon({type}:{type:'route'|'download'|'delete'|'refresh'}){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{type==='route'?<><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h8"/></>:<path d={type==='download'?'M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4':type==='delete'?'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6':'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1'}/>}</svg>;}
+type SelectedEntry={entry:TrackingHistoryEntry;snapshotAt:string};
 export default function AssetMovementHistory({assetId,title='Asset',historyTabs}:{assetId:string;title?:string;historyTabs?:ReactNode}){
- const [from,setFrom]=useState(today),[to,setTo]=useState(today),[preset,setPreset]=useState('Today');
- const [report,setReport]=useState<MovementReport|null>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0),[exportOpen,setExportOpen]=useState(false);
- const url=`/api/asset-register/${encodeURIComponent(assetId)}/tracking/history?${new URLSearchParams({from,to})}`;
- useEffect(()=>{const c=new AbortController();setBusy(true);setReport(null);setError('');fetch(url,{signal:c.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load tracking.');if(!c.signal.aborted)setReport(d);}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setBusy(false);});return()=>c.abort();},[url,revision]);
- const points=useMemo(()=>(report?.readings||[]).map(p=>({...p,label:`${date(p.capturedAt)} · ${p.speedKmh===null?'Speed unavailable':p.speedKmh.toFixed(1)+' km/h'} · Accuracy ${Math.round(p.accuracy)} m`})),[report]);
- const stops=useMemo(()=>(report?.stops||[]).map((s,i)=>({...s,label:`Stop ${i+1} · ${Math.round(s.seconds/60)} min · ${date(s.from)} to ${date(s.to)}`})),[report]);
- return <section className={`${styles.panel} ${styles.movementPanel}`}>
-  {exportOpen&&createPortal(<ReportDownloadFlow title="Download tracking report" allLabel={title} assets={[{id:assetId,title,meta:`Tracking · ${from} to ${to} · South African time`}]} lockedAssetId={assetId} skipTimeline instantDownload onClose={()=>setExportOpen(false)} onDownload={selection=>downloadAssetMapReport(url+'&format='+selection.format,selection.format)}/>,document.body)}
-  <div className={historyStyles.historyToolbar}>{historyTabs}<div className={historyStyles.filters}><label>From<DateInput value={from} max={to} onValueChange={value=>{setPreset('Custom');setFrom(value);}}/></label><label>To<DateInput value={to} min={from} onValueChange={value=>{setPreset('Custom');setTo(value);}}/></label></div></div>
-  <div className={styles.movementToolbar}><div className={styles.actions} role="group" aria-label="Tracking period">{['Today','Yesterday','Last 7 days','Custom'].map(label=><button type="button" key={label} aria-pressed={preset===label} onClick={()=>{setPreset(label);if(label!=='Custom'){setFrom(offsetDate(label==='Yesterday'?-1:label==='Last 7 days'?-6:0));setTo(offsetDate(label==='Yesterday'?-1:0));}}}>{label}</button>)}</div>
-  <div className={styles.movementActions}><button type="button" disabled={busy} onClick={()=>setRevision(n=>n+1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 6M4 12l2 6a7 7 0 0 0 12-1"/></svg>Refresh</button><button type="button" className={styles.reportButton} aria-haspopup="dialog" disabled={busy||!report?.readings.length} onClick={()=>setExportOpen(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4"/></svg>Download report</button></div></div>
-
-  <p className={styles.periodCaption}>{from === to ? from : `${from} – ${to}`} · South African time</p>
-  {busy?<p role="status">Loading tracking…</p>:error?<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Try again</button></p>:report&&<>
-   {points.length>0&&<div className={styles.stats}>{[[report.distanceKm.toFixed(2)+' km','Recorded distance'],[(report.movingSeconds/3600).toFixed(2)+' h','Moving time'],[(report.stationarySeconds/3600).toFixed(2)+' h','Stationary time'],[report.averageMovingKmh.toFixed(1)+' km/h','Average moving speed']].map(([value,label])=><div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>}
-   {points.length?<><AssetLocationHistoryMap points={points} routeSegments={report.segments} stops={stops}/><div className={styles.routeLegend}><span>● Start / End</span><span>● Recorded GPS dots</span><span>● Numbered stops: 15+ minutes</span></div><p className={styles.notice}>{points.length.toLocaleString()} readings · {Math.round(report.gapSeconds/60)} minutes unobserved between readings. {points.length>5000?'The map displays a sample of dots; exports retain all readings.':''}</p>
-   {stops.length>0&&<details className={styles.setupDetails}><summary>Observed stops ({stops.length})</summary><ol className={styles.stopList}>{stops.map((s,i)=><li key={s.from}><strong>Stop {i+1} · {Math.round(s.seconds/60)} min</strong><span>{date(s.from)} – {date(s.to)}</span></li>)}</ol></details>}</>:<div className={styles.emptyState}><span className={styles.emptyIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><strong>No locations recorded yet</strong><p>Try another period. For a newly connected phone, tap Activate in Tracker and take it outdoors.</p><span className={styles.emptyHint}>Your route and report will appear once GPS readings arrive.</span></div>}
-   {points.length>0&&<p className={styles.notice}>GPS estimates. Moving time is not engine or working hours; stopped does not mean the engine is off. Lines join recorded points. Missing periods and separate sessions are not joined.</p>}
+ const [from,setFrom]=useState(''),[to,setTo]=useState('');
+ const [page,setPage]=useState<TrackingHistoryPage|null>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0);
+ const [expanded,setExpanded]=useState<SelectedEntry|null>(null),[exportEntry,setExportEntry]=useState<SelectedEntry|null>(null),[deleteEntry,setDeleteEntry]=useState<SelectedEntry|null>(null);
+ const [deleting,setDeleting]=useState(false),[deleteError,setDeleteError]=useState(''),[loadingMore,setLoadingMore]=useState(false);
+ const generation=useRef(0),moreAbort=useRef<AbortController|null>(null);
+ const endpoint=`/api/asset-register/${encodeURIComponent(assetId)}/tracking/history`;
+ const url=`${endpoint}?${new URLSearchParams({view:'entries',from,to})}`;
+ useEffect(()=>{const c=new AbortController();generation.current++;moreAbort.current?.abort();setLoadingMore(false);setBusy(true);setError('');
+  fetch(url,{signal:c.signal,cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load tracking history.');if(!c.signal.aborted)setPage(d);}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setBusy(false);});return()=>{c.abort();moreAbort.current?.abort();};
+ },[url,revision]);
+ useEffect(()=>{if(expanded||deleteEntry||exportEntry||loadingMore||(page?.items.length||0)>30)return;const timer=setInterval(()=>{if(document.visibilityState==='visible')setRevision(n=>n+1);},60000);return()=>clearInterval(timer);},[expanded,deleteEntry,exportEntry,loadingMore,page?.items.length]);
+ function changeDates(value:string,which:'from'|'to'){setPage(null);setExpanded(null);if(which==='from')setFrom(value);else setTo(value);}
+ async function loadMore(){
+  if(!page?.nextBefore||loadingMore)return;const current=generation.current,c=new AbortController();moreAbort.current=c;setLoadingMore(true);setError('');
+  try{const r=await fetch(url+'&'+new URLSearchParams({before:page.nextBefore,snapshotAt:page.snapshotAt}),{signal:c.signal,cache:'no-store'}),d:TrackingHistoryPage&{error?:string}=await r.json();if(!r.ok)throw Error(d.error||'Could not load earlier entries.');if(current===generation.current&&!c.signal.aborted)setPage(previous=>previous?{...d,items:[...previous.items,...d.items]}:d);}
+  catch(e){if(!c.signal.aborted)setError(e instanceof Error?e.message:'Please try again.');}finally{if(current===generation.current)setLoadingMore(false);}
+ }
+ const entryUrl=(selected:SelectedEntry)=>`${endpoint}?${new URLSearchParams({from:selected.entry.day,to:selected.entry.day,snapshotAt:selected.snapshotAt})}`;
+ async function confirmDelete(){
+  if(!deleteEntry||deleting)return;setDeleting(true);setDeleteError('');
+  try{const r=await fetch(`${endpoint}?${new URLSearchParams({day:deleteEntry.entry.day,snapshotAt:deleteEntry.snapshotAt})}`,{method:'DELETE'}),d=await r.json();if(!r.ok)throw Error(d.error||'Could not delete this entry.');setPage(null);setExpanded(null);setDeleteEntry(null);setRevision(n=>n+1);}
+  catch(e){setDeleteError(e instanceof Error?e.message:'Please try again.');}finally{setDeleting(false);}
+ }
+ return <section className={historyStyles.trackingHistory} aria-label="Saved tracking history">
+  {exportEntry&&createPortal(<ReportDownloadFlow title="Download tracking report" allLabel={title} assets={[{id:assetId,title,meta:`Tracking · ${dayLabel(exportEntry.entry.day)} · South African time`}]} lockedAssetId={assetId} skipTimeline instantDownload onClose={()=>setExportEntry(null)} onDownload={selection=>downloadAssetMapReport(entryUrl(exportEntry)+'&format='+selection.format,selection.format)}/>,document.body)}
+  {deleteEntry&&<AssetAccessSettingsDialog locationLayout title="Delete tracking entry?" assetTitle={title} onClose={()=>{if(!deleting)setDeleteEntry(null);}}><div className={historyStyles.deleteConfirm}>
+   <span className={historyStyles.deleteIcon}><Icon type="delete"/></span><strong>Delete this saved tracking entry?</strong>
+   <div className={historyStyles.deleteRecord}><strong>{dayLabel(deleteEntry.entry.day)}</strong><span>{deleteEntry.entry.readings.toLocaleString()} readings · {time(deleteEntry.entry.firstCapturedAt)} – {time(deleteEntry.entry.lastCapturedAt)}</span></div>
+   <p>These readings will be removed from tracking history and reports.<br/>Your connected phone, current map position and new readings stay unchanged.</p>
+   {deleteError&&<p role="alert" className={historyStyles.deleteError}>{deleteError}</p>}
+   <div className={historyStyles.confirmActions}><button type="button" disabled={deleting} onClick={()=>setDeleteEntry(null)}>Cancel</button><button type="button" className={historyStyles.deleteButton} disabled={deleting} onClick={()=>void confirmDelete()}>{deleting?'Deleting…':'Delete entry'}</button></div>
+  </div></AssetAccessSettingsDialog>}
+  <div className={historyStyles.historyToolbar}>{historyTabs}<div className={historyStyles.filters}><label>From<DateInput value={from} max={to||undefined} onValueChange={value=>changeDates(value,'from')}/></label><label>To<DateInput value={to} min={from||undefined} onValueChange={value=>changeDates(value,'to')}/></label></div></div>
+  <div className={historyStyles.trackingListHeading}><span>Saved automatically by day · South African time</span><button type="button" disabled={busy||loadingMore} onClick={()=>{setExpanded(null);setRevision(n=>n+1);}}><Icon type="refresh"/>Refresh</button></div>
+  {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Try again</button></p>}
+  {busy&&!page?<p role="status">Loading tracking history…</p>:page&&<>
+   {page.items.length?<ol className={`${historyStyles.list} ${historyStyles.trackingList}`}>{page.items.map((entry,index)=>{
+    const selected={entry,snapshotAt:page.snapshotAt},isOpen=expanded?.entry.day===entry.day;
+    return <li key={entry.day} data-selected={isOpen} aria-label={`Tracking entry ${dayLabel(entry.day)}`}>
+     <div className={historyStyles.row}><strong><span className={historyStyles.recordNumber}>{index+1}</span>{dayLabel(entry.day)}</strong><span className={historyStyles.badge}>Tracking</span></div>
+     <div className={historyStyles.recordBody}><div><p>{time(entry.firstCapturedAt)} – {time(entry.lastCapturedAt)}</p><small>{entry.readings.toLocaleString()} GPS {entry.readings===1?'reading':'readings'}</small></div><div className={historyStyles.recordActions}>
+      <button type="button" aria-expanded={isOpen} aria-controls={`tracking-route-${entry.day}`} onClick={()=>setExpanded(isOpen?null:selected)}><Icon type="route"/>{isOpen?'Hide route':'View route'}</button>
+      <button type="button" aria-haspopup="dialog" aria-label={`Download tracking report ${dayLabel(entry.day)}`} onClick={()=>setExportEntry(selected)}><Icon type="download"/>Download report</button>
+      <button type="button" className={historyStyles.deleteAction} aria-haspopup="dialog" aria-label={`Delete tracking entry ${dayLabel(entry.day)}`} onClick={()=>{setDeleteError('');setDeleteEntry(selected);}}><Icon type="delete"/>Delete</button>
+     </div></div>
+     {isOpen&&<div id={`tracking-route-${entry.day}`} className={historyStyles.trackingRoute}><TrackingRoute key={entryUrl(expanded)} url={entryUrl(expanded)}/></div>}
+    </li>;
+   })}</ol>:<div className={historyStyles.empty}><strong>No tracking entries in this period.</strong><p>Choose different dates, or activate the connected phone to start recording.</p></div>}
+   <div className={historyStyles.trackingListFooter}><span>{page.items.length} saved {page.items.length===1?'day':'days'}{page.nextBefore?' shown':''}</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
   </>}
  </section>;
+}
+function TrackingRoute({url}:{url:string}){
+ const [report,setReport]=useState<MovementReport|null>(null),[error,setError]=useState(''),[retry,setRetry]=useState(0);
+ useEffect(()=>{const c=new AbortController();setError('');fetch(url,{signal:c.signal,cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load this route.');if(!c.signal.aborted)setReport(d);}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[url,retry]);
+ const points=useMemo(()=>(report?.readings||[]).map(p=>({...p,label:`${date(p.capturedAt)} · ${p.speedKmh===null?'Speed unavailable':p.speedKmh.toFixed(1)+' km/h'} · Accuracy ${Math.round(p.accuracy)} m`})),[report]);
+ const stops=useMemo(()=>(report?.stops||[]).map((s,i)=>({...s,label:`Stop ${i+1} · ${Math.round(s.seconds/60)} min · ${date(s.from)} to ${date(s.to)}`})),[report]);
+ if(error)return <p role="alert">{error} <button type="button" onClick={()=>setRetry(n=>n+1)}>Try again</button></p>;
+ if(!report)return <p role="status">Loading route…</p>;
+ return <>
+  <div className={historyStyles.trackingStats}>{[[report.distanceKm.toFixed(2)+' km','Recorded distance'],[(report.movingSeconds/3600).toFixed(2)+' h','Moving time'],[(report.stationarySeconds/3600).toFixed(2)+' h','Stationary time'],[report.averageMovingKmh.toFixed(1)+' km/h','Average moving speed']].map(([value,label])=><div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
+  {points.length>0?<AssetLocationHistoryMap points={points} routeSegments={report.segments} stops={stops}/>:<p>No readings remain in this entry. Refresh history.</p>}
+  <div className={styles.routeLegend}><span>● Start / End</span><span>● Recorded GPS dots</span><span>● Numbered stops: 15+ minutes</span></div>
+  {stops.length>0&&<details><summary>Observed stops ({stops.length})</summary><div className={historyStyles.trackingStops}>{stops.map((s,i)=><p key={s.from}><strong>Stop {i+1} · {Math.round(s.seconds/60)} min</strong><br/>{date(s.from)} – {date(s.to)}</p>)}</div></details>}
+  <p className={historyStyles.disclaimer}>GPS estimates · {Math.round(report.gapSeconds/60)} minutes unobserved. Moving time is not engine or working hours. Lines join recorded dots; missing periods and separate sessions are not joined.{points.length>5000?' The map samples dots; reports retain all readings.':''}</p>
+ </>;
 }

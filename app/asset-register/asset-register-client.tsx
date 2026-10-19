@@ -21485,7 +21485,7 @@ export default function AssetRegisterClient({
                             aria-pressed={isSelected}
                             onClick={() => advanceProjectionStep({ inflationRatePct: rate })}
                           >
-                            <ProjectionIcon kind="inflation" /><strong>{rate}%</strong>
+                            <strong>{rate}%</strong><span className={styles.projectionPresetCaption}>per year</span>
                           </button>
                         );
                       })}
@@ -21558,10 +21558,12 @@ export default function AssetRegisterClient({
 
                 {projectionStep === 'result' && projectionResult ? (
                   <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
+                    <div className={styles.projectionValueHero}>
                     <span className={styles.projectionResultLabel}><ProjectionIcon kind="value" />Projected future price</span>
                     <strong>{pricingMoney(projectionResult.projected.retailExVat)}</strong>
                     <div className={styles.projectionResultBasis}><p>{pricingVatLabel} value for {projectionResult.targetYear}.</p><PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} /></div>
 
+                    </div>
                     <div className={styles.projectionSimpleMeta}>
                       <div><span className={styles.projectionMetaLabel}><ProjectionIcon kind="value" />Current saved value</span><strong>{pricingMoney(projectionAsset.value)}</strong></div>
                       <div>
@@ -21596,7 +21598,7 @@ export default function AssetRegisterClient({
               </div>
             </div>
             <div className={styles.pricingPreviewActions}>
-              <button type="button" className={styles.secondaryButton} onClick={projectionStep === 1 ? closeProjectionModal : goBackProjection}>{projectionStep === 1 ? 'Cancel' : 'Back'}</button>
+              <button type="button" className={styles.secondaryButton} onClick={projectionStep === 1 ? closeProjectionModal : goBackProjection}>{projectionStep === 1 ? 'Cancel' : projectionStep === 'result' ? 'Change answers' : 'Back'}</button>
               {projectionStep !== 'result' && projectionStep !== 4 ? <button type="button" className={styles.primaryButton} onClick={() => advanceProjectionStep()}>Continue</button> : null}
               {projectionStep === 'result' && projectionError ? <button type="button" className={styles.primaryButton} onClick={() => void requestProjection(projectionAsset, projectionForm)} disabled={isLoadingProjection}>Try again</button> : null}
               {projectionStep === 'result' && projectionResult ? <button type="button" className={styles.primaryButton} onClick={closeProjectionModal}>Done</button> : null}
