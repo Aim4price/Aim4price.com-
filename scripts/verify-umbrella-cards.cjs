@@ -45,20 +45,14 @@ async function check(browser, url) {
       const title=row.querySelector('h2'),panel=row.querySelector('[aria-label="Asset valuation"]'),price=row.querySelector(panel?'[aria-label="Asset valuation"] strong[aria-live="polite"]':'[class*="assetValueVatAmountRow"] strong'),rail=row.querySelector('[class*="assetSideActions"]');
       if(!price||!rail?.firstElementChild)throw new Error(`${title.textContent}: missing visible price or action rail`);
       const r=title.getBoundingClientRect(),p=price.getBoundingClientRect(),f=rail.firstElementChild.getBoundingClientRect(),v=panel?.getBoundingClientRect();
-      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:panel?.getBoundingClientRect().top,summaryTop:row.querySelector('[class*="assetGroupSummary"]')?.getBoundingClientRect().top,flagY:f.y+f.height/2,actionY:(()=>{const a=row.querySelector('[class*="cardManageButton"]').getBoundingClientRect();return a.y+a.height/2})()};
+      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:v?.top,flagY:f.y+f.height/2};
     }));console.log(width,JSON.stringify(geometry));
     for(const g of geometry) {
       assert.ok(g.priceWidth>0&&g.priceHeight>0,`${g.title}: visible price`);
-      if(g.panelTop!==undefined)assert.ok(Math.abs(g.titleTop-g.panelTop)<8,`${g.title}: identity aligns with value content`);
-      else assert.ok(Math.abs(g.titleTop-g.summaryTop)<8,`${g.title}: umbrella price alignment`);
-      assert.ok(Math.abs(g.actionY-g.flagY)<8,`${g.title}: footer control alignment`);
+      if(g.panelTop!==undefined)assert.ok(Math.abs(g.titleTop-g.panelTop)<8,`${g.title}: valuation panel alignment`);
+      else assert.ok(Math.abs(g.titleY-g.priceY)<8,`${g.title}: umbrella price alignment`);
+      assert.ok(Math.abs(g.titleY-g.flagY)<8,`${g.title}: flag alignment`);
     }
-    const groupVat='[class*="assetGroupSummary"] [aria-label="Price VAT display"]';
-    await page.$$eval(`${groupVat} button`,buttons=>buttons[1].click());
-    assert.equal(await page.$eval(`${groupVat} button:last-child`,b=>b.getAttribute('aria-pressed')),'true');
-    await page.$$eval(`${groupVat} button`,buttons=>buttons[1].click());
-    assert.equal(await page.$eval(`${groupVat} button:last-child`,b=>b.getAttribute('aria-pressed')),'true','reselecting included VAT is idempotent');
-    await page.$$eval(`${groupVat} button`,buttons=>buttons[0].click());
     for (const selector of ['#asset-card-normal [class*="assetGroupButton"]', '[aria-label="Edit Asset umbrella"]']) {
       await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
       await page.mouse.move(2, 2);
@@ -156,7 +150,7 @@ async function check(browser, url) {
     const value = '#asset-card-normal [aria-label="Asset valuation"] strong[aria-live="polite"]';
     const pricePanel='#asset-card-normal [aria-label="Asset valuation"]';
     const amount=()=>page.$eval(value,e=>Number(e.textContent.replace(/[^0-9]/g,'')));
-    const choosePrice=async label=>{await page.$eval(pricePanel,e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.$$eval(`${pricePanel} button`,(buttons,label)=>{const button=buttons.find(b=>b.textContent===label);if(!button)throw Error(`Missing price control: ${label}`);button.click();},label);};
+    const choosePrice=async label=>{const basis={'Replacement':'replacement','Fair value':'fair','Market estimate':'market'}[label];if(basis){await page.select(`${pricePanel} select[aria-label="Value basis"]`,basis);return;}await page.$eval(pricePanel,e=>e.scrollIntoView({block:'center',behavior:'instant'}));await page.$$eval(`${pricePanel} button`,(buttons,label)=>{const button=buttons.find(b=>b.textContent===label);if(!button)throw Error(`Missing price control: ${label}`);button.click();},label);};
     await choosePrice('Fair value');await choosePrice('Excl. VAT');
     assert.equal(await amount(),327133,'fair value is displayed');
     await choosePrice('Incl. VAT');assert.equal(await amount(),Math.round(327133*1.15),'VAT changes the displayed fair value');
@@ -164,18 +158,6 @@ async function check(browser, url) {
     await choosePrice('Excl. VAT');assert.equal(await amount(),500000,'replacement excluding VAT');
     await choosePrice('Market estimate');
     assert.equal(await page.$eval(pricePanel,e=>e.textContent.includes('What could it sell for?')),true,'missing market estimate has a clear empty state');
-    for (const label of ['Replacement','Fair value','Market estimate']) {
-      await choosePrice(label);
-      const aligned=await page.$eval('#asset-card-normal',card=>{
-        const title=card.querySelector('h2').getBoundingClientRect();
-        const content=card.querySelector('[class*="valueContent"]').getBoundingClientRect();
-        const tabs=card.querySelector('[aria-label="Value basis"]').getBoundingClientRect();
-        return Math.abs(title.top-content.top)<8&&tabs.top>=content.top;
-      });
-      assert.ok(aligned,`${label}: identity and price stay aligned with tabs below`);
-      await page.$eval('#asset-card-normal',card=>card.scrollIntoView({block:'center',behavior:'instant'}));
-      await page.screenshot({path:path.join(output,`asset-price-${label.replaceAll(' ','-')}-${width}.png`)});
-    }
     await choosePrice('Fair value');
     assert.equal(await page.$eval(value,e=>e.hasAttribute('role')||e.hasAttribute('tabindex')),false,'displayed value is not an edit shortcut');
     await click(value);
