@@ -1,4 +1,6 @@
 'use client';
+import BudgetDetailIcon from '../../components/BudgetDetailIcon';
+import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
@@ -3906,7 +3908,7 @@ export default function MyInvoicesClient({
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget"><span aria-hidden="true">×</span></button>
               </div>
 
-              <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
+              <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body, budgetWizardStep === 4 ? reviewStyles.body : ''].join(' ')}>
 
                 {budgetWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-coverage-title">
@@ -4049,16 +4051,16 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {budgetWizardStep === 4 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-review-title">
+                  <section className={reviewStyles.panel} aria-labelledby="budget-review-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                       <span className={wizardStyles.panelNumber} aria-hidden="true">4</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-review-title" tabIndex={-1}>Review your budget</h3>
-                      <p>Check the details before saving.</p>
+                      
                     </div>
 
-                    <dl className={styles.budgetReviewGrid}>
+                    <dl className={reviewStyles.grid}>
                       <div>
-                        <dt>Assets</dt>
+                        <dt><BudgetDetailIcon kind="asset" />Assets</dt>
                         <dd title={selectedBudgetAssets.map((asset) => asset.title).join(', ')}>
                           {selectedBudgetAssets.length
                             ? selectedBudgetAssets.map((asset) => asset.title).join(', ')
@@ -4068,19 +4070,19 @@ export default function MyInvoicesClient({
                         </dd>
                       </div>
                       <div>
-                        <dt>Period</dt>
+                        <dt><BudgetDetailIcon kind="calendar" />Period</dt>
                         <dd>{budgetDraft.period === 'monthly' ? 'Monthly' : 'Annual'}</dd>
                       </div>
                       <div>
-                        <dt>Budget</dt>
+                        <dt><BudgetDetailIcon kind="budget" />Budget</dt>
                         <dd>{formatMoney(budgetAmountValue)}</dd>
                       </div>
                       <div>
-                        <dt>Warning level</dt>
+                        <dt><BudgetDetailIcon kind="alert" />Warning level</dt>
                         <dd>{budgetDraft.warningPercent}%</dd>
                       </div>
                       <div>
-                        <dt>Fuel slips</dt>
+                        <dt><BudgetDetailIcon kind="fuel" />Fuel slips</dt>
                         <dd>{budgetDraft.includeFuelSlipCosts ? 'Counted' : 'Not counted'}</dd>
                       </div>
                     </dl>
