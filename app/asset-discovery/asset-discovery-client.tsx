@@ -1,4 +1,5 @@
 "use client";
+import WorkspaceViewSwitch from "../../components/WorkspaceViewSwitch";
 import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import dialogStyles from "../../components/AccountDialog.module.css";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
@@ -8,7 +9,6 @@ import website_mobileStyles from '../../components/website-styles/FieldManagerCo
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../components/WorkspacePrimitives";
 import LeadPhotoViewerModal from "../../components/LeadPhotoViewerModal";
@@ -1807,34 +1807,18 @@ export default function AssetDiscoveryClient({
     }
   }
 
-  function renderDiscoveryViewSwitch() {
-    if (!allowRecentAdverts) return null;
-
+  function renderDiscoveryHeader() {
+    const advertised = activeDiscoveryView === "recently-advertised";
     return (
-      <section className={styles.discoveryViewSwitch} aria-label="Choose a Discovery view">
-        <div className={styles.discoveryViewSwitchCopy}>
-          <strong>Explore more equipment</strong>
-          <span>
-            Browse available assets or recent Marketplace adverts.
-          </span>
-        </div>
-        <div className={styles.discoveryViewSwitchButtons} role="group" aria-label="Discovery views">
-          <button
-            type="button"
-            aria-pressed={activeDiscoveryView === "discovery"}
-            className={activeDiscoveryView === "discovery" ? styles.discoveryViewSwitchActive : ""}
-            onClick={() => changeDiscoveryView("discovery")}
-          >
-            Available assets
-          </button>
-          <button
-            type="button"
-            aria-pressed={activeDiscoveryView === "recently-advertised"}
-            className={activeDiscoveryView === "recently-advertised" ? styles.discoveryViewSwitchActive : ""}
-            onClick={() => changeDiscoveryView("recently-advertised")}
-          >
-            Recently advertised
-          </button>
+      <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
+        <div className={styles.discoveryTitleRow}>
+          <h1>{advertised ? "Recently advertised" : compactAppMode ? "Discovery" : "Discover Assets"}</h1>
+          {allowRecentAdverts ? (
+            <WorkspaceViewSwitch
+              label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}
+              onClick={() => changeDiscoveryView(advertised ? "discovery" : "recently-advertised")}
+            />
+          ) : null}
         </div>
       </section>
     );
@@ -1843,15 +1827,7 @@ export default function AssetDiscoveryClient({
   if (activeDiscoveryView === "recently-advertised" && allowRecentAdverts) {
     return (
       <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
-        {compactAppMode ? (
-          <div className={`${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}`}>
-            <h1>Discovery</h1>
-            <p>Find equipment through owner assets and recent Marketplace advertisers.</p>
-          </div>
-        ) : (
-          <WorkspaceTitlePanel title="Discover Assets" />
-        )}
-        {renderDiscoveryViewSwitch()}
+        {renderDiscoveryHeader()}
         <RecentlyAdvertisedClient compactAppMode={compactAppMode} />
       </section>
     );
@@ -1870,9 +1846,7 @@ export default function AssetDiscoveryClient({
         className={`${workspaceStyles.shell} ${styles.shell}`}
         aria-label="Discovery participation required"
       >
-        <WorkspaceTitlePanel title="Discover Assets" />
-
-        {renderDiscoveryViewSwitch()}
+        {renderDiscoveryHeader()}
 
         {notice ? (
           <div
@@ -1991,20 +1965,7 @@ export default function AssetDiscoveryClient({
 
   return (
     <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
-      {compactAppMode ? (
-        <div className={`${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}`}>
-          <h1>{"Discovery"}</h1>
-          <p>
-            {"Browse available machinery and request access from owners."}
-          </p>
-        </div>
-      ) : (
-        <WorkspaceTitlePanel
-          title={"Discover Assets"}
-        />
-      )}
-
-      {renderDiscoveryViewSwitch()}
+      {renderDiscoveryHeader()}
 
       <section
         className={styles.controlsPanel}
