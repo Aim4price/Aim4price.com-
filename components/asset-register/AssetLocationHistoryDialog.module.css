@@ -66,7 +66,7 @@
 /* One compact view switch, balanced with the date filters. */
 .historyToolbar { justify-content:flex-start; gap:1.5rem; padding:.25rem 0 1rem; }
 .historyToolbar > .filters { max-width:none; flex:1; }
-.historyToolbar > .historySwitch { display:flex; align-items:stretch; gap:.25rem; padding:.3rem; border:1px solid #cfdfd7; border-radius:1rem; background:#edf4f0; }
+.historySwitch { display:flex; align-items:stretch; gap:.25rem; padding:.3rem; border:1px solid #cfdfd7; border-radius:1rem; background:#edf4f0; }
 .historySwitch button { display:inline-flex; align-items:center; justify-content:center; gap:.55rem; min-height:2.9rem; padding:.7rem 1rem; border:1px solid transparent; border-radius:.75rem; background:transparent; color:#46695b; font:inherit; font-size:.9rem; font-weight:750; cursor:pointer; white-space:nowrap; }
 .historySwitch button[aria-pressed="true"] { color:#fff; background:#185d46; border-color:#185d46; box-shadow:0 3px 8px #174c3820; }
 .historySwitch button:hover:not([aria-pressed="true"]) { background:#fff; color:#185d46; }
@@ -98,8 +98,8 @@
  :global(:where(html:not(:has([data-website-canvas])))) .trackingList .recordActions { width:100%; justify-content:flex-start; }
 }
 @media(max-width:600px) {
- :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch { display:grid; grid-template-columns:1fr 1fr; width:100%; min-width:0; box-sizing:border-box; }
- :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch button { min-width:0; padding:.65rem .35rem; gap:.35rem; font-size:.8rem; white-space:normal; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historySwitch { display:grid; grid-template-columns:1fr 1fr; width:100%; min-width:0; box-sizing:border-box; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historySwitch button { min-width:0; padding:.65rem .35rem; gap:.35rem; font-size:.8rem; white-space:normal; }
  :global(:where(html:not(:has([data-website-canvas])))) .trackingList .recordActions { display:grid; grid-template-columns:1fr; }
 }
 
@@ -107,8 +107,8 @@
 .historyToolbar { display:grid; grid-template-columns:minmax(0,1fr) 24rem; align-items:flex-end; gap:1rem; padding:0 0 .85rem; margin:0; }
 .historyToolbar > .filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; min-width:0; }
 .historyToolbar > .filters label { min-width:0; gap:.4rem; }
-.historyToolbar > .historySwitch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.25rem; width:100%; height:3.2rem; padding:.25rem; box-sizing:border-box; border-radius:.9rem; }
-.historyToolbar > .historySwitch button { min-width:0; min-height:0; height:100%; padding:.45rem .65rem; box-sizing:border-box; }
+.historySwitch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.25rem; width:100%; height:3.2rem; padding:.25rem; box-sizing:border-box; border-radius:.9rem; }
+.historySwitch button { min-width:0; min-height:0; height:100%; padding:.45rem .65rem; box-sizing:border-box; }
 .trackingListHeading .refreshButton { min-height:2.8rem; min-width:8.6rem; padding:.35rem .8rem .35rem .4rem; gap:.6rem; background:#fff; }
 .refreshIcon { display:grid; place-items:center; width:2rem; height:2rem; border-radius:.6rem; background:#e7f2ec; color:#176348; }
 .refreshIcon svg { width:1.2rem; height:1.2rem; stroke-width:2; }
@@ -119,9 +119,55 @@
 @keyframes historyRefresh { to { transform:rotate(360deg); } }
 @media(max-width:720px) {
  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar { grid-template-columns:1fr; gap:.85rem; }
- :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch { height:auto; min-height:3.2rem; }
- :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch button { min-height:2.7rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historySwitch { height:auto; min-height:3.2rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historySwitch button { min-height:2.7rem; }
 }
 @media(max-width:480px) {
  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .filters { grid-template-columns:1fr; gap:.65rem; }
+}
+
+/* Compact daily entries, with explicit capture times and a clear route action. */
+.historyTypeField { display:grid; gap:.4rem; min-width:0; }
+.historyTypeField > span { font-size:.85rem; font-weight:750; }
+.historyToolbar { grid-template-columns:minmax(0,1fr) 24rem; }
+.historyTypeField .historySwitch { border:1px solid #cfdfd7; background:#edf4f0; }
+.recordedHeading { display:grid; gap:.35rem; }
+.recordedHeading h3 { display:flex; align-items:center; gap:.65rem; margin:0; color:#173e30; font-size:1.1rem; font-weight:800; }
+.recordedHeading p { margin:0; font-size:.85rem; }
+.dayCount { display:inline-grid; place-items:center; min-width:1.8rem; height:1.8rem; padding:0 .3rem; box-sizing:border-box; border-radius:999px; background:#eaf3ee; font-size:.8rem; }
+.trackingListHeading .refreshButton { min-width:0; min-height:2.8rem; padding:.6rem .85rem; }
+.refreshIcon { width:1.2rem; height:1.2rem; background:transparent; border-radius:0; }
+.trackingEntryRow { display:grid; grid-template-columns:minmax(12rem,1fr) auto auto; align-items:center; gap:1.1rem; }
+.trackingEntryIdentity { display:flex; align-items:center; gap:.8rem; min-width:0; }
+.dayIcon { display:grid; place-items:center; width:2.7rem; height:2.7rem; border-radius:.7rem; background:#eaf4ee; color:#1b6148; flex-shrink:0; }
+.dayIcon svg { width:1.35rem; height:1.35rem; }
+.trackingEntryIdentity > div { display:grid; gap:.35rem; min-width:0; }
+.trackingEntryIdentity strong { font-size:.9rem; line-height:1.4; color:#173e30; }
+.trackingEntryIdentity > div > span { color:#61736c; font-size:.78rem; line-height:1.4; }
+.trackingEntryTimes { display:flex; margin:0; }
+.trackingEntryTimes > div { display:grid; gap:.35rem; padding:0 1rem; border-left:1px solid #dce7e1; }
+.trackingEntryTimes dt { font-size:.78rem; color:#61736c; }
+.trackingEntryTimes dd { margin:0; font-size:.95rem; font-weight:750; color:#173e30; }
+.trackingEntryRow .recordActions { margin:0; flex-wrap:nowrap; gap:.55rem; }
+.trackingEntryRow .recordActions button { min-height:2.9rem; padding:.65rem .8rem; white-space:nowrap; }
+.trackingEntryRow .recordActions .viewRouteAction { background:#176348; border-color:#176348; color:#fff; }
+.trackingEntryRow .viewRouteAction:hover { background:#104f39; }
+.trackingEntryRow .recordActions .trackingDeleteAction { min-width:2.9rem; padding:.65rem; background:#fff; }
+.trackingEntryRow .trackingDeleteAction:hover { background:#fff0ed; }
+.trackingListFooter { font-size:.78rem; line-height:1.5; }
+@media(max-width:1000px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryRow { grid-template-columns:minmax(0,1fr) auto; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryRow .recordActions { grid-column:1/-1; justify-content:flex-end; }
+}
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryRow { grid-template-columns:1fr; gap:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryTimes { gap:1.5rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryTimes > div { padding:0; border:0; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryRow .recordActions { display:grid; grid-template-columns:1fr auto; }
+ :global(:where(html:not(:has([data-website-canvas])))) .trackingEntryRow .viewRouteAction { grid-column:1/-1; }
+}
+.historyToolbar .filters button[aria-label="Open calendar"] { background:transparent; color:#185d46; border-color:transparent; box-shadow:none; }
+.historyToolbar .filters button[aria-label="Open calendar"]:hover { background:#e4f0e9; }
+@media(max-width:720px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar { grid-template-columns:1fr; }
 }

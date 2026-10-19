@@ -13,7 +13,7 @@ import historyStyles from './AssetLocationHistoryDialog.module.css';
 const date=(v:string)=>new Date(v).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'});
 const dayLabel=(v:string)=>new Date(v+'T12:00:00+02:00').toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'long',year:'numeric'});
 const time=(v:string)=>new Date(v).toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg',hour:'2-digit',minute:'2-digit'});
-function Icon({type}:{type:'route'|'download'|'delete'|'refresh'}){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{type==='route'?<><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h8"/></>:<path d={type==='download'?'M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4':type==='delete'?'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6':'M3 12a9 9 0 0 1 9-9c2.5 0 4.9 1 6.7 2.8L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9c-2.5 0-4.9-1-6.7-2.8L3 16M8 16H3v5'}/>}</svg>;}
+function Icon({type}:{type:'route'|'download'|'delete'|'refresh'|'calendar'}){return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{type==='calendar'?<><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18M8 15h2m4 0h2m-8 3h2"/></>:type==='route'?<><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h8"/></>:<path d={type==='download'?'M12 3v12m-4-4 4 4 4-4M4 17v4h16v-4':type==='delete'?'M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6':'M3 12a9 9 0 0 1 9-9c2.5 0 4.9 1 6.7 2.8L21 8M21 3v5h-5M21 12a9 9 0 0 1-9 9c-2.5 0-4.9-1-6.7-2.8L3 16M8 16H3v5'}/>}</svg>;}
 type SelectedEntry={entry:TrackingHistoryEntry;snapshotAt:string};
 export default function AssetMovementHistory({assetId,title='Asset',historyTabs}:{assetId:string;title?:string;historyTabs?:ReactNode}){
  const [from,setFrom]=useState(''),[to,setTo]=useState('');
@@ -49,22 +49,25 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
    <div className={historyStyles.confirmActions}><button type="button" disabled={deleting} onClick={()=>setDeleteEntry(null)}>Cancel</button><button type="button" className={historyStyles.deleteButton} disabled={deleting} onClick={()=>void confirmDelete()}>{deleting?'Deleting…':'Delete entry'}</button></div>
   </div></AssetAccessSettingsDialog>}
   <div className={historyStyles.historyToolbar}><div className={historyStyles.filters}><label>From<DateInput value={from} max={to||undefined} onValueChange={value=>changeDates(value,'from')}/></label><label>To<DateInput value={to} min={from||undefined} onValueChange={value=>changeDates(value,'to')}/></label></div>{historyTabs}</div>
-  <div className={historyStyles.trackingListHeading}><span>Saved automatically by day · South African time</span><button type="button" className={historyStyles.refreshButton} aria-busy={busy||loadingMore} disabled={busy||loadingMore} onClick={()=>{setExpanded(null);setRevision(n=>n+1);}}><span className={historyStyles.refreshIcon}><Icon type="refresh"/></span>{busy||loadingMore?'Refreshing…':'Refresh'}</button></div>
+  <div className={historyStyles.trackingListHeading}><div className={historyStyles.recordedHeading}><h3>Recorded days {page&&<span className={historyStyles.dayCount}>{page.items.length}{page.nextBefore?'+':''}</span>}</h3><p>Newest first · South African time</p></div><button type="button" className={historyStyles.refreshButton} aria-busy={busy||loadingMore} disabled={busy||loadingMore} onClick={()=>{setExpanded(null);setRevision(n=>n+1);}}><span className={historyStyles.refreshIcon}><Icon type="refresh"/></span>{busy||loadingMore?'Refreshing…':'Refresh'}</button></div>
   {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Try again</button></p>}
   {busy&&!page?<p role="status">Loading tracking history…</p>:page&&<>
-   {page.items.length?<ol className={`${historyStyles.list} ${historyStyles.trackingList}`}>{page.items.map((entry,index)=>{
+   {page.items.length?<ol className={`${historyStyles.list} ${historyStyles.trackingList}`}>{page.items.map(entry=>{
     const selected={entry,snapshotAt:page.snapshotAt},isOpen=expanded?.entry.day===entry.day;
     return <li key={entry.day} data-selected={isOpen} aria-label={`Tracking entry ${dayLabel(entry.day)}`}>
-     <div className={historyStyles.row}><strong><span className={historyStyles.recordNumber}>{index+1}</span>{dayLabel(entry.day)}</strong><span className={historyStyles.badge}>Tracking</span></div>
-     <div className={historyStyles.recordBody}><div><p>{time(entry.firstCapturedAt)} – {time(entry.lastCapturedAt)}</p><small>{entry.readings.toLocaleString()} GPS {entry.readings===1?'reading':'readings'}</small></div><div className={historyStyles.recordActions}>
-      <button type="button" aria-expanded={isOpen} aria-controls={`tracking-route-${entry.day}`} onClick={()=>setExpanded(isOpen?null:selected)}><Icon type="route"/>{isOpen?'Hide route':'View route'}</button>
-      <button type="button" aria-haspopup="dialog" aria-label={`Download tracking report ${dayLabel(entry.day)}`} onClick={()=>setExportEntry(selected)}><Icon type="download"/>Download report</button>
-      <button type="button" className={historyStyles.deleteAction} aria-haspopup="dialog" aria-label={`Delete tracking entry ${dayLabel(entry.day)}`} onClick={()=>{setDeleteError('');setDeleteEntry(selected);}}><Icon type="delete"/>Delete</button>
-     </div></div>
+     <div className={historyStyles.trackingEntryRow}>
+      <div className={historyStyles.trackingEntryIdentity}><span className={historyStyles.dayIcon}><Icon type="calendar"/></span><div><strong>{dayLabel(entry.day)}</strong><span>{entry.readings.toLocaleString()} recorded GPS {entry.readings===1?'point':'points'}</span></div></div>
+      <dl className={historyStyles.trackingEntryTimes}><div><dt>First point</dt><dd>{time(entry.firstCapturedAt)}</dd></div><div><dt>Last point</dt><dd>{time(entry.lastCapturedAt)}</dd></div></dl>
+      <div className={historyStyles.recordActions}>
+       <button type="button" className={historyStyles.viewRouteAction} aria-expanded={isOpen} aria-controls={`tracking-route-${entry.day}`} onClick={()=>setExpanded(isOpen?null:selected)}><Icon type="route"/>{isOpen?'Hide route':'View route'}</button>
+       <button type="button" aria-haspopup="dialog" aria-label={`Download tracking report ${dayLabel(entry.day)}`} onClick={()=>setExportEntry(selected)}><Icon type="download"/>Download report</button>
+       <button type="button" className={`${historyStyles.deleteAction} ${historyStyles.trackingDeleteAction}`} aria-haspopup="dialog" aria-label={`Delete tracking entry ${dayLabel(entry.day)}`} title="Delete entry" onClick={()=>{setDeleteError('');setDeleteEntry(selected);}}><Icon type="delete"/></button>
+      </div>
+     </div>
      {isOpen&&<div id={`tracking-route-${entry.day}`} className={historyStyles.trackingRoute}><TrackingRoute key={entryUrl(expanded)} url={entryUrl(expanded)}/></div>}
     </li>;
    })}</ol>:<div className={historyStyles.empty}><strong>No tracking entries in this period.</strong><p>Choose different dates, or activate the connected phone to start recording.</p></div>}
-   <div className={historyStyles.trackingListFooter}><span>{page.items.length} saved {page.items.length===1?'day':'days'}{page.nextBefore?' shown':''}</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
+   <div className={historyStyles.trackingListFooter}><span>Each day groups the GPS points received from the equipment phone.</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
   </>}
  </section>;
 }
