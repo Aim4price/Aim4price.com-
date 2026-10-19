@@ -664,32 +664,38 @@
   align-content: start;
   gap: 0.76rem;
   padding: 0.85rem;
-  padding-right: 0.74rem;
+  padding-right: 1rem;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(23, 117, 83, 0.46) rgba(235, 243, 239, 0.8);
+  scrollbar-width: auto;
+  scrollbar-color: #4d8a73 #e6efea;
 }
 
 .assetList::-webkit-scrollbar {
-  width: 0.5rem;
+  width: 16px;
 }
 
 .assetList::-webkit-scrollbar-track {
   margin-block: 0.85rem;
   border-radius: 999px;
-  background: rgba(235, 243, 239, 0.8);
+  background: #e6efea;
 }
 
 .assetList::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
+  border: 3px solid #e6efea;
   border-radius: 999px;
-  background: rgba(23, 117, 83, 0.46);
+  background: #4d8a73;
   background-clip: padding-box;
 }
 
 .assetList::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(23, 117, 83, 0.7);
+  background-color: #236449;
 }
+
+@supports selector(::-webkit-scrollbar) {
+  .assetList { scrollbar-width: auto; scrollbar-color: auto; }
+}
+.assetList::-webkit-scrollbar-thumb:active { background-color: #154c38; }
+.assetList::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 
 .emptyState {
   margin: 0;

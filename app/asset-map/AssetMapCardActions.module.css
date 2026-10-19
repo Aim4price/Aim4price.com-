@@ -88,13 +88,25 @@
 .status[data-warning="true"] { border-color:#ead9b9; background:#fff9ef; }
 .status[data-warning="true"] .statusDot { background:#a56a19; }
 .serial { margin:0; font-size:.75rem; color:#627568; }
-.options { display:grid; gap:.8rem; }
-.options button,.options a { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid #d3e3d9; border-radius:1rem; background:#f5faf7; color:#214d39; text-decoration:none; text-align:left; font:inherit; cursor:pointer; }
-.options svg { width:1.5rem; height:1.5rem; flex-shrink:0; }
-.options span { display:grid; gap:.35rem; }
-.options small { color:#607467; font-size:.85rem; }
-.options :is(button,a):hover { background:#eaf4ee; border-color:#9fc1ad; }
-.options :is(button,a):focus-visible { outline:3px solid #64ad91; outline-offset:3px; }
+.options { display:grid; gap:.9rem; padding:.15rem 0 .25rem; }
+.options > :is(button,a) {
+  --option-ink:#185b43; --option-tint:#edf7f1; --option-line:#c4dfd0; --option-icon:#d6eddf;
+  display:flex; align-items:center; gap:1rem; min-height:5.25rem; box-sizing:border-box;
+  padding:1rem 1.2rem; border:1px solid var(--option-line); border-radius:1.1rem;
+  background:linear-gradient(110deg,var(--option-tint),#fff); color:var(--option-ink);
+  text-decoration:none; text-align:left; font:inherit; cursor:pointer;
+  box-shadow:0 4px 12px rgba(23,55,42,.035);
+  transition:box-shadow 160ms ease,border-color 160ms ease;
+}
+.options > [data-tone="blue"] { --option-ink:#245b80; --option-tint:#eef5fc; --option-line:#c6dced; --option-icon:#dcebf9; }
+.options > [data-tone="amber"] { --option-ink:#80591f; --option-tint:#fcf7ed; --option-line:#e8d8b7; --option-icon:#f4e6c8; }
+.options .optionIcon { display:grid; place-items:center; width:3rem; height:3rem; flex:0 0 auto; border-radius:.9rem; background:var(--option-icon); box-shadow:inset 0 0 0 1px rgba(255,255,255,.65); }
+.options svg { width:1.5rem; height:1.5rem; }
+.options span:not(.optionIcon) { display:grid; gap:.3rem; min-width:0; }
+.options strong { font-size:1rem; line-height:1.35; font-weight:800; }
+.options small { color:#5d6e69; font-size:.85rem; line-height:1.45; }
+.options > :is(button,a):hover { border-color:var(--option-ink); box-shadow:0 6px 18px rgba(23,55,42,.09); }
+.options > :is(button,a):focus-visible { outline:3px solid var(--option-ink); outline-offset:3px; }
 @media(max-width:600px) {
  :global(:where(html:not(:has([data-website-canvas])))) .primaryRow { grid-template-columns:1fr; }
 }
