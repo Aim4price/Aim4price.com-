@@ -259,8 +259,40 @@ export async function trackingStatus(ownerId: string, assetId: string) {
 export async function latestTrackingPositions(ownerId: string) {
   await ensureTrackingTables();
   const result = await getDb().query(
-    `SELECT d.asset_id,d.active,d.last_seen_at,p.* FROM public.asset_tracking_devices d JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id LEFT JOIN LATERAL(SELECT latitude,longitude,captured_at,motion FROM public.asset_tracking_points WHERE device_id=d.id AND accuracy<=50 ORDER BY captured_at DESC LIMIT 1)p ON true WHERE d.owner_id=$1 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL`,
+    `SELECT assets.asset_id,current_phone.id AS connected_device_id,current_phone.active,current_phone.last_seen_at,p.*
+     FROM (SELECT DISTINCT d.asset_id FROM public.asset_tracking_devices d
+       JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id
+       WHERE d.owner_id=$1 AND d.paired_at IS NOT NULL) assets
+     LEFT JOIN LATERAL (
+       SELECT d.id,d.active,d.last_seen_at FROM public.asset_tracking_devices d
+       WHERE d.asset_id=assets.asset_id AND d.owner_id=$1 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL
+       ORDER BY d.paired_at DESC,d.id DESC LIMIT 1
+     ) current_phone ON true
+     LEFT JOIN LATERAL (
+       SELECT p.latitude,p.longitude,p.captured_at,p.motion,p.device_id
+       FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id
+       WHERE d.asset_id=assets.asset_id AND d.owner_id=$1 AND d.paired_at IS NOT NULL AND p.accuracy<=50
+       ORDER BY p.captured_at DESC,p.received_at DESC,p.sample_id DESC LIMIT 1
+     ) p ON true`,
     [ownerId],
   );
   return new Map(result.rows.map((row) => [row.asset_id, row]));
+}
+
+/** Disconnect credentials only: locations and history belong to the asset. */
+export async function disconnectTrackingDevice(ownerId: string, assetId: string) {
+  await ensureTrackingTables();
+  const client = await getDb().connect();
+  try {
+    await client.query("BEGIN");
+    const owned = await client.query("SELECT id FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE", [assetId, ownerId]);
+    if (!owned.rowCount) throw Error("ASSET_UNAVAILABLE");
+    await client.query("UPDATE public.asset_tracking_devices SET revoked_at=now(),active=false,pair_hash=NULL,pair_expires_at=NULL WHERE asset_id=$1 AND owner_id=$2 AND revoked_at IS NULL", [assetId, ownerId]);
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }

@@ -270,3 +270,41 @@ test("diagnostics are bounded and older phones remain compatible",()=>{
  const bad=api.validateUpload({...body,diagnostics:{pending:-2,rejectedFixes:NaN,accuracy:Infinity,provider:'injected',version:'<script>',lastGpsAt:'bad'}},now).diagnostics;
  assert.equal(bad,null);
 });
+
+test('disconnect, phone failure and replacement retain asset location and every phone’s readings', async () => {
+  const assetId=crypto.randomUUID();
+  await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[assetId,'lifecycle-owner','Replacement test']);
+  const pair=async()=>api.pairDevice((await api.createPairing('lifecycle-owner',assetId)).replaceAll('-',''),'Equipment phone');
+  const old=await pair();
+  const captured=Date.now()-60000;
+  const reading=(time,longitude,accuracy=5)=>({id:crypto.randomUUID(),sessionId:crypto.randomUUID(),capturedAt:new Date(time).toISOString(),latitude:-33,longitude,accuracy,motion:'moving'});
+  const upload=(points,active=true)=>api.validateUpload({points,active,stateAt:new Date().toISOString()});
+  await api.ingestTracking(old.token,upload([reading(captured,18)]));
+  await api.ingestTracking(old.token,upload([],false));
+  let position=(await api.latestTrackingPositions('lifecycle-owner')).get(assetId);
+  assert.equal(position.longitude,18);assert.equal(position.active,false);
+  await assert.rejects(api.disconnectTrackingDevice('intruder',assetId),/ASSET_UNAVAILABLE/);
+  await api.disconnectTrackingDevice('lifecycle-owner',assetId);
+  position=(await api.latestTrackingPositions('lifecycle-owner')).get(assetId);
+  assert.equal(position.longitude,18);assert.equal(position.connected_device_id,null);
+  assert.equal(await api.trackingStatus('lifecycle-owner',assetId),null);
+  await assert.rejects(api.ingestTracking(old.token,upload([])),/DEVICE_REVOKED/);
+  // An unused pairing code must not hide the saved map location.
+  await api.createPairing('lifecycle-owner',assetId);
+  assert.equal((await api.latestTrackingPositions('lifecycle-owner')).get(assetId).longitude,18);
+  const replacement=await pair();
+  position=(await api.latestTrackingPositions('lifecycle-owner')).get(assetId);
+  assert.equal(position.connected_device_id,replacement.deviceId);assert.equal(position.longitude,18);
+  // Old and poor GPS fixes cannot replace the asset's reliable position.
+  await api.ingestTracking(replacement.token,upload([reading(captured-20000,17),reading(captured+10000,19,100)]));
+  assert.equal((await api.latestTrackingPositions('lifecycle-owner')).get(assetId).longitude,18);
+  await api.ingestTracking(replacement.token,upload([reading(captured+20000,18.1)]));
+  await db.query("UPDATE asset_tracking_devices SET last_seen_at=now()-interval '1 day' WHERE id=$1",[replacement.deviceId]);
+  position=(await api.latestTrackingPositions('lifecycle-owner')).get(assetId);
+  assert.equal(position.longitude,18.1);
+  await api.disconnectTrackingDevice('lifecycle-owner',assetId);
+  assert.equal((await api.latestTrackingPositions('lifecycle-owner')).get(assetId).longitude,18.1);
+  const counts=await db.query('SELECT count(*)::int AS points,count(DISTINCT p.device_id)::int AS phones FROM asset_tracking_points p JOIN asset_tracking_devices d ON d.id=p.device_id WHERE d.asset_id=$1',[assetId]);
+  assert.deepEqual(counts.rows[0],{points:4,phones:2});
+  assert.equal((await api.latestTrackingPositions('intruder')).has(assetId),false);
+});
