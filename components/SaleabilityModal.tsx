@@ -96,7 +96,18 @@ function answersAreComplete(value: Partial<SaleabilityRefinementAnswers>): value
 
 type SaleIconKind = 'location' | 'assets' | 'buyers' | 'demand' | 'model' | 'time' | 'priority';
 function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
+  if (kind === 'assets' && value && value !== 'unknown') {
+    const count = ({ none: 0, one_to_three: 1, four_to_ten: 3, more_than_ten: 4 } as Record<string, number>)[value] ?? 4;
+    return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">{count === 0 ? <path d="M5 12h14" /> : Array.from({ length: count }, (_, i) => <rect key={i} x={3 + i % 2 * 11} y={3 + Math.floor(i / 2) * 11} width="7" height="7" rx="1" />)}</svg></span>;
+  }
+  if (kind === 'time' && value && value !== 'flexible') {
+    return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M3 9h18M8 2v4M16 2v4" /><text x="12" y="18" textAnchor="middle" stroke="none" fill="currentColor" fontSize="8" fontWeight="700">{value}</text></svg></span>;
+  }
   const path = value === 'unknown' ? 'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01'
+    : kind === 'demand' && value === 'normal' ? 'M3 4v16h18M6 12h14m-4-4 4 4-4 4'
+    : kind === 'model' && value === 'rare' ? 'm12 3 9 9-9 9-9-9ZM3 12h18M12 3l-4 9 4 9 4-9Z'
+    : kind === 'model' && value === 'less_common' ? 'M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'
+    : kind === 'location' && value === 'province' ? 'm3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2ZM9 3v16M15 5v16'
     : kind === 'location' ? (value === 'south_africa' ? 'M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18' : 'M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12ZM12 7v4M10 9h4')
     : kind === 'assets' ? 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z'
     : kind === 'buyers' ? 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 7M19 14a6 6 0 0 1 3 5v2'
@@ -254,13 +265,13 @@ export default function SaleabilityModal({
         <header className={styles.header}>
           <div>
             <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2>
-            <p>{assetTitle} · Build your selling plan.</p>
+            <p>{assetTitle}</p>
             {step === 'result' ? <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} /> : null}
           </div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
 
-        <div className={styles.questionProgress} role="status" aria-live="polite">
+        <div className={styles.questionProgress} role="status" aria-live="polite" hidden={step === 'result'}>
           {step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}
           <div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${step === 'result' ? 100 : step / 7 * 100}%` }} /></div>
         </div>
