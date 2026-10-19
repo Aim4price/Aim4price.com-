@@ -2,6 +2,13 @@ name: Asset revaluation validation
 on:
   pull_request:
     paths:
+      - 'lib/automatic-valuation-*.ts'
+      - 'instrumentation.ts'
+      - 'database/migrations/140-automatic-asset-valuations.sql'
+      - 'lib/scan-assets.ts'
+      - 'lib/scan-current-inputs.ts'
+      - 'app/api/asset-register/revalue/route.ts'
+      - 'tests/automatic-valuation*.test.cjs'
       - 'lib/asset-revaluation-save.ts'
       - 'lib/asset-register-revaluation.ts'
       - 'lib/asset-register-db.ts'
@@ -29,4 +36,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/asset-revaluation-save.test.cjs tests/approved-value-baseline.test.cjs tests/asset-history.test.cjs tests/asset-saleability.test.cjs
+      - run: node --test tests/automatic-valuation.test.cjs tests/automatic-valuation-access.test.cjs tests/asset-revaluation-save.test.cjs tests/approved-value-baseline.test.cjs tests/asset-history.test.cjs tests/asset-saleability.test.cjs

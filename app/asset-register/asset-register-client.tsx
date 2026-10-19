@@ -1,4 +1,6 @@
 'use client';
+
+import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
 import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
 import AssetMarketDetail from '../../components/asset-register/AssetMarketDetail';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
@@ -4214,7 +4216,7 @@ function buildOwnerAssetPageHref(
 }
 
 function isValuationUpdateAvailable(asset: RegisterAsset): boolean {
-  return Boolean(asset.valuationRunId !== null && asset.selectedMethod !== 'manual');
+  return asset.selectedMethod !== 'manual' && (asset.valuationRunId !== null || Boolean(asset.specsJson.automaticValuationStatus));
 }
 
 function doesEstimateNeedUpdate(asset: RegisterAsset): boolean {
@@ -7907,7 +7909,16 @@ export default function AssetRegisterClient({
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  async function handleRefreshAssetRegister() {
+  const hasAutomaticValueUpdates = assets.some(asset => automaticValuationPending(asset.specsJson));
+  useEffect(() => {
+    if (!hasAutomaticValueUpdates) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void handleRefreshAssetRegister(true);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [hasAutomaticValueUpdates, activeRegisterId, isLoading, isRefreshingRegister]);
+
+  async function handleRefreshAssetRegister(silent = false) {
     if (isLoading || isRefreshingRegister) return;
 
     const requestVersion = ++registerRequestVersion.current;
@@ -7955,13 +7966,13 @@ export default function AssetRegisterClient({
       }
 
       window.dispatchEvent(new Event('aim4price:asset-register-refreshed'));
-      setNotice({
+      if (!silent) setNotice({
         tone: 'success',
         message: 'Asset Register refreshed.',
       });
     } catch (error) {
       if (requestVersion !== registerRequestVersion.current) return;
-      setNotice({
+      if (!silent) setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to refresh your asset register.',
       });
@@ -11122,6 +11133,7 @@ export default function AssetRegisterClient({
   }
 
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
+    registerRequestVersion.current++;
     if (assetModalReturnRef.current?.assetId === nextAsset.id) {
       assetModalReturnRef.current = {
         ...assetModalReturnRef.current,
@@ -16250,7 +16262,7 @@ export default function AssetRegisterClient({
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${styles.toolbarRefreshButton}`}
-                onClick={handleRefreshAssetRegister}
+                onClick={() => void handleRefreshAssetRegister()}
                 disabled={isLoading || isRefreshingRegister}
               >
                 <RefreshIcon className={`${styles.buttonIcon} ${isRefreshingRegister ? styles.toolbarRefreshIconActive : ''}`} />
@@ -16632,7 +16644,7 @@ export default function AssetRegisterClient({
                               </span>
                             ) : null}
                             {estimateNeedsUpdate ? (
-                              <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
+                              <span className={`${styles.badge} ${styles.badgeWarning}`} title={AUTOMATIC_VALUATION_NOTICE}>{automaticValuationLabel(asset.specsJson)}</span>
                             ) : null}
                             {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
                             {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
@@ -16663,7 +16675,7 @@ export default function AssetRegisterClient({
                                     <strong>{money(displayedAssetValue)}</strong>
                                     <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
                                   </div>
-                                  <span>{assetValueVatLabel}</span>
+                                  <span>{assetValueVatLabel}{estimateNeedsUpdate ? ' · Previous value' : ''}</span>
                                 </div>
                               </div>
                             </div>
@@ -16678,7 +16690,7 @@ export default function AssetRegisterClient({
                                       data-tooltip="Update estimate"
                                 >
                                   <TrendIcon className={styles.buttonIcon} />
-                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : 'Update estimate'}</span>
+                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : asset.specsJson.automaticValuationStatus === 'failed' ? 'Retry update' : 'Update now'}</span>
                                 </button>
                               ) : null}
 

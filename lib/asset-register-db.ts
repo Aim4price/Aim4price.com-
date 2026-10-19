@@ -2839,13 +2839,29 @@ export async function updateAssetRegisterItemFlag(
 }
 
 
+async function withAssetInputTransaction<T>(write: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
+  const client = await getDb().connect();
+  let discard = false;
+  try {
+    await client.query('BEGIN');
+    const result = await write(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch { discard = true; }
+    throw error;
+  } finally { client.release(discard); }
+}
+
 export async function updateAssetRegisterItemYearModel(
   userId: string,
   input: UpdateAssetRegisterItemYearModelInput,
+  transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+  if (!transaction) return withAssetInputTransaction(client => updateAssetRegisterItemYearModel(userId, input, client));
+  const db = transaction;
   const schema = await getAssetRegisterSchema();
-  const existing = await getAssetRegisterItemById(userId, input.assetId);
+  const existing = await getAssetRegisterItemById(userId, input.assetId, transaction);
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');
@@ -2892,6 +2908,7 @@ export async function updateAssetRegisterItemYearModel(
 
   const item = mapAssetRegisterRow(row);
   await captureAssetDepreciationLogEntry({
+    transaction,
     previousAsset: existing,
     asset: item,
     eventType: 'manual_asset_updated',
@@ -3141,10 +3158,12 @@ export async function updateAssetRegisterItemStatusDetails(
 export async function updateAssetRegisterItem(
   userId: string,
   input: UpdateAssetRegisterItemInput,
+  transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+  if (!transaction) return withAssetInputTransaction(client => updateAssetRegisterItem(userId, input, client));
+  const db = transaction;
   const schema = await getAssetRegisterSchema();
-  const existing = await getAssetRegisterItemById(userId, input.assetId);
+  const existing = await getAssetRegisterItemById(userId, input.assetId, transaction);
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');
@@ -3152,7 +3171,7 @@ export async function updateAssetRegisterItem(
 
   const now = new Date();
   const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
-  const nextValue = Math.round(Number(input.value) || 0);
+  const nextValue = existing.selectedMethod === 'manual' ? Math.round(Number(input.value) || 0) : existing.value;
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
   const mergedReplacementSpecs = {
     ...(isRecord(existing.specsJson) ? existing.specsJson : {}),
@@ -3178,6 +3197,8 @@ export async function updateAssetRegisterItem(
   const existingCondition = normalizeConditionForDb(existing.condition);
   const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
+  // Ordinary edits cannot replace an owner-approved valuation anchor.
+  baseSpecsJson.approved_value_baseline = existing.specsJson.approved_value_baseline ?? null;
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
   const baseLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
@@ -3286,6 +3307,7 @@ export async function updateAssetRegisterItem(
 
   const item = mapAssetRegisterRow(row);
   await captureAssetDepreciationLogEntry({
+    transaction,
     previousAsset: existing,
     asset: item,
     eventType: 'manual_asset_updated',
@@ -4028,7 +4050,9 @@ export async function saveApprovedAssetValue(client: import('pg').PoolClient, as
   }
   pushField(fields,schema,['updated_at','modified_at','updatedon'],new Date());
   const update=buildUpdateSetClause(fields);
+  await client.query("SELECT set_config('aim4price.valuation_write','resolved',true)");
   const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[asset.userId,asset.id,...update.values]);
+  await client.query("SELECT set_config('aim4price.valuation_write','',true)");
   if(!result.rows[0])throw new Error('Asset unavailable.');
   return mapAssetRegisterRow(result.rows[0]);
 }

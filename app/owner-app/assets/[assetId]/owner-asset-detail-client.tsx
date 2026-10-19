@@ -1,4 +1,6 @@
 'use client';
+
+import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../../../lib/automatic-valuation-status';
 import AppMaintenanceActions from '../../../../components/AppMaintenanceActions';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
@@ -274,7 +276,7 @@ function manualMarketplaceNote(value: string) {
 }
 
 function estimateNeedsAutomaticUpdate(asset: Pick<Asset, 'valuationRunId' | 'selectedMethod' | 'specsJson'>): boolean {
-  if (asset.valuationRunId === null || asset.selectedMethod === 'manual') return false;
+  if (asset.selectedMethod === 'manual') return false;
   const value = asset.specsJson.valuationNeedsUpdate ?? asset.specsJson.valuation_needs_update;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value === 1;
@@ -470,15 +472,31 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     });
   }
 
-  async function loadDetail(silent = false) {
+  const hasAutomaticValueUpdate = Boolean(draft && automaticValuationPending(draft.specsJson));
+  useEffect(() => {
+    // Only refresh the summary: never overwrite an unsaved editing draft.
+    if (!hasAutomaticValueUpdate || view !== 'summary' || actionBusy) return;
+    const controller = new AbortController();
+    let refreshing = false;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible' || refreshing) return;
+      refreshing = true;
+      void loadDetail(true, controller.signal).finally(() => { refreshing = false; });
+    }, 5000);
+    return () => { controller.abort(); window.clearInterval(timer); };
+  }, [hasAutomaticValueUpdate, view, actionBusy, assetId]);
+
+  async function loadDetail(silent = false, signal?: AbortSignal) {
     if (!silent) setLoading(true);
     try {
-      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, { credentials: 'include', cache: 'no-store' });
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, { credentials: 'include', cache: 'no-store', signal });
       const payload = await response.json().catch(() => null) as DetailResponse | null;
+      if (signal?.aborted) return;
       if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
       if (!response.ok || !payload?.ok || !payload.item) throw new Error(payload?.error || 'Failed to load this asset.');
       applyDetail(payload);
     } catch (cause) {
+      if (signal?.aborted) return;
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load this asset.' });
     } finally {
       if (!silent) setLoading(false);
@@ -834,14 +852,17 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
   const estimateNeedsUpdate = estimateNeedsAutomaticUpdate(draft);
   const renderEstimateUpdateAction = () => estimateNeedsUpdate ? (
+    <div>
+    <p role="status" title={AUTOMATIC_VALUATION_NOTICE}>{automaticValuationLabel(draft.specsJson)} · Previous value shown</p>
     <button
       type="button"
       className={`${styles.detailValueUpdateButton} ${styles.detailValueUpdateButtonAttention}`}
       onClick={() => void updateEstimateNow()}
       disabled={Boolean(actionBusy)}
     >
-      {actionBusy === 'update-estimate' ? 'Updating…' : 'Update estimate'}
+      {actionBusy === 'update-estimate' ? 'Updating…' : draft.specsJson.automaticValuationStatus === 'failed' ? 'Retry update' : 'Update now'}
     </button>
+    </div>
   ) : null;
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
     const value = extra(key, ...(options.fallbackKeys ?? []));
