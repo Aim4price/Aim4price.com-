@@ -103,14 +103,14 @@
 
 /* Consistent icon alignment and a quieter, structured budget summary. */
 .metrics { gap: 1rem; margin-bottom: 1rem; }
-.metrics > div { min-width: 0; padding: .9rem 1rem; border: 1px solid var(--app-line, #d9e7df); border-radius: 1rem; background: var(--app-surface, #fff); }
-.metrics dt { display: flex; align-items: center; gap: .65rem; margin-bottom: .6rem; line-height: 1.4; }
+.metrics > div { min-width: 0; padding: .75rem 1rem; border: 1px solid var(--app-line, #d9e7df); border-radius: 1rem; background: var(--app-surface, #fff); }
+.metrics dt { display: flex; align-items: center; gap: .65rem; margin-bottom: .2rem; line-height: 1.4; }
 .metrics dd { padding-left: 2.75rem; font-variant-numeric: tabular-nums; }
 .detailsMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; margin: .85rem 0; color: var(--app-muted, #61786e); font-size: .88rem; line-height: 1.5; }
 .detailsMeta > span { display: inline-flex; align-items: center; gap: .5rem; }
 .detailsMeta svg { padding: .15rem; background: transparent; border-radius: 0; }
 @media(max-width: 600px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .metrics > div { display: grid; gap: .45rem; padding: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics > div { display: grid; gap: .2rem; padding: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .metrics dt { margin-bottom: 0; }
   :global(:where(html:not(:has([data-website-canvas])))) .metrics dd { padding-left: 2.75rem; text-align: left; }
 }
