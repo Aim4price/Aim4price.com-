@@ -142,11 +142,11 @@ test("batch retries are idempotent and late arrivals cannot replace latest posit
   assert.equal(status.longitude, 0.01);
   assert.equal(await api.trackingStatus("intruder", asset), null);
 });
-test("a second UUID in the same minute cannot multiply stored points", async () => {
+test("a second UUID in the same ten-second bucket cannot multiply stored points", async () => {
   const p = {
     id: crypto.randomUUID(),
     sessionId,
-    capturedAt: new Date().toISOString(),
+    capturedAt: (await db.query('SELECT captured_at FROM asset_tracking_points ORDER BY captured_at DESC LIMIT 1')).rows[0].captured_at.toISOString(),
     latitude: 0,
     longitude: 2,
     accuracy: 5,
@@ -238,3 +238,17 @@ test("re-pairing revokes old credentials and ownership transfer invalidates new 
   );
 });
 test.after(() => db.close());
+
+test("six ten-second readings survive ingestion and retries",async()=>{
+ const code=await api.createPairing('new-owner',asset);const paired=await api.pairDevice(code.replaceAll('-',''),'Ten second test');
+ const start=Math.floor((Date.now()-120000)/60000)*60000;
+ const points=Array.from({length:6},(_,i)=>({id:crypto.randomUUID(),sessionId,capturedAt:new Date(start+i*10000).toISOString(),latitude:0,longitude:i*.001,accuracy:5,motion:'moving'}));
+ const body=api.validateUpload({points,active:true,stateAt:new Date().toISOString()});await api.ingestTracking(paired.token,body);await api.ingestTracking(paired.token,body);
+ const result=await db.query('SELECT count(*)::int AS n FROM asset_tracking_points WHERE device_id=$1',[paired.deviceId]);assert.equal(result.rows[0].n,6);
+ const report=summarizeTracking(points);assert.equal(report.readings.length,6);assert.equal(report.movingSeconds,50);assert.ok(report.distanceKm>.55);
+});
+
+test("slow ten-second movement is accumulated beyond the drift threshold",()=>{
+ const points=Array.from({length:7},(_,i)=>point(i/6,i*.00005));
+ const report=summarizeTracking(points);assert.ok(report.distanceKm>.032);assert.equal(report.movingSeconds,60);assert.equal(report.stationarySeconds,0);
+});

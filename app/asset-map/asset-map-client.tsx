@@ -4,6 +4,7 @@ import AssetMapAssetDialog from '../../components/asset-register/AssetMapAssetDi
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import AssetLocationHistoryDialog from '../../components/asset-register/AssetLocationHistoryDialog';
+import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
 import cardActions from "./AssetMapCardActions.module.css";
 import downloadStyles from "../../components/ReportDownload.module.css";
 
@@ -71,6 +72,7 @@ type AssetMapItem = {
   updatedAtIso: string;
   photos: string[];
   trackingStatus?: string;
+  lastTrackingContactAtIso?: string | null;
   lastTrackedAtIso?: string;
 };
 
@@ -671,7 +673,7 @@ function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
 
 export default function AssetMapClient() {
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
-  const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'}|null>(null);
+  const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'|'tracking'|'more'}|null>(null);
   const [photoViewer,setPhotoViewer]=useState<{assetId:string;title:string;urls:string[];index:number}|null>(null);
   const photoTrigger=useRef<HTMLButtonElement|null>(null);
   const closePhotoViewer=useCallback(()=>{setPhotoViewer(null);requestAnimationFrame(()=>photoTrigger.current?.focus());},[]);
@@ -1604,7 +1606,15 @@ export default function AssetMapClient() {
         }}
       />}
       {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
-      {locationDialog?.view==='history'&&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
+      {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Tracking device" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel assetId={locationDialog.asset.id}/></AssetAccessSettingsDialog>}
+      {locationDialog?.view==='more'&&<AssetAccessSettingsDialog locationLayout title="Location options" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
+        <div className={cardActions.options}>
+          <button type="button" onClick={()=>setLocationDialog({...locationDialog,view:'update'})}><MapIcon/><span><strong>Update location</strong><small>Save a position manually</small></span></button>
+          <a href={buildGoogleMapsHref(locationDialog.asset)||'#'} target="_blank" rel="noreferrer"><MapIcon/><span><strong>Open Google Maps</strong><small>View this saved position</small></span></a>
+          <Link href={buildAssetRegisterHref(locationDialog.asset)}><RegisterIcon/><span><strong>Open asset register</strong><small>View the full asset details</small></span></Link>
+        </div>
+      </AssetAccessSettingsDialog>}
+      {locationDialog?.view==='history' &&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <AssetLocationEditor trackingAssetId={locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
@@ -1961,10 +1971,7 @@ export default function AssetMapClient() {
                           </button>
                         ) : (
                           <div className={styles.selectedPhotoPlaceholder}>
-                            <strong>No photos uploaded</strong>
-                            <span>
-                              Photos added in the Asset Register will show here.
-                            </span>
+                            <RegisterIcon/><span>No photo yet</span>
                           </div>
                         )}
 
@@ -2030,46 +2037,17 @@ export default function AssetMapClient() {
 
                       </div>
 
-                      <div className={styles.selectedDetailGrid}>
-                        <span>
-                          <small>Serial / VIN</small>
-                          <strong>{selectedAsset.serialNumber || "—"}</strong>
-                        </span>
-                        <span>
-                          <small>Last updated</small>
-                          <strong>
-                            {formatDate(selectedAsset.updatedAtIso)}
-                            {selectedAsset.trackingStatus ? ` · ${selectedAsset.trackingStatus}` : ""}
-                          </strong>
-                        </span>
+                      <div className={cardActions.status} data-warning={['Offline','No recent GPS','Waiting'].includes(selectedAsset.trackingStatus||'')}>
+                        <span className={cardActions.statusDot} aria-hidden="true"/>
+                        <div><strong>{selectedAsset.trackingStatus==='No recent GPS'?'GPS signal missing':selectedAsset.trackingStatus==='Offline'?'Phone offline':selectedAsset.trackingStatus==='Waiting'?'Waiting for first location':selectedAsset.trackingStatus==='Deactivated'?'Tracking paused':selectedAsset.trackingStatus==='Stopped'?'Stationary':selectedAsset.trackingStatus||'Saved location'}</strong>
+                        <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:`Location saved: ${formatDate(selectedAsset.updatedAtIso)}`}</span>
+                        {selectedAsset.trackingStatus&&<small>Phone contact: {selectedAsset.lastTrackingContactAtIso?formatDate(selectedAsset.lastTrackingContactAtIso):'Not received yet'}</small>}</div>
                       </div>
-
-                      <div className={cardActions.actions}>
-                        <div className={cardActions.primaryRow}>
-                          <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'update'});}}>
-                            <span className={cardActions.icon}><MapIcon /></span>
-                            <span>Update location</span>
-                          </button>
-                          <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.history}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}>
-                            <span className={cardActions.icon}><LocationHistoryIcon /></span>
-                            <span>Location history</span>
-                          </button>
-                        </div>
-                        <div className={cardActions.secondaryRow}>
-                          <Link href={buildAssetRegisterHref(selectedAsset)} prefetch={true} className={cardActions.button}>
-                            <RegisterIcon /><span>Asset Register</span>
-                          </Link>
-                          {selectedAssetGoogleMapsHref ? (
-                            <a href={selectedAssetGoogleMapsHref} target="_blank" rel="noreferrer" className={cardActions.button}>
-                              <MapIcon /><span>Google Maps</span>
-                            </a>
-                          ) : null}
-                          {selectedAssetReportHref ? (
-                            <button type="button" disabled={isDownloading} onClick={() => void handleDownload(selectedAssetReportHref, "pdf")} className={cardActions.button}>
-                              <DownloadIcon /><span>{isDownloading ? "Preparing…" : "Download report"}</span>
-                            </button>
-                          ) : null}
-                        </div>
+                      {selectedAsset.serialNumber&&<p className={cardActions.serial}>Serial / VIN · {selectedAsset.serialNumber}</p>}
+                      <div className={cardActions.primaryRow}>
+                        <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><LocationHistoryIcon/><span>Routes &amp; history</span></button>
+                        <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'tracking'});}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg><span>Tracking device</span></button>
+                        <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'more'});}}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>More</span></button>
                       </div>
                     </div>
                   </div>

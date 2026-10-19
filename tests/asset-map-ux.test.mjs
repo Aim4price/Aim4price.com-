@@ -155,11 +155,14 @@ test("map controls and selection preserve the user's context", () => {
 test("selected overlay keeps the original compact content without a duplicate number badge", () => {
   assert.match(assetMapClient, /styles\.selectedAssetIdentity/);
   assert.doesNotMatch(assetMapClient, /styles\.selectedAssetNumber/);
-  assert.match(assetMapClient, />Serial \/ VIN</);
-  assert.match(assetMapClient, />Last updated</);
-  assert.match(assetMapClient, />Asset Register</);
-  assert.match(assetMapClient, />Google Maps</);
-  assert.match(assetMapClient, /"Download report"/);
+  assert.match(assetMapClient, /selectedAsset.serialNumber&&/);
+  assert.match(assetMapClient, /Last GPS location:/);
+  assert.match(assetMapClient, /Phone contact:/);
+  assert.match(assetMapClient, />Open asset register</);
+  assert.match(assetMapClient, />Open Google Maps</);
+  assert.match(assetMapClient, /Routes &amp; history/);
+  assert.match(assetMapClient, />Tracking device</);
+  assert.match(assetMapClient, />More</);
   assert.doesNotMatch(assetMapClient, />Last known location</);
   assert.doesNotMatch(assetMapClient, /\.slice\(0, 6\)/);
   assert.match(

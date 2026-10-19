@@ -14,10 +14,24 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
  String scannedCode="", connectionError=""; boolean pairedScreen=false;
  static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff64746a, SOFT=0xffeef5f0;
- TextView status;final Handler handler=new Handler(Looper.getMainLooper());
- final Runnable refresh=new Runnable(){public void run(){if(status!=null){var p=TrackerApi.prefs(MainActivity.this);if(pairedScreen!=!p.getString("token","").isEmpty()){draw();return;}status.setText((p.getString("token","").isEmpty() ? (connectionError.isEmpty()?"Ready to connect":connectionError) : (p.getBoolean("active",false)?"Tracking activated":"Tracking deactivated")+"\n"+p.getString("sync","No upload yet")+"\n"+p.getString("gps","Waiting for GPS")+"\n"+p.getString("issue","")));}handler.postDelayed(this,3000);}};
+ TextView status,gpsStatus,syncStatus,queueStatus,issueStatus;Button trackingButton;final Handler handler=new Handler(Looper.getMainLooper());
+ final Runnable refresh=new Runnable(){public void run(){
+  if(status!=null){var p=TrackerApi.prefs(MainActivity.this);boolean paired=!p.getString("token","").isEmpty();
+   if(pairedScreen!=paired){draw();return;}
+   boolean active=p.getBoolean("active",false);
+   status.setText(paired?(active?"Tracking active":"Tracking paused"):(connectionError.isEmpty()?"Ready to connect":connectionError));
+   if(paired&&gpsStatus!=null){
+    gpsStatus.setText(p.getString("gps","Waiting for first GPS location"));
+    syncStatus.setText(p.getString("sync","Waiting for first upload"));
+    int pending=p.getInt("pending",0);queueStatus.setText(pending==0?(p.getLong("lastUploadAt",0)==0?"Waiting for first upload":"All saved readings uploaded"):pending+" readings saved on this phone");
+    String issue=p.getString("gpsIssue","");String upload=p.getString("issue","");if(!upload.isEmpty())issue+=(issue.isEmpty()?"":"\n")+upload;
+    issueStatus.setText(issue);issueStatus.setVisibility(issue.isEmpty()?View.GONE:View.VISIBLE);
+    trackingButton.setText(active?"Deactivate tracking":"Activate tracking");
+   }
+  }handler.postDelayed(this,3000);
+ }};
  public void onCreate(Bundle b){super.onCreate(b);readPairingIntent(getIntent());draw();}
- public void onResume(){super.onResume();handler.removeCallbacks(refresh);handler.post(refresh);}
+ public void onResume(){super.onResume();if(TrackerApi.prefs(this).getBoolean("active",false)&&checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED){try{startForegroundService(new Intent(this,TrackingService.class));}catch(RuntimeException e){TrackerApi.prefs(this).edit().putString("issue","Tap Activate to resume tracking.").apply();}}handler.removeCallbacks(refresh);handler.post(refresh);}
  public void onPause(){handler.removeCallbacks(refresh);super.onPause();}
  public void onNewIntent(Intent intent){super.onNewIntent(intent);setIntent(intent);readPairingIntent(intent);draw();}
  void readPairingIntent(Intent intent){
@@ -52,12 +66,18 @@ public class MainActivity extends Activity {
    TextView help=text("Scan the QR code on Aim4price, or enter your pairing code above.",13,MUTED);help.setPadding(0,dp(12),0,dp(8));box.addView(help);
    Button pair=new Button(this);pair.setText("Connect phone");box.addView(pair);styleButton(pair,true);pair.setOnClickListener(v->{String value=code.getText().toString().trim().replace("-","").toUpperCase(java.util.Locale.ROOT);if(!value.matches("[A-F0-9]{16}")){connectionError="Enter the full pairing code shown on Aim4price.";status.setText(connectionError);return;}pair.setEnabled(false);pair.setText("Connecting…");connectionError="Connecting…";var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{JSONObject r=TrackerApi.post("/api/tracking/pair",new JSONObject().put("code",value).put("name",Build.MANUFACTURER+" "+Build.MODEL),null);new TrackerStore(this).clear();p.edit().putString("token",r.getString("token")).putString("title",r.getString("assetTitle")).putBoolean("active",false).remove("issue").apply();runOnUiThread(()->{scannedCode="";connectionError="";draw();});}catch(Exception e){runOnUiThread(()->{connectionError=e.getMessage();status.setText(connectionError);pair.setText("Try again");pair.setEnabled(true);});}finally{executor.shutdown();}});});
   }else{
-   Button activate=new Button(this);activate.setText("Activate tracking");box.addView(activate);styleButton(activate,true);activate.setOnClickListener(v->activate());
-   Button stop=new Button(this);stop.setText("Deactivate tracking");box.addView(stop);styleButton(stop,false);stop.setOnClickListener(v->{p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});});
-   Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName()))));
+   gpsStatus=text("",14,MUTED);syncStatus=text("",14,MUTED);queueStatus=text("",14,MUTED);issueStatus=text("",14,0xff9b4d2d);
+   box.addView(gpsStatus);box.addView(syncStatus);box.addView(queueStatus);box.addView(issueStatus);
+   trackingButton=new Button(this);box.addView(trackingButton);styleButton(trackingButton,true);
+   trackingButton.setOnClickListener(v->{if(!p.getBoolean("active",false)){activate();return;}
+    p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));
+    var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});
+   });
+   Button settings=new Button(this);settings.setText("Battery & permissions");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v->startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName()))));
+   box.addView(text("Records every 10 seconds while moving. Uploads in batches every minute.",13,MUTED));
    TextView note=text("Keep this phone on the equipment. In Phone settings, allow unrestricted battery use. After restarting, open Tracker and tap Activate.",13,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
   }
-  TextView version=text("Aim4price Tracker · 0.5",12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
+  TextView version=text("Aim4price Tracker · 0.6",12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
   page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",13,Color.rgb(85,109,96)));
   handler.removeCallbacks(refresh);refresh.run();
  }
