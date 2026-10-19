@@ -1628,37 +1628,7 @@ export default function AssetMapClient() {
               <h1>Asset Map &amp; Tracking</h1>
             </div>
 
-            <form
-              className={styles.topActions}
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleSearchSubmit();
-              }}
-            >
-              <label
-                className={styles.searchWrap}
-                aria-label="Search mapped assets"
-              >
-                <SearchIcon className={styles.searchIcon} />
-                <input
-                  type="search"
-                  className={styles.searchInput}
-                  value={search}
-                  onChange={(event) => handleSearchChange(event.target.value)}
-                  placeholder="Search name, serial or registration"
-                />
-                {hasActiveSearch ? (
-                  <button
-                    type="button"
-                    className={styles.clearSearchButton}
-                    onClick={clearSearch}
-                    aria-label="Clear search"
-                  >
-                    ×
-                  </button>
-                ) : null}
-              </label>
-
+            <div className={styles.topActions}>
               <div className={styles.topActionButtons}>
                 <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.addAssetAction}`} aria-haspopup="dialog"
                   disabled={dataStatus !== 'ready'} onClick={event => { locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
@@ -1703,7 +1673,7 @@ export default function AssetMapClient() {
                   <span>Download</span>
                 </button>
               </div>
-            </form>
+            </div>
           </header>
 
           {notice && dataStatus === "ready" ? (
@@ -1847,6 +1817,32 @@ export default function AssetMapClient() {
             </aside>
 
             <div className={styles.assetMapShell}>
+              <form className={styles.mapSearch} role="search" aria-label="Search mapped assets" onSubmit={event => { event.preventDefault(); handleSearchSubmit(); }}>
+              <label
+                className={styles.searchWrap}
+                aria-label="Search mapped assets"
+              >
+                <SearchIcon className={styles.searchIcon} />
+                <input
+                  type="search"
+                  className={styles.searchInput}
+                  value={search}
+                  onChange={(event) => handleSearchChange(event.target.value)}
+                  placeholder="Search name, serial or registration"
+                />
+                {hasActiveSearch ? (
+                  <button
+                    type="button"
+                    className={styles.clearSearchButton}
+                    onClick={clearSearch}
+                    aria-label="Clear search"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </label>
+
+              </form>
               {isSidebarCollapsed ? (
                 <button
                   ref={sidebarExpandTriggerRef}
