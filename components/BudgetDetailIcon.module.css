@@ -1,0 +1,3 @@
+.icon { display: block; box-sizing: content-box; width: 1.3rem; height: 1.3rem; flex: 0 0 1.3rem; padding: .4rem; border-radius: .65rem; color: var(--app-accent, #17654d); background: var(--app-surface-soft, #e8f3ed); overflow: visible; }
+.icon[data-budget-icon='budget'], .icon[data-budget-icon='asset'] { color: var(--app-info, #235f99); background: var(--app-info-soft, #eaf3ff); }
+.icon[data-budget-icon='alert'] { color: var(--app-warning, #925c20); background: var(--app-warning-soft, #fff3e3); }

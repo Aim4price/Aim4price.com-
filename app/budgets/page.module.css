@@ -100,12 +100,17 @@
 /* Search fills the toolbar now that budgets no longer expose a filter menu. */
 .page .searchToolbar { grid-template-columns: minmax(0, 1fr); }
 
-/* Supporting icons keep expanded budget details easy to scan. */
-.metrics dt { display: flex; align-items: center; gap: .6rem; }
-.page .detailIcon { display: block; width: 1.3rem; height: 1.3rem; flex: 0 0 1.3rem; overflow: visible; }
-.metrics dt .detailIcon { box-sizing: content-box; padding: .3rem; border-radius: .55rem; color: var(--app-accent, #17654d); background: var(--app-surface-soft, #e8f3ed); }
-.metrics dt [data-budget-icon='budget'] { color: var(--app-info, #235f99); background: var(--app-info-soft, #eaf3ff); }
-.metrics dt [data-budget-icon='alert'] { color: var(--app-warning, #925c20); background: var(--app-warning-soft, #fff3e3); }
-.detailsMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem 1.5rem; margin: 1rem 0; color: var(--app-muted, #697d8b); font-size: .85rem; line-height: 1.5; }
+
+/* Consistent icon alignment and a quieter, structured budget summary. */
+.metrics { gap: 1rem; margin-bottom: 1rem; }
+.metrics > div { min-width: 0; padding: .9rem 1rem; border: 1px solid var(--app-line, #d9e7df); border-radius: 1rem; background: var(--app-surface, #fff); }
+.metrics dt { display: flex; align-items: center; gap: .65rem; margin-bottom: .6rem; line-height: 1.4; }
+.metrics dd { padding-left: 2.75rem; font-variant-numeric: tabular-nums; }
+.detailsMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; margin: .85rem 0; color: var(--app-muted, #61786e); font-size: .88rem; line-height: 1.5; }
 .detailsMeta > span { display: inline-flex; align-items: center; gap: .5rem; }
-.detailsMeta .detailIcon { color: var(--app-muted, #56776a); }
+.detailsMeta svg { padding: .15rem; background: transparent; border-radius: 0; }
+@media(max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics > div { display: grid; gap: .45rem; padding: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics dt { margin-bottom: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics dd { padding-left: 2.75rem; text-align: left; }
+}

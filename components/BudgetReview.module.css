@@ -1,0 +1,19 @@
+.body.body.body { padding: 16px 30px !important; scrollbar-gutter: auto; }
+.panel { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; }
+.grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; margin: 0; }
+.grid > div { min-width: 0; padding: 12px 16px; border: 1px solid var(--app-line, #d8e6de); border-radius: 14px; background: var(--app-surface, #fff); }
+.grid > div:first-child, .grid > div:last-child { grid-column: 1 / -1; }
+.grid dt { display: flex; align-items: center; gap: 9px; margin: 0 0 6px; color: var(--app-muted, #62786e); font-size: .88rem; font-weight: 700; }
+.grid dd { margin: 0; padding-left: 2.7rem; color: var(--app-text, #123f32); font-size: 1.05rem; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+.grid > div:first-child, .grid > div:last-child { display: flex; align-items: center; gap: 12px; }
+.grid > div:first-child dt, .grid > div:last-child dt { flex-shrink: 0; margin: 0; }
+.grid > div:first-child dd, .grid > div:last-child dd { padding-left: 0; }
+@media(max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .body.body.body { padding: 14px 18px !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid dt { margin: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid dd { padding-left: 0; text-align: right; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid > div:first-child { display: block; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid > div:first-child dd { margin-top: 8px; text-align: left; }
+}
