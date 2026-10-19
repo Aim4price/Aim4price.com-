@@ -32,39 +32,21 @@
 .detailLabel { display:flex !important; align-items:center; gap:.55rem; }
 .detailLabel .detailIcon, .marketHeading>.detailIcon { box-sizing:content-box; padding:.22rem; border-radius:.48rem; background:#e6f1ec; color:#17654d; }
 .marketHeading>.detailIcon { background:#e1edfb; color:#235f99; }
-.marketDetail { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.4rem 1rem; min-height:3.65rem; padding:.72rem .88rem .72rem 1rem; border:1px solid #c6ddf4; border-radius:.96rem; background:#f0f7ff; color:#235b89; }
-.marketHeading { display:flex; align-items:center; gap:.55rem; min-width:0; }
-.marketHeading>span { font-size:.78rem; font-weight:800; line-height:1.4; text-transform:uppercase; letter-spacing:.025em; }
-.priceInfo { display:inline-grid; place-items:center; flex:0 0 1.6rem; width:1.6rem; height:1.6rem; border:0; padding:0; border-radius:50%; background:transparent; color:#416889; font:inherit; font-size:.8rem; cursor:pointer; }
-.priceInfo .detailIcon { width:1.2rem; height:1.2rem; }
-.marketAmount { display:flex; flex-direction:column; align-items:flex-end; gap:.2rem; text-align:right; font-size:.8rem; line-height:1.4; }
-.marketAmount>strong { font-size:clamp(1.08rem,calc(var(--website-design-vw,1vw) * 1.35),1.34rem); line-height:1.15; color:#174f84; white-space:nowrap; }
-.marketAmount>small { font-size:.72rem; font-weight:700; color:#5c7184; }
-.calculateMarket { display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:2.65rem; padding:.5rem .75rem; border:1px solid #9bbfe2; border-radius:.7rem; background:#fff; color:#205f98; font:inherit; font-size:.85rem; font-weight:750; cursor:pointer; }
-.updateMarket { border:0; padding:.2rem 0; background:transparent; color:#205f98; font:inherit; font-size:.75rem; text-decoration:underline; cursor:pointer; }
-.marketAmount .reviewNeeded { color:#865d12; }
-.marketDetail button:focus-visible { outline:3px solid #2678b9; outline-offset:3px; }
-.marketDetail button:hover { background:#e2effc; }
-.marketInfo { grid-column:1/-1; margin:.35rem 0 0; padding-top:.6rem; border-top:1px solid #cee0f2; color:#466580; font-size:.82rem; line-height:1.5; }
-@media(max-width:600px) {
- :global(:where(html:not(:has([data-website-canvas])))) .marketDetail { grid-template-columns:minmax(0,1fr); }
- :global(:where(html:not(:has([data-website-canvas])))) .marketAmount { align-items:flex-start; text-align:left; padding-left:1.8rem; }
-}
 
-/* A shared VAT basis and a clear entry point into saleability. */
-.detailPricingToolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.65rem; padding:.2rem 0 .55rem; }
-.detailPricingToolbar > span { color:#526b60; font-size:.8rem; font-weight:750; }
-.marketDetail { padding:0 .65rem 0 0; gap:.35rem; overflow:hidden; }
-.marketOpen { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1rem; width:100%; min-width:0; padding:.9rem 1rem; border:0; border-radius:.9rem; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+/* Match replacement price sizing, with a distinct saleability accent. */
+.marketDetail { min-width:0; border:1px solid #c6ddf4; border-radius:.96rem; background:#f0f7ff; color:#235b89; }
+.marketOpen { box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1rem; width:100%; min-height:3.65rem; padding:.72rem .88rem .72rem 1rem; border:0; border-radius:inherit; background:transparent; color:inherit; font:inherit; text-align:left; cursor:pointer; }
 .marketOpen:disabled { cursor:default; opacity:1; }
-.marketOpen .marketTitle { display:grid; gap:.25rem; text-transform:none; letter-spacing:0; }
-.marketTitle strong { font-size:.9rem; font-weight:800; }
-.marketTitle small { font-size:.74rem; font-weight:550; color:#5c7184; }
-.marketAmount .marketPrompt { color:#205f98; font-size:.72rem; font-weight:600; }
-.marketDetail .marketInfo { margin:0 .8rem .8rem 1rem; }
-.marketDetail .marketOpen:focus-visible { outline-offset:-3px; }
-.marketDetail .marketOpen:disabled:hover { background:transparent; }
-@media(max-width:600px) {
- :global(:where(html:not(:has([data-website-canvas])))) .marketDetail { grid-template-columns:minmax(0,1fr) auto; }
- :global(:where(html:not(:has([data-website-canvas])))) .marketOpen { grid-template-columns:1fr; gap:.7rem; }
+.marketOpen:not(:disabled):hover { background:#e2effc; }
+.marketOpen:focus-visible { outline:2px solid var(--app-accent,#158061); outline-offset:2px; }
+.marketHeading { display:flex; align-items:center; gap:.55rem; min-width:0; }
+.marketTitle strong { font-size:.78rem; font-weight:900; letter-spacing:.052em; line-height:1.15; text-transform:uppercase; }
+.marketAmount { display:flex; flex-direction:column; align-items:flex-end; gap:.16rem; min-width:0; text-align:right; font-size:.8rem; line-height:1.4; }
+.marketAmount>strong { color:#174f84; font-size:clamp(1.08rem,calc(var(--website-design-vw,1vw) * 1.35),1.34rem); font-weight:880; letter-spacing:-.036em; line-height:1.05; white-space:nowrap; }
+.marketAmount>small { color:#5c7184; font-size:.72rem; font-weight:820; letter-spacing:-.005em; line-height:1.12; }
+.marketAmount .reviewNeeded { color:#865d12; margin-top:.2rem; }
+.calculateMarket { display:inline-flex; align-items:center; gap:.4rem; color:#205f98; font-size:.85rem; font-weight:750; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .marketOpen { grid-template-columns:1fr; gap:.24rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .marketAmount { align-items:flex-start; text-align:left; }
 }

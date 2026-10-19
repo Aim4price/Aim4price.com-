@@ -82,8 +82,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.keyboard.press('Enter');
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.body.textContent.includes('Review needed')));
- await page.click('[aria-label="About estimated selling price"]');
- assert(await page.evaluate(()=>document.querySelector('[role="note"]').textContent.includes('Actual offers may differ')));
+ assert.equal(await page.$('[aria-label="About estimated selling price"]'),null);
+ assert.equal(await page.$eval('[aria-label="Open saleability assessment"] strong',node=>node.textContent),'SALEABILITY');
+ assert(await page.evaluate(()=>!document.querySelector('[aria-label="Estimated selling price"]').textContent.includes('Open assessment')));
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.evaluate(()=>window.renderMarketDetail(undefined,{error:true}));
