@@ -1,4 +1,5 @@
 'use client';
+import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
@@ -4021,25 +4022,14 @@ export default function MyInvoicesClient({
                         </div>
                       </label>
 
-                      <label className={styles.budgetField}>
-                        <span>Warning level</span>
-                        <div className={styles.budgetPercentInput}>
-                          <input
-                            type="number"
-                            min="1"
-                            max="99"
-                            step="1"
-                            value={budgetDraft.warningPercent}
-                            onChange={(event) => {
-                              setBudgetFormError('');
-                              setBudgetDraft((current) => ({ ...current, warningPercent: event.target.value }));
-                            }}
-                            required
-                            disabled={budgetSaving}
-                          />
-                          <span>%</span>
-                        </div>
-                      </label>
+                      <BudgetWarningInput
+                        value={budgetDraft.warningPercent}
+                        disabled={budgetSaving}
+                        onChange={(warningPercent) => {
+                          setBudgetFormError('');
+                          setBudgetDraft((current) => ({ ...current, warningPercent }));
+                        }}
+                      />
                     </div>
 
                     <label className={[styles.budgetFuelToggle, styles.budgetFuelToggleCompact].join(' ')}>
