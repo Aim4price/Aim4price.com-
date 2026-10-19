@@ -15358,3 +15358,32 @@
 .replacementPriceDialog .replacementInputActions { flex: 0 0 auto; margin-top: 12px; padding: 16px 0 4px; background: var(--app-surface, #fff); }
 .replacementPriceDialog .replacementInputActions { align-items: center; }
 .replacementPriceDialog .replacementInputActions > button { margin: 0; min-height: 46px; }
+
+/* Keep missing answers clear without blurring button labels. */
+.requiredHint { display: block; margin: 6px 0 0; color: #b42318; font-size: .9rem; font-weight: 650; line-height: 1.4; }
+.field input[aria-invalid='true'],
+.field select[aria-invalid='true'],
+.stepContent [data-required-invalid='true'] {
+  border: 2px solid #c7352b;
+  border-radius: 12px;
+  outline-offset: 3px;
+}
+.stepContent[data-required-feedback='true'] .specStepCardActive {
+  border-color: #c7352b;
+  box-shadow: inset 0 0 0 1px #c7352b;
+  animation: none;
+}
+.stepContent[data-required-feedback='true'] .specStepCardActive::after,
+.basicLevelGrid[data-required-invalid='true']::after {
+  content: 'Required';
+  color: #b42318;
+  font-size: .85rem;
+  font-weight: 650;
+}
+.primaryButton:disabled, .primaryButton:disabled:hover {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}

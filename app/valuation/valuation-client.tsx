@@ -1880,10 +1880,25 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
   const [lifeWorkedPercent, setLifeWorkedPercent] = useState('');
+  const [requiredFeedback, setRequiredFeedback] = useState(false);
+
+  function requiredProps(invalid: boolean) {
+    return {
+      'aria-invalid': requiredFeedback && invalid || undefined,
+      onBlur: () => setRequiredFeedback(true),
+    };
+  }
+
+  function requiredHint(invalid: boolean) {
+    return requiredFeedback && invalid ? <small className={styles.requiredHint}>Required</small> : null;
+  }
+
   const [yearStepComplete, setYearStepComplete] = useState(false);
   const [usageStepComplete, setUsageStepComplete] = useState(false);
   const [conditionStepComplete, setConditionStepComplete] = useState(false);
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
+  useEffect(() => { setRequiredFeedback(false); }, [step, activeDetailsModal]);
+
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
   const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
   const [pendingAdvancedSection, setPendingAdvancedSection] = useState<string | null>(null);
@@ -5256,8 +5271,33 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     });
   }
 
+  function nextRequiredMessage(): string | null {
+    if (step === 6) return null;
+    if (step === 1) return selectedFamily ? null : 'Choose an equipment type.';
+    if (basicEstimateActive) {
+      if (step === 2) return normalizeText(unlistedBrandName) ? null : 'Enter the brand name.';
+      if (step === 3) return basicSpecLevel ? null : 'Choose a specification level.';
+      if (step === 4) return validateDetails();
+      if (step === 5) return basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0 ? validateDetails() : 'Enter a replacement price.';
+    }
+    if (step === 2) {
+      if (isMotorSector(selectedSector)) return validateMotorCanonicalSelection();
+      if (selectedMotorSubtypeConfig && !motorSubtypeValue) return `Choose the ${selectedMotorSubtypeConfig.fieldLabel.toLowerCase()}.`;
+      return selectedBrand ? null : 'Choose a brand.';
+    }
+    if (step === 3) {
+      if (!flowMode) return 'Choose an estimate path.';
+      if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup.';
+      if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return 'Choose a model.';
+      return validateGenericModelSelection();
+    }
+    return step === 4 ? validateDetails() : null;
+  }
+
   function handleNext() {
     if (identityTimerRef.current) return;
+    setRequiredFeedback(true);
+    if (nextRequiredMessage()) return;
     setMessage('');
 
     if (basicEstimateActive) {
@@ -6080,6 +6120,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <span className={styles.identityFieldHeading}>{renderDetailIcon('brand')}<span className={styles.fieldLabel}>Brand</span></span>
             <input
               type="text"
+              {...requiredProps(!normalizeText(unlistedBrandName))}
               value={unlistedBrandName}
               onChange={(event) => {
                 setUnlistedBrandName(event.target.value);
@@ -6089,6 +6130,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="Enter the manufacturer"
               autoComplete="off"
             />
+            {requiredHint(!normalizeText(unlistedBrandName))}
             <small className={styles.identityFieldHint}>The name shown on the asset or manufacturer’s badge.</small>
           </label>
 
@@ -6096,6 +6138,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <span className={styles.identityFieldHeading}>{renderDetailIcon('model')}<span className={styles.fieldLabel}>Model</span></span>
             <input
               type="text"
+              {...requiredProps(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
               value={typedModelName}
               onChange={(event) => {
                 const value = event.target.value;
@@ -6106,6 +6149,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="Model name or number"
               autoComplete="off"
             />
+            {requiredHint(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
             <small className={styles.identityFieldHint}>Optional - leave blank if you do not know the model.</small>
           </label>
 
@@ -6126,7 +6170,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderSpecificationChoices(selectedLevel: BasicSpecificationLevel | '', onSelect: (level: BasicSpecificationLevel) => void) {
     return (
-        <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
+        <div data-required-invalid={requiredFeedback && !selectedLevel || undefined} className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
           {BASIC_SPECIFICATION_LEVELS.map((option) => {
             const selected = selectedLevel === option.key;
             return (
@@ -6387,6 +6431,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <input
               type="text"
               inputMode="decimal"
+              {...requiredProps(!(basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0))}
               value={formatReplacementPriceInput(basicReplacementPrice)}
               onChange={(event) => {
                 handleReplacementPriceInput(event, setBasicReplacementPrice);
@@ -6395,6 +6440,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               }}
               placeholder="e.g. 1 850 000"
             />
+            {requiredHint(!(basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0))}
             {!compactAppMode ? <span className={styles.fieldHint}>Enter the asset price only. Selected extras are added separately below.</span> : null}
           </label>
         </div>
@@ -6489,6 +6535,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <span className={styles.fieldLabel}>Search brand and model</span>
             <input
               className={styles.searchInput}
+              {...requiredProps(!selectedMotorCanonicalModel)}
               value={motorCanonicalQuery}
               onChange={(event) => {
                 setMotorCanonicalQuery(event.target.value);
@@ -6503,6 +6550,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder={getSearchPlaceholder('motor', 'model')}
               autoComplete="off"
             />
+            {requiredHint(!selectedMotorCanonicalModel)}
           </label>
 
           <div className={styles.equipmentDropdownWrap}>
@@ -6640,6 +6688,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <label className={`${styles.field} ${styles.searchPanel}`}>
             <input
               className={styles.searchInput}
+              {...requiredProps(!selectedBrand)}
               value={brandSearch}
               onChange={(event) => {
                 setBrandSearch(event.target.value);
@@ -6649,6 +6698,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder={getSearchPlaceholder(selectedSector, 'brand')}
               autoComplete="off"
             />
+            {requiredHint(!selectedBrand)}
           </label>
 
           <div className={styles.equipmentDropdownWrap}>
@@ -7047,6 +7097,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <label className={styles.field}>
                 <span className={styles.fieldLabel}>Enter model name</span>
                 <input
+                  {...requiredProps(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
                   value={typedModelName}
                   onChange={(event) => {
                     setTypedModelName(event.target.value);
@@ -7056,6 +7107,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   required
                   autoComplete="off"
                 />
+                {requiredHint(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
                 <span className={styles.fieldHint}>This will be saved as a model candidate for catalogue review.</span>
               </label>
             ) : null}
@@ -7081,6 +7133,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <label className={`${styles.field} ${styles.unlistedBrandNameField}`}>
             <span className={styles.fieldLabel}>Enter brand name</span>
             <input
+              {...requiredProps(!normalizeText(unlistedBrandName))}
               value={unlistedBrandName}
               onChange={(event) => {
                 setUnlistedBrandName(event.target.value);
@@ -7089,6 +7142,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="e.g. Toyota, JCB, Mahindra"
               autoComplete="off"
             />
+            {requiredHint(!normalizeText(unlistedBrandName))}
             <span className={styles.fieldHint}>Optional. This name is saved with the estimate details, without adding a new catalogue brand.</span>
           </label>
         ) : null}
@@ -7116,6 +7170,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Enter model name</span>
             <input
+              {...requiredProps(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
               value={typedModelName}
               onChange={(event) => {
                 setTypedModelName(event.target.value);
@@ -7125,6 +7180,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               required
               autoComplete="off"
             />
+            {requiredHint(!basicEstimateActive && genericModelMode === 'manual' && !normalizeText(typedModelName))}
             <span className={styles.fieldHint}>This will be used only as the typed model name for this estimate.</span>
           </label>
         ) : null}
@@ -7421,6 +7477,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <input
                 type="text"
                 inputMode="numeric"
+                {...requiredProps(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
                 value={yearModelUnknown ? '' : year}
                 onChange={(event) => {
                   setYear(event.target.value);
@@ -7429,6 +7486,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 }}
                 placeholder={`e.g. ${CURRENT_YEAR}`}
               />
+              {requiredHint(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
             </label>
 
             <button type="button" className={`${styles.unknownAnswerButton} ${styles.unknownDangerButton}`} onClick={saveUnknownYear}>
@@ -7438,11 +7496,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
-          <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
+          <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
             <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
               Back
             </button>
-            <button type="button" className={styles.primaryButton} onClick={saveYearFromInput}>
+            <button type="button" className={styles.primaryButton} onClick={saveYearFromInput} disabled={!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR}>
               Continue
             </button>
           </div>
@@ -7485,10 +7543,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <input
                   type="text"
                   inputMode="numeric"
+                  {...requiredProps(toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}
                   value={usageAmount}
                   onChange={(event) => setUsageAmount(event.target.value)}
                   placeholder={selectedUsageDisplayUnit === 'km' ? 'e.g. 196000' : 'e.g. 3500'}
                 />
+                {requiredHint(toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}
               </label>
 
               <button
@@ -7541,11 +7601,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
-          <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
+          <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
             <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>
               Cancel
             </button>
-            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)}>
+            <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)} disabled={usageModalMode === 'hours' && showHoursInput && (toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue)) === null || Number(usageAmount) < 0)}>
               Continue
             </button>
           </div>
@@ -7591,7 +7651,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           {visibleQuestions.map((question) => {
             const answered = isSpecQuestionAnswered(question, specAnswers[question.specKey]);
             return (
-              <div key={question.specKey} className={`${styles.progressiveQuestionCard} ${answered ? styles.progressiveQuestionCardDone : ''}`}>
+              <div data-required-invalid={requiredFeedback && question.isRequired && !answered || undefined} key={question.specKey} className={`${styles.progressiveQuestionCard} ${answered ? styles.progressiveQuestionCardDone : ''}`}>
                 <div className={styles.progressiveQuestionHeader}>
                   {renderDetailIcon('specs', answered)}
                   <div className={styles.progressiveQuestionTitleWrap}>
@@ -7600,6 +7660,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </div>
                 </div>
                 {renderSpecInput(question)}
+                {requiredHint(question.isRequired && !answered)}
               </div>
             );
           })}
@@ -8148,6 +8209,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <input
                   type="text"
                   inputMode="decimal"
+                  {...requiredProps(!basicExtraReplacementPriceExVat)}
                   value={basicFamilyExtraReplacementPrice}
                   onChange={(event) => {
                     setBasicFamilyExtraReplacementPrice(event.target.value);
@@ -8156,6 +8218,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   }}
                   placeholder="e.g. 150 000"
                 />
+                {requiredHint(!basicExtraReplacementPriceExVat)}
               </label>
             ) : null}
 
@@ -8164,6 +8227,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>Extra name</span>
                   <input
+                    {...requiredProps(!normalizeText(otherExtraName))}
                     value={otherExtraName}
                     onChange={(event) => {
                       setOtherExtraName(event.target.value);
@@ -8173,12 +8237,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     maxLength={100}
                     placeholder="e.g. Weight set"
                   />
+                  {requiredHint(!normalizeText(otherExtraName))}
                 </label>
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
                   <input
                     type="text"
                     inputMode="decimal"
+                    {...requiredProps(!parseMoneyInput(otherExtraReplacementPrice))}
                     value={otherExtraReplacementPrice}
                     onChange={(event) => {
                       setOtherExtraReplacementPrice(event.target.value);
@@ -8187,12 +8253,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     }}
                     placeholder="e.g. 25 000"
                   />
+                  {requiredHint(!parseMoneyInput(otherExtraReplacementPrice))}
                 </label>
               </div>
             ) : null}
 
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
-            <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
+            <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
               <button
                 type="button"
                 className={styles.secondaryButton}
@@ -8206,6 +8273,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button
                 type="button"
                 className={styles.primaryButton}
+                disabled={!basicExtraChoice || basicExtraChoice === 'none' || !basicExtraReplacementPriceExVat || (basicExtraChoice === 'family' && !basicFamilyExtra) || (basicExtraChoice === 'other' && !normalizeText(otherExtraName))}
                 onClick={() => {
                   if (!basicExtraChoice || basicExtraChoice === 'none') {
                     setMessage('Choose a fitted extra, or go back and choose No extras.');
@@ -8641,6 +8709,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>Extra name</span>
                   <input
+                    {...requiredProps(!normalizeText(otherExtraName))}
                     value={otherExtraName}
                     onChange={(event) => {
                       setOtherExtraName(event.target.value);
@@ -8649,12 +8718,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     maxLength={100}
                     placeholder="e.g. Weight set"
                   />
+                  {requiredHint(!normalizeText(otherExtraName))}
                 </label>
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
                   <input
                     type="text"
                     inputMode="decimal"
+                    {...requiredProps(!parseMoneyInput(otherExtraReplacementPrice))}
                     value={otherExtraReplacementPrice}
                     onChange={(event) => {
                       setOtherExtraReplacementPrice(event.target.value);
@@ -8662,6 +8733,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     }}
                     placeholder="e.g. 25 000"
                   />
+                  {requiredHint(!parseMoneyInput(otherExtraReplacementPrice))}
                 </label>
               </div>
             ) : null}
@@ -9092,7 +9164,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <div className={styles.replacementOtherFields}>
                           <label className={`${styles.field} ${styles.replacementField}`}>
                             <span className={styles.fieldLabel}>Extra name</span>
-                            <input value={otherExtraName} onChange={(event) => setOtherExtraName(event.target.value)} maxLength={100} />
+                            <input {...requiredProps(!normalizeText(otherExtraName))}
+                            value={otherExtraName} onChange={(event) => setOtherExtraName(event.target.value)} maxLength={100} />
+                {requiredHint(!normalizeText(otherExtraName))}
                           </label>
                           <label className={`${styles.field} ${styles.replacementField}`}>
                             <span className={styles.fieldLabel}>Extra replacement price</span>
@@ -9396,12 +9470,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
-            <div className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
+            <div onBlurCapture={() => setRequiredFeedback(true)} data-required-feedback={requiredFeedback || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
+              {nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={requiredFeedback ? styles.requiredHint : styles.fieldHint} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
             <div
+              onPointerDownCapture={() => setRequiredFeedback(true)}
+              onFocusCapture={() => setRequiredFeedback(true)}
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
             >
               <button
@@ -9430,7 +9507,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   data-valuation-action="next"
                   onClick={handleNext}
                   disabled={
-                    preparingIdentity || valuationLoading
+                    preparingIdentity || valuationLoading || Boolean(nextRequiredMessage())
                     || (!basicEstimateActive && step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))
                   }
                 >

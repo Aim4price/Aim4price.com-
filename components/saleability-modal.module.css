@@ -844,3 +844,24 @@
   :global(:where(html:not(:has([data-website-canvas])))) .modal .result { grid-template-columns: 1fr; }
   :global(:where(html:not(:has([data-website-canvas])))) .modal .resultHero { grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; align-items: center; }
 }
+
+/* Fit the collapsed plan naturally; preserve scrolling for expanded details. */
+.modal.resultModal {
+  padding: 20px 24px;
+  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
+}
+.resultModal .header { padding-bottom: 10px; }
+.resultModal .header h2 { font-size: 1.8rem; }
+.resultModal .header p { margin-top: 4px; font-size: .95rem; }
+.resultModal .body { padding-block: 12px; scrollbar-gutter: auto; }
+.resultModal .actions { padding-top: 12px; padding-bottom: 0; }
+.resultModal .resultHero { gap: 8px; }
+.resultModal .result .valuationReminder {
+  padding: 8px 0 0;
+  border: 0;
+  border-top: 1px solid var(--app-line, #dce8e1);
+  border-radius: 0;
+  background: transparent;
+  font-size: .82rem;
+  white-space: normal;
+}
