@@ -13,6 +13,10 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
   const pairingDevice=useRef<string|null|undefined>(undefined);
   const remaining=Math.max(0,Math.ceil((expiresAt-now)/1000));
   const [showInstallShare,setShowInstallShare]=useState(false);
+  const [showManage,setShowManage]=useState(false);
+  const manageHeadingRef=useRef<HTMLHeadingElement>(null);
+  const manageButtonRef=useRef<HTMLButtonElement>(null);
+  useEffect(()=>{if(showManage)manageHeadingRef.current?.focus();},[showManage]);
   const [device, setDevice] = useState<any>(null),
     [code, setCode] = useState(""),
     [busy, setBusy] = useState(false),
@@ -70,7 +74,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       if (!r.ok) throw Error(d.error);
       setCode(d.code || "");setCopied(false);setNow(Date.now());setExpiresAt(Date.now()+(d.expiresInMinutes||15)*60000);
       if(method==='POST')pairingDevice.current=device?.id||null;
-      if (method === "DELETE") {setDevice(null);setReplace(false);pairingDevice.current=undefined;}
+      if (method === "DELETE") {setDevice(null);setReplace(false);setShowManage(false);pairingDevice.current=undefined;}
     } catch (e) {
       setError(e instanceof Error ? e.message : "Please try again.");
     } finally {
@@ -90,7 +94,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         </div>
         {device && <span className={styles.connectionStatus}>{device.status}</span>}
       </div>
-      {device && !replace && <div className={styles.connectedSummary}>
+      {device && !replace && !showManage && <div className={styles.connectedSummary}>
         <div className={styles.connectedIntro}>
           <span className={styles.successIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 12 4 4 8-8"/></svg></span>
           <div><strong>Phone connected</strong><p>{device.lastCapturedAt?'Location received. View your route below.':'On the phone: allow precise location, then tap Activate outdoors.'}</p></div>
@@ -99,7 +103,8 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
           <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
           <div><dt>Latest GPS reading</dt><dd>{device.lastCapturedAt?new Date(device.lastCapturedAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Waiting for first location'}</dd></div>
         </dl>
-        <button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports<span aria-hidden="true">→</span></button>
+        <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports<span aria-hidden="true">→</span></button>
+        <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>Manage device</button></div>
       </div>}
       {(!device||replace)&&<>
       <div className={styles.setupSteps}>
@@ -139,7 +144,15 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       {!device && <div className={styles.setupFooter}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg><p>Routes: <strong>Location history → Tracking</strong></p>
       </div>}
-      {device && <details className={styles.setupDetails}><summary>Manage device</summary><div className={styles.disconnectRow}><button type="button" onClick={()=>setReplace(true)}>Replace phone</button><button className={styles.disconnectAction} disabled={busy} type="button" onClick={() => action("DELETE")}>Disconnect phone</button><span>Saved routes will remain.</span></div></details>}
+      {device && showManage && <div className={styles.deviceManagement}>
+        <button type="button" className={styles.manageBack} onClick={()=>{setShowManage(false);requestAnimationFrame(()=>manageButtonRef.current?.focus());}}>← Back</button>
+        <h4 ref={manageHeadingRef} tabIndex={-1}>Manage device</h4>
+        <div className={styles.manageOptions}>
+          <button type="button" className={styles.secondaryAction} disabled={busy} onClick={()=>{setShowManage(false);setReplace(true);}}>Replace phone</button>
+          <button type="button" className={styles.disconnectAction} disabled={busy} onClick={()=>action("DELETE")}>{busy?'Please wait…':'Disconnect phone'}</button>
+        </div>
+        <p>Saved routes will remain.</p>
+      </div>}
     </section>
   );
 }

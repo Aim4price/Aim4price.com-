@@ -204,3 +204,21 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
  :global(:where(html:not(:has([data-website-canvas])))) .connectedSummary .connectionFacts { grid-template-columns:1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .movementActions { flex-wrap:wrap; }
 }
+
+/* Keep management within the visible connected-phone card. */
+.connectedActions { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+.connectedActions button { width:100%; justify-content:center; }
+.deviceManagement { display:grid; gap:1rem; padding:1.2rem; border:1px solid #bdd9cc; border-radius:1rem; background:#fff; }
+.deviceManagement h4 { margin:0; font-size:1.15rem; color:#173e30; }
+.deviceManagement h4:focus { outline:none; }
+.deviceManagement p { margin:0; color:#5e746a; font-size:.9rem; }
+.manageOptions { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+.manageOptions button { min-height:3rem; padding:.75rem 1rem; border:1px solid #bdd9cc; border-radius:.8rem; font:inherit; font-weight:750; cursor:pointer; }
+.manageOptions .disconnectAction { background:#fff5f2; border-color:#e5bfb8; color:#a33c32; }
+.manageBack { justify-self:start; padding:.6rem .9rem; border:1px solid #bdd9cc; border-radius:.7rem; background:#f4f9f6; color:#185c43; font:inherit; font-weight:700; cursor:pointer; }
+.manageOptions button:focus-visible,.manageBack:focus-visible { outline:3px solid #5abf98; outline-offset:3px; }
+.manageOptions button:disabled { opacity:.55; cursor:wait; }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .connectedActions,
+ :global(:where(html:not(:has([data-website-canvas])))) .manageOptions { grid-template-columns:1fr; }
+}
