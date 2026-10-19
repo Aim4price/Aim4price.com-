@@ -350,7 +350,11 @@ export default function Validation(){
    await closeChild();await page.click('[aria-label="Close lead management"]');
    await click('admin');await page.waitForFunction(()=>document.body.textContent.includes('Business acceptances (1)'));
    await page.$$eval('details',els=>els.forEach(e=>e.open=true));await click('Prepare listing');
-   await fill('[name=until]','2099-12-31');await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));
+   await page.type('input[aria-label="Access expiry"]','31/12/2099');
+   assert.equal(await page.$eval('input[name=until]',input=>input.value),'2099-12-31','Visible expiry date is saved in ISO format');
+   await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));
+   const activation=JSON.parse(requests.filter(r=>r.path==='/api/admin/guest-businesses'&&r.method==='POST').at(-1).data);
+   assert.equal(activation.accessUntil,'2099-12-31T23:59:59Z','Activation submits the selected expiry date');
    assert.ok(activated);await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));await click('Suspend access');await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));assert.equal(activated,false);
   }
   // Standard outside sharing must not create a snapshot or guest lead.
