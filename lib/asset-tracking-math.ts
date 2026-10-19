@@ -5,6 +5,9 @@ export type TrackingPoint = {
   accuracy: number;
   sessionId: string;
   deviceId?: string;
+  sampleId?: string;
+  context?: boolean;
+  receivedAt?: string;
 };
 export function distanceMeters(a: TrackingPoint, b: TrackingPoint): number {
   const rad = Math.PI / 180;
@@ -111,7 +114,15 @@ export function summarizeTracking(input: TrackingPoint[]) {
   const observedSpan = readings.length > 1
     ? (Date.parse(readings[readings.length-1].capturedAt)-Date.parse(readings[0].capturedAt))/1000 : 0;
   gapSeconds = Math.max(0,observedSpan-movingSeconds-stationarySeconds);
+  const gaps=readings.flatMap((point,i)=>{
+    if(!i||point.speedKmh!==null)return [];
+    const before=readings[i-1];
+    return [{from:before.capturedAt,to:point.capturedAt,seconds:(Date.parse(point.capturedAt)-Date.parse(before.capturedAt))/1000,
+      reason:before.sessionId!==point.sessionId||before.deviceId!==point.deviceId?'Recording changed':'Missing or unreliable GPS'}];
+  });
   return {
+    gaps,
+    rejectedReadings:points.length-readings.length,
     points,
     readings,
     stops,

@@ -20,7 +20,7 @@ export default function AssetLocationHistoryMap({points,routeSegments,stops,onSe
     const stride=Math.max(1,Math.ceil(points.length/5000));
     points.forEach((p,i)=>{if(i%stride===0||i===points.length-1){const label=document.createElement('span');label.textContent=p.label;L.circleMarker([p.latitude,p.longitude],{radius:3,color:'#0f5840',fillOpacity:1,renderer}).addTo(map).bindPopup(label);}});
     const marker=(p:{latitude:number;longitude:number;label:string},text:string,color:string,offset:number)=>{const label=document.createElement('span');label.textContent=text;label.style.cssText=`background:${color};color:white;border:2px solid white;border-radius:12px;padding:4px 8px;font:bold 12px Arial;white-space:nowrap`;const popup=document.createElement('span');popup.textContent=p.label;L.marker([p.latitude,p.longitude],{icon:L.divIcon({html:label,className:'',iconSize:[55,24],iconAnchor:[27,offset]}),title:text,zIndexOffset:1000}).addTo(map).bindPopup(popup);};
-    stops?.forEach((p,i)=>marker(p,String(i+1),'#ac6e1b',12));
+    stops?.forEach((p,i)=>marker(p,'Stop '+(i+1),'#ac6e1b',12));
     if(points.length){marker(points[0],'Start','#176d50',32);marker(points[points.length-1],'End','#2561a1',-8);}
    } else points.forEach((point,index)=>{
     const icon=L.divIcon({className:styles.marker,html:`<span class="${styles.pin}" style="background:${index===0?'#0f5840':'#367b9c'}"><b style="transform:rotate(45deg);color:white;font:800 12px Arial">${index+1}</b></span>`,iconSize:[38,48],iconAnchor:[19,48]});

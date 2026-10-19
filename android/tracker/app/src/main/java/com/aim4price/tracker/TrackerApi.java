@@ -26,6 +26,10 @@ public class TrackerApi {
   // Bounded catch-up work. Repeat on the next upload tick until the durable queue is empty.
   for(int n=0;n<8;n++){
    JSONArray points=store.batch();JSONObject body=new JSONObject().put("points",points).put("active",prefs.getBoolean("active",false)).put("stateAt",Instant.now().toString());
+   JSONObject diagnostics=new JSONObject().put("pending",Math.max(0,store.pending()-points.length())).put("rejectedFixes",prefs.getInt("rejectedFixes",0)).put("accuracy",prefs.getFloat("accuracy",-1)).put("provider",prefs.getString("provider","unknown"));
+   for(String field:new String[]{"lastCallbackAt","lastGpsAt","lastSavedAt"}){long value=prefs.getLong(field,0);if(value>0)diagnostics.put(field,Instant.ofEpochMilli(value).toString());}
+   diagnostics.put("version",context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName);
+   body.put("diagnostics",diagnostics);
    JSONObject result;try{prefsForUsage.set(prefs);result=post("/api/tracking/points",body,token);}finally{prefsForUsage.remove();}store.acknowledge(result.getJSONArray("accepted"));prefs.edit().putString("sync","Last upload: "+java.time.LocalTime.now().withNano(0)).putLong("lastUploadAt",System.currentTimeMillis()).putInt("pending",store.pending()).apply();
    if(points.length()<120)break;
   }

@@ -21,7 +21,8 @@ public class MainActivity extends Activity {
    boolean active=p.getBoolean("active",false);
    status.setText(paired?(active?"Tracking active":"Tracking paused"):(connectionError.isEmpty()?"Ready to connect":connectionError));
    if(paired&&gpsStatus!=null){
-    gpsStatus.setText(p.getString("gps","Waiting for first GPS location"));
+    long gpsAge=p.getLong("lastGpsAt",0);float accuracy=p.getFloat("accuracy",-1);
+    gpsStatus.setText(gpsAge==0?"Waiting for GPS":("Last usable GPS: "+Math.max(0,(System.currentTimeMillis()-gpsAge)/1000)+" sec ago"+(accuracy>=0?" · ±"+Math.round(accuracy)+" m":"")));
     syncStatus.setText(p.getString("sync","Waiting for first upload"));
     int pending=p.getInt("pending",0);queueStatus.setText(pending==0?(p.getLong("lastUploadAt",0)==0?"Waiting for first upload":"All saved readings uploaded"):pending+" readings saved on this phone");
     String issue=p.getString("gpsIssue","");String upload=p.getString("issue","");if(!upload.isEmpty())issue+=(issue.isEmpty()?"":"\n")+upload;

@@ -262,3 +262,11 @@ test("two devices using the same session identifier never form a route",()=>{
  const r=summarizeTracking([point(0,0,{deviceId:'phone-a'}),point(1,.001,{deviceId:'phone-b'})]);
  assert.equal(r.distanceKm,0);assert.equal(r.gapSeconds,60);assert.equal(r.segments.length,2);
 });
+test("diagnostics are bounded and older phones remain compatible",()=>{
+ const now=Date.now(),body={points:[],active:true,stateAt:new Date(now).toISOString()};
+ assert.equal(api.validateUpload(body,now).diagnostics,null);
+ const d=api.validateUpload({...body,diagnostics:{pending:3,rejectedFixes:9,accuracy:12.5,provider:'fused',version:'0.7',lastGpsAt:new Date(now-10000).toISOString(),token:'must-not-store'}},now).diagnostics;
+ assert.equal(d.pending,3);assert.equal(d.accuracy,12.5);assert.equal(d.token,undefined);
+ const bad=api.validateUpload({...body,diagnostics:{pending:-2,rejectedFixes:NaN,accuracy:Infinity,provider:'injected',version:'<script>',lastGpsAt:'bad'}},now).diagnostics;
+ assert.equal(bad,null);
+});

@@ -11,18 +11,21 @@ public class TrackingService extends Service implements LocationListener {
  LocationManager manager;TrackerStore store;Location anchor;long lastAttempt=0;boolean started=false,hasSaved=false;
  final TrackingCadence cadence=new TrackingCadence();final Handler main=new Handler(Looper.getMainLooper());
 
+ final ExecutorService storageWorker=Executors.newSingleThreadExecutor();
  final ScheduledExecutorService worker=Executors.newSingleThreadScheduledExecutor();
  public static void channel(Context c){((NotificationManager)c.getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(new NotificationChannel("tracking","Equipment tracking",NotificationManager.IMPORTANCE_LOW));}
  public static Notification notification(Context c,String text){channel(c);return new Notification.Builder(c,"tracking").setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("Aim4price Tracker").setContentText(text).setOngoing(true).setContentIntent(PendingIntent.getActivity(c,0,new Intent(c,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT)).build();}
  public int onStartCommand(Intent intent,int flags,int startId){
   if(!TrackerApi.prefs(this).getBoolean("active",false)){stopSelf();return START_NOT_STICKY;}
   startForeground(1,notification(this,"Recording equipment location"));if(started)return START_STICKY;started=true;store=new TrackerStore(this);manager=(LocationManager)getSystemService(LOCATION_SERVICE);
-  try{manager.requestLocationUpdates(LocationManager.GPS_PROVIDER,TrackingCadence.MOVING_INTERVAL_MS,0,this,Looper.getMainLooper());}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).putString("issue","Enable precise location, then Activate.").apply();stopSelf();return START_NOT_STICKY;}
+  try{subscribe(TrackingCadence.MOVING_INTERVAL_MS);}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).putString("issue","Enable precise location, then Activate.").apply();stopSelf();return START_NOT_STICKY;}
   worker.scheduleWithFixedDelay(this::upload,0,TrackingCadence.UPLOAD_INTERVAL_SECONDS,TimeUnit.SECONDS);return START_STICKY;
  }
  public void onLocationChanged(Location location){
   long now=System.currentTimeMillis();if(!TrackerApi.prefs(this).getBoolean("active",false))return;
-  if(!location.hasAccuracy()||location.getAccuracy()>50||now-location.getTime()>120000||location.getTime()>now+120000){TrackerApi.prefs(this).edit().putString("gpsIssue","GPS reading too inaccurate or outdated. Move the phone near a window.").apply();return;}
+  var diagnostics=TrackerApi.prefs(this);
+  diagnostics.edit().putLong("lastCallbackAt",now).putFloat("accuracy",location.hasAccuracy()?location.getAccuracy():-1).apply();
+  if(!location.hasAccuracy()||location.getAccuracy()>50||now-location.getTime()>120000||location.getTime()>now+120000){TrackerApi.prefs(this).edit().putInt("rejectedFixes",diagnostics.getInt("rejectedFixes",0)+1).putString("gpsIssue","GPS reading too inaccurate or outdated. Move the phone near a window.").apply();return;}
   if(!cadence.isFresh(location.getTime()))return;
   TrackerApi.prefs(this).edit().putString("gps","Last GPS: "+java.time.LocalTime.now().withNano(0)).putLong("lastGpsAt",now).putString("gpsIssue","").apply();
   boolean moved=anchor==null||anchor.distanceTo(location)>Math.max(10,Math.max(anchor.getAccuracy(),location.getAccuracy()));
@@ -33,14 +36,22 @@ public class TrackingService extends Service implements LocationListener {
   if(!save)return;
   boolean stopped=cadence.stopped();final boolean firstReading=!hasSaved;hasSaved=true;
   var p=TrackerApi.prefs(this);String session=p.getString("session","");if(session.isEmpty()){session=UUID.randomUUID().toString();p.edit().putString("session",session).apply();}
-  final String sid=session;worker.execute(()->{try{
+  final String sid=session;storageWorker.execute(()->{try{
    JSONObject point=new JSONObject().put("id",UUID.randomUUID().toString()).put("sessionId",sid).put("capturedAt",Instant.ofEpochMilli(location.getTime()).toString()).put("latitude",location.getLatitude()).put("longitude",location.getLongitude()).put("accuracy",location.getAccuracy()).put("motion",stopped?"stationary":"moving");
    if(!store.add(point)){p.edit().putBoolean("active",false).putString("issue","Offline queue full. Connect to upload readings before activating again.").apply();stopSelf();return;}
-   p.edit().putInt("pending",store.pending()).apply();
-   if(firstReading||System.currentTimeMillis()-lastAttempt>=60000)upload();
+   p.edit().putInt("pending",store.pending()).putLong("lastSavedAt",System.currentTimeMillis()).apply();
+   if(firstReading&&!worker.isShutdown())worker.execute(this::upload);
   }catch(Exception e){p.edit().putString("issue","Could not save reading. Open the app to check storage.").apply();}});
  }
- void requestUpdates(long interval){try{manager.removeUpdates(this);manager.requestLocationUpdates(LocationManager.GPS_PROVIDER,interval,0,this,Looper.getMainLooper());}catch(SecurityException e){TrackerApi.prefs(this).edit().putString("gpsIssue","Location permission was removed. Open phone settings.").apply();}}
+ void subscribe(long interval) throws SecurityException {
+  String provider=LocationManager.GPS_PROVIDER;
+  if(Build.VERSION.SDK_INT>=31&&manager.hasProvider(LocationManager.FUSED_PROVIDER)){
+   provider=LocationManager.FUSED_PROVIDER;
+   manager.requestLocationUpdates(provider,new LocationRequest.Builder(interval).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).setMinUpdateIntervalMillis(9000).setMaxUpdateDelayMillis(20000).build(),getMainExecutor(),this);
+  }else manager.requestLocationUpdates(provider,interval,0,this,Looper.getMainLooper());
+  TrackerApi.prefs(this).edit().putString("provider",provider).apply();
+ }
+ void requestUpdates(long interval){try{manager.removeUpdates(this);subscribe(interval);}catch(SecurityException e){TrackerApi.prefs(this).edit().putString("gpsIssue","Location permission was removed. Open phone settings.").apply();}}
  void upload(){
   var prefs=TrackerApi.prefs(this);long lastGps=prefs.getLong("lastGpsAt",0);
   if(System.currentTimeMillis()-lastGps>120000){prefs.edit().putString("gpsIssue","Waiting for a clear GPS signal. Keep the phone near a window.").apply();main.post(()->{if(started&&prefs.getBoolean("active",false))requestUpdates(cadence.interval());});}
@@ -49,5 +60,5 @@ public class TrackingService extends Service implements LocationListener {
  public void onProviderEnabled(String provider){TrackerApi.prefs(this).edit().putString("gpsIssue","Waiting for GPS").apply();}
  public void onStatusChanged(String provider,int status,Bundle extras){}
  public IBinder onBind(Intent intent){return null;}
- public void onDestroy(){started=false;main.removeCallbacksAndMessages(null);if(manager!=null)manager.removeUpdates(this);worker.shutdown();super.onDestroy();}
+ public void onDestroy(){started=false;main.removeCallbacksAndMessages(null);if(manager!=null)manager.removeUpdates(this);worker.shutdown();storageWorker.shutdown();super.onDestroy();}
 }
