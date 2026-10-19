@@ -4,6 +4,7 @@ export type TrackingPoint = {
   longitude: number;
   accuracy: number;
   sessionId: string;
+  deviceId?: string;
 };
 export function distanceMeters(a: TrackingPoint, b: TrackingPoint): number {
   const rad = Math.PI / 180;
@@ -61,7 +62,7 @@ export function summarizeTracking(input: TrackingPoint[]) {
     if (seconds <= 0) continue;
     const metres = distanceMeters(anchor, point),
       threshold = Math.max(10, anchor.accuracy, point.accuracy);
-    const sameSession = previous.sessionId === point.sessionId;
+    const sameSession = previous.sessionId === point.sessionId && previous.deviceId === point.deviceId;
     const stationary = metres <= threshold;
     if (!sameSession || seconds > (stationary ? 720 : 180)) {
       gapSeconds += seconds;
@@ -105,6 +106,11 @@ export function summarizeTracking(input: TrackingPoint[]) {
     previous = anchor = point;
   }
   finishStop();
+  // Include intervals broken by rejected GPS fixes, too. Every second between
+  // the first and last usable reading is observed movement, stationary, or unknown.
+  const observedSpan = readings.length > 1
+    ? (Date.parse(readings[readings.length-1].capturedAt)-Date.parse(readings[0].capturedAt))/1000 : 0;
+  gapSeconds = Math.max(0,observedSpan-movingSeconds-stationarySeconds);
   return {
     points,
     readings,

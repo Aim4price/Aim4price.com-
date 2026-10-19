@@ -7,7 +7,7 @@ import { ensureTrackingTables } from "../../../../../../lib/asset-tracking";
 import { summarizeTracking } from "../../../../../../lib/asset-tracking-math";
 import { getDb } from "../../../../../../lib/db";
 import {buildMovementHtml,buildMovementWorkbook} from "../../../../../../lib/asset-movement-report";
-import {validTrackingDay,validTrackingSnapshot,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL} from "../../../../../../lib/asset-tracking-history";
+import {validTrackingDay,validTrackingSnapshot,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor} from "../../../../../../lib/asset-tracking-history";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export async function GET(
@@ -21,6 +21,18 @@ export async function GET(
       to = request.nextUrl.searchParams.get("to");
     const snapshotAt=request.nextUrl.searchParams.get('snapshotAt');
     if(snapshotAt && !validTrackingSnapshot(snapshotAt))return trackingJson({error:'Invalid history snapshot.'},400);
+    const deviceId=request.nextUrl.searchParams.get('deviceId'),sessionId=request.nextUrl.searchParams.get('sessionId');
+    if((deviceId||sessionId)&&(!validTrackingId(deviceId)||!validTrackingId(sessionId)))return trackingJson({error:'Choose a valid recording session.'},400);
+    if(request.nextUrl.searchParams.get('view')==='sessions'){
+      const before=request.nextUrl.searchParams.get('before');
+      if([from,to].some(v=>v&&!validTrackingDay(v)) || (from&&to&&from>to) || (before&&!validSessionCursor(before)))return trackingJson({error:'Choose a valid date range or session.'},400);
+      const snapshot=snapshotAt||new Date().toISOString();
+      await ensureTrackingTables();
+      const result=await getDb().query(TRACKING_HISTORY_SESSIONS_SQL,[access.ownerId,params.assetId,from||null,to||null,before||null,snapshot]);
+      const items=result.rows.slice(0,30).map(row=>({id:row.device_id+'-'+row.session_id,deviceId:row.device_id,sessionId:row.session_id,day:row.day,from:row.day,to:row.end_day,firstCapturedAt:new Date(row.first_captured_at).toISOString(),lastCapturedAt:new Date(row.last_captured_at).toISOString(),readings:Number(row.readings)}));
+      const last=items.at(-1);
+      return trackingJson({items,nextBefore:result.rows.length>30&&last?[last.lastCapturedAt,last.deviceId,last.sessionId].join('|'):null,snapshotAt:snapshot});
+    }
     if(request.nextUrl.searchParams.get('view')==='entries'){
       const before=request.nextUrl.searchParams.get('before');
       if([from,to,before].some(v=>v&&!validTrackingDay(v)) || (from&&to&&from>to))return trackingJson({error:'Choose a valid date range.'},400);
@@ -34,13 +46,13 @@ export async function GET(
       !validTrackingDay(from) ||
       !validTrackingDay(to) ||
       from! > to! ||
-      Date.parse(to!) - Date.parse(from!) > 30 * 86400000
+      (!sessionId && Date.parse(to!) - Date.parse(from!) > 30 * 86400000)
     )
       return trackingJson({ error: "Choose up to 31 calendar days." }, 400);
     await ensureTrackingTables();
     const r = await getDb().query(
-      `SELECT p.captured_at,p.latitude,p.longitude,p.accuracy,p.session_id FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.history_deleted_at IS NULL AND ($5::timestamptz IS NULL OR p.received_at <= $5::timestamptz) AND p.captured_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg') AND p.captured_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg') ORDER BY p.captured_at LIMIT 50001`,
-      [access.ownerId, params.assetId, from, to, snapshotAt],
+      `SELECT p.device_id,p.captured_at,p.latitude,p.longitude,p.accuracy,p.session_id FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.history_deleted_at IS NULL AND ($6::uuid IS NULL OR (p.device_id=$6::uuid AND p.session_id=$7::uuid)) AND ($5::timestamptz IS NULL OR p.received_at <= $5::timestamptz) AND p.captured_at >= ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg') AND p.captured_at < (($4::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg') ORDER BY p.captured_at LIMIT 50001`,
+      [access.ownerId, params.assetId, from, to, snapshotAt, deviceId, sessionId],
     );
     if (r.rows.length > 50000)
       return trackingJson(
@@ -53,6 +65,7 @@ export async function GET(
       longitude: Number(p.longitude),
       accuracy: Number(p.accuracy),
       sessionId: p.session_id,
+      deviceId: p.device_id,
     }));
     const report = summarizeTracking(points);
     const format = request.nextUrl.searchParams.get("format");
@@ -76,6 +89,15 @@ export async function DELETE(request:NextRequest,{params}:{params:{assetId:strin
     const access=await trackingOwner(request,params.assetId);
     if(access instanceof NextResponse)return access;
     const day=request.nextUrl.searchParams.get('day'),snapshotAt=request.nextUrl.searchParams.get('snapshotAt');
+    const deviceId=request.nextUrl.searchParams.get('deviceId'),sessionId=request.nextUrl.searchParams.get('sessionId');
+    if(deviceId||sessionId){
+      const from=request.nextUrl.searchParams.get('from'),to=request.nextUrl.searchParams.get('to');
+      if(!validTrackingId(deviceId)||!validTrackingId(sessionId)||!validTrackingDay(from)||!validTrackingDay(to)||from>to||!validTrackingSnapshot(snapshotAt))return trackingJson({error:'Choose a valid recording session.'},400);
+      await ensureTrackingTables();
+      const result=await getDb().query(DELETE_TRACKING_SESSION_SQL,[access.ownerId,params.assetId,deviceId,sessionId,from,to,snapshotAt]);
+      if(!result.rowCount)return trackingJson({error:'This recording session is no longer available. Refresh history.'},404);
+      return trackingJson({ok:true});
+    }
     if(!validTrackingDay(day)||!validTrackingSnapshot(snapshotAt))return trackingJson({error:'Choose a valid tracking entry.'},400);
     await ensureTrackingTables();
     const result=await getDb().query(DELETE_TRACKING_DAY_SQL,[access.ownerId,params.assetId,day,snapshotAt]);
