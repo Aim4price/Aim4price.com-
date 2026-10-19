@@ -1,7 +1,7 @@
 .content{display:grid;gap:1.2rem;color:var(--text,#17382f)}
 .summary{padding:1.1rem 1.2rem;background:rgba(38,150,110,.09);border:1px solid rgba(38,150,110,.22);border-radius:1rem}
 .summary strong{font-size:1.05rem;font-weight:800}.summary p,.empty p{margin:.45rem 0 0;line-height:1.6}
-.filters{display:flex;align-items:end;flex-wrap:wrap;gap:.85rem}.filters label{display:grid;gap:.45rem;font-size:.85rem;font-weight:750;flex:1;min-width:8rem}
+.filters{display:flex;align-items:flex-end;flex-wrap:wrap;gap:.85rem}.filters label{display:grid;gap:.45rem;font-size:.85rem;font-weight:750;flex:1;min-width:8rem}
 .filters input{width:100%;box-sizing:border-box;min-height:2.8rem;border:1px solid rgba(40,100,80,.4);border-radius:.7rem;padding:.55rem .75rem;background:var(--surface,#fff);color:inherit;font:inherit}
 .filters button{min-height:2.8rem;border:1px solid #287b60;background:#196348;color:white;border-radius:.7rem;padding:.65rem 1rem;font:inherit;font-weight:750;cursor:pointer}.filters button:disabled{opacity:.5;cursor:default}
 .filters input:focus-visible,.filters button:focus-visible,.list a:focus-visible{outline:3px solid #5abf98;outline-offset:3px}
@@ -101,4 +101,27 @@
  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch { display:grid; grid-template-columns:1fr 1fr; width:100%; min-width:0; box-sizing:border-box; }
  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch button { min-width:0; padding:.65rem .35rem; gap:.35rem; font-size:.8rem; white-space:normal; }
  :global(:where(html:not(:has([data-website-canvas])))) .trackingList .recordActions { display:grid; grid-template-columns:1fr; }
+}
+
+/* Match both history views: dates first, equal view choices on the right. */
+.historyToolbar { display:grid; grid-template-columns:minmax(0,1fr) 24rem; align-items:flex-end; gap:1rem; padding:0 0 .85rem; margin:0; }
+.historyToolbar > .filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; min-width:0; }
+.historyToolbar > .filters label { min-width:0; gap:.4rem; }
+.historyToolbar > .historySwitch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.25rem; width:100%; height:3.2rem; padding:.25rem; box-sizing:border-box; border-radius:.9rem; }
+.historyToolbar > .historySwitch button { min-width:0; min-height:0; height:100%; padding:.45rem .65rem; box-sizing:border-box; }
+.trackingListHeading .refreshButton { min-height:2.8rem; min-width:8.6rem; padding:.35rem .8rem .35rem .4rem; gap:.6rem; background:#fff; }
+.refreshIcon { display:grid; place-items:center; width:2rem; height:2rem; border-radius:.6rem; background:#e7f2ec; color:#176348; }
+.refreshIcon svg { width:1.2rem; height:1.2rem; stroke-width:2; }
+.refreshButton:hover:not(:disabled) { background:#eef7f2; border-color:#73a58b; }
+@media(prefers-reduced-motion:no-preference) {
+ .refreshButton[aria-busy="true"] .refreshIcon svg { animation:historyRefresh 1.2s linear infinite; }
+}
+@keyframes historyRefresh { to { transform:rotate(360deg); } }
+@media(max-width:720px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar { grid-template-columns:1fr; gap:.85rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch { height:auto; min-height:3.2rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .historySwitch button { min-height:2.7rem; }
+}
+@media(max-width:480px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar > .filters { grid-template-columns:1fr; gap:.65rem; }
 }

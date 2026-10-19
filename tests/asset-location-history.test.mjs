@@ -7,7 +7,7 @@ const source=readFileSync(new URL('../app/api/asset-register/[assetId]/locations
 const js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
 const assetId='11111111-1111-4111-8111-111111111111';
 function setup({signedIn=true,asset=true,rows=[]}={}){
- const calls=[];const exports={};const api={getServerSession:async()=>signedIn?{user:{id:'owner-1'}}:null,getAssetRegisterAccountAccess:async()=>true,getAssetRegisterItemById:async(owner,id)=>{calls.push(['asset',owner,id]);return asset?{id}:null;},ensureFuelLedgerTables:async()=>{},getDb:()=>({query:async(sql,params)=>{calls.push(['query',sql,params]);return {rows};}}),businessJson:(body,status=200)=>({body,status}),businessError:()=>({status:500})};
+ const calls=[];const exports={};const api={getServerSession:async()=>signedIn?{user:{id:'owner-1'}}:null,getAssetRegisterAccountAccess:async()=>true,getAssetRegisterItemById:async(owner,id)=>{calls.push(['asset',owner,id]);return asset?{id}:null;},ensureLocationHistorySchema:async()=>{},getDb:()=>({query:async(sql,params)=>{calls.push(['query',sql,params]);return {rows};}}),businessJson:(body,status=200)=>({body,status}),businessError:()=>({status:500})};
  vm.runInNewContext(js,{exports,require:()=>api,Date,Number});return {get:query=>exports.GET({nextUrl:new URL('https://example.test/?'+query)},{params:{assetId}}),calls};
 }
 test('unauthenticated and missing assets never query history',async()=>{for(const config of [{signedIn:false},{asset:false}]){const h=setup(config);const result=await h.get('');assert.ok([403,404].includes(result.status));assert.equal(h.calls.filter(c=>c[0]==='query').length,0);}});
