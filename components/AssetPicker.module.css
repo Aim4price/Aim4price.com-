@@ -9,7 +9,11 @@
   align-items: center;
   gap: 0.85rem !important;
   margin: 0 !important;
-  padding: 1.15rem var(--picker-padding) !important;
+  padding: 1.15rem var(--picker-padding) 0.65rem !important;
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1;
+  background: var(--app-surface, #fff) !important;
 }
 .modal.modal.modal [data-asset-choice-toolbar] > input,
 .modal.modal.modal [data-asset-choice-toolbar] > label {
@@ -43,8 +47,13 @@
   min-height: 0 !important;
   max-height: none !important;
   gap: 0.8rem !important;
-  margin: -1.25rem calc(var(--picker-padding) - 1.25rem) 0 !important;
+  /* Keep the scrolling viewport below the toolbar. Side padding still leaves
+     room for the rounded hover outline without clipping it. */
+  margin: 0 calc(var(--picker-padding) - 1.25rem) 0 !important;
   padding: 1.25rem !important;
+  position: relative !important;
+  inset: auto !important;
+  z-index: 0;
   scroll-padding: 1.25rem;
   overflow-y: auto !important;
   overflow-x: hidden !important;
