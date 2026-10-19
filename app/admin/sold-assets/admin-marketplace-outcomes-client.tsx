@@ -1,5 +1,6 @@
 'use client';
 
+import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   formatAdminMarketplaceMoney,
@@ -468,14 +469,8 @@ export default function AdminMarketplaceOutcomesClient({
           ) : null}
         </div> : <div className={styles.empty}><strong>No outcomes recorded.</strong></div>}
 
-        {report.outcomes.length ? <footer className={styles.pagination}>
-          <span>{filteredOutcomes.length.toLocaleString('en-ZA')} matching · {report.outcomes.length.toLocaleString('en-ZA')} all time</span>
-          <div>
-            <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage <= 1}>Previous</button>
-            <strong>Page {currentPage} of {totalPages}</strong>
-            <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={currentPage >= totalPages}>Next</button>
-          </div>
-        </footer> : null}
+        {report.outcomes.length ? <ListPagination label="Marketplace outcome pages" page={currentPage} pageCount={totalPages} onPageChange={setPage}
+          summary={<>{filteredOutcomes.length.toLocaleString('en-ZA')} matching · {report.outcomes.length.toLocaleString('en-ZA')} all time</>} /> : null}
       </section>
 
       {detailOutcome ? (

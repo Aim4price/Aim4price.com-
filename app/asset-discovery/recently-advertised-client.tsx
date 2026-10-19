@@ -1,4 +1,5 @@
 "use client";
+import ListPagination from '../../components/ListPagination';
 import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
@@ -976,20 +977,9 @@ export default function RecentlyAdvertisedClient({
       </section>
 
       {!loading && !error && pagination.totalItems > 0 ? (
-        <nav className={`${styles.discoveryPagination} ${styles.recentAdvertPagination}`} aria-label="Recently advertised pagination">
-          <div className={styles.discoveryPaginationInfo}>
-            <span className={styles.discoveryPaginationSummary}>
-              Showing <strong>{pagination.rangeStart}-{pagination.rangeEnd}</strong> of <strong>{pagination.totalItems}</strong>
-            </span>
-          </div>
-          {pagination.totalPages > 1 ? (
-            <div className={styles.discoveryPaginationControls}>
-              <button type="button" className={styles.discoveryPaginationButton} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={!pagination.hasPreviousPage || loading}>Previous</button>
-              <span className={styles.recentAdvertPageLabel}>Page {pagination.page} of {pagination.totalPages}</span>
-              <button type="button" className={styles.discoveryPaginationButton} onClick={() => setCurrentPage((page) => Math.min(pagination.totalPages, page + 1))} disabled={!pagination.hasNextPage || loading}>Next</button>
-            </div>
-          ) : null}
-        </nav>
+        <ListPagination label="Recently advertised pagination" page={pagination.page} pageCount={pagination.totalPages}
+          onPageChange={setCurrentPage} disabled={loading}
+          summary={<>Showing {pagination.rangeStart}–{pagination.rangeEnd} of {pagination.totalItems}</>} />
       ) : null}
 
       {sourcingRequest ? (

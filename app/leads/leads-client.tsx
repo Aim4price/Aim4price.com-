@@ -1,4 +1,5 @@
 'use client';
+import ListPagination from '../../components/ListPagination';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import ManageActionGrid from '../../components/leads/ManageActionGrid';
@@ -242,7 +243,6 @@ const MAX_LEAD_ASSET_PHOTOS = 12;
 const MAX_LEAD_ASSET_PHOTO_BYTES = 5 * 1024 * 1024;
 const LEAD_ASSET_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const LEADS_PER_PAGE = 10;
-const PAGINATION_WINDOW = 5;
 
 const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'all', label: 'All leads' },
@@ -1908,18 +1908,6 @@ export default function LeadsClient({
   }, [filteredLeads, visibleLeadPage]);
   const leadRangeStart = filteredLeads.length ? (visibleLeadPage - 1) * LEADS_PER_PAGE + 1 : 0;
   const leadRangeEnd = Math.min(visibleLeadPage * LEADS_PER_PAGE, filteredLeads.length);
-  const leadPaginationPages = useMemo(() => {
-    const maxButtons = Math.min(PAGINATION_WINDOW, totalLeadPages);
-    const halfWindow = Math.floor(maxButtons / 2);
-    let startPage = Math.max(1, visibleLeadPage - halfWindow);
-    const endOverflow = startPage + maxButtons - 1 - totalLeadPages;
-
-    if (endOverflow > 0) {
-      startPage = Math.max(1, startPage - endOverflow);
-    }
-
-    return Array.from({ length: maxButtons }, (_item, index) => startPage + index);
-  }, [totalLeadPages, visibleLeadPage]);
   const hasActiveLeadFilter = monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
   const activeLeadFilterLabel = useMemo(() => {
     const labels: string[] = [];
@@ -3773,50 +3761,8 @@ export default function LeadsClient({
           ) : null}
 
           {!isLoading && filteredLeads.length > LEADS_PER_PAGE ? (
-            <nav className={`${useDealerWorkspaceStyles ? workspaceStyles.pagination : ''} ${styles.leadPagination}`} aria-label="Lead pagination">
-              <div className={styles.leadPaginationSummary}>
-                Showing <strong>{leadRangeStart}</strong>-<strong>{leadRangeEnd}</strong> of <strong>{filteredLeads.length}</strong> leads
-              </div>
-
-              <div className={styles.leadPaginationControls}>
-                <button
-                  type="button"
-                  className={styles.leadPaginationButton}
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={visibleLeadPage <= 1}
-                  aria-label="Show previous leads page"
-                >
-                  <ChevronLeftIcon className={assetStyles.buttonIcon} />
-                  <span>Previous</span>
-                </button>
-
-                <div className={styles.leadPaginationPages}>
-                  {leadPaginationPages.map((page) => (
-                    <button
-                      type="button"
-                      key={`lead-page-${page}`}
-                      className={`${styles.leadPaginationPageButton} ${page === visibleLeadPage ? styles.leadPaginationPageButtonActive : ''}`}
-                      onClick={() => setCurrentPage(page)}
-                      aria-current={page === visibleLeadPage ? 'page' : undefined}
-                      aria-label={`Show leads page ${page}`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  type="button"
-                  className={styles.leadPaginationButton}
-                  onClick={() => setCurrentPage((page) => Math.min(totalLeadPages, page + 1))}
-                  disabled={visibleLeadPage >= totalLeadPages}
-                  aria-label="Show next leads page"
-                >
-                  <span>Next</span>
-                  <ChevronRightIcon className={assetStyles.buttonIcon} />
-                </button>
-              </div>
-            </nav>
+            <ListPagination label="Lead pagination" page={visibleLeadPage} pageCount={totalLeadPages}
+              onPageChange={setCurrentPage} summary={<>Showing {leadRangeStart}–{leadRangeEnd} of {filteredLeads.length} leads</>} />
           ) : null}
         </section>
       </section>

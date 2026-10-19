@@ -1,5 +1,6 @@
 'use client';
 
+import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   filterAndSortAdminMarketplaceAssets,
@@ -590,14 +591,8 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
           ) : null}
         </div>
 
-        <footer className={styles.pagination}>
-          <span>{filteredAssets.length.toLocaleString('en-ZA')} matching · {allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} all time</span>
-          <div>
-            <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage <= 1}>Previous</button>
-            <strong>Page {currentPage} of {totalPages}</strong>
-            <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={currentPage >= totalPages}>Next</button>
-          </div>
-        </footer>
+        <ListPagination label="Admin Marketplace pages" page={currentPage} pageCount={totalPages} onPageChange={setPage}
+          summary={<>{filteredAssets.length.toLocaleString('en-ZA')} matching · {allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} all time</>} />
       </section>
 
       {activityTarget ? (

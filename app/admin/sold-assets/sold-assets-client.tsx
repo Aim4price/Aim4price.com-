@@ -1,5 +1,6 @@
 'use client';
 
+import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AdminAssetAllocationAccount,
@@ -524,26 +525,8 @@ export default function SoldAssetsClient({
         )}
 
         {report.outcomes.length ? (
-          <footer className={styles.pagination}>
-            <span>{rows.length.toLocaleString('en-ZA')} matching · {report.outcomes.length.toLocaleString('en-ZA')} all time</span>
-            <div aria-label="Outcome pages">
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
-                disabled={currentPage <= 1}
-              >
-                Previous
-              </button>
-              <strong>Page {currentPage} of {totalPages}</strong>
-              <button
-                type="button"
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                disabled={currentPage >= totalPages}
-              >
-                Next
-              </button>
-            </div>
-          </footer>
+          <ListPagination label="Outcome pages" page={currentPage} pageCount={totalPages} onPageChange={setPage}
+            summary={<>{rows.length.toLocaleString('en-ZA')} matching · {report.outcomes.length.toLocaleString('en-ZA')} all time</>} />
         ) : null}
       </section>
 

@@ -1,4 +1,5 @@
 "use client";
+import ListPagination from '../../components/ListPagination';
 import WorkspaceViewSwitch from "../../components/WorkspaceViewSwitch";
 import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import dialogStyles from "../../components/AccountDialog.module.css";
@@ -407,18 +408,6 @@ function normalizeDiscoveryPageSize(value: string): DiscoveryPageSize {
     DISCOVERY_PAGE_SIZE_OPTIONS.find((option) => option === numeric) ??
     DISCOVERY_PAGE_SIZE
   );
-}
-
-function paginationPages(page: number, totalPages: number): number[] {
-  const maxButtons = 5;
-  const safeTotal = Math.max(1, totalPages);
-
-  if (safeTotal <= maxButtons) {
-    return Array.from({ length: safeTotal }, (_, index) => index + 1);
-  }
-
-  const start = Math.max(1, Math.min(page - 2, safeTotal - maxButtons + 1));
-  return Array.from({ length: maxButtons }, (_, index) => start + index);
 }
 
 function isUnknown(value: string): boolean {
@@ -909,11 +898,6 @@ export default function AssetDiscoveryClient({
       }
     };
   }, [expandedAssetId, photoModal, activeEnquiry]);
-
-  const visiblePaginationPages = useMemo(
-    () => paginationPages(pagination.page, pagination.totalPages),
-    [pagination.page, pagination.totalPages],
-  );
 
   function handleSearchChange(value: string) {
     setSearchInput(value);
@@ -1669,115 +1653,10 @@ export default function AssetDiscoveryClient({
     if (!hasMultiplePages && !shouldShowPageSizeSelector) return null;
 
     return (
-      <nav
-        className={styles.discoveryPagination}
-        aria-label="Asset Discovery pagination"
-      >
-        <div className={styles.discoveryPaginationInfo}>
-          <div className={styles.discoveryPaginationSummary}>
-            Showing <strong>{pagination.rangeStart}</strong>-
-            <strong>{pagination.rangeEnd}</strong> of{" "}
-            <strong>{pagination.totalItems}</strong> assets
-            {hasMultiplePages ? (
-              <>
-                <span className={styles.discoveryPaginationDivider}>·</span>
-                Page <strong>{pagination.page}</strong> of{" "}
-                <strong>{pagination.totalPages}</strong>
-              </>
-            ) : null}
-          </div>
-
-          {shouldShowPageSizeSelector ? (
-            <div
-              className={styles.discoveryPageSizeField}
-              data-discovery-filter="true"
-            >
-              <span>Show</span>
-              <div className={styles.discoveryPageSizeSelect}>
-                <button
-                  type="button"
-                  className={styles.discoveryPageSizeButton}
-                  aria-label="Assets per page"
-                  aria-haspopup="listbox"
-                  aria-expanded={openFilter === "pageSize"}
-                  onClick={() =>
-                    setOpenFilter((current) =>
-                      current === "pageSize" ? null : "pageSize",
-                    )
-                  }
-                  disabled={loading}
-                >
-                  <strong>{pageSize}</strong>
-                  <ChevronDownIcon className={styles.discoveryPageSizeChevron} />
-                </button>
-
-                {openFilter === "pageSize" ? (
-                  <DropdownOverlay
-                    className={styles.discoveryPageSizeMenu}
-                    matchAnchorWidth={false}
-                    minimumWidth={160}
-                    role="listbox"
-                    aria-label="Assets per page"
-                  >
-                    {DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => (
-                      <button
-                        type="button"
-                        key={`asset-discovery-page-size-${option}`}
-                        className={`${styles.discoveryPageSizeOption} ${option === pageSize ? styles.discoveryPageSizeOptionSelected : ""}`}
-                        role="option"
-                        aria-selected={option === pageSize}
-                        onClick={() => {
-                          handlePageSizeChange(String(option));
-                          setOpenFilter(null);
-                        }}
-                      >
-                        <span>{option} assets</span>
-                        {option === pageSize ? <strong>✓</strong> : null}
-                      </button>
-                    ))}
-                  </DropdownOverlay>
-                ) : null}
-              </div>
-              <span>per page</span>
-            </div>
-          ) : null}
-        </div>
-
-        {hasMultiplePages ? (
-          <div className={styles.discoveryPaginationControls}>
-            <button
-              type="button"
-              className={styles.discoveryPaginationButton}
-              onClick={() => goToPage(pagination.page - 1)}
-              disabled={!pagination.hasPreviousPage || loading}
-            >
-              Previous
-            </button>
-            <div className={styles.discoveryPaginationPages}>
-              {visiblePaginationPages.map((page) => (
-                <button
-                  type="button"
-                  key={`asset-discovery-page-${page}`}
-                  className={`${styles.discoveryPaginationPageButton} ${page === pagination.page ? styles.discoveryPaginationPageButtonActive : ""}`}
-                  onClick={() => goToPage(page)}
-                  disabled={loading}
-                  aria-current={page === pagination.page ? "page" : undefined}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={styles.discoveryPaginationButton}
-              onClick={() => goToPage(pagination.page + 1)}
-              disabled={!pagination.hasNextPage || loading}
-            >
-              Next
-            </button>
-          </div>
-        ) : null}
-      </nav>
+      <ListPagination label="Asset Discovery pagination" page={pagination.page} pageCount={pagination.totalPages}
+        pageSize={pageSize} pageSizeOptions={DISCOVERY_PAGE_SIZE_OPTIONS}
+        onPageChange={goToPage} onPageSizeChange={(size) => { handlePageSizeChange(String(size)); setOpenFilter(null); }}
+        disabled={loading} />
     );
   }
 

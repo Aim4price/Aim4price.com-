@@ -1,4 +1,5 @@
 "use client";
+import ListPagination from '../../../components/ListPagination';
 import Link from "next/link";
 import { adminQueueFilter, ADMIN_CAPTURE_PAGE_SIZE } from "../../../lib/admin-operations-shared";
 import AdminCaptureAssistance from "../../../components/AdminCaptureAssistance";
@@ -1158,10 +1159,9 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
         </div>
       </section>
 
-      {!queueError ? <nav className={styles.pagination} aria-label="Capture queue pages">
-        <span role="status">{isLoading ? "Loading documents…" : total ? `${(page - 1) * ADMIN_CAPTURE_PAGE_SIZE + 1}–${Math.min(page * ADMIN_CAPTURE_PAGE_SIZE, total)} of ${total} documents` : "0 documents"}</span>
-        <div><button type="button" disabled={isLoading || page <= 1} onClick={() => setPage(current => current - 1)}>Previous</button><button type="button" disabled={isLoading || !hasNextPage} onClick={() => setPage(current => current + 1)}>Next</button></div>
-      </nav> : null}
+      {!queueError ? <ListPagination label="Capture queue pages" page={page} pageCount={Math.max(1, Math.ceil(total / ADMIN_CAPTURE_PAGE_SIZE))}
+        onPageChange={setPage} disabled={isLoading}
+        summary={isLoading ? 'Loading documents…' : `${total} documents`} /> : null}
 
       {selectedId && isDetailLoading ? (
         <section

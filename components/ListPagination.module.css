@@ -1,146 +1,73 @@
-/* Shared Asset Register pagination, independent of each ledger's button theme. */
-
+/* One pagination treatment across owner, dealer and administration lists. */
 .bar {
-  min-height: 0;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
   margin-top: 1.1rem;
-  padding: .95rem 1rem;
-  border-radius: 1.2rem;
-  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f5f8fb) 100%);
-  border: 1px solid var(--app-info-line, rgba(217,227,235,.96));
+  padding: 1rem;
+  min-width: 0;
+  border: 1px solid var(--app-info-line, #d6e1e8);
+  border-radius: 1.35rem;
+  background: var(--app-surface, #fff);
+  box-shadow: 0 5px 18px var(--app-shadow-colour, #163e2e06);
 }
-
-.info {
+.sizes, .sizeButtons, .navigation, .actions, .pageEntry {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  min-width: 0;
 }
-
-.meta {
-  color: var(--app-muted, #677586);
-  font-size: .9rem;
+.sizes { gap: 1.25rem; flex-wrap: wrap; }
+.sizeButtons { gap: .5rem; }
+.navigation { gap: 1.25rem; flex-wrap: wrap; margin-left: auto; }
+.meta, .sizes > span, .summary {
+  color: var(--app-muted, #687b89);
+  font-size: .95rem;
   font-weight: 700;
+  line-height: 1.5;
 }
-
-.sizes {
-  display: inline-flex;
-  align-items: center;
-  gap: .55rem;
-  padding-left: 1rem;
-  border-left: 1px solid var(--app-info-line, #d8e1ea);
-  color: var(--app-muted, #677586);
-  font-size: .85rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.sizeButtons {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-}
-
+.meta, .sizes > span { white-space: nowrap; }
+.actions, .pageEntry { gap: .5rem; }
+.actions { flex-wrap: wrap; }
 .bar .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .55rem;
-  min-width: 2.8rem;
-  min-height: 3.1rem;
-  padding: 0 1.08rem;
-  border-radius: 1rem;
-  border: 1px solid var(--app-info-line, #c5d5e2);
+  box-sizing: border-box;
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: .65rem .85rem;
+  border: 1px solid var(--app-info-line, #d0dfe7);
+  border-radius: .9rem;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173d32);
   font: inherit;
-  font-size: .96rem;
-  font-weight: 830;
-  letter-spacing: -.015em;
-  cursor: pointer;
-  color: var(--app-info, #1d3142);
-  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f8fbfd) 100%);
-  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(31,51,71,.045)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.98));
-  transition: transform 160ms ease,box-shadow 160ms ease,background 160ms ease;
-}
-
-.bar .button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: var(--app-info-line, #aebfd0);
-  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f5f9fb) 100%);
-  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(31,51,71,.065)),inset 0 1px 0 var(--app-shadow-colour, #fff);
-}
-
-.bar .button:disabled {
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.bar .button:focus-visible {
-  outline: 3px solid var(--app-accent, rgba(20,112,82,.35));
-  outline-offset: 3px;
-}
-
-.bar .selectedSize, .bar .selectedSize:hover:not(:disabled) {
-  color: #fff;
-  background: linear-gradient(180deg,#197454 0%,#0f5840 100%);
-  border-color: var(--app-line, #0f6248);
-  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(25,116,84,.2)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.18));
-}
-
-.bar .selectedPage, .bar .selectedPage:hover:not(:disabled) {
-  color: var(--app-text, #0a543d);
-  background: radial-gradient(circle at top left,var(--app-surface-soft, rgba(20,112,82,.085)),transparent 42%),linear-gradient(180deg,var(--app-surface, #f7fffa) 0%,var(--app-surface-soft, #e4f7ec) 100%);
-  border-color: var(--app-line, #86d0a8);
-  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(20,112,82,.09)),inset 0 1px 0 var(--app-shadow-colour, #fff);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  gap: .45rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.pageEntry {
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-}
-
-.ellipsis {
-  min-width: 2rem;
-  text-align: center;
-  color: var(--app-muted, #677586);
+  font-size: 1rem;
   font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
-
-.button svg {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
+.bar .button:hover:not(:disabled) {
+  border-color: #258361;
+  box-shadow: 0 0 0 2px #25836125, 0 3px 12px #176b4820;
+  background: var(--app-surface-soft, #f2f8f4);
 }
-
-@media(max-width:600px) {
-
-  :global(html:not(:has([data-website-canvas]))) .sizes {
-    padding-left: 0;
-    border-left: 0;
-    flex-wrap: wrap;
-  }
-
-  :global(html:not(:has([data-website-canvas]))) .actions {
-    justify-content: flex-start;
-  }
+.bar .button:focus-visible { outline: 3px solid #258361; outline-offset: 3px; }
+.bar .button:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.bar .selectedSize, .bar .selectedPage,
+.bar .selectedSize:hover:not(:disabled), .bar .selectedPage:hover:not(:disabled) {
+  background: #14664d;
+  color: #fff;
+  border-color: #14664d;
 }
-
-@media(prefers-reduced-motion:reduce) {
-
-  .bar .button {
-    transition: none;
-  }
+.ellipsis { min-width: 1rem; text-align: center; color: var(--app-muted, #687b89); }
+.button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (max-width: 720px) {
+  :global(html:not(:has([data-website-canvas]))) .navigation { margin-left: 0; width: 100%; gap: .75rem; }
+  :global(html:not(:has([data-website-canvas]))) .bar { padding: .85rem; }
+  :global(html:not(:has([data-website-canvas]))) .actions { gap: .35rem; }
+  :global(html:not(:has([data-website-canvas]))) .pageEntry { gap: .35rem; }
 }
+@media (prefers-reduced-motion: reduce) { .bar .button { transition: none; } }

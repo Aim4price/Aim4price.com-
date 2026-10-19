@@ -1,4 +1,5 @@
 'use client';
+import ListPagination from '../../components/ListPagination';
 import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import ListingAlertSettings from '../../components/ListingAlertSettings';
@@ -104,7 +105,6 @@ type ActiveFilterChip = {
   onRemove: () => void;
 };
 
-type PaginationItem = number | 'ellipsis-before' | 'ellipsis-after';
 type DealerListingView = 'browse' | 'mine';
 
 type MarketplaceEditDraft = {
@@ -2075,39 +2075,6 @@ function normaliseFamilyOption(family: EquipmentFamilyRecord): FamilyOption | nu
   };
 }
 
-function buildPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const pages = new Set<number>([1, totalPages]);
-
-  if (currentPage <= 4) {
-    [2, 3, 4, 5].forEach((page) => pages.add(page));
-  } else if (currentPage >= totalPages - 3) {
-    [totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1].forEach((page) => pages.add(page));
-  } else {
-    [currentPage - 1, currentPage, currentPage + 1].forEach((page) => pages.add(page));
-  }
-
-  const orderedPages = Array.from(pages)
-    .filter((page) => page >= 1 && page <= totalPages)
-    .sort((a, b) => a - b);
-  const items: PaginationItem[] = [];
-
-  orderedPages.forEach((page, index) => {
-    const previousPage = orderedPages[index - 1];
-
-    if (typeof previousPage === 'number' && page - previousPage > 1) {
-      items.push(previousPage === 1 ? 'ellipsis-before' : 'ellipsis-after');
-    }
-
-    items.push(page);
-  });
-
-  return items;
-}
-
 function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   const fromApi = records.map(normaliseFamilyOption).filter((item): item is FamilyOption => item !== null);
   const result: FamilyOption[] = [];
@@ -2430,11 +2397,6 @@ export default function MarketplaceClient({
   const lastVisibleListingNumber = Math.min(firstVisibleListingIndex + LISTINGS_PER_PAGE, visible.length);
   const visibleListings = visible.slice(firstVisibleListingIndex, lastVisibleListingNumber);
   const showroomHasNoInventory = showroomMode && !isLoadingListings && items.length === 0;
-  const paginationItems = useMemo(
-    () => buildPaginationItems(normalizedCurrentPage, totalPages),
-    [normalizedCurrentPage, totalPages],
-  );
-
   const activeImages = useMemo(
     () => (activeListing ? getListingImages(activeListing) : []),
     [activeListing],
@@ -3449,54 +3411,8 @@ export default function MarketplaceClient({
           )}
 
           {visible.length > 0 ? (
-            <div className={styles.paginationWrap}>
-              <p className={styles.paginationSummary}>
-                Showing {firstVisibleListingNumber}-{lastVisibleListingNumber} of {visible.length} listings
-                {totalPages > 1 ? ` · Page ${normalizedCurrentPage} of ${totalPages}` : ''}
-              </p>
-
-              {totalPages > 1 ? (
-                <nav className={styles.paginationControls} aria-label="Marketplace listing pages">
-                  <button
-                    type="button"
-                    className={styles.paginationButton}
-                    onClick={() => goToPage(normalizedCurrentPage - 1)}
-                    disabled={normalizedCurrentPage === 1}
-                  >
-                    <IconChevronLeft />
-                    Previous
-                  </button>
-
-                  {paginationItems.map((item) =>
-                    typeof item === 'number' ? (
-                      <button
-                        key={item}
-                        type="button"
-                        className={`${styles.paginationButton} ${item === normalizedCurrentPage ? styles.paginationButtonActive : ''}`}
-                        onClick={() => goToPage(item)}
-                        aria-current={item === normalizedCurrentPage ? 'page' : undefined}
-                      >
-                        {item}
-                      </button>
-                    ) : (
-                      <span key={item} className={styles.paginationEllipsis} aria-hidden="true">
-                        …
-                      </span>
-                    ),
-                  )}
-
-                  <button
-                    type="button"
-                    className={styles.paginationButton}
-                    onClick={() => goToPage(normalizedCurrentPage + 1)}
-                    disabled={normalizedCurrentPage === totalPages}
-                  >
-                    Next
-                    <IconChevronRight />
-                  </button>
-                </nav>
-              ) : null}
-            </div>
+            <ListPagination label="Marketplace listing pages" page={normalizedCurrentPage} pageCount={totalPages}
+              onPageChange={goToPage} summary={<>Showing {firstVisibleListingNumber}–{lastVisibleListingNumber} of {visible.length} listings</>} />
           ) : null}
         </section>
       </div>

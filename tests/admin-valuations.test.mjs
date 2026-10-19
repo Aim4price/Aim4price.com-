@@ -65,7 +65,8 @@ test('Admin Valuations supports server search, filters, sorting and pagination',
   assert.match(data, /limit \$\{limitParameter\}/);
   assert.match(data, /offset \$\{offsetParameter\}/);
   assert.match(client, /Asset, account, email or reference/);
-  assert.match(client, /Rows per page/);
+  assert.match(client, /<ListPagination label="Admin valuation pages"/);
+  assert.match(client, /pageSizeOptions=\{ADMIN_VALUATION_PAGE_SIZES\}/);
 });
 
 test('new free estimates retain normalized inputs and calculated outputs', () => {

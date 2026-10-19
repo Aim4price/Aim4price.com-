@@ -1,5 +1,6 @@
 "use client";
 
+import ListPagination from '../../components/ListPagination';
 import { useEffect, useState } from "react";
 import BillingInvoiceCard from "../../components/BillingInvoiceCard";
 import { money, invoiceState, billingDate, type BillingInvoice } from "../../lib/billing-shared";
@@ -42,11 +43,8 @@ export default function AccountInvoices() {
       </button>
       <div id={`invoice-details-${invoice.id}`} hidden={!expanded.includes(invoice.id)} className={styles.invoiceFoldBody}><BillingInvoiceCard invoice={invoice} embedded/></div>
     </section>)}
-    {page > 1 || page * 50 < data.total ? <nav className={styles.invoicePagination} aria-label="Invoice pages">
-      <button className={styles.ghostButton} disabled={page === 1} onClick={() => { setData(null); setExpanded([]); setPage(value => value - 1); }}>Previous</button>
-      <span>Page {page}</span>
-      <button className={styles.ghostButton} disabled={page * 50 >= data.total} onClick={() => { setData(null); setExpanded([]); setPage(value => value + 1); }}>Next</button>
-    </nav> : null}
+    {page > 1 || page * 50 < data.total ? <ListPagination label="Invoice pages" page={page} pageCount={Math.ceil(data.total / 50)}
+      onPageChange={(nextPage) => { setData(null); setExpanded([]); setPage(nextPage); }} /> : null}
     <p className={styles.invoiceHelp}>Payments appear after Aim4price verifies receipt. For queries, email <a href="mailto:Aim4price@gmail.com">Aim4price@gmail.com</a>.</p>
   </div>;
 }
