@@ -6,7 +6,7 @@ import type {SavedSaleability} from '../../lib/asset-saleability';
 import styles from './AssetPriceSwitch.module.css';
 export type AssetPriceView = 'fair' | 'market' | 'replacement';
 function PriceIcon({kind='fair'}:{kind?:AssetPriceView}) {
- const path=kind==='replacement'?'M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 11-1l3 3M4 15l3 3a7 7 0 0 0 11-1':kind==='market'?'M3 3h7l11 11-7 7L3 10ZM7 7h.01':'M12 3v18M7 21h10M3 7h18M5 7l-3 7h6ZM19 7l-3 7h6Z';
+ const path=kind==='replacement'?'M12 3 3 8v8l9 5 9-5V8ZM3 8l9 5 9-5M12 13v8M7.5 5.5l9 5':kind==='market'?'M3 3h7l11 11-7 7L3 10ZM7 7h.01':'M12 3v18M7 21h10M3 7h18M5 7l-3 7h6ZM19 7l-3 7h6Z';
  return <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={path}/></svg>;
 }
 type Props={value:number;manual:boolean;view:AssetPriceView;onViewChange:(value:AssetPriceView)=>void;replacementPrice:number|null;replacementParts?:{asset:number;extras:number}|null;onEditReplacement:()=>void;onRecalculate:()=>void;included:boolean;onVatChange:(value:boolean)=>void;saved?:SavedSaleability;stale:boolean;onCalculate:()=>void;canCalculate:boolean;loading:boolean;error:boolean};
@@ -22,6 +22,7 @@ export default function AssetPriceSwitch({value,manual,view,onViewChange,replace
   <div className={styles.switch} role="group" aria-label="Value basis">
    {(['replacement','fair','market'] as const).map(kind=><button key={kind} data-kind={kind} type="button" title={explanations[kind]} aria-pressed={view===kind} onClick={()=>{setShowInfo(false);onViewChange(kind);}}><PriceIcon kind={kind}/><span>{labels[kind]}</span></button>)}
   </div>
+  <div className={styles.valueContent}>
   {amount!==undefined?<>
    <div className={styles.amountRow}><strong aria-live="polite">{money(amount)}</strong><PricingVatToggle included={included} onChange={onVatChange}/></div>
    {replacement&&replacementParts?<p className={styles.breakdown}>Asset {money(replacementParts.asset)} <span>+ Extras {money(replacementParts.extras)}</span></p>:null}
@@ -32,5 +33,6 @@ export default function AssetPriceSwitch({value,manual,view,onViewChange,replace
     {canCalculate?<button type="button" onClick={replacement?onEditReplacement:market?onCalculate:onRecalculate}>{replacement?'Edit replacement price':market?'Update market estimate':manual?'Edit manual value':'Recalculate value'}</button>:null}
    </div>
   </>:<div className={styles.empty}><strong>{replacement?'Replacement price not set':loading?'Loading assessment…':error?'Assessment unavailable':'What could it sell for?'}</strong><p>{replacement?'Add the cost of a comparable new asset.':error?'Reload to try again.':canCalculate?'Answer a few questions to estimate a selling price.':'No saved market estimate yet.'}</p>{canCalculate&&(replacement||!loading&&!error)?<button type="button" onClick={replacement?onEditReplacement:onCalculate}><PriceIcon kind={view}/>{replacement?'Add replacement price':'Calculate market estimate'}</button>:null}</div>}
+  </div>
  </section>;
 }

@@ -16569,6 +16569,8 @@ export default function AssetRegisterClient({
                           }}
                         >
                         <span aria-hidden="true" className={`${styles.controlTooltip} ${styles.cardToggleHint}`} data-tooltip={isExpanded ? 'Close Asset' : 'Open Asset'} />
+                        <div className={`${styles.assetHeader} ${styles.marketValueHeader}`}>
+                          <div className={styles.assetTitleBlock}>
                         {(canUseOwnerOnlyAssetActions) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
                             <button
@@ -16614,8 +16616,7 @@ export default function AssetRegisterClient({
                             ) : null}
                           </div>
                         ) : null}
-                        <div className={`${styles.assetHeader} ${styles.marketValueHeader}`}>
-                          <div className={styles.assetTitleBlock}>
+
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
