@@ -172,7 +172,7 @@ async function check(browser, url) {
       return {afterReplacement:!!(replacement.compareDocumentPosition(market)&Node.DOCUMENT_POSITION_FOLLOWING),beforeDocuments:!!(market.compareDocumentPosition(documents)&Node.DOCUMENT_POSITION_FOLLOWING),calculate:market.textContent.includes('Calculate')};
     });
     assert.deepEqual(detailOrder,{afterReplacement:true,beforeDocuments:true,calculate:true});
-    await click('#asset-card-normal [aria-label="Estimated selling price"] button[class*="calculateMarket"]');
+    await click('#asset-card-normal [aria-label="Open saleability assessment"]');
     await page.waitForSelector('[aria-label="Close Saleability"]');
     await click('[aria-label="Close Saleability"]');
     await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
