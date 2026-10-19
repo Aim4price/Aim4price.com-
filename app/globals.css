@@ -1,3 +1,5 @@
+@import './modal-scrollbars.css';
+
 /* Use the same bundled variable Montserrat face across every page and app. */
 @font-face {
   font-family: 'Montserrat';
