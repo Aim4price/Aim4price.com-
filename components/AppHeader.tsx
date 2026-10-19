@@ -907,42 +907,53 @@ export default function AppHeader({
 
   useEffect(() => {
     let mounted = true;
+    let inFlight = false;
+    const controller = new AbortController();
 
-    async function loadNotifications() {
-
+    async function loadNotifications(showLoading = false) {
       if (!session?.id) {
         setNotifications([]);
         setNotificationOpen(false);
         return;
       }
-
+      if (inFlight || !mounted) return;
+      inFlight = true;
       try {
-        setIsLoadingNotifications(true);
+        if (showLoading) setIsLoadingNotifications(true);
         const response = await fetch('/api/notifications', {
           credentials: 'include',
           cache: 'no-store',
+          signal: controller.signal,
         });
-
         const data = (await response.json()) as NotificationsResponse;
-
+        if (!response.ok || !data.ok) throw new Error('Notifications could not load.');
         if (!mounted) return;
         setNotifications(Array.isArray(data.notifications) ? data.notifications : []);
       } catch {
-        if (!mounted) return;
-        setNotifications([]);
+        // Keep the current inbox during temporary connection failures.
       } finally {
-        if (mounted) {
-          setIsLoadingNotifications(false);
-        }
+        inFlight = false;
+        if (mounted && showLoading) setIsLoadingNotifications(false);
       }
     }
 
-    void loadNotifications();
-
+    void loadNotifications(true);
+    const refresh = () => {
+      if (document.visibilityState === 'visible') void loadNotifications();
+    };
+    const timer = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('aim4price-notifications-updated', refresh);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
       mounted = false;
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('aim4price-notifications-updated', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
-  }, [session?.id, session?.accountType, session?.accountSubtype, pathname]);
+  }, [session?.id, session?.accountType, session?.accountSubtype, pathname, notificationOpen]);
 
   useEffect(() => {
     function refreshCostLedgerNotifications() {
