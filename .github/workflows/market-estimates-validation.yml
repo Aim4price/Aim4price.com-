@@ -1,0 +1,27 @@
+name: Market estimates validation
+on:
+  pull_request:
+    paths:
+      - 'lib/asset-saleability.ts'
+      - 'lib/saleability.ts'
+      - 'app/api/asset-register/saleability/**'
+      - 'components/asset-register/AssetPriceSwitch*'
+      - 'components/SaleabilityModal.tsx'
+      - 'app/asset-register/asset-register-client.tsx'
+      - 'tests/asset-saleability.test.cjs'
+      - 'scripts/verify-market-estimates.cjs'
+      - '.github/workflows/market-estimates-validation.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/asset-saleability.test.cjs
+      - run: node --experimental-strip-types --test tests/saleability.test.mjs tests/pricing-vat.test.mjs tests/asset-register-card-ui.test.mjs tests/pricing-modal-return.test.mjs
+      - run: node scripts/verify-market-estimates.cjs
