@@ -94,20 +94,37 @@ function answersAreComplete(value: Partial<SaleabilityRefinementAnswers>): value
   );
 }
 
+type SaleIconKind = 'location' | 'assets' | 'buyers' | 'demand' | 'model' | 'time' | 'priority';
+function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
+  const path = value === 'unknown' ? 'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01'
+    : kind === 'location' ? (value === 'south_africa' ? 'M3 12h18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18' : 'M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12ZM12 7v4M10 9h4')
+    : kind === 'assets' ? 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z'
+    : kind === 'buyers' ? 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-3a7 7 0 0 1 14 0v3M17 4a4 4 0 0 1 0 7M19 14a6 6 0 0 1 3 5v2'
+    : kind === 'demand' ? (value === 'weak' ? 'M3 5v15h18M6 8l5 5 4-3 6 6M17 16h4v-4' : 'M3 3v17h18M6 15l5-5 4 3 6-8M17 5h4v4')
+    : kind === 'model' ? 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z'
+    : kind === 'time' ? 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM12 7v5l3 2'
+    : value === 'fast_cashflow' ? 'm13 2-9 12h7l-1 8 10-13h-7Z'
+    : value === 'balanced' ? 'M12 3v18M7 21h10M3 7h18M5 7l-3 7h6ZM19 7l-3 7h6Z'
+    : 'M3 4h7l11 11-6 6L3 9ZM7 7h.01';
+  return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{value === 'unknown' || value === 'south_africa' ? <circle cx="12" cy="12" r="9" /> : null}<path d={path} /></svg></span>;
+}
+
 function ChoiceQuestion<T extends string>({
   label,
+  icon,
   value,
   options,
   onChange,
 }: {
   label: string;
+  icon: SaleIconKind;
   value?: T;
   options: Choice<T>[];
   onChange: (value: T) => void;
 }) {
   return (
     <fieldset className={styles.question}>
-      <legend>{label}</legend>
+      <legend><SaleIcon kind={icon} />{label}</legend>
       <div className={styles.choiceGrid}>
         {options.map((option) => (
           <button
@@ -117,7 +134,7 @@ function ChoiceQuestion<T extends string>({
             aria-pressed={value === option.value}
             onClick={() => onChange(option.value)}
           >
-            <strong>{option.label}</strong>
+            <SaleIcon kind={icon} value={option.value} /><strong>{option.label}</strong>
             {option.help ? <small>{option.help}</small> : null}
           </button>
         ))}
@@ -236,21 +253,23 @@ export default function SaleabilityModal({
       <section className={`${styles.modal} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div>
-            <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title">{assetTitle}</h2>
-            <p>Build your selling plan.</p>
-            <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
+            <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2>
+            <p>{assetTitle} · Build your selling plan.</p>
+            {step === 'result' ? <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} /> : null}
           </div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
 
         <div className={styles.questionProgress} role="status" aria-live="polite">
           {step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}
+          <div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${step === 'result' ? 100 : step / 7 * 100}%` }} /></div>
         </div>
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}>
           {step !== 'result' ? (
             <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
               {step === 1 ? (
               <ChoiceQuestion
+                icon="location"
                 label="Where will you sell?"
                 value={answers.saleArea}
                 options={SALE_AREA_OPTIONS}
@@ -259,6 +278,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 2 ? (
               <ChoiceQuestion
+                icon="assets"
                 label="How many similar assets are for sale?"
                 value={answers.similarAssetsAvailable}
                 options={AVAILABLE_OPTIONS}
@@ -267,6 +287,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 3 ? (
               <ChoiceQuestion
+                icon="buyers"
                 label="How many likely buyers?"
                 value={answers.realisticBuyerPool}
                 options={BUYER_OPTIONS}
@@ -275,6 +296,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 4 ? (
               <ChoiceQuestion
+                icon="demand"
                 label="Current demand?"
                 value={answers.currentDemand}
                 options={DEMAND_OPTIONS}
@@ -283,6 +305,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 5 ? (
               <ChoiceQuestion
+                icon="model"
                 label="How well known is the model?"
                 value={answers.modelFamiliarity}
                 options={FAMILIARITY_OPTIONS}
@@ -291,6 +314,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 6 ? (
               <ChoiceQuestion
+                icon="time"
                 label="When would you like to sell?"
                 value={answers.desiredTimeline}
                 options={TIMELINE_OPTIONS}
@@ -299,6 +323,7 @@ export default function SaleabilityModal({
               ) : null}
               {step === 7 ? (
               <ChoiceQuestion
+                icon="priority"
                 label="What matters most?"
                 value={answers.sellingPriority}
                 options={PRIORITY_OPTIONS}
@@ -311,7 +336,7 @@ export default function SaleabilityModal({
           {step === 'result' && plan ? (
             <div className={styles.result}>
               <section className={styles.resultHero} aria-live="polite">
-                <span>Refined Saleability</span>
+                <span className={styles.resultLabel}><SaleIcon kind="demand" />Refined Saleability</span>
                 <strong>{plan.refinedScore} / 100</strong>
                 <p>Grade {plan.grade} · {plan.gradeLabel}</p>
 
@@ -319,7 +344,7 @@ export default function SaleabilityModal({
 
               <section className={styles.pricePlan}>
                 <div className={styles.planHeader}>
-                  <h3>Your selling plan</h3>
+                  <h3 className={styles.resultLabel}><SaleIcon kind="priority" />Your selling plan</h3>
                 </div>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
