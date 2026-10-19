@@ -1,5 +1,6 @@
 "use client";
 
+import ListPagination from '../../components/ListPagination';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -1843,46 +1844,7 @@ export default function AdminClient({
           </table>
         </div>
 
-        <div
-          className={styles.paginationBar}
-          aria-label="Admin users pagination"
-        >
-          <span>
-            Page {currentPageNumber} of {pageCount}
-          </span>
-          <div className={styles.paginationControls}>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPageNumber === 1}
-            >
-              First
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={currentPageNumber === 1}
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                setCurrentPage((page) => Math.min(pageCount, page + 1))
-              }
-              disabled={currentPageNumber === pageCount}
-            >
-              Next
-            </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage(pageCount)}
-              disabled={currentPageNumber === pageCount}
-            >
-              Last
-            </button>
-          </div>
-        </div>
+        <ListPagination label="Admin users pagination" page={currentPageNumber} pageCount={pageCount} onPageChange={setCurrentPage} />
       </section>
 
       {groupNotificationComposer ? (

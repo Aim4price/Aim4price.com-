@@ -1,73 +1,78 @@
 'use client';
 
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 import styles from './ListPagination.module.css';
 
 export type ListPageSize = 6 | 12 | 18 | 'all';
 
-type Props = {
+type Props<T extends number | 'all'> = {
   page: number;
   pageCount: number;
-  pageSize: ListPageSize;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: ListPageSize) => void;
+  pageSize?: T;
+  pageSizeOptions?: readonly T[];
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: T) => void;
   label: string;
   sizeLabel?: string;
+  sizeDescription?: string;
+  summary?: ReactNode;
+  disabled?: boolean;
+  /** Server-rendered lists can preserve normal link navigation. */
+  pageHrefPrefix?: string;
 };
 
-export default function ListPagination({
-  page, pageCount, pageSize, onPageChange, onPageSizeChange, label, sizeLabel = 'Show',
-}: Props) {
-  const pages = Array.from(new Set([1, pageCount, page - 1, page, page + 1]))
-    .filter(value => value >= 1 && value <= pageCount)
-    .sort((a, b) => a - b);
+export default function ListPagination<T extends number | 'all' = ListPageSize>({
+  page, pageCount, pageSize, pageSizeOptions, onPageChange, onPageSizeChange,
+  label, sizeLabel = 'Show per page', sizeDescription, summary, disabled = false, pageHrefPrefix,
+}: Props<T>) {
+  const total = Math.max(1, pageCount);
+  const current = Math.min(Math.max(1, page), total);
+  const pages = total <= 7
+    ? Array.from({ length: total }, (_, index) => index + 1)
+    : Array.from(new Set([1, total, current - 1, current, current + 1]))
+      .filter(value => value >= 1 && value <= total).sort((a, b) => a - b);
+  const sizes = pageSizeOptions ?? ([6, 12, 18, 'all'] as unknown as readonly T[]);
+
+  function pageControl(value: number, content: ReactNode, name: string, unavailable = false) {
+    const selected = name.startsWith('Page ') && value === current;
+    const className = `${styles.button} ${selected ? styles.selectedPage : ''}`;
+    const common = { className, 'aria-label': name, 'aria-current': selected ? 'page' as const : undefined };
+    if (pageHrefPrefix && !disabled && !unavailable) {
+      return <Link {...common} href={`${pageHrefPrefix}${value}`}>{content}</Link>;
+    }
+    return <button {...common} type="button" disabled={disabled || unavailable} onClick={() => onPageChange?.(value)}>{content}</button>;
+  }
 
   return (
     <nav className={styles.bar} aria-label={label}>
-      <div className={styles.info}>
-        <div className={styles.meta} aria-live="polite">Page {page} of {pageCount}</div>
-        <div className={styles.sizes} role="group" aria-label={`${label}: items per page`}>
+      {pageSize !== undefined && onPageSizeChange ? (
+        <div className={styles.sizes} role="group" aria-label={`${label}: items per page`} title={sizeDescription}>
           <span>{sizeLabel}</span>
           <div className={styles.sizeButtons}>
-            {([6, 12, 18, 'all'] as const).map(size => (
-              <button
-                key={size}
-                type="button"
-                className={`${styles.button} ${pageSize === size ? styles.selectedSize : ''}`}
-                aria-pressed={pageSize === size}
-                onClick={() => onPageSizeChange(size)}
-              >
+            {sizes.map(size => (
+              <button key={size} type="button" className={`${styles.button} ${pageSize === size ? styles.selectedSize : ''}`}
+                aria-label={`Show ${size === 'all' ? 'all' : size} per page${sizeDescription ? `: ${sizeDescription}` : ''}`}
+                aria-pressed={pageSize === size} disabled={disabled} onClick={() => onPageSizeChange(size)}>
                 {size === 'all' ? 'All' : size}
               </button>
             ))}
           </div>
         </div>
-      </div>
-      {pageCount > 1 ? (
-        <div className={styles.actions}>
-          <button type="button" className={styles.button} disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-            Previous
-          </button>
+      ) : summary ? <div className={styles.summary}>{summary}</div> : null}
+      <div className={styles.navigation}>
+        <div className={styles.meta} aria-live="polite">Page {current} of {total}</div>
+        {total > 1 ? <div className={styles.actions}>
+          {pageControl(current - 1, <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>, 'Previous page', current <= 1)}
           {pages.map((value, index) => (
             <span className={styles.pageEntry} key={value}>
-              {index > 0 && value - pages[index - 1] > 1 ? <span className={styles.ellipsis}>…</span> : null}
-              <button
-                type="button"
-                className={`${styles.button} ${page === value ? styles.selectedPage : ''}`}
-                aria-label={`Page ${value}`}
-                aria-current={page === value ? 'page' : undefined}
-                onClick={() => onPageChange(value)}
-              >
-                {value}
-              </button>
+              {index > 0 && value - pages[index - 1] > 1 ? <span className={styles.ellipsis} aria-hidden="true">…</span> : null}
+              {pageControl(value, value, `Page ${value}`)}
             </span>
           ))}
-          <button type="button" className={styles.button} disabled={page >= pageCount} onClick={() => onPageChange(page + 1)}>
-            Next
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-          </button>
-        </div>
-      ) : null}
+          {pageControl(current + 1, <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>, 'Next page', current >= total)}
+        </div> : null}
+      </div>
     </nav>
   );
 }

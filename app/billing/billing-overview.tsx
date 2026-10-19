@@ -1,3 +1,4 @@
+import ListPagination from '../../components/ListPagination';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import BillingInvoiceCard from '../../components/BillingInvoiceCard';
@@ -16,7 +17,7 @@ export default function BillingOverview({invoices,total,page,preparing}:{invoice
     {preparing?<p className={styles.notice} role="status">Your signup invoice is being prepared. Refresh shortly to view it here.</p>:null}
     <div className={styles.list}>{invoices.map(invoice=><BillingInvoiceCard key={invoice.id} invoice={invoice}/>)}</div>
     {!invoices.length&&!preparing?<div className={styles.empty}><h3>No invoices yet</h3><p>Issued invoices and their payment details will appear here.</p></div>:null}
-    {page>1||page*50<total?<nav className={styles.pagination} aria-label="Invoice pages">{page>1?<Link className={styles.button} href={'/billing?page='+(page-1)}>Previous</Link>:null}<span>Page {page}</span>{page*50<total?<Link className={styles.button} href={'/billing?page='+(page+1)}>Next</Link>:null}</nav>:null}
+    {page>1||page*50<total?<ListPagination label="Invoice pages" page={page} pageCount={Math.ceil(total / 50)} pageHrefPrefix="/billing?page=" />:null}
    </section>
    <p className={styles.note}>Payments appear once verified by Aim4price. Questions? <a href="mailto:Aim4price@gmail.com">Email billing support</a>.</p>
   </div>

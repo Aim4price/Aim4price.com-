@@ -17379,7 +17379,7 @@ export default function AssetRegisterClient({
                     pageSize={pageSize}
                     onPageChange={setCurrentPage}
                     onPageSizeChange={handlePageSizeChange}
-                    sizeLabel={hasGroupedPaginationEntries ? 'Show standalone' : 'Show'}
+                    sizeDescription={hasGroupedPaginationEntries ? 'Standalone assets per page; umbrellas stay together.' : undefined}
                   />
                 ) : null}
               </>

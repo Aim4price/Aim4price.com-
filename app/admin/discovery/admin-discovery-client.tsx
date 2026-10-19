@@ -1,5 +1,6 @@
 "use client";
 
+import ListPagination from '../../../components/ListPagination';
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -743,54 +744,10 @@ export default function AdminDiscoveryClient({
           ) : null}
         </div>
 
-        <footer className={styles.pagination}>
-          <label>
-            <span>Rows per page</span>
-            <select
-              value={filters.pageSize}
-              onChange={(event) =>
-                updateFilter("pageSize", Number(event.target.value))
-              }
-              disabled={loading}
-            >
-              {ADMIN_DISCOVERY_PAGE_SIZES.map((size) => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
-          </label>
-          <span>
-            Page {report.pagination.page.toLocaleString("en-ZA")} of{" "}
-            {report.pagination.totalPages.toLocaleString("en-ZA")}
-          </span>
-          <div>
-            <button
-              type="button"
-              disabled={!report.pagination.hasPreviousPage || loading}
-              onClick={() =>
-                void loadReport({
-                  ...filters,
-                  page: Math.max(1, report.pagination.page - 1),
-                  focusAssetId: "",
-                })
-              }
-            >
-              Previous
-            </button>
-            <button
-              type="button"
-              disabled={!report.pagination.hasNextPage || loading}
-              onClick={() =>
-                void loadReport({
-                  ...filters,
-                  page: report.pagination.page + 1,
-                  focusAssetId: "",
-                })
-              }
-            >
-              Next
-            </button>
-          </div>
-        </footer>
+        <ListPagination label="Admin Discovery pages" page={report.pagination.page} pageCount={report.pagination.totalPages}
+          disabled={loading} pageSize={filters.pageSize} pageSizeOptions={ADMIN_DISCOVERY_PAGE_SIZES}
+          onPageSizeChange={(size) => updateFilter('pageSize', size)}
+          onPageChange={(page) => void loadReport({ ...filters, page, focusAssetId: '' })} />
       </section>
 
       {activityTarget ? (

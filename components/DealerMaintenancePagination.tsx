@@ -1,5 +1,6 @@
 'use client';
 
+import ListPagination from '../components/ListPagination';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import assetStyles from '../app/asset-register/page.module.css';
 import leadStyles from '../app/leads/page.module.css';
@@ -7,16 +8,6 @@ import paginationStyles from './DealerMaintenancePagination.module.css';
 import workspaceStyles from './WorkspacePrimitives.module.css';
 
 const DEFAULT_PAGE_SIZE = 10;
-const PAGINATION_WINDOW = 5;
-
-function ChevronLeftIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function ChevronRightIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
 function maintenanceCards(root: HTMLElement): HTMLElement[] {
   const cards = new Set<HTMLElement>();
 
@@ -31,16 +22,6 @@ function maintenanceCards(root: HTMLElement): HTMLElement[] {
     const position = left.compareDocumentPosition(right);
     return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
   });
-}
-
-function pageNumbers(currentPage: number, totalPages: number): number[] {
-  const maxButtons = Math.min(PAGINATION_WINDOW, totalPages);
-  const halfWindow = Math.floor(maxButtons / 2);
-  let startPage = Math.max(1, currentPage - halfWindow);
-  const endOverflow = startPage + maxButtons - 1 - totalPages;
-
-  if (endOverflow > 0) startPage = Math.max(1, startPage - endOverflow);
-  return Array.from({ length: maxButtons }, (_item, index) => startPage + index);
 }
 
 function showPage(cards: HTMLElement[], page: number, pageSize: number) {
@@ -112,7 +93,6 @@ export default function DealerMaintenancePagination({
 
   const rangeStart = totalCards ? (visiblePage - 1) * safePageSize + 1 : 0;
   const rangeEnd = Math.min(visiblePage * safePageSize, totalCards);
-  const pages = pageNumbers(visiblePage, totalPages);
 
   return (
     <div ref={rootRef} className={leadStyles.leadsPage}>
@@ -120,47 +100,8 @@ export default function DealerMaintenancePagination({
       {totalCards > safePageSize ? (
         <div className={`${assetStyles.shell} ${workspaceStyles.shell} ${paginationStyles.paginationShell}`}>
           <div className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel} ${paginationStyles.paginationPanel}`}>
-            <nav className={`${leadStyles.leadPagination} ${paginationStyles.pagination}`} aria-label="Maintenance pagination">
-              <div className={leadStyles.leadPaginationSummary}>
-                Showing <strong>{rangeStart}</strong>-<strong>{rangeEnd}</strong> of <strong>{totalCards}</strong> maintenance cards
-              </div>
-              <div className={leadStyles.leadPaginationControls}>
-                <button
-                  type="button"
-                  className={leadStyles.leadPaginationButton}
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-                  disabled={visiblePage <= 1}
-                  aria-label="Show previous maintenance page"
-                >
-                  <ChevronLeftIcon />
-                  <span>Previous</span>
-                </button>
-                <div className={leadStyles.leadPaginationPages}>
-                  {pages.map((page) => (
-                    <button
-                      type="button"
-                      key={`maintenance-page-${page}`}
-                      className={`${leadStyles.leadPaginationPageButton} ${page === visiblePage ? leadStyles.leadPaginationPageButtonActive : ''}`}
-                      onClick={() => setCurrentPage(page)}
-                      aria-current={page === visiblePage ? 'page' : undefined}
-                      aria-label={`Show maintenance page ${page}`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className={leadStyles.leadPaginationButton}
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-                  disabled={visiblePage >= totalPages}
-                  aria-label="Show next maintenance page"
-                >
-                  <span>Next</span>
-                  <ChevronRightIcon />
-                </button>
-              </div>
-            </nav>
+            <ListPagination label="Maintenance pagination" page={visiblePage} pageCount={totalPages}
+              onPageChange={setCurrentPage} summary={<>Showing {rangeStart}–{rangeEnd} of {totalCards} maintenance cards</>} />
           </div>
         </div>
       ) : null}

@@ -1,5 +1,6 @@
 'use client';
 
+import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ADMIN_VALUATION_PAGE_SIZES,
@@ -643,19 +644,10 @@ export default function AdminValuationsClient({
           ) : null}
         </div>
 
-        <footer className={styles.pagination}>
-          <label>
-            <span>Rows per page</span>
-            <select value={filters.pageSize} onChange={(event) => void loadReport({ ...filters, pageSize: Number(event.target.value), page: 1 })}>
-              {ADMIN_VALUATION_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
-            </select>
-          </label>
-          <span>Page {report.pagination.page} of {report.pagination.totalPages}</span>
-          <div>
-            <button type="button" disabled={!report.pagination.hasPreviousPage || loading} onClick={() => void loadReport({ ...filters, page: Math.max(1, report.pagination.page - 1) })}>Previous</button>
-            <button type="button" disabled={!report.pagination.hasNextPage || loading} onClick={() => void loadReport({ ...filters, page: report.pagination.page + 1 })}>Next</button>
-          </div>
-        </footer>
+        <ListPagination label="Admin valuation pages" page={report.pagination.page} pageCount={report.pagination.totalPages}
+          disabled={loading} pageSize={filters.pageSize} pageSizeOptions={ADMIN_VALUATION_PAGE_SIZES}
+          onPageSizeChange={(pageSize) => void loadReport({ ...filters, pageSize, page: 1 })}
+          onPageChange={(page) => void loadReport({ ...filters, page })} />
       </section>
 
       {selectedValuation ? (

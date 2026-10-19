@@ -108,7 +108,7 @@ async function appearance(page, selector) {
     for (const width of [1440, 430]) {
       await page.setViewport({ width, height: 1000 });
       await page.goto('http://localhost:3036/pagination-validation?mode=reference', {waitUntil:'networkidle2', timeout:120000});
-      const reference = await appearance(page, '[data-original-pagination]');
+      const reference = await appearance(page, '[data-original-pagination] nav');
       for (const [mode, label, rows, search] of scenarios) {
         await page.goto(`http://localhost:3036/pagination-validation?mode=${mode}`, { waitUntil: 'networkidle2', timeout: 120000 });
         const nav = `nav[aria-label="${label}"]`;
@@ -117,7 +117,7 @@ async function appearance(page, selector) {
         assert.equal(await count(), 6, `${mode}: default page size`);
         const clickButton = async text => {
           await page.$eval(nav, (el, text) => {
-            const button = [...el.querySelectorAll('button')].find(b => b.textContent.trim() === text);
+            const button = [...el.querySelectorAll('button')].find(b => b.textContent.trim() === text || b.getAttribute('aria-label') === `${text} page`);
             if (!button) throw new Error(`Missing button ${text}`);
             button.click();
           }, text);

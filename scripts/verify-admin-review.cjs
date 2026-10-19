@@ -377,7 +377,10 @@ const evidence=path.join(root,'.next/admin-review-validation');
   console.log('PASS wider responsive account modal and protected administrator without a delete action');
 
   queuePaging=true;await open('capture-queue');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
-  await page.$$eval('[aria-label="Capture queue pages"] button',els=>els.find(e=>e.textContent==='Next').click());
+  const queueNextPage = '[aria-label="Capture queue pages"] button[aria-label="Next page"]';
+  await page.waitForSelector(queueNextPage);
+  assert.equal(await page.$eval(queueNextPage, button => button.disabled), false);
+  await page.click(queueNextPage);
   await page.waitForFunction(()=>document.body.textContent.includes('PAGE-2'));
   assert.equal(queueRequests.at(-1).get('page'),'2');
   await page.select('select','all');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
