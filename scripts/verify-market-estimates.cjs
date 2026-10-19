@@ -38,6 +38,7 @@ function add(file){
 
 
 add('components/asset-register/AssetPriceSwitch');
+add('components/asset-register/AssetMarketDetail');
 add('components/SaleabilityModal');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -65,6 +66,27 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/market-card-desktop.png'});
  await page.setViewport({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'/tmp/market-card-mobile.png'});
  await page.evaluate(()=>window.renderCard(undefined,null));await click('Replacement');await click('Add replacement price');assert(await page.evaluate(()=>document.body.textContent.includes('Replacement price not set')));
+
+ await page.evaluate(()=>{
+   window.renderMarketDetail=(saved,extra={})=>window.root.render(React.createElement(require('components/asset-register/AssetMarketDetail').default,{
+     saved,stale:false,included:false,loading:false,error:false,canCalculate:true,onCalculate:()=>{window.detailCalculated=true},...extra
+   }));
+   window.renderMarketDetail();
+ });
+ await click('Calculate');assert(await page.evaluate(()=>window.detailCalculated));
+ await page.evaluate(()=>window.renderMarketDetail({priceExVat:425000,assessedAt:'2026-10-19T10:00:00Z'},{included:true,stale:true}));
+ await page.waitForFunction(()=>document.querySelector('[aria-label="Estimated selling price"] strong')?.textContent.replace(/\D/g,'')==='488750');
+ await click('Update estimate');
+ assert(await page.evaluate(()=>document.body.textContent.includes('Review needed')));
+ await page.click('[aria-label="About estimated selling price"]');
+ assert(await page.evaluate(()=>document.querySelector('[role="note"]').textContent.includes('Actual offers may differ')));
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.evaluate(()=>window.renderMarketDetail(undefined,{error:true}));
+ await page.waitForFunction(()=>document.body.textContent.includes('Unavailable'));
+ assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Calculate')),false);
+ await page.evaluate(()=>window.renderMarketDetail(undefined,{canCalculate:false}));
+ await page.waitForFunction(()=>document.body.textContent.includes('Not calculated'));
+ assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Calculate')),false);
  await page.evaluate(()=>{window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
  await click('Save market estimate');await page.waitForFunction(()=>document.body.textContent.includes('Save failed — retry'));assert.equal(await page.evaluate(()=>!!window.modalClosed),false);
  await page.evaluate(()=>window.allowSave=true);await click('Save market estimate');await page.waitForFunction(()=>window.modalClosed);assert.equal(await page.evaluate(()=>window.sent.currentDemand),'normal');

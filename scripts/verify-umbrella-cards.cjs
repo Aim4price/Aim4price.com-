@@ -27,7 +27,7 @@ async function check(browser, url) {
     if(request.isNavigationRequest() && request.frame()===page.mainFrame())console.log('NAV_REQUEST',request.url(),JSON.stringify(request.initiator()));
     if(target.pathname.startsWith('/api/')) {
       if(target.pathname==='/api/asset-groups' && request.method()==='PATCH') {const data=JSON.parse(request.postData());groups=groups.map(g=>({...g,isFlagged:data.isFlagged}));}
-      const body=target.pathname==='/api/me'?{ok:true,signedIn:true,user}:target.pathname==='/api/account-profile'?{ok:true,profile}:{ok:true,register:{id:'canvas-register',name:'Test farm'},items:assets,assets,groups,registers:[{id:'canvas-register',name:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false},enabled:false,hasPin:false};
+      const body=target.pathname==='/api/asset-register/saleability'?{ok:true,items:[]}:target.pathname==='/api/me'?{ok:true,signedIn:true,user}:target.pathname==='/api/account-profile'?{ok:true,profile}:{ok:true,register:{id:'canvas-register',name:'Test farm'},items:assets,assets,groups,registers:[{id:'canvas-register',name:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false},enabled:false,hasPin:false};
       return request.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
     }
     if(request.resourceType()==='media')return request.abort();return request.continue();
@@ -163,6 +163,21 @@ async function check(browser, url) {
     assert.equal(await isOpen('normal'),false,'card click closes standalone details');
     await click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),true,'card click opens standalone details');
+
+    await page.waitForSelector('#asset-card-normal [aria-label="Estimated selling price"]');
+    const detailOrder=await page.$eval('#asset-card-normal',card=>{
+      const market=card.querySelector('[aria-label="Estimated selling price"]');
+      const replacement=card.querySelector('[data-asset-return-action="detail-replacement"]');
+      const documents=card.querySelector('[aria-label^="View documents for"]');
+      return {afterReplacement:!!(replacement.compareDocumentPosition(market)&Node.DOCUMENT_POSITION_FOLLOWING),beforeDocuments:!!(market.compareDocumentPosition(documents)&Node.DOCUMENT_POSITION_FOLLOWING),calculate:market.textContent.includes('Calculate')};
+    });
+    assert.deepEqual(detailOrder,{afterReplacement:true,beforeDocuments:true,calculate:true});
+    await click('#asset-card-normal [aria-label="Estimated selling price"] button[class*="calculateMarket"]');
+    await page.waitForSelector('[aria-label="Close Saleability"]');
+    await click('[aria-label="Close Saleability"]');
+    await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+    assert.equal(await isOpen('normal'),true,'closing saleability returns to expanded card, not a pricing menu');
+
     const layout = await page.$eval('#asset-card-normal',card=>{
       const details=card.querySelector('#asset-panel-normal');
       const notices=[...card.querySelectorAll('[class*="partnerNoteBanner"]')];
