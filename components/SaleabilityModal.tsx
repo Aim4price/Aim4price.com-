@@ -26,6 +26,8 @@ type SaleabilityModalProps = {
   valuationExVat: number;
   input: GeneralSaleabilityInput;
   storageKey?: string;
+  initialAnswers?: SaleabilityRefinementAnswers;
+  onSave?: (answers: SaleabilityRefinementAnswers) => Promise<void>;
 };
 
 type Choice<T extends string> = { value: T; label: string; help?: string };
@@ -162,7 +164,12 @@ export default function SaleabilityModal({
   valuationExVat,
   input,
   storageKey,
+  initialAnswers,
+  onSave,
 }: SaleabilityModalProps) {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saved, setSaved] = useState(false);
   const [vatIncluded, setVatIncluded] = useState(false);
   const vatLabel = vatIncluded ? 'Incl. VAT' : 'Excl. VAT';
   const displayMoney = (value: number) => formatMoney(pricingVatAmount(value, vatIncluded));
@@ -178,8 +185,10 @@ export default function SaleabilityModal({
   useEffect(() => {
     if (!open) return undefined;
 
+    setSaveError(''); setSaved(false);
     let restored = false;
-    if (storageKey) {
+    if (initialAnswers) { setAnswers(initialAnswers); setStep('result'); restored = true; }
+    if (storageKey && !initialAnswers) {
       try {
         const saved = window.localStorage.getItem(storageKey);
         if (saved) {
@@ -208,7 +217,7 @@ export default function SaleabilityModal({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [onClose, open, storageKey]);
+  }, [onClose, open, storageKey, initialAnswers]);
 
   useEffect(() => {
     if (!open || step !== 'result' || !plan) return;
@@ -254,6 +263,7 @@ export default function SaleabilityModal({
         // Storage is optional.
       }
     }
+    setSaved(false); setSaveError('');
     setStep('result');
   }
 
@@ -399,6 +409,7 @@ export default function SaleabilityModal({
             </div>
           ) : null}
         </div>
+        {saveError ? <p role="alert" style={{color:"#9c2626",padding:"0 1.5rem"}}>{saveError}</p> : null}
         <footer className={`${styles.actions} ${estimateStyle ? modalStyles.actions : ''}`}>
           {step !== 'result' ? (
             <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>
@@ -406,8 +417,12 @@ export default function SaleabilityModal({
             </button>
           ) : (
             <>
-              <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Change answers</button>
-              <button type="button" className={styles.primary} onClick={onClose}>Done</button>
+              <button type="button" className={styles.secondary} disabled={saving} onClick={() => { setSaved(false); setSaveError(''); setStep(1); }}>Change answers</button>
+              {onSave && !saved ? <button type="button" className={styles.primary} disabled={saving} onClick={async () => {
+                if (!answersAreComplete(answers)) return;
+                setSaving(true); setSaveError('');
+                try { await onSave(answers); setSaved(true); onClose(); } catch(error) { setSaveError(error instanceof Error ? error.message : 'Could not save. Please try again.'); } finally { setSaving(false); }
+              }}>{saving ? 'Saving…' : 'Save market estimate'}</button> : <button type="button" className={styles.primary} onClick={onClose}>Done</button>}
             </>
           )}
         </footer>

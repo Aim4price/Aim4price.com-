@@ -1,4 +1,6 @@
 'use client';
+import AssetPriceSwitch, {type AssetPriceView} from '../../components/asset-register/AssetPriceSwitch';
+import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
 import MarketplacePriceInput from '../../components/MarketplacePriceInput';
@@ -4617,6 +4619,14 @@ function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementP
   return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
 }
 
+function readReplacementParts(asset: RegisterAsset): {asset:number;extras:number}|null {
+  const total=readAssetReplacementPriceExVat(asset);
+  const base=readNumberFromSpecs(asset.specsJson,['basic_asset_replacement_price_ex_vat']);
+  const extras=readNumberFromSpecs(asset.specsJson,['basic_extra_replacement_price_ex_vat']);
+  if(total===null||base===null||extras===null||base<0||extras<=0||Math.abs(base+extras-total)>1)return null;
+  return {asset:base,extras};
+}
+
 const INSURED_VALUE_SPEC_KEYS = [
   'insuredValueExVat',
   'insured_value_ex_vat',
@@ -5010,25 +5020,7 @@ function getAssetLifeWorkedPercent(asset: RegisterAsset): number | null {
 }
 
 function buildRegisterAssetSaleabilityInput(asset: RegisterAsset): GeneralSaleabilityInput {
-  const savedInputs = isPlainRecord(asset.specsJson.aim4priceSaleabilityInputs)
-    ? asset.specsJson.aim4priceSaleabilityInputs
-    : isPlainRecord(asset.specsJson.aim4price_saleability_inputs)
-      ? asset.specsJson.aim4price_saleability_inputs
-      : null;
-
-  return {
-    lifeRemainingPercent: asset.lifeRemainingPercent,
-    usageAmount: asset.hours,
-    maxLifetimeUsage: readAssetMaxLifetimeUsage(asset),
-    lifeWorkedPercent: getAssetLifeWorkedPercent(asset),
-    condition: asset.condition,
-    conditionFactorPercent: savedInputs
-      ? readNumberFromSpecs(savedInputs, ['conditionFactorPercent', 'condition_factor_percent'])
-      : null,
-    popularityStars: savedInputs
-      ? readNumberFromSpecs(savedInputs, ['popularityStars', 'popularity_stars'])
-      : null,
-  };
+  return assetSaleabilityInput(asset);
 }
 
 const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
@@ -6515,6 +6507,19 @@ export default function AssetRegisterClient({
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [assetGroupValueVatModes, setAssetGroupValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
+  const [priceViews,setPriceViews] = useState<Record<string,AssetPriceView>>({});
+  const [savedSaleability,setSavedSaleability] = useState<Record<string,SavedSaleability>>({});
+  const [saleabilityLoading,setSaleabilityLoading] = useState(true);
+  const [saleabilityLoadError,setSaleabilityLoadError] = useState(false);
+  useEffect(()=>{
+    let active=true;
+    fetch('/api/asset-register/saleability',{credentials:'include'}).then(async response=>{
+      if(!response.ok)throw Error('Assessment load failed');
+      const data=await response.json();
+      if(active)setSavedSaleability(Object.fromEntries(data.items.map((item:{asset_id:string;assessment:SavedSaleability})=>[item.asset_id,item.assessment])));
+    }).catch(()=>{if(active)setSaleabilityLoadError(true);}).finally(()=>{if(active)setSaleabilityLoading(false);});
+    return ()=>{active=false;};
+  },[]);
   const [assetValueVatModes, setAssetValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
   const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_VISIBLE_CARD_COUNT);
@@ -16609,7 +16614,7 @@ export default function AssetRegisterClient({
                             ) : null}
                           </div>
                         ) : null}
-                        <div className={styles.assetHeader}>
+                        <div className={`${styles.assetHeader} ${styles.marketValueHeader}`}>
                           <div className={styles.assetTitleBlock}>
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
@@ -16651,17 +16656,15 @@ export default function AssetRegisterClient({
                           </div>
 
                           <div className={styles.assetHeaderAside}>
-                            <div className={styles.valueBlock}>
-                              <div className={styles.assetValueVatDisplay}>
-                                <div className={styles.assetValueVatText}>
-                                  <div className={styles.assetValueVatAmountRow}>
-                                    <strong>{money(displayedAssetValue)}</strong>
-                                    <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
-                                  </div>
-                                  <span>{assetValueVatLabel}</span>
-                                </div>
-                              </div>
-                            </div>
+                            <AssetPriceSwitch value={asset.value} manual={isManualValueAsset}
+                              view={priceViews[asset.id]??'fair'} onViewChange={view=>setPriceViews(current=>({...current,[asset.id]:view}))}
+                              replacementPrice={readAssetReplacementPriceExVat(asset)} replacementParts={readReplacementParts(asset)}
+                              onEditReplacement={()=>openConfirmedValue(asset,'replacement')} onRecalculate={()=>isManualValueAsset?openConfirmedValue(asset,'override'):openPricingTool(asset,'recalculate')}
+                              included={assetValueVatMode==='included'} onVatChange={included=>setAssetValueVatModes(current=>({...current,[asset.id]:included?'included':'excluded'}))}
+                              saved={savedSaleability[asset.id]} stale={!!savedSaleability[asset.id]&&savedSaleability[asset.id].basis!==saleabilityBasis(asset)}
+                              canCalculate={canUseOwnerOnlyAssetActions} loading={saleabilityLoading} error={saleabilityLoadError}
+                              onCalculate={()=>openPricingTool(asset,'saleability')}/>
+
 
                             <div className={`${styles.assetHeaderActions} ${''}`}>
                               {estimateNeedsUpdate && canUseOwnerOnlyAssetActions ? (
@@ -20205,7 +20208,16 @@ export default function AssetRegisterClient({
           assetTitle={saleabilityAsset.title}
           valuationExVat={saleabilityAsset.value}
           input={buildRegisterAssetSaleabilityInput(saleabilityAsset)}
-          storageKey={`aim4price-saleability:asset:${saleabilityAsset.id}`}
+          key={saleabilityAsset.id}
+          initialAnswers={savedSaleability[saleabilityAsset.id]?.answers}
+          onSave={async answers=>{
+            const assetId=saleabilityAsset.id;
+            const response=await fetch('/api/asset-register/saleability',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId,answers,basis:saleabilityBasis(saleabilityAsset)})});
+            const data=await response.json();
+            if(!response.ok)throw Error(data.error||'Could not save assessment.');
+            setSavedSaleability(current=>({...current,[assetId]:data.assessment}));
+            setPriceViews(current=>({...current,[assetId]:'market'}));
+          }}
         />
       ) : null}
 
