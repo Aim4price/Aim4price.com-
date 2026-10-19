@@ -17,6 +17,7 @@ export async function saveAssetRevaluation<T>(
     if (!expected.updatedAtIso || current.updatedAtIso !== expected.updatedAtIso) {
       throw new Error('The asset changed. Reopen the value preview and try again.');
     }
+    await transaction.query("SELECT set_config('aim4price.valuation_write','resolved',true)");
     const result = await persist(transaction);
     await transaction.query('COMMIT');
     return result;

@@ -1,6 +1,8 @@
+import { requireBusinessOrigin } from '../../../../lib/business-network-api';
+import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 import { LegacyValuationRecoveryError } from '../../../../lib/asset-register-valuation-recovery';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
+import { getServerSession, isOwnerAppSession } from '../../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { revalueAssetRegisterItem } from '../../../../lib/asset-register-revaluation';
 import { attachOpenAssetAlerts } from '../../../../lib/asset-register-alerts';
@@ -197,6 +199,8 @@ function formatError(error: unknown): { status: number; message: string } {
 }
 
 export async function POST(request: NextRequest) {
+  try { requireBusinessOrigin(request); }
+  catch { return NextResponse.json({ok: false, error: 'This request must be sent from Aim4price.'}, {status: 403}); }
   const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
@@ -243,6 +247,13 @@ export async function POST(request: NextRequest) {
 
   if (!assetId) {
     return badRequest('Valid asset id is required.');
+  }
+
+  if (isOwnerAppSession(session)) {
+    const access = await getOwnerAppAccess();
+    if (!access || !ownerAppCan(access, 'manage_assets') || !ownerAppCanAccessAsset(access, assetId)) {
+      return NextResponse.json({ok: false, error: 'You do not have permission to update this asset.'}, {status: 403});
+    }
   }
 
   const hasReplacementPriceOverride = Object.prototype.hasOwnProperty.call(body, 'replacementPriceExVat');

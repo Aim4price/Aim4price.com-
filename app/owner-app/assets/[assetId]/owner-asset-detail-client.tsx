@@ -1,4 +1,6 @@
 'use client';
+
+import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../../../lib/automatic-valuation-status';
 import AppMaintenanceActions from '../../../../components/AppMaintenanceActions';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
@@ -274,7 +276,7 @@ function manualMarketplaceNote(value: string) {
 }
 
 function estimateNeedsAutomaticUpdate(asset: Pick<Asset, 'valuationRunId' | 'selectedMethod' | 'specsJson'>): boolean {
-  if (asset.valuationRunId === null || asset.selectedMethod === 'manual') return false;
+  if (asset.selectedMethod === 'manual') return false;
   const value = asset.specsJson.valuationNeedsUpdate ?? asset.specsJson.valuation_needs_update;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value === 1;
@@ -469,6 +471,16 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       longitude: payload.item.lastKnownLng === null ? '' : String(payload.item.lastKnownLng),
     });
   }
+
+  const hasAutomaticValueUpdate = Boolean(draft && automaticValuationPending(draft.specsJson));
+  useEffect(() => {
+    // Only refresh the summary: never overwrite an unsaved editing draft.
+    if (!hasAutomaticValueUpdate || view !== 'summary' || actionBusy) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadDetail(true);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [hasAutomaticValueUpdate, view, actionBusy, assetId]);
 
   async function loadDetail(silent = false) {
     if (!silent) setLoading(true);
@@ -834,14 +846,17 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
   const estimateNeedsUpdate = estimateNeedsAutomaticUpdate(draft);
   const renderEstimateUpdateAction = () => estimateNeedsUpdate ? (
+    <div>
+    <p role="status" title={AUTOMATIC_VALUATION_NOTICE}>{automaticValuationLabel(draft.specsJson)} · Previous value shown</p>
     <button
       type="button"
       className={`${styles.detailValueUpdateButton} ${styles.detailValueUpdateButtonAttention}`}
       onClick={() => void updateEstimateNow()}
       disabled={Boolean(actionBusy)}
     >
-      {actionBusy === 'update-estimate' ? 'Updating…' : 'Update estimate'}
+      {actionBusy === 'update-estimate' ? 'Updating…' : draft.specsJson.automaticValuationStatus === 'failed' ? 'Retry update' : 'Update now'}
     </button>
+    </div>
   ) : null;
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
     const value = extra(key, ...(options.fallbackKeys ?? []));

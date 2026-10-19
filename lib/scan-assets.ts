@@ -1,3 +1,4 @@
+import { isHistoricalScan } from './scan-current-inputs';
 import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from "./db";
@@ -1873,6 +1874,7 @@ export async function saveScanAssetEvent(
         where a.id::text = $1
           and upper(regexp_replace(coalesce(to_jsonb(a)->>'public_asset_code', ''), '\\s+', '', 'g')) = $3
         limit 1
+        FOR UPDATE OF a
       `,
       [resolvedOwner.assetId, scopedOwnerUserId, normalizedCode],
     );
@@ -1924,6 +1926,7 @@ export async function saveScanAssetEvent(
     const nextLocationText = asText(input.locationText) || null;
     const clientEventId = normalizeClientEventId(input.clientEventId);
     const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+    const historicalScan = isHistoricalScan(clientCapturedAt, existingRow);
     const gpsAccuracyMeters = normalizeGpsAccuracyMeters(
       input.gpsAccuracyMeters,
     );
@@ -2004,7 +2007,7 @@ export async function saveScanAssetEvent(
     }
 
     if (
-      nextHours !== null &&
+      !historicalScan && nextHours !== null &&
       currentAsset.hours !== null &&
       nextHours < currentAsset.hours
     ) {
@@ -2012,7 +2015,7 @@ export async function saveScanAssetEvent(
     }
 
     if (
-      nextLifeWorkedPercent !== null &&
+      !historicalScan && nextLifeWorkedPercent !== null &&
       currentLifeWorkedPercent !== null &&
       nextLifeWorkedPercent < currentLifeWorkedPercent
     ) {
@@ -2020,7 +2023,7 @@ export async function saveScanAssetEvent(
     }
 
     const valuationStaleReasons: string[] = [];
-    if (hasSavedValuation(existingRow)) {
+    if (!historicalScan && hasSavedValuation(existingRow)) {
       if (nextHours !== null && nextHours !== currentAsset.hours) {
         valuationStaleReasons.push("usage changed");
       }
@@ -2044,7 +2047,7 @@ export async function saveScanAssetEvent(
     const shouldCaptureDepreciationLogEntry = valuationStaleReasons.length > 0;
 
     const baseSpecsJson =
-      nextLifeWorkedPercent !== null
+      !historicalScan && nextLifeWorkedPercent !== null
         ? applyLifeWorkedPercent(
             asRecord(existingRow.specs_json),
             nextLifeWorkedPercent,
@@ -2172,6 +2175,7 @@ export async function saveScanAssetEvent(
       nextPhotoUrls,
       existingScanManagedPhotos,
     );
+    await client.query("SELECT set_config('aim4price.valuation_input_at',$1,true)", [clientCapturedAt ?? new Date().toISOString()]);
     const updatedAsset = await client.query<ScanAccessRow>(
       `
         with updated as (
@@ -2183,7 +2187,7 @@ export async function saveScanAssetEvent(
             fuel_percent = coalesce($3::integer, fuel_percent),
             condition = coalesce($4::text, condition),
             photo_urls = $5::jsonb,
-            last_scanned_at = coalesce($11::timestamptz, now()),
+            last_scanned_at = greatest(last_scanned_at, coalesce($11::timestamptz, now())),
             last_known_lat = coalesce($6::double precision, last_known_lat),
             last_known_lng = coalesce($7::double precision, last_known_lng),
             last_known_location_text = coalesce($8::text, last_known_location_text),
@@ -2243,15 +2247,15 @@ export async function saveScanAssetEvent(
       `,
       [
         currentAsset.id,
-        nextHours,
-        nextFuelPercent,
-        nextCondition,
+        historicalScan ? null : nextHours,
+        historicalScan ? null : nextFuelPercent,
+        historicalScan ? null : nextCondition,
         JSON.stringify(mergedPhotos),
-        nextLatitude,
-        nextLongitude,
-        nextLocationText,
+        historicalScan ? null : nextLatitude,
+        historicalScan ? null : nextLongitude,
+        historicalScan ? null : nextLocationText,
         JSON.stringify(nextSpecsJson),
-        nextLifeWorkedPercent,
+        historicalScan ? null : nextLifeWorkedPercent,
         clientCapturedAt,
         scopedOwnerUserId,
       ],
