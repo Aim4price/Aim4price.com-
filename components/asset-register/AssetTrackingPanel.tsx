@@ -89,10 +89,10 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
             <span className={styles.disconnectIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="m9 9 6 6m0-6-6 6"/></svg></span>
             <div className={styles.disconnectCopy}>
               <strong>Tracking will stop</strong>
-              <p>Reconnect this phone with a new pairing code to resume tracking.</p>
+              <p>Connect this phone or a replacement with a new pairing code.</p>
             </div>
           </div>
-          <p className={styles.savedRoutesNote}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Your saved routes will remain.</p>
+          <p className={styles.savedRoutesNote}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>Your asset stays on the map. Its location and history are kept.</p>
           {error && <p role="alert" className={styles.error}>{error}</p>}
           <div className={styles.confirmActions}>
             <button type="button" className={styles.secondaryAction} disabled={busy} onClick={()=>setConfirmDisconnect(false)}>Cancel</button>
