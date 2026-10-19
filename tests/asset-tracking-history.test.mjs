@@ -46,3 +46,54 @@ test('tracking history API validates dates, snapshots and access before mutation
  assert.equal((await route.GET(req('view=entries&from=2026-10-19&to=2026-10-18'),ctx)).status,400);
  const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/p\.history_deleted_at IS NULL/);
 });
+test('sessions remain separate on the same day, survive midnight, paginate ties and delete only the selected snapshot',async()=>{
+ const db=new PGlite();
+ const session='44444444-4444-4444-8444-444444444444',second='55555555-5555-4555-8555-555555555555';
+ try{
+ await db.exec('CREATE TABLE asset_tracking_devices(id uuid PRIMARY KEY,asset_id uuid,owner_id text);CREATE TABLE asset_tracking_points(device_id uuid,session_id uuid,sample_id text,captured_at timestamptz,received_at timestamptz,accuracy real,history_deleted_at timestamptz,latitude real DEFAULT 0,longitude real DEFAULT 0);');
+ await db.query('INSERT INTO asset_tracking_devices VALUES($1,$2,$3),($4,$2,$3)',[device,asset,'owner',other]);
+ const add=(dev,sid,id,at,received='2026-10-19T12:00:00Z')=>db.query('INSERT INTO asset_tracking_points(device_id,session_id,sample_id,captured_at,received_at,accuracy,history_deleted_at) VALUES($1,$2,$3,$4,$5,5,NULL)',[dev,sid,id,at,received]);
+ await add(device,session,'before-midnight','2026-10-18T21:50:00Z');
+ await add(device,session,'after-midnight','2026-10-18T22:10:00Z');
+ await add(device,second,'morning','2026-10-19T08:00:00Z');
+ await add(other,second,'other-phone','2026-10-19T08:00:00Z');
+ await add(device,second,'late','2026-10-19T08:01:00Z','2026-10-19T14:00:00Z');
+ const snapshot='2026-10-19T13:00:00.000Z';
+ const args=['owner',asset,null,null,null,snapshot];
+ const rows=(await db.query(lib.TRACKING_HISTORY_SESSIONS_SQL,args)).rows;
+ assert.equal(rows.length,3);
+ assert.deepEqual(rows.map(r=>r.readings),[1,1,2]);
+ assert.equal(rows[2].day,'2026-10-18');assert.equal(rows[2].end_day,'2026-10-19');
+ const cursor=[new Date(rows[0].last_captured_at).toISOString(),rows[0].device_id,rows[0].session_id].join('|');
+ assert.equal(lib.validSessionCursor(cursor),true);
+ assert.equal(lib.validSessionCursor(cursor+'|extra'),false);
+ const next=(await db.query(lib.TRACKING_HISTORY_SESSIONS_SQL,['owner',asset,null,null,cursor,snapshot])).rows;
+ assert.equal(next.length,2);assert.equal(next[0].device_id,device);
+ assert.equal((await db.query(lib.TRACKING_HISTORY_SESSIONS_SQL,['stranger',asset,null,null,null,snapshot])).rows.length,0);
+ const filtered=(await db.query(lib.TRACKING_HISTORY_SESSIONS_SQL,['owner',asset,'2026-10-19','2026-10-19',null,snapshot])).rows;
+ assert.equal(filtered[2].readings,1);
+
+ class Response{constructor(body,options){this.body=body;this.status=options?.status||200;}}
+ const prefix='../../../../../../lib/';
+ const route=load('app/api/asset-register/[assetId]/tracking/history/route.ts',{
+ 'next/server':{NextResponse:Response},[prefix+'asset-tracking-api']:{trackingOwner:async()=>({ownerId:'owner',asset:{title:'Tractor'}}),trackingJson:(body,status)=>new Response(body,{status})},
+ [prefix+'asset-tracking']:{ensureTrackingTables:async()=>{}},[prefix+'asset-tracking-math']:load('lib/asset-tracking-math.ts'),
+ [prefix+'asset-movement-report']:{buildMovementWorkbook:r=>r},[prefix+'asset-tracking-history']:lib,
+ [prefix+'db']:{getDb:()=>({query:(sql,args)=>db.query(sql,args)})}
+ });
+ const query=new URLSearchParams({from:'2026-10-19',to:'2026-10-19',deviceId:device,sessionId:second,snapshotAt:snapshot});
+ for(const format of ['', 'xlsx']){
+   query.set('format',format);
+   const response=await route.GET({nextUrl:new URL('https://example.test/history?'+query)},{params:{assetId:asset}});
+   assert.equal(response.status,200);
+   assert.equal(response.body.readings.length,1,'route and download include only the selected phone/session snapshot');
+   assert.equal(response.body.readings[0].sessionId,second);
+   assert.equal(response.body.readings[0].deviceId,device);
+ }
+ const del=['owner',asset,device,second,'2026-10-19','2026-10-19',snapshot];
+ assert.equal((await db.query(lib.DELETE_TRACKING_SESSION_SQL,['stranger',...del.slice(1)])).rows.length,0);
+ assert.equal((await db.query(lib.DELETE_TRACKING_SESSION_SQL,del)).rows.length,1);
+ const remaining=(await db.query('SELECT sample_id FROM asset_tracking_points WHERE history_deleted_at IS NULL ORDER BY sample_id')).rows.map(r=>r.sample_id);
+ assert.deepEqual(remaining,['after-midnight','before-midnight','late','other-phone']);
+ }finally{await db.close();}
+});

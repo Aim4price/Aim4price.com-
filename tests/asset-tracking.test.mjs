@@ -252,3 +252,13 @@ test("slow ten-second movement is accumulated beyond the drift threshold",()=>{
  const points=Array.from({length:7},(_,i)=>point(i/6,i*.00005));
  const report=summarizeTracking(points);assert.ok(report.distanceKm>.032);assert.equal(report.movingSeconds,60);assert.equal(report.stationarySeconds,0);
 });
+test("rejected fixes remain visible as missing coverage rather than disappearing from time totals",()=>{
+ const r=summarizeTracking([point(0,0),point(1,.001,{accuracy:200}),point(2,.002)]);
+ assert.equal(r.gapSeconds,120);
+ assert.equal(r.movingSeconds+r.stationarySeconds+r.gapSeconds,120);
+ assert.equal(r.segments.length,2);
+});
+test("two devices using the same session identifier never form a route",()=>{
+ const r=summarizeTracking([point(0,0,{deviceId:'phone-a'}),point(1,.001,{deviceId:'phone-b'})]);
+ assert.equal(r.distanceKm,0);assert.equal(r.gapSeconds,60);assert.equal(r.segments.length,2);
+});
