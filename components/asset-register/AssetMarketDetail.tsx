@@ -20,21 +20,21 @@ export default function AssetMarketDetail({saved, stale, included, loading, erro
   const [showInfo, setShowInfo] = useState(false);
   const money = saved ? new Intl.NumberFormat('en-ZA', {style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(saved.priceExVat, included)) : null;
   return <div className={styles.marketDetail} aria-label="Estimated selling price">
-    <div className={styles.marketHeading}>
-      <AssetDetailIcon kind="market"/>
-      <span>Estimated selling price</span>
-      <button className={styles.priceInfo} type="button" aria-label="About estimated selling price" aria-expanded={showInfo} onClick={()=>setShowInfo(value=>!value)}><AssetDetailIcon kind="info"/></button>
-    </div>
-    <div className={styles.marketAmount}>
-      {saved ? <>
-        <strong aria-live="polite">{money}</strong>
-        <small>{included ? 'Incl. VAT' : 'Excl. VAT'}</small>
-        {stale ? <small className={styles.reviewNeeded}>Review needed</small> : null}
-        {canCalculate ? <button className={styles.updateMarket} type="button" onClick={onCalculate}>Update estimate</button> : null}
-      </> : loading ? <span role="status">Loading…</span> : error ? <span role="status">Unavailable. Reload to retry.</span> : canCalculate ? (
-        <button className={styles.calculateMarket} type="button" onClick={onCalculate}><AssetDetailIcon kind="calculator"/>Calculate</button>
-      ) : <span>Not calculated</span>}
-    </div>
+    <button type="button" className={styles.marketOpen} disabled={!canCalculate || (!saved && (loading || error))} onClick={onCalculate} aria-haspopup={canCalculate?'dialog':undefined} aria-label={canCalculate?'Open saleability assessment':'Saleability estimate'}>
+      <span className={styles.marketHeading}>
+        <AssetDetailIcon kind="market"/>
+        <span className={styles.marketTitle}><strong>Saleability</strong><small>Estimated selling price</small></span>
+      </span>
+      <span className={styles.marketAmount}>
+        {saved ? <>
+          <strong aria-live="polite">{money}</strong>
+          <small>{included ? 'Incl. VAT' : 'Excl. VAT'}</small>
+          {stale ? <small className={styles.reviewNeeded}>Review needed</small> : null}
+        </> : loading ? <span role="status">Loading…</span> : error ? <span role="status">Unavailable. Reload to retry.</span> : canCalculate ? <span className={styles.calculateMarket}><AssetDetailIcon kind="calculator"/>Calculate</span> : <span>Not calculated</span>}
+        {canCalculate&&saved ? <small className={styles.marketPrompt}>Open assessment</small> : null}
+      </span>
+    </button>
+    <button className={styles.priceInfo} type="button" aria-label="About estimated selling price" aria-expanded={showInfo} onClick={()=>setShowInfo(value=>!value)}><AssetDetailIcon kind="info"/></button>
     {showInfo ? <p className={styles.marketInfo} role="note">
       Indicative selling price based on your saleability answers. Actual offers may differ.
       {saved ? <> Assessed {new Date(saved.assessedAt).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})}.</> : null}
