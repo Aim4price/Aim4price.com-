@@ -81,7 +81,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.focus('[aria-label="Update needed: open saleability assessment"]');
  await page.keyboard.press('Enter');
  assert.equal(await page.evaluate(()=>window.detailCalculated),2);
- assert(await page.evaluate(()=>document.body.textContent.includes('Update needed') && document.body.textContent.includes('Previous estimate')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Update needed') && !document.body.textContent.includes('Previous estimate')));
  assert(await page.evaluate(()=>!!document.querySelector('[data-detail-icon="alert"]')));
  assert.equal(await page.$eval('[aria-label="Estimated selling price"]',el=>getComputedStyle(el).backgroundColor),'rgb(255, 241, 242)');
  assert.equal(await page.$('[aria-label="About estimated selling price"]'),null);

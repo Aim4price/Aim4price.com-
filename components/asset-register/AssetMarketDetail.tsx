@@ -22,7 +22,7 @@ export default function AssetMarketDetail({saved, stale, included, loading, erro
     <button type="button" className={styles.marketOpen} disabled={!canCalculate || (!saved && (loading || error))} onClick={onCalculate} aria-haspopup={canCalculate?'dialog':undefined} aria-label={canCalculate ? (needsUpdate ? 'Update needed: open saleability assessment' : 'Open saleability assessment') : 'Saleability estimate'}>
       <span className={styles.marketHeading}>
         <AssetDetailIcon kind={needsUpdate ? "alert" : "market"}/>
-        <span className={styles.marketTitle}><strong>SALEABILITY</strong>{needsUpdate ? <small>Previous estimate</small> : null}</span>
+        <span className={styles.marketTitle}><strong>SALEABILITY</strong></span>
       </span>
       <span className={styles.marketAmount}>
         {saved ? <>
