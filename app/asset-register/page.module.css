@@ -41592,3 +41592,35 @@ button.documentOpenLink {
 }
 .projectionQuestionModal.projectionQuestionModal .projectionModalHeader > button { position:static !important; flex:0 0 auto; width:2.75rem !important; height:2.75rem !important; margin:0 !important; border-radius:.75rem !important; box-shadow:none !important; }
 .projectionQuestionModal .projectionDisclaimer { font-weight:500 !important; }
+
+/* Recalculate value: compact shell, clear choices and a readable preview. */
+.revalueQuestionModal.revalueQuestionModal { display:flex; flex-direction:column; overflow:hidden; padding:1.5rem !important; }
+.revalueQuestionModal .pricingResultHeader { flex:0 0 auto; padding:0 0 1rem !important; margin:0 !important; gap:1rem; }
+.revalueQuestionModal .pricingResultHeader h3 { display:flex; align-items:center; gap:.8rem; font-size:1.6rem !important; line-height:1.3 !important; }
+.revalueQuestionModal .pricingResultHeader p { margin:.45rem 0 0 !important; font-size:1rem !important; font-weight:500 !important; }
+.revalueQuestionModal .pricingResultHeader > button { position:static !important; margin:0 !important; flex:0 0 auto; width:2.75rem !important; height:2.75rem !important; border-radius:.75rem !important; }
+.revalueQuestionModal .pricingResultBody { min-height:0; overflow-y:auto; padding:1rem .75rem 0 0 !important; margin-right:-.75rem !important; }
+.revalueContext { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.75rem; padding-bottom:1rem; }
+.revalueContext p { flex:1; margin:0; color:#50665a; font-size:.9rem; line-height:1.5; }
+.revalueQuestionModal .projectionIcon { display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; width:2.5rem; height:2.5rem; border-radius:.75rem; background:#e4f2eb; color:#21664b; }
+.revalueQuestionModal .projectionIcon svg { width:1.4rem; height:1.4rem; }
+.revalueQuestionModal .projectionIcon[data-kind='usage'] { background:#e8f2fa; color:#346487; }
+.revalueQuestionModal .revalueQuestionPanel { gap:1rem; padding:1.1rem; border:1px solid #d3e2d9; border-radius:1rem; background:#f7faf8; }
+.revalueQuestionModal h4 { display:flex; align-items:center; gap:.75rem; font-size:1.15rem !important; line-height:1.4; }
+.revalueQuestionModal .revalueDecisionActions > button { display:flex; align-items:center; justify-content:flex-start; gap:.75rem; padding:1rem !important; min-height:4.5rem !important; color:#193e32 !important; background:#fff !important; border:1px solid #c5d8cc !important; box-shadow:none !important; text-align:left; }
+.revalueQuestionModal .revalueDecisionActions > button:hover:not(:disabled) { border-color:#237454 !important; background:#edf7f1 !important; }
+.revalueQuestionModal .revalueSavedReplacementCard { padding:1rem !important; background:#edf6f0; border-color:#c7ded1; }
+.revalueQuestionModal .pricingPreviewActions { flex:0 0 auto; margin:1rem 0 0 !important; padding:1rem 0 0 !important; background:transparent !important; }
+.revalueQuestionModal .revaluePreviewPanel { display:grid; grid-template-columns:1fr 1fr; gap:1rem; padding:0 !important; background:transparent; border:0; }
+.revalueQuestionModal .revalueReplacementHeader { grid-column:1 / -1; }
+.revalueQuestionModal .pricingResultHero { margin:0; padding:1.25rem; display:flex; flex-direction:column; justify-content:center; border-radius:1rem; background:#edf6f0; }
+.revalueQuestionModal .pricingCompareGrid { display:grid; grid-template-columns:1fr; gap:.5rem; margin:0; }
+.revalueQuestionModal .pricingCompareGrid > div { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.75rem; }
+.revalueQuestionModal .pricingCompareGrid span { display:flex; align-items:center; gap:.5rem; }
+.revalueQuestionModal .pricingCompareGrid .projectionIcon { width:1.8rem; height:1.8rem; }
+.revalueQuestionModal .pricingCompareGrid .projectionIcon svg { width:1.1rem; height:1.1rem; }
+.revalueQuestionModal .revalueReplacementSummary { grid-column:1 / -1; margin:0; }
+@media(max-width:600px){
+ :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revaluePreviewPanel { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revalueDecisionActions { grid-template-columns:1fr; }
+}
