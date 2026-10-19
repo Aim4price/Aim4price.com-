@@ -108,6 +108,7 @@ type PaginationItem = number | 'ellipsis-before' | 'ellipsis-after';
 type DealerListingView = 'browse' | 'mine';
 
 type MarketplaceEditDraft = {
+  title: string;
   photos: string[];
   askingPriceExVat: string;
   description: string;
@@ -2871,6 +2872,7 @@ export default function MarketplaceClient({
     if (compactAppMode) {
       setEditListingTarget(listing);
       setEditListingDraft({
+        title: listing.title,
         photos: getListingImages(listing),
         askingPriceExVat: String(Math.round(listing.askingPriceExVat || 0)),
         description: getListingNote(listing),
@@ -2906,6 +2908,10 @@ export default function MarketplaceClient({
   async function saveListingEdit() {
     if (!editListingTarget?.sourceAssetId || !editListingDraft || isSavingListingEdit || listingPhotosBusy) return;
 
+    if (!editListingDraft.title.trim()) {
+      setListingEditError('Enter a listing title.');
+      return;
+    }
     const askingPriceExVat = Math.round(
       Number(editListingDraft.askingPriceExVat.replace(/[^0-9.-]/g, '')) || 0,
     );
@@ -2931,6 +2937,7 @@ export default function MarketplaceClient({
           photos: editListingDraft.photos,
           replacePhotos: true,
           askingPriceExVat,
+          marketplaceTitle: editListingDraft.title.trim(),
           marketplaceNotes: editListingDraft.description.trim(),
           sellerName: editListingDraft.sellerName.trim(),
           sellerCompany: editListingDraft.sellerCompany.trim(),
@@ -3930,6 +3937,10 @@ export default function MarketplaceClient({
             </header>
 
             <div className={dealerStyles.editListingBody}>
+              <label className={dealerStyles.editListingField}>
+                <span>Listing title</span>
+                <input aria-label="Listing title" value={editListingDraft.title} maxLength={160} required disabled={isSavingListingEdit || listingPhotosBusy} onChange={event => updateListingEditDraft({ title: event.target.value })} />
+              </label>
               <MarketplacePhotoEditor photos={editListingDraft.photos} busy={listingPhotosBusy} onBusyChange={setListingPhotosBusy} disabled={isSavingListingEdit || listingPhotosBusy} onChange={photos => updateListingEditDraft({ photos })} />
               <MarketplacePriceInput value={editListingDraft.askingPriceExVat} disabled={isSavingListingEdit || listingPhotosBusy} onChange={askingPriceExVat => updateListingEditDraft({ askingPriceExVat })} />
               <label className={dealerStyles.editListingField}>

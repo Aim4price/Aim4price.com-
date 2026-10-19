@@ -825,6 +825,10 @@
 .modal .result { gap: 12px; }
 .modal .resultHero, .modal .pricePlan { padding: 16px; }
 
+/* Keep VAT display beside the prices it controls. */
+.planHeader { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem 1.25rem; }
+.planHeader > [aria-label="Price VAT display"] { margin-top:0; }
+
 /* Keep VAT with the asking price and show the rating alongside the plan. */
 .modal .result { grid-template-columns: minmax(0, .7fr) minmax(0, 1.7fr); align-items: stretch; }
 .modal .resultHero { grid-template-columns: 1fr; align-content: center; justify-items: start; gap: 12px; }
