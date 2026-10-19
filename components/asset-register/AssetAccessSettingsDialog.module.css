@@ -227,3 +227,6 @@
 .dialog.dialog .body.body:has([data-tracker-setup]):not(:has([data-tracker-pairing]))::-webkit-scrollbar {
   display: none;
 }
+
+/* History starts close to its header in both saved-location and tracking views. */
+.dialog.dialog .body.body.body:has([data-location-history]) { padding-top:.55rem !important; }

@@ -76,7 +76,14 @@ async function check(browser, url) {
     const groupDetails = '[class*="assetGroupHeaderRow"] [class*="cardViewDetailsButton"]';
     const details = id => `#asset-card-${id} [class*="cardViewDetailsButton"]`;
     const isOpen = async id => page.$eval(details(id), e => e.getAttribute('aria-expanded') === 'true');
-    const outside = async () => { await page.mouse.click(2,1000); await delay(100); };
+    const outside = async () => {
+      // Use an inert fixture target: viewport coordinates can hit a navigation
+      // link after a card expansion changes the canvas scroll position.
+      await page.evaluate(()=>{const target=document.createElement('div');target.id='outside-card-test-target';target.style.cssText='position:fixed;left:2px;bottom:2px;width:12px;height:12px;z-index:2147483647';document.body.append(target);});
+      await page.click('#outside-card-test-target');
+      await page.$eval('#outside-card-test-target',e=>e.remove());
+      await delay(100);
+    };
     const red = async selector => {
       await page.waitForFunction(sel => getComputedStyle(document.querySelector(sel)).borderTopColor === 'rgb(223, 67, 77)', {}, selector);
       return page.$eval(selector,e=>getComputedStyle(e).borderTopColor);
