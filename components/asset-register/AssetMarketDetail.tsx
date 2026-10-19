@@ -23,7 +23,7 @@ export default function AssetMarketDetail({saved, stale, included, loading, erro
     <div className={styles.marketHeading}>
       <AssetDetailIcon kind="market"/>
       <span>Estimated selling price</span>
-      <button className={styles.priceInfo} type="button" aria-label="About estimated selling price" aria-expanded={showInfo} onClick={()=>setShowInfo(value=>!value)}>i</button>
+      <button className={styles.priceInfo} type="button" aria-label="About estimated selling price" aria-expanded={showInfo} onClick={()=>setShowInfo(value=>!value)}><AssetDetailIcon kind="info"/></button>
     </div>
     <div className={styles.marketAmount}>
       {saved ? <>
