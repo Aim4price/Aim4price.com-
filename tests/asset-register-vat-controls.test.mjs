@@ -16,19 +16,22 @@ test('the register VAT selector updates the total and every asset card', () => {
   assert.match(client, /handleRegisterValueVatModeChange\('included'\)/);
 });
 
-test('asset and umbrella quick actions share an in-card footer', () => {
-  assert.equal((client.match(/className=\{styles\.sharedCardFooter\}/g) ?? []).length, 2);
-  assert.equal((client.match(/className=\{styles\.sharedCardUtilities\}/g) ?? []).length, 2);
-  assert.match(styles, /\.assetSideActions\{position:static !important;display:flex !important/);
+test('asset quick actions retain the original side rail', () => {
+  assert.match(client, /<article[\s\S]*?styles\.assetSideActions[\s\S]*?aria-label=\{`Actions for/);
+  assert.doesNotMatch(client, /styles\.sharedCardFooter/);
+  assert.match(styles, /\.assetSideActions \{[\s\S]*?left: calc\(0rem - clamp/);
 });
 
-test('asset and umbrella prices share the explicit VAT selector', () => {
-  const priceSwitch = readFileSync(new URL('../components/asset-register/AssetPriceSwitch.tsx', import.meta.url), 'utf8');
-  assert.match(priceSwitch, /<PricingVatToggle included=\{included\} onChange=\{onVatChange\}/);
-  assert.match(client, /<PricingVatToggle included=\{groupValueVatMode === 'included'\}/);
-  assert.match(client, /if \(included !== \(groupValueVatMode === 'included'\)\) handleAssetGroupValueVatToggle/);
+test('asset and umbrella prices retain independent VAT controls', () => {
+  assert.match(client, /<AssetPriceSwitch[\s\S]*?included=\{assetValueVatMode\s*===\s*'included'\}/);
+  const pricing = readFileSync(new URL('../components/asset-register/AssetPriceSwitch.tsx', import.meta.url), 'utf8');
+  assert.match(pricing, /<PricingVatToggle included=\{included\} onChange=\{onVatChange\}/);
+  assert.match(client, /<CardVatToggle included=\{groupValueVatMode === 'included'\}/);
   assert.match(client, /assetGroupValueVatModes\[group.id\] \?\? registerValueVatMode/);
   assert.match(client, /setAssetGroupValueVatModes\(\{\}\)/);
+  const toggleStyles = readFileSync(new URL('../components/CardVatToggle.module.css', import.meta.url), 'utf8');
+  assert.match(toggleStyles, /position: absolute/);
+  assert.match(toggleStyles, /background: transparent/);
 });
 
 test('the Register value selector continues to match Replacement value', () => {
