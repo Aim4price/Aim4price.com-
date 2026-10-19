@@ -2862,10 +2862,13 @@ export default function MarketplaceClient({
   }
 
   function handleEditManagedListing() {
-    const listing = manageListingTarget;
-    const assetId = listing?.sourceAssetId;
+    if (manageListingTarget) editMarketplaceListing(manageListingTarget);
+  }
 
-    if (!listing || !assetId) {
+  function editMarketplaceListing(listing: MarketplaceListing) {
+    const assetId = listing.sourceAssetId;
+
+    if (!listing.canManage || !assetId) {
       return;
     }
 
@@ -3373,6 +3376,14 @@ export default function MarketplaceClient({
                       />
                       <DealRatingBadge listing={listing} />
                       {images.length > 1 ? <span className={styles.photoPill}>{images.length} photos</span> : null}
+                      {listing.canManage && listing.sourceAssetId ? (
+                        <button type="button" className={`${styles.cardShareButton} ${styles.cardEditButton}`}
+                          aria-label="Edit advert" data-tooltip="Edit advert"
+                          onClick={event => { event.stopPropagation(); editMarketplaceListing(listing); }}
+                          onKeyDown={event => event.stopPropagation()}>
+                          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16l-1 4Z" /><path d="M13 20h8" /></svg>
+                        </button>
+                      ) : null}
                       <button type="button" className={`${styles.cardShareButton} ${styles.cardVatButton}`}
                         aria-label={vatIncluded ? 'Show prices excluding VAT' : 'Show prices including VAT'}
                         data-tooltip={vatIncluded ? 'Show excl. VAT' : 'Show incl. VAT'} aria-pressed={vatIncluded}

@@ -6430,6 +6430,7 @@ export default function AssetRegisterClient({
   const [isLoadingAcquisitionDetails, setIsLoadingAcquisitionDetails] = useState(false);
   const [isSavingAcquisitionDetails, setIsSavingAcquisitionDetails] = useState(false);
   const [acquisitionDetailsError, setAcquisitionDetailsError] = useState('');
+  const [marketplaceVatIncluded, setMarketplaceVatIncluded] = useState(false);
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplacePhotosBusy, setMarketplacePhotosBusy] = useState(false);
@@ -11761,6 +11762,7 @@ export default function AssetRegisterClient({
     const profile = await ensureAccountProfile();
     setMarketplaceAsset(asset);
     setMarketplaceDraft(createMarketplaceDraft(asset, profile));
+    setMarketplaceVatIncluded(false);
     setIsPublishingMarketplace(false);
   }
 
@@ -21245,8 +21247,8 @@ export default function AssetRegisterClient({
 
                   <div className={styles.marketplaceAssetSummaryValue}>
                     <span>Register value</span>
-                    <strong>{money(marketplaceAsset.value)}</strong>
-                    <small>Excl. VAT</small>
+                    <strong>{money(marketplaceAsset.value * (marketplaceVatIncluded ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1))}</strong>
+                    <small>{marketplaceVatIncluded ? 'Incl. VAT' : 'Excl. VAT'}</small>
                   </div>
                 </section>
 
@@ -21254,6 +21256,7 @@ export default function AssetRegisterClient({
                   <div className={styles.marketplaceListingColumn}>
                     <section className={styles.marketplacePricePanel}>
                       <MarketplacePriceInput value={marketplaceDraft.askingPriceExVat}
+                        vatIncluded={marketplaceVatIncluded} onVatIncludedChange={setMarketplaceVatIncluded}
                         disabled={isPublishingMarketplace || marketplacePhotosBusy}
                         onChange={askingPriceExVat => setMarketplaceDraft(current => current ? { ...current, askingPriceExVat } : current)} />
                     </section>
