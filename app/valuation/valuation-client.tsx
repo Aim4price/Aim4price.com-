@@ -9472,7 +9472,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div onBlurCapture={() => setRequiredFeedback(true)} data-required-feedback={requiredFeedback || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
-              {nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={requiredFeedback ? styles.requiredHint : styles.fieldHint} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
+              {nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={`${styles.requiredSummary} ${requiredFeedback ? styles.requiredHint : styles.fieldHint}`} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
