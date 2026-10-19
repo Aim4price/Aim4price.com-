@@ -204,6 +204,7 @@ test('scan insertion and history queries retain checklist snapshots without chan
     const result = await pg.query(insert, [assetId,'owner_session','Tester',null,null,null,'Checked\nChecked items: Ploughshares','[]',-25.7,28.2,'GPS','event-one',null,10,null,null,null,null,'percentage','asset_qr_scan','QR Scan',JSON.stringify(work)]);
     assert.deepEqual(result.rows[0].maintenance_work,work);
     const scan = load('lib/scan-assets.ts', {
+      './scan-current-inputs': load('lib/scan-current-inputs.ts'),
       './db': { getDb: () => pg }, './maintenance-catalogue': shared,
       './asset-display-title': {}, './asset-owner-resolver': {}, './asset-register-uploads': {MAX_ASSET_REGISTER_PHOTOS:12},
       './asset-usage': {}, './fuel-ledger': {ensureFuelLedgerTables:async()=>{}}, './account-profile': {}, './asset-depreciation-timeline': {}, './usage-readings': {toFiniteNumberOrNull:v=>v==null?null:Number(v)},

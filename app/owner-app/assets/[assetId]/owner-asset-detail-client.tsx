@@ -476,21 +476,27 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   useEffect(() => {
     // Only refresh the summary: never overwrite an unsaved editing draft.
     if (!hasAutomaticValueUpdate || view !== 'summary' || actionBusy) return;
+    const controller = new AbortController();
+    let refreshing = false;
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void loadDetail(true);
+      if (document.visibilityState !== 'visible' || refreshing) return;
+      refreshing = true;
+      void loadDetail(true, controller.signal).finally(() => { refreshing = false; });
     }, 5000);
-    return () => window.clearInterval(timer);
+    return () => { controller.abort(); window.clearInterval(timer); };
   }, [hasAutomaticValueUpdate, view, actionBusy, assetId]);
 
-  async function loadDetail(silent = false) {
+  async function loadDetail(silent = false, signal?: AbortSignal) {
     if (!silent) setLoading(true);
     try {
-      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, { credentials: 'include', cache: 'no-store' });
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, { credentials: 'include', cache: 'no-store', signal });
       const payload = await response.json().catch(() => null) as DetailResponse | null;
+      if (signal?.aborted) return;
       if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
       if (!response.ok || !payload?.ok || !payload.item) throw new Error(payload?.error || 'Failed to load this asset.');
       applyDetail(payload);
     } catch (cause) {
+      if (signal?.aborted) return;
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load this asset.' });
     } finally {
       if (!silent) setLoading(false);

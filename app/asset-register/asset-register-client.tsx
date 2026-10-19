@@ -11133,6 +11133,7 @@ export default function AssetRegisterClient({
   }
 
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
+    registerRequestVersion.current++;
     if (assetModalReturnRef.current?.assetId === nextAsset.id) {
       assetModalReturnRef.current = {
         ...assetModalReturnRef.current,
