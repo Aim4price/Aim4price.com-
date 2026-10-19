@@ -41624,11 +41624,3 @@ button.documentOpenLink {
  :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revaluePreviewPanel { grid-template-columns:1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revalueDecisionActions { grid-template-columns:1fr; }
 }
-
-/* Keep the value controls together; stack below identity on smaller screens. */
-.page .assetHeader.marketValueHeader { align-items:flex-start !important; }
-.page .marketValueHeader .assetHeaderAside { width:32rem; max-width:100%; flex-shrink:0; }
-@media(max-width:900px) {
- :global(:where(html:not(:has([data-website-canvas])))) .page .assetHeader.marketValueHeader { grid-template-columns:minmax(0,1fr) !important; }
- :global(:where(html:not(:has([data-website-canvas])))) .page .marketValueHeader .assetHeaderAside { grid-column:1 !important; grid-row:2 !important; width:100% !important; justify-items:stretch; }
-}
