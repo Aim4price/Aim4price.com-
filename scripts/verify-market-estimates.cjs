@@ -69,24 +69,29 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
  await page.evaluate(()=>{
    window.renderMarketDetail=(saved,extra={})=>window.root.render(React.createElement(require('components/asset-register/AssetMarketDetail').default,{
-     saved,stale:false,included:false,loading:false,error:false,canCalculate:true,onCalculate:()=>{window.detailCalculated=true},...extra
+     saved,stale:false,included:false,loading:false,error:false,canCalculate:true,onCalculate:()=>{window.detailCalculated=(window.detailCalculated||0)+1},...extra
    }));
    window.renderMarketDetail();
  });
- await click('Calculate');assert(await page.evaluate(()=>window.detailCalculated));
+ await page.waitForSelector('[aria-label="Open saleability assessment"]');
+ await page.click('[aria-label="Open saleability assessment"]');
+ assert.equal(await page.evaluate(()=>window.detailCalculated),1);
  await page.evaluate(()=>window.renderMarketDetail({priceExVat:425000,assessedAt:'2026-10-19T10:00:00Z'},{included:true,stale:true}));
- await page.waitForFunction(()=>document.querySelector('[aria-label="Estimated selling price"] strong')?.textContent.replace(/\D/g,'')==='488750');
- await click('Update estimate');
+ await page.waitForFunction(()=>document.querySelector('[aria-label="Estimated selling price"] [aria-live="polite"]')?.textContent.replace(/\D/g,'')==='488750');
+ await page.focus('[aria-label="Open saleability assessment"]');
+ await page.keyboard.press('Enter');
+ assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.body.textContent.includes('Review needed')));
  await page.click('[aria-label="About estimated selling price"]');
  assert(await page.evaluate(()=>document.querySelector('[role="note"]').textContent.includes('Actual offers may differ')));
+ assert.equal(await page.evaluate(()=>window.detailCalculated),2);
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.evaluate(()=>window.renderMarketDetail(undefined,{error:true}));
  await page.waitForFunction(()=>document.body.textContent.includes('Unavailable'));
- assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Calculate')),false);
+ assert(await page.evaluate(()=>document.querySelector('[aria-label="Open saleability assessment"]').disabled));
  await page.evaluate(()=>window.renderMarketDetail(undefined,{canCalculate:false}));
  await page.waitForFunction(()=>document.body.textContent.includes('Not calculated'));
- assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Calculate')),false);
+ assert(await page.evaluate(()=>document.querySelector('[aria-label="Saleability estimate"]').disabled));
  await page.evaluate(()=>{window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
  await click('Save market estimate');await page.waitForFunction(()=>document.body.textContent.includes('Save failed — retry'));assert.equal(await page.evaluate(()=>!!window.modalClosed),false);
  await page.evaluate(()=>window.allowSave=true);await click('Save market estimate');await page.waitForFunction(()=>window.modalClosed);assert.equal(await page.evaluate(()=>window.sent.currentDemand),'normal');
