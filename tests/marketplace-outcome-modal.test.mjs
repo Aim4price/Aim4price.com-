@@ -83,9 +83,9 @@ test('advert removal mirrors the Asset Register confirmation and four-step dispo
   assert.match(styles, /\.confirmContent h2\s*\{[^}]*padding:[^;]*1\.1rem[^;]*;[^}]*border-bottom:/);
   assert.match(styles, /\.confirmCloseButton\s*\{[^}]*position:\s*absolute;[^}]*width:\s*3rem/);
   assert.match(styles, /\.confirmActions\s*\{[^}]*justify-content:\s*flex-end;[^}]*gap:\s*0\.75rem/);
-  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\)\)/);
+  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(56rem, calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\)\)/);
   assert.match(styles, /\.dialog\s*\{[^}]*max-height:\s*min\((?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 90\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 0\.9\)), 52rem\);[^}]*display:\s*flex;[^}]*flex-direction:\s*column/);
-  assert.match(styles, /\.wizardActions\s*\{[^}]*position:\s*sticky;[^}]*bottom:\s*-1\.4rem;[^}]*padding:\s*0\.85rem 0 0/);
+  assert.match(styles, /\.wizardActions\s*\{[^}]*position:\s*static;[^}]*padding:\s*1\.1rem 1\.75rem/);
   assert.match(styles, /\.progress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.reasonGrid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.reasonGrid\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/);
@@ -112,9 +112,9 @@ test('shared Marketplace outcome dialog is keyboard and screen-reader accessible
   assert.match(styles, /\.dialog button,\s*\.dialog input,\s*\.dialog textarea\s*\{[^}]*font-family:\s*inherit/);
   assert.doesNotMatch(styles, /\.dialog button,\s*\.dialog input,\s*\.dialog textarea\s*\{[^}]*font:\s*inherit/);
   assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*1\.8rem/);
-  assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3\.08rem;[^}]*height:\s*3\.08rem;[^}]*border-radius:\s*999px/);
+  assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3\.08rem;[^}]*height:\s*3\.08rem;[^}]*border-radius:\s*0\.85rem/);
   assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#1d3b62;[^}]*background:\s*linear-gradient\(180deg, #f7fbff 0%, #edf4fb 100%\)/);
-  assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.55rem;[^}]*border-radius:\s*0\.95rem/);
+  assert.match(styles, /\.option\s*\{[^}]*min-height:\s*4rem;[^}]*border-radius:\s*0\.95rem/);
   assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.25rem;[^}]*font-weight:\s*800/);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);

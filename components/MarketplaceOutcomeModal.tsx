@@ -395,20 +395,20 @@ export default function MarketplaceOutcomeModal({
               </button>
             </header>
 
-            <div className={`${styles.body} ${styles.wizardBody}`}>
-              <ol className={styles.progress} aria-label={`Step ${step} of 4`}>
-                {REMOVAL_STEPS.map((item) => (
-                  <li
-                    key={item.step}
-                    className={item.step === step ? styles.progressCurrent : item.step < step ? styles.progressComplete : ''}
-                    aria-current={item.step === step ? 'step' : undefined}
-                  >
-                    <span>{item.step}</span>
-                    <small>{item.label}</small>
-                  </li>
-                ))}
-              </ol>
+            <ol className={styles.progress} aria-label={`Step ${step} of 4`}>
+              {REMOVAL_STEPS.map((item) => (
+                <li
+                  key={item.step}
+                  className={item.step === step ? styles.progressCurrent : item.step < step ? styles.progressComplete : ''}
+                  aria-current={item.step === step ? 'step' : undefined}
+                >
+                  <span>{item.step}</span>
+                  <small>{item.label}</small>
+                </li>
+              ))}
+            </ol>
 
+            <div className={`${styles.body} ${styles.wizardBody}`}>
               {step === 1 ? (
                 <section className={styles.step} aria-labelledby="advert-removal-outcome-title">
                   <div className={styles.stepHeader}>
@@ -548,27 +548,27 @@ export default function MarketplaceOutcomeModal({
               ) : null}
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
-
-              <footer className={`${styles.actions} ${styles.wizardActions}`}>
-                <button
-                  type="button"
-                  className={styles.cancelButton}
-                  onClick={step === 1 ? closeModal : previousStep}
-                  disabled={submitting}
-                >
-                  {step === 1 ? 'Cancel' : 'Back'}
-                </button>
-                {step < 4 ? (
-                  <button type="button" className={styles.primaryButton} onClick={nextStep} disabled={submitting || (step === 1 && !reason) || (step === 3 && aim4priceHelped === null)}>
-                    Next
-                  </button>
-                ) : (
-                  <button type="button" className={styles.primaryButton} onClick={() => void submitOutcome()} disabled={submitting}>
-                    {submitting ? 'Saving outcome…' : 'Save outcome & remove advert'}
-                  </button>
-                )}
-              </footer>
             </div>
+
+            <footer className={`${styles.actions} ${styles.wizardActions}`}>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={step === 1 ? closeModal : previousStep}
+                disabled={submitting}
+              >
+                {step === 1 ? 'Cancel' : 'Back'}
+              </button>
+              {step < 4 ? (
+                <button type="button" className={styles.primaryButton} onClick={nextStep} disabled={submitting || (step === 1 && !reason) || (step === 3 && aim4priceHelped === null)}>
+                  Next
+                </button>
+              ) : (
+                <button type="button" className={styles.primaryButton} onClick={() => void submitOutcome()} disabled={submitting}>
+                  {submitting ? 'Saving outcome…' : 'Save outcome & remove advert'}
+                </button>
+              )}
+            </footer>
           </>
         )}
       </section>
