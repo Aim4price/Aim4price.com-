@@ -224,16 +224,22 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 }
 
 .manageOptions button { display:inline-flex; align-items:center; justify-content:center; text-align:center; }
-.disconnectConfirm { display:grid; justify-items:center; gap:1rem; text-align:center; padding:.4rem 0; }
-.disconnectConfirm > strong { font-size:1.1rem; color:#173e30; }
-.disconnectConfirm p { margin:0; max-width:44ch; line-height:1.6; color:#566d63; }
-.disconnectConfirm .savedRoutesNote { padding:.7rem 1rem; border-radius:.75rem; background:#eff6f2; color:#245940; font-size:.9rem; }
-.disconnectIcon { display:grid; place-items:center; width:3.5rem; height:3.5rem; border-radius:1rem; background:#fcece8; color:#a33c32; }
-.disconnectIcon svg { width:1.8rem; height:1.8rem; }
-.confirmActions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.8rem; width:100%; margin-top:.5rem; }
-.confirmActions button { display:inline-flex; align-items:center; justify-content:center; min-height:3rem; padding:.75rem 1.2rem; border-radius:.8rem; font:inherit; font-weight:750; cursor:pointer; }
-.confirmDisconnectButton { border:1px solid #a33c32; background:#a33c32; color:#fff; }
+.disconnectConfirm { display:grid; gap:1.25rem; padding:.25rem 0; }
+.disconnectWarning { display:flex; align-items:flex-start; gap:1rem; padding:1.25rem; border:1px solid #edd7d1; border-radius:1rem; background:#fff8f5; }
+.disconnectCopy { display:grid; gap:.5rem; padding-top:.1rem; }
+.disconnectCopy strong { font-size:1.1rem; line-height:1.4; color:#713c32; }
+.disconnectConfirm p { margin:0; line-height:1.6; color:#566d63; }
+.disconnectCopy p { max-width:44ch; font-size:.95rem; }
+.disconnectConfirm .savedRoutesNote { display:flex; align-items:center; justify-content:center; gap:.5rem; color:#37634e; font-size:.9rem; }
+.savedRoutesNote svg { width:1.15rem; height:1.15rem; flex-shrink:0; }
+.disconnectIcon { display:grid; place-items:center; flex-shrink:0; width:3rem; height:3rem; border:1px solid #f0d5cd; border-radius:.85rem; background:#fcece6; color:#a33c32; }
+.disconnectIcon svg { width:1.5rem; height:1.5rem; }
+.confirmActions { display:grid; grid-template-columns:1fr 1fr; gap:.85rem; padding-top:1.25rem; border-top:1px solid #e0e9e3; }
+.confirmActions button { display:inline-flex; align-items:center; justify-content:center; min-height:3rem; padding:.8rem 1rem; border-radius:.8rem; font:inherit; font-size:.95rem; font-weight:750; cursor:pointer; transition:background-color .15s ease,border-color .15s ease; }
+.confirmDisconnectButton { border:1px solid #a33c32; background:#a33c32; color:#fff; box-shadow:0 2px 3px #713c3214; }
+.confirmDisconnectButton:hover:not(:disabled) { border-color:#8c3028; background:#8c3028; }
 .confirmActions button:focus-visible { outline:3px solid #5abf98; outline-offset:3px; }
 .confirmActions button:disabled { opacity:.55; cursor:wait; }
-
-.confirmActions .secondaryAction { border:1px solid #bdd9cc; background:#f3f8f5; color:#185c43; }
+.confirmActions .secondaryAction { border:1px solid #c7dbcf; background:#f6faf7; color:#185c43; }
+.confirmActions .secondaryAction:hover:not(:disabled) { border-color:#9ebfac; background:#eaf3ed; }
+.disconnectConfirm .error { padding:.75rem 1rem; border-radius:.75rem; background:#fff0ed; color:#a33c32; }
