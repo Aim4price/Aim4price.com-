@@ -68,3 +68,17 @@
  :global(:where(html:not(:has([data-website-canvas])))) .marketDetail { grid-template-columns:minmax(0,1fr) auto; }
  :global(:where(html:not(:has([data-website-canvas])))) .marketOpen { grid-template-columns:1fr; gap:.7rem; }
 }
+
+/* An outdated saved assessment stays visibly actionable until a new save. */
+.marketDetail.marketNeedsUpdate { border-color:#dc8585; background:#fff1f2; color:#991b1b; }
+.marketNeedsUpdate .marketHeading>.detailIcon { background:#fee2e2; color:#b91c1c; }
+.marketNeedsUpdate .marketAmount>strong,
+.marketNeedsUpdate .marketAmount .reviewNeeded,
+.marketNeedsUpdate .marketAmount .marketPrompt { color:#991b1b; }
+.marketNeedsUpdate .marketTitle small,
+.marketNeedsUpdate .marketAmount>small,
+.marketNeedsUpdate .marketInfo { color:#8a3535; }
+.marketNeedsUpdate .marketAmount .reviewNeeded { padding:.18rem .5rem; border-radius:.4rem; background:#fee2e2; font-weight:800; }
+.marketNeedsUpdate button:hover { background:#ffe4e6; }
+.marketNeedsUpdate button:focus-visible { outline-color:#b91c1c; }
+.marketNeedsUpdate .marketInfo { border-color:#efb8bd; }
