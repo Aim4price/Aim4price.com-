@@ -108,7 +108,7 @@
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(16rem, 1fr) minmax(36rem, 1.35fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   justify-content: stretch;
   gap: clamp(0.7rem, calc(var(--website-design-vw) * 1), 0.95rem);
@@ -174,10 +174,10 @@
 .topActionButtons {
   width: 100%;
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
-  gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.9), 0.82rem);
+  gap: clamp(0.78rem, calc(var(--website-design-vw) * 1.35), 1.25rem);
 }
 
 .primaryAction,
@@ -2128,3 +2128,19 @@
 .assetMapShell :global(.aim4priceMapMarker:focus .aim4priceMapMarkerPin),
 .assetMapShell :global(.aim4priceMapMarker:hover .aim4priceMapMarkerPin) { filter:drop-shadow(0 0 8px rgba(24,119,80,.65)); }
 .assetMapShell :global(.aim4priceMapMarker:focus-visible .aim4priceMapMarkerPin) { filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #176d50); }
+
+/* Keep asset search on the map, between zoom and layer controls. */
+.mapSearch {
+  position: absolute;
+  z-index: 13;
+  top: 0.88rem;
+  left: 5.4rem;
+  right: 13rem;
+  margin: 0;
+}
+.mapSearch .searchWrap { min-height: 3.35rem; box-shadow: 0 8px 24px rgba(18, 41, 52, 0.12); }
+.topActionButtons .topActionButton {
+  min-height: clamp(3.62rem, calc(var(--website-design-vw) * 4.45), 4.08rem);
+  border-radius: clamp(1rem, calc(var(--website-design-vw) * 1.45), 1.22rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw) * 1.15), 1.08rem);
+}
