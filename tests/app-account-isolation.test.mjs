@@ -98,6 +98,7 @@ test('shared authentication and Marketplace use only the selected app account', 
     'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
     '../../../lib/auth-session': auth, '../../../lib/account-profile': { getAccountProfile: getProfile },
     '../../../lib/dealer-app-access': await load('lib/dealer-app-access.ts'),
+    '../../../lib/marketplace-title': await load('lib/marketplace-title.ts'),
     '../../../lib/marketplace-db': { listPublishedMarketplaceAssetListings: async options => { viewer = options.viewerUserId; return []; }, publishAssetRegisterItemToMarketplace: async input => { publisher = input.userId; return {}; } },
     '../../../lib/asset-register-uploads': { MAX_ASSET_REGISTER_PHOTOS: 10 }, '../../../lib/middleman-account': { isMiddlemanAccountSubtype },
   });
