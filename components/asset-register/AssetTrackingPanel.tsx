@@ -116,6 +116,11 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
           <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
           <div><dt>Latest GPS reading</dt><dd>{device.lastCapturedAt?new Date(device.lastCapturedAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Waiting for first location'}</dd></div>
         </dl>
+        <details className={styles.trackingDiagnostics}><summary>Recording health</summary>
+          <p>Latest saved accuracy: {typeof device.accuracy==='number'?'±'+Math.round(device.accuracy)+' m':'Not available'}</p>
+          {device.diagnostics?<><p>Tracker {device.diagnostics.version||'Unknown version'} · {device.diagnostics.provider||'Unknown location source'}</p><p>Awaiting upload at last contact: {device.diagnostics.pending??'Unknown'} readings</p><p>Rejected GPS fixes since installation: {device.diagnostics.rejectedFixes??'Unknown'}</p></>:<p>This phone does not send recording diagnostics yet. Its tracker version cannot be verified remotely.</p>}
+          <p>Last contact confirms an upload connection; latest GPS confirms a recorded location.</p>
+        </details>
         <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports</button>
         <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>Manage device</button></div>
       </div>}

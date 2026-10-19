@@ -36,7 +36,7 @@ test('tracking history API validates dates, snapshots and access before mutation
  let allowed=true,calls=0;const prefix='../../../../../../lib/';
  const route=load('app/api/asset-register/[assetId]/tracking/history/route.ts',{
  'next/server':{NextResponse:Response},[prefix+'asset-tracking-api']:{trackingOwner:async()=>allowed?{ownerId:'owner',asset:{title:'Tractor'}}:new Response({},403),trackingJson:(body,status)=>new Response(body,status)},
- [prefix+'asset-tracking']:{ensureTrackingTables:async()=>{}},[prefix+'asset-tracking-math']:{summarizeTracking:p=>({readings:p})},[prefix+'asset-movement-report']:{},[prefix+'asset-tracking-history']:lib,[prefix+'db']:{getDb:()=>({query:async()=>{calls++;return {rowCount:1,rows:[]};}})}
+ [prefix+'asset-tracking']:{ensureTrackingTables:async()=>{}},[prefix+'asset-tracking-math']:{summarizeTracking:p=>({readings:p})},[prefix+'asset-movement-report']:{},[prefix+'asset-tracking-history']:lib,[prefix+'asset-tracking-journeys']:load('lib/asset-tracking-journeys.ts',{'./asset-tracking-math':load('lib/asset-tracking-math.ts')}),[prefix+'db']:{getDb:()=>({query:async()=>{calls++;return {rowCount:1,rows:[]};}})}
  });
  const req=q=>({nextUrl:new URL('https://www.aim4price.com/api/history?'+q)}),ctx={params:{assetId:asset}},valid='day=2026-10-19&snapshotAt=2026-10-19T00:00:00.000Z';
  allowed=false;assert.equal((await route.DELETE(req(valid),ctx)).status,403);allowed=true;
@@ -44,7 +44,7 @@ test('tracking history API validates dates, snapshots and access before mutation
  assert.equal(calls,0);assert.equal((await route.DELETE(req(valid),ctx)).status,200);assert.equal(calls,1);
  assert.equal((await route.GET(req('view=entries&from=2026-02-30'),ctx)).status,400);
  assert.equal((await route.GET(req('view=entries&from=2026-10-19&to=2026-10-18'),ctx)).status,400);
- const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/p\.history_deleted_at IS NULL/);
+ const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/visibleTrackingPoints/);
 });
 test('sessions remain separate on the same day, survive midnight, paginate ties and delete only the selected snapshot',async()=>{
  const db=new PGlite();
@@ -78,8 +78,8 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
  const route=load('app/api/asset-register/[assetId]/tracking/history/route.ts',{
  'next/server':{NextResponse:Response},[prefix+'asset-tracking-api']:{trackingOwner:async()=>({ownerId:'owner',asset:{title:'Tractor'}}),trackingJson:(body,status)=>new Response(body,{status})},
  [prefix+'asset-tracking']:{ensureTrackingTables:async()=>{}},[prefix+'asset-tracking-math']:load('lib/asset-tracking-math.ts'),
- [prefix+'asset-movement-report']:{buildMovementWorkbook:r=>r},[prefix+'asset-tracking-history']:lib,
- [prefix+'db']:{getDb:()=>({query:(sql,args)=>db.query(sql,args)})}
+ [prefix+'asset-movement-report']:{buildMovementWorkbook:r=>r},[prefix+'asset-tracking-history']:lib,[prefix+'asset-tracking-journeys']:load('lib/asset-tracking-journeys.ts',{'./asset-tracking-math':load('lib/asset-tracking-math.ts')}),
+ [prefix+'db']:{getDb:()=>({query:async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length};}})}
  });
  const query=new URLSearchParams({from:'2026-10-19',to:'2026-10-19',deviceId:device,sessionId:second,snapshotAt:snapshot});
  for(const format of ['', 'xlsx']){
@@ -90,10 +90,24 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
    assert.equal(response.body.readings[0].sessionId,second);
    assert.equal(response.body.readings[0].deviceId,device);
  }
+
+ const bounded=new URLSearchParams({from:'2026-10-18',to:'2026-10-19',deviceId:device,sessionId:session,snapshotAt:snapshot,startAt:'2026-10-18T21:50:00.000Z',endAt:'2026-10-18T21:50:00.000Z'});
+ const boundedReport=await route.GET({nextUrl:new URL('https://example.test/history?'+bounded)},{params:{assetId:asset}});
+ assert.equal(boundedReport.body.readings.length,1,'journey route uses exact capture bounds within an activation');
+ const removed=await route.DELETE({nextUrl:new URL('https://example.test/history?'+bounded)},{params:{assetId:asset}});
+ assert.equal(removed.status,200);
+ const deletedReport=await route.GET({nextUrl:new URL('https://example.test/history?'+bounded)},{params:{assetId:asset}});
+ assert.equal(deletedReport.body.readings.length,0);
+ assert.equal(deletedReport.body.points.length,0,'deleted coordinates must not leak into audit exports');
+ assert.equal((await db.query("SELECT count(*)::integer AS n FROM asset_tracking_points WHERE sample_id='after-midnight' AND history_deleted_at IS NULL")).rows[0].n,1,'deleting one journey preserves another in the same activation');
+ const journeyPage=await route.GET({nextUrl:new URL('https://example.test/history?'+new URLSearchParams({view:'journeys',from:'2026-10-18',to:'2026-10-19',snapshotAt:snapshot}))},{params:{assetId:asset}});
+ assert.equal(journeyPage.status,200);
+ assert.equal(journeyPage.body.items.length,3);
+ assert(journeyPage.body.items.every(e=>e.startAt&&e.endAt&&e.id&&e.kind));
  const del=['owner',asset,device,second,'2026-10-19','2026-10-19',snapshot];
  assert.equal((await db.query(lib.DELETE_TRACKING_SESSION_SQL,['stranger',...del.slice(1)])).rows.length,0);
  assert.equal((await db.query(lib.DELETE_TRACKING_SESSION_SQL,del)).rows.length,1);
  const remaining=(await db.query('SELECT sample_id FROM asset_tracking_points WHERE history_deleted_at IS NULL ORDER BY sample_id')).rows.map(r=>r.sample_id);
- assert.deepEqual(remaining,['after-midnight','before-midnight','late','other-phone']);
+ assert.deepEqual(remaining,['after-midnight','late','other-phone']);
  }finally{await db.close();}
 });

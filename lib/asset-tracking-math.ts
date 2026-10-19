@@ -5,7 +5,20 @@ export type TrackingPoint = {
   accuracy: number;
   sessionId: string;
   deviceId?: string;
+  sampleId?: string;
+  context?: boolean;
+  breakBefore?: boolean;
+  receivedAt?: string;
 };
+export function visibleTrackingPoints<T extends TrackingPoint & {historyDeleted?:boolean}>(input:T[]):T[]{
+ const removed=new Set<string>();
+ return [...input].sort((a,b)=>Date.parse(a.capturedAt)-Date.parse(b.capturedAt)).flatMap(p=>{
+  const key=(p.deviceId||'')+'|'+p.sessionId;
+  if(p.historyDeleted){removed.add(key);return [];}
+  const breakBefore=removed.delete(key)||p.breakBefore;
+  return [{...p,breakBefore}];
+ });
+}
 export function distanceMeters(a: TrackingPoint, b: TrackingPoint): number {
   const rad = Math.PI / 180;
   const dLat = (b.latitude - a.latitude) * rad,
@@ -62,7 +75,7 @@ export function summarizeTracking(input: TrackingPoint[]) {
     if (seconds <= 0) continue;
     const metres = distanceMeters(anchor, point),
       threshold = Math.max(10, anchor.accuracy, point.accuracy);
-    const sameSession = previous.sessionId === point.sessionId && previous.deviceId === point.deviceId;
+    const sameSession = previous.sessionId === point.sessionId && previous.deviceId === point.deviceId && !point.breakBefore;
     const stationary = metres <= threshold;
     if (!sameSession || seconds > (stationary ? 720 : 180)) {
       gapSeconds += seconds;
@@ -111,7 +124,15 @@ export function summarizeTracking(input: TrackingPoint[]) {
   const observedSpan = readings.length > 1
     ? (Date.parse(readings[readings.length-1].capturedAt)-Date.parse(readings[0].capturedAt))/1000 : 0;
   gapSeconds = Math.max(0,observedSpan-movingSeconds-stationarySeconds);
+  const gaps=readings.flatMap((point,i)=>{
+    if(!i||point.speedKmh!==null)return [];
+    const before=readings[i-1];
+    return [{from:before.capturedAt,to:point.capturedAt,seconds:(Date.parse(point.capturedAt)-Date.parse(before.capturedAt))/1000,
+      reason:point.breakBefore?'Readings removed from history':before.sessionId!==point.sessionId||before.deviceId!==point.deviceId?'Recording changed':'Missing or unreliable GPS'}];
+  });
   return {
+    gaps,
+    rejectedReadings:points.length-readings.length,
     points,
     readings,
     stops,

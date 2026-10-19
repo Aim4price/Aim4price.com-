@@ -14,6 +14,7 @@ export function ensureTrackingTables() {
  upload_window timestamptz, upload_count integer NOT NULL DEFAULT 0,
  last_seen_at timestamptz, active boolean NOT NULL DEFAULT false, state_at timestamptz,
  created_at timestamptz NOT NULL DEFAULT now());
+ ALTER TABLE public.asset_tracking_devices ADD COLUMN IF NOT EXISTS diagnostics jsonb;
  CREATE INDEX IF NOT EXISTS tracking_device_asset ON public.asset_tracking_devices(asset_id);
  CREATE TABLE IF NOT EXISTS public.asset_tracking_points(
  device_id uuid NOT NULL REFERENCES public.asset_tracking_devices(id) ON DELETE CASCADE,
@@ -113,7 +114,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateUpload(
   body: any,
   now = Date.now(),
-): { points: UploadPoint[]; active: boolean; stateAt: string } {
+): { points: UploadPoint[]; active: boolean; stateAt: string; diagnostics:Record<string,number|string>|null } {
   if (
     !body ||
     !Array.isArray(body.points) ||
@@ -154,7 +155,20 @@ export function validateUpload(
       motion: p.motion,
     } as UploadPoint;
   });
-  return { points, active: body.active, stateAt: body.stateAt };
+  const diagnostics:Record<string,number|string>={};
+  if(body.diagnostics&&typeof body.diagnostics==='object'){
+    for(const key of ['pending','rejectedFixes','accuracy']){
+      const value=body.diagnostics[key];
+      if(typeof value==='number'&&Number.isFinite(value)&&value>=(key==='accuracy'?-1:0)&&value<=1e9&&(key==='accuracy'||Number.isInteger(value)))diagnostics[key]=value;
+    }
+    for(const key of ['lastCallbackAt','lastGpsAt','lastSavedAt']){
+      const value=body.diagnostics[key];
+      if(typeof value==='string'&&value.length<=30&&Number.isFinite(Date.parse(value))&&Date.parse(value)<=now+120000)diagnostics[key]=new Date(value).toISOString();
+    }
+    if(typeof body.diagnostics.version==='string'&&/^\d+\.\d+(?:\.\d+)?$/.test(body.diagnostics.version))diagnostics.version=body.diagnostics.version;
+    if(['gps','fused','unknown'].includes(body.diagnostics.provider))diagnostics.provider=body.diagnostics.provider;
+  }
+  return { points, active: body.active, stateAt: body.stateAt, diagnostics:Object.keys(diagnostics).length?diagnostics:null };
 }
 export async function ingestTracking(
   token: string,
@@ -198,8 +212,8 @@ export async function ingestTracking(
         ],
       );
     await client.query(
-      `UPDATE public.asset_tracking_devices SET last_seen_at=now(),active=CASE WHEN state_at IS NULL OR state_at <= $3::timestamptz THEN $2 ELSE active END,state_at=GREATEST(state_at,$3::timestamptz) WHERE id=$1`,
-      [device.id, body.active, body.stateAt],
+      `UPDATE public.asset_tracking_devices SET last_seen_at=now(),active=CASE WHEN state_at IS NULL OR state_at <= $3::timestamptz THEN $2 ELSE active END,diagnostics=CASE WHEN state_at IS NULL OR state_at <= $3::timestamptz THEN COALESCE($4::jsonb,diagnostics) ELSE diagnostics END,state_at=GREATEST(state_at,$3::timestamptz) WHERE id=$1`,
+      [device.id, body.active, body.stateAt,body.diagnostics?JSON.stringify(body.diagnostics):null],
     );
     await client.query("COMMIT");
     return { accepted: body.points.map((p) => p.id) };
@@ -213,7 +227,7 @@ export async function ingestTracking(
 export async function trackingStatus(ownerId: string, assetId: string) {
   await ensureTrackingTables();
   const r = await getDb().query(
-    `SELECT d.id,d.name,d.paired_at,d.last_seen_at,d.active,p.captured_at,p.latitude,p.longitude,p.motion FROM public.asset_tracking_devices d JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id LEFT JOIN LATERAL(SELECT * FROM public.asset_tracking_points WHERE device_id=d.id AND accuracy<=50 ORDER BY captured_at DESC LIMIT 1)p ON true WHERE d.owner_id=$1 AND d.asset_id=$2 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL ORDER BY d.created_at DESC LIMIT 1`,
+    `SELECT d.id,d.name,d.paired_at,d.last_seen_at,d.active,d.diagnostics,p.accuracy,p.captured_at,p.latitude,p.longitude,p.motion FROM public.asset_tracking_devices d JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id LEFT JOIN LATERAL(SELECT * FROM public.asset_tracking_points WHERE device_id=d.id AND accuracy<=50 ORDER BY captured_at DESC LIMIT 1)p ON true WHERE d.owner_id=$1 AND d.asset_id=$2 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL ORDER BY d.created_at DESC LIMIT 1`,
     [ownerId, assetId],
   );
   if (!r.rowCount) return null;
@@ -221,6 +235,8 @@ export async function trackingStatus(ownerId: string, assetId: string) {
   return {
     id: d.id,
     name: d.name,
+    diagnostics:d.diagnostics,
+    accuracy:d.accuracy,
     lastSeenAt: d.last_seen_at,
     lastCapturedAt: d.captured_at,
     latitude: d.latitude,

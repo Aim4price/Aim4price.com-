@@ -175,3 +175,6 @@
 .sessionNumber { display:grid; place-items:center; flex-shrink:0; width:2.25rem; height:2.25rem; border-radius:50%; background:#195d47; color:white; font-weight:800; }
 .coverageWarning { display:grid; gap:.3rem; padding:.9rem 1rem; margin:0 0 1rem; background:#fff6e5; border:1px solid #e7cf9b; border-radius:.8rem; color:#785014; line-height:1.45; }
 .coverageWarning span { font-size:.88rem; }
+
+.traceDetails { margin-top:1rem; padding:.85rem 1rem; background:#f4f8f6; border:1px solid #d8e5de; border-radius:.8rem; color:#38594c; font-size:.85rem; line-height:1.6; }
+.traceDetails summary { cursor:pointer; font-weight:750; }

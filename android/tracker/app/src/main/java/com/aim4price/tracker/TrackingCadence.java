@@ -7,6 +7,7 @@ public final class TrackingCadence {
  public boolean isFresh(long time){return lastFix<0||time-lastFix>=9000;}
  public boolean accept(long time,boolean moved){
   if(!isFresh(time))return false;
+  if(lastFix>=0&&time-lastFix>120000)stationarySince=time;
   lastFix=time;
   if(stationarySince<0||moved)stationarySince=time;
   boolean nextStopped=time-stationarySince>=15*60000;
