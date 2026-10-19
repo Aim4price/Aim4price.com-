@@ -1,5 +1,5 @@
 'use client';
-import AssetPriceSwitch from '../../components/asset-register/AssetPriceSwitch';
+import AssetPriceSwitch, {type AssetPriceView} from '../../components/asset-register/AssetPriceSwitch';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
@@ -4619,6 +4619,14 @@ function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementP
   return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
 }
 
+function readReplacementParts(asset: RegisterAsset): {asset:number;extras:number}|null {
+  const total=readAssetReplacementPriceExVat(asset);
+  const base=readNumberFromSpecs(asset.specsJson,['basic_asset_replacement_price_ex_vat']);
+  const extras=readNumberFromSpecs(asset.specsJson,['basic_extra_replacement_price_ex_vat']);
+  if(total===null||base===null||extras===null||base<0||extras<=0||Math.abs(base+extras-total)>1)return null;
+  return {asset:base,extras};
+}
+
 const INSURED_VALUE_SPEC_KEYS = [
   'insuredValueExVat',
   'insured_value_ex_vat',
@@ -6499,7 +6507,7 @@ export default function AssetRegisterClient({
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [assetGroupValueVatModes, setAssetGroupValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
-  const [marketViews,setMarketViews] = useState<Record<string,boolean>>({});
+  const [priceViews,setPriceViews] = useState<Record<string,AssetPriceView>>({});
   const [savedSaleability,setSavedSaleability] = useState<Record<string,SavedSaleability>>({});
   const [saleabilityLoading,setSaleabilityLoading] = useState(true);
   const [saleabilityLoadError,setSaleabilityLoadError] = useState(false);
@@ -16649,7 +16657,9 @@ export default function AssetRegisterClient({
 
                           <div className={styles.assetHeaderAside}>
                             <AssetPriceSwitch value={asset.value} manual={isManualValueAsset}
-                              market={marketViews[asset.id]??false} onMarketChange={market=>setMarketViews(current=>({...current,[asset.id]:market}))}
+                              view={priceViews[asset.id]??'fair'} onViewChange={view=>setPriceViews(current=>({...current,[asset.id]:view}))}
+                              replacementPrice={readAssetReplacementPriceExVat(asset)} replacementParts={readReplacementParts(asset)}
+                              onEditReplacement={()=>openConfirmedValue(asset,'replacement')} onRecalculate={()=>isManualValueAsset?openConfirmedValue(asset,'override'):openPricingTool(asset,'recalculate')}
                               included={assetValueVatMode==='included'} onVatChange={included=>setAssetValueVatModes(current=>({...current,[asset.id]:included?'included':'excluded'}))}
                               saved={savedSaleability[asset.id]} stale={!!savedSaleability[asset.id]&&savedSaleability[asset.id].basis!==saleabilityBasis(asset)}
                               canCalculate={canUseOwnerOnlyAssetActions} loading={saleabilityLoading} error={saleabilityLoadError}
@@ -20206,7 +20216,7 @@ export default function AssetRegisterClient({
             const data=await response.json();
             if(!response.ok)throw Error(data.error||'Could not save assessment.');
             setSavedSaleability(current=>({...current,[assetId]:data.assessment}));
-            setMarketViews(current=>({...current,[assetId]:true}));
+            setPriceViews(current=>({...current,[assetId]:'market'}));
           }}
         />
       ) : null}
