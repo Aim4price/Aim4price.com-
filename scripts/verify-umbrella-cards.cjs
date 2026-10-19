@@ -157,8 +157,14 @@ async function check(browser, url) {
     assert.equal(layout.below,true,'expanded asset details precede every notice visually and in reading order');
     await page.screenshot({path:path.join(output,`asset-details-before-notices-${width}.png`)});
     await page.click('#asset-card-normal [class*="cardManageButton"]');
-    await page.waitForSelector('[role="dialog"]');
-    await page.$eval('[role="dialog"]',e=>e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})));
+    // Resolve and interact in one browser turn: canvas overlay mounting can
+    // replace the node between separate waitForSelector and $eval calls.
+    await page.waitForFunction(()=>{
+      const dialog=document.querySelector('[role="dialog"][aria-labelledby="asset-manage-title"]');
+      if(!dialog?.isConnected||!dialog.getBoundingClientRect().width)return false;
+      dialog.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+      return true;
+    });
     assert.equal(await isOpen('normal'),true,'modal interaction preserves expanded asset');
     await page.keyboard.press('Escape');
     await outside();
