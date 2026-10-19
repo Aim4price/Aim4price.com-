@@ -12921,8 +12921,9 @@
 }
 
 .marketplaceAssetSummaryValue {
-  justify-items: end !important;
-  text-align: right !important;
+  justify-items: center !important;
+  text-align: center !important;
+  overflow-wrap: anywhere;
 }
 
 .marketplaceBodyGrid {
@@ -13344,8 +13345,8 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .marketplaceAssetSummaryValue {
-    justify-items: start !important;
-    text-align: left !important;
+    justify-items: center !important;
+    text-align: center !important;
   }
 }
 
