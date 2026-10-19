@@ -4385,8 +4385,8 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #759f91 #edf4f1;
+  scrollbar-width: auto;
+  scrollbar-color: #648e7d #edf4f1;
 }
 
 /* Chromium needs the standard colours reset to use the rounded custom track. */
@@ -4398,8 +4398,8 @@
 }
 
 .accountPopover::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
 }
 
 .accountPopover::-webkit-scrollbar-track {
@@ -4411,9 +4411,9 @@
 }
 
 .accountPopover::-webkit-scrollbar-thumb {
-  min-height: 48px;
+  min-height: 56px;
   background: #648e7d;
-  border: 3px solid transparent;
+  border: 2px solid transparent;
   background-clip: padding-box;
   border-radius: 999px;
 }
