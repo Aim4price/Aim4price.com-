@@ -24,7 +24,7 @@ const assetDb = read('lib/asset-register-db.ts');
 const revaluation = read('lib/asset-register-revaluation.ts');
 
 test('the estimate result and standard PDF include General Saleability', () => {
-  assert.match(valuationClient, /General Saleability/);
+  assert.match(valuationClient, /aria-label="How easily could it sell\?"/);
   assert.match(valuationClient, /Refine Saleability/);
   assert.match(valuationClient, /saleabilityRows:/);
   assert.match(reportRoute, /<h2>Saleability<\/h2>/);
@@ -96,7 +96,8 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(modalStyles, /\.header p\s*\{[\s\S]*?white-space:\s*nowrap;/);
   assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
-  assert.match(modal, /<h2[^>]* id="saleability-title">\{assetTitle\}<\/h2>/);
+  assert.match(modal, /id="saleability-title"><SaleIcon kind="demand" \/>Saleability<\/h2>/);
+  assert.match(modal, /<p>\{assetTitle\} · Build your selling plan\.<\/p>/);
   assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
   assert.doesNotMatch(modal, /styles\.baselineStrip/);
   assert.match(modal, /styles\.settingsCard/);

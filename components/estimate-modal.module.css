@@ -141,3 +141,31 @@
 .surface.surface .close.close { border-color: #d2dfd7; color: #234d3b; cursor: pointer; }
 .surface.surface .close.close:hover:not(:disabled) { background: #e8f3ec; border-color: #237454; }
 .surface.surface .close.close:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
+
+/* Optional larger replacement editor; values remain stored excluding VAT. */
+.expandedPriceControl { gap: 16px; }
+.priceReadout { display: grid; gap: 8px; padding: 24px; border-radius: 18px; background: #123e31; color: #fff; }
+.priceReadout > span, .priceReadout small { font-size: 1rem; font-weight: 600; color: #dceee5; }
+.priceReadout strong { font-size: 2.2rem; line-height: 1.2; overflow-wrap: anywhere; }
+.priceEntryLabel { font-size: 1rem; font-weight: 650; }
+.expandedPriceControl .amountEntry input { font-size: 1.5rem; }
+.expandedPriceControl .sliderControl { gap: 16px; }
+.expandedPriceControl .adjustSlider { appearance: none; height: 40px; }
+.expandedPriceControl .adjustSlider::-webkit-slider-runnable-track { height: 10px; border-radius: 999px; background: linear-gradient(to right, #20694f var(--price-progress), #dfebe5 var(--price-progress)); }
+.expandedPriceControl .adjustSlider::-moz-range-track { height: 10px; border-radius: 999px; background: #dfebe5; }
+.expandedPriceControl .adjustSlider::-moz-range-progress { height: 10px; border-radius: 999px; background: #20694f; }
+.expandedPriceControl .adjustSlider::-webkit-slider-thumb { appearance: none; width: 30px; height: 30px; margin-top: -10px; border-radius: 50%; background: #175644; border: 4px solid #fff; box-shadow: 0 0 0 3px #cce1d7; }
+.expandedPriceControl .adjustSlider::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #175644; border: 4px solid #fff; box-shadow: 0 0 0 3px #cce1d7; }
+.priceFineTune { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.priceFineTune button { min-height: 48px; border: 1px solid var(--app-line, #cbded3); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #173e33); font: inherit; font-weight: 700; cursor: pointer; }
+.expandedPriceControl { grid-template-columns: minmax(0, .95fr) minmax(0, 1.65fr); gap: 20px; }
+.expandedPriceControl .priceReadout { grid-column: 1; grid-row: 1; align-content: center; }
+.expandedPriceControl .sliderControl { grid-column: 2; grid-row: 1; align-content: center; }
+.expandedPriceControl .priceEntryLabel { grid-column: 1 / -1; grid-row: 2; }
+.expandedPriceControl .amountEntry { grid-column: 1 / -1; grid-row: 3; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .expandedPriceControl { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .expandedPriceControl .sliderControl { grid-column: 1; grid-row: 2; }
+  :global(:where(html:not(:has([data-website-canvas])))) .expandedPriceControl .priceEntryLabel { grid-row: 3; }
+  :global(:where(html:not(:has([data-website-canvas])))) .expandedPriceControl .amountEntry { grid-row: 4; }
+}

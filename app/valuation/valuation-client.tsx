@@ -9036,13 +9036,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) setReplacementPanelOpen(false);
                 }}>
                 <div className={styles.specificationModalHeader}>
-                  <h3 data-estimate-modal-title id="replacement-price-dialog-title">Replacement price</h3>
+                  <h3 data-estimate-modal-title id="replacement-price-dialog-title" className={styles.detailsModalTitle}>{renderDetailIcon('brand')}<span>Replacement price</span></h3>
                   <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} aria-label="Close replacement price"
                     disabled={replacementRecalculateLoading || advancedRecalculateLoading} onClick={() => setReplacementPanelOpen(false)}>×</button>
                 </div>
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
-                    {basicEstimateActive ? 'Set the total cost of the asset and selected extras. Extras are already included in this amount.' : 'Set the cost of a comparable new asset. Drag the slider or type an amount.'}
+                    What would a comparable new asset cost today?<br />{basicEstimateActive ? 'Adjust the total replacement price, including your selected extras. Do not add extras again.' : 'Adjust the asset replacement price. Selected extras are handled separately.'}
                   </p>
 
                   <div className={styles.replacementInputPanel}>
@@ -9053,16 +9053,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </div>
 
                     <div className={styles.replacementFieldsGrid}>
-                      <label className={`${styles.field} ${styles.replacementField}`}>
-                        <span className={styles.fieldLabel}>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} ({replacementModalVat === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
-                        <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
-                          label="Asset replacement price" sliderMax={replacementSliderMax} />
-                        <small className={styles.replacementFieldHint}>Current price: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} {getVatDisplayLabel(replacementModalVat)}</small>
-                      </label>
+                      <div className={`${styles.field} ${styles.replacementField}`}>
+                        <EstimatePriceInput expanded value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
+                          label={basicEstimateActive ? 'Total replacement price · includes extras' : 'Asset replacement price'} sliderMax={replacementSliderMax} />
+                        <small className={styles.replacementFieldHint}>Price used in this estimate: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}</small>
+                      </div>
                       {isGeneric && genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ? <button
                         type="button" className={styles.replacementSavedLink} disabled={replacementRecalculateLoading}
                         onClick={() => setUserReplacementPrice(String(genericResult.aim4priceReplacementCalculation!.replacementPriceExVat))}>
-                        Use saved price: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation.replacementPriceExVat, replacementModalVat))}
+                        Restore saved {basicEstimateActive ? 'total' : 'asset'} price: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation.replacementPriceExVat, replacementModalVat))} · {getVatDisplayLabel(replacementModalVat)}
                       </button> : null}
                       {tractorResult && (frontPto || frontLoader || gpsEnabled || otherExtraEnabled) ? <details className={styles.replacementExtrasDisclosure}>
                         <summary>Adjust selected extras</summary><div className={styles.replacementFieldsGrid}>
