@@ -41547,3 +41547,48 @@ button.documentOpenLink {
   :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionQuickButtons { grid-template-columns:repeat(2,minmax(0,1fr)); }
   :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionSimpleMeta { grid-template-columns:1fr; }
 }
+
+/* Compact future-value layout: one price panel beside aligned assumption rows. */
+.projectionQuestionModal.projectionQuestionModal .projectionModalHeader {
+  padding:0 0 1rem !important; margin:0 !important; align-items:flex-start;
+}
+.projectionQuestionModal.projectionQuestionModal .projectionModalHeader .modalHeaderText { gap:.4rem; }
+.projectionQuestionModal.projectionQuestionModal .projectionModalHeader h3 { font-size:1.6rem !important; }
+.projectionQuestionModal.projectionQuestionModal .projectionModalHeader p { margin:.4rem 0 0 !important; }
+.projectionQuestionModal.projectionQuestionModal .projectionScrollBody { padding:1rem .75rem 0 0 !important; margin-right:-.75rem !important; }
+.projectionQuestionModal .projectionSimpleBody { gap:1rem; }
+.projectionQuestionModal .projectionQuestionProgress { font-size:.9rem; color:#50665a; }
+.projectionQuestionModal .projectionSimpleCard { padding:1.1rem !important; gap:.85rem; }
+.projectionQuestionModal .projectionSimpleSectionHeader p { font-weight:500; color:#50665a; }
+.projectionQuestionModal .projectionPresetButton { flex-direction:column; justify-content:center; gap:.2rem; min-height:4rem; }
+.projectionQuestionModal .projectionPresetButton strong { font-size:1.35rem; }
+.projectionPresetCaption { font-size:.8rem; font-weight:500; color:#50665a; }
+.projectionQuestionModal .projectionConditionGrid { grid-template-columns:repeat(6,minmax(0,1fr)) !important; }
+.projectionQuestionModal .projectionConditionButton { grid-column:span 2; }
+.projectionQuestionModal .projectionConditionButton:nth-child(4) { grid-column:2 / span 2; }
+.projectionQuestionModal .projectionConditionButton:nth-child(5) { grid-column:4 / span 2; }
+.projectionQuestionModal .projectionSimpleResult {
+  display:grid; grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr); align-items:stretch;
+  gap:1rem; padding:0 !important; border:0; background:transparent; box-shadow:none;
+}
+.projectionValueHero { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:1rem; min-width:0; padding:1.25rem; border:1px solid #c7ded1; border-radius:1rem; background:#edf6f0; }
+.projectionValueHero > strong { font-size:2.5rem; font-weight:800; line-height:1.15; letter-spacing:-.04em; color:#123e2d; overflow-wrap:anywhere; }
+.projectionQuestionModal .projectionResultLabel { font-size:.95rem; font-weight:700; letter-spacing:normal; text-transform:none; }
+.projectionQuestionModal .projectionResultBasis { flex-direction:column; align-items:flex-start; gap:.8rem; }
+.projectionQuestionModal .projectionResultBasis p { font-size:.9rem; font-weight:500; }
+.projectionQuestionModal .projectionSimpleMeta { display:flex; flex-direction:column; justify-content:center; margin:0; gap:0; padding:.25rem 1rem; border:1px solid #d4e1d9; border-radius:1rem; background:#fff; }
+.projectionQuestionModal .projectionSimpleMeta > div { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); align-items:center; gap:.2rem .75rem; padding:.7rem 0; border:0; border-bottom:1px solid #e0e9e3; border-radius:0; background:transparent; }
+.projectionQuestionModal .projectionSimpleMeta > div:last-child { border-bottom:0; }
+.projectionQuestionModal .projectionMetaLabel { font-size:.85rem; font-weight:600; letter-spacing:normal; text-transform:none; gap:.5rem; }
+.projectionQuestionModal .projectionSimpleMeta strong { font-size:.95rem; line-height:1.4; text-align:right; }
+.projectionQuestionModal .projectionSimpleMeta small { grid-column:2; font-size:.75rem; text-align:right; color:#53685d; }
+.projectionQuestionModal .projectionDisclaimer { grid-column:1 / -1; font-size:.85rem; line-height:1.45; }
+.projectionQuestionModal .pricingPreviewActions { justify-content:flex-end; }
+@media(max-width:600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionSimpleResult { grid-template-columns:1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionConditionGrid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionConditionButton { grid-column:auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionQuestionModal .projectionConditionButton:last-child { grid-column:1 / -1; justify-content:center; }
+}
+.projectionQuestionModal.projectionQuestionModal .projectionModalHeader > button { position:static !important; flex:0 0 auto; width:2.75rem !important; height:2.75rem !important; margin:0 !important; border-radius:.75rem !important; box-shadow:none !important; }
+.projectionQuestionModal .projectionDisclaimer { font-weight:500 !important; }
