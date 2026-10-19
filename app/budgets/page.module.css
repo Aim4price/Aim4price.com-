@@ -99,3 +99,13 @@
 
 /* Search fills the toolbar now that budgets no longer expose a filter menu. */
 .page .searchToolbar { grid-template-columns: minmax(0, 1fr); }
+
+/* Supporting icons keep expanded budget details easy to scan. */
+.metrics dt { display: flex; align-items: center; gap: .6rem; }
+.page .detailIcon { display: block; width: 1.3rem; height: 1.3rem; flex: 0 0 1.3rem; overflow: visible; }
+.metrics dt .detailIcon { box-sizing: content-box; padding: .3rem; border-radius: .55rem; color: var(--app-accent, #17654d); background: var(--app-surface-soft, #e8f3ed); }
+.metrics dt [data-budget-icon='budget'] { color: var(--app-info, #235f99); background: var(--app-info-soft, #eaf3ff); }
+.metrics dt [data-budget-icon='alert'] { color: var(--app-warning, #925c20); background: var(--app-warning-soft, #fff3e3); }
+.detailsMeta { display: flex; flex-wrap: wrap; align-items: center; gap: .65rem 1.5rem; margin: 1rem 0; color: var(--app-muted, #697d8b); font-size: .85rem; line-height: 1.5; }
+.detailsMeta > span { display: inline-flex; align-items: center; gap: .5rem; }
+.detailsMeta .detailIcon { color: var(--app-muted, #56776a); }
