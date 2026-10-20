@@ -215,7 +215,6 @@ export default function SaleabilityModal({
           <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2><p>{assetTitle}</p></div>
           <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
-        {step !== 'result' ? <div className={styles.questionProgress} role="status" aria-live="polite">Question {step} of 5<div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${step / 5 * 100}%` }} /></div></div> : null}
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>
           {step !== 'result' ? <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
             {step === 1 ? <ChoiceQuestion icon="route" label="How would you like to sell?" value={answers.sellingRoute} options={ROUTE_OPTIONS} onChange={value => update('sellingRoute', value)} /> : null}
@@ -244,10 +243,8 @@ export default function SaleabilityModal({
               <div><SaleIcon kind="time" value={answers.desiredTimeline} /><dt>Timeframe</dt><dd>{TIMELINE_OPTIONS.find(option => option.value === answers.desiredTimeline)?.label}</dd></div>
               <div><SaleIcon kind="location" value={answers.saleArea} /><dt>Area</dt><dd>{SALE_AREA_OPTIONS.find(option => option.value === answers.saleArea)?.label}</dd></div>
             </dl>
-            <p className={styles.valuationReminder}>An estimate, not a guaranteed offer. Selling circumstances affect the price; your Aim4price value stays unchanged.</p>
           </div> : null}
         </div>
-        {step === 'result' && recalculating ? <p className={styles.recalculateNote}>Uses your previous answers and latest asset details.</p> : null}
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
         <footer className={`${styles.actions} ${estimateStyle ? modalStyles.actions : ''}`}>
           {step !== 'result' ? <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>{step === 1 ? 'Cancel' : 'Back'}</button> : <>

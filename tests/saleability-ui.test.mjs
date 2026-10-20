@@ -83,7 +83,7 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
-  assert.match(modal, /An estimate, not a guaranteed offer/);
+  assert.doesNotMatch(modal, /An estimate, not a guaranteed offer|Uses your previous answers|className=\{styles.questionProgress\}/);
   assert.match(modal, /\/api\/saleability\/quote/);
   assert.doesNotMatch(modal, /calculateGeneralSaleability|calculateRefinedSaleability|Rating details|marketScore/);
   assert.doesNotMatch(modal, /Outlook/i);
