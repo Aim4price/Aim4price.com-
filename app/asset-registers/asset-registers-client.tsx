@@ -3567,10 +3567,11 @@ export default function AssetRegistersClient({
             </div>
 
             <div className={`${styles.modalBody} ${styles.qrLabelsBody}`}>
-              <div className={styles.exportFormatGrid} aria-label="QR label size">
+              <div className={`${styles.exportFormatGrid} ${styles.qrSizeOptions}`} aria-label="QR label size">
                 <button
                   type="button"
                   className={`${styles.exportOption} ${qrLayout === "small-qr-25mm" ? styles.exportOptionActive : ""}`}
+                  aria-pressed={qrLayout === "small-qr-25mm"}
                   onClick={() => setQrLayout("small-qr-25mm")}
                   disabled={isGeneratingQrPdf}
                 >
@@ -3579,13 +3580,14 @@ export default function AssetRegistersClient({
                   </span>
                   <span className={styles.exportOptionTitleBlock}>
                     <strong>25 mm Small Labels</strong>
-                    <small>Compact QR stickers with the asset name above.</small>
+                    <small>QR stickers with asset names.</small>
                   </span>
                 </button>
 
                 <button
                   type="button"
                   className={`${styles.exportOption} ${qrLayout === "full-labels-10-per-page" ? styles.exportOptionActive : ""}`}
+                  aria-pressed={qrLayout === "full-labels-10-per-page"}
                   onClick={() => setQrLayout("full-labels-10-per-page")}
                   disabled={isGeneratingQrPdf}
                 >
@@ -3594,7 +3596,7 @@ export default function AssetRegistersClient({
                   </span>
                   <span className={styles.exportOptionTitleBlock}>
                     <strong>Full Labels</strong>
-                    <small>Ten larger Aim4price plate labels per A4 page.</small>
+                    <small>10 plate labels per A4 page.</small>
                   </span>
                 </button>
               </div>
@@ -3606,6 +3608,8 @@ export default function AssetRegistersClient({
                     className={styles.searchInput}
                     value={qrAssetSearch}
                     onChange={(event) => setQrAssetSearch(event.target.value)}
+                    type="search"
+                    aria-label="Search assets, QR codes or registers"
                     placeholder="Search assets, QR codes or registers..."
                     disabled={isLoadingQrAssets || isGeneratingQrPdf}
                   />
@@ -3634,6 +3638,7 @@ export default function AssetRegistersClient({
                 ) : visibleQrAssets.length ? (
                   visibleQrAssets.map((asset) => {
                     const isSelected = selectedQrAssetIds.includes(asset.id);
+                    const details = managedAssets.find((item) => item.id === asset.id);
                     return (
                       <label
                         key={asset.id}
@@ -3643,17 +3648,19 @@ export default function AssetRegistersClient({
                       >
                         <input
                           type="checkbox"
+                          className={pickerStyles.checkbox}
                           checked={isSelected}
                           onChange={() => toggleQrAsset(asset.id)}
                           disabled={!asset.hasQr || isGeneratingQrPdf}
                         />
                         <span className={styles.qrAssetCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <AssetPickerDetail>{asset.registerName} · {asset.plateLabel || "QR code not available"}</AssetPickerDetail>
+                          {details ? <small data-asset-choice-meta="true">Year Model: {details.yearModel ?? 'Unknown'} · Usage: {buildAssetUsageValue(details)} · Condition: {conditionLabel(details.condition) || 'Not provided'}</small> : null}
+                          <AssetPickerDetail>{details ? `${assetKindLabel(details)} · ${methodLabel(details.selectedMethod)}` : asset.registerName}</AssetPickerDetail>
+                          <AssetSerialNumber value={details?.serialNumber} />
+                          <small className={styles.qrChoiceCode}>{asset.hasQr ? `QR: ${asset.plateLabel || asset.publicAssetCode}` : 'QR code not available'}{isManagingCombined ? ` · ${asset.registerName}` : ''}</small>
                         </span>
-                        <span className={styles.qrAssetStatus} data-asset-choice-secondary="true">
-                          {asset.hasQr ? "Ready" : "Unavailable"}
-                        </span>
+                        <span data-asset-choice-value="true"><span className={`${pickerStyles.select} ${pickerStyles.multi}`}><i aria-hidden="true">{isSelected ? '✓' : ''}</i><strong>{!asset.hasQr ? 'Unavailable' : isSelected ? 'Selected' : 'Select'}</strong></span></span>
                       </label>
                     );
                   })
@@ -3677,6 +3684,7 @@ export default function AssetRegistersClient({
               <button
                 type="button"
                 className={styles.primaryButton}
+                data-asset-choice-action="primary"
                 onClick={() => void generateQrLabelsPdf()}
                 disabled={isLoadingQrAssets || isGeneratingQrPdf || !selectedQrAssetIds.length}
               >
