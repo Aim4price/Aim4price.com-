@@ -4293,3 +4293,45 @@
 .polishedSettingsModal .mediaUploadField { padding:0; border:0; background:transparent; }
 .polishedSettingsModal .businessLogoPanel { padding:1rem; }
 .polishedSettingsModal .businessLogoPreview { width:6rem; height:6rem; min-height:6rem; }
+
+/* Business details: size each step to its content and keep actions inside the card. */
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollContent {
+  padding: 1.5rem 2rem !important;
+}
+.businessDetailsModalCard.polishedSettingsModal .wizardStepPanel {
+  min-height: 0;
+  gap: .65rem;
+}
+.businessDetailsModalCard.polishedSettingsModal .modalHeader {
+  margin-bottom: .8rem !important;
+  padding-bottom: .75rem !important;
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStepProgress { margin-bottom: .8rem; }
+.businessDetailsModalCard.polishedSettingsModal .wizardFieldGrid { gap: .7rem 1.2rem; }
+.businessDetailsModalCard.polishedSettingsModal .field .settingsInput > input {
+  min-height: 3rem;
+  padding-top: .65rem;
+  padding-bottom: .65rem;
+}
+.businessDetailsModalCard.polishedSettingsModal .wizardActions {
+  position: static;
+  bottom: auto !important;
+  margin: .85rem 0 0 !important;
+  padding: 1rem 0 .25rem !important;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  box-shadow: none;
+}
+.businessDetailsModalCard.polishedSettingsModal .wizardActions > button {
+  min-height: 3rem;
+  min-width: 8.75rem;
+  margin: 0;
+  padding: .7rem 1.1rem;
+}
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .accountModalScrollContent { padding: 1.1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .wizardActions > button { flex: 1 1 8rem; min-width: 0; }
+}
+/* The step indicator already names the section; avoid repeating it above the fields. */
+.businessDetailsModalCard.polishedSettingsModal .modalSectionHeading { display: none; }
