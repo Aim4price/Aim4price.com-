@@ -2563,8 +2563,7 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="business-details-modal-title">Business details</h2>
                 <p>
-                  Complete one short section at a time. Your changes are saved
-                  together on the final step.
+                  Your changes are saved together on the final step.
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
