@@ -41,3 +41,12 @@
   :global(:where(html:not(:has([data-website-canvas])))) .options .row { gap: .65rem; padding: .85rem .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .optionLabel { gap: .6rem; }
 }
+
+/* Use the available width so notification choices fit without a long scroll. */
+.options .categories { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+.options .categories > :last-child:nth-child(odd) { grid-column:1 / -1; }
+.options .row { min-height:3.25rem; padding:.7rem .85rem; }
+.options .optionLabel { gap:.7rem; }
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .options .categories { grid-template-columns:minmax(0,1fr); }
+}
