@@ -12,6 +12,7 @@ import {
   SALEABILITY_PDF_PLAN_SESSION_KEY,
   createSaleabilityPdfPlanSnapshot,
 } from '../lib/saleability-pdf';
+import { validSaleabilityAnswers } from '../lib/asset-saleability';
 import PricingVatToggle from './PricingVatToggle';
 import { pricingVatAmount } from '../lib/pricing-vat';
 import styles from './saleability-modal.module.css';
@@ -167,6 +168,8 @@ export default function SaleabilityModal({
   initialAnswers,
   onSave,
 }: SaleabilityModalProps) {
+  const [answersChanged, setAnswersChanged] = useState(false);
+  const recalculating = Boolean(onSave && validSaleabilityAnswers(initialAnswers) && !answersChanged);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -185,9 +188,9 @@ export default function SaleabilityModal({
   useEffect(() => {
     if (!open) return undefined;
 
-    setSaveError(''); setSaved(false);
+    setSaveError(''); setSaved(false); setAnswersChanged(false);
     let restored = false;
-    if (initialAnswers) { setAnswers(initialAnswers); setStep('result'); restored = true; }
+    if (validSaleabilityAnswers(initialAnswers)) { setAnswers(initialAnswers); setStep('result'); restored = true; }
     if (storageKey && !initialAnswers) {
       try {
         const saved = window.localStorage.getItem(storageKey);
@@ -245,6 +248,7 @@ export default function SaleabilityModal({
   if (!open) return null;
 
   function update<K extends keyof SaleabilityRefinementAnswers>(key: K, value: SaleabilityRefinementAnswers[K]) {
+    setAnswersChanged(true);
     const nextAnswers = { ...answers, [key]: value };
     setAnswers(nextAnswers);
     if (step === 7) {
@@ -409,6 +413,7 @@ export default function SaleabilityModal({
             </div>
           ) : null}
         </div>
+        {step === 'result' && recalculating ? <p className={styles.recalculateNote}>Uses your previous answers and latest asset details.</p> : null}
         {saveError ? <p role="alert" style={{color:"#9c2626",padding:"0 1.5rem"}}>{saveError}</p> : null}
         <footer className={`${styles.actions} ${estimateStyle ? modalStyles.actions : ''}`}>
           {step !== 'result' ? (
@@ -422,7 +427,7 @@ export default function SaleabilityModal({
                 if (!answersAreComplete(answers)) return;
                 setSaving(true); setSaveError('');
                 try { await onSave(answers); setSaved(true); onClose(); } catch(error) { setSaveError(error instanceof Error ? error.message : 'Could not save. Please try again.'); } finally { setSaving(false); }
-              }}>{saving ? 'Saving…' : 'Save market estimate'}</button> : <button type="button" className={styles.primary} onClick={onClose}>Done</button>}
+              }}>{saving ? (recalculating ? 'Recalculating…' : 'Saving…') : recalculating ? 'Recalculate' : 'Save market estimate'}</button> : <button type="button" className={styles.primary} onClick={onClose}>Done</button>}
             </>
           )}
         </footer>

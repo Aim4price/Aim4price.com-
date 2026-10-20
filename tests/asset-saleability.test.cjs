@@ -34,6 +34,18 @@ test('assessment API persists history, scopes access and rejects stale or forged
  result=await api.GET({method:'GET'});assert.equal(result.data.items.length,1);
  await api.POST(req);assert.equal((await db.query('SELECT count(*) FROM asset_saleability_assessments')).rows[0].count,2);
  assert.equal((await api.GET({method:'GET'})).data.items.length,1);
+ // Reuse saved answers after a usage/value change; retain the earlier assessment.
+ const previous=(await api.GET({method:'GET'})).data.items[0].assessment;
+ current={...current,value:390000,lifeWorkedPercent:65};
+ const refreshed=await api.POST({...req,body:{...req.body,answers:previous.answers,basis:model.saleabilityBasis(current)}});
+ assert.equal(refreshed.status,200);
+ assert.deepEqual(refreshed.data.assessment.answers,previous.answers);
+ assert.equal(refreshed.data.assessment.basis,model.saleabilityBasis(current));
+ assert.notEqual(refreshed.data.assessment.priceExVat,previous.priceExVat);
+ assert.equal((await db.query('SELECT count(*) FROM asset_saleability_assessments')).rows[0].count,3);
+ assert.deepEqual((await api.GET({method:'GET'})).data.items[0].assessment,refreshed.data.assessment);
+ current={...asset};
+
  session={user:{id:'foreign'}};assert.equal((await api.GET({method:'GET'})).data.items.length,0);assert.equal((await api.POST(req)).status,404);
  session={user:{id:'owner'},ownerApp:{ownerAppUserId:'staff'}};allowed=false;assert.equal((await api.POST(req)).status,403);allowed=true;
  await db.query('UPDATE asset_register_items SET updated_at=now()');assert.equal((await api.POST(req)).status,409);

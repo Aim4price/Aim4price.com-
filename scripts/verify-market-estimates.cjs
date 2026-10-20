@@ -101,8 +101,18 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.body.textContent.includes('Not calculated'));
  assert(await page.evaluate(()=>document.querySelector('[aria-label="Saleability estimate"]').disabled));
  await page.evaluate(()=>{window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
- await click('Save market estimate');await page.waitForFunction(()=>document.body.textContent.includes('Save failed — retry'));assert.equal(await page.evaluate(()=>!!window.modalClosed),false);
- await page.evaluate(()=>window.allowSave=true);await click('Save market estimate');await page.waitForFunction(()=>window.modalClosed);assert.equal(await page.evaluate(()=>window.sent.currentDemand),'normal');
+ await page.waitForFunction(()=>document.body.textContent.includes('Uses your previous answers and latest asset details.'));
+ await page.setViewport({width:1366,height:768});
+ assert(await page.evaluate(()=>!document.querySelector('[role="dialog"]').textContent.includes('Question 1 of 7')));
+ await page.screenshot({path:'/tmp/saleability-recalculate.png'});
+ await page.setViewport({width:390,height:844});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await click('Recalculate');await page.waitForFunction(()=>document.body.textContent.includes('Save failed — retry'));assert.equal(await page.evaluate(()=>!!window.modalClosed),false);
+ await page.evaluate(()=>window.allowSave=true);await click('Recalculate');await page.waitForFunction(()=>window.modalClosed);assert.equal(await page.evaluate(()=>window.sent.currentDemand),'normal');
+ await click('Change answers');
+ await page.waitForFunction(()=>document.body.textContent.includes('Question 1 of 7'));
+ await page.$$eval('button',nodes=>nodes.find(n=>n.textContent==='Near me').click());
+ await page.waitForFunction(()=>document.body.textContent.includes('Question 2 of 7'));
  assert.deepEqual(errors,[]);console.log('PASS all three price views, replacement actions, independent VAT, empty states, mobile fit and save retry');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

@@ -886,3 +886,10 @@
 .modal.modal .resultMeta span,
 .modal.modal .resultRows span { font-size: .95rem; }
 .modal.modal .choice { border-color: #bdcec4; }
+
+.recalculateNote {
+  margin: 8px 0 0;
+  color: var(--app-muted, #52675d);
+  font-size: .85rem;
+  line-height: 1.5;
+}
