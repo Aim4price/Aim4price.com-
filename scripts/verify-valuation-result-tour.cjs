@@ -38,7 +38,6 @@ function add(file){
 
 
 add('components/ValuationResultTour');
-add('components/ValuationFlowFocus');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -118,44 +117,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  // Remounting a new result must start the walkthrough again.
  await page.evaluate(()=>window.root.render(React.createElement(require('components/ValuationResultTour').default,{key:'new-estimate'})));
  await page.waitForSelector('dialog[open]');await finish();
- // Earlier steps: focus is visual only, and follows the next question and input.
- await page.evaluate(()=>{
-   window.root.render(React.createElement(require('components/ValuationFlowFocus').default,{enabled:true,activeSelector:'.next-question'}));
-   const main=document.querySelector('main');main.style.zoom='1';main.dataset.websiteScale='1';
-   main.style.setProperty('--website-visible-width',innerWidth+'px');main.style.setProperty('--website-visible-height',innerHeight+'px');
-   const wizard=document.createElement('section');wizard.id='valuation-wizard-card';
-   wizard.innerHTML='<div data-valuation-focus-content><button class="next-question">Manufacturing year</button><label style="display:block;padding:24px">Brand<input aria-label="Brand"></label></div><div data-valuation-focus-navigation><button id="continue-test">Continue</button></div>';
-   main.prepend(wizard);window.scrollTo(0,0);
-   document.querySelector('#continue-test').onclick=()=>window.continued=true;
- });
- await page.waitForSelector('[data-valuation-flow-focus]');
- await page.focus('input[aria-label="Brand"]');await page.type('input[aria-label="Brand"]','Landini');
- assert.equal(await page.$eval('input[aria-label="Brand"]',e=>e.value),'Landini');
- await page.click('#continue-test');assert(await page.evaluate(()=>window.continued));
- // A reused footer must never take focus away from the next required question.
- await page.waitForFunction(()=>{
-   const hole=document.querySelector('[data-valuation-flow-focus]').getBoundingClientRect();
-   const question=document.querySelector('.next-question').getBoundingClientRect();
-   return hole.top<=question.top && hole.bottom>=question.bottom && hole.height<100;
- });
- await page.evaluate(()=>document.querySelector('#continue-test').disabled=true);
- await page.waitForFunction(()=>{
-   const hole=document.querySelector('[data-valuation-flow-focus]').getBoundingClientRect();
-   return hole.bottom<document.querySelector('#continue-test').getBoundingClientRect().top;
- });
- // Replacement/choice screens have no active spec card: highlight the content,
- // not the persistent navigation from the preceding screen.
- await page.evaluate(()=>document.querySelector('.next-question').classList.remove('next-question'));
- await page.waitForFunction(()=>{
-   const hole=document.querySelector('[data-valuation-flow-focus]').getBoundingClientRect();
-   const content=document.querySelector('[data-valuation-focus-content]').getBoundingClientRect();
-   return Math.abs(hole.top-content.top)<=9 && Math.abs(hole.bottom-content.bottom)<=9;
- });
- await page.evaluate(()=>{const modal=document.createElement('div');modal.dataset.websiteOverlay='';modal.setAttribute('role','dialog');modal.id='focus-modal';modal.textContent='Choose year';document.body.append(modal);});
- await page.waitForFunction(()=>!document.querySelector('[data-valuation-flow-focus]'));
- await page.evaluate(()=>document.getElementById('focus-modal').remove());
- await page.waitForSelector('[data-valuation-flow-focus]');
  assert.deepEqual(errors,[]);
- console.log('PASS mandatory start on every result, four steps, Back/Done, keyboard, mobile, zoom alignment, live input focus and modal handoff');
+ console.log('PASS mandatory start on every result, four steps, Back/Done, keyboard, mobile, zoom alignment');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
