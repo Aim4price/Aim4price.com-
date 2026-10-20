@@ -7183,3 +7183,27 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 /* Leave the circular page switch breathing room inside the title card. */
 .pageTitleBlock > div { gap: 1.25rem; }
 .pageTitleBlock h1 { flex: 1; }
+
+/* Fit invoice details into two rows while leaving the wizard footer visible. */
+.accountCostModal.manualCostWizardModal .manualCostInvoiceGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+.accountCostModal.manualCostWizardModal .manualCostWizardPanel {
+  padding: 1rem !important;
+  gap: .85rem !important;
+}
+.accountCostModal.accountCostModal.manualCostWizardModal > .formModalScrollBody {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+}
+@media (max-width: 1100px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountCostModal.manualCostWizardModal .manualCostInvoiceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountCostModal.manualCostWizardModal .manualCostInvoiceGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
