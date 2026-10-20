@@ -7183,3 +7183,20 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 /* Leave the circular page switch breathing room inside the title card. */
 .pageTitleBlock > div { gap: 1.25rem; }
 .pageTitleBlock h1 { flex: 1; }
+
+/* Distinct, restrained icon colours for the three cost capture methods. */
+.costChoiceModal .manualChoiceOption .choiceGraphic {
+  color: var(--app-info, #276b9d);
+  border-color: var(--app-info-line, #bdd8ec);
+  background: var(--app-info-soft, #edf6fc);
+}
+.costChoiceModal .recurringChoiceOption .choiceGraphic {
+  color: var(--app-warning, #99571f);
+  border-color: var(--app-warning-line, #e8c7a7);
+  background: var(--app-warning-soft, #fff3e7);
+}
+.costChoiceModal .aim4priceCaptureChoiceOption .choiceGraphic {
+  color: var(--app-accent, #187456);
+  border-color: var(--app-line, #b6d9c9);
+  background: var(--app-surface-soft, #edf8f1);
+}
