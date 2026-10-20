@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { DEFAULT_PUSH_PREFERENCES, PUSH_CATEGORIES, type PushCategory, type AccountPushPreferences } from '../../../lib/push-policy';
+import SettingsDetailIcon from '../../../components/SettingsDetailIcon';
 import accountStyles from '../page.module.css';
 import styles from './page.module.css';
 export default function DesktopNotificationSettings({ onClose, onSaved, onBusyChange }: { onClose: () => void; onSaved: () => void; onBusyChange: (busy: boolean) => void }) {
@@ -33,11 +34,11 @@ export default function DesktopNotificationSettings({ onClose, onSaved, onBusyCh
       <div className={styles.options}>
         {loading ? <p role="status">Loading notifications…</p> : categories.length ? <>
           <button className={styles.row} type="button" role="switch" aria-checked={settings.enabled} disabled={saving} onClick={()=>setSettings({...settings,enabled:!settings.enabled})}>
-            <span>Phone notifications<small>All app logins on this account</small></span><span className={settings.enabled?styles.on:styles.off}>{settings.enabled?'On':'Off'}</span>
+            <span className={styles.optionLabel}><SettingsDetailIcon name="phone" /><span>Phone notifications<small>All app logins on this account</small></span></span><span className={settings.enabled?styles.on:styles.off}>{settings.enabled?'On':'Off'}</span>
           </button>
           <div className={styles.categories}>{categories.map(category=><button key={category} className={styles.row} type="button" role="switch" aria-checked={settings.preferences[category]} disabled={saving||!settings.enabled}
             onClick={()=>setSettings({...settings,preferences:{...settings.preferences,[category]:!settings.preferences[category]}})}>
-            <span>{PUSH_CATEGORIES[category]}</span><span className={settings.preferences[category]?styles.on:styles.off}>{settings.preferences[category]?'On':'Off'}</span>
+            <span className={styles.optionLabel}><SettingsDetailIcon name={category} /><span>{PUSH_CATEGORIES[category]}</span></span><span className={settings.preferences[category]?styles.on:styles.off}>{settings.preferences[category]?'On':'Off'}</span>
           </button>)}</div>
         </> : null}
 

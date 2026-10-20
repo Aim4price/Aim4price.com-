@@ -12,6 +12,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
+import SettingsDetailIcon from "../../components/SettingsDetailIcon";
 import DesktopNotificationSettings from "./notifications/notification-settings-client";
 import AccountInvoices from "./account-invoices";
 import AppHeader from "../../components/AppHeader";
@@ -2551,7 +2552,7 @@ export default function AccountClient({
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="business-details-modal-title"
@@ -2585,35 +2586,35 @@ export default function AccountClient({
                   {businessDetailsStep === 1 ? (
                     <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                       <div className={styles.modalSectionHeading}>
-                        <strong>Contact information</strong>
+                        <strong><SettingsDetailIcon name="person" />Contact information</strong>
                         <p>How Aim4price and customers identify and contact this business.</p>
                       </div>
 
                       <div className={styles.wizardFieldGrid}>
                         <label className={styles.field}>
-                          <span>Full name</span>
+                          <span><SettingsDetailIcon name="person" />Full name</span>
                           <input value={profileDraft.displayName} onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Full name" autoFocus />
                         </label>
                         <label className={styles.field}>
-                          <span>Account email</span>
+                          <span><SettingsDetailIcon name="lock" />Account email</span>
                           <input value={profile?.email ?? ""} disabled />
                           <small className={styles.fieldHint}>Used only for login and account access.</small>
                         </label>
                         <label className={styles.field}>
-                          <span>Business name</span>
+                          <span><SettingsDetailIcon name="business" />Business name</span>
                           <input value={profileDraft.businessName} onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))} placeholder="Business name" />
                         </label>
                         <label className={styles.field}>
-                          <span>Business email</span>
+                          <span><SettingsDetailIcon name="email" />Business email</span>
                           <input type="email" value={profileDraft.marketplaceEmail} onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))} placeholder="business@email.co.za" />
                         </label>
                         <label className={styles.field}>
-                          <span>Contact details</span>
+                          <span><SettingsDetailIcon name="phone" />Contact details</span>
                           <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone, WhatsApp or office number" />
                         </label>
                         {isPartnerAccount ? (
                           <label className={styles.field}>
-                            <span>Website link</span>
+                            <span><SettingsDetailIcon name="globe" />Website link</span>
                             <input inputMode="url" value={profileDraft.websiteUrl} onChange={(event) => setProfileDraft((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://your-business.co.za" />
                           </label>
                         ) : null}
@@ -2624,30 +2625,30 @@ export default function AccountClient({
                   {businessDetailsStep === 2 ? (
                     <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                       <div className={styles.modalSectionHeading}>
-                        <strong>Business address</strong>
+                        <strong><SettingsDetailIcon name="location" />Business address</strong>
                         <p>Your main business location. The public directory map pin is controlled separately.</p>
                       </div>
 
                       <div className={styles.wizardFieldGrid}>
                         <label className={styles.field}>
-                          <span>Account type</span>
+                          <span><SettingsDetailIcon name="business" />Account type</span>
                           <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
                           <small className={styles.fieldHint}>Account type is locked after signup.</small>
                         </label>
                         <label className={styles.field}>
-                          <span>Province</span>
+                          <span><SettingsDetailIcon name="location" />Province</span>
                           <input value={profileDraft.province} onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))} placeholder="Province" autoFocus />
                         </label>
                         <label className={styles.field}>
-                          <span>Town / city</span>
+                          <span><SettingsDetailIcon name="location" />Town / city</span>
                           <input value={profileDraft.townCity} onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))} placeholder="Town or city" />
                         </label>
                         <label className={styles.field}>
-                          <span>Address line 1</span>
+                          <span><SettingsDetailIcon name="location" />Address line 1</span>
                           <input value={profileDraft.addressLine1} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))} placeholder="Street address" />
                         </label>
                         <label className={`${styles.field} ${styles.fullWidth}`}>
-                          <span>Address line 2</span>
+                          <span><SettingsDetailIcon name="location" />Address line 2</span>
                           <input value={profileDraft.addressLine2} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))} placeholder="Building, unit or area (optional)" />
                         </label>
                       </div>
@@ -2657,7 +2658,7 @@ export default function AccountClient({
                   {businessDetailsStep === 3 ? (
                     <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                       <div className={styles.modalSectionHeading}>
-                        <strong>Business logo</strong>
+                        <strong><SettingsDetailIcon name="image" />Business logo</strong>
                         <p>Add one clear logo, or keep the initials shown as your fallback.</p>
                       </div>
 
@@ -2817,7 +2818,7 @@ export default function AccountClient({
       {activeAccountModal === "notifications" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard} ${styles.notificationModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard} ${styles.notificationModalCard} ${styles.polishedSettingsModal}`}
             role="dialog" aria-modal="true" aria-labelledby="notifications-modal-title" tabIndex={-1}
             onClick={(event) => event.stopPropagation()}>
             <div className={styles.accountModalScrollContent}>
@@ -2839,7 +2840,7 @@ export default function AccountClient({
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-contact-modal-title"
@@ -2866,7 +2867,7 @@ export default function AccountClient({
                 onSubmit={handleProfileSubmit}
               >
                 <label className={styles.field}>
-                  <span>Seller name</span>
+                  <span><SettingsDetailIcon name="person" />Seller name</span>
                   <input
                     value={profileDraft.marketplaceSellerName}
                     onChange={(event) =>
@@ -2880,7 +2881,7 @@ export default function AccountClient({
                 </label>
 
                 <label className={styles.field}>
-                  <span>Contact details</span>
+                  <span><SettingsDetailIcon name="phone" />Contact details</span>
                   <input
                     type="text"
                     value={profileDraft.marketplacePhone}
@@ -2895,7 +2896,7 @@ export default function AccountClient({
                 </label>
 
                 <label className={styles.field}>
-                  <span>Business email</span>
+                  <span><SettingsDetailIcon name="email" />Business email</span>
                   <input
                     type="email"
                     value={profileDraft.marketplaceEmail}
@@ -2910,7 +2911,7 @@ export default function AccountClient({
                 </label>
 
                 <label className={styles.field}>
-                  <span>Location</span>
+                  <span><SettingsDetailIcon name="location" />Location</span>
                   <input
                     value={profileDraft.marketplaceLocation}
                     onChange={(event) =>
@@ -2954,7 +2955,7 @@ export default function AccountClient({
         >
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-participation-modal-title"
@@ -2997,7 +2998,7 @@ export default function AccountClient({
                     }
                   />
                   <span>
-                    <strong>Participate in Discovery</strong>
+                    <strong><SettingsDetailIcon name="discovery" />Participate in Discovery</strong>
                     <small>
                       When enabled, all eligible Aim4price assets participate.
                       Your own assets remain hidden from you.
@@ -3006,7 +3007,7 @@ export default function AccountClient({
                 </label>
 
                 <div className={styles.confirmBox}>
-                  <strong>Private information stays locked.</strong>
+                  <strong><SettingsDetailIcon name="lock" />Private information stays locked.</strong>
                   <p>
                     Photos and contact details are released only after you
                     approve an enquiry. Turning this off immediately removes
