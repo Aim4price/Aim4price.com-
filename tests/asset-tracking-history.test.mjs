@@ -42,6 +42,12 @@ test('tracking history API validates dates, snapshots and access before mutation
  allowed=false;assert.equal((await route.DELETE(req(valid),ctx)).status,403);allowed=true;
  for(const q of ['day=2026-02-30','day=2026-10-19','day=2026-10-19&snapshotAt=2099-01-01T00:00:00.000Z'])assert.equal((await route.DELETE(req(q),ctx)).status,400);
  assert.equal(calls,0);assert.equal((await route.DELETE(req(valid),ctx)).status,200);assert.equal(calls,1);
+ const bulk='scope=all&snapshotAt=2026-10-19T00:00:00.000Z';
+ for(const q of ['scope=all','scope=unknown',bulk+'&day=2026-10-19',bulk+'&deviceId='+device,'scope=all&snapshotAt=2099-01-01T00:00:00.000Z'])assert.equal((await route.DELETE(req(q),ctx)).status,400);
+ assert.equal(calls,1);
+ allowed=false;assert.equal((await route.DELETE(req(bulk),ctx)).status,403);allowed=true;
+ const cleared=await route.DELETE(req(bulk),ctx);assert.equal(cleared.status,200);assert.equal(cleared.body.deleted,1);assert.equal(calls,2);
+
  assert.equal((await route.GET(req('view=entries&from=2026-02-30'),ctx)).status,400);
  assert.equal((await route.GET(req('view=entries&from=2026-10-19&to=2026-10-18'),ctx)).status,400);
  const source=readFileSync('app/api/asset-register/[assetId]/tracking/history/route.ts','utf8');assert.match(source,/visibleTrackingPoints/);

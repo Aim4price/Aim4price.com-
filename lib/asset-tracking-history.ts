@@ -71,3 +71,11 @@ export const DELETE_TRACKING_SESSION_SQL = `
  AND p.captured_at >= ($5::date::timestamp AT TIME ZONE 'Africa/Johannesburg')
  AND p.captured_at < (($6::date+1)::timestamp AT TIME ZONE 'Africa/Johannesburg')
  AND p.received_at <= $7::timestamptz RETURNING p.sample_id`;
+
+// Retain coordinates for the current map position and retry deduplication.
+// Only history received by the loaded snapshot is cleared; later uploads survive.
+export const DELETE_ALL_TRACKING_HISTORY_SQL = `
+ UPDATE public.asset_tracking_points p SET history_deleted_at=now()
+ FROM public.asset_tracking_devices d
+ WHERE d.id=p.device_id AND d.owner_id=$1 AND d.asset_id=$2
+ AND p.history_deleted_at IS NULL AND p.received_at <= $3::timestamptz`;

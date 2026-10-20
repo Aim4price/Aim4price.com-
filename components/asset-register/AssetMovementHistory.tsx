@@ -1,5 +1,6 @@
 'use client';
 import DateInput from '../DateInput';
+import DeleteAllHistoryDialog,{HistoryDeleteIcon} from './DeleteAllHistoryDialog';
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import AssetLocationHistoryMap from './AssetLocationHistoryMap';
 import AssetAccessSettingsDialog from './AssetAccessSettingsDialog';
@@ -20,6 +21,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
  const [from,setFrom]=useState(()=>new Date(Date.now()-6*86400000+7200000).toISOString().slice(0,10)),[to,setTo]=useState(()=>new Date(Date.now()+7200000).toISOString().slice(0,10));
  const [page,setPage]=useState<TrackingSessionPage|null>(null),[busy,setBusy]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0);
  const [expanded,setExpanded]=useState<SelectedEntry|null>(null),[exportEntry,setExportEntry]=useState<SelectedEntry|null>(null),[deleteEntry,setDeleteEntry]=useState<SelectedEntry|null>(null);
+ const [deleteAllSnapshot,setDeleteAllSnapshot]=useState<string|null>(null);
  const [deleting,setDeleting]=useState(false),[deleteError,setDeleteError]=useState(''),[loadingMore,setLoadingMore]=useState(false);
  const generation=useRef(0),moreAbort=useRef<AbortController|null>(null);
  const endpoint=`/api/asset-register/${encodeURIComponent(assetId)}/tracking/history`;
@@ -27,7 +29,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
  useEffect(()=>{const c=new AbortController();generation.current++;moreAbort.current?.abort();setLoadingMore(false);setBusy(true);setError('');
   fetch(url,{signal:c.signal,cache:'no-store'}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load tracking history.');if(!c.signal.aborted)setPage(d);}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setBusy(false);});return()=>{c.abort();moreAbort.current?.abort();};
  },[url,revision]);
- useEffect(()=>{if(expanded||deleteEntry||exportEntry||loadingMore||(page?.items.length||0)>30)return;const timer=setInterval(()=>{if(document.visibilityState==='visible')setRevision(n=>n+1);},60000);return()=>clearInterval(timer);},[expanded,deleteEntry,exportEntry,loadingMore,page?.items.length]);
+ useEffect(()=>{if(expanded||deleteEntry||deleteAllSnapshot||exportEntry||loadingMore||(page?.items.length||0)>30)return;const timer=setInterval(()=>{if(document.visibilityState==='visible')setRevision(n=>n+1);},60000);return()=>clearInterval(timer);},[expanded,deleteEntry,deleteAllSnapshot,exportEntry,loadingMore,page?.items.length]);
  function changeDates(value:string,which:'from'|'to'){setPage(null);setExpanded(null);if(which==='from')setFrom(value);else setTo(value);}
  async function loadMore(){
   if(!page?.nextBefore||loadingMore)return;const current=generation.current,c=new AbortController();moreAbort.current=c;setLoadingMore(true);setError('');
@@ -42,6 +44,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
  }
  return <section className={historyStyles.trackingHistory} aria-label="Saved tracking history">
   {exportEntry&&createPortal(<ReportDownloadFlow title="Download tracking report" allLabel={title} assets={[{id:assetId,title,meta:`Tracking · ${date(exportEntry.entry.firstCapturedAt)} – ${date(exportEntry.entry.lastCapturedAt)}`}]} lockedAssetId={assetId} skipTimeline instantDownload onClose={()=>setExportEntry(null)} onDownload={selection=>downloadAssetMapReport(entryUrl(exportEntry)+'&format='+selection.format,selection.format)}/>,document.body)}
+  {deleteAllSnapshot&&<DeleteAllHistoryDialog title={title} kind="tracking" endpoint={endpoint} snapshotAt={deleteAllSnapshot} onClose={()=>setDeleteAllSnapshot(null)} onDeleted={()=>{generation.current++;moreAbort.current?.abort();setLoadingMore(false);setPage(null);setExpanded(null);setDeleteAllSnapshot(null);setRevision(n=>n+1);}}/>}
   {deleteEntry&&<AssetAccessSettingsDialog locationLayout title="Delete tracking record?" assetTitle={title} onClose={()=>{if(!deleting)setDeleteEntry(null);}}><div className={historyStyles.deleteConfirm}>
    <span className={historyStyles.deleteIcon}><Icon type="delete"/></span><strong>Delete this tracking record?</strong>
    <div className={historyStyles.deleteRecord}><strong>{dayLabel(deleteEntry.entry.day)}</strong><span>{deleteEntry.entry.readings.toLocaleString()} readings · {time(deleteEntry.entry.firstCapturedAt)} – {time(deleteEntry.entry.lastCapturedAt)}</span></div>
@@ -50,7 +53,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
    <div className={historyStyles.confirmActions}><button type="button" disabled={deleting} onClick={()=>setDeleteEntry(null)}>Cancel</button><button type="button" className={historyStyles.deleteButton} disabled={deleting} onClick={()=>void confirmDelete()}>{deleting?'Deleting…':'Delete entry'}</button></div>
   </div></AssetAccessSettingsDialog>}
   <div className={historyStyles.historyToolbar}><div className={historyStyles.filters}><label>From<DateInput value={from} max={to||undefined} onValueChange={value=>changeDates(value,'from')}/></label><label>To<DateInput value={to} min={from||undefined} onValueChange={value=>changeDates(value,'to')}/></label></div>{historyTabs}</div>
-  <div className={historyStyles.trackingListHeading}><div className={historyStyles.recordedHeading}><h3>Journeys & stops {page&&<span className={historyStyles.dayCount}>{page.items.length}{page.nextBefore?'+':''}</span>}</h3><p>Newest first · South African time</p></div><button type="button" className={historyStyles.refreshButton} aria-busy={busy||loadingMore} disabled={busy||loadingMore} onClick={()=>{setExpanded(null);setRevision(n=>n+1);}}><span className={historyStyles.refreshIcon}><Icon type="refresh"/></span>{busy||loadingMore?'Refreshing…':'Refresh'}</button></div>
+  <div className={historyStyles.trackingListHeading}><div className={historyStyles.recordedHeading}><h3>Journeys & stops {page&&<span className={historyStyles.dayCount}>{page.items.length}{page.nextBefore?'+':''}</span>}</h3><p>Newest first · South African time</p></div><div className={historyStyles.historyActions}><button type="button" className={historyStyles.deleteAllAction} disabled={busy||loadingMore||!!error||!page?.snapshotAt} aria-haspopup="dialog" aria-label="Delete all tracking history" onClick={()=>{if(page)setDeleteAllSnapshot(page.snapshotAt);}}><HistoryDeleteIcon/>Delete all</button><button type="button" className={historyStyles.refreshButton} aria-busy={busy||loadingMore} disabled={busy||loadingMore} onClick={()=>{setExpanded(null);setRevision(n=>n+1);}}><span className={historyStyles.refreshIcon}><Icon type="refresh"/></span>{busy||loadingMore?'Refreshing…':'Refresh'}</button></div></div>
   {error&&<p role="alert" className={styles.error}>{error} <button type="button" onClick={()=>setRevision(n=>n+1)}>Try again</button></p>}
   {busy&&!page?<p role="status">Loading tracking history…</p>:page&&<>
    {page.items.length?<ol className={`${historyStyles.list} ${historyStyles.trackingList}`}>{page.items.map((entry,index)=>{
