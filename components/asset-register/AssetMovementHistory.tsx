@@ -68,7 +68,7 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
      {isOpen&&<div id={`tracking-route-${entry.id}`} className={historyStyles.trackingRoute}><TrackingRoute key={entryUrl(expanded)} url={entryUrl(expanded)}/></div>}
     </li>;
    })}</ol>:<div className={historyStyles.empty}><strong>No tracking entries in this period.</strong><p>Choose different dates, or activate the connected phone to start recording.</p></div>}
-   <div className={historyStyles.trackingListFooter}><span>Journeys split after 15 minutes stopped. Signal gaps start a separate record. Times cover the selected dates.</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
+   <div className={historyStyles.trackingListFooter}><span>Journeys split after 15 minutes stopped. Signal gaps start a separate record. Routes cover the selected dates. Widen the dates if a journey crosses the boundary.</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
   </>}
  </section>;
 }
@@ -82,6 +82,7 @@ function TrackingRoute({url}:{url:string}){
  if(!report)return <p role="status">Loading route…</p>;
  return <>
   {(report.gapSeconds>0||points.length<2)&&<div className={historyStyles.coverageWarning} role="note"><strong>{points.length<2?'Not enough readings to measure movement':'Partial tracking coverage'}</strong><span>{points.length<2?'One GPS point shows a location, not a journey.':`${duration(report.gapSeconds)} unobserved between usable readings. Distance and time cover recorded portions only.`}</span></div>}
+  {points.length>=2&&report.gapSeconds===0&&<p className={historyStyles.coverageGood}>GPS coverage · No gaps detected between these readings</p>}
   <div className={historyStyles.trackingStats}>{[[report.distanceKm.toFixed(2)+' km','Recorded distance'],[duration(report.movingSeconds),'Moving time'],[duration(report.stationarySeconds),'Stationary time'],[report.averageMovingKmh.toFixed(1)+' km/h','Average moving speed']].map(([value,label])=><div key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
   {points.length>0?<AssetLocationHistoryMap points={points} routeSegments={report.segments} stops={stops}/>:<p>No readings remain in this entry. Refresh history.</p>}
   <div className={styles.routeLegend}><span>● Start / End</span><span>● Recorded GPS dots</span><span>● Stops: 15+ minutes</span></div>

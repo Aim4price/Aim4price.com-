@@ -10,6 +10,7 @@ export const validTrackingDay = (value: string | null): value is string =>
   !!value && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value;
 export const validTrackingSnapshot = (value: string | null): value is string =>
   !!value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value && Date.parse(value) <= Date.now();
+export const validTrackingCapture = (value:string|null): value is string => !!value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString()===value && Date.parse(value)<=Date.now()+120000;
 export const TRACKING_HISTORY_DAYS_SQL = `
  SELECT to_char(p.captured_at AT TIME ZONE 'Africa/Johannesburg','YYYY-MM-DD') AS day,
  min(p.captured_at) AS first_captured_at,max(p.captured_at) AS last_captured_at,count(*)::integer AS readings

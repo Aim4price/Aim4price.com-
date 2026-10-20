@@ -489,7 +489,7 @@ export async function GET() {
     for(const asset of assets){
       const point=byAsset.get(asset.id);if(!point)continue;
       asset.lastTrackingContactAtIso=point.last_seen_at?new Date(point.last_seen_at).toISOString():null;
-      asset.trackingStatus=!point.connected_device_id?'Phone disconnected':!point.last_seen_at?'Waiting':!point.active?'Deactivated':Date.now()-new Date(point.last_seen_at).getTime()>12*60000?'Offline':!point.captured_at||Date.now()-new Date(point.captured_at).getTime()>12*60000?'No recent GPS':point.motion==='stationary'?'Stopped':'Moving';
+      asset.trackingStatus=!point.connected_device_id?'Phone disconnected':!point.last_seen_at?'Waiting':!point.active?'Deactivated':Date.now()-new Date(point.last_seen_at).getTime()>12*60000?'Offline':point.diagnostics?.recording===0?'Open phone to resume':!point.captured_at||Date.now()-new Date(point.captured_at).getTime()>12*60000?'No recent GPS':point.motion==='stationary'?'Stopped':'Moving';
       if(point.captured_at){asset.lastTrackedAtIso=new Date(point.captured_at).toISOString();
         if(!asset.lastScannedAtIso||Date.parse(asset.lastTrackedAtIso)>=Date.parse(asset.lastScannedAtIso)){
           asset.lastKnownLat=Number(point.latitude);asset.lastKnownLng=Number(point.longitude);asset.lastKnownLocationText='Tracking phone';

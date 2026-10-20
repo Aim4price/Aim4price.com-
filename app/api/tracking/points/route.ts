@@ -24,13 +24,17 @@ export async function POST(request: NextRequest) {
     return trackingJson(
       {
         error:
-          message === "DEVICE_REVOKED"
+          message === "RECOVERY_UNAVAILABLE"
+            ? "Saved readings belong to another connection. They remain on the phone."
+            : message === "DEVICE_REVOKED"
             ? "Device disconnected. Pair again."
             : message === "INVALID_UPLOAD"
               ? "Invalid tracking readings."
               : "Upload failed. Retry later.",
       },
-      message === "RATE_LIMIT"
+      message === "RECOVERY_UNAVAILABLE"
+        ? 403
+        : message === "RATE_LIMIT"
         ? 429
         : message === "DEVICE_REVOKED"
           ? 401

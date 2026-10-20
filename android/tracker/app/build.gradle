@@ -3,7 +3,7 @@ def signingPath = System.getenv('TRACKER_KEYSTORE')
 android {
  namespace 'com.aim4price.tracker'
  compileSdk 35
- defaultConfig { applicationId 'com.aim4price.tracker.pilot'; minSdk 26; targetSdk 35; versionCode 7; versionName '0.7' }
+ defaultConfig { applicationId 'com.aim4price.tracker.pilot'; minSdk 26; targetSdk 35; versionCode 8; versionName '0.8' }
  signingConfigs {
   release {
    if (signingPath) {
@@ -18,6 +18,7 @@ android {
   debug { applicationIdSuffix '.debug' }
   release { debuggable false; signingConfig signingConfigs.release }
  }
+ testOptions { unitTests.includeAndroidResources = true }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 // Never silently produce an unsigned or debug-signed release download.
@@ -31,4 +32,4 @@ tasks.configureEach { task ->
  }
 }
 
-dependencies { testImplementation 'junit:junit:4.13.2' }
+dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.14.1' }

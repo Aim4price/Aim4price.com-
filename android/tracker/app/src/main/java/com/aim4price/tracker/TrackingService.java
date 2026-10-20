@@ -17,7 +17,7 @@ public class TrackingService extends Service implements LocationListener {
  public static Notification notification(Context c,String text){channel(c);return new Notification.Builder(c,"tracking").setSmallIcon(android.R.drawable.ic_menu_mylocation).setContentTitle("Aim4price Tracker").setContentText(text).setOngoing(true).setContentIntent(PendingIntent.getActivity(c,0,new Intent(c,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT)).build();}
  public int onStartCommand(Intent intent,int flags,int startId){
   if(!TrackerApi.prefs(this).getBoolean("active",false)){stopSelf();return START_NOT_STICKY;}
-  startForeground(1,notification(this,"Recording equipment location"));if(started)return START_STICKY;started=true;store=new TrackerStore(this);manager=(LocationManager)getSystemService(LOCATION_SERVICE);
+  try{startForeground(1,notification(this,"Recording equipment location"));}catch(RuntimeException e){TrackerApi.prefs(this).edit().putString("issue","Open Tracker to resume recording.").apply();stopSelf();return START_NOT_STICKY;}if(started)return START_STICKY;started=true;TrackerApi.prefs(this).edit().putBoolean("serviceRunning",true).apply();store=new TrackerStore(this);var connection=TrackerApi.prefs(this);store.rememberConnection(connection.getString("token",""),connection.getString("assetId",""),connection.getString("title","Equipment"));manager=(LocationManager)getSystemService(LOCATION_SERVICE);TrackerApi.prefs(this).edit().putString("issue","").apply();
   try{subscribe(TrackingCadence.MOVING_INTERVAL_MS);}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).putString("issue","Enable precise location, then Activate.").apply();stopSelf();return START_NOT_STICKY;}
   worker.scheduleWithFixedDelay(this::upload,0,TrackingCadence.UPLOAD_INTERVAL_SECONDS,TimeUnit.SECONDS);return START_STICKY;
  }
@@ -36,10 +36,11 @@ public class TrackingService extends Service implements LocationListener {
   if(!save)return;
   boolean stopped=cadence.stopped();final boolean firstReading=!hasSaved;hasSaved=true;
   var p=TrackerApi.prefs(this);String session=p.getString("session","");if(session.isEmpty()){session=UUID.randomUUID().toString();p.edit().putString("session",session).apply();}
-  final String sid=session;storageWorker.execute(()->{try{
+  final String sid=session,recordingToken=p.getString("token","");storageWorker.execute(()->{try{
    JSONObject point=new JSONObject().put("id",UUID.randomUUID().toString()).put("sessionId",sid).put("capturedAt",Instant.ofEpochMilli(location.getTime()).toString()).put("latitude",location.getLatitude()).put("longitude",location.getLongitude()).put("accuracy",location.getAccuracy()).put("motion",stopped?"stationary":"moving");
-   if(!store.add(point)){p.edit().putBoolean("active",false).putString("issue","Offline queue full. Connect to upload readings before activating again.").apply();stopSelf();return;}
+   if(!store.add(point,recordingToken)){p.edit().putBoolean("active",false).putString("issue","Offline queue full. Connect to upload readings before activating again.").apply();stopSelf();return;}
    p.edit().putInt("pending",store.pending()).putLong("lastSavedAt",System.currentTimeMillis()).apply();
+   if(store.pending()==1)UploadJobService.schedule(this);
    if(firstReading&&!worker.isShutdown())worker.execute(this::upload);
   }catch(Exception e){p.edit().putString("issue","Could not save reading. Open the app to check storage.").apply();}});
  }
@@ -60,5 +61,5 @@ public class TrackingService extends Service implements LocationListener {
  public void onProviderEnabled(String provider){TrackerApi.prefs(this).edit().putString("gpsIssue","Waiting for GPS").apply();}
  public void onStatusChanged(String provider,int status,Bundle extras){}
  public IBinder onBind(Intent intent){return null;}
- public void onDestroy(){started=false;main.removeCallbacksAndMessages(null);if(manager!=null)manager.removeUpdates(this);worker.shutdown();storageWorker.shutdown();super.onDestroy();}
+ public void onDestroy(){started=false;TrackerApi.prefs(this).edit().putBoolean("serviceRunning",false).apply();main.removeCallbacksAndMessages(null);if(manager!=null)manager.removeUpdates(this);worker.shutdown();storageWorker.shutdown();super.onDestroy();}
 }

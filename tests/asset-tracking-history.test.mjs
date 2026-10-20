@@ -50,7 +50,7 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
  const db=new PGlite();
  const session='44444444-4444-4444-8444-444444444444',second='55555555-5555-4555-8555-555555555555';
  try{
- await db.exec('CREATE TABLE asset_tracking_devices(id uuid PRIMARY KEY,asset_id uuid,owner_id text);CREATE TABLE asset_tracking_points(device_id uuid,session_id uuid,sample_id text,captured_at timestamptz,received_at timestamptz,accuracy real,history_deleted_at timestamptz,latitude real DEFAULT 0,longitude real DEFAULT 0);');
+ await db.exec('CREATE TABLE asset_tracking_devices(id uuid PRIMARY KEY,asset_id uuid,owner_id text);CREATE TABLE asset_tracking_points(device_id uuid,session_id uuid,sample_id text,captured_at timestamptz,received_at timestamptz,accuracy real,history_deleted_at timestamptz,recovered_by_device_id uuid,latitude real DEFAULT 0,longitude real DEFAULT 0);');
  await db.query('INSERT INTO asset_tracking_devices VALUES($1,$2,$3),($4,$2,$3)',[device,asset,'owner',other]);
  const add=(dev,sid,id,at,received='2026-10-19T12:00:00Z')=>db.query('INSERT INTO asset_tracking_points(device_id,session_id,sample_id,captured_at,received_at,accuracy,history_deleted_at) VALUES($1,$2,$3,$4,$5,5,NULL)',[dev,sid,id,at,received]);
  await add(device,session,'before-midnight','2026-10-18T21:50:00Z');
@@ -110,4 +110,11 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
  const remaining=(await db.query('SELECT sample_id FROM asset_tracking_points WHERE history_deleted_at IS NULL ORDER BY sample_id')).rows.map(r=>r.sample_id);
  assert.deepEqual(remaining,['after-midnight','late','other-phone']);
  }finally{await db.close();}
+});
+
+test('capture boundaries tolerate phone clock drift without accepting future history snapshots',()=>{
+ const slightlyAhead=new Date(Date.now()+60000).toISOString();
+ assert.equal(lib.validTrackingCapture(slightlyAhead),true);
+ assert.equal(lib.validTrackingSnapshot(slightlyAhead),false);
+ assert.equal(lib.validTrackingCapture(new Date(Date.now()+600000).toISOString()),false);
 });
