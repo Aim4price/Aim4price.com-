@@ -1,4 +1,6 @@
 "use client";
+import AssetSerialNumber from '../../components/AssetSerialNumber';
+import ShareNextIcon from '../../components/asset-register/ShareNextIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import CreateAssetRegisterModal from '../../components/asset-register/CreateAssetRegisterModal';
@@ -3436,7 +3438,7 @@ export default function AssetRegistersClient({
                 </label>
               </div>
 
-              <div className={`${styles.assetMovePanel} ${styles.manageAssetScroller}`} tabIndex={0} role="region" aria-label="Assets">
+              <div className={`${styles.assetMovePanel} ${styles.manageAssetScroller}`} data-asset-choice-surface="true" tabIndex={0} role="region" aria-label="Assets">
                 {!isLoadingManagedAssets && (isManagingCombined ? registers.length <= 1 : !managedMoveTargets.length) ? <p className={styles.muted}>Create another asset register before moving assets.</p> : null}
                 {isLoadingManagedAssets ? (
                   <p className={styles.loading}>Loading assets...</p>
@@ -3444,32 +3446,32 @@ export default function AssetRegistersClient({
                   visibleManagedAssets.length ? (
                     <div className={styles.assetMoveList}>
                       {visibleManagedAssets.map((asset) => (
-                      <div key={asset.id} className={styles.assetMoveRow}>
-                        <div className={styles.assetMoveCopy}>
-                          <span className={styles.assetRegisterEyebrow}>
-                            <RegisterFolderIcon />
-                            {asset.registerName || managedRegister.businessName}
-                          </span>
+                      <button
+                        key={asset.id}
+                        type="button"
+                        className={`${styles.assetMoveRow} ${styles.standardAssetChoice}`}
+                        data-asset-choice-row="true"
+                        aria-label={`Move ${asset.title}`}
+                        disabled={Boolean(movingAssetId) || !registers.some((register) => register.id !== asset.registerId)}
+                        onClick={(event) => {
+                          moveTriggerRef.current = event.currentTarget;
+                          setMoveRegisterSearch("");
+                          setMoveTargetId("");
+                          setMoveError("");
+                          setMoveCandidate(asset);
+                        }}
+                      >
+                        <span className={styles.assetMoveCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <span className={styles.assetCurrentValue}><b>{money(asset.value)}</b><small>Current value</small></span>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.assetMoveLaunch}
-                          aria-label={`Move ${asset.title}`}
-                          disabled={Boolean(movingAssetId) || !registers.some((register) => register.id !== asset.registerId)}
-                          onClick={(event) => {
-                            moveTriggerRef.current = event.currentTarget;
-                            setMoveRegisterSearch("");
-                            setMoveTargetId("");
-                            setMoveError("");
-                            setMoveCandidate(asset);
-                          }}
-                        >
-                          <MoveIcon />
-                          <span>Move</span>
-                        </button>
-                      </div>
+                          <small data-asset-choice-meta="true">
+                            Year Model: {asset.yearModel ?? 'Unknown'} · Usage: {buildAssetUsageValue(asset)} · Condition: {conditionLabel(asset.condition) || 'Not provided'}
+                          </small>
+                          <AssetPickerDetail>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</AssetPickerDetail>
+                          <AssetSerialNumber value={asset.serialNumber} />
+                          {isManagingCombined ? <small className={styles.assetChoiceRegister}>{asset.registerName || managedRegister.businessName}</small> : null}
+                        </span>
+                        <ShareNextIcon />
+                      </button>
                     ))}
                     </div>
                   ) : (
