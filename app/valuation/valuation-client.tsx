@@ -2493,9 +2493,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     };
   }, [isDealerAccount, isSignedIn]);
 
+  const wizardScrollFrameRef = useRef(0);
   useEffect(() => {
-    const target = document.getElementById('valuation-wizard-card');
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The result walkthrough controls its own scrolling and focus.
+    if (step !== 6) scrollWizardToStart();
+    return () => cancelAnimationFrame(wizardScrollFrameRef.current);
   }, [step]);
 
   useEffect(() => {
@@ -4085,11 +4087,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setGuestValuationCount(incrementGuestValuationCount());
       }
       setStep(6);
-      requestAnimationFrame(() => {
-        const heading = document.getElementById('valuation-result-heading');
-        heading?.focus({ preventScroll: true });
-        heading?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
     } catch (error) {
       console.error(error);
       setMessage(error instanceof Error ? error.message : 'Failed to calculate estimate.');
@@ -5259,9 +5256,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function scrollWizardToStart() {
-
-    requestAnimationFrame(() => {
-      document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    cancelAnimationFrame(wizardScrollFrameRef.current);
+    // Wait for the next screen's DOM and layout, including delayed transitions.
+    wizardScrollFrameRef.current = requestAnimationFrame(() => {
+      wizardScrollFrameRef.current = requestAnimationFrame(() => {
+        const wizard = document.getElementById('valuation-wizard-card');
+        if (!wizard) return;
+        wizard.focus({ preventScroll: true });
+        wizard.scrollIntoView({ behavior: 'instant', block: 'start' });
+      });
     });
   }
 
@@ -5876,9 +5879,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (compactAppMode && targetStep === 2) setBrandDropdownOpen(true);
     setStep(!basicEstimateActive && isMotorSector(selectedSector) && targetStep === 3 ? 2 : targetStep);
 
-    requestAnimationFrame(() => {
-      document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+    scrollWizardToStart();
   }
 
   function renderMachineStep() {
@@ -9444,7 +9445,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
       <div className={styles.container}>
         <section className={`${styles.wizardShell} ${styles.sectorWizardShell}`}>
-          <div id="valuation-wizard-card" className={`${styles.wizardCard} ${styles.sectorWizardCard}`}>
+          <div id="valuation-wizard-card" tabIndex={-1} className={`${styles.wizardCard} ${styles.sectorWizardCard}`}>
             {step > 1 || (compactAppMode && selectedSector && estimateExperience) ? (
               <div className={styles.wizardHeader}>
                 {compactAppMode ? (

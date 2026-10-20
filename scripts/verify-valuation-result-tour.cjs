@@ -132,6 +132,19 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  // Remounting a new result must start the walkthrough again.
  await page.evaluate(()=>window.root.render(React.createElement(require('components/ValuationResultTour').default,{key:'new-estimate'})));
  await page.waitForSelector('dialog[open]');await finish();
+ // Exercise the production step-reset function with a reused, focused footer.
+ const valuationSource=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
+ const scrollFunction=valuationSource.slice(valuationSource.indexOf('  function scrollWizardToStart() {'),valuationSource.indexOf('  function scrollToDetailsCard'));
+ await page.addScriptTag({content:'const wizardScrollFrameRef={current:0};'+scrollFunction+';window.resetWizardScroll=scrollWizardToStart;'});
+ await page.evaluate(()=>{
+   window.root.unmount();
+   document.body.innerHTML='<div style="height:180px"></div><div id="valuation-wizard-card" tabindex="-1" style="scroll-margin-top:112px"><h2>Current step</h2><div id="step-content" style="height:1400px"></div><button id="next-step">Continue</button></div><div style="height:1000px"></div>';
+   document.getElementById('next-step').focus();
+   window.resetWizardScroll();
+   document.querySelector('h2').textContent='Next step';
+   document.getElementById('step-content').style.height='800px';
+ });
+ await page.waitForFunction(()=>document.activeElement?.id==='valuation-wizard-card' && Math.abs(document.getElementById('valuation-wizard-card').getBoundingClientRect().top-112)<2);
  assert.deepEqual(errors,[]);
  console.log('PASS mandatory start on every result, four steps, Back/Done, keyboard, mobile, zoom alignment');
  }finally{await browser.close();}
