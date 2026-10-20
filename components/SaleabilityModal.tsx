@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { GeneralSaleabilityInput, SaleabilityRefinementAnswers } from '../lib/saleability';
-import { validCurrentSaleabilityAnswers, type SaleabilityContext, type SaleabilityQuote } from '../lib/asset-saleability';
+import { validSaleabilityEase, saleabilityEaseLabel, validCurrentSaleabilityAnswers, type SaleabilityContext, type SaleabilityQuote } from '../lib/asset-saleability';
 import { SALEABILITY_PDF_PLAN_SESSION_KEY, createSaleabilityPdfPlanSnapshot } from '../lib/saleability-pdf';
 import PricingVatToggle from './PricingVatToggle';
 import { pricingVatAmount } from '../lib/pricing-vat';
@@ -55,12 +55,12 @@ type SaleIconKind = 'location' | 'assets' | 'buyers' | 'demand' | 'model' | 'tim
 function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
   if (kind === 'assets' && value && value !== 'unknown') {
     const count = ({ none: 0, one_to_three: 1, four_to_ten: 3, more_than_ten: 4 } as Record<string, number>)[value] ?? 4;
-    return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">{count === 0 ? <path d="M5 12h14" /> : Array.from({ length: count }, (_, i) => <rect key={i} x={3 + i % 2 * 11} y={3 + Math.floor(i / 2) * 11} width="7" height="7" rx="1" />)}</svg></span>;
+    return <span className={styles.choiceIcon} data-kind={kind} data-value={value} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">{count === 0 ? <path d="M5 12h14" /> : Array.from({ length: count }, (_, i) => <rect key={i} x={3 + i % 2 * 11} y={3 + Math.floor(i / 2) * 11} width="7" height="7" rx="1" />)}</svg></span>;
   }
   if (kind === 'time' && value && value !== 'flexible') {
-    return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M3 9h18M8 2v4M16 2v4" /><text x="12" y="18" textAnchor="middle" stroke="none" fill="currentColor" fontSize="8" fontWeight="700">{value}</text></svg></span>;
+    return <span className={styles.choiceIcon} data-kind={kind} data-value={value} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M3 9h18M8 2v4M16 2v4" /><text x="12" y="18" textAnchor="middle" stroke="none" fill="currentColor" fontSize="8" fontWeight="700">{value}</text></svg></span>;
   }
-  const path = kind === 'route' ? (value === 'dealer' ? 'M3 10h18v11H3ZM2 10l3-7h14l3 7M9 21v-7h6v7' : value === 'auction' ? 'm5 3 8 8M3 5l4-4 8 8-4 4ZM12 12l8 8M3 21h9' : value === 'consignment' ? 'M8 12h8M5 8l-3 4 3 4M19 8l3 4-3 4M12 3v4M12 17v4' : 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-3a7 7 0 0 1 14 0v3M17 11h6M20 8v6')
+  const path = kind === 'route' ? (value === 'dealer' ? 'M3 10h18v11H3ZM2 10l3-7h14l3 7M9 21v-7h6v7' : value === 'auction' ? 'm8 3 6 6-4 4-6-6ZM6 5l6 6M12 11l8 8M3 21h10M4 18h8v3' : value === 'consignment' ? 'm2 8 4-4 4 2 4-2 8 4-3 8-5 4-8-5ZM6 4l5 5 3-2 4 4M2 8l4 7M22 8l-4 3M9 16l3-3M12 18l3-3' : 'M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2 20v-3a6 6 0 0 1 10-4M15 16h7m-3-3 3 3-3 3M14 5h7M18 2l3 3-3 3')
     : value === 'unknown' ? 'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01'
     : kind === 'demand' && value === 'normal' ? 'M3 4v16h18M6 12h14m-4-4 4 4-4 4'
     : kind === 'model' && value === 'rare' ? 'm12 3 9 9-9 9-9-9ZM3 12h18M12 3l-4 9 4 9 4-9Z'
@@ -75,7 +75,7 @@ function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
     : value === 'fast_cashflow' ? 'm13 2-9 12h7l-1 8 10-13h-7Z'
     : value === 'balanced' ? 'M12 3v18M7 21h10M3 7h18M5 7l-3 7h6ZM19 7l-3 7h6Z'
     : 'M3 4h7l11 11-6 6L3 9ZM7 7h.01';
-  return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{value === 'unknown' || value === 'south_africa' ? <circle cx="12" cy="12" r="9" /> : null}<path d={path} /></svg></span>;
+  return <span className={styles.choiceIcon} data-kind={kind} data-value={value} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{value === 'unknown' || value === 'south_africa' ? <circle cx="12" cy="12" r="9" /> : null}<path d={path} /></svg></span>;
 }
 
 function ChoiceQuestion<T extends string>({
@@ -94,7 +94,7 @@ function ChoiceQuestion<T extends string>({
   return (
     <fieldset className={styles.question}>
       <legend><SaleIcon kind={icon} />{label}</legend>
-      <div className={styles.choiceGrid}>
+      <div className={styles.choiceGrid} data-options={options.length}>
         {options.map((option) => (
           <button
             key={option.value}
@@ -228,12 +228,24 @@ export default function SaleabilityModal({
           {step === 'result' && loading ? <p className={styles.loading} role="status"><span className={styles.spinner} aria-hidden="true" />Calculating your estimate…</p> : null}
           {step === 'result' && plan ? <div className={styles.result}>
             <section className={styles.resultHero} aria-live="polite">
-              <span className={styles.resultLabel}><SaleIcon kind="route" value={answers.sellingRoute} />{plan.resultLabel}</span>
+              <div className={styles.resultHeading}>
+                <span className={styles.resultLabel}><SaleIcon kind="route" value={answers.sellingRoute} />{plan.resultLabel}</span>
+                <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
+              </div>
               <strong>{displayMoney(plan.priceExVat)}</strong>
               <p>{vatLabel} · Before selling fees</p>
-              <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
             </section>
-            <p className={styles.valuationReminder}>Based on your selling circumstances. An estimate, not a guaranteed offer.</p>
+            {validSaleabilityEase(plan.ease) ? <section className={styles.easeCard} aria-label="Ease of selling">
+              <div className={styles.easeHeading}><div><h3>Ease of selling</h3><p>{saleabilityEaseLabel(plan.ease.score)}{plan.ease.provisional ? ' · Provisional' : ''}</p></div><strong>{plan.ease.score}<span> / 100</span></strong></div>
+              <div className={styles.easeMeter} role="meter" aria-label="Ease of selling score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={plan.ease.score} aria-valuetext={`${plan.ease.score} out of 100 — ${saleabilityEaseLabel(plan.ease.score)}`} data-level={plan.ease.score >= 65 ? 'strong' : plan.ease.score >= 45 ? 'moderate' : 'limited'}><span style={{width: `${plan.ease.score}%`}} /></div>
+              <p className={styles.easeNote}>{plan.ease.provisional ? 'Some market answers are unknown. ' : ''}Based on your answers and selling plan. Not a probability or guarantee of sale.</p>
+            </section> : <p className={styles.easeNote}>Ease of selling score unavailable.</p>}
+            <dl className={styles.sellingSummary} aria-label="Your selling plan">
+              <div><SaleIcon kind="route" value={answers.sellingRoute} /><dt>Method</dt><dd>{ROUTE_OPTIONS.find(option => option.value === answers.sellingRoute)?.label}</dd></div>
+              <div><SaleIcon kind="time" value={answers.desiredTimeline} /><dt>Timeframe</dt><dd>{TIMELINE_OPTIONS.find(option => option.value === answers.desiredTimeline)?.label}</dd></div>
+              <div><SaleIcon kind="location" value={answers.saleArea} /><dt>Area</dt><dd>{SALE_AREA_OPTIONS.find(option => option.value === answers.saleArea)?.label}</dd></div>
+            </dl>
+            <p className={styles.valuationReminder}>An estimate, not a guaranteed offer. Selling circumstances affect the price; your Aim4price value stays unchanged.</p>
           </div> : null}
         </div>
         {step === 'result' && recalculating ? <p className={styles.recalculateNote}>Uses your previous answers and latest asset details.</p> : null}

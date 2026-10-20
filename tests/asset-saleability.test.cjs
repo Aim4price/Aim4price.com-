@@ -1,5 +1,6 @@
 // Fictional baseline-only policy for persistence/access tests.
 process.env.SALEABILITY_POLICY_JSON=JSON.stringify({version:'test-fixture',steps:[],result:{get:'value'}});
+process.env.SALEABILITY_EASE_POLICY_JSON=JSON.stringify({version:'test-ease',steps:[],result:67});
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript'),{randomUUID}=require('node:crypto');
 function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>{if(n in mocks)return mocks[n];throw Error('Unexpected import '+n);},exports);return exports;}
 const shared=load('lib/asset-saleability.ts');
@@ -35,11 +36,12 @@ test('assessment API persists history, scopes access and rejects stale or forged
  assert.equal((await api.POST({...req,body:{...req.body,answers:{}}})).status,400);
  assert.equal((await api.POST({...req,body:{...req.body,basis:'old'}})).status,409);
  const preview=await api.POST({...req,body:{...req.body,preview:true,valuationExVat:1,context:{kind:'vehicle'}}});
+ assert.deepEqual(preview.data.quote.ease,{score:67,version:'test-ease',provisional:false});
  assert.equal(preview.status,200);assert(preview.data.quote.priceExVat>1000);
- assert.deepEqual(Object.keys(preview.data.quote).sort(),['modelVersion','priceExVat','resultLabel']);
+ assert.deepEqual(Object.keys(preview.data.quote).sort(),['ease','modelVersion','priceExVat','resultLabel']);
  assert.equal((await db.query('SELECT count(*) FROM asset_saleability_assessments')).rows[0].count,0);
  let result=await api.POST(req);assert.equal(result.status,200);assert.notEqual(result.data.assessment.priceExVat,1);
- result=await api.GET({method:'GET'});assert.equal(result.data.items.length,1);
+ result=await api.GET({method:'GET'});assert.equal(result.data.items.length,1);assert.deepEqual(result.data.items[0].assessment.ease,preview.data.quote.ease);
  await api.POST(req);assert.equal((await db.query('SELECT count(*) FROM asset_saleability_assessments')).rows[0].count,2);
  assert.equal((await api.GET({method:'GET'})).data.items.length,1);
  // Reuse saved answers after a usage/value change; retain the earlier assessment.

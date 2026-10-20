@@ -8,6 +8,25 @@ process.env.SALEABILITY_POLICY_JSON=JSON.stringify({version:'test-fixture',steps
  {name:'adjustment',expression:{cases:[{when:{op:'eq',args:[{get:'answers.currentDemand'},'strong']},then:1.07},{when:{op:'eq',args:[{get:'answers.currentDemand'},'weak']},then:0.91}],otherwise:1}},
 ],result:{op:'multiply',args:[{get:'value'},{get:'steps.adjustment'}]}});
 const fixture=process.env.SALEABILITY_POLICY_JSON;
+test('ease score is separate, bounded, versioned and optional for legacy configurations',()=>{
+ const before=quote(100000,answers);
+ assert.equal(before.ease,undefined);
+ process.env.SALEABILITY_EASE_POLICY_JSON=JSON.stringify({version:'test-ease',steps:[],result:72.4});
+ const scored=quote(100000,answers);
+ assert.equal(scored.priceExVat,before.priceExVat);
+ assert.deepEqual(scored.ease,{score:72,version:'test-ease',provisional:true});
+ assert.deepEqual(quote(900000,answers).ease,scored.ease);
+ assert.equal(quote(100000,{...answers,similarAssetsAvailable:'none'}).ease.provisional,false);
+ for(const score of [0,100]){
+  process.env.SALEABILITY_EASE_POLICY_JSON=JSON.stringify({version:'test-ease',steps:[],result:score});
+  assert.equal(quote(100000,answers).ease.score,score);
+ }
+ for(const score of [-1,101,'invalid']){
+  process.env.SALEABILITY_EASE_POLICY_JSON=JSON.stringify({version:'test-ease',steps:[],result:score});
+  const result=quote(100000,answers);assert.equal(result.ease,undefined);assert.equal(result.priceExVat,before.priceExVat);
+ }
+ delete process.env.SALEABILITY_EASE_POLICY_JSON;
+});
 test('private policy supports two-way results without exposing its inputs or operations',()=>{
  assert.equal(quote(100000,answers).priceExVat,100000);
  assert.equal(quote(100000,{...answers,currentDemand:'strong'}).priceExVat,107000);

@@ -1,7 +1,7 @@
 import type { GeneralSaleabilityInput, SaleabilityRefinementAnswers } from './saleability';
 
 export type SaleabilityAsset = {equipmentFamilyKey?:string; kind?:string; value:number; hours:number|null; lifeRemainingPercent?:number|null; lifeWorkedPercent?:number|null; condition:string; maxLifetimeHours?:number|null; yearModel?:number|null; replacementPriceExVat?:number|null; specsJson:Record<string,unknown>};
-export type SavedSaleability = {priceExVat:number; lowExVat:number; highExVat:number; assessedAt:string; basis:string; answers:SaleabilityRefinementAnswers; modelVersion?:string; resultLabel?:string};
+export type SavedSaleability = {priceExVat:number; lowExVat:number; highExVat:number; assessedAt:string; basis:string; answers:SaleabilityRefinementAnswers; modelVersion?:string; resultLabel?:string; ease?:SaleabilityEase};
 const options = {
  saleArea:['local','province','south_africa'], similarAssetsAvailable:['none','one_to_three','four_to_ten','more_than_ten','unknown'], realisticBuyerPool:['many','moderate','few','specialist','unknown'], currentDemand:['strong','normal','weak','unknown'], modelFamiliarity:['common','less_common','rare','unknown'], desiredTimeline:['14','30','60','90','flexible'], sellingPriority:['best_price','balanced','fast_cashflow'],
 };
@@ -18,7 +18,16 @@ export function assetSaleabilityInput(asset:SaleabilityAsset):GeneralSaleability
 export function saleabilityBasis(asset:SaleabilityAsset) {return JSON.stringify([2,saleabilityContext(asset),asset.value,asset.yearModel??null,asset.replacementPriceExVat??null,assetSaleabilityInput(asset)]);}
 
 export type SaleabilityContext = { kind?: string; sectorKey?: string; familyKey?: string };
-export type SaleabilityQuote = { priceExVat: number; resultLabel: string; modelVersion: string };
+export type SaleabilityEase = { score: number; version: string; provisional: boolean };
+export type SaleabilityQuote = { priceExVat: number; resultLabel: string; modelVersion: string; ease?: SaleabilityEase };
+export function validSaleabilityEase(value: unknown): value is SaleabilityEase {
+ const ease = value as SaleabilityEase | null;
+ return !!ease && Number.isInteger(ease.score) && ease.score >= 0 && ease.score <= 100
+  && typeof ease.version === 'string' && typeof ease.provisional === 'boolean';
+}
+export function saleabilityEaseLabel(score: number) {
+ return score >= 80 ? 'Very strong' : score >= 65 ? 'Strong' : score >= 45 ? 'Moderate' : score >= 25 ? 'Limited' : 'Challenging';
+}
 export function validCurrentSaleabilityAnswers(value: unknown): value is SaleabilityRefinementAnswers {
  if (!validSaleabilityAnswers(value)) return false;
  return value.modelVersion === 2 && ['direct','dealer','consignment','auction'].includes(value.sellingRoute ?? '');

@@ -100,7 +100,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>window.renderMarketDetail(undefined,{canCalculate:false}));
  await page.waitForFunction(()=>document.body.textContent.includes('Not calculated'));
  assert(await page.evaluate(()=>document.querySelector('[aria-label="Saleability estimate"]').disabled));
- await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0'}})});window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{modelVersion:2,sellingRoute:'direct',saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
+ await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0',ease:{score:72,version:'fixture-ease',provisional:false}}})});window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{modelVersion:2,sellingRoute:'direct',saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
  await page.waitForFunction(()=>document.body.textContent.includes('Uses your previous answers and latest asset details.'));
  await page.setViewport({width:1366,height:768});
  assert(await page.evaluate(()=>!document.querySelector('[role="dialog"]').textContent.includes('Question 1 of 5')));
@@ -126,6 +126,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(!await page.evaluate(()=>/Rating details|Market score|Grade [A-E]/.test(document.body.textContent)));
  await page.setViewport({width:1366,height:768});
  assert(await page.$eval('[aria-label="Your selling estimate"]',el=>el.scrollHeight<=el.clientHeight+1));
+ assert.equal(await page.$eval('[role="meter"]',el=>el.getAttribute('aria-valuenow')),'72');
+ await click('Incl. VAT');
+ assert.equal(await page.$eval('[role="meter"]',el=>el.getAttribute('aria-valuenow')),'72','VAT does not change ease');
+ assert(await page.evaluate(()=>document.body.textContent.includes('Not a probability or guarantee of sale.')));
  await page.screenshot({path:'/tmp/saleability-v2-desktop.png'});
  await page.setViewport({width:390,height:844});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
