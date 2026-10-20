@@ -1,4 +1,5 @@
 'use client';
+import DropdownOverlay from '../../components/DropdownOverlay';
 import modalStyles from '../../components/estimate-modal.module.css';
 
 import { submitCanonicalReportForm } from '../../lib/report-open';
@@ -24,15 +25,16 @@ function CategoryMenu({value, groups, onChange}: {value: string; groups: string[
     if (!open) return;
     list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({preventScroll: true});
     const outside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !wrap.current?.contains(event.target)) setOpen(false);
+      if (event.target instanceof Node && !wrap.current?.contains(event.target) && !list.current?.contains(event.target)) setOpen(false);
     };
     document.addEventListener('pointerdown', outside);
     return () => document.removeEventListener('pointerdown', outside);
   }, [open]);
   const close = () => { setOpen(false); trigger.current?.focus({preventScroll: true}); };
   return <div ref={wrap} className={styles.familyCategoryField} onBlur={event => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null) && !list.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
   }} onKeyDown={event => {
+    if (event.key === 'Tab' && open) { event.preventDefault(); event.stopPropagation(); close(); return; }
     if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
     if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
       event.preventDefault();
@@ -47,12 +49,14 @@ function CategoryMenu({value, groups, onChange}: {value: string; groups: string[
       <span>{value || 'All categories'}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
     </button>
-    {open ? <div ref={list} id="equipment-category-list" role="listbox" aria-label="Equipment categories" className={styles.familyCategoryMenu}>
+    {open ? <DropdownOverlay anchorRef={trigger} maxHeight={300} id="equipment-category-list" role="listbox" aria-label="Equipment categories" className={styles.familyCategoryMenu}>
+      <div ref={node => { list.current = node; if (node) node.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({preventScroll: true}); }}>
       {options.map(option => <button key={option} type="button" role="option" aria-selected={value === option} tabIndex={value === option ? 0 : -1} onClick={() => { onChange(option); close(); }}>
         <span>{option || 'All categories'}</span>
         {value === option ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
       </button>)}
-    </div> : null}
+      </div>
+    </DropdownOverlay> : null}
   </div>;
 }
 

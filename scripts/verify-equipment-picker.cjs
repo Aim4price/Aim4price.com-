@@ -59,7 +59,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('app/valuation/ValuationFlowPolish').default));"});
  await page.click('#trigger');await page.waitForSelector('[role=dialog]');
- const click=async text=>{await page.$$eval('[role=dialog] button',(els,text)=>{const el=els.find(e=>e.textContent===text);if(!el)throw Error(text);el.click()},text)};
+ const click=async text=>{await page.$$eval('[role=dialog] button, [role=listbox] button',(els,text)=>{const el=els.find(e=>e.textContent===text);if(!el)throw Error(text);el.click()},text)};
  await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('Automatic Calf Feeder'));
  assert.deepEqual(await page.$$eval('[role=dialog] button strong',els=>els.map(e=>e.textContent)),['Automatic Calf Feeder','Baler','Feedout Wagon','Milk Cooling Tank','Tractor']);
  await page.click('[aria-label="Equipment category"]');await click('Feeding');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('2 results'));

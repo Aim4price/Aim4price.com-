@@ -497,11 +497,6 @@
 .familyCategoryTrigger[aria-expanded='true'] { border-color: #237454; box-shadow: 0 0 0 3px #2374541a; }
 .familyCategoryTrigger[aria-expanded='true'] > svg { transform: rotate(180deg); }
 .familyCategoryMenu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 100%;
-  max-height: min(300px, calc(var(--website-visible-height, 100dvh) - 330px));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 6px;
@@ -512,6 +507,6 @@
   scrollbar-width: thin;
   scrollbar-color: #8cafa0 transparent;
 }
-.familyCategoryMenu > button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 9px; color: #244f3f; background: #fff; font: inherit; font-size: .88rem; font-weight: 500; line-height: 1.4; text-align: left; cursor: pointer; }
-.familyCategoryMenu > button[aria-selected='true'] { background: #e7f3ec; color: #17563f; font-weight: 700; }
-.familyCategoryMenu > button:hover, .familyCategoryMenu > button:focus-visible { background: #f0f7f3; outline: 2px solid #91bfa7; outline-offset: -2px; }
+.familyCategoryMenu > div > button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 9px; color: #244f3f; background: #fff; font: inherit; font-size: .88rem; font-weight: 500; line-height: 1.4; text-align: left; cursor: pointer; }
+.familyCategoryMenu > div > button[aria-selected='true'] { background: #e7f3ec; color: #17563f; font-weight: 700; }
+.familyCategoryMenu > div > button:hover, .familyCategoryMenu > div > button:focus-visible { background: #f0f7f3; outline: 2px solid #91bfa7; outline-offset: -2px; }
