@@ -34,7 +34,10 @@ export default function ValuationResultTour() {
   function start() {
     const visible = steps.filter(step => document.querySelector<HTMLElement>(`[data-value-tour="${step.target}"]`)?.getClientRects().length);
     if (!visible.length) return;
-    setAvailable(visible); setIndex(0); setBox(null); setActive(true);
+    const tailored=visible.map(step => step.target==='settings' && document.querySelector('[data-value-tour="settings"][data-value-tour-readonly="true"]')
+      ? {...step, title:'Check your asset details', text:'Check the year, usage and condition shown here. To correct an entry, finish this guide and use the steps above to go back.'}
+      : step);
+    setAvailable(tailored); setIndex(0); setBox(null); setActive(true);
   }
 
   useEffect(() => {

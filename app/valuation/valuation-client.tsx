@@ -8992,7 +8992,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Older passenger-car marketability adjustment applied: {formatPrecisePercent(genericSelectedCalculation.marketabilityReductionPercent)}%.
               </div>
             ) : null}
-            <div data-value-tour={breakdownAccess && activeBreakdown ? undefined : "settings"} className={styles.resultFactsGrid}>
+            <div data-value-tour={breakdownAccess && activeBreakdown ? undefined : "settings"} data-value-tour-readonly={!breakdownAccess || !activeBreakdown || undefined} className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('year')}<span>Year model</span>
                 <strong>{yearSummary}</strong>
@@ -9482,14 +9482,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
-            <div onBlurCapture={(event) => { if (!activeDetailsModal && event.target instanceof HTMLInputElement && !event.target.validity.valid) setRequiredFeedback(true); }} data-required-feedback={(!activeDetailsModal && requiredFeedback) || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
+            <div data-valuation-focus-content onBlurCapture={(event) => { if (!activeDetailsModal && event.target instanceof HTMLInputElement && !event.target.validity.valid) setRequiredFeedback(true); }} data-required-feedback={(!activeDetailsModal && requiredFeedback) || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
               {!activeDetailsModal && nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={`${styles.requiredSummary} ${requiredFeedback ? styles.requiredHint : styles.fieldHint}`} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
             <div
-              data-valuation-focus-group
+              data-valuation-focus-navigation
               onPointerDownCapture={() => setRequiredFeedback(true)}
               onFocusCapture={() => setRequiredFeedback(true)}
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
@@ -9532,7 +9532,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </section>
       </div>
 
-      <ValuationFlowFocus enabled={step < (basicEstimateActive ? 6 : 5)} activeSelector={`.${styles.specStepCardActive}`} />
+      <ValuationFlowFocus key={step} enabled={step < (basicEstimateActive ? 6 : 5)} activeSelector={`.${styles.specStepCardActive}`} />
 
       {replacementNoticeOpen ? (
         <div className={styles.replacementNoticeOverlay} data-valuation-focus-modal data-website-overlay onClick={closeReplacementPriceNotice}>
