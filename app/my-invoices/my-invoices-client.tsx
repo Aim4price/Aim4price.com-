@@ -23,6 +23,7 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
+import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
 import DocumentFileLink from '../../components/DocumentFileLink';
@@ -4985,9 +4986,13 @@ export default function MyInvoicesClient({
                   <span className={styles.assetInfo} data-asset-choice-copy="true">
                     {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                     <strong>{asset.title}</strong>
+                    {flow === 'asset-manual' ? <ManualCostAssetDetails asset={asset} /> : (
+                      <>
                     <small data-asset-choice-meta="true">{asset.meta}</small>
                     <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                     <AssetSerialNumber value={asset.serialNumber} />
+                      </>
+                    )}
                   </span>
                   <span className={styles.assetValue} data-asset-choice-value="true">
                     <span className={pickerStyles.select}>
