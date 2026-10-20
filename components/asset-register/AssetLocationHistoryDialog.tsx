@@ -1,5 +1,6 @@
 'use client';
 import DateInput from '../DateInput';
+import DeleteAllHistoryDialog,{HistoryDeleteIcon} from './DeleteAllHistoryDialog';
 import AssetMovementHistory from './AssetMovementHistory';
 import {useEffect,useMemo,useState,useRef} from 'react';
 import AssetAccessSettingsDialog from './AssetAccessSettingsDialog';
@@ -11,6 +12,7 @@ import styles from './AssetLocationHistoryDialog.module.css';
 type Entry={id:string;latitude:number;longitude:number;note:string;actor:string;accuracy:number|null;recordedAt:string;capturedAt:string|null;source:string};
 const date=(value:string)=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'});
 export default function AssetLocationHistoryDialog({assetId,title,onClose,initialTab}:{assetId:string;title:string;onClose:()=>void;initialTab?:'observations'|'movement'}){
+ const [snapshotAt,setSnapshotAt]=useState(''),[deleteAllSnapshot,setDeleteAllSnapshot]=useState<string|null>(null);
  const [deleteEntry,setDeleteEntry]=useState<Entry|null>(null),[deleting,setDeleting]=useState(false),[deleteError,setDeleteError]=useState('');
  async function confirmDelete(){
   if(!deleteEntry||deleting)return;
@@ -30,10 +32,11 @@ export default function AssetLocationHistoryDialog({assetId,title,onClose,initia
  useEffect(()=>{if(tabChosen)return;const c=new AbortController();fetch(`/api/asset-register/${encodeURIComponent(assetId)}/tracking`,{signal:c.signal}).then(r=>r.ok?r.json():null).then(d=>{if(!c.signal.aborted&&d?.device)setTab('movement');}).catch(()=>{});return()=>c.abort();},[assetId,tabChosen]);
  const [from,setFrom]=useState(''),[to,setTo]=useState(''),[items,setItems]=useState<Entry[]>([]),[busy,setBusy]=useState(true),[error,setError]=useState(''),[truncated,setTruncated]=useState(false),[retry,setRetry]=useState(0),[exportOpen,setExportOpen]=useState(false);
  const points=useMemo(()=>items.map(item=>({latitude:item.latitude,longitude:item.longitude,label:`${date(item.recordedAt)} · ${item.source}${item.note?' · '+item.note:''}`})),[items]);
- useEffect(()=>{const controller=new AbortController();setBusy(true);setError('');setItems([]);
-  fetch(`/api/asset-register/${encodeURIComponent(assetId)}/locations?${new URLSearchParams({from,to})}`,{signal:controller.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error||'Could not load location history.');if(controller.signal.aborted)return;setItems(data.items);setTruncated(data.truncated);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});return()=>controller.abort();
+ useEffect(()=>{const controller=new AbortController();setBusy(true);setError('');setItems([]);setSnapshotAt('');
+  fetch(`/api/asset-register/${encodeURIComponent(assetId)}/locations?${new URLSearchParams({from,to})}`,{signal:controller.signal}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error||'Could not load location history.');if(controller.signal.aborted)return;setItems(data.items);setTruncated(data.truncated);setSnapshotAt(data.snapshotAt);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setBusy(false);});return()=>controller.abort();
  },[assetId,from,to,retry]);
  const historyTabs=<div className={styles.historyTypeField}><span>History type</span><div className={styles.historySwitch} role="group" aria-label="History type"><button type="button" aria-pressed={tab==='observations'} onClick={()=>{setTabChosen(true);setTab('observations');}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>Saved locations</button><button type="button" aria-pressed={tab==='movement'} onClick={()=>{setTabChosen(true);setTab('movement');}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a4 4 0 0 0 0 8h8"/></svg>Tracking</button></div></div>;
+ if(deleteAllSnapshot)return <DeleteAllHistoryDialog title={title} kind="locations" endpoint={`/api/asset-register/${encodeURIComponent(assetId)}/locations`} snapshotAt={deleteAllSnapshot} onClose={()=>setDeleteAllSnapshot(null)} onDeleted={()=>{setDeleteAllSnapshot(null);setSelectedRecord(null);setItems([]);setRetry(n=>n+1);}}/>;
  if(deleteEntry)return <AssetAccessSettingsDialog locationLayout title="Delete location entry?" assetTitle={title} onClose={()=>{if(!deleting)setDeleteEntry(null);}}>
   <div className={styles.deleteConfirm}>
    <span className={styles.deleteIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6"/></svg></span>
@@ -49,6 +52,7 @@ export default function AssetLocationHistoryDialog({assetId,title,onClose,initia
   <div className={styles.content} data-location-history>
    {tab==='movement'?<AssetMovementHistory assetId={assetId} title={title} historyTabs={historyTabs}/>:<>
    <div className={styles.historyToolbar}><div className={styles.filters}><label>From<DateInput value={from} max={to||undefined} onValueChange={value=>setFrom(value)}/></label><label>To<DateInput value={to} min={from||undefined} onValueChange={value=>setTo(value)}/></label></div>{historyTabs}</div>
+   <div className={styles.historyActions}><button type="button" className={styles.deleteAllAction} disabled={busy||!!error||!snapshotAt} aria-haspopup="dialog" aria-label="Delete all saved locations" onClick={()=>setDeleteAllSnapshot(snapshotAt)}><HistoryDeleteIcon/>Delete all</button></div>
    {busy?<p role="status">Loading location history…</p>:error?<div role="alert">{error} <button type="button" onClick={()=>setRetry(n=>n+1)}>Try again</button></div>:<>
     {truncated&&<p role="status">Showing the latest 2 000 records. Narrow the dates for a complete report.</p>}
     {items.length?<><AssetLocationHistoryMap points={points} onSelectPoint={selectRecord}/><div className={styles.legend}><span>● Latest in selected period</span><span>● Earlier observations</span><strong>{items.length.toLocaleString()} {items.length===1?'record':'records'}</strong></div>

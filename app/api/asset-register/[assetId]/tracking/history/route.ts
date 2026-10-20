@@ -7,7 +7,7 @@ import { ensureTrackingTables } from "../../../../../../lib/asset-tracking";
 import { summarizeTracking, visibleTrackingPoints } from "../../../../../../lib/asset-tracking-math";
 import { getDb } from "../../../../../../lib/db";
 import {buildMovementHtml,buildMovementWorkbook} from "../../../../../../lib/asset-movement-report";
-import {validTrackingDay,validTrackingSnapshot,validTrackingCapture,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor} from "../../../../../../lib/asset-tracking-history";
+import {validTrackingDay,validTrackingSnapshot,validTrackingCapture,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor,DELETE_ALL_TRACKING_HISTORY_SQL} from "../../../../../../lib/asset-tracking-history";
 import {trackingJourneys} from '../../../../../../lib/asset-tracking-journeys';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,6 +117,13 @@ export async function DELETE(request:NextRequest,{params}:{params:{assetId:strin
     const access=await trackingOwner(request,params.assetId);
     if(access instanceof NextResponse)return access;
     const day=request.nextUrl.searchParams.get('day'),snapshotAt=request.nextUrl.searchParams.get('snapshotAt');
+    const scope=request.nextUrl.searchParams.get('scope');
+    if(scope!==null){
+      if(scope!=='all'||!validTrackingSnapshot(snapshotAt)||['day','deviceId','sessionId','from','to','startAt','endAt','contextAt'].some(key=>request.nextUrl.searchParams.has(key)))return trackingJson({error:'Refresh history before deleting all tracking records.'},400);
+      await ensureTrackingTables();
+      const result=await getDb().query(DELETE_ALL_TRACKING_HISTORY_SQL,[access.ownerId,params.assetId,snapshotAt]);
+      return trackingJson({ok:true,deleted:result.rowCount||0});
+    }
     const deviceId=request.nextUrl.searchParams.get('deviceId'),sessionId=request.nextUrl.searchParams.get('sessionId');
     const startAt=request.nextUrl.searchParams.get('startAt'),endAt=request.nextUrl.searchParams.get('endAt');
     if((startAt||endAt)&&(!validTrackingCapture(startAt)||!validTrackingCapture(endAt)||startAt>endAt||!deviceId||!sessionId))return trackingJson({error:'Choose a valid journey.'},400);
