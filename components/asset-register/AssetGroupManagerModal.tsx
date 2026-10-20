@@ -1,4 +1,6 @@
 'use client';
+import AssetPickerDetail from '../AssetPickerDetail';
+
 import downloadStyles from "../ReportDownload.module.css";
 
 import AssetReportTypeIcon from './AssetReportTypeIcon';
@@ -1125,7 +1127,7 @@ export default function AssetGroupManagerModal({
                             <span className={styles.assetCopy} data-asset-choice-copy="true">
                               <strong>{asset.title}</strong>
                               <small data-asset-choice-meta="true">{assetDetailLine(asset)}</small>
-                              <small data-asset-choice-secondary="true">{assetSourceLine(asset, combinedMode)}</small>
+                              <AssetPickerDetail>{assetSourceLine(asset, combinedMode)}</AssetPickerDetail>
                               <AssetSerialNumber value={asset.serialNumber} />
                               {movingFromAnotherGroup ? (
                                 <small className={styles.assetMoveNotice}>Currently in {existingGroup?.name} — select to move</small>

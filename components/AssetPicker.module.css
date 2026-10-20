@@ -58,8 +58,8 @@
   overflow-y: auto !important;
   overflow-x: hidden !important;
   overscroll-behavior: contain;
-  scrollbar-width: thin !important;
-  scrollbar-color: #829a92 transparent !important;
+  scrollbar-width: auto !important;
+  scrollbar-color: #829a92 var(--app-surface-soft, #edf3ef) !important;
 }
 .modal.modal.modal[data-asset-choice-modal] [data-asset-choice-row] {
   display: grid !important;
@@ -329,7 +329,7 @@
   outline-offset: 2px !important;
 }
 .modal.modal.modal[data-asset-choice-modal] [data-asset-choice-copy] [data-asset-choice-secondary] {
-  font-size: .82rem !important; font-weight: 400 !important; line-height: 1.45 !important;
+  font-size: .88rem !important; font-weight: 400 !important; line-height: 1.45 !important;
 }
 .modal.modal.modal [data-asset-choice-row] { box-shadow: none !important; }
 .modal.modal.modal [data-asset-choice-row]:hover:not(:disabled) {
@@ -348,4 +348,18 @@
 .modal.modal.modal .select:not(.multi) i:empty::after {
   content: ''; width: .5rem; height: .5rem; border-top: 1.7px solid currentColor;
   border-right: 1.7px solid currentColor; transform: translateX(-.12rem) rotate(45deg);
+}
+
+/* Standard choose-assets: calm identity rows, stable footer and a usable gutter. */
+.modal.modal.modal [data-asset-choice-list] { scrollbar-gutter: stable !important; }
+.modal.modal.modal [data-asset-choice-list]::-webkit-scrollbar { width: 1.1rem; }
+.modal.modal.modal [data-asset-choice-list]::-webkit-scrollbar-thumb { border: 3px solid transparent; border-radius: 999px; background: #829a92; background-clip: padding-box; }
+.modal.modal.modal [data-asset-choice-list]::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf3ef); border-radius: 999px; }
+.modal.modal.modal [data-asset-choice-copy] { gap: .5rem !important; }
+.modal.modal.modal [data-asset-choice-copy] > strong { margin-bottom: .1rem; }
+.modal.modal.modal [data-asset-choice-row]:disabled,
+.modal.modal.modal [data-asset-choice-row]:has(input:disabled) { cursor: not-allowed; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.modal.modal { --picker-padding: 1rem; width: calc(100vw - 1.5rem) !important; max-height: calc(100dvh - 1.5rem) !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.modal.modal .multi { flex-direction: column; align-items: center; font-size: .8rem !important; }
 }

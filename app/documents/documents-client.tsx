@@ -1,4 +1,6 @@
 'use client';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
+
 import DateInput from '../../components/DateInput';
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
@@ -1730,7 +1732,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         <span className={styles.assetSelectionCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
                           <small data-asset-choice-meta="true">{asset.detail || asset.meta || 'No key details saved yet'}</small>
-                          <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.methodLabel].filter(Boolean).join(' · ') || 'Asset Register item'}</small>
+                          <AssetPickerDetail>{[asset.categoryLabel, asset.methodLabel].filter(Boolean).join(' · ') || 'Asset Register item'}</AssetPickerDetail>
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetSelectionValue} data-asset-choice-value="true">

@@ -1,4 +1,5 @@
 "use client";
+import AssetPickerDetail from '../../components/AssetPickerDetail';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import CreateAssetRegisterModal from '../../components/asset-register/CreateAssetRegisterModal';
 
@@ -3646,7 +3647,7 @@ export default function AssetRegistersClient({
                         />
                         <span className={styles.qrAssetCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <small data-asset-choice-meta="true">{asset.registerName} · {asset.plateLabel || "QR code not available"}</small>
+                          <AssetPickerDetail>{asset.registerName} · {asset.plateLabel || "QR code not available"}</AssetPickerDetail>
                         </span>
                         <span className={styles.qrAssetStatus} data-asset-choice-secondary="true">
                           {asset.hasQr ? "Ready" : "Unavailable"}

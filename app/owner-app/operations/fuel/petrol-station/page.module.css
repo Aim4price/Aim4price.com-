@@ -362,3 +362,6 @@
   font-weight: 900;
   line-height: 1.15;
 }
+
+.assetCard[data-asset-choice-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; font: inherit; cursor: pointer; }
+.assetChoiceNext { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid currentColor; border-radius: 50%; color: var(--app-text, #15392f); font-size: 1.5rem; }

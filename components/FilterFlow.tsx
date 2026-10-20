@@ -4,6 +4,7 @@ import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useSt
 import styles from './FilterFlow.module.css';
 import DropdownOverlay from './DropdownOverlay';
 import picker from './AssetPicker.module.css';
+import AssetPickerDetail from './AssetPickerDetail';
 import AssetSerialNumber from './AssetSerialNumber';
 
 type FilterAssetPicker = { title: string; assets: Array<{ id: string; title: string; meta?: string; serialNumber?: string; selectedMethod?: string; categoryLabel?: string }> };
@@ -130,7 +131,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
     <div data-asset-choice-list="true">{options.filter((option,index)=>index === 0 || `${option.label} ${assetPicker.assets.find(asset=>asset.id === option.value)?.serialNumber || ''}`.toLowerCase().includes(query.trim().toLowerCase())).map(option=>{
       const asset=assetPicker.assets.find(asset=>asset.id === option.value);
       return <button key={option.value} type="button" data-asset-choice-row="true" data-asset-choice-selected={value === option.value} aria-pressed={value === option.value} onClick={()=>onChange(option.value)}>
-        <span data-asset-choice-copy="true"><strong>{option.label}</strong>{asset?.meta ? <small>{asset.meta}</small> : null}{asset?.selectedMethod ? <small>{[asset.categoryLabel, asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'].filter(Boolean).join(' · ')}</small> : null}{asset ? <AssetSerialNumber value={asset.serialNumber} /> : null}</span>
+        <span data-asset-choice-copy="true"><strong>{option.label}</strong>{asset?.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset?.selectedMethod ? <AssetPickerDetail>{[asset.categoryLabel, asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'].filter(Boolean).join(' · ')}</AssetPickerDetail> : null}{asset ? <AssetSerialNumber value={asset.serialNumber} /> : null}</span>
         <span data-asset-choice-value="true"><span className={picker.select}><i aria-hidden="true">{value === option.value ? '✓' : ''}</i>Select</span></span>
       </button>;
     })}</div>

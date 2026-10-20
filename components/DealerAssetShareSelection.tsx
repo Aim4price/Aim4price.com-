@@ -1,5 +1,6 @@
 'use client';
 
+import AssetSerialNumber from './AssetSerialNumber';
 import styles from './DealerAssetShareSelection.module.css';
 
 export type DealerShareAssetOption = {
@@ -54,8 +55,7 @@ export default function DealerAssetShareSelection({
         {assets.map((asset) => {
           const checked = selectedIds.has(asset.id);
           const details = [
-            asset.yearModel ? String(asset.yearModel) : '',
-            asset.serialNumber ? `Serial ${asset.serialNumber}` : '',
+            asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
             asset.registrationNumber ? `Reg ${asset.registrationNumber}` : '',
           ].filter(Boolean);
 
@@ -76,6 +76,7 @@ export default function DealerAssetShareSelection({
               <span className={styles.assetCopy} data-asset-choice-copy="true">
                 <strong>{asset.title}</strong>
                 {details.length ? <small data-asset-choice-meta="true">{details.join(' · ')}</small> : null}
+                <AssetSerialNumber value={asset.serialNumber} />
               </span>
             </label>
           );

@@ -1,4 +1,6 @@
 'use client';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
+
 import BudgetDetailIcon from '../../components/BudgetDetailIcon';
 import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
@@ -3862,7 +3864,7 @@ export default function MyInvoicesClient({
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{asset.meta}</small>
-                        <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                        <AssetPickerDetail>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail>
                         <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
@@ -4421,7 +4423,7 @@ export default function MyInvoicesClient({
                       {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                       <strong>{asset.title}</strong>
                       {asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}
-                      <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.yearModel].filter(Boolean).join(' · ')}</small>
+                      <AssetPickerDetail>{[asset.categoryLabel, asset.yearModel].filter(Boolean).join(' · ')}</AssetPickerDetail>
                       <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
@@ -4564,7 +4566,7 @@ export default function MyInvoicesClient({
                         {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{asset.meta}</small>
-                        <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                        <AssetPickerDetail>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail>
                         <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
@@ -4989,7 +4991,7 @@ export default function MyInvoicesClient({
                     {flow === 'asset-manual' ? <ManualCostAssetDetails asset={asset} /> : (
                       <>
                     <small data-asset-choice-meta="true">{asset.meta}</small>
-                    <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                    <AssetPickerDetail>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail>
                     <AssetSerialNumber value={asset.serialNumber} />
                       </>
                     )}

@@ -1,4 +1,7 @@
 'use client';
+import AssetSerialNumber from '../../components/AssetSerialNumber';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
+
 import pickerStyles from '../../components/AssetPicker.module.css';
 import FuelWorkField from '../../components/FuelWorkField';
 import DateInput from '../../components/DateInput';
@@ -541,7 +544,8 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                         <span className={styles.assetInfo} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
                           <small data-asset-choice-meta="true">{assetPickerMeta(asset) || 'Asset details not set'}</small>
-                          <small data-asset-choice-secondary="true">{assetPickerDetail(asset)}</small>
+                          <AssetPickerDetail>{assetPickerDetail(asset)}</AssetPickerDetail>
+                          <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span data-asset-choice-value="true"><span className={pickerStyles.select}><i aria-hidden="true" /><strong>Select</strong></span></span>
                       </button>

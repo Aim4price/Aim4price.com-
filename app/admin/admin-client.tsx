@@ -1,5 +1,6 @@
 "use client";
 
+import AssetPickerDetail from '../../components/AssetPickerDetail';
 import ListPagination from '../../components/ListPagination';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -2605,16 +2606,9 @@ export default function AdminClient({
                       />
 
                       <span className={styles.qrAssetMain} data-asset-choice-copy="true">
-                        <strong>
-                          {asset.title}
-                          <span data-asset-choice-meta="true">
-                            {` · ${asset.registerName}`}
-                            {asset.plateLabel ? ` · ${asset.plateLabel}` : ""}
-                          </span>
-                          <span data-asset-choice-value="true">
-                            {` · ${asset.hasQr ? asset.publicAssetCode : "No QR"}`}
-                          </span>
-                        </strong>
+                        <strong>{asset.title}</strong>
+                        <AssetPickerDetail>{asset.registerName}{asset.plateLabel ? ` · ${asset.plateLabel}` : ''}</AssetPickerDetail>
+                        <small data-asset-choice-meta="true">{asset.hasQr ? asset.publicAssetCode : 'No QR'}</small>
                       </span>
                     </label>
                   );

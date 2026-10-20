@@ -194,13 +194,13 @@ optgroup {
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   scrollbar-gutter: stable !important;
-  scrollbar-width: thin !important;
+  scrollbar-width: auto !important;
   scrollbar-color: rgba(18, 66, 51, 0.8) rgba(239, 244, 247, 0.98) !important;
   gap: 0.72rem !important;
 }
 
 [data-asset-choice-list='true']::-webkit-scrollbar {
-  width: 0.82rem;
+  width: 1.1rem;
 }
 
 [data-asset-choice-list='true']::-webkit-scrollbar-track {
@@ -508,4 +508,17 @@ html[data-background='dark'] body { background: #1d302b; }
 }
 [data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-copy='true'] > small {
   font-size: .9rem !important; font-weight: 650 !important; line-height: 1.5 !important;
+}
+
+/* Shared chooser details stay quiet even inside embedded permission/share lists. */
+[data-asset-choice-surface='true'] [data-asset-choice-copy='true'] > small[data-asset-choice-secondary='true'] {
+  font-size: .88rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+[data-asset-choice-surface='true']:not([data-asset-choice-modal='true']) [data-asset-choice-list='true'] {
+  padding: .65rem;
+}
+[data-asset-choice-surface='true'] [data-asset-choice-copy='true'] > strong {
+  white-space: normal !important;
 }

@@ -153,3 +153,11 @@
   }
 }
 
+
+/* Embedded multi-selection uses the same readable identity hierarchy. */
+.list { padding: .65rem; scrollbar-width: auto; max-height: 24rem; }
+.assetCopy strong, .assetCopy small { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.assetRow { grid-template-columns: minmax(0, 1fr) auto; }
+.assetCopy { grid-column: 1; grid-row: 1; }
+.checkbox { grid-column: 2; grid-row: 1; border-radius: 50%; width: 2rem; height: 2rem; }
+.assetRow:focus-within { outline: 2px solid var(--app-accent, #17563f); outline-offset: 2px; }

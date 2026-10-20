@@ -1,4 +1,5 @@
 'use client';
+import AssetPickerDetail from './AssetPickerDetail';
 
 import { useEffect, useRef, useState } from 'react';
 import dialogStyles from './MaintenanceDialog.module.css';
@@ -115,7 +116,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
           {filteredAssets.length ? filteredAssets.map((item) => <button type="button" key={item.id} data-asset-choice-row="true" onClick={() => { setAssetId(item.id); setSelected(new Set()); setChoosingAsset(false); }}>
             <span data-asset-choice-copy="true"><strong>{item.title}</strong>
               {item.meta ? <small data-asset-choice-meta="true">{item.meta}</small> : null}
-              {item.selectedMethod ? <small data-asset-choice-secondary="true">{item.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small> : null}
+              {item.selectedMethod ? <AssetPickerDetail>{item.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail> : null}
               <AssetSerialNumber value={item.serialNumber} />
             </span>
             <span data-asset-choice-value="true"><span className={pickerStyles.select}><i aria-hidden="true" /><strong>Select</strong></span></span>
