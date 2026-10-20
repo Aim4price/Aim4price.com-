@@ -164,7 +164,6 @@ type MaintenanceDraft = {
 };
 
 type ModalMode = 'checklists' | 'timing' | 'record-work' | 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
-type QuickClearStep = 'confirm' | 'completion';
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
@@ -791,7 +790,6 @@ export default function MaintenanceClient({
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
   const [recordPendingComplete, setRecordPendingComplete] = useState<MaintenanceRecord | null>(null);
   const [recordPendingQuickClear, setRecordPendingQuickClear] = useState<MaintenanceRecord | null>(null);
-  const [quickClearStep, setQuickClearStep] = useState<QuickClearStep>('confirm');
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
   const completeRequestInFlight = useRef(false);
@@ -997,7 +995,6 @@ export default function MaintenanceClient({
     setRecordPendingDelete(null);
     setRecordPendingComplete(null);
     setRecordPendingQuickClear(null);
-    setQuickClearStep('confirm');
     setDraft(null);
     setQuickLaunchActive(false);
 
@@ -1152,7 +1149,6 @@ export default function MaintenanceClient({
   function openQuickClear(record: MaintenanceRecord) {
     setNotice(null);
     setRecordPendingQuickClear(record);
-    setQuickClearStep('confirm');
     setModalMode('quick-clear');
   }
 
@@ -1223,21 +1219,21 @@ export default function MaintenanceClient({
       const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
 
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || 'Maintenance could not be cleared.');
+        throw new Error(payload.error || 'Maintenance could not be marked completed.');
       }
 
       applyPayload(payload);
       setNotice({
         type: 'success',
         text: record.recurringEnabled && payload.nextRecord
-          ? `Maintenance marked done with no additional information. The next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
-          : 'Maintenance marked done with no additional information.',
+          ? `Maintenance marked completed. The next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+          : 'Maintenance marked completed.',
       });
       closeModal();
     } catch (error) {
       setNotice({
         type: 'error',
-        text: error instanceof Error ? error.message : 'Maintenance could not be cleared.',
+        text: error instanceof Error ? error.message : 'Maintenance could not be marked completed.',
       });
     } finally {
       completeRequestInFlight.current = false;
@@ -1433,6 +1429,7 @@ export default function MaintenanceClient({
                               if (canComplete) openComplete(record);
                             }}
                             disabled={!canComplete || busyCompleteId !== null}
+                            title={canComplete ? `Record completed work for this ${typeLabel(record.maintenanceType).toLowerCase()}` : undefined}
                             aria-pressed={isDone}
                             aria-label={isDone ? `${record.assetTitle} maintenance completed` : !canComplete ? `${record.assetTitle} maintenance cancelled` : `Record ${record.maintenanceType} for ${record.assetTitle}`}
                           >
@@ -1508,7 +1505,7 @@ export default function MaintenanceClient({
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
                 <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
               <button className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update maintenance details.</small></span></button>
-              {managedRecord.status === 'upcoming' ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Clear</strong><small className={umbrellaStyles.menuOptionSubtitle}>Confirm the work is complete.</small></span></button> : null}
+              {managedRecord.status === 'upcoming' ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Mark as completed</strong><small className={umbrellaStyles.menuOptionSubtitle}>Save completion without extra details.</small></span></button> : null}
               <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 7 1 1 2-2M13 8h4m-4 6h4" /></svg></i><span><strong>Download checklist</strong><small className={umbrellaStyles.menuOptionSubtitle}>Choose PDF checklist items for this asset.</small></span></button>
               <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this maintenance record.</small></span></button>
                 </div>
@@ -1728,7 +1725,7 @@ export default function MaintenanceClient({
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-quick-clear-title">
-                  {quickClearStep === 'confirm' ? 'Clear maintenance?' : 'Was it completed?'}
+                  Mark this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} as completed?
                 </h2>
               </div>
               <button
@@ -1736,52 +1733,35 @@ export default function MaintenanceClient({
                 type="button"
                 onClick={closeModal}
                 disabled={busyCompleteId === recordPendingQuickClear.id}
-                aria-label="Close maintenance clear confirmation"
+                aria-label="Close maintenance completion confirmation"
               >
                 <span aria-hidden="true">×</span>
               </button>
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.deleteConfirmBody}>
-              {quickClearStep === 'confirm' ? (
-                <p id="maintenance-quick-clear-description">
-                  Clear this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()}?
-                </p>
-              ) : (
-                <>
-                  <p id="maintenance-quick-clear-description">
-                    Only choose <strong>Yes</strong> if this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} was completed.
-                  </p>
-                  <p className={styles.maintenanceQuickClearNote}>
-                    Yes saves a basic completed record. <strong>Not sure</strong> leaves it open.
-                  </p>
-                </>
-              )}
+              <p id="maintenance-quick-clear-description">
+                Confirm only if the work is finished. This saves a basic completion record for today, without extra details.
+              </p>
+              {recordPendingQuickClear.triggerType === 'usage' ? <p className={styles.maintenanceQuickClearNote}>The current saved usage reading will be used.</p> : null}
+              {recordPendingQuickClear.recurringEnabled ? <p className={styles.maintenanceQuickClearNote}>Your recurring schedule will continue and the next maintenance record will be created automatically.</p> : null}
+              {notice?.type === 'error' ? <p role="alert">{notice.text}</p> : null}
               <div className={styles.deleteRecordSummary}>
                 <strong>{cleanMaintenanceAssetTitle(recordPendingQuickClear.assetTitle)}</strong>
                 <small>{typeLabel(recordPendingQuickClear.maintenanceType)} · {maintenanceDueValue(recordPendingQuickClear)} · {recordPendingQuickClear.assignedName || 'Unassigned'}</small>
               </div>
             </div>
             <footer className={styles.modalFooter}>
-              {quickClearStep === 'confirm' ? (
-                <>
-                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-                  <button className={styles.primaryButton} type="button" onClick={() => setQuickClearStep('completion')}>Continue</button>
-                </>
-              ) : (
-                <>
-                  <button className={styles.secondaryButton} type="button" onClick={closeModal} disabled={busyCompleteId === recordPendingQuickClear.id}>Not sure</button>
-                  <button
-                    className={styles.primaryButton}
-                    type="button"
-                    onClick={() => void quickCompleteMaintenance(recordPendingQuickClear)}
-                    disabled={busyCompleteId === recordPendingQuickClear.id}
-                    aria-busy={busyCompleteId === recordPendingQuickClear.id}
-                  >
-                    {busyCompleteId === recordPendingQuickClear.id ? 'Saving...' : 'Yes, completed'}
-                  </button>
-                </>
-              )}
+              <button className={styles.secondaryButton} type="button" onClick={closeModal} disabled={busyCompleteId === recordPendingQuickClear.id}>Cancel</button>
+              <button
+                className={styles.primaryButton}
+                type="button"
+                onClick={() => void quickCompleteMaintenance(recordPendingQuickClear)}
+                disabled={busyCompleteId === recordPendingQuickClear.id}
+                aria-busy={busyCompleteId === recordPendingQuickClear.id}
+              >
+                {busyCompleteId === recordPendingQuickClear.id ? 'Saving...' : 'Mark completed'}
+              </button>
             </footer>
           </section>
         </div>
@@ -1885,4 +1865,5 @@ export default function MaintenanceClient({
     </div>
   );
 }
+
 
