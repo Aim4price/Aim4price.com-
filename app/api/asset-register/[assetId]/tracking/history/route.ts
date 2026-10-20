@@ -98,7 +98,9 @@ export async function GET(
     const report = summarizeTracking(points);
     const format = request.nextUrl.searchParams.get("format");
     if(format && !['pdf','xlsx'].includes(format)) return trackingJson({error:'Choose PDF or Excel.'},400);
-    const options={title:access.asset.title,serial:access.asset.serialNumber||'',assetId:params.assetId,from:from!,to:to!,generatedAt:new Date()};
+    if(!format)return trackingJson(report);
+    const {historyReportPhotos}=await import('../../../../../../lib/asset-history-report-media');
+    const options={photos:format?await historyReportPhotos(access.asset.photos||[],request.url,format==='pdf'):[],registration:access.asset.licenseRegistrationNumber||access.asset.plateLabel||'',year:access.asset.yearModel,snapshotAt,deviceId,sessionId,title:access.asset.title,serial:access.asset.serialNumber||'',assetId:params.assetId,from:from!,to:to!,generatedAt:new Date()};
     if(format==='xlsx') return new NextResponse(buildMovementWorkbook(report,options),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="aim4price-movement-${from}-${to}.xlsx"`,'Cache-Control':'private, no-store'}});
     if(format==='pdf') {
       const {getAssetRegisterReportLogoUrl}=await import('../../../../../../lib/asset-registers');

@@ -61,6 +61,26 @@ td small { display: block; margin-top: 3px; color: var(--muted); }
 .footer p { margin: 4px 0 0; color: var(--muted); font-size: 7.5px; max-width: 700px; }
 .footer > div:last-child { text-align: right; max-width: 240px; overflow-wrap: anywhere; }
 #map-warning { color: #72511b; padding: 8px; border: 1px solid #d7c49f; background: #fffaec; }
+.photoSection { margin-top:14px; border:1px solid var(--line-strong); border-radius:8px; }
+.referenceNote { break-after:avoid; padding:0 10px; color:var(--muted); font-size:8.5px; }
+.photoGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0 10px 10px; }
+.photoGrid figure { margin:0; break-inside:avoid; min-width:0; }
+.photoFrame { height:32mm; display:flex; align-items:center; justify-content:center; background:#f4f7f5; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+.assetPhoto { display:block; width:100%; height:100%; object-fit:contain; }
+[hidden] { display:none!important; }
+.photoGrid figcaption { font-size:8px; padding-top:5px; color:var(--muted); overflow-wrap:anywhere; }
+.photoWarning { margin:10px; padding:8px; background:#fff7e8; color:#78571e; }
+.evidenceGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:10px 0; break-inside:avoid; }
+.evidenceCard { border:1px solid var(--line-strong); border-radius:8px; padding:10px; min-width:0; }
+.evidenceCard h2 { margin-bottom:6px; }
+.evidenceCard p { margin:4px 0; font-size:9px; overflow-wrap:anywhere; }
+.coverageNote { margin:10px 0; border-left:3px solid #b57c25; padding:8px 10px; background:#fff7e8; font-size:9px; }
+.auditSummary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin:10px 0; break-inside:avoid; }
+.auditSummary > div { background:var(--brand-wash); border:1px solid var(--line); border-radius:6px; padding:8px; }
+.auditSummary span { display:block; color:var(--muted); font-size:8px; }
+.auditSummary strong { display:block; margin-top:3px; font-size:10px; }
+.history + .history { margin-top:12px; }
+.recordId { font-size:7px; color:var(--muted); overflow-wrap:anywhere; }
 @page { size: A4 landscape; margin: 9mm 10mm; }
 @media print { body { background: white; } .screenBar { display: none; } .assetMapReportPage { width: 100%; margin: 0; padding: 0; border-radius: 0; box-shadow: none!important; } }
 `;

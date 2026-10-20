@@ -84,7 +84,7 @@ test('sessions remain separate on the same day, survive midnight, paginate ties 
  const route=load('app/api/asset-register/[assetId]/tracking/history/route.ts',{
  'next/server':{NextResponse:Response},[prefix+'asset-tracking-api']:{trackingOwner:async()=>({ownerId:'owner',asset:{title:'Tractor'}}),trackingJson:(body,status)=>new Response(body,{status})},
  [prefix+'asset-tracking']:{ensureTrackingTables:async()=>{}},[prefix+'asset-tracking-math']:load('lib/asset-tracking-math.ts'),
- [prefix+'asset-movement-report']:{buildMovementWorkbook:r=>r},[prefix+'asset-tracking-history']:lib,[prefix+'asset-tracking-journeys']:load('lib/asset-tracking-journeys.ts',{'./asset-tracking-math':load('lib/asset-tracking-math.ts')}),
+ [prefix+'asset-history-report-media']:{historyReportPhotos:async()=>[]},[prefix+'asset-movement-report']:{buildMovementWorkbook:r=>r},[prefix+'asset-tracking-history']:lib,[prefix+'asset-tracking-journeys']:load('lib/asset-tracking-journeys.ts',{'./asset-tracking-math':load('lib/asset-tracking-math.ts')}),
  [prefix+'db']:{getDb:()=>({query:async(sql,args)=>{const r=await db.query(sql,args);return {...r,rowCount:r.rows.length};}})}
  });
  const query=new URLSearchParams({from:'2026-10-19',to:'2026-10-19',deviceId:device,sessionId:second,snapshotAt:snapshot});

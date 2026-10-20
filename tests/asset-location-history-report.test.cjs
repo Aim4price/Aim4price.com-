@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
 function load(file,mocks={}){const module={exports:{}};new Function('require','module','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>{if(n in mocks)return mocks[n];throw Error('Missing dependency '+n);},module,module.exports);return module.exports;}
-const workbook=load('lib/simple-xlsx.ts'),theme=load('lib/report-theme.ts'),report=load('lib/asset-location-history-report.ts',{'./simple-xlsx':workbook,'./report-theme':theme,'./location-history-report-styles':load('lib/location-history-report-styles.ts')});
+const workbook=load('lib/simple-xlsx.ts'),theme=load('lib/report-theme.ts'),report=load('lib/asset-location-history-report.ts',{'./asset-history-report-shared':load('lib/asset-history-report-shared.ts'),'./simple-xlsx':workbook,'./report-theme':theme,'./location-history-report-styles':load('lib/location-history-report-styles.ts')});
 const options={title:'Tractor <script>alert(1)</script>',serial:'TEST-123',assetId:'asset-1',from:'2026-10-01',to:'2026-10-16',generatedAt:new Date('2026-10-16T12:00:00Z')};
 const entry={id:'e1',latitude:-34.02,longitude:22.38,note:'Workshop & yard',actor:'Test owner',accuracy:5,recordedAt:'2026-10-16T10:00:00Z',capturedAt:'2026-10-16T09:59:00Z',source:'Device GPS'};
 test('print report includes map pins, matching rows, selected period, attribution and escaped text',()=>{const html=report.buildLocationHistoryHtml([entry],options);assert.ok(html.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));assert.ok(!html.includes('<script>alert(1)</script>'));for(const text of ['TEST-123','2026-10-01 to 2026-10-16','tile.openstreetmap.org','OpenStreetMap contributors','Workshop &amp; yard','Device GPS','Test owner','Save PDF / Print','not independently verify','class="pin latest"'])assert.ok(html.includes(text),text);assert.ok(html.includes('12:00'));});
@@ -9,3 +9,17 @@ test('Excel is a real workbook with numeric coordinates, filters and links, not 
 
 
 test('history uses the map report layout with satellite close-up, overview and compact metadata',()=>{const html=report.buildLocationHistoryHtml([entry],options);for(const value of ['Latest Recorded Position','Recorded Locations Overview','Latest Record Details','server.arcgisonline.com','Imagery © Esri','class="headerMeta"','class="summary"','id="close"','Powered by Aim4price.com'])assert.ok(html.includes(value),value);assert.equal((html.match(/class="pin latest"/g)||[]).length,2);assert.equal((html.match(/id="map-warning"/g)||[]).length,1);const empty=report.buildLocationHistoryHtml([],options);assert.ok(!empty.includes('server.arcgisonline.com'));});
+test('saved-location exports identify records and include safe asset photo references',()=>{
+ const o={...options,registration:'CA 123',year:2020,photos:['https://www.aim4price.com/photo.jpg','javascript:alert(1)']};
+ const html=report.buildLocationHistoryHtml([entry],o),xlsx=report.buildLocationHistoryWorkbook([entry],o).toString();
+ for(const value of ['Asset photo reference','photo.jpg','CA 123','2020','Record ID: e1','do not confirm'])assert.ok(html.includes(value),value);
+ assert.ok(!html.includes('javascript:'));assert.ok(xlsx.includes('Record ID'));assert.ok(xlsx.includes('Asset photos'));assert.ok(xlsx.includes('photo.jpg'));
+});
+test('report media embeds internal asset photos and preserves safe references on storage failure',async()=>{
+ const shared=load('lib/asset-history-report-shared.ts');let calls=[];
+ const media=load('lib/asset-history-report-media.ts',{'./asset-history-report-shared':shared,'./asset-register-uploads':{resolveAssetRegisterUploadBytes:async id=>{calls.push(id);return id==='ready'?{status:'ready',upload:{mimeType:'image/png',data:Buffer.from('photo')}}:{status:'unavailable'};}}});
+ const photos=['/api/asset-register/uploads/ready','/api/asset-register/uploads/missing','https://external.example/image.jpg','javascript:bad','//bad.example/image'];
+ const resolved=await media.historyReportPhotos(photos,'https://www.aim4price.com/api/report',true);
+ assert.deepEqual(calls,['ready','missing']);assert.equal(resolved[0],'data:image/png;base64,cGhvdG8=');assert.equal(resolved[1],'https://www.aim4price.com/api/asset-register/uploads/missing');assert.equal(resolved.length,3);
+ calls=[];const refs=await media.historyReportPhotos(photos,'https://www.aim4price.com/api/report',false);assert.equal(calls.length,0);assert.ok(refs[0].startsWith('https://'));
+});
