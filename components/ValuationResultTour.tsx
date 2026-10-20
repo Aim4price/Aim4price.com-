@@ -4,7 +4,6 @@ import {useEffect, useRef, useState} from 'react';
 import {websiteLogicalRect, websiteVisibleViewport} from '../lib/website-canvas';
 import styles from './valuation-result-tour.module.css';
 
-const storageKey = 'aim4price:result-tour:v1';
 const steps = [
   {target:'value', title:'Your estimated value', text:'Your Aim4price estimate, based on the asset details you entered.'},
   {target:'replacement', title:'Replacement price', text:'Check what a comparable new asset would cost today. This directly affects your estimate.'},
@@ -14,7 +13,6 @@ const steps = [
 type Box = {top:number; left:number; width:number; height:number};
 
 export default function ValuationResultTour() {
-  const [seen, setSeen] = useState(false);
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [available, setAvailable] = useState(steps);
@@ -24,11 +22,11 @@ export default function ValuationResultTour() {
   const card = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {try {setSeen(localStorage.getItem(storageKey) === 'seen');} catch {}}, []);
+  // Each new result gets the full introduction, including returning visitors.
+  useEffect(() => { start(); }, []);
 
   function close() {
-    setActive(false); setSeen(true);
-    try {localStorage.setItem(storageKey, 'seen');} catch {}
+    setActive(false);
     dialog.current?.close();
     trigger.current?.focus({preventScroll:true});
   }
@@ -79,18 +77,23 @@ export default function ValuationResultTour() {
     <div className={styles.launch}>
       <button ref={trigger} type="button" onClick={start} aria-haspopup="dialog">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01"/></svg>
-        {seen ? 'Show me around' : 'New to this result? Show me around'}
+        Show me around
       </button>
     </div>
-    <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>{event.preventDefault();close();}}>
+    <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>event.preventDefault()} onKeyDown={event=>{
+      if(event.key !== 'Tab') return;
+      const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+      const first=buttons[0],last=buttons[buttons.length-1];
+      if(event.shiftKey && document.activeElement===first){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus();}
+    }}>
       {active ? <>
         <div className={styles.spotlight} style={box ?? {inset:0}} aria-hidden="true"/>
         <div ref={card} className={styles.card} style={position}>
-          <div className={styles.top}><span>{index+1} of {available.length}</span><button type="button" onClick={close} aria-label="Close walkthrough">×</button></div>
+          <div className={styles.top}><span>{index+1} of {available.length}</span><span>Quick guide</span></div>
           <h2 id="value-tour-title">{available[index].title}</h2>
           <p id="value-tour-description" aria-live="polite">{available[index].text}</p>
           <div className={styles.actions}>
-            <button type="button" className={styles.skip} onClick={close}>Skip</button>
             {index > 0 ? <button type="button" onClick={()=>setIndex(index-1)}>Back</button> : null}
             <button type="button" className={styles.next} onClick={()=>index===available.length-1 ? close() : setIndex(index+1)}>{index===available.length-1 ? 'Done' : 'Next'}</button>
           </div>

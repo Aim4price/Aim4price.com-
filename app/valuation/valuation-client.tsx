@@ -25,6 +25,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import ValuationFlowFocus from '../../components/ValuationFlowFocus';
 import ValuationResultTour from '../../components/ValuationResultTour';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import styles from './page.module.css';
@@ -9488,6 +9489,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
 
             <div
+              data-valuation-focus-group
               onPointerDownCapture={() => setRequiredFeedback(true)}
               onFocusCapture={() => setRequiredFeedback(true)}
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
@@ -9530,8 +9532,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </section>
       </div>
 
+      <ValuationFlowFocus enabled={step < (basicEstimateActive ? 6 : 5)} activeSelector={`.${styles.specStepCardActive}`} />
+
       {replacementNoticeOpen ? (
-        <div className={styles.replacementNoticeOverlay} data-website-overlay onClick={closeReplacementPriceNotice}>
+        <div className={styles.replacementNoticeOverlay} data-valuation-focus-modal data-website-overlay onClick={closeReplacementPriceNotice}>
           <section
             ref={replacementNoticeDialogRef}
             className={`${styles.replacementNoticeModal} ${modalStyles.surface} ${modalStyles.danger}`}
