@@ -160,7 +160,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /function renderDetailsStep\(\)[\s\S]*?basicEstimateActive && selectedFamily[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /function renderBasicReplacementStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /<section className=\{`\$\{styles\.wizardShell\} \$\{styles\.sectorWizardShell\}`\}>/);
-  assert.match(client, /id="valuation-wizard-card" className=\{`\$\{styles\.wizardCard\} \$\{styles\.sectorWizardCard\}`\}/);
+  assert.match(client, /id="valuation-wizard-card"[^>]*className=\{`\$\{styles\.wizardCard\} \$\{styles\.sectorWizardCard\}`\}/);
   assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardShell/);
   assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardCard/);
   assert.doesNotMatch(client, /Quick mathematical estimate using the asset family, its condition, usage and replacement price\./);
