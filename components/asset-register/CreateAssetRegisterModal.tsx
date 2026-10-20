@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useId, useRef, type FormEvent } from 'react';
+import SettingsDetailIcon from '../SettingsDetailIcon';
 import styles from '../../app/asset-registers/page.module.css';
 
 export type RegisterDetailsDraft = { businessName: string; email: string; phone: string; addressLine1: string };
@@ -53,49 +54,61 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Business name</span>
-                <input
-                  value={draft.businessName}
-                  onChange={(event) =>
-                    onChange({ ...draft, businessName: event.target.value })
-                  }
-                  placeholder="Example: Bashan Boerdery Pty Ltd"
-                  required
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="business" />
+                  <input
+                    value={draft.businessName}
+                    onChange={(event) =>
+                      onChange({ ...draft, businessName: event.target.value })
+                    }
+                    placeholder="Example: Bashan Boerdery Pty Ltd"
+                    required
+                  />
+                </span>
               </label>
 
               <label className={styles.field}>
                 <span>Email</span>
-                <input
-                  type="email"
-                  value={draft.email}
-                  onChange={(event) =>
-                    onChange({ ...draft, email: event.target.value })
-                  }
-                  placeholder="accounts@example.co.za"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="email" />
+                  <input
+                    type="email"
+                    value={draft.email}
+                    onChange={(event) =>
+                      onChange({ ...draft, email: event.target.value })
+                    }
+                    placeholder="accounts@example.co.za"
+                  />
+                </span>
               </label>
 
               <label className={styles.field}>
                 <span>Phone</span>
-                <input
-                  type="tel"
-                  value={draft.phone}
-                  onChange={(event) =>
-                    onChange({ ...draft, phone: event.target.value })
-                  }
-                  placeholder="082 000 0000"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="phone" />
+                  <input
+                    type="tel"
+                    value={draft.phone}
+                    onChange={(event) =>
+                      onChange({ ...draft, phone: event.target.value })
+                    }
+                    placeholder="082 000 0000"
+                  />
+                </span>
               </label>
 
               <label className={`${styles.field} ${styles.fullField}`}>
                 <span>Address</span>
-                <textarea
-                  value={draft.addressLine1}
-                  onChange={(event) =>
-                    onChange({ ...draft, addressLine1: event.target.value })
-                  }
-                  placeholder="Farm, town, province"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="location" />
+                  <textarea
+                    value={draft.addressLine1}
+                    onChange={(event) =>
+                      onChange({ ...draft, addressLine1: event.target.value })
+                    }
+                    placeholder="Farm, town, province"
+                  />
+                </span>
               </label>
             </div>
 

@@ -4446,3 +4446,26 @@
   :global(:where(html:not(:has([data-website-canvas])))) .manageWorkspace .assetMoveLaunch { justify-self: end; min-width: 6.5rem; min-height: 2.75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .manageWorkspace .manageActionGridCombined > :last-child { grid-column: 1 / -1; }
 }
+
+
+/* Keep decorative field icons clear of editable text in the shared create flow. */
+.registerInputWithIcon {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.registerInputWithIcon > svg {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: 1.2rem;
+  height: 1.2rem;
+  pointer-events: none;
+}
+
+.accountRegisterModal.accountRegisterModal .registerInputWithIcon :is(input, textarea) {
+  width: 100%;
+  box-sizing: border-box;
+  padding-left: 3rem !important;
+}
