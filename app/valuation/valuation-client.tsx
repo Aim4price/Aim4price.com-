@@ -25,6 +25,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import ValuationResultTour from '../../components/ValuationResultTour';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import styles from './page.module.css';
 import native_dealerStyles from '../dealer/dealer.module.css';
@@ -8947,7 +8948,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
         <div className={styles.resultsMain}>
-          <section className={`${styles.resultHero} ${resultHeroTone}`}>
+          <ValuationResultTour />
+          <section data-value-tour="value" className={`${styles.resultHero} ${resultHeroTone}`}>
             {isSalvageEstimate || !basicEstimateActive ? <div className={styles.resultHeroTopline}>
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
@@ -8989,7 +8991,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Older passenger-car marketability adjustment applied: {formatPrecisePercent(genericSelectedCalculation.marketabilityReductionPercent)}%.
               </div>
             ) : null}
-            <div className={styles.resultFactsGrid}>
+            <div data-value-tour={breakdownAccess && activeBreakdown ? undefined : "settings"} className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('year')}<span>Year model</span>
                 <strong>{yearSummary}</strong>
@@ -9092,7 +9094,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           <div className={styles.resultCalculationPanel}>
           {(isGeneric && genericResult) || tractorResult ? (
-            <section className={styles.resultReplacementSummary}>
+            <section data-value-tour="replacement" className={styles.resultReplacementSummary}>
               <div className={styles.resultReplacementHeading}>
                 {renderDetailIcon('extras')}
                 <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
@@ -9234,11 +9236,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <EstimateUsage unit={getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'} lifetime={getResultMaxLifetimeUsage(resultState)!}
               settings={activeBreakdown.report.settings ?? null} busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
               error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
-          {breakdownAccess && activeBreakdown ? <EstimateTools report={activeBreakdown.report}
+          {breakdownAccess && activeBreakdown ? <div data-value-tour="settings"><EstimateTools report={activeBreakdown.report}
             busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
-            error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
+            error={advancedError} onApply={applyPrivateEstimateSettings} /></div> : null}
           </div>
-          <section className={styles.saleabilitySummary} aria-label="How easily could it sell?">
+          <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
               <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
               <strong>{generalSaleability.score} / 100 · Grade {generalSaleability.grade}</strong>
