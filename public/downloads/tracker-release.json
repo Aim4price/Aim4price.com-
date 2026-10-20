@@ -1,10 +1,11 @@
 {
-  "version": "0.7",
-  "versionCode": 7,
-  "file": "aim4price-tracker-0.7.apk",
-  "sha256": "29d3b0920768f5a71ab4009409c433f5b7f097894442e29d66d71fe0b97e874d",
+  "version": "0.8",
+  "versionCode": 8,
+  "file": "aim4price-tracker-0.8.apk",
+  "sha256": "ff982938d2aa1a68554ecb18037145f6685165755c22bba203d5aaa76f3ee166",
   "certificateSha256": "468e26fa42fbc1b5181157b506222184c800acacd33cb8917998fa0fbeb4c326",
   "aliases": [
+    "aim4price-tracker-0.7.apk",
     "aim4price-tracker-0.5.apk",
     "aim4price-tracker-0.4.apk",
     "aim4price-tracker-0.3.apk",
