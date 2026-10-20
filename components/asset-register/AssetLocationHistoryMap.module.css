@@ -1,0 +1,20 @@
+.frame { border-radius:1rem; }
+.frame .zoom { gap:.25rem; padding:.35rem; border-radius:.9rem; box-shadow:0 3px 14px #183a3020; }
+.frame .zoom button { position:relative; width:2.8rem; min-height:2.8rem; padding:.65rem; border-color:transparent; border-radius:.65rem; background:#fff; }
+.frame .zoom button:last-child { border-top:1px solid #dce7e1; }
+.frame .zoom svg { width:1.4rem; height:1.4rem; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.zoom button::after { content:attr(data-tooltip); position:absolute; left:calc(100% + .8rem); top:50%; transform:translateY(-50%); padding:.55rem .8rem; border-radius:.6rem; background:#124c3c; color:#fff; box-shadow:0 4px 12px #173e3026; font-size:.9rem; font-weight:750; line-height:1.25; white-space:nowrap; pointer-events:none; visibility:hidden; opacity:0; }
+.zoom button:hover:not(:disabled)::after,.zoom button:focus-visible::after { visibility:visible; opacity:1; }
+.markerRoot { border:0; background:none; }
+.routeMarker { position:relative; width:26px; height:26px; --marker-color:#176348; }
+.routeMarker[data-kind="end"] { --marker-color:#2561a1; }
+.routeMarker[data-kind="stop"] { --marker-color:#a96b18; }
+.markerSymbol { display:grid; place-items:center; width:26px; height:26px; box-sizing:border-box; border:3px solid white; border-radius:50%; background:var(--marker-color); box-shadow:0 1px 5px #133d3555; color:#fff; font:800 11px Arial,sans-serif; }
+.startShape { width:0; height:0; margin-left:2px; border-top:5px solid transparent; border-bottom:5px solid transparent; border-left:7px solid white; }
+.endShape { width:8px; height:8px; background:white; border-radius:1px; }
+.markerLabel { position:absolute; left:50%; bottom:calc(100% + 6px); transform:translateX(-50%); border:1px solid #d3dfd8; border-radius:7px; padding:5px 9px; background:#fff; color:var(--marker-color); box-shadow:0 2px 7px #173e3020; font:750 13px/1.2 var(--font-heading,Arial),sans-serif; white-space:nowrap; }
+.routeMarker[data-kind="end"] .markerLabel { bottom:auto; top:calc(100% + 6px); }
+.routeMarker[data-kind="stop"] .markerLabel { left:calc(100% + 6px); bottom:auto; top:50%; transform:translateY(-50%); }
+.markerRoot:focus-visible { outline:none; }
+.markerRoot:focus-visible .markerSymbol { outline:3px solid #57a382; outline-offset:3px; }
+.markerRoot:hover .markerSymbol { filter:drop-shadow(0 0 4px #307a6055); }

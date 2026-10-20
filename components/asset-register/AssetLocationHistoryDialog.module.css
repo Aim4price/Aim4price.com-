@@ -189,3 +189,39 @@
 .historyActions .deleteAllAction:hover:not(:disabled) { background:#fcebe6; border-color:#cb8c7e; }
 .historyActions .deleteAllAction:disabled { opacity:.5; cursor:default; }
 .historyActions .deleteAllAction:focus-visible { outline:3px solid #bc7565; outline-offset:3px; }
+
+/* Route legend and evidence share one quiet, readable footer. */
+.routeKey { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; padding:.15rem .15rem .35rem; }
+.routeKeyItems { display:flex; flex-wrap:wrap; align-items:center; gap:1.1rem; }
+.routeKeyItems > span { display:inline-flex; align-items:center; gap:.45rem; color:#365548; font-size:.82rem; font-weight:650; }
+.routeKeyItems i { display:block; width:.65rem; height:.65rem; background:#176348; border-radius:50%; }
+.routeKeyItems i[data-kind="end"] { background:#2561a1; border-radius:.15rem; }
+.routeKeyItems i[data-kind="point"] { width:.4rem; height:.4rem; box-shadow:0 0 0 2px #d5e9dd; }
+.routeKeyItems i[data-kind="stop"] { background:#a96b18; }
+.routeKeyHint { font-size:.78rem; color:#687b71; }
+.routeDetails { border:1px solid #d8e5de; border-radius:.85rem; overflow:hidden; background:#fff; }
+.routeDetailSection + .routeDetailSection { border-top:1px solid #e0e9e3; }
+.routeDetailSection > summary { display:flex; align-items:center; gap:.7rem; padding:1rem 1.1rem; list-style:none; cursor:pointer; font-size:.9rem; }
+.routeDetailSection > summary::-webkit-details-marker { display:none; }
+.routeDetailSection > summary::after { content:'+'; margin-left:auto; color:#47715b; font-size:1.3rem; font-weight:400; }
+.routeDetailSection[open] > summary::after { content:'−'; }
+.routeDetailSection > summary:hover { background:#f4f8f5; }
+.routeDetailSection > summary:focus-visible { outline:3px solid #5abf98; outline-offset:-3px; }
+.detailCount { padding:.2rem .5rem; border-radius:.4rem; color:#587364; background:#eef4f0; font-size:.75rem; font-weight:650; }
+.stopList { margin:0; padding:0 1.1rem .5rem; list-style:none; }
+.stopList li { display:flex; align-items:center; gap:.75rem; padding:.8rem 0; border:0; border-top:1px solid #e6ece8; border-radius:0; background:transparent; box-shadow:none; }
+.stopNumber { display:grid; place-items:center; flex-shrink:0; width:1.8rem; height:1.8rem; border-radius:.5rem; background:#fff3df; color:#96601a; font-size:.8rem; font-weight:750; }
+.stopList li > div { display:grid; gap:.3rem; min-width:0; }
+.stopList strong { font-size:.85rem; color:#294d3b; }
+.stopList li > div > span { color:#64776c; font-size:.78rem; line-height:1.5; }
+.stopDuration { margin-left:auto; white-space:nowrap; }
+.recordingGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem 1.5rem; margin:0; padding:.2rem 1.1rem 1rem; }
+.recordingGrid > div { display:grid; gap:.35rem; }
+.recordingGrid dt { color:#687d70; font-size:.78rem; }
+.recordingGrid dd { margin:0; color:#294d3b; font-size:.85rem; font-weight:650; line-height:1.5; }
+.exportNote { margin:0; padding:.8rem 1.1rem; background:#f5f8f6; color:#60786a; font-size:.78rem; line-height:1.6; }
+.gapList { padding:0 1.1rem .8rem; }.gapList p { display:grid; gap:.3rem; padding:.65rem .8rem; border-radius:.5rem; background:#fff7e9; color:#80581e; font-size:.8rem; line-height:1.5; }
+.routeNote { display:flex; gap:.65rem; align-items:flex-start; padding:.85rem 1rem; background:#f1f6f3; border-radius:.75rem; color:#64786a; }
+.routeNote > svg { flex-shrink:0; width:1.15rem; height:1.15rem; margin-top:.1rem; }
+.routeNote p { display:grid; gap:.25rem; margin:0; font-size:.78rem; line-height:1.6; }
+.routeNote strong { color:#3c5d49; font-weight:700; }
