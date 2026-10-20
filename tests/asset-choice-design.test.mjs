@@ -101,7 +101,7 @@ test('nested document and umbrella asset selectors share row typography without 
     assert.match(source, /data-asset-choice-row="true"/);
     assert.match(source, /data-asset-choice-selected=/);
     assert.match(source, /data-asset-choice-copy="true"/);
-    assert.match(source, /data-asset-choice-meta="true"/);
+    assert.match(source, /data-asset-choice-meta="true"|<AssetPickerDetail>/);
   }
 });
 
@@ -112,7 +112,7 @@ test('sharing, QR-label and app-access asset selectors use the shared design con
     assert.match(source, /data-asset-choice-row="true"/);
     assert.match(source, /data-asset-choice-selected=/);
     assert.match(source, /data-asset-choice-copy="true"/);
-    assert.match(source, /data-asset-choice-meta="true"/);
+    assert.match(source, /data-asset-choice-meta="true"|<AssetPickerDetail>/);
   }
 
   for (const dedicatedModal of [assetRegistersClient, adminClient]) {

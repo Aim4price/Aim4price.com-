@@ -1,4 +1,6 @@
 'use client';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
+
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import FuelWorkField from '../../components/FuelWorkField';
@@ -3915,7 +3917,7 @@ export default function FuelClient({
                         <span className={styles.assetInfo} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
                           <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                          <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</small>
+                          <AssetPickerDetail>{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</AssetPickerDetail>
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetValue} data-asset-choice-value="true">
@@ -4338,7 +4340,7 @@ export default function FuelClient({
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                        <small data-asset-choice-secondary="true">{fuelSlipAssetDetail(asset)}</small>
+                        <AssetPickerDetail>{fuelSlipAssetDetail(asset)}</AssetPickerDetail>
                         <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
@@ -4357,7 +4359,7 @@ export default function FuelClient({
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{storage.name}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipStorageMeta(storage)}</small>
-                        <small data-asset-choice-secondary="true">Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</small>
+                        <AssetPickerDetail>Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</AssetPickerDetail>
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
                         <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>

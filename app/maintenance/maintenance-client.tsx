@@ -1,4 +1,6 @@
 'use client';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
+
 import CostDetailIcon from '../../components/CostDetailIcon';
 import MaintenanceDetailsCard from '../../components/MaintenanceDetailsCard';
 import { maintenanceLabel } from '../../lib/maintenance-presentation';
@@ -1556,7 +1558,7 @@ export default function MaintenanceClient({
                     <span className={styles.assetInfo} data-asset-choice-copy="true">
                       <strong>{asset.title}</strong>
                       <small data-asset-choice-meta="true">{asset.meta}</small>
-                      <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                      <AssetPickerDetail>{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail>
                       <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">

@@ -1,6 +1,8 @@
 'use client';
 import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../../../lib/fuel-work-choice-options';
 import FuelWorkField from '../../../../../components/FuelWorkField';
+import AssetPickerDetail from '../../../../../components/AssetPickerDetail';
+import AssetSerialNumber from '../../../../../components/AssetSerialNumber';
 import DateInput from '../../../../../components/DateInput';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
@@ -89,10 +91,6 @@ function assetName(asset: FuelAsset): string {
 
 function assetMeta(asset: FuelAsset): string {
   return asset.plateLabel || asset.serialNumber || asset.assetTypeLabel || 'Asset details not captured';
-}
-
-function serialDisplayText(asset: FuelAsset): string {
-  return asset.serialNumber || 'Not captured';
 }
 
 function yearDisplayText(asset: FuelAsset): string {
@@ -465,26 +463,17 @@ export default function PetrolStationFuelClient({
             <span className={styles.visuallyHidden}>Search assets</span>
             <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search asset, model, reg or serial" />
           </label>
-          <div className={styles.assetList}>
+          <div className={styles.assetList} data-asset-choice-surface="true" data-asset-choice-list="true">
             {visibleAssets.map((asset) => (
-              <article key={asset.id} className={styles.assetCard}>
-                <h2><BalancedHeadingText text={assetName(asset)} /></h2>
-                <div className={styles.assetMetaGrid}>
-                  <div>
-                    <span>Serial / VIN</span>
-                    <strong>{serialDisplayText(asset)}</strong>
-                  </div>
-                  <div>
-                    <span>Year</span>
-                    <strong>{yearDisplayText(asset)}</strong>
-                  </div>
-                  <div>
-                    <span>Usage</span>
-                    <strong>{usageDisplayText(asset)}</strong>
-                  </div>
-                </div>
-                <button type="button" onClick={() => selectAsset(asset)}>Open</button>
-              </article>
+              <button type="button" key={asset.id} className={styles.assetCard} data-asset-choice-row="true" onClick={() => selectAsset(asset)}>
+                <span data-asset-choice-copy="true">
+                  <strong><BalancedHeadingText text={assetName(asset)} /></strong>
+                  <small data-asset-choice-meta="true">Year Model: {yearDisplayText(asset)} · Usage: {usageDisplayText(asset)}</small>
+                  <AssetPickerDetail>{asset.assetTypeLabel || 'Saved asset'}</AssetPickerDetail>
+                  <AssetSerialNumber value={asset.serialNumber} />
+                </span>
+                <span className={styles.assetChoiceNext} aria-hidden="true">›</span>
+              </button>
             ))}
             {!visibleAssets.length && !isLoading ? <p className={styles.empty}>No matching fuel assets.</p> : null}
           </div>

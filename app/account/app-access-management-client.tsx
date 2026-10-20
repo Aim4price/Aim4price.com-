@@ -1,5 +1,6 @@
 'use client';
 
+import AssetPickerDetail from '../../components/AssetPickerDetail';
 import {
   useEffect,
   useId,
@@ -1347,7 +1348,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
                       data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
                     >
                       <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                      <span data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.kind}</small></span>
+                      <span data-asset-choice-copy="true"><strong>{asset.title}</strong><AssetPickerDetail>{asset.kind}</AssetPickerDetail></span>
                     </label>
                   )) : <p className={styles.accessMessage}>No assets available.</p>}
                 </div>
@@ -1490,7 +1491,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
                   data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
                 >
                   <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                  <span data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.kind}</small></span>
+                  <span data-asset-choice-copy="true"><strong>{asset.title}</strong><AssetPickerDetail>{asset.kind}</AssetPickerDetail></span>
                 </label>
               )) : <p className={styles.accessMessage}>No assets available.</p>}
             </div>

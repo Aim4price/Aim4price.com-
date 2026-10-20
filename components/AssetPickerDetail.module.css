@@ -1,0 +1,22 @@
+.detail.detail {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: .7rem !important;
+  min-width: 0;
+  font-size: .88rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  color: var(--app-muted, #64746a);
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.detail > svg {
+  flex: 0 0 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: .1rem;
+  color: var(--app-muted, #64746a);
+  opacity: .65;
+  pointer-events: none;
+}
+.detail > span { min-width: 0; }

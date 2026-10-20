@@ -1,4 +1,5 @@
 'use client';
+import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
 import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
@@ -20851,7 +20852,8 @@ export default function AssetRegisterClient({
                           <span className={styles.pdfAssetDownloadCopy} data-asset-choice-copy="true">
                             <strong>{asset.title}</strong>
                             <small data-asset-choice-meta="true">{buildAssetMeta(asset)}</small>
-                            <small data-asset-choice-secondary="true">{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}{required ? ' · Current asset' : ''}</small>
+                            <AssetPickerDetail>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}{required ? ' · Current asset' : ''}</AssetPickerDetail>
+                            <AssetSerialNumber value={asset.serialNumber} />
                           </span>
                           <span data-asset-choice-value="true"><span className={`${pickerStyles.select} ${pickerStyles.multi}`}><i aria-hidden="true">{selected ? '✓' : ''}</i><strong>{required ? 'Included' : selected ? 'Selected' : 'Select'}</strong></span></span>
                         </label>
@@ -21193,7 +21195,7 @@ export default function AssetRegisterClient({
                                     <span className={styles.pdfAssetDownloadCopy} data-asset-choice-copy="true">
                                       <strong>{asset.title}</strong>
                                       <small data-asset-choice-meta="true">{buildAssetMeta(asset)}</small>
-                                      <small data-asset-choice-secondary="true">{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
+                                      <AssetPickerDetail>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</AssetPickerDetail>
                                       <AssetSerialNumber value={asset.serialNumber} />
                                     </span>
 

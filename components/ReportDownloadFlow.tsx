@@ -1,4 +1,5 @@
 'use client';
+import AssetPickerDetail from './AssetPickerDetail';
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { FilterQuestion } from './FilterFlow';
@@ -87,7 +88,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
             <button type="button" className={picker.secondary} onClick={()=>setSearch('')}>Clear</button>
           </div>
           <div data-asset-choice-list="true">{assets.filter(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())).map(asset=><button type="button" key={asset.id} data-asset-choice-row="true" onClick={()=>{setSelection(s=>({...s,assetId:asset.id}));setStep('timeline');}}>
-            <span data-asset-choice-copy="true"><strong>{asset.title}</strong>{asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset.selectedMethod ? <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small> : null}<AssetSerialNumber value={asset.serialNumber} /></span>
+            <span data-asset-choice-copy="true"><strong>{asset.title}</strong>{asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset.selectedMethod ? <AssetPickerDetail>{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail> : null}<AssetSerialNumber value={asset.serialNumber} /></span>
             <span data-asset-choice-value="true"><span className={picker.select}><i aria-hidden="true" />Select</span></span>
           </button>)}{!assets.some(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())) ? <div className={picker.empty}>No saved assets found.</div> : null}</div>
         </> : step === 'timeline' ? <div className={`${styles.fields} ${compactTimeline ? styles.compactFields : ''}`}>
