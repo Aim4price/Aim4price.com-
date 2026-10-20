@@ -893,3 +893,19 @@
   font-size: .85rem;
   line-height: 1.5;
 }
+
+/* A single private calculation result, with controls kept outside the scroller. */
+.resultHero > strong { font-size: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 5), 3.5rem); overflow-wrap: anywhere; }
+.resultHero > p { margin: 0.4rem 0 1rem; }
+.loading { display: flex; justify-content: center; align-items: center; gap: 0.8rem; padding: 2rem; }
+.spinner { width: 1.4rem; height: 1.4rem; border: 3px solid #d8e9e1; border-top-color: #176346; border-radius: 50%; animation: saleability-spin 0.8s linear infinite; }
+.error { color: #9c2626; padding: 0.5rem 0; margin: 0; }
+@keyframes saleability-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+
+.resultModal { width: min(720px, var(--website-dialog-reference-width, 100%)); }
+.resultModal .result { display: flex; flex-direction: column; gap: 1rem; }
+.resultModal .resultHero { display: flex; flex-direction: column; align-items: flex-start; gap: 0.65rem; width: 100%; padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 3), 2rem); }
+.resultModal .resultHero > strong { margin: 0; line-height: 1.12; }
+.resultModal .resultHero > p { margin: 0 0 0.35rem; }
+.resultModal .valuationReminder { margin: 0; line-height: 1.6; }

@@ -5,7 +5,8 @@ import {getOwnerAppAccess,ownerAppCan,ownerAppCanAccessAsset} from '../../../../
 import {businessBody,businessJson,requireBusinessOrigin} from '../../../../lib/business-network-api';
 import {getDb} from '../../../../lib/db';
 import {getAssetRegisterItemById} from '../../../../lib/asset-register-db';
-import {assessSaleability,saleabilityBasis,validSaleabilityAnswers} from '../../../../lib/asset-saleability';
+import {saleabilityBasis,validCurrentSaleabilityAnswers} from '../../../../lib/asset-saleability';
+import {assessSaleability} from '../../../../lib/server/saleability';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 async function handle(request:NextRequest){
@@ -24,12 +25,13 @@ async function handle(request:NextRequest){
    return businessJson({items:rows.filter(row=>!access||ownerAppCanAccessAsset(access,row.asset_id))});
   }
   const body=await businessBody(request);
-  if(typeof body.assetId!=='string'||!validSaleabilityAnswers(body.answers))return businessJson({error:'Complete all saleability questions.'},400);
+  if(typeof body.assetId!=='string'||!validCurrentSaleabilityAnswers(body.answers))return businessJson({error:'Complete all saleability questions.'},400);
   if(access&&!ownerAppCanAccessAsset(access,body.assetId))return businessJson({error:'Asset access required.'},403);
   const asset=await getAssetRegisterItemById(session.user.id,body.assetId);
   if(!asset)return businessJson({error:'Asset unavailable.'},404);
   if(body.basis!==saleabilityBasis(asset))return businessJson({error:'Asset details changed. Reload the register and review your answers.'},409);
   const assessment=assessSaleability(asset,body.answers);
+  if(body.preview === true)return businessJson({quote:{priceExVat:assessment.priceExVat,resultLabel:assessment.resultLabel,modelVersion:assessment.modelVersion}});
   // Compare the asset revision atomically; do not attach an assessment to newer details.
   const saved=await db.query(`INSERT INTO asset_saleability_assessments(owner_id,asset_id,actor_id,assessment) SELECT $1,a.id,$3,$4::jsonb FROM asset_register_items a WHERE a.user_id=$1 AND a.id=$2::uuid AND date_trunc('milliseconds',a.updated_at)=$5::timestamptz RETURNING id`,[session.user.id,asset.id,isOwnerAppSession(session)?session.ownerApp.ownerAppUserId:session.user.id,JSON.stringify(assessment),asset.updatedAtIso]);
   if(!saved.rowCount)return businessJson({error:'Asset changed while saving. Reload and try again.'},409);
