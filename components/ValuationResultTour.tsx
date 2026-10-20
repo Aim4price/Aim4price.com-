@@ -5,10 +5,10 @@ import {websiteLogicalRect, websiteVisibleViewport} from '../lib/website-canvas'
 import styles from './valuation-result-tour.module.css';
 
 const steps = [
-  {target:'value', title:'Your estimated value', text:'Your Aim4price estimate, based on the asset details you entered.'},
-  {target:'replacement', title:'Replacement price', text:'Check what a comparable new asset would cost today. This directly affects your estimate.'},
-  {target:'saleability', title:'Saleability', text:'Explore how demand and your selling circumstances may affect the estimated selling price. This is separate from your Aim4price value.'},
-  {target:'settings', title:'Fine-tune your estimate', text:'Review usage, condition and valuation settings to better reflect your asset.'},
+  {target:'value', title:'Your estimated fair value', text:'This is the Aim4price fair-value estimate based on your asset details. It is a guide, not a guaranteed selling price.', action:'Value feel too high or too low? Check the replacement price, age, usage and condition before you save.'},
+  {target:'replacement', title:'Start with the right replacement price', text:'Use what a comparable new asset would cost today, with the correct VAT basis. This is the starting point for depreciation.', action:'After this guide, choose Adjust price if this amount needs correcting.'},
+  {target:'saleability', title:'Fair value and selling price can differ', text:'Buyer demand, time available to sell and selling circumstances affect the likely market price. Saleability estimates that effect separately from fair value.', action:'After this guide, choose Refine to explore your estimated selling price. The actual sale price may differ.'},
+  {target:'settings', title:'Check the details behind the value', text:'If the estimate feels wrong, review the inputs so they accurately reflect your asset.', action:'Use the steps above to edit age, usage or condition. Use Estimate settings to review the calculation assumptions.'},
 ];
 type Box = {top:number; left:number; width:number; height:number};
 
@@ -35,7 +35,7 @@ export default function ValuationResultTour() {
     const visible = steps.filter(step => document.querySelector<HTMLElement>(`[data-value-tour="${step.target}"]`)?.getClientRects().length);
     if (!visible.length) return;
     const tailored=visible.map(step => step.target==='settings' && document.querySelector('[data-value-tour="settings"][data-value-tour-readonly="true"]')
-      ? {...step, title:'Check your asset details', text:'Check the year, usage and condition shown here. To correct an entry, finish this guide and use the steps above to go back.'}
+      ? {...step, title:'Check your asset details', action:'After this guide, use the steps above to correct the year, usage or condition. Then calculate your estimate again.'}
       : step);
     setAvailable(tailored); setIndex(0); setBox(null); setActive(true);
   }
@@ -59,12 +59,30 @@ export default function ValuationResultTour() {
       const r = websiteLogicalRect(target!.getBoundingClientRect());
       const viewport = websiteVisibleViewport();
       const w = viewport.width, h = viewport.height;
-      const ch = card.current?.offsetHeight ?? 210;
+      const ch = card.current?.offsetHeight ?? 300;
       const cw = Math.min(360,w-32);
-      const top = r.bottom + 16 + ch <= h-16 ? r.bottom+16
-        : r.top-16-ch >= 16 ? r.top-16-ch : h-ch-16;
-      setBox({top:Math.max(8,r.top-6),left:Math.max(8,r.left-6),width:Math.min(w-16,r.width+12),height:Math.max(0,Math.min(h-8,r.bottom+6)-Math.max(8,r.top-6))});
-      setPosition({top:Math.max(16,top),left:Math.max(16,Math.min(w-cw-16,r.left))});
+      const gap = 20;
+      const clampTop = (top:number) => Math.max(16, Math.min(h-ch-16, top));
+      let left = Math.max(16, Math.min(w-cw-16, r.left));
+      let top:number;
+      let spotlightBottom = Math.min(h-8,r.bottom+6);
+      // Prefer the side: keep the value, details and action being explained clear.
+      if (r.right+gap+cw <= w-16) {
+        left=r.right+gap; top=clampTop(r.top+(r.height-ch)/2);
+      } else if (r.left-gap-cw >= 16) {
+        left=r.left-gap-cw; top=clampTop(r.top+(r.height-ch)/2);
+      } else if (r.bottom+gap+ch <= h-16) {
+        top=r.bottom+gap;
+      } else if (r.top-gap-ch >= 16) {
+        top=r.top-gap-ch;
+      } else {
+        // On short screens dock the explanation and keep the spotlight above it.
+        top=Math.max(16,h-ch-16);
+        spotlightBottom=Math.min(spotlightBottom,top-gap);
+      }
+      const spotlightTop=Math.max(8,r.top-6);
+      setBox({top:spotlightTop,left:Math.max(8,r.left-6),width:Math.min(w-16,r.width+12),height:Math.max(0,spotlightBottom-spotlightTop)});
+      setPosition({top,left});
     }
     const schedule = () => {cancelAnimationFrame(frame); frame=requestAnimationFrame(measure);};
     measure();
@@ -95,7 +113,7 @@ export default function ValuationResultTour() {
         <div ref={card} className={styles.card} style={position}>
           <div className={styles.top}><span>{index+1} of {available.length}</span><span>Quick guide</span></div>
           <h2 id="value-tour-title">{available[index].title}</h2>
-          <p id="value-tour-description" aria-live="polite">{available[index].text}</p>
+          <div id="value-tour-description" aria-live="polite"><p>{available[index].text}</p><p className={styles.hint}>{available[index].action}</p></div>
           <div className={styles.actions}>
             {index > 0 ? <button type="button" onClick={()=>setIndex(index-1)}>Back</button> : null}
             <button type="button" className={styles.next} onClick={()=>index===available.length-1 ? close() : setIndex(index+1)}>{index===available.length-1 ? 'Done' : 'Next'}</button>
