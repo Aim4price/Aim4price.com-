@@ -1,8 +1,0 @@
-.spotlight {
-  position: fixed;
-  z-index: 80;
-  pointer-events: none;
-  border: 2px solid #9bcbb5;
-  border-radius: 18px;
-  box-shadow: 0 0 0 max(var(--website-visible-width, 100vw), var(--website-visible-height, 100dvh)) rgb(12 33 26 / 48%);
-}

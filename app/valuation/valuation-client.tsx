@@ -25,7 +25,6 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
-import ValuationFlowFocus from '../../components/ValuationFlowFocus';
 import ValuationResultTour from '../../components/ValuationResultTour';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import styles from './page.module.css';
@@ -9482,14 +9481,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
-            <div data-valuation-focus-content onBlurCapture={(event) => { if (!activeDetailsModal && event.target instanceof HTMLInputElement && !event.target.validity.valid) setRequiredFeedback(true); }} data-required-feedback={(!activeDetailsModal && requiredFeedback) || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
+            <div onBlurCapture={(event) => { if (!activeDetailsModal && event.target instanceof HTMLInputElement && !event.target.validity.valid) setRequiredFeedback(true); }} data-required-feedback={(!activeDetailsModal && requiredFeedback) || undefined} className={`${styles.stepContent} ${isSectorIntroStep ? styles.sectorStepContent : ''}`}>
               {renderStepBody()}
               {!activeDetailsModal && nextRequiredMessage() && step > 1 && step < 6 ? <p id="valuation-required-summary" className={`${styles.requiredSummary} ${requiredFeedback ? styles.requiredHint : styles.fieldHint}`} role="status">{requiredFeedback ? 'Required: ' : ''}{nextRequiredMessage()}</p> : null}
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
             <div
-              data-valuation-focus-navigation
               onPointerDownCapture={() => setRequiredFeedback(true)}
               onFocusCapture={() => setRequiredFeedback(true)}
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
@@ -9532,10 +9530,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </section>
       </div>
 
-      <ValuationFlowFocus key={step} enabled={step < (basicEstimateActive ? 6 : 5)} activeSelector={`.${styles.specStepCardActive}`} />
-
       {replacementNoticeOpen ? (
-        <div className={styles.replacementNoticeOverlay} data-valuation-focus-modal data-website-overlay onClick={closeReplacementPriceNotice}>
+        <div className={styles.replacementNoticeOverlay} data-website-overlay onClick={closeReplacementPriceNotice}>
           <section
             ref={replacementNoticeDialogRef}
             className={`${styles.replacementNoticeModal} ${modalStyles.surface} ${modalStyles.danger}`}
