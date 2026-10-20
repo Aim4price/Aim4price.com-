@@ -1,0 +1,9 @@
+.icon {
+  display: inline-block;
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 1.2rem;
+  color: var(--app-muted, #70877c);
+  vertical-align: middle;
+  pointer-events: none;
+}

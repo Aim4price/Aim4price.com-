@@ -4190,3 +4190,70 @@
 .businessDetailsModalCard .field input::placeholder { color:var(--app-muted,#536b60); opacity:1; font-weight:500; }
 .businessDetailsModalCard .field > span { color:var(--app-text,#173e33); font-weight:800; }
 .businessDetailsModalCard .fieldHint,.businessDetailsModalCard .modalSectionHeading p { color:var(--app-muted,#536b60); font-weight:600; }
+
+/* Shared, restrained detail styling for account preferences and contact editors. */
+.polishedSettingsModal.polishedSettingsModal {
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 52rem) !important;
+}
+.polishedSettingsModal .modalCloseButton { border-radius: .6rem !important; }
+.polishedSettingsModal .field > span,
+.polishedSettingsModal .modalSectionHeading > strong,
+.polishedSettingsModal .toggleField strong,
+.polishedSettingsModal .confirmBox > strong {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  font-size: .9rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--app-text, #234b3d);
+}
+.polishedSettingsModal .field { gap: .55rem; min-width: 0; }
+.polishedSettingsModal .wizardFieldGrid { gap: 1.15rem 1.25rem; align-items: start; }
+.polishedSettingsModal .field input:not(:disabled),
+.polishedSettingsModal .field textarea {
+  min-height: 3rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--app-line, #d5e1da);
+  border-radius: .85rem;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173e33);
+  font-size: 1rem;
+  font-weight: 550;
+  line-height: 1.45;
+}
+.polishedSettingsModal .field input:focus,
+.polishedSettingsModal .field textarea:focus {
+  border-color: var(--app-accent, #27816a);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 0 0 3px var(--app-success-soft, #e2eee6);
+}
+.polishedSettingsModal .fieldHint,
+.polishedSettingsModal .modalSectionHeading p,
+.polishedSettingsModal .toggleField small,
+.polishedSettingsModal .confirmBox p {
+  font-size: .88rem;
+  font-weight: 500;
+  line-height: 1.55;
+  color: var(--app-muted, #64746a);
+}
+.polishedSettingsModal .modalSectionHeading { padding: 1rem; background: var(--app-surface, #fff); }
+.polishedSettingsModal .modalSectionHeading p { margin: .4rem 0 0 1.85rem; }
+.polishedSettingsModal .toggleField,
+.polishedSettingsModal .confirmBox { padding: 1rem; border-radius: .95rem; }
+.polishedSettingsModal .toggleField small { display: block; margin-top: .45rem; }
+.polishedSettingsModal .confirmBox p { margin: .45rem 0 0 1.85rem; }
+.polishedSettingsModal .toggleField { align-items: start; gap: .85rem; }
+.polishedSettingsModal .toggleField input { margin-top: .15rem; accent-color: #24825f; }
+.polishedSettingsModal .ghostButton {
+  background: var(--app-info-soft, #f2f5f8);
+  color: var(--app-text, #234b3d);
+  border: 1px solid var(--app-info-line, #d2dfea);
+  border-radius: 1rem;
+}
+.polishedSettingsModal .field input:disabled {
+  border: 1px solid var(--app-line, #d5e1da);
+  background: var(--app-info-soft, #f2f5f8);
+}

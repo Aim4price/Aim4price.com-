@@ -29,3 +29,15 @@
 .options .row { min-height:3.2rem; padding:.8rem 1rem; border-color:#d8e2ec; border-radius:.92rem; font-size:1rem; font-weight:750; line-height:1.4; }
 .options .row small { color:#64746a; font-size:.88rem; font-weight:650; line-height:1.5; }
 .options .categories { gap:.65rem; margin-top:.65rem; }
+
+/* Match the quiet outline icons and label spacing in the account editors. */
+.optionLabel { display:flex; align-items:center; gap:.85rem; min-width:0; }
+.optionLabel > span { min-width:0; overflow-wrap:anywhere; }
+.options .row { gap:1rem; min-height:3.6rem; padding:.85rem 1rem; font-size:.95rem; font-weight:700; background:var(--app-surface,#fff); color:var(--app-text,#234b3d); border-color:var(--app-line,#d5e1da); }
+.options .row small { font-weight:500; margin-top:.3rem; }
+.options { padding:1.3rem 2rem; scrollbar-gutter:stable; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .options { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .options .row { gap: .65rem; padding: .85rem .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .optionLabel { gap: .6rem; }
+}
