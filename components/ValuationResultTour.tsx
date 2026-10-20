@@ -97,8 +97,8 @@ export default function ValuationResultTour() {
   return <>
     <div className={styles.launch}>
       <button ref={trigger} type="button" onClick={start} aria-haspopup="dialog">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01"/></svg>
-        Show me around
+        <span className={styles.launchIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5.5C9 3.5 5.5 3.5 2.5 4.5v14c3-1 6.5-1 9.5 1 3-2 6.5-2 9.5-1v-14c-3-1-6.5-1-9.5 1Z"/><path d="M12 5.5v14M6 8h2.5M6 11h2.5M15.5 8H18M15.5 11H18"/></svg></span>
+        <span>Explain my value</span>
       </button>
     </div>
     <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>event.preventDefault()} onKeyDown={event=>{
