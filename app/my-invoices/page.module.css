@@ -7227,3 +7227,20 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   :global(:where(html:not(:has([data-website-canvas])))) .captureUploadIcon { width: 2.5rem; height: 2.5rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .captureUploadNext { display: none; }
 }
+
+/* Distinct, restrained icon colours for the three cost capture methods. */
+.costChoiceModal .manualChoiceOption .choiceGraphic {
+  color: var(--app-info, #276b9d);
+  border-color: var(--app-info-line, #bdd8ec);
+  background: var(--app-info-soft, #edf6fc);
+}
+.costChoiceModal .recurringChoiceOption .choiceGraphic {
+  color: var(--app-warning, #99571f);
+  border-color: var(--app-warning-line, #e8c7a7);
+  background: var(--app-warning-soft, #fff3e7);
+}
+.costChoiceModal .aim4priceCaptureChoiceOption .choiceGraphic {
+  color: var(--app-accent, #187456);
+  border-color: var(--app-line, #b6d9c9);
+  background: var(--app-surface-soft, #edf8f1);
+}

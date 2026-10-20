@@ -994,3 +994,28 @@
 .resultModal .resultHeading .choiceIcon { width: 36px; height: 36px; border-radius: 12px; }
 .resultModal .resultHeading .choiceIcon svg { width: 24px; height: 24px; }
 .modal.resultModal .body { padding-block: 12px; }
+
+/* One clear result, followed by the score and a quiet selling-plan strip. */
+.modal.resultModal .result { gap: 12px; }
+.modal.resultModal .resultHero { padding: 16px 24px; gap: 8px; border-radius: 18px; box-shadow: none; }
+.modal.resultModal .resultLabel { font-size: 1rem; font-weight: 650; gap: 12px; }
+.modal.resultModal .resultHero > strong { font-size: clamp(2.4rem, calc(var(--website-design-vw, 1vw) * 3.6), 3.25rem); font-variant-numeric: tabular-nums; letter-spacing: -.035em; }
+.modal.resultModal .resultHero > p { font-weight: 500; }
+.modal.resultModal .easeCard { padding: 14px 22px; border-radius: 18px; }
+.modal.resultModal .easeHeading h3 { font-size: 1.05rem; line-height: 1.4; }
+.modal.resultModal .easeHeading p { margin-top: 6px; }
+.modal.resultModal .easeHeading > strong { font-size: 2rem; line-height: 1.2; }
+.modal.resultModal .easeMeter { margin: 12px 0 8px; height: 7px; }
+.modal.resultModal .sellingSummary { gap: 0; padding: 14px 4px; border: 1px solid #dce7e1; border-radius: 16px; background: #f8fbf9; }
+.modal.resultModal .sellingSummary > div { border: 0; border-radius: 0; padding: 4px 16px; background: transparent; gap: 5px 12px; }
+.modal.resultModal .sellingSummary > div + div { border-left: 1px solid #dce7e1; }
+.modal.resultModal .sellingSummary dt { font-size: .78rem; }
+.modal.resultModal .sellingSummary dd { font-size: .9rem; }
+.modal.resultModal .actions { padding-top: 16px; gap: 12px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.resultModal .resultHero { padding: 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.resultModal .easeCard { padding: 16px 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.resultModal .sellingSummary { padding: 4px 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.resultModal .sellingSummary > div { padding: 12px 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal.resultModal .sellingSummary > div + div { border-left: 0; border-top: 1px solid #dce7e1; }
+}

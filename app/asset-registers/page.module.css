@@ -4196,6 +4196,7 @@
  box-shadow:0 32px 90px var(--app-shadow-colour, rgba(7,25,20,.28)),0 8px 24px var(--app-shadow-colour, rgba(7,25,20,.12)) !important;
 }
 .accountRegisterModal.createModalCard,
+.accountRegisterModal.editDetailsModalCard,
 .accountRegisterModal.manageModalCard,.accountRegisterModal.qrLabelsModal,.accountRegisterModal.exportFormatModal {
  width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),58rem) !important;
 }
