@@ -3,6 +3,7 @@ import AssetSerialNumber from '../../components/AssetSerialNumber';
 import ShareNextIcon from '../../components/asset-register/ShareNextIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import pickerStyles from '../../components/AssetPicker.module.css';
+import SettingsDetailIcon from '../../components/SettingsDetailIcon';
 import CreateAssetRegisterModal from '../../components/asset-register/CreateAssetRegisterModal';
 
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -3720,61 +3721,73 @@ export default function AssetRegistersClient({
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Business name</span>
-                <input
-                  value={editDraft.businessName}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      businessName: event.target.value,
-                    }))
-                  }
-                  placeholder="Business name"
-                  required
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="business" />
+                  <input
+                    value={editDraft.businessName}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        businessName: event.target.value,
+                      }))
+                    }
+                    placeholder="Business name"
+                    required
+                  />
+                </span>
               </label>
 
               <label className={styles.field}>
                 <span>Email</span>
-                <input
-                  type="email"
-                  value={editDraft.email}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                  placeholder="Email"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="email" />
+                  <input
+                    type="email"
+                    value={editDraft.email}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    placeholder="Email"
+                  />
+                </span>
               </label>
 
               <label className={styles.field}>
                 <span>Phone</span>
-                <input
-                  type="tel"
-                  value={editDraft.phone}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="Phone"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="phone" />
+                  <input
+                    type="tel"
+                    value={editDraft.phone}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        phone: event.target.value,
+                      }))
+                    }
+                    placeholder="Phone"
+                  />
+                </span>
               </label>
 
               <label className={`${styles.field} ${styles.fullField}`}>
                 <span>Address</span>
-                <textarea
-                  value={editDraft.addressLine1}
-                  onChange={(event) =>
-                    applyEditDraftChange((current) => ({
-                      ...current,
-                      addressLine1: event.target.value,
-                    }))
-                  }
-                  placeholder="Address"
-                />
+                <span className={styles.registerInputWithIcon}>
+                  <SettingsDetailIcon name="location" />
+                  <textarea
+                    value={editDraft.addressLine1}
+                    onChange={(event) =>
+                      applyEditDraftChange((current) => ({
+                        ...current,
+                        addressLine1: event.target.value,
+                      }))
+                    }
+                    placeholder="Address"
+                  />
+                </span>
               </label>
             </div>
 
