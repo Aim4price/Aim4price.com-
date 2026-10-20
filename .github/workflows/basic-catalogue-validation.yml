@@ -46,6 +46,8 @@ jobs:
         run: node --experimental-strip-types --test tests/estimate-replacement-consistency.test.mjs tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
       - name: Private estimate breakdown regressions
         run: node --test tests/estimate-breakdown.test.cjs
+      - name: Equipment picker browsing and selection
+        run: node scripts/verify-equipment-picker.cjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash

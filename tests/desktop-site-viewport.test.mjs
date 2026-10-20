@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import postcss from 'postcss';
 import {
   createSaleabilityPdfPlanSnapshot,
   formatSaleabilityPdfPrice,
@@ -102,7 +103,10 @@ test('Get Estimate keeps the website viewport stable, uses R5k replacement slide
   assert.match(polishStyles, /\.familyModal\s*\{[\s\S]*?position:\s*relative;[\s\S]*?z-index:\s*1;/);
   assert.doesNotMatch(polishStyles, /\.familyPicker[^}]*position:\s*fixed/);
   assert.match(polishStyles, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.doesNotMatch(polishStyles, /@media\s*\([^)]*(?:max-width|min-width|orientation)/);
+  postcss.parse(polishStyles).walkAtRules('media', rule => {
+    if (!/(max-width|min-width|orientation)/.test(rule.params)) return;
+    rule.walkRules(child => assert.ok(child.selector.includes('html:not(:has([data-website-canvas]))'), 'Responsive picker rules must exclude the canonical website canvas'));
+  });
 });
 
 test('Estimate PDF Saleability price only follows a matching refined plan', async () => {
