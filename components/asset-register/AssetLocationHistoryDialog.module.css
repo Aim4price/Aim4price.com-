@@ -178,3 +178,5 @@
 
 .traceDetails { margin-top:1rem; padding:.85rem 1rem; background:#f4f8f6; border:1px solid #d8e5de; border-radius:.8rem; color:#38594c; font-size:.85rem; line-height:1.6; }
 .traceDetails summary { cursor:pointer; font-weight:750; }
+
+.coverageGood { margin:0 0 1rem; padding:.7rem .9rem; border-radius:.75rem; background:#eef5f0; color:#254733; font-size:.88rem; line-height:1.45; }

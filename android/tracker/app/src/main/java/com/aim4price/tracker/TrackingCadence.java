@@ -1,7 +1,7 @@
 package com.aim4price.tracker;
 /** Sampling decisions are separate from network uploads and Android lifecycle. */
 public final class TrackingCadence {
- public static final long MOVING_INTERVAL_MS=10000, STATIONARY_INTERVAL_MS=60000, UPLOAD_INTERVAL_SECONDS=60;
+ public static final long MOVING_INTERVAL_MS=10000, STATIONARY_INTERVAL_MS=20000, UPLOAD_INTERVAL_SECONDS=60;
  private long stationarySince=-1,lastSaved=-1,lastFix=-1;
  private boolean stopped=false;
  public boolean isFresh(long time){return lastFix<0||time-lastFix>=9000;}

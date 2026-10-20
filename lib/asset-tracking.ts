@@ -25,6 +25,7 @@ export function ensureTrackingTables() {
  motion text NOT NULL CHECK(motion IN ('moving','stationary')),
  received_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(device_id,sample_id));
  ALTER TABLE public.asset_tracking_points ADD COLUMN IF NOT EXISTS history_deleted_at timestamptz;
+ ALTER TABLE public.asset_tracking_points ADD COLUMN IF NOT EXISTS recovered_by_device_id uuid;
  CREATE UNIQUE INDEX IF NOT EXISTS tracking_points_ten_seconds ON public.asset_tracking_points(device_id,(floor(extract(epoch FROM captured_at AT TIME ZONE 'UTC') / 10)));
  DROP INDEX IF EXISTS public.tracking_points_minute;
  CREATE INDEX IF NOT EXISTS tracking_points_time ON public.asset_tracking_points(device_id,captured_at DESC);
@@ -98,7 +99,7 @@ export async function pairDevice(code: string, name: string) {
       [d.id, hashToken(token), name],
     );
     await client.query("COMMIT");
-    return { token, assetTitle: d.title, deviceId: d.id };
+    return { token, assetTitle: d.title, assetId: d.asset_id, deviceId: d.id };
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;
@@ -114,7 +115,7 @@ const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function validateUpload(
   body: any,
   now = Date.now(),
-): { points: UploadPoint[]; active: boolean; stateAt: string; diagnostics:Record<string,number|string>|null } {
+): { points: UploadPoint[]; active: boolean; stateAt: string; diagnostics:Record<string,number|string>|null; rejected:{id:string;reason:string}[]; recoveryToken?:string } {
   if (
     !body ||
     !Array.isArray(body.points) ||
@@ -126,7 +127,9 @@ export function validateUpload(
   const state = Date.parse(body.stateAt);
   if (!Number.isFinite(state) || Math.abs(now - state) > 300000)
     throw Error("INVALID_UPLOAD");
-  const points = body.points.map((p: any) => {
+  if(body.recoveryToken!==undefined && (typeof body.recoveryToken!=='string'||!/^[a-f0-9]{64}$/.test(body.recoveryToken)))throw Error("INVALID_UPLOAD");
+  const rejected:{id:string;reason:string}[]=[];
+  const points = body.points.flatMap((p: any) => {
     if (
       !p ||
       !uuid.test(p.id) ||
@@ -143,9 +146,12 @@ export function validateUpload(
       Math.abs(p.longitude) > 180 ||
       p.accuracy < 0 ||
       p.accuracy > 5000
-    )
-      throw Error("INVALID_UPLOAD");
-    return {
+    ) {
+      if(body.partial!==true || !p || typeof p.id!=='string' || !uuid.test(p.id))throw Error("INVALID_UPLOAD");
+      rejected.push({id:p.id,reason:Date.parse(p.capturedAt)<now-30*86400000?'Reading is older than 30 days':Date.parse(p.capturedAt)>now+120000?'Capture time is in the future':'Invalid GPS reading'});
+      return [];
+    }
+    return [{
       id: p.id,
       sessionId: p.sessionId,
       capturedAt: p.capturedAt,
@@ -153,13 +159,14 @@ export function validateUpload(
       longitude: p.longitude,
       accuracy: p.accuracy,
       motion: p.motion,
-    } as UploadPoint;
+    } as UploadPoint];
   });
   const diagnostics:Record<string,number|string>={};
   if(body.diagnostics&&typeof body.diagnostics==='object'){
-    for(const key of ['pending','rejectedFixes','accuracy']){
+    for(const key of ['pending','retained','rejectedFixes','accuracy','batteryPercent','backgroundLocation','recording']){
       const value=body.diagnostics[key];
-      if(typeof value==='number'&&Number.isFinite(value)&&value>=(key==='accuracy'?-1:0)&&value<=1e9&&(key==='accuracy'||Number.isInteger(value)))diagnostics[key]=value;
+      const maximum=key==='batteryPercent'?100:['backgroundLocation','recording'].includes(key)?1:1e9;
+      if(typeof value==='number'&&Number.isFinite(value)&&value>=(key==='accuracy'?-1:0)&&value<=maximum&&(key==='accuracy'||Number.isInteger(value)))diagnostics[key]=value;
     }
     for(const key of ['lastCallbackAt','lastGpsAt','lastSavedAt']){
       const value=body.diagnostics[key];
@@ -168,7 +175,7 @@ export function validateUpload(
     if(typeof body.diagnostics.version==='string'&&/^\d+\.\d+(?:\.\d+)?$/.test(body.diagnostics.version))diagnostics.version=body.diagnostics.version;
     if(['gps','fused','unknown'].includes(body.diagnostics.provider))diagnostics.provider=body.diagnostics.provider;
   }
-  return { points, active: body.active, stateAt: body.stateAt, diagnostics:Object.keys(diagnostics).length?diagnostics:null };
+  return { points, rejected, recoveryToken:body.recoveryToken, active: body.active, stateAt: body.stateAt, diagnostics:Object.keys(diagnostics).length?diagnostics:null };
 }
 export async function ingestTracking(
   token: string,
@@ -184,6 +191,19 @@ export async function ingestTracking(
     );
     if (!result.rowCount) throw Error("DEVICE_REVOKED");
     const device = result.rows[0];
+    let sourceDevice=device;
+    if(body.recoveryToken){
+      const old=await client.query("SELECT * FROM public.asset_tracking_devices WHERE token_hash=$1 AND owner_id=$2 AND asset_id=$3 AND revoked_at IS NOT NULL",[hashToken(body.recoveryToken),device.owner_id,device.asset_id]);
+      if(!old.rowCount)throw Error("RECOVERY_UNAVAILABLE");
+      sourceDevice=old.rows[0];
+    }
+    const rejected=[...(body.rejected||[])];
+    const points=body.points.filter(p=>{
+      if(body.recoveryToken && Date.parse(p.capturedAt)>new Date(sourceDevice.revoked_at).getTime()){
+        rejected.push({id:p.id,reason:'Captured after the original phone was disconnected'});return false;
+      }
+      return true;
+    });
     const windowFresh =
       device.upload_window &&
       Date.now() - new Date(device.upload_window).getTime() < 60000;
@@ -197,11 +217,11 @@ export async function ingestTracking(
       ],
     );
     // Row locking above serializes retries and revocation for this credential.
-    for (const p of body.points)
+    for (const p of points)
       await client.query(
-        `INSERT INTO public.asset_tracking_points(device_id,sample_id,session_id,captured_at,latitude,longitude,accuracy,motion) VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`,
+        `INSERT INTO public.asset_tracking_points(device_id,sample_id,session_id,captured_at,latitude,longitude,accuracy,motion,recovered_by_device_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
         [
-          device.id,
+          sourceDevice.id,
           p.id,
           p.sessionId,
           p.capturedAt,
@@ -209,6 +229,7 @@ export async function ingestTracking(
           p.longitude,
           p.accuracy,
           p.motion,
+          body.recoveryToken ? device.id : null,
         ],
       );
     await client.query(
@@ -216,7 +237,7 @@ export async function ingestTracking(
       [device.id, body.active, body.stateAt,body.diagnostics?JSON.stringify(body.diagnostics):null],
     );
     await client.query("COMMIT");
-    return { accepted: body.points.map((p) => p.id) };
+    return { accepted: points.map((p) => p.id), rejected };
   } catch (e) {
     await client.query("ROLLBACK");
     throw e;
@@ -247,6 +268,8 @@ export async function trackingStatus(ownerId: string, assetId: string) {
         ? "Offline"
         : !d.active
           ? "Deactivated"
+          : d.diagnostics?.recording===0
+            ? "Open phone to resume"
           : !d.captured_at ||
               Date.now() - new Date(d.captured_at).getTime() > 12 * 60000
             ? "No recent GPS"
@@ -259,12 +282,12 @@ export async function trackingStatus(ownerId: string, assetId: string) {
 export async function latestTrackingPositions(ownerId: string) {
   await ensureTrackingTables();
   const result = await getDb().query(
-    `SELECT assets.asset_id,current_phone.id AS connected_device_id,current_phone.active,current_phone.last_seen_at,p.*
+    `SELECT assets.asset_id,current_phone.id AS connected_device_id,current_phone.active,current_phone.last_seen_at,current_phone.diagnostics,p.*
      FROM (SELECT DISTINCT d.asset_id FROM public.asset_tracking_devices d
        JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id
        WHERE d.owner_id=$1 AND d.paired_at IS NOT NULL) assets
      LEFT JOIN LATERAL (
-       SELECT d.id,d.active,d.last_seen_at FROM public.asset_tracking_devices d
+       SELECT d.id,d.active,d.last_seen_at,d.diagnostics FROM public.asset_tracking_devices d
        WHERE d.asset_id=assets.asset_id AND d.owner_id=$1 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL
        ORDER BY d.paired_at DESC,d.id DESC LIMIT 1
      ) current_phone ON true

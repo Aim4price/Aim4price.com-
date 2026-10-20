@@ -9,6 +9,7 @@ export type TrackingPoint = {
   context?: boolean;
   breakBefore?: boolean;
   receivedAt?: string;
+  recoveredByDeviceId?: string;
 };
 export function visibleTrackingPoints<T extends TrackingPoint & {historyDeleted?:boolean}>(input:T[]):T[]{
  const removed=new Set<string>();

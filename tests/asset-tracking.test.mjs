@@ -308,3 +308,27 @@ test('disconnect, phone failure and replacement retain asset location and every 
   assert.deepEqual(counts.rows[0],{points:4,phones:2});
   assert.equal((await api.latestTrackingPositions('intruder')).has(assetId),false);
 });
+
+test('partial uploads isolate expired readings without blocking valid readings',async()=>{
+ const assetId=crypto.randomUUID();await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[assetId,'recovery-owner','Recovery asset']);
+ const paired=await api.pairDevice((await api.createPairing('recovery-owner',assetId)).replaceAll('-',''),'Original');
+ const make=(time)=>({id:crypto.randomUUID(),sessionId:crypto.randomUUID(),capturedAt:new Date(time).toISOString(),latitude:-33,longitude:18,accuracy:5,motion:'moving'});
+ const old=make(Date.now()-31*86400000),good=make(Date.now()-60000);
+ const payload={points:[old,good],active:true,stateAt:new Date().toISOString(),partial:true};
+ const result=await api.ingestTracking(paired.token,api.validateUpload(payload));
+ assert.deepEqual(result.accepted,[good.id]);assert.equal(result.rejected[0].id,old.id);assert.match(result.rejected[0].reason,/30 days/);
+ assert.throws(()=>api.validateUpload({...payload,partial:false}),/INVALID_UPLOAD/);
+ const replacement=await api.pairDevice((await api.createPairing('recovery-owner',assetId)).replaceAll('-',''),'Replacement');
+ const missing=make(Date.now()-30000),afterDisconnect=make(Date.now()+60000);
+ const recovered=await api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing,afterDisconnect],recoveryToken:paired.token}));
+ assert.deepEqual(recovered.accepted,[missing.id]);assert.match(recovered.rejected[0].reason,/disconnected/);
+ const saved=(await db.query('SELECT device_id,recovered_by_device_id FROM asset_tracking_points WHERE sample_id=$1',[missing.id])).rows[0];
+ assert.equal(saved.device_id,paired.deviceId);assert.equal(saved.recovered_by_device_id,replacement.deviceId);
+ const again=await api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing],recoveryToken:paired.token}));assert.deepEqual(again.accepted,[missing.id]);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM asset_tracking_points WHERE sample_id=$1',[missing.id])).rows[0].n,1);
+ await assert.rejects(api.ingestTracking(paired.token,api.validateUpload({...payload,points:[missing]})),/DEVICE_REVOKED/);
+ const different=crypto.randomUUID();await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[different,'recovery-owner','Other asset']);
+ const other=await api.pairDevice((await api.createPairing('recovery-owner',different)).replaceAll('-',''),'Other');
+ await assert.rejects(api.ingestTracking(other.token,api.validateUpload({...payload,points:[missing],recoveryToken:paired.token})),/RECOVERY_UNAVAILABLE/);
+ await assert.rejects(api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing],recoveryToken:'0'.repeat(64)})),/RECOVERY_UNAVAILABLE/);
+});
