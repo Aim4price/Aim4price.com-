@@ -550,6 +550,16 @@ function ManualInvoiceIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function RecurringCommitmentIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M7 3v4M17 3v4M3 10h18" />
+      <path d="M8 14h8l-2-2M16 17H8l2 2" />
+    </IconBase>
+  );
+}
+
 function AutomaticInvoiceIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -4459,7 +4469,7 @@ export default function MyInvoicesClient({
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={() => startFlow('manual')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.manualChoiceOption}`} onClick={() => startFlow('manual')}>
                 <span className={styles.choiceGraphic}>
                   <ManualInvoiceIcon />
                 </span>
@@ -4474,7 +4484,7 @@ export default function MyInvoicesClient({
               {!dealerMode && !sharedFlow ? (
                 <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
                   <span className={styles.choiceGraphic}>
-                    <ManualInvoiceIcon />
+                    <RecurringCommitmentIcon />
                   </span>
                   <span className={styles.choiceTitleBlock}>
                     <strong>Add recurring commitment</strong>
