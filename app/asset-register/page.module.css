@@ -41671,3 +41671,25 @@ button.documentOpenLink {
   border-color:var(--app-success-line, #acd9c3) !important;
 }
 .page .umbrellaFlagStatus .buttonIcon { width:.95rem; height:.95rem; flex:0 0 .95rem; color:inherit !important; }
+
+/* Live listings have a fourth quick action beneath the existing controls. */
+.assetSideActions .assetMarketplaceButton {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  text-decoration: none;
+}
+.assetSideActions .assetMarketplaceButton:hover,
+.assetSideActions .assetMarketplaceButton:focus-visible {
+  color: #075985 !important;
+  border-color: #7dd3fc !important;
+  background: #e0f2fe !important;
+  box-shadow: 0 0 0 1px rgba(125, 211, 252, .4), 0 0 12px rgba(56, 189, 248, .25) !important;
+}
+.assetSideActions .assetMarketplaceButton:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+.assetCard:has(.assetMarketplaceButton) {
+  min-height: 12.5rem;
+}

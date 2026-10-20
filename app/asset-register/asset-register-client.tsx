@@ -16624,6 +16624,16 @@ export default function AssetRegisterClient({
                                 <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                               </button>
                             ) : null}
+                            {isLive ? (
+                              <a
+                                className={`${styles.assetRegisterMoveButton} ${styles.assetMarketplaceButton} ${styles.controlTooltip}`}
+                                href={`/marketplace/browse?listing=${encodeURIComponent(asset.id)}`}
+                                aria-label={`View ${asset.title} on Marketplace`}
+                                data-tooltip="View on Marketplace"
+                              >
+                                <CartIcon className={styles.assetRegisterMoveIcon} />
+                              </a>
+                            ) : null}
                           </div>
                         ) : null}
                         <div className={styles.assetHeader}>
