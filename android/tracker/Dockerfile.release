@@ -1,0 +1,11 @@
+FROM gradle:8.9-jdk17
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends python3 curl unzip && rm -rf /var/lib/apt/lists/*
+ENV ANDROID_HOME=/opt/android
+RUN mkdir -p /opt/android/cmdline-tools && curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -o /tmp/sdk.zip && unzip -q /tmp/sdk.zip -d /opt/android/cmdline-tools && mv /opt/android/cmdline-tools/cmdline-tools /opt/android/cmdline-tools/latest && rm /tmp/sdk.zip
+RUN yes | /opt/android/cmdline-tools/latest/bin/sdkmanager --licenses >/dev/null
+RUN /opt/android/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0" >/dev/null
+WORKDIR /build
+COPY android/tracker /build/android/tracker
+COPY public/downloads/tracker-release.json /build/public/downloads/tracker-release.json
+CMD ["python3", "-u", "android/tracker/scripts/railway-release.py"]
