@@ -1277,3 +1277,40 @@
   :global(:where(html:not(:has([data-website-canvas])))) .loginDetails { padding:.85rem 1rem; flex-direction:column; align-items:flex-start; gap:.65rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .loginDetails > span + span { border-inline-start:0; padding-inline-start:0; }
 }
+
+
+/* Compact, aligned login editor; permission panels retain their own layout. */
+.notificationStyle .editorCard {
+  padding: 0 !important;
+  border: 0;
+  background: transparent;
+}
+.editorCard .loginIdentity { padding: .25rem 0 .8rem; }
+.editorCard .loginActions { padding: .25rem 0 .8rem; }
+.editorCard .loginDetails { padding: .75rem 0; gap: .55rem 1rem; font-size: .8rem; }
+.editorCard .loginDetails > span + span { padding-inline-start: 1rem; }
+.notificationStyle .loginEditForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem 1.25rem;
+  margin-top: 0;
+}
+.loginEditForm > * { min-width: 0; }
+.loginEditFull, .loginEditActions { grid-column: 1 / -1; }
+.loginInputIcon { display: block; position: relative; min-width: 0; }
+.loginInputIcon > svg { position: absolute; left: 1rem; top: 1.05rem; pointer-events: none; }
+.notificationStyle .loginInputIcon input { padding-left: 3rem; min-height: 3.35rem; font-weight: 600; }
+.notificationStyle .loginEditActions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-top: .2rem; padding-top: 1rem; }
+.loginEditActions > button { min-height: 3rem; border-radius: .7rem; padding: .7rem 1.1rem; }
+.loginEditActions > button:first-child { margin-right: auto; min-width: 10rem; }
+.loginAccessNote { display: flex; align-items: flex-start; gap: .65rem; margin-top: 1rem; padding-top: .85rem; border-top: 1px solid var(--app-line, #e0e6e3); }
+.loginAccessNote > svg { margin-top: .15rem; }
+.loginAccessNote .accessMessage { margin: 0; font-size: .85rem; font-weight: 500; line-height: 1.5; color: var(--app-muted, #64756d); }
+.modalBackButton > svg { width: 1.1rem; height: 1.1rem; margin-right: .45rem; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .loginEditForm { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .editorCard .loginDetails > span + span { padding-inline-start: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginEditActions > button:first-child { width: 100%; margin-right: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginEditActions > button:not(:first-child) { flex: 1; }
+}
