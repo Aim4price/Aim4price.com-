@@ -1,16 +1,22 @@
 /* Quiet ledger details, grouped by subject without extra panels. */
 .icon { display:inline-block; width:1.15rem; height:1.15rem; flex:0 0 1.15rem; color:var(--app-muted, #648477); vertical-align:middle; }
 .detailsGrid.detailsGrid { gap:1.25rem 2rem; align-items:start; }
-.detailGroup { display:grid; gap:1rem; min-width:0; margin:0; }
+.detailGroup { display:grid; gap:1.5rem; min-width:0; margin:0; }
 .detailGroup + .detailGroup { border-left:1px solid var(--app-line, #e2eae7); padding-left:2rem; }
-.detailGroup > div, .detailGroup > span { position:relative; padding-left:1.75rem; min-width:0; }
-.detailsGrid dt, .detailsGrid small { font-size:.85rem; line-height:1.4; margin-bottom:.25rem; }
+.detailGroup > div, .detailGroup > span { position:relative; padding-left:2.15rem; min-width:0; }
+.detailsGrid dt, .detailsGrid small { font-size:.85rem; line-height:1.4; margin-bottom:.4rem; }
 .detailGroup dt .icon { position:absolute; left:0; top:.05rem; }
-.sectionHeading.sectionHeading { display:flex; align-items:center; gap:.6rem; }
-.descriptions.descriptions p { padding-left:1.75rem; color:var(--app-text, #304d46); line-height:1.55; }
-.legacyDescriptions.legacyDescriptions p, .descriptionNote.descriptionNote { position:relative; padding-left:1.75rem; color:var(--app-text, #304d46); line-height:1.55; }
+.sectionHeading.sectionHeading { display:flex; align-items:center; gap:1rem; }
+.descriptions.descriptions p { padding-left:2.15rem; color:var(--app-text, #304d46); line-height:1.55; }
+.legacyDescriptions.legacyDescriptions p, .descriptionNote.descriptionNote { position:relative; padding-left:2.15rem; color:var(--app-text, #304d46); line-height:1.55; }
 .legacyDescriptions .sectionHeading .icon, .descriptionNote .sectionHeading .icon { position:absolute; left:0; }
 @media(max-width:760px) {
  :global(:where(html:not(:has([data-website-canvas])))) .detailsGrid.detailsGrid { grid-template-columns:minmax(0,1fr); }
  :global(:where(html:not(:has([data-website-canvas])))) .detailGroup + .detailGroup { border-left:0; border-top:1px solid var(--app-line, #e2eae7); padding-left:0; padding-top:1rem; }
+}
+
+/* Separate detail rows gently without boxing in individual fields. */
+.detailGroup > div + div::before, .detailGroup > span + span::before {
+ content:''; position:absolute; left:0; right:0; top:-.75rem; height:1px;
+ background:var(--app-line, #e2eae7); opacity:.65; pointer-events:none;
 }
