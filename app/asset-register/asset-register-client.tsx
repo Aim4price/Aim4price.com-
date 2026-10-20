@@ -1240,37 +1240,37 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'equipment',
     label: 'Equipment',
-    description: 'General machines and larger equipment not added through valuation.',
+    description: 'Machines and larger equipment.',
     titlePlaceholder: 'Example: Water pump trailer',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
-    description: 'Bakkies, trucks, trailers and other road or farm vehicles.',
+    description: 'Bakkies, trucks and trailers.',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
   },
   {
     value: 'property',
     label: PROPERTY_ASSET_LABEL,
-    description: PROPERTY_ASSET_DESCRIPTION,
+    description: 'Land, buildings and fixed structures.',
     titlePlaceholder: PROPERTY_ASSET_TITLE_PLACEHOLDER,
   },
   {
     value: 'tools',
     label: 'Tools',
-    description: 'Smaller tools, workshop items and handheld equipment.',
+    description: 'Hand tools and workshop equipment.',
     titlePlaceholder: 'Example: Workshop tool set',
   },
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Inventory, goods, produce, livestock and other stock held by the business.',
+    description: 'Goods, produce and livestock.',
     titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
   },
   {
     value: 'manual',
     label: 'Contents & electronics',
-    description: 'Furniture, appliances, computers, electronics and other everyday contents.',
+    description: 'Furniture, appliances and electronics.',
     titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
 ];
@@ -18065,9 +18065,6 @@ export default function AssetRegisterClient({
                                 <small>{option.description}</small>
                               </span>
 
-                              <span className={styles.manualAssetTypeArrow} aria-hidden="true">
-                                <ChevronRightIcon className={styles.buttonIcon} />
-                              </span>
                             </button>
                           );
                         })}
