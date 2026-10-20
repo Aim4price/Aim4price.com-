@@ -4490,3 +4490,31 @@
 .manageWorkspace .standardAssetChoice:disabled > svg { opacity: .4; }
 .manageWorkspace .assetChoiceRegister { font-size: .82rem; color: var(--app-muted, #64746a); }
 .manageWorkspace .manageAssetScroller { padding: .85rem .75rem !important; scrollbar-gutter: stable; }
+
+/* QR chooser: compact options above the standard independently scrolling list. */
+.qrLabelsModal.qrLabelsModal .qrLabelsBody { display: contents !important; }
+.qrLabelsModal.qrLabelsModal .qrSizeOptions {
+  flex: 0 0 auto;
+  margin: 1rem var(--picker-padding) 0;
+  padding: 0;
+  gap: .75rem;
+}
+.qrLabelsModal.qrLabelsModal .qrSizeOptions .exportOption {
+  min-height: 0 !important;
+  padding: .85rem 1rem !important;
+  gap: .75rem !important;
+  box-shadow: none;
+}
+.qrLabelsModal.qrLabelsModal .qrSizeOptions .exportOptionTitleBlock { gap: .2rem; }
+.qrLabelsModal.qrLabelsModal .qrAssetRow { position: relative; }
+.qrLabelsModal.qrLabelsModal .qrAssetRow input[type='checkbox'] {
+  position: absolute; width: 1px; height: 1px; min-height: 0 !important;
+  padding: 0 !important; border: 0 !important; opacity: 0;
+}
+.qrLabelsModal.qrLabelsModal .qrAssetCopy .qrChoiceCode { font-size: .8rem !important; font-weight: 400 !important; }
+.qrLabelsModal.qrLabelsModal .exportValidation { margin: .5rem var(--picker-padding); flex: 0 0 auto; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrLabelsModal.qrLabelsModal .qrSizeOptions { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .qrLabelsModal.qrLabelsModal .qrSizeOptions .exportOption { grid-template-columns: minmax(0, 1fr) !important; gap: .4rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .qrLabelsModal.qrLabelsModal .qrSizeOptions .exportGraphic { display: none; }
+}
