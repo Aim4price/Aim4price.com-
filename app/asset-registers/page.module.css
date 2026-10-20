@@ -4470,3 +4470,23 @@
   box-sizing: border-box;
   padding-left: 3rem !important;
 }
+
+/* Register management uses the standard saved-asset identity card. */
+.manageWorkspace .standardAssetChoice {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center;
+  width: 100%;
+  border-radius: 1rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.manageWorkspace .standardAssetChoice .assetMoveCopy { display: grid; gap: .5rem; min-width: 0; }
+.manageWorkspace .standardAssetChoice [data-asset-choice-meta] { font-size: .9rem !important; line-height: 1.5 !important; }
+.manageWorkspace .standardAssetChoice [data-asset-choice-secondary] { font-size: .88rem !important; font-weight: 400 !important; }
+.manageWorkspace .standardAssetChoice:focus-visible { outline: 2px solid var(--app-accent, #17563f); outline-offset: 3px; }
+.manageWorkspace .standardAssetChoice:disabled { cursor: not-allowed; opacity: 1; }
+.manageWorkspace .standardAssetChoice:disabled > svg { opacity: .4; }
+.manageWorkspace .assetChoiceRegister { font-size: .82rem; color: var(--app-muted, #64746a); }
+.manageWorkspace .manageAssetScroller { padding: .85rem .75rem !important; scrollbar-gutter: stable; }
