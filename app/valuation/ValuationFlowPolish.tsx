@@ -238,8 +238,6 @@ export default function ValuationFlowPolish() {
   }, []);
 
   useLayoutEffect(() => {
-    let guardedWizard: HTMLElement | null = null;
-    let originalScrollIntoView: HTMLElement['scrollIntoView'] | null = null;
     let guardedReplacementSlider: HTMLInputElement | null = null;
     let originalReplacementStep = '';
     let previousHtmlOverflow = '';
@@ -260,24 +258,6 @@ export default function ValuationFlowPolish() {
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
       scrollLocked = false;
-    };
-
-    const restoreWizardGuard = () => {
-      if (guardedWizard && originalScrollIntoView) guardedWizard.scrollIntoView = originalScrollIntoView;
-      guardedWizard = null;
-      originalScrollIntoView = null;
-    };
-
-    const guardWizardScroll = () => {
-      const wizard = document.getElementById(WIZARD_CARD_ID);
-      if (wizard === guardedWizard) return;
-
-      restoreWizardGuard();
-      if (!wizard) return;
-
-      guardedWizard = wizard;
-      originalScrollIntoView = wizard.scrollIntoView;
-      wizard.scrollIntoView = () => undefined;
     };
 
     const restoreReplacementSlider = () => {
@@ -355,7 +335,6 @@ export default function ValuationFlowPolish() {
     };
 
     const syncFamilyPicker = () => {
-      guardWizardScroll();
       syncReplacementSliderStep();
 
       const nextPicker = findFamilyPicker();
@@ -429,7 +408,6 @@ export default function ValuationFlowPolish() {
     };
 
     setOverlayHost(document.getElementById('aim4price-website-overlays') ?? document.body);
-    guardWizardScroll();
     syncFamilyPicker();
 
     const observer = new MutationObserver(syncFamilyPicker);
@@ -449,7 +427,6 @@ export default function ValuationFlowPolish() {
       pickerRef.current = null;
       optionButtonsRef.current = new Map();
       restoreReplacementSlider();
-      restoreWizardGuard();
     };
   }, []);
 
