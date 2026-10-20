@@ -49,16 +49,17 @@
 .historyToolbar > .filters input { min-height:2.9rem; }
 .recordActions { gap:.6rem; flex-wrap:wrap; }
 .recordActions .deleteAction { color:#a33c32; background:#fff7f5; border-color:#e7cdc8; }
-.deleteConfirm { display:grid; justify-items:center; gap:1.25rem; text-align:center; color:#183a30; padding:.5rem 0; }
-.deleteIcon { display:grid; place-items:center; width:3.5rem; height:3.5rem; border-radius:1rem; background:#fbece8; color:#a33c32; }
-.deleteIcon svg { width:1.8rem; height:1.8rem; }
-.deleteConfirm > strong { font-size:1.1rem; line-height:1.5; }
-.deleteRecord { display:grid; gap:.5rem; width:100%; box-sizing:border-box; padding:1rem; border:1px solid #dce7e1; background:#f1f6f3; border-radius:.9rem; }
-.deleteRecord span { font-size:.85rem; overflow-wrap:anywhere; }
-.deleteConfirm p { margin:0; color:#5b7067; font-size:.9rem; line-height:1.6; max-width:48ch; }
+.deleteConfirm { display:grid; grid-template-columns:2.75rem minmax(0,1fr); align-items:center; gap:1rem .85rem; text-align:left; color:#183a30; padding:.15rem 0; }
+.deleteIcon { display:grid; place-items:center; grid-column:1; grid-row:1; width:2.75rem; height:2.75rem; border:1px solid #efd5cd; border-radius:.8rem; background:#fff3ee; color:#a33c32; }
+.deleteIcon svg { width:1.35rem; height:1.35rem; }
+.deleteConfirm > strong { grid-column:2; grid-row:1; font-size:1.05rem; line-height:1.45; font-weight:750; }
+.deleteRecord { grid-column:1/-1; display:grid; gap:.4rem; min-width:0; width:100%; box-sizing:border-box; padding:.95rem 1.1rem; border:1px solid #dce7e1; border-left:3px solid #9fbbaa; background:#f5f8f6; border-radius:.75rem; }
+.deleteRecord strong { font-size:.95rem; line-height:1.45; }
+.deleteRecord span { font-size:.85rem; line-height:1.5; color:#5b7067; overflow-wrap:anywhere; }
+.deleteConfirm > p { grid-column:1/-1; margin:0; color:#5b7067; font-size:.9rem; line-height:1.6; }
 .deleteConfirm .deleteError { color:#a33c32; }
-.confirmActions { display:flex; justify-content:flex-end; gap:.85rem; width:100%; padding-top:.5rem; }
-.confirmActions button { min-height:2.9rem; padding:.75rem 1.35rem; border:1px solid #c5d9d0; background:#f1f8f4; color:#145c42; border-radius:.75rem; font:inherit; font-weight:700; cursor:pointer; }
+.confirmActions { grid-column:1/-1; display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.75rem; width:100%; box-sizing:border-box; margin-top:.2rem; padding-top:1rem; border-top:1px solid #e2e9e5; }
+.confirmActions button { min-height:2.9rem; min-width:7rem; padding:.7rem 1.25rem; border:1px solid #c5d9d0; background:#fff; color:#244d3c; border-radius:.75rem; font:inherit; font-size:.9rem; font-weight:700; cursor:pointer; }
 .confirmActions .deleteButton { background:#a33c32; color:#fff; border-color:#a33c32; }
 .confirmActions button:disabled { opacity:.55; cursor:wait; }
 .confirmActions button:focus-visible { outline:3px solid #77ac92; outline-offset:3px; }
