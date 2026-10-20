@@ -41624,3 +41624,50 @@ button.documentOpenLink {
  :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revaluePreviewPanel { grid-template-columns:1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionModal .revalueDecisionActions { grid-template-columns:1fr; }
 }
+
+/* Register status pills follow the quiet, outlined cost-ledger badges. */
+.page .badgeRow,
+.page .umbrellaAttentionPills { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+.page .badgeRow > .badge,
+.page .umbrellaAttentionPills > span,
+.page .umbrellaFlagStatus {
+  box-sizing:border-box; display:inline-flex; align-items:center; gap:.45rem;
+  max-width:100%; min-width:0; min-height:2.15rem; padding:.4rem .8rem;
+  border:1px solid var(--app-line, #acd9c3); border-radius:1.5rem;
+  box-shadow:inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.65));
+  font-size:.8rem; font-weight:650; line-height:1.4; letter-spacing:normal;
+  text-transform:none; overflow-wrap:anywhere; white-space:normal;
+}
+.page .badgeRow > .badge::before,
+.page .umbrellaAttentionPills > span::before {
+  content:""; flex:0 0 .95rem; width:.95rem; height:.95rem;
+  background:currentColor; opacity:.85;
+  -webkit-mask:var(--register-pill-icon) center / contain no-repeat;
+  mask:var(--register-pill-icon) center / contain no-repeat;
+}
+.page .badgeRow > .badge, .page .umbrellaAttentionPills > span { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22M12%2011v6m0-10h.01%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeDanger { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M5%2021V4c4-4%2010%204%2014%200v10c-4%204-10-4-14%200%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeBudgetWarning { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M3%203v18h18M7%2016v-5m5%205V7m5%209v-3%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeWarning { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%207v5h-5M4%2017v-5h5M6%207a7%207%200%200%201%2011-1l3%203M4%2015l3%203a7%207%200%200%200%2011-1%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeInfo { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14%203H5v18h14V8l-5-5Zm0%200v5h5M8%2012h8m-8%204h5%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeMaintenanceUpcoming { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M14%206a5%205%200%200%200-6%206l-5%205a2.1%202.1%200%200%200%203%203l5-5a5%205%200%200%200%206-6l-3%203-3-3%203-3Z%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeMaintenanceDone { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%229%22%2F%3E%3Cpath%20d%3D%22m8%2012%203%203%205-6%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeIssueNote { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m12%203%2010%2018H2L12%203Zm0%206v5m0%203h.01%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > .badgeDealerCorrection { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M20%207v5h-5M4%2017v-5h5M6%207a7%207%200%200%201%2011-1l3%203M4%2015l3%203a7%207%200%200%200%2011-1%22%2F%3E%3C%2Fsvg%3E"); }
+.page .umbrellaAttentionPills > .umbrellaIssuePill { --register-pill-icon:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.8%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22m12%203%2010%2018H2L12%203Zm0%206v5m0%203h.01%22%2F%3E%3C%2Fsvg%3E"); }
+.page .badgeRow > :is(.badgeDanger,.badgeIssueNote,.badgeDealerCorrectionWarning),
+.page .umbrellaAttentionPills > .umbrellaIssuePill,
+.page .umbrellaFlagStatus {
+  color:var(--app-danger, #934b47) !important; background:var(--app-danger-soft, #fce9e7) !important;
+  border-color:var(--app-danger-line, #edc0bf) !important;
+}
+.page .badgeRow > :is(.badgeWarning,.badgeMaintenanceUpcoming),
+.page .umbrellaAttentionPills > span:not(.umbrellaIssuePill) {
+  color:var(--app-warning, #79571f) !important; background:var(--app-warning-soft, #fff4df) !important;
+  border-color:var(--app-warning-line, #e6d1a6) !important;
+}
+.page .badgeRow > .badgeMaintenanceDone {
+  color:var(--app-success, #12573f) !important; background:var(--app-success-soft, #d8f2e5) !important;
+  border-color:var(--app-success-line, #acd9c3) !important;
+}
+.page .umbrellaFlagStatus .buttonIcon { width:.95rem; height:.95rem; flex:0 0 .95rem; color:inherit !important; }
