@@ -268,6 +268,16 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   },
 };
 
+function LoginDetailIcon({ kind }: { kind: 'person' | 'shield' | 'clock' | 'gear' }) {
+  const paths = {
+    person: <><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a8 7 0 0 1 16 0v2" /></>,
+    shield: <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z" />,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 6v6l4 2" /></>,
+    gear: <><path d="m9 3-.6 2.2-1.8 1L4.4 6 2.9 8.6l1.6 1.7v2.1l-1.6 1.7L4.4 17l2.2-.3 1.8 1L9 20h3l.6-2.3 1.8-1 2.2.3 1.5-2.9-1.6-1.7v-2.1l1.6-1.7L16.6 6l-2.2.2-1.8-1L12 3Z" transform="translate(1.5 .5)" /><circle cx="12" cy="12" r="3" /></>,
+  };
+  return <svg className={styles.loginDetailIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{paths[kind]}</svg>;
+}
+
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
@@ -968,24 +978,26 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
     const roleSummary = config.roleSummary(record);
     return (
-      <div className={`${baseStyles.managerSummary} ${styles.managerSummary}`}>
-        <div className={baseStyles.managerIdentity}>
-          <strong>{record.displayName}</strong>
-          <span>{record.username}</span>
-          {roleSummary ? <small className={baseStyles.rolePill}>{roleSummary}</small> : null}
+      <div className={styles.loginSummary}>
+        <div className={styles.loginIdentity}>
+          <LoginDetailIcon kind="person" />
+          <div><strong>{record.displayName}</strong><span>{record.username}</span></div>
         </div>
-        <div className={`${baseStyles.managerSummaryMeta} ${styles.managerSummaryMeta} ${includeManageButton ? styles.listDates : ''}`} aria-label={`${config.itemLabel} dates`}>
-          <span><b>Last login</b>{formatDateTime(record.lastLoginAtIso)}</span>
-          {!includeManageButton ? <span><b>Updated</b>{formatDateTime(record.updatedAtIso)}</span> : null}
+        <div className={styles.loginActions}>
+          <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
+            {record.isActive ? 'Active' : 'Inactive'}
+          </span>
+          {includeManageButton ? (
+            <button type="button" className={styles.loginManageButton} onClick={() => setSelectedId(record.id)} aria-label={`Manage ${record.displayName}`}>
+              <LoginDetailIcon kind="gear" /> Manage
+            </button>
+          ) : null}
         </div>
-        <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
-          {record.isActive ? 'Active' : 'Inactive'}
-        </span>
-        {includeManageButton ? (
-          <button type="button" className={`${baseStyles.manageButton} ${styles.manageButton}`} onClick={() => setSelectedId(record.id)}>
-            Manage <span aria-hidden="true">›</span>
-          </button>
-        ) : null}
+        <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
+          {roleSummary ? <span><LoginDetailIcon kind="shield" />{roleSummary}</span> : null}
+          <span><LoginDetailIcon kind="clock" /><span>Last login <span>{formatDateTime(record.lastLoginAtIso)}</span></span></span>
+          {!includeManageButton ? <span><LoginDetailIcon kind="clock" /><span>Updated <span>{formatDateTime(record.updatedAtIso)}</span></span></span> : null}
+        </div>
       </div>
     );
   }
