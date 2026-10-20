@@ -37,6 +37,8 @@ import CaptureRequestDecisionModal from '../../components/CaptureRequestDecision
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
+import CostDetailIcon from '../../components/CostDetailIcon';
+import costDetailStyles from '../../components/CostDetailIcon.module.css';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 
@@ -3518,25 +3520,25 @@ export default function MyInvoicesClient({
                   </div>
                   <div id={detailsId} hidden={!expanded} className={styles.invoiceDetails}>
                     <h3>Cost details</h3>
-                    <dl className={styles.invoiceDetailsGrid}>
-                      <div><dt>Asset</dt><dd>{buildInvoiceAssetMeta(invoice).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</dd></div>
-                      <div><dt>Invoice date</dt><dd>{invoice.invoiceDate ? formatDateTime(invoice.invoiceDate) : 'Not recorded'}</dd></div>
-                      <div><dt>Excl. VAT</dt><dd>{invoice.subtotalExVat !== null ? formatMoney(invoice.subtotalExVat) : 'Not recorded'}</dd></div>
-                      <div><dt>VAT</dt><dd>{invoice.vatAmount !== null ? formatMoney(invoice.vatAmount) : 'Not recorded'}</dd></div>
-                      {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <div><dt>Usage at capture</dt><dd>{formatAssetUsageReading(invoice.usageReading, invoice.usageMetric) || '0 ' + (invoice.usageMetric === 'km' ? 'km' : 'hours')}</dd></div> : null}
-                      <div><dt>Source</dt><dd>{sourceLabel(invoice.source)}</dd></div>
-                      {invoice.createdByDisplayName ? <div><dt>Added by</dt><dd>{invoice.createdByDisplayName}</dd></div> : null}
-                      {invoice.createdAtIso ? <div><dt>Added</dt><dd>{formatDateTime(invoice.createdAtIso)}</dd></div> : null}
-                      {invoice.updatedAtIso ? <div><dt>Updated</dt><dd>{formatDateTime(invoice.updatedAtIso)}</dd></div> : null}
+                    <dl className={`${styles.invoiceDetailsGrid} ${costDetailStyles.detailsGrid}`}>
+                      <div><dt><CostDetailIcon kind="asset" />Asset</dt><dd>{buildInvoiceAssetMeta(invoice).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</dd></div>
+                      <div><dt><CostDetailIcon kind="calendar" />Invoice date</dt><dd>{invoice.invoiceDate ? formatDateTime(invoice.invoiceDate) : 'Not recorded'}</dd></div>
+                      <div><dt><CostDetailIcon kind="money" />Excl. VAT</dt><dd>{invoice.subtotalExVat !== null ? formatMoney(invoice.subtotalExVat) : 'Not recorded'}</dd></div>
+                      <div><dt><CostDetailIcon kind="percent" />VAT</dt><dd>{invoice.vatAmount !== null ? formatMoney(invoice.vatAmount) : 'Not recorded'}</dd></div>
+                      {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <div><dt><CostDetailIcon kind="usage" />Usage at capture</dt><dd>{formatAssetUsageReading(invoice.usageReading, invoice.usageMetric) || '0 ' + (invoice.usageMetric === 'km' ? 'km' : 'hours')}</dd></div> : null}
+                      <div><dt><CostDetailIcon kind="document" />Source</dt><dd>{sourceLabel(invoice.source)}</dd></div>
+                      {invoice.createdByDisplayName ? <div><dt><CostDetailIcon kind="person" />Added by</dt><dd>{invoice.createdByDisplayName}</dd></div> : null}
+                      {invoice.createdAtIso ? <div><dt><CostDetailIcon kind="calendar" />Added</dt><dd>{formatDateTime(invoice.createdAtIso)}</dd></div> : null}
+                      {invoice.updatedAtIso ? <div><dt><CostDetailIcon kind="clock" />Updated</dt><dd>{formatDateTime(invoice.updatedAtIso)}</dd></div> : null}
                     </dl>
                     {invoice.blocks.length ? <div className={styles.invoiceBreakdown}>
-                      {invoice.blocks.map((block) => <div key={block.id}><div><strong>{({ maintenance: 'Maintenance', parts: 'Parts', repair: 'Repair', other: 'Other' })[block.blockType]}</strong><p>{block.description || 'No description'}</p></div></div>)}
+                      {invoice.blocks.map((block) => <div key={block.id}><div><strong className={costDetailStyles.sectionHeading}><CostDetailIcon kind={block.blockType} />{({ maintenance: 'Maintenance', parts: 'Parts', repair: 'Repair', other: 'Other' })[block.blockType]}</strong><p>{block.description || 'No description'}</p></div></div>)}
                     </div> : <div className={styles.invoiceLegacyDetails}>
-                      {invoice.maintenanceWorkDone ? <p><strong>Maintenance</strong>{invoice.maintenanceWorkDone}</p> : null}
-                      {invoice.partsSupplied ? <p><strong>Parts</strong>{invoice.partsSupplied}</p> : null}
-                      {invoice.repairWorkDone ? <p><strong>Repair</strong>{invoice.repairWorkDone}</p> : null}
+                      {invoice.maintenanceWorkDone ? <p><strong className={costDetailStyles.sectionHeading}><CostDetailIcon kind="maintenance" />Maintenance</strong>{invoice.maintenanceWorkDone}</p> : null}
+                      {invoice.partsSupplied ? <p><strong className={costDetailStyles.sectionHeading}><CostDetailIcon kind="parts" />Parts</strong>{invoice.partsSupplied}</p> : null}
+                      {invoice.repairWorkDone ? <p><strong className={costDetailStyles.sectionHeading}><CostDetailIcon kind="repair" />Repair</strong>{invoice.repairWorkDone}</p> : null}
                     </div>}
-                    {invoice.notes ? <p className={styles.invoiceNotes}><strong>Notes</strong>{invoice.notes}</p> : null}
+                    {invoice.notes ? <p className={styles.invoiceNotes}><strong className={costDetailStyles.sectionHeading}><CostDetailIcon kind="document" />Notes</strong>{invoice.notes}</p> : null}
                   </div>
                 </LedgerDetailsCard>
               );
