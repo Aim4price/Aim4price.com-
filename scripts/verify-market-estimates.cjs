@@ -134,6 +134,30 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:390,height:844});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.screenshot({path:'/tmp/saleability-v2-mobile.png'});
+
+ // Fresh assessments must not preselect a selling area, even for dealers.
+ await page.setViewport({width:1280,height:650});
+ await page.evaluate(()=>window.root.render(React.createElement(require('components/SaleabilityModal').default,{key:'fresh-spacing',open:true,onClose:()=>{},assetTitle:'2022 New Holland TT4.90 4WD Openstation',valuationExVat:459000})));
+ const questionFits=async n=>{
+   await page.waitForFunction(n=>document.querySelector('[aria-label="Question '+n+' of 5"]'),{},n);
+   assert(await page.$eval('[aria-label="Question '+n+' of 5"]',el=>el.scrollHeight<=el.clientHeight+1),'Question '+n+' should fit without scrolling');
+ };
+ await questionFits(1);
+ await page.screenshot({path:'/tmp/saleability-spacing-question.png'});
+ await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.includes('Dealer / trade-in')).click());
+ await questionFits(2);
+ await page.$$eval('button',nodes=>nodes.find(n=>n.querySelector('strong')?.textContent==='Within 30 days').click());
+ await questionFits(3);
+ assert.equal(await page.$$eval('[aria-label="Question 3 of 5"] [aria-pressed="true"]',nodes=>nodes.length),0,'Selling area requires an explicit choice');
+ await click('Near me');
+ await questionFits(4);
+ await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.startsWith('Normal')).click());
+ await questionFits(5);
+ await click('Several');
+ await page.waitForSelector('[role="meter"]');
+ await page.screenshot({path:'/tmp/saleability-spacing-result.png'});
+ assert(await page.$eval('[aria-label="Your selling estimate"]',el=>el.scrollHeight<=el.clientHeight+1),'Result should fit a compact desktop viewport');
+ await page.screenshot({path:'/tmp/saleability-spacing-result.png'});
  assert(!Object.keys(modules).some(name=>name.includes('server/saleability')));
  assert.deepEqual(errors,[]);console.log('PASS all three price views, replacement actions, independent VAT, empty states, mobile fit and save retry');
  }finally{await browser.close();}
