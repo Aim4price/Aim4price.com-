@@ -1252,3 +1252,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .listDates { grid-column: 1 / -1; grid-row: 2; }
   :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .manageButton { grid-column: 1 / -1; grid-row: 3; }
 }
+
+/* Quiet login identity and metadata, shared by the directory and editor. */
+.modal .directoryCard { padding:0 !important; box-shadow:none !important; }
+.loginSummary { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:0; min-width:0; }
+.loginIdentity { display:flex; align-items:center; gap:1rem; padding:1.1rem 1.25rem; min-width:0; }
+.loginIdentity > div { display:grid; gap:.3rem; min-width:0; }
+.loginIdentity strong { color:var(--app-text,#143b30); font-size:1.08rem; font-weight:800; line-height:1.3; overflow-wrap:anywhere; }
+.loginIdentity span { color:var(--app-muted,#64756d); font-size:.92rem; font-weight:550; line-height:1.4; overflow-wrap:anywhere; }
+.loginDetailIcon { width:1.25rem; height:1.25rem; flex:0 0 1.25rem; color:var(--app-muted,#70877c); pointer-events:none; }
+.loginIdentity > .loginDetailIcon { width:1.5rem; height:1.5rem; flex-basis:1.5rem; }
+.loginActions { display:flex; align-items:center; gap:1.25rem; padding:1rem 1.25rem 1rem 0; }
+.loginManageButton { display:inline-flex; align-items:center; justify-content:center; gap:.65rem; min-height:2.85rem; padding:.65rem 1rem; border:1px solid var(--app-line,#d5e1da); border-radius:.65rem; background:var(--app-surface-soft,#f3f8f5); color:var(--app-text,#195440); font:inherit; font-size:.95rem; font-weight:700; cursor:pointer; }
+.loginManageButton .loginDetailIcon { color:inherit; }
+.loginManageButton:hover { border-color:var(--app-accent,#28815f); background:var(--app-success-soft,#edf5f0); }
+.loginManageButton:focus-visible { outline:2px solid var(--app-accent,#28815f); outline-offset:3px; }
+.loginDetails { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem 1.4rem; grid-column:1 / -1; padding:.9rem 1.25rem; border-top:1px solid var(--app-line,#e0e8e3); color:var(--app-muted,#64756d); font-size:.87rem; font-weight:500; line-height:1.5; }
+.loginDetails > span { display:flex; align-items:center; gap:.7rem; min-width:0; overflow-wrap:anywhere; }
+.loginDetails > span + span { border-inline-start:1px solid var(--app-line,#dce5df); padding-inline-start:1.4rem; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginSummary { grid-template-columns:minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginActions { justify-content:space-between; padding:0 1rem 1rem; gap:.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginIdentity { padding:1rem; gap:.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginDetails { padding:.85rem 1rem; flex-direction:column; align-items:flex-start; gap:.65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .loginDetails > span + span { border-inline-start:0; padding-inline-start:0; }
+}
