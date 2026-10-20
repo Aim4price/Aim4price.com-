@@ -930,6 +930,17 @@
 .sellingSummary .choiceIcon svg { width: 22px; height: 22px; }
 .sellingSummary dt { color: #596e64; font-size: .75rem; line-height: 1.4; }
 .sellingSummary dd { margin: 0; color: #163e30; font-size: .85rem; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.easeCard { padding: 16px 20px; border: 1px solid #dce7e1; border-radius: 16px; background: #fff; }
+.easeHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.easeHeading h3 { margin: 0; color: #163e30; font-size: 1rem; }
+.easeHeading p { margin: 4px 0 0; color: #52675e; font-size: .85rem; }
+.easeHeading > strong { color: #163e30; font-size: 1.9rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.easeHeading > strong > span { font-size: .85rem; font-weight: 600; color: #52675e; }
+.easeMeter { height: 8px; overflow: hidden; margin: 12px 0 8px; background: #edf1ee; border-radius: 8px; }
+.easeMeter > span { display: block; height: 100%; border-radius: inherit; background: #287858; }
+.easeMeter[data-level='moderate'] > span { background: #3578a4; }
+.easeMeter[data-level='limited'] > span { background: #a96e20; }
+.easeNote { margin: 0; font-size: .78rem; line-height: 1.45; color: #52675e; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .sellingSummary { grid-template-columns: 1fr; gap: 8px; }
   :global(:where(html:not(:has([data-website-canvas])))) .sellingSummary > div { padding: 10px 12px; }

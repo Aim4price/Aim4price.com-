@@ -31,7 +31,7 @@ async function handle(request:NextRequest){
   if(!asset)return businessJson({error:'Asset unavailable.'},404);
   if(body.basis!==saleabilityBasis(asset))return businessJson({error:'Asset details changed. Reload the register and review your answers.'},409);
   const assessment=assessSaleability(asset,body.answers);
-  if(body.preview === true)return businessJson({quote:{priceExVat:assessment.priceExVat,resultLabel:assessment.resultLabel,modelVersion:assessment.modelVersion}});
+  if(body.preview === true)return businessJson({quote:{priceExVat:assessment.priceExVat,resultLabel:assessment.resultLabel,modelVersion:assessment.modelVersion,...(assessment.ease?{ease:assessment.ease}:{})}});
   // Compare the asset revision atomically; do not attach an assessment to newer details.
   const saved=await db.query(`INSERT INTO asset_saleability_assessments(owner_id,asset_id,actor_id,assessment) SELECT $1,a.id,$3,$4::jsonb FROM asset_register_items a WHERE a.user_id=$1 AND a.id=$2::uuid AND date_trunc('milliseconds',a.updated_at)=$5::timestamptz RETURNING id`,[session.user.id,asset.id,isOwnerAppSession(session)?session.ownerApp.ownerAppUserId:session.user.id,JSON.stringify(assessment),asset.updatedAtIso]);
   if(!saved.rowCount)return businessJson({error:'Asset changed while saving. Reload and try again.'},409);

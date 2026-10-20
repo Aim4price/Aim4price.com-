@@ -45,8 +45,7 @@ function evaluate(expression: unknown, inputs: Record<string, unknown>, budget: 
   throw Error('Invalid pricing configuration.');
 }
 
-function calculatePrivatePrice(value: number, answers: SaleabilityRefinementAnswers, context: SaleabilityContext) {
-  const rawPolicy = process.env.SALEABILITY_POLICY_JSON;
+function calculatePrivatePolicy(rawPolicy: string | undefined, value: number, answers: SaleabilityRefinementAnswers, context: SaleabilityContext) {
   if (!rawPolicy || rawPolicy.length > 50000) throw Error('Saleability is temporarily unavailable.');
   const policy = JSON.parse(rawPolicy);
   if (!policy || typeof policy.version !== 'string' || !/^[a-zA-Z0-9._-]{1,60}$/.test(policy.version)
@@ -59,7 +58,7 @@ function calculatePrivatePrice(value: number, answers: SaleabilityRefinementAnsw
     steps[step.name] = evaluate(step.expression, inputs, budget);
   }
   const result = evaluate(policy.result, inputs, budget);
-  if (typeof result !== 'number' || !Number.isFinite(result) || result <= 0 || result > 1e13) throw Error('Invalid pricing result.');
+  if (typeof result !== 'number' || !Number.isFinite(result) || result < 0 || result > 1e13) throw Error('Invalid pricing result.');
   return {raw: result, version: policy.version};
 }
 
@@ -67,12 +66,24 @@ export function quoteSaleability(valueExVat: number, answers: SaleabilityRefinem
   if (!validCurrentSaleabilityAnswers(answers) || !Number.isFinite(valueExVat) || valueExVat <= 0 || valueExVat > 1e12) {
     throw new Error('Complete the selling questions and enter a valid asset value.');
   }
-  const {raw, version} = calculatePrivatePrice(valueExVat, answers, context);
+  const {raw, version} = calculatePrivatePolicy(process.env.SALEABILITY_POLICY_JSON, valueExVat, answers, context);
+  if (raw <= 0) throw Error('Invalid pricing result.');
   const increment = raw >= 100000 ? 1000 : raw >= 10000 ? 500 : raw >= 1000 ? 100 : raw >= 100 ? 10 : 0.01;
   const priceExVat = Math.round(Math.max(increment, Math.round(raw / increment) * increment) * 100) / 100;
   const resultLabel = answers.sellingRoute === 'dealer' ? 'Estimated dealer offer'
     : answers.sellingRoute === 'auction' ? 'Estimated auction price' : 'Estimated selling price';
-  return { priceExVat, resultLabel, modelVersion: version };
+  // A score outage must not change or prevent an otherwise valid price estimate.
+  let ease: SaleabilityQuote['ease'];
+  if (process.env.SALEABILITY_EASE_POLICY_JSON) {
+    try {
+      // Deliberately exclude the monetary value: ease is not a price ratio.
+      const score = calculatePrivatePolicy(process.env.SALEABILITY_EASE_POLICY_JSON, 0, answers, context);
+      if (score.raw > 100) throw Error('Invalid ease score.');
+      ease = { score: Math.round(score.raw), version: score.version,
+        provisional: answers.currentDemand === 'unknown' || answers.similarAssetsAvailable === 'unknown' };
+    } catch { console.error('Saleability ease score unavailable.'); }
+  }
+  return { priceExVat, resultLabel, modelVersion: version, ...(ease ? {ease} : {}) };
 }
 
 export function assessSaleability(asset: SaleabilityAsset, answers: SaleabilityRefinementAnswers): SavedSaleability {

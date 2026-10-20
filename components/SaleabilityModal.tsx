@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { GeneralSaleabilityInput, SaleabilityRefinementAnswers } from '../lib/saleability';
-import { validCurrentSaleabilityAnswers, type SaleabilityContext, type SaleabilityQuote } from '../lib/asset-saleability';
+import { validSaleabilityEase, saleabilityEaseLabel, validCurrentSaleabilityAnswers, type SaleabilityContext, type SaleabilityQuote } from '../lib/asset-saleability';
 import { SALEABILITY_PDF_PLAN_SESSION_KEY, createSaleabilityPdfPlanSnapshot } from '../lib/saleability-pdf';
 import PricingVatToggle from './PricingVatToggle';
 import { pricingVatAmount } from '../lib/pricing-vat';
@@ -235,6 +235,11 @@ export default function SaleabilityModal({
               <strong>{displayMoney(plan.priceExVat)}</strong>
               <p>{vatLabel} · Before selling fees</p>
             </section>
+            {validSaleabilityEase(plan.ease) ? <section className={styles.easeCard} aria-label="Ease of selling">
+              <div className={styles.easeHeading}><div><h3>Ease of selling</h3><p>{saleabilityEaseLabel(plan.ease.score)}{plan.ease.provisional ? ' · Provisional' : ''}</p></div><strong>{plan.ease.score}<span> / 100</span></strong></div>
+              <div className={styles.easeMeter} role="meter" aria-label="Ease of selling score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={plan.ease.score} aria-valuetext={`${plan.ease.score} out of 100 — ${saleabilityEaseLabel(plan.ease.score)}`} data-level={plan.ease.score >= 65 ? 'strong' : plan.ease.score >= 45 ? 'moderate' : 'limited'}><span style={{width: `${plan.ease.score}%`}} /></div>
+              <p className={styles.easeNote}>{plan.ease.provisional ? 'Some market answers are unknown. ' : ''}Based on your answers and selling plan. Not a probability or guarantee of sale.</p>
+            </section> : <p className={styles.easeNote}>Ease of selling score unavailable.</p>}
             <dl className={styles.sellingSummary} aria-label="Your selling plan">
               <div><SaleIcon kind="route" value={answers.sellingRoute} /><dt>Method</dt><dd>{ROUTE_OPTIONS.find(option => option.value === answers.sellingRoute)?.label}</dd></div>
               <div><SaleIcon kind="time" value={answers.desiredTimeline} /><dt>Timeframe</dt><dd>{TIMELINE_OPTIONS.find(option => option.value === answers.desiredTimeline)?.label}</dd></div>
