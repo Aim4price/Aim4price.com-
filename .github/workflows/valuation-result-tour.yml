@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'components/ValuationResultTour.tsx'
+      - 'components/ValuationFlowFocus.tsx'
+      - 'components/valuation-flow-focus.module.css'
       - 'components/valuation-result-tour.module.css'
       - 'app/valuation/valuation-client.tsx'
       - 'scripts/verify-valuation-result-tour.cjs'

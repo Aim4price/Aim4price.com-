@@ -38,6 +38,7 @@ function add(file){
 
 
 add('components/ValuationResultTour');
+add('components/ValuationFlowFocus');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -55,9 +56,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+"window.root=ReactDOM.createRoot(document.getElementById('app'));window.root.render(React.createElement(require('components/ValuationResultTour').default));"});
  const click=async text=>{await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(n=>n.textContent===t).click(),text)};
+ const finish=async()=>{while(await page.$('dialog[open]')){const done=await page.$$eval('button',nodes=>nodes.some(n=>n.textContent==='Done'));await click(done?'Done':'Next');await page.evaluate(()=>new Promise(requestAnimationFrame));}};
  await page.waitForSelector('[aria-haspopup="dialog"]');
- assert.equal(await page.$('dialog[open]'),null);
- await page.click('[aria-haspopup="dialog"]');
+ assert.equal(await page.$('button[aria-label="Close walkthrough"]'),null);
  await page.waitForSelector('dialog[open]');
  await page.waitForFunction(()=>document.querySelector('#value-tour-title')?.textContent==='Your estimated value');
  await page.waitForFunction(()=>!document.querySelector('dialog').getAnimations({subtree:true}).some(a=>a.playState==='running'));
@@ -69,7 +70,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Done');assert.equal(await page.$('dialog[open]'),null);
  assert(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')==='dialog'));
  await click('Show me around');await page.waitForSelector('dialog[open]');
- await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ await page.keyboard.press('Escape');assert(await page.$('dialog[open]'));
+ await finish();
  await page.setViewport({width:390,height:844});
  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
  await click('Show me around');await page.waitForSelector('dialog[open]');
@@ -78,13 +80,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.evaluate(()=>{const r=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}));
  await page.keyboard.press('Tab');
  assert(await page.evaluate(()=>document.querySelector('dialog').contains(document.activeElement)));
- await click('Skip');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ await finish();
  await page.evaluate(()=>document.querySelector('[data-value-tour="replacement"]').remove());
  await click('Show me around');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 3')));
  await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Saleability');
 
- await click('Skip');
+ await finish();
  await page.setViewport({width:1366,height:768});
  for (const scale of [0.6,1,1.2]) {
    await page.evaluate(scale=>{
@@ -105,9 +107,31 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    assert(Math.abs(geometry.target.left-geometry.spotlight.left)<=9,JSON.stringify({scale,geometry}));
    assert(Math.abs(geometry.target.top-geometry.spotlight.top)<=9,JSON.stringify({scale,geometry}));
    assert(geometry.panel.left>=0&&geometry.panel.right<=geometry.width&&geometry.panel.top>=0&&geometry.panel.bottom<=geometry.height,JSON.stringify({scale,geometry}));
-   await click('Skip');
+   await finish();
  }
+
+ // Remounting a new result must start the walkthrough again.
+ await page.evaluate(()=>window.root.render(React.createElement(require('components/ValuationResultTour').default,{key:'new-estimate'})));
+ await page.waitForSelector('dialog[open]');await finish();
+ // Earlier steps: focus is visual only, and follows the next question and input.
+ await page.evaluate(()=>{
+   window.root.render(React.createElement(require('components/ValuationFlowFocus').default,{enabled:true,activeSelector:'.next-question'}));
+   const main=document.querySelector('main');main.style.zoom='1';main.dataset.websiteScale='1';
+   main.style.setProperty('--website-visible-width',innerWidth+'px');main.style.setProperty('--website-visible-height',innerHeight+'px');
+   const wizard=document.createElement('section');wizard.id='valuation-wizard-card';
+   wizard.innerHTML='<button class="next-question">Manufacturing year</button><label style="display:block;padding:24px">Brand<input aria-label="Brand"></label><button id="continue-test">Continue</button>';
+   main.prepend(wizard);window.scrollTo(0,0);
+   document.querySelector('#continue-test').onclick=()=>window.continued=true;
+ });
+ await page.waitForSelector('[data-valuation-flow-focus]');
+ await page.focus('input[aria-label="Brand"]');await page.type('input[aria-label="Brand"]','Landini');
+ assert.equal(await page.$eval('input[aria-label="Brand"]',e=>e.value),'Landini');
+ await page.click('#continue-test');assert(await page.evaluate(()=>window.continued));
+ await page.evaluate(()=>{const modal=document.createElement('div');modal.dataset.websiteOverlay='';modal.setAttribute('role','dialog');modal.id='focus-modal';modal.textContent='Choose year';document.body.append(modal);});
+ await page.waitForFunction(()=>!document.querySelector('[data-valuation-flow-focus]'));
+ await page.evaluate(()=>document.getElementById('focus-modal').remove());
+ await page.waitForSelector('[data-valuation-flow-focus]');
  assert.deepEqual(errors,[]);
- console.log('PASS optional start, four steps, Back, Done, focus restore, Escape, Skip, reopen, mobile, reduced motion and missing target');
+ console.log('PASS mandatory start on every result, four steps, Back/Done, keyboard, mobile, zoom alignment, live input focus and modal handoff');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
