@@ -5269,3 +5269,35 @@
  content: ''; position: absolute; left: 0; right: 0; top: -.75rem; height: 1px;
  background: var(--app-line, #e2eae7); opacity: .65; pointer-events: none;
 }
+
+
+/* Let scheduling choices expand in the form instead of covering its footer. */
+.customFilterSelectMenu.scheduleDropdownMenu {
+  position: static; inset: auto; transform: none; width: 100%;
+  max-height: 16rem; margin-top: .65rem; padding: .5rem;
+  display: grid; gap: .35rem; overflow-y: auto;
+  border: 1px solid var(--app-line, #d5e3dc); border-radius: 1rem;
+  background: var(--app-surface, #fff); box-shadow: none;
+  scrollbar-width: auto; scrollbar-color: #8eae9e #f1f6f3;
+}
+.scheduleDropdownMenu .customFilterSelectOption {
+  display: flex; align-items: center; justify-content: space-between; gap: .8rem;
+  min-height: 3.15rem; padding: .85rem 1rem; border-radius: .7rem;
+  font-size: 1rem; font-weight: 500; line-height: 1.4;
+}
+.scheduleDropdownMenu .customFilterSelectOption svg { width: 1.1rem; height: 1.1rem; flex: 0 0 auto; }
+.scheduleDropdownMenu .customFilterSelectOption:focus-visible { outline: 2px solid #35865e; outline-offset: -2px; }
+.simpleScheduleDialog .scheduleSectionHeading { gap: .8rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.5rem; }
+.scheduleStepCount { margin-left: auto; color: var(--app-muted, #6c8177); font-size: .8rem; font-weight: 500; white-space: nowrap; }
+.simpleScheduleDialog .scheduleQuestion { gap: 1.25rem; }
+.simpleScheduleDialog .scheduleQuestion .filterField { gap: .65rem; }
+.simpleScheduleDialog .scheduleQuestion :is(input, textarea, .customFilterSelectButton) {
+  min-height: 3.5rem; padding: .95rem 1rem; border-radius: .85rem;
+  background: var(--app-surface, #fff); border-color: var(--app-line, #c9dcd2);
+  font-size: 1.05rem; line-height: 1.5; box-shadow: none;
+}
+.simpleScheduleDialog .scheduleQuestion :is(input, textarea):focus { outline: 2px solid #73aa90; outline-offset: 2px; }
+.simpleScheduleDialog .scheduleQuestion textarea { min-height: 8rem; resize: vertical; }
+.simpleScheduleDialog .maintenanceInlineFields { align-items: start; gap: .85rem; }
+.simpleScheduleDialog .scheduleQuestion .customFilterSelectChevron { width: 1.5rem; height: 1.5rem; padding: .2rem; border: 1px solid var(--app-line, #d5e3dc); border-radius: 50%; }
+.simpleScheduleDialog .scheduleQuestion small { line-height: 1.5; font-weight: 500; color: var(--app-muted, #6c8177); }
