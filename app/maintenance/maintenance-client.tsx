@@ -18,7 +18,6 @@ import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
-import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openCanonicalReportUrl } from '../../lib/report-open';
@@ -641,7 +640,9 @@ function MaintenanceDropdown({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        event.stopPropagation();
         setIsOpen(false);
+        rootRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
       }
     }
 
@@ -683,7 +684,15 @@ function MaintenanceDropdown({
         </button>
 
         {isOpen ? (
-          <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+          <div className={`${styles.customFilterSelectMenu} ${styles.scheduleDropdownMenu}`} role="listbox" aria-label={label} onKeyDown={(event) => {
+            if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+            const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="option"]'));
+            if (!items.length) return;
+            event.preventDefault();
+            const index = items.indexOf(document.activeElement as HTMLButtonElement);
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowUp' ? -1 : 1) + items.length) % items.length;
+            items[next]?.focus();
+          }}>
             {searchable ? (
               <div className={styles.customFilterSearchRow}>
                 <input
@@ -709,11 +718,13 @@ function MaintenanceDropdown({
                     onClick={() => {
                       onChange(option.value);
                       setIsOpen(false);
+                      rootRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
                     }}
                     role="option"
                     aria-selected={isSelected}
                   >
                     <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
+                    {isSelected ? <CheckIcon /> : null}
                   </button>
                 );
               })
@@ -722,7 +733,7 @@ function MaintenanceDropdown({
                 <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
               </div>
             )}
-          </DropdownOverlay>
+          </div>
         ) : null}
       </div>
     </div>
@@ -837,6 +848,7 @@ export default function MaintenanceClient({
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const selectedDraftAsset = draft ? assetById.get(draft.assetId) : undefined;
+  const selectedDraftRecord = editingRecordId ? records.find((record) => record.id === editingRecordId) : undefined;
   const quickLaunchReturnTo = (initialOpenAdd || initialOpenChecklists) && initialAssetId ? initialReturnTo : '';
   const assetEntryLocked = quickLaunchActive && Boolean(initialAssetId && assetById.has(initialAssetId));
   const filteredAssetReturnTo = !initialOpenAdd && initialAssetId && assetById.has(initialAssetId)
@@ -1632,7 +1644,7 @@ export default function MaintenanceClient({
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
-                <p>{cleanMaintenanceAssetTitle(selectedDraftAsset?.title || 'Selected asset')}</p>
+                <p>{cleanMaintenanceAssetTitle(selectedDraftAsset?.title || selectedDraftRecord?.assetTitle || 'Selected asset')}</p>
               </div>
               <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance form">
                 <CloseIcon />
@@ -1641,8 +1653,9 @@ export default function MaintenanceClient({
 
             <div key={scheduleStep} className={`${styles.formModalScrollBody} ${dialogStyles.body}`}>
               <div className={styles.scheduleSectionHeading}>
-                <ScheduleIcon />
+                <CostDetailIcon kind={(['calendar', 'clock', 'calendar', 'person', 'document'] as const)[scheduleStep]} />
                 <h3 aria-live="polite">{['When is it due?', 'When should we remind you?', 'Should this repeat?', 'Who is responsible?', 'Any notes?'][scheduleStep]}</h3>
+                <span className={styles.scheduleStepCount}>Step {scheduleStep + 1} of 5</span>
               </div>
               <div className={styles.scheduleQuestion}>
                 {scheduleStep === 0 ? (
@@ -1653,7 +1666,7 @@ export default function MaintenanceClient({
                       <label className={styles.filterField}>
                         <span>Due at ({usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)})</span>
                         <input aria-label="Due usage" required type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
-                        <small>Current: {formatUsage(selectedDraftAsset?.usageReading ?? null, selectedDraftAsset?.usageMetric ?? draft.usageMetric)}</small>
+                        <small>Current: {formatUsage(selectedDraftAsset?.usageReading ?? selectedDraftRecord?.currentUsage ?? null, selectedDraftAsset?.usageMetric ?? draft.usageMetric)}</small>
                       </label>
                     )}
                   </>
@@ -1865,5 +1878,6 @@ export default function MaintenanceClient({
     </div>
   );
 }
+
 
 
