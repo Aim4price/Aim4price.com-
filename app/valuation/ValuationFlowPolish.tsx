@@ -482,16 +482,18 @@ export default function ValuationFlowPolish() {
               <button type="button" onClick={() => setFamilySearch('')} aria-label="Clear family search">×</button>
             ) : null}
           </label>
-          <span className={styles.familyResultCount} aria-live="polite">
-            {visibleFamilyOptions.length} {visibleFamilyOptions.length === 1 ? 'result' : 'results'}
-          </span>
+          {familyGroups.length > 1 ? <label className={styles.familyCategoryField}>
+            <span className={styles.srOnly}>Equipment category</span>
+            <select aria-label="Equipment category" value={familyGroup} onChange={event => setFamilyGroup(event.target.value)}>
+              <option value="">All categories</option>
+              {familyGroups.map(group => <option key={group} value={group}>{group}</option>)}
+            </select>
+          </label> : null}
         </div>
-
-        {familyGroups.length > 1 ? <div className={styles.familyCategories} role="group" aria-label="Equipment categories">
-          <button type="button" aria-pressed={!familyGroup} onClick={() => setFamilyGroup('')}>All</button>
-          {familyGroups.map(group => <button key={group} type="button" aria-pressed={familyGroup === group} onClick={() => setFamilyGroup(group)}>{group}</button>)}
-        </div> : null}
-        <div className={styles.familyListHeading}><strong>{familyGroup || `All ${familyTypeLabel === 'vehicle type' ? 'vehicles' : 'equipment'}`}</strong><span>{familySearch.trim() ? 'Matches · A–Z' : 'A–Z'}</span></div>
+        <div className={styles.familyListHeading}>
+          <strong>{familyGroup || `All ${familyTypeLabel === 'vehicle type' ? 'vehicles' : 'equipment'}`}</strong>
+          <span className={styles.familyResultCount} aria-live="polite">{visibleFamilyOptions.length} {visibleFamilyOptions.length === 1 ? 'result' : 'results'} · A–Z</span>
+        </div>
         <div ref={optionsViewportRef} className={styles.familyOptionsViewport}>
           {visibleFamilyOptions.length ? (
             <div className={styles.familyOptionsGrid}>
