@@ -41700,3 +41700,38 @@ button.documentOpenLink {
     min-height: 0;
   }
 }
+
+/* Keep the quick-action rail and summary on one shared, vertically centred row.
+   The rail's intrinsic height handles any number of available actions. */
+.page .assetCardRow > .assetCard:has(> .assetSideActions) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: .75rem;
+  padding: 1.4rem 1.38rem 1.4rem 1rem !important;
+  min-height: 0;
+}
+.page .assetCardRow > .assetCard > .assetGroupMemberActions.assetSideActions {
+  position: static !important;
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  margin: 0 !important;
+}
+.page .assetCard:has(> .assetSideActions) > .assetHeader {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+}
+.page .assetCard:has(> .assetSideActions) > .assetBody {
+  grid-column: 2;
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetCardRow > .assetCard:has(> .assetSideActions) {
+    display: block;
+    padding: 1.2rem !important;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetCardRow > .assetCard > .assetGroupMemberActions.assetSideActions {
+    margin: 0 0 .8rem !important;
+  }
+}
