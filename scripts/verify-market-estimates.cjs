@@ -101,7 +101,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.body.textContent.includes('Not calculated'));
  assert(await page.evaluate(()=>document.querySelector('[aria-label="Saleability estimate"]').disabled));
  await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0',ease:{score:72,version:'fixture-ease',provisional:false}}})});window.root.render(React.createElement(require('components/SaleabilityModal').default,{open:true,onClose:()=>{window.modalClosed=true},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:{modelVersion:2,sellingRoute:'direct',saleArea:'province',similarAssetsAvailable:'one_to_three',realisticBuyerPool:'moderate',currentDemand:'normal',modelFamiliarity:'common',desiredTimeline:'60',sellingPriority:'balanced'},onSave:async answers=>{window.sent=answers;if(!window.allowSave)throw Error('Save failed — retry');}}));});
- await page.waitForFunction(()=>document.body.textContent.includes('Uses your previous answers and latest asset details.'));
+ await page.waitForSelector('[aria-label="Your selling estimate"]');
+ assert(!await page.evaluate(()=>document.body.textContent.includes('Uses your previous answers')));
  await page.setViewport({width:1366,height:768});
  assert(await page.evaluate(()=>!document.querySelector('[role="dialog"]').textContent.includes('Question 1 of 5')));
  await page.screenshot({path:'/tmp/saleability-recalculate.png'});
@@ -111,16 +112,16 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Recalculate');await page.waitForFunction(()=>document.body.textContent.includes('Save failed — retry'));assert.equal(await page.evaluate(()=>!!window.modalClosed),false);
  await page.evaluate(()=>window.allowSave=true);await click('Recalculate');await page.waitForFunction(()=>window.modalClosed);assert.equal(await page.evaluate(()=>window.sent.currentDemand),'normal');
  await click('Change answers');
- await page.waitForFunction(()=>document.body.textContent.includes('Question 1 of 5'));
+ await page.waitForSelector('[aria-label="Question 1 of 5"]');
  await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.includes('Dealer / trade-in')).click());
- await page.waitForFunction(()=>document.body.textContent.includes('Question 2 of 5'));
+ await page.waitForSelector('[aria-label="Question 2 of 5"]');
  // Complete all five questions and check the uncluttered result.
  await page.$$eval('button',nodes=>nodes.find(n=>n.querySelector('strong')?.textContent==='Within 30 days').click());
- await page.waitForFunction(()=>document.body.textContent.includes('Question 3 of 5'));
+ await page.waitForSelector('[aria-label="Question 3 of 5"]');
  await click('Near me');
- await page.waitForFunction(()=>document.body.textContent.includes('Question 4 of 5'));
+ await page.waitForSelector('[aria-label="Question 4 of 5"]');
  await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.startsWith('Normal')).click());
- await page.waitForFunction(()=>document.body.textContent.includes('Question 5 of 5'));
+ await page.waitForSelector('[aria-label="Question 5 of 5"]');
  await click('Several');
  await page.waitForFunction(()=>document.body.textContent.includes('Estimated selling price'));
  assert(!await page.evaluate(()=>/Rating details|Market score|Grade [A-E]/.test(document.body.textContent)));
