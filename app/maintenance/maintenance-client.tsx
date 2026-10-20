@@ -684,7 +684,7 @@ function MaintenanceDropdown({
         </button>
 
         {isOpen ? (
-          <div className={`${styles.customFilterSelectMenu} ${styles.scheduleDropdownMenu}`} role="listbox" aria-label={label} onKeyDown={(event) => {
+          <div className={`${styles.customFilterSelectMenu} ${styles.scheduleDropdownMenu}`} data-inline-listbox="maintenance-schedule" role="listbox" aria-label={label} onKeyDown={(event) => {
             if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
             const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button[role="option"]'));
             if (!items.length) return;

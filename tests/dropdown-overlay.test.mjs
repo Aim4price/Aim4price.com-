@@ -230,7 +230,7 @@ function hasSharedOverlayAncestor(source, offset) {
   return false;
 }
 
-test('every custom listbox uses the shared overlay or a verified body portal', async () => {
+test('every custom listbox uses an overlay, verified body portal, or verified in-flow schedule list', async () => {
   const sourceFiles = [
     ...await listSourceFiles('app'),
     ...await listSourceFiles('components'),
@@ -248,7 +248,13 @@ test('every custom listbox uses the shared overlay or a verified body portal', a
       const verifiedPortal = /data-dropdown-overlay-(?:portal|contained)="true"/.test(tag)
         && source.includes('createPortal')
         && source.includes('document.body');
-      if (!sharedOverlay && !verifiedPortal) {
+      // Scheduling choices intentionally expand the form and push its footer down.
+      // This narrowly scoped exception is checked against its layout contract below.
+      const inlineSchedule = relativePath === 'app/maintenance/maintenance-client.tsx'
+        && tagName === 'div'
+        && /data-inline-listbox="maintenance-schedule"/.test(tag)
+        && /styles\.scheduleDropdownMenu/.test(tag);
+      if (!sharedOverlay && !verifiedPortal && !inlineSchedule) {
         violations.push(`${relativePath}: ${tag.replace(/\s+/g, ' ').slice(0, 160)}`);
       }
     }
@@ -289,14 +295,13 @@ test('marketplace filters use branded listboxes instead of browser-native select
   assert.match(styles, /\.filterSelectOptionActive \{[\s\S]*?background: #e8f3ee/);
 });
 
-test('report, modal, maintenance, fuel, invoice, and document dropdowns are migrated', async () => {
+test('floating report, modal, fuel, invoice, and document dropdowns are migrated', async () => {
   const criticalFiles = [
     'components/asset-register/AssetGroupManagerModal.tsx',
     'components/DealerMaintenanceReportModal.tsx',
     'components/DealerCostOfOwnershipReportModal.tsx',
     'components/DealerMaintenanceScheduleModal.tsx',
     'app/asset-register/asset-register-client.tsx',
-    'app/maintenance/maintenance-client.tsx',
     'app/fuel/fuel-client.tsx',
     'app/fuel/missing-fuel-entry-modal.tsx',
     'app/my-invoices/my-invoices-client.tsx',
@@ -342,4 +347,29 @@ test('calendar listboxes remain inside their body-portalled top-layer dialog', a
   assert.match(source, /createPortal\(<dialog[\s\S]*<CalendarSelect[\s\S]*<\/dialog>, document\.body\)/);
   assert.match(source, /dialog\.current\?\.showModal\(\)/);
   assert.match(css, /\.selectMenu\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/);
+});
+
+
+test('maintenance schedule choices stay in flow and remain keyboard accessible', async () => {
+  const source = await read('app/maintenance/maintenance-client.tsx');
+  const css = await read('app/maintenance/page.module.css');
+  const roles = [...source.matchAll(/role="listbox"/g)];
+  assert.equal(roles.length, 1);
+  const tag = openingTagAt(source, roles[0].index);
+  assert.match(tag, /data-inline-listbox="maintenance-schedule"/);
+  assert.match(tag, /styles\.scheduleDropdownMenu/);
+  assert.match(tag, /onKeyDown=/);
+  assert.match(tag, /ArrowDown/);
+  assert.match(tag, /ArrowUp/);
+  assert.match(source, /aria-selected=\{isSelected\}/);
+  assert.match(source, /event\.key === 'Escape'/);
+  const ast = (await import('./helpers/site-layout-audit.mjs')).postcss.parse(css);
+  const rules = ast.nodes.filter(node => node.type === 'rule' && node.selector === '.customFilterSelectMenu.scheduleDropdownMenu');
+  assert.equal(rules.length, 1, 'The inline dropdown must have an explicit layout rule.');
+  const values = Object.fromEntries(rules[0].nodes.filter(node => node.type === 'decl').map(node => [node.prop, node.value]));
+  assert.equal(values.position, 'static', 'Options must push the footer down, not overlay it.');
+  assert.equal(values.transform, 'none');
+  assert.equal(values.width, '100%');
+  assert.equal(values['overflow-y'], 'auto');
+  assert.ok(values['max-height'], 'Long choice lists must remain scrollable.');
 });
