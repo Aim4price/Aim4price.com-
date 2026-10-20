@@ -83,6 +83,30 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Show me around');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 3')));
  await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Saleability');
+
+ await click('Skip');
+ await page.setViewport({width:1366,height:768});
+ for (const scale of [0.6,1,1.2]) {
+   await page.evaluate(scale=>{
+     const main=document.querySelector('main');
+     main.dataset.websiteCanvas='';main.dataset.websiteScale=String(scale);
+     main.style.zoom=String(scale);
+     main.style.setProperty('--website-visible-width',innerWidth/scale+'px');
+     main.style.setProperty('--website-visible-height',innerHeight/scale+'px');
+   },scale);
+   await click('Show me around');await page.waitForSelector('dialog[open]');
+   await page.waitForFunction(()=>!document.querySelector('dialog').getAnimations({subtree:true}).some(a=>a.playState==='running'));
+   const geometry=await page.evaluate(()=>{
+     const target=document.querySelector('[data-value-tour="value"]').getBoundingClientRect();
+     const spotlight=document.querySelector('dialog > div').getBoundingClientRect();
+     const panel=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();
+     return {target:{left:target.left,top:target.top,right:target.right,bottom:target.bottom},spotlight:{left:spotlight.left,top:spotlight.top,right:spotlight.right,bottom:spotlight.bottom},panel:{left:panel.left,top:panel.top,right:panel.right,bottom:panel.bottom},width:innerWidth,height:innerHeight};
+   });
+   assert(Math.abs(geometry.target.left-geometry.spotlight.left)<=9,JSON.stringify({scale,geometry}));
+   assert(Math.abs(geometry.target.top-geometry.spotlight.top)<=9,JSON.stringify({scale,geometry}));
+   assert(geometry.panel.left>=0&&geometry.panel.right<=geometry.width&&geometry.panel.top>=0&&geometry.panel.bottom<=geometry.height,JSON.stringify({scale,geometry}));
+   await click('Skip');
+ }
  assert.deepEqual(errors,[]);
  console.log('PASS optional start, four steps, Back, Done, focus restore, Escape, Skip, reopen, mobile, reduced motion and missing target');
  }finally{await browser.close();}

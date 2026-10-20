@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect, useRef, useState} from 'react';
+import {websiteLogicalRect, websiteVisibleViewport} from '../lib/website-canvas';
 import styles from './valuation-result-tour.module.css';
 
 const storageKey = 'aim4price:result-tour:v1';
@@ -54,8 +55,9 @@ export default function ValuationResultTour() {
     target.scrollIntoView({behavior:reduced ? 'instant' : 'smooth', block:'center'});
     let frame = 0;
     function measure() {
-      const r = target!.getBoundingClientRect();
-      const w = window.innerWidth, h = window.innerHeight;
+      const r = websiteLogicalRect(target!.getBoundingClientRect());
+      const viewport = websiteVisibleViewport();
+      const w = viewport.width, h = viewport.height;
       const ch = card.current?.offsetHeight ?? 210;
       const cw = Math.min(360,w-32);
       const top = r.bottom + 16 + ch <= h-16 ? r.bottom+16
