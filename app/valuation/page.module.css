@@ -15441,3 +15441,7 @@
 .replacementStage .replacementCostParts dd,
 .replacementStage .replacementCostTotal > strong { font-size: 1.75rem; }
 .resultHeroHeading h2 { scroll-margin-top: 120px; }
+
+/* Start each wizard page below the website header, without retaining footer focus. */
+.wizardCard { scroll-margin-top: 112px; }
+.wizardCard:focus { outline: none; }
