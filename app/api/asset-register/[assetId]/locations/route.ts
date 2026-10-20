@@ -38,7 +38,7 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
   if(truncated)return businessJson({error:'Narrow the date range to 2 000 records or fewer for a complete report.'},409);
   const {buildLocationHistoryHtml,buildLocationHistoryWorkbook}=await import('../../../../../lib/asset-location-history-report');
   const {historyReportPhotos}=await import('../../../../../lib/asset-history-report-media');
-  const options={photos:format?await historyReportPhotos(asset.photos||[],request.url,format==='pdf'):[],registration:asset.licenseRegistrationNumber||asset.plateLabel||'',year:asset.yearModel,title:asset.title,serial:asset.serialNumber||'',assetId:asset.id,from,to,generatedAt:new Date()};
+  const options={photos:format?await historyReportPhotos(asset.photos||[],request.url,format==='pdf'):[],registration:asset.licenseRegistrationNumber||asset.plateLabel||'',year:asset.yearModel,brand:asset.brandName,model:asset.modelName||asset.typedModelName,category:asset.equipmentFamilyLabel,assetCode:asset.publicAssetCode,title:asset.title,serial:asset.serialNumber||'',assetId:asset.id,from,to,generatedAt:new Date()};
   const filename=`aim4price-location-history-${asset.id}`;
   if(format==='xlsx')return new NextResponse(buildLocationHistoryWorkbook(items,options),{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Content-Disposition':`attachment; filename="${filename}.xlsx"`,'Cache-Control':'no-store'}});
   const {getAssetRegisterReportLogoUrl}=await import('../../../../../lib/asset-registers');

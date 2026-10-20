@@ -1,5 +1,5 @@
 import type {XlsxSheet} from './simple-xlsx';
-export type HistoryAssetReference = {registration?:string;year?:number|null;photos?:string[]};
+export type HistoryAssetReference = {registration?:string;brand?:string;model?:string;category?:string;assetCode?:string;year?:number|null;photos?:string[]};
 export const reportEscape=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function safeHistoryPhoto(value:string):string {
  const url=value.trim();
@@ -8,7 +8,10 @@ export function safeHistoryPhoto(value:string):string {
  try {const parsed=new URL(url);return ['https:','http:'].includes(parsed.protocol)&&!parsed.username&&!parsed.password?parsed.href:'';}catch{return '';}
 }
 export const historyPhotos=(o:HistoryAssetReference)=>Array.from(new Set((o.photos||[]).map(safeHistoryPhoto).filter(Boolean)));
-export function assetReferenceDetails(o:HistoryAssetReference){return `${o.registration?`<p><strong>Registration / plate:</strong> ${reportEscape(o.registration)}</p>`:''}${o.year?`<p><strong>Year model:</strong> ${reportEscape(o.year)}</p>`:''}`;}
+export function assetReferenceDetails(o:HistoryAssetReference){
+ const details=[['Registration / plate',o.registration],['Year model',o.year],['Make',o.brand],['Model',o.model],['Category',o.category],['Asset reference',o.assetCode]];
+ return `<div class="assetDetails">${details.filter(([,value])=>value).map(([label,value])=>`<p><strong>${label}:</strong> ${reportEscape(value)}</p>`).join('')}</div>`;
+}
 export function assetPhotoSection(o:HistoryAssetReference,title:string){
  const photos=historyPhotos(o);
  return `<section class="photoSection"><div class="sectionHead"><h2>Asset photo reference</h2><span>${photos.length?`${photos.length} register photo${photos.length===1?'':'s'}`:'No photos on this asset'}</span></div><p class="referenceNote">Current asset-register photos for identification. They do not confirm the asset’s condition or presence at a recorded location.</p>${photos.length?`<div class="photoGrid">${photos.map((url,i)=>`<figure><div class="photoFrame"><img class="assetPhoto" src="${reportEscape(url)}" alt="${reportEscape(title)} — reference photo ${i+1}"/><span class="photoUnavailable" hidden>Photo unavailable</span></div><figcaption>Photo ${i+1} · ${reportEscape(title)}</figcaption></figure>`).join('')}</div>`:''}<p class="photoWarning" hidden>Some reference photos could not load. Reopen this report with a connection before saving.</p></section>`;

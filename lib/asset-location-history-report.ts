@@ -15,14 +15,14 @@ export function buildLocationHistoryWorkbook(items:LocationReportEntry[],options
   {value:index+1,style:'integer'},date(item.recordedAt),item.capturedAt?date(item.capturedAt):'',{value:item.latitude,style:'coordinate'},{value:item.longitude,style:'coordinate'},item.source,{value:item.accuracy,style:'decimal'},item.actor,item.note,{value:'Open location',style:'link',hyperlink:maps(item)},item.id
  ])];
  return createXlsxWorkbook([
-  {name:'Report summary',columns:[25,95],rows:[[{value:'Location history report',style:'title'}],[{value:'Aim4price | Asset Map Tracking',style:'subtitle'}],[],['Asset',options.title],['Serial / VIN',options.serial||'Not recorded'],['Registration / plate',options.registration||'Not recorded'],['Year model',options.year||'Not recorded'],['Asset ID',options.assetId],['Period (South Africa)',period(options)],['Generated (SAST)',date(options.generatedAt)],['Location records',{value:items.length,style:'integer'}],[],['About this report',evidence]],merges:[{fromRow:1,fromColumn:1,toRow:1,toColumn:2},{fromRow:2,fromColumn:1,toRow:2,toColumn:2}],rowHeights:{13:65},tabColor:'197454'},
+  {name:'Report summary',columns:[25,95],rows:[[{value:'Location history report',style:'title'}],[{value:'Aim4price | Asset Map Tracking',style:'subtitle'}],[],['Asset',options.title],['Serial / VIN',options.serial||'Not recorded'],['Registration / plate',options.registration||'Not recorded'],['Year model',options.year||'Not recorded'],['Make',options.brand||'Not recorded'],['Model',options.model||'Not recorded'],['Category',options.category||'Not recorded'],['Asset reference',options.assetCode||'Not recorded'],['Asset ID',options.assetId],['Period (South Africa)',period(options)],['Generated (SAST)',date(options.generatedAt)],['Location records',{value:items.length,style:'integer'}],[],['About this report',evidence]],merges:[{fromRow:1,fromColumn:1,toRow:1,toColumn:2},{fromRow:2,fromColumn:1,toRow:2,toColumn:2}],rowHeights:{17:65},tabColor:'197454'},
   {name:'Location records',rows,columns:[8,27,32,17,17,32,24,30,48,22,40],freezeRow:1,autoFilter:{fromRow:1,fromColumn:1,toRow:rows.length,toColumn:headers.length},orientation:'landscape',tabColor:'197454'},assetPhotoSheet(options)
  ]);
 }
 /** Static map tiles print without Leaflet transforms or browser zoom affecting pin positions. */
 function renderMap(items:LocationReportEntry[], satellite=false){
  if(!items.length)return '<p>No recorded positions in this period.</p>';
- const width=satellite?720:320,height=satellite?330:180;
+ const width=satellite?720:320,height=satellite?300:160;
  const projected=items.map(item=>{const latitude=Math.max(-85.05112878,Math.min(85.05112878,item.latitude)),sin=Math.sin(latitude*Math.PI/180);return {x:(item.longitude+180)/360,y:.5-Math.log((1+sin)/(1-sin))/(4*Math.PI)};});
  const xs=projected.map(p=>p.x),ys=projected.map(p=>p.y),minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
  let zoom=satellite?17:13;while(zoom>1&&((maxX-minX)*256*2**zoom>width-100||(maxY-minY)*256*2**zoom>height-100))zoom--;
@@ -36,7 +36,7 @@ export function buildLocationHistoryHtml(items:LocationReportEntry[],options:Rep
  const latest=items[0];
  const generatedDate=options.generatedAt.toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'long',year:'numeric'});
  const generatedTime=options.generatedAt.toLocaleTimeString('en-ZA',{timeZone:'Africa/Johannesburg',hour:'2-digit',minute:'2-digit',hour12:false});
- return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${escape(options.title)} | Location history</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><style>
+ return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${escape(options.title)} | Location history</title><style>
  ${LOCATION_HISTORY_REPORT_CSS}
  ${REPORT_THEME_CSS}
  </style></head><body>
@@ -48,7 +48,7 @@ export function buildLocationHistoryHtml(items:LocationReportEntry[],options:Rep
    <div class="headerMeta"><div><span>Generated</span><strong>${escape(generatedDate)}</strong></div><div><span>Time</span><strong>${escape(generatedTime)} SAST</strong></div><div><span>Scope</span><strong>${escape(options.title)}</strong></div></div>
  </header>
  <section class="hero"><div class="identity"><p class="kicker">Asset Map Tracking</p><h1>${escape(options.title)}</h1><p><strong>Serial / VIN:</strong> ${escape(options.serial||'Not recorded')}</p><p><strong>Period:</strong> ${escape(period(options))}</p>${assetReferenceDetails(options)}</div>
- <aside class="summary"><div><span>Recorded positions</span><strong>${items.length.toLocaleString()}</strong></div><div><span>Latest in this period</span><strong>${latest?escape(date(latest.recordedAt)):'No records'}</strong></div><div><span>Time zone</span><strong>South Africa (SAST)</strong></div><div><span>Map key</span><strong>Pin 1 = latest record</strong></div></aside></section>
+ <aside class="summary"><div><span>Recorded positions</span><strong>${items.length.toLocaleString()}</strong></div><div><span>Latest in this period</span><strong class="summaryText">${latest?escape(date(latest.recordedAt)):'No records'}</strong></div><div><span>Time zone</span><strong class="summaryText">South Africa (SAST)</strong></div><div><span>Map key</span><strong class="summaryText">Pin 1 = latest record</strong></div></aside></section>
  <div class="mapGrid"><section class="mapPanel"><div class="sectionHead"><h2>Latest Recorded Position</h2><span>Satellite close-up · Pin 1</span></div>${renderMap(items.slice(0,1),true)}</section>
  <aside class="mapSide"><section class="sideCard"><h2>Recorded Locations Overview</h2>${renderMap(items)}<p class="mapHint">All recorded positions in the selected period.</p></section>
  <section class="sideCard"><h2>Latest Record Details</h2>${latest?`<dl><div><dt>Coordinates</dt><dd><a href="${escape(maps(latest))}">${latest.latitude.toFixed(6)}, ${latest.longitude.toFixed(6)}</a></dd></div><div><dt>Source</dt><dd>${escape(latest.source)}</dd></div><div><dt>Recorded by</dt><dd>${escape(latest.actor||'Not recorded')}</dd></div><div><dt>Reported accuracy</dt><dd>${latest.accuracy===null?'Not recorded':`${escape(latest.accuracy)} m`}</dd></div></dl>`:'<p>No location records in this period.</p>'}</section></aside></div>
