@@ -4257,3 +4257,39 @@
   border: 1px solid var(--app-line, #d5e1da);
   background: var(--app-info-soft, #f2f5f8);
 }
+
+/* Inset field icons with dedicated text clearance, and a more compact editor. */
+.polishedSettingsModal .field > .settingsInput {
+  position: relative;
+  display: block;
+  min-width: 0;
+  width: 100%;
+}
+.polishedSettingsModal .settingsInput > svg {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  pointer-events: none;
+  z-index: 1;
+}
+.polishedSettingsModal .field .settingsInput > input {
+  width: 100%;
+  min-width: 0;
+  padding-inline-start: 3rem;
+  min-height: 3rem;
+}
+.polishedSettingsModal .settingsStaticInput { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; }
+.polishedSettingsModal .field { gap:.4rem; }
+.polishedSettingsModal .wizardFieldGrid { gap:.85rem 1.2rem; }
+.polishedSettingsModal .modalHeader { margin-bottom:1rem !important; padding-bottom:.85rem !important; min-height:0; }
+.polishedSettingsModal .modalStepProgress { margin:0 0 1rem; }
+.polishedSettingsModal .modalSectionHeading { border:0; padding:0; border-radius:0; background:transparent; margin:0 0 .25rem; }
+.polishedSettingsModal .modalSectionHeading p { margin:.2rem 0 0 1.85rem; }
+.polishedSettingsModal .wizardStepPanel { gap:.75rem; }
+.polishedSettingsModal .fieldHint { font-size:.8rem; margin:0; line-height:1.4; }
+.polishedSettingsModal .mediaUploadField { padding:0; border:0; background:transparent; }
+.polishedSettingsModal .businessLogoPanel { padding:1rem; }
+.polishedSettingsModal .businessLogoPreview { width:6rem; height:6rem; min-height:6rem; }

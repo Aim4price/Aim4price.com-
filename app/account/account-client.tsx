@@ -2592,30 +2592,48 @@ export default function AccountClient({
 
                       <div className={styles.wizardFieldGrid}>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="person" />Full name</span>
-                          <input value={profileDraft.displayName} onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Full name" autoFocus />
+                          <span>Full name</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="person" />
+                            <input value={profileDraft.displayName} onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Full name" autoFocus />
+                          </span>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="lock" />Account email</span>
-                          <input value={profile?.email ?? ""} disabled />
+                          <span>Account email</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="lock" />
+                            <input value={profile?.email ?? ""} disabled />
+                          </span>
                           <small className={styles.fieldHint}>Used only for login and account access.</small>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="business" />Business name</span>
-                          <input value={profileDraft.businessName} onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))} placeholder="Business name" />
+                          <span>Business name</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="business" />
+                            <input value={profileDraft.businessName} onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))} placeholder="Business name" />
+                          </span>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="email" />Business email</span>
-                          <input type="email" value={profileDraft.marketplaceEmail} onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))} placeholder="business@email.co.za" />
+                          <span>Business email</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="email" />
+                            <input type="email" value={profileDraft.marketplaceEmail} onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))} placeholder="business@email.co.za" />
+                          </span>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="phone" />Contact details</span>
-                          <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone, WhatsApp or office number" />
+                          <span>Contact details</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="phone" />
+                            <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone, WhatsApp or office number" />
+                          </span>
                         </label>
                         {isPartnerAccount ? (
                           <label className={styles.field}>
-                            <span><SettingsDetailIcon name="globe" />Website link</span>
+                            <span>Website link</span>
+                            <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="globe" />
                             <input inputMode="url" value={profileDraft.websiteUrl} onChange={(event) => setProfileDraft((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://your-business.co.za" />
+                          </span>
                           </label>
                         ) : null}
                       </div>
@@ -2631,25 +2649,37 @@ export default function AccountClient({
 
                       <div className={styles.wizardFieldGrid}>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="business" />Account type</span>
-                          <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
+                          <span>Account type</span>
+                          <div className={`${styles.readOnlyValue} ${styles.settingsStaticInput}`}><SettingsDetailIcon name="business" />{accountTypeLabel}</div>
                           <small className={styles.fieldHint}>Account type is locked after signup.</small>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="location" />Province</span>
-                          <input value={profileDraft.province} onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))} placeholder="Province" autoFocus />
+                          <span>Province</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="location" />
+                            <input value={profileDraft.province} onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))} placeholder="Province" autoFocus />
+                          </span>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="location" />Town / city</span>
-                          <input value={profileDraft.townCity} onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))} placeholder="Town or city" />
+                          <span>Town / city</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="location" />
+                            <input value={profileDraft.townCity} onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))} placeholder="Town or city" />
+                          </span>
                         </label>
                         <label className={styles.field}>
-                          <span><SettingsDetailIcon name="location" />Address line 1</span>
-                          <input value={profileDraft.addressLine1} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))} placeholder="Street address" />
+                          <span>Address line 1</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="location" />
+                            <input value={profileDraft.addressLine1} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))} placeholder="Street address" />
+                          </span>
                         </label>
                         <label className={`${styles.field} ${styles.fullWidth}`}>
-                          <span><SettingsDetailIcon name="location" />Address line 2</span>
-                          <input value={profileDraft.addressLine2} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))} placeholder="Building, unit or area (optional)" />
+                          <span>Address line 2</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="location" />
+                            <input value={profileDraft.addressLine2} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))} placeholder="Building, unit or area (optional)" />
+                          </span>
                         </label>
                       </div>
                     </section>
@@ -2867,8 +2897,10 @@ export default function AccountClient({
                 onSubmit={handleProfileSubmit}
               >
                 <label className={styles.field}>
-                  <span><SettingsDetailIcon name="person" />Seller name</span>
-                  <input
+                  <span>Seller name</span>
+                  <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="person" />
+                            <input
                     value={profileDraft.marketplaceSellerName}
                     onChange={(event) =>
                       setProfileDraft((current) => ({
@@ -2878,11 +2910,14 @@ export default function AccountClient({
                     }
                     placeholder={marketplaceSellerName}
                   />
+                          </span>
                 </label>
 
                 <label className={styles.field}>
-                  <span><SettingsDetailIcon name="phone" />Contact details</span>
-                  <input
+                  <span>Contact details</span>
+                  <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="phone" />
+                            <input
                     type="text"
                     value={profileDraft.marketplacePhone}
                     onChange={(event) =>
@@ -2893,11 +2928,14 @@ export default function AccountClient({
                     }
                     placeholder={marketplacePhone}
                   />
+                          </span>
                 </label>
 
                 <label className={styles.field}>
-                  <span><SettingsDetailIcon name="email" />Business email</span>
-                  <input
+                  <span>Business email</span>
+                  <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="email" />
+                            <input
                     type="email"
                     value={profileDraft.marketplaceEmail}
                     onChange={(event) =>
@@ -2908,11 +2946,14 @@ export default function AccountClient({
                     }
                     placeholder="business@email.co.za"
                   />
+                          </span>
                 </label>
 
                 <label className={styles.field}>
-                  <span><SettingsDetailIcon name="location" />Location</span>
-                  <input
+                  <span>Location</span>
+                  <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="location" />
+                            <input
                     value={profileDraft.marketplaceLocation}
                     onChange={(event) =>
                       setProfileDraft((current) => ({
@@ -2922,6 +2963,7 @@ export default function AccountClient({
                     }
                     placeholder={marketplaceLocation}
                   />
+                          </span>
                 </label>
 
                 <div className={styles.marketplaceActions}>
