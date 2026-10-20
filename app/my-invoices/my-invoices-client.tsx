@@ -5021,11 +5021,11 @@ export default function MyInvoicesClient({
 
       {captureAllowance.blocked ? <CaptureAllowanceModal endpoint={allowanceEndpoint} ledger="Cost" onClose={closeModal} /> : null}
       {flow === 'upload' && !captureAllowance.blocked ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
-          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${styles.captureUploadBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.captureUploadDialog} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Upload invoice/photo</h2>
+                <h2>Upload invoice or photos</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting}><span aria-hidden="true">×</span></button>
@@ -5033,23 +5033,28 @@ export default function MyInvoicesClient({
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
-                <h3>Documents and photos</h3>
-                <div className={`${styles.uploadBox} ${automaticUploadFile ? styles.uploadBoxReady : ''}`}>
-                  <label className={styles.uploadButton}>
-                    <UploadIcon />
-                    Add invoice/photo
-                    <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple disabled={isExtracting} onChange={handleAutomaticFileChange} />
-                  </label>
-                  <span className={styles.uploadCounter}>{automaticUploadPages.length ? `${automaticUploadPages.length} selected` : 'No file selected'}</span>
-                  <small>One PDF or up to 12 photos of the same invoice · 12 MB per file</small>
-                  {automaticUploadPages.map((file, index) => <p key={`${file.name}-${index}`}>{index + 1}. {file.name}</p>)}
-                </div>
-                <label className={styles.captureNoteField}>
-                  <span>Anything we should know? <small>Optional</small></span>
-                  <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={3} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
+                <label className={styles.captureUploadTarget}>
+                  <span className={styles.captureUploadIcon} aria-hidden="true"><UploadIcon /></span>
+                  <span className={styles.captureUploadCopy}>
+                    <strong>{automaticUploadPages.length ? 'Change files' : 'Choose invoice or photos'}</strong>
+                    <small>One PDF or up to 12 photos of the same invoice</small>
+                    <small>PDF, JPG, PNG or WebP · 12 MB per file</small>
+                  </span>
+                  <span className={styles.captureUploadNext} aria-hidden="true"><ChevronRightIcon /></span>
+                  <input type="file" aria-label="Choose invoice or photos" accept="application/pdf,image/jpeg,image/png,image/webp" multiple disabled={isExtracting} onChange={handleAutomaticFileChange} />
                 </label>
-                <p>{dealerMode ? 'Aim4price checks the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture and verify it within 24 hours.'}</p>
-                <p role="status">{captureAllowance.label}</p>
+                {automaticUploadPages.length ? <div className={styles.captureFileSelection}>
+                  <span className={styles.captureFileCount} role="status">{automaticUploadPages.length} {automaticUploadPages.length === 1 ? 'file' : 'files'} selected</span>
+                  <ul className={styles.captureFileList} aria-label="Selected files">
+                    {automaticUploadPages.map((file, index) => <li key={`${file.name}-${index}`}><span aria-hidden="true"><ManualInvoiceIcon /></span><span>{file.name}</span></li>)}
+                  </ul>
+                </div> : null}
+                <label className={styles.captureNoteField}>
+                  <span>Notes <small>Optional</small></span>
+                  <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={2} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
+                </label>
+                <div className={styles.captureServiceInfo}><p>{dealerMode ? 'Aim4price checks the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture and verify it within 24 hours.'}</p>
+                <p role="status">{captureAllowance.label}</p></div>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}
               </section>
