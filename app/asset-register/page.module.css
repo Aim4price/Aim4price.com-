@@ -41690,6 +41690,15 @@ button.documentOpenLink {
   outline: 2px solid #38bdf8;
   outline-offset: 2px;
 }
-.assetCard:has(.assetMarketplaceButton) {
-  min-height: 12.5rem;
+/* Match the card rule's specificity so the four-action rail has breathing room. */
+.page .assetCardRow > .assetCard:has(.assetMarketplaceButton) {
+  min-height: 13rem;
+}
+.page .assetCard:has(.assetMarketplaceButton) > .assetGroupMemberActions {
+  top: 1.25rem !important;
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetCardRow > .assetCard:has(.assetMarketplaceButton) {
+    min-height: 0;
+  }
 }

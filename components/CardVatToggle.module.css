@@ -20,22 +20,23 @@
   opacity: .9;
   cursor: pointer;
   transform: translateY(-50%);
-  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease, opacity 160ms ease;
+  transition: transform 160ms ease, color 160ms ease, opacity 160ms ease;
 }
-.button .icon {
+.button.button > span {
   display: block;
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
+  margin: 0;
+  color: inherit !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.5rem) !important;
+  font-weight: 520 !important;
+  line-height: .78 !important;
+  letter-spacing: 0 !important;
+  transform: translateY(-.03em);
 }
-.button:hover {
-  color: var(--app-text, #073b30);
-  opacity: 1;
-  background: rgba(43, 138, 99, .08);
-  box-shadow: 0 0 0 1px rgba(43, 138, 99, .35), 0 0 10px rgba(43, 138, 99, .2);
-}
+.button:hover { color: var(--app-text, #073b30); opacity: 1; transform: translate(.18rem, -50%); }
+.button[aria-pressed=true]:hover { transform: translate(-.18rem, -50%); }
 .button:focus-visible { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 2px; }
-/* The calculator sits outside the white card, against the page background. */
+/* The arrow sits outside the white card, against the page background. */
 :global(html[data-background='dark']) .button,
 :global(html[data-app-theme='dark']) .button {
   color: #f1f8f4;
@@ -49,7 +50,7 @@
 :global(html[data-app-theme='dark']) .button:focus-visible {
   outline-color: #a5ddba;
 }
-/* Umbrella controls sit on the light card surface, rather than the page background. */
+/* Umbrella arrows sit on the light card surface, rather than the page background. */
 :global([data-asset-group-id]) .button.button {
   color: rgba(7, 59, 48, .78);
   opacity: .9;
