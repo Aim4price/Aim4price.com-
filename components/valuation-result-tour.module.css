@@ -1,6 +1,9 @@
-.launch { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-.launch button { display:inline-flex; align-items:center; gap:8px; border:0; background:transparent; color:#365b4b; padding:8px; font:inherit; font-size:.85rem; cursor:pointer; }
-.launch svg { width:19px; height:19px; flex-shrink:0; }
+.launch { display:flex; justify-content:flex-end; margin-bottom:12px; }
+.launch button { display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:7px 14px 7px 7px; border:1px solid #c9ded2; border-radius:14px; background:#fff; color:#195b43; font:inherit; font-size:.9rem; font-weight:650; line-height:1.25; cursor:pointer; box-shadow:0 2px 6px #173d3010; transition:background .15s ease,border-color .15s ease; }
+.launch button:hover { background:#f2f8f4; border-color:#82b59c; }
+.launch button:active { background:#e7f2ec; }
+.launchIcon { display:grid; place-items:center; width:32px; height:32px; flex-shrink:0; border-radius:10px; background:#e8f3ed; color:#21674c; }
+.launch svg { width:20px; height:20px; }
 .overlay { position:fixed; inset:0; width:var(--website-visible-width, 100vw); height:var(--website-visible-height, 100dvh); max-width:none; max-height:none; margin:0; padding:0; border:0; background:transparent; overflow:hidden; color:#183d30; }
 .overlay::backdrop { background:transparent; }
 .spotlight { position:fixed; border:2px solid #8fc8ad; border-radius:16px; box-shadow:0 0 0 max(var(--website-visible-width, 100vw), var(--website-visible-height, 100dvh)) rgb(12 33 26 / 58%); pointer-events:none; transition:top .2s ease,left .2s ease,width .2s ease,height .2s ease; }
