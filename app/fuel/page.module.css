@@ -7711,3 +7711,8 @@
   :global(:where(html:not(:has([data-website-canvas])))) .titleViewSwitch { right: 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .topActionButtons { grid-template-columns: 1fr; }
 }
+
+/* Match the quiet outline treatment used by cost ledger details. */
+.slipLedgerCard .fuelSlipDetailGrid { row-gap: .9rem; }
+.fuelSlipDetailGrid > span { position: relative; padding-left: 1.65rem; }
+.fuelSlipDetailIcon { position: absolute; left: 0; top: .05rem; display: block; width: 1.1rem; height: 1.1rem; color: var(--app-muted, #648477); }

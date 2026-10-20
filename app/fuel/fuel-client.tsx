@@ -563,6 +563,18 @@ function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
 }
 
+function FuelSlipDetailIcon({kind}: {kind: 'target' | 'card' | 'work' | 'updated' | 'reference' | 'transaction'}) {
+  const paths = {
+    target: <><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M9 6V3h6v3M8 11h8M8 15h5"/></>,
+    card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></>,
+    work: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18M10 12v3h4v-3"/></>,
+    updated: <><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></>,
+    reference: <><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8m-8 4h6"/></>,
+    transaction: <><path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/></>,
+  };
+  return <IconBase className={styles.fuelSlipDetailIcon} strokeWidth="1.6" focusable="false">{paths[kind]}</IconBase>;
+}
+
 function StorageViewIcon(props: SVGProps<SVGSVGElement>) {
   return <IconBase {...props}><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></IconBase>;
 }
@@ -3477,29 +3489,29 @@ export default function FuelClient({
                         {isExpanded ? (
                           <div className={styles.fuelSlipManagerExpanded} id={detailsId}>
                             <h4 className={styles.slipLedgerDetailsTitle}>Fuel slip details</h4>
-                            <div className={styles.fuelSlipManagerSecondaryGrid}>
+                            <div className={`${styles.fuelSlipManagerSecondaryGrid} ${styles.fuelSlipDetailGrid}`}>
                               <span>
-                                <small>Target type</small>
+                                <small><FuelSlipDetailIcon kind="target" />Target type</small>
                                 <strong>{fuelSlipTargetTypeLabel(slip)}</strong>
                               </span>
                               <span>
-                                <small>Card</small>
+                                <small><FuelSlipDetailIcon kind="card" />Card</small>
                                 <strong>{cardEndingLabel || 'Not recorded'}</strong>
                               </span>
                               <span>
-                                <small>Work use</small>
+                                <small><FuelSlipDetailIcon kind="work" />Work use</small>
                                 <strong>{slip.workUseExcluded ? 'Excluded' : 'Included'}</strong>
                               </span>
                               <span>
-                                <small>Last updated</small>
+                                <small><FuelSlipDetailIcon kind="updated" />Last updated</small>
                                 <strong>{updatedLabel || 'Saved fuel slip'}</strong>
                               </span>
                               <span>
-                                <small>Slip / reference</small>
+                                <small><FuelSlipDetailIcon kind="reference" />Slip / reference</small>
                                 <strong>{slip.slipNumber || 'Not recorded'}</strong>
                               </span>
                               <span>
-                                <small>Transaction</small>
+                                <small><FuelSlipDetailIcon kind="transaction" />Transaction</small>
                                 <strong>{slip.transactionNumber || 'Not recorded'}</strong>
                               </span>
                             </div>
