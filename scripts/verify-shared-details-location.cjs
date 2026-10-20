@@ -46,7 +46,18 @@ export default function Page(){const [action,setAction]=useState('');return <><b
  await page.click('[aria-label="Zoom in"]');await page.waitForFunction(()=>window.mapZoom===16);
  await page.click('[aria-label="Zoom out"]');await page.waitForFunction(()=>window.mapZoom===15);
  await click('Map');await page.waitForFunction(()=>window.mapLayers.length===1&&window.mapLayers[0].includes('openstreetmap'));
- await page.evaluate(()=>window.mapClick({latlng:{lat:-32,lng:20}}));await click('Save location');await page.waitForFunction(()=>document.body.textContent.includes('-32, 20'));assert.equal(writes[5].body.latitude,-32);
+ await page.evaluate(()=>window.mapClick({latlng:{lat:-32,lng:20}}));
+ // Leaflet callbacks update React asynchronously. Wait for the controlled fields
+ // before saving, rather than racing the render with a synthetic button click.
+ await page.waitForFunction(()=>{
+  const fields=[...document.querySelectorAll('[data-location-view="map"] label')];
+  const value=label=>fields.find(n=>n.querySelector('span')?.textContent===label)?.querySelector('input')?.value;
+  return value('Latitude')==='-32.000000'&&value('Longitude')==='20.000000';
+ });
+ await click('Save location');
+ await page.waitForFunction(()=>document.querySelector('[data-location-view="choice"]')?.textContent.includes('-32, 20'));
+ assert.equal(writes.length,6,'Map save creates exactly one additional request');
+ assert.equal(writes[5].body.latitude,-32);assert.equal(writes[5].body.longitude,20);assert.equal(writes[5].body.source,'manual');
  await page.click('[aria-label="Close action form"]');canDetails=false;await click('Details');await page.waitForSelector('[data-manage-action=details]');assert.equal(await page.$$eval('[data-manage-action=documents]',n=>n.length),0,'Legacy permission hides Paperwork');await page.click('[data-manage-action=details]');await page.waitForSelector('[data-asset-detail-edit-target=year]');assert.equal(await page.$$eval('[role=tab]',n=>n.length),0,'Legacy year/usage access does not expose paperwork');assert.deepEqual(errors,[]);
  console.log('PASS paperwork sections, canonical dropdowns, scoped writes, manual/device/map location and legacy permission boundary');
  }finally{if(browser)await browser.close();if(server&&server.exitCode===null){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/business/shared-settings-validation'),{recursive:true,force:true});}}

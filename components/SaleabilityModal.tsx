@@ -1,18 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  calculateGeneralSaleability,
-  calculateRefinedSaleability,
-  type GeneralSaleabilityInput,
-  type SaleabilityPlan,
-  type SaleabilityRefinementAnswers,
-} from '../lib/saleability';
-import {
-  SALEABILITY_PDF_PLAN_SESSION_KEY,
-  createSaleabilityPdfPlanSnapshot,
-} from '../lib/saleability-pdf';
-import { validSaleabilityAnswers } from '../lib/asset-saleability';
+import { useEffect, useRef, useState } from 'react';
+import type { GeneralSaleabilityInput, SaleabilityRefinementAnswers } from '../lib/saleability';
+import { validCurrentSaleabilityAnswers, type SaleabilityContext, type SaleabilityQuote } from '../lib/asset-saleability';
+import { SALEABILITY_PDF_PLAN_SESSION_KEY, createSaleabilityPdfPlanSnapshot } from '../lib/saleability-pdf';
 import PricingVatToggle from './PricingVatToggle';
 import { pricingVatAmount } from '../lib/pricing-vat';
 import styles from './saleability-modal.module.css';
@@ -20,84 +11,47 @@ import modalStyles from './estimate-modal.module.css';
 import accountStyles from '../app/account/page.module.css';
 
 type SaleabilityModalProps = {
-  estimateStyle?: boolean;
-  open: boolean;
-  onClose: () => void;
-  assetTitle: string;
-  valuationExVat: number;
-  input: GeneralSaleabilityInput;
-  storageKey?: string;
-  initialAnswers?: SaleabilityRefinementAnswers;
+  estimateStyle?: boolean; open: boolean; onClose: () => void;
+  assetTitle: string; valuationExVat: number; input: GeneralSaleabilityInput;
+  context?: SaleabilityContext; assetId?: string; basis?: string;
+  storageKey?: string; initialAnswers?: SaleabilityRefinementAnswers;
   onSave?: (answers: SaleabilityRefinementAnswers) => Promise<void>;
 };
-
 type Choice<T extends string> = { value: T; label: string; help?: string };
-
-const SALE_AREA_OPTIONS: Choice<SaleabilityRefinementAnswers['saleArea']>[] = [
-  { value: 'local', label: 'Near me' },
-  { value: 'province', label: 'My province' },
-  { value: 'south_africa', label: 'South Africa' },
-];
-const AVAILABLE_OPTIONS: Choice<SaleabilityRefinementAnswers['similarAssetsAvailable']>[] = [
-  { value: 'none', label: 'Almost none' },
-  { value: 'one_to_three', label: 'A few' },
-  { value: 'four_to_ten', label: 'Several' },
-  { value: 'more_than_ten', label: 'Many' },
-  { value: 'unknown', label: 'I’m not sure' },
-];
-const BUYER_OPTIONS: Choice<SaleabilityRefinementAnswers['realisticBuyerPool']>[] = [
-  { value: 'many', label: 'Many buyers' },
-  { value: 'moderate', label: 'A fair number' },
-  { value: 'few', label: 'Only a few' },
-  { value: 'specialist', label: 'A specialist buyer' },
-  { value: 'unknown', label: 'I’m not sure' },
-];
-const DEMAND_OPTIONS: Choice<SaleabilityRefinementAnswers['currentDemand']>[] = [
-  { value: 'strong', label: 'Strong' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'weak', label: 'Weak' },
-  { value: 'unknown', label: 'I’m not sure' },
-];
-const FAMILIARITY_OPTIONS: Choice<SaleabilityRefinementAnswers['modelFamiliarity']>[] = [
-  { value: 'common', label: 'Well known' },
-  { value: 'less_common', label: 'Less common' },
-  { value: 'rare', label: 'Rare or specialised' },
-  { value: 'unknown', label: 'I’m not sure' },
+const ROUTE_OPTIONS: Choice<NonNullable<SaleabilityRefinementAnswers['sellingRoute']>>[] = [
+  { value: 'direct', label: 'Sell directly', help: 'To an end buyer' },
+  { value: 'dealer', label: 'Dealer / trade-in', help: 'A dealer buys it' },
+  { value: 'consignment', label: 'Sell on my behalf', help: 'Through a dealer or broker' },
+  { value: 'auction', label: 'Auction', help: 'Sell through bidding' },
 ];
 const TIMELINE_OPTIONS: Choice<SaleabilityRefinementAnswers['desiredTimeline']>[] = [
-  { value: '14', label: 'Within 14 days' },
-  { value: '30', label: 'Within 30 days' },
-  { value: '60', label: 'Within 60 days' },
-  { value: '90', label: 'Within 90 days' },
+  { value: '14', label: 'Within 14 days' }, { value: '30', label: 'Within 30 days' },
+  { value: '60', label: 'Within 60 days' }, { value: '90', label: 'Within 90 days' },
   { value: 'flexible', label: 'No hurry' },
 ];
-const PRIORITY_OPTIONS: Choice<SaleabilityRefinementAnswers['sellingPriority']>[] = [
-  { value: 'best_price', label: 'Best price' },
-  { value: 'balanced', label: 'Balanced' },
-  { value: 'fast_cashflow', label: 'Fast cashflow' },
+const SALE_AREA_OPTIONS: Choice<SaleabilityRefinementAnswers['saleArea']>[] = [
+  { value: 'local', label: 'Near me' }, { value: 'province', label: 'My province' },
+  { value: 'south_africa', label: 'South Africa' },
 ];
-
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat('en-ZA', {
-    style: 'currency',
-    currency: 'ZAR',
-    maximumFractionDigits: 0,
-  }).format(value);
+const DEMAND_OPTIONS: Choice<SaleabilityRefinementAnswers['currentDemand']>[] = [
+  { value: 'strong', label: 'Strong', help: 'Buyers are actively looking' },
+  { value: 'normal', label: 'Normal', help: 'Steady buyer interest' },
+  { value: 'weak', label: 'Weak', help: 'Little buyer interest' },
+  { value: 'unknown', label: 'I’m not sure' },
+];
+const AVAILABLE_OPTIONS: Choice<SaleabilityRefinementAnswers['similarAssetsAvailable']>[] = [
+  { value: 'none', label: 'Almost none' }, { value: 'one_to_three', label: 'A few' },
+  { value: 'four_to_ten', label: 'Several' }, { value: 'more_than_ten', label: 'Many' },
+  { value: 'unknown', label: 'I’m not sure' },
+];
+function defaults(): Partial<SaleabilityRefinementAnswers> {
+  return { modelVersion: 2, realisticBuyerPool: 'unknown', modelFamiliarity: 'unknown', sellingPriority: 'balanced' };
+}
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value);
 }
 
-function answersAreComplete(value: Partial<SaleabilityRefinementAnswers>): value is SaleabilityRefinementAnswers {
-  return Boolean(
-    value.saleArea
-      && value.similarAssetsAvailable
-      && value.realisticBuyerPool
-      && value.currentDemand
-      && value.modelFamiliarity
-      && value.desiredTimeline
-      && value.sellingPriority,
-  );
-}
-
-type SaleIconKind = 'location' | 'assets' | 'buyers' | 'demand' | 'model' | 'time' | 'priority';
+type SaleIconKind = 'location' | 'assets' | 'buyers' | 'demand' | 'model' | 'time' | 'priority' | 'route';
 function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
   if (kind === 'assets' && value && value !== 'unknown') {
     const count = ({ none: 0, one_to_three: 1, four_to_ten: 3, more_than_ten: 4 } as Record<string, number>)[value] ?? 4;
@@ -106,7 +60,8 @@ function SaleIcon({ kind, value }: { kind: SaleIconKind; value?: string }) {
   if (kind === 'time' && value && value !== 'flexible') {
     return <span className={styles.choiceIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="3" /><path d="M3 9h18M8 2v4M16 2v4" /><text x="12" y="18" textAnchor="middle" stroke="none" fill="currentColor" fontSize="8" fontWeight="700">{value}</text></svg></span>;
   }
-  const path = value === 'unknown' ? 'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01'
+  const path = kind === 'route' ? (value === 'dealer' ? 'M3 10h18v11H3ZM2 10l3-7h14l3 7M9 21v-7h6v7' : value === 'auction' ? 'm5 3 8 8M3 5l4-4 8 8-4 4ZM12 12l8 8M3 21h9' : value === 'consignment' ? 'M8 12h8M5 8l-3 4 3 4M19 8l3 4-3 4M12 3v4M12 17v4' : 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM2 21v-3a7 7 0 0 1 14 0v3M17 11h6M20 8v6')
+    : value === 'unknown' ? 'M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3M12 17h.01'
     : kind === 'demand' && value === 'normal' ? 'M3 4v16h18M6 12h14m-4-4 4 4-4 4'
     : kind === 'model' && value === 'rare' ? 'm12 3 9 9-9 9-9-9ZM3 12h18M12 3l-4 9 4 9 4-9Z'
     : kind === 'model' && value === 'less_common' ? 'M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z'
@@ -158,86 +113,56 @@ function ChoiceQuestion<T extends string>({
 }
 
 export default function SaleabilityModal({
-  estimateStyle = false,
-  open,
-  onClose,
-  assetTitle,
-  valuationExVat,
-  input,
-  storageKey,
-  initialAnswers,
-  onSave,
+  estimateStyle = false, open, onClose, assetTitle, valuationExVat,
+  context, assetId, basis, storageKey, initialAnswers, onSave,
 }: SaleabilityModalProps) {
-  const [answersChanged, setAnswersChanged] = useState(false);
-  const recalculating = Boolean(onSave && validSaleabilityAnswers(initialAnswers) && !answersChanged);
+  const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>(defaults);
+  const [step, setStep] = useState<number | 'result'>(1);
+  const [plan, setPlan] = useState<SaleabilityQuote | null>(null);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
-  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [retry, setRetry] = useState(0);
+  const [answersChanged, setAnswersChanged] = useState(false);
   const [vatIncluded, setVatIncluded] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const contextJson = JSON.stringify(context ?? {});
+  const recalculating = Boolean(onSave && validCurrentSaleabilityAnswers(initialAnswers) && !answersChanged);
   const vatLabel = vatIncluded ? 'Incl. VAT' : 'Excl. VAT';
   const displayMoney = (value: number) => formatMoney(pricingVatAmount(value, vatIncluded));
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState<number | 'result'>(1);
-  const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>({});
-  const general = useMemo(() => calculateGeneralSaleability(input), [input]);
-  const plan: SaleabilityPlan | null = useMemo(
-    () => answersAreComplete(answers) ? calculateRefinedSaleability(general, answers, valuationExVat) : null,
-    [answers, general, valuationExVat],
-  );
 
   useEffect(() => {
-    if (!open) return undefined;
-
-    setSaveError(''); setSaved(false); setAnswersChanged(false);
-    let restored = false;
-    if (validSaleabilityAnswers(initialAnswers)) { setAnswers(initialAnswers); setStep('result'); restored = true; }
-    if (storageKey && !initialAnswers) {
-      try {
-        const saved = window.localStorage.getItem(storageKey);
-        if (saved) {
-          const parsed = JSON.parse(saved) as Partial<SaleabilityRefinementAnswers>;
-          if (parsed && typeof parsed === 'object') {
-            setAnswers(parsed);
-            if (answersAreComplete(parsed)) {
-              setStep('result');
-              restored = true;
-            }
-          }
-        }
-      } catch {
-        // Storage is a convenience only; the calculator still works without it.
-      }
+    if (!open) return;
+    let restored: unknown = initialAnswers;
+    if (!restored && storageKey) {
+      try { restored = JSON.parse(window.localStorage.getItem(storageKey) ?? 'null'); } catch { /* Optional storage. */ }
     }
-    if (!restored) setStep(1);
+    setAnswers(validCurrentSaleabilityAnswers(restored) ? restored : defaults());
+    setStep(validCurrentSaleabilityAnswers(restored) ? 'result' : 1);
+    setPlan(null); setError(''); setAnswersChanged(false);
+  }, [open, storageKey, initialAnswers]);
 
-    const previousOverflow = document.body.style.overflow;
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+    dialogRef.current?.focus({ preventScroll: true });
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); }
+      if (event.key !== 'Tab') return;
+      const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]') ?? []).filter(el => el.getClientRects().length);
+      if (!nodes.length) { event.preventDefault(); return; }
+      const first = nodes[0], last = nodes[nodes.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !nodes.includes(document.activeElement as HTMLElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !nodes.includes(document.activeElement as HTMLElement))) { event.preventDefault(); first.focus(); }
     };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [onClose, open, storageKey, initialAnswers]);
-
-  useEffect(() => {
-    if (!open || step !== 'result' || !plan) return;
-
-    const snapshot = createSaleabilityPdfPlanSnapshot({
-      assetTitle,
-      valuationExVat,
-      saleabilityPriceExVat: plan.recommendedAskingPriceExVat,
-    });
-    if (!snapshot) return;
-
-    try {
-      window.sessionStorage.setItem(SALEABILITY_PDF_PLAN_SESSION_KEY, JSON.stringify(snapshot));
-    } catch {
-      // PDF enrichment is optional; Saleability itself remains fully usable.
-    }
-  }, [assetTitle, open, plan, step, valuationExVat]);
+    window.addEventListener('keydown', keydown);
+    return () => { document.body.style.overflow = overflow; window.removeEventListener('keydown', keydown); previous?.focus({ preventScroll: true }); };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -245,195 +170,87 @@ export default function SaleabilityModal({
     bodyRef.current?.focus({ preventScroll: true });
   }, [open, step]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open || step !== 'result' || !validCurrentSaleabilityAnswers(answers)) return;
+    const controller = new AbortController();
+    setLoading(true); setError(''); setPlan(null);
+    try { window.sessionStorage.removeItem(SALEABILITY_PDF_PLAN_SESSION_KEY); } catch { /* Optional storage. */ }
+    const url = assetId ? '/api/asset-register/saleability' : '/api/saleability/quote';
+    const payload = assetId ? { assetId, basis, answers, preview: true }
+      : { valuationExVat, answers, context: JSON.parse(contextJson) };
+    void (async () => {
+      try {
+        const response = await fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok) throw Error(data.error || 'Could not calculate. Please try again.');
+        if (!data.quote || !Number.isFinite(data.quote.priceExVat) || data.quote.priceExVat <= 0) throw Error('Could not calculate. Please try again.');
+        if (!controller.signal.aborted) setPlan(data.quote);
+      } catch (failure) {
+        if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Could not calculate. Please try again.');
+      } finally { if (!controller.signal.aborted) setLoading(false); }
+    })();
+    return () => controller.abort();
+  }, [open, step, answers, valuationExVat, assetId, basis, contextJson, retry]);
+
+  useEffect(() => {
+    if (!open || step !== 'result' || !plan) return;
+    const snapshot = createSaleabilityPdfPlanSnapshot({ assetTitle, valuationExVat, saleabilityPriceExVat: plan.priceExVat });
+    try {
+      if (snapshot) window.sessionStorage.setItem(SALEABILITY_PDF_PLAN_SESSION_KEY, JSON.stringify(snapshot));
+      if (storageKey) window.localStorage.setItem(storageKey, JSON.stringify(answers));
+    } catch { /* Optional storage. */ }
+  }, [assetTitle, open, plan, step, valuationExVat, storageKey, answers]);
 
   function update<K extends keyof SaleabilityRefinementAnswers>(key: K, value: SaleabilityRefinementAnswers[K]) {
-    setAnswersChanged(true);
-    const nextAnswers = { ...answers, [key]: value };
-    setAnswers(nextAnswers);
-    if (step === 7) {
-      calculate(nextAnswers);
-    } else if (typeof step === 'number') {
-      setStep(step + 1);
-    }
+    setAnswersChanged(true); setError(''); setPlan(null);
+    const next = { ...answers, [key]: value };
+    if (key === 'sellingRoute' && !next.saleArea) next.saleArea = value === 'dealer' ? 'local' : 'south_africa';
+    setAnswers(next);
+    setStep(step === 5 ? 'result' : typeof step === 'number' ? step + 1 : 1);
   }
-
-  function calculate(completedAnswers: Partial<SaleabilityRefinementAnswers>) {
-    if (!answersAreComplete(completedAnswers)) return;
-    if (storageKey) {
-      try {
-        window.localStorage.setItem(storageKey, JSON.stringify(completedAnswers));
-      } catch {
-        // Storage is optional.
-      }
-    }
-    setSaved(false); setSaveError('');
-    setStep('result');
-  }
-
+  if (!open) return null;
   return (
-    <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose();
-    }}>
-      <section className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
+    <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) onClose(); }}>
+      <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
-          <div>
-            <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2>
-            <p>{assetTitle}</p>
-          </div>
-          <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
+          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2><p>{assetTitle}</p></div>
+          <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
-
-        <div className={styles.questionProgress} role="status" aria-live="polite" hidden={step === 'result'}>
-          {step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}
-          <div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${step === 'result' ? 100 : step / 7 * 100}%` }} /></div>
-        </div>
-        <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}>
-          {step !== 'result' ? (
-            <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
-              {step === 1 ? (
-              <ChoiceQuestion
-                icon="location"
-                label="Where will you sell?"
-                value={answers.saleArea}
-                options={SALE_AREA_OPTIONS}
-                onChange={(value) => update('saleArea', value)}
-              />
-              ) : null}
-              {step === 2 ? (
-              <ChoiceQuestion
-                icon="assets"
-                label="How many similar assets are for sale?"
-                value={answers.similarAssetsAvailable}
-                options={AVAILABLE_OPTIONS}
-                onChange={(value) => update('similarAssetsAvailable', value)}
-              />
-              ) : null}
-              {step === 3 ? (
-              <ChoiceQuestion
-                icon="buyers"
-                label="How many likely buyers?"
-                value={answers.realisticBuyerPool}
-                options={BUYER_OPTIONS}
-                onChange={(value) => update('realisticBuyerPool', value)}
-              />
-              ) : null}
-              {step === 4 ? (
-              <ChoiceQuestion
-                icon="demand"
-                label="Current demand?"
-                value={answers.currentDemand}
-                options={DEMAND_OPTIONS}
-                onChange={(value) => update('currentDemand', value)}
-              />
-              ) : null}
-              {step === 5 ? (
-              <ChoiceQuestion
-                icon="model"
-                label="How well known is the model?"
-                value={answers.modelFamiliarity}
-                options={FAMILIARITY_OPTIONS}
-                onChange={(value) => update('modelFamiliarity', value)}
-              />
-              ) : null}
-              {step === 6 ? (
-              <ChoiceQuestion
-                icon="time"
-                label="When would you like to sell?"
-                value={answers.desiredTimeline}
-                options={TIMELINE_OPTIONS}
-                onChange={(value) => update('desiredTimeline', value)}
-              />
-              ) : null}
-              {step === 7 ? (
-              <ChoiceQuestion
-                icon="priority"
-                label="What matters most?"
-                value={answers.sellingPriority}
-                options={PRIORITY_OPTIONS}
-                onChange={(value) => update('sellingPriority', value)}
-              />
-              ) : null}
+        {step !== 'result' ? <div className={styles.questionProgress} role="status" aria-live="polite">Question {step} of 5<div className={styles.progressTrack} aria-hidden="true"><span style={{ width: `${step / 5 * 100}%` }} /></div></div> : null}
+        <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>
+          {step !== 'result' ? <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
+            {step === 1 ? <ChoiceQuestion icon="route" label="How would you like to sell?" value={answers.sellingRoute} options={ROUTE_OPTIONS} onChange={value => update('sellingRoute', value)} /> : null}
+            {step === 2 ? <ChoiceQuestion icon="time" label="When would you like to sell?" value={answers.desiredTimeline} options={TIMELINE_OPTIONS} onChange={value => update('desiredTimeline', value)} /> : null}
+            {step === 3 ? <ChoiceQuestion icon="location" label={answers.sellingRoute === 'dealer' ? 'Where will you seek dealer offers?' : 'Where will you sell?'} value={answers.saleArea} options={SALE_AREA_OPTIONS} onChange={value => update('saleArea', value)} /> : null}
+            {step === 4 ? <ChoiceQuestion icon="demand" label="Current demand?" value={answers.currentDemand} options={DEMAND_OPTIONS} onChange={value => update('currentDemand', value)} /> : null}
+            {step === 5 ? <ChoiceQuestion icon="assets" label="How many similar assets are for sale in that area?" value={answers.similarAssetsAvailable} options={AVAILABLE_OPTIONS} onChange={value => update('similarAssetsAvailable', value)} /> : null}
+          </section> : null}
+          {step === 'result' && loading ? <p className={styles.loading} role="status"><span className={styles.spinner} aria-hidden="true" />Calculating your estimate…</p> : null}
+          {step === 'result' && plan ? <div className={styles.result}>
+            <section className={styles.resultHero} aria-live="polite">
+              <span className={styles.resultLabel}><SaleIcon kind="route" value={answers.sellingRoute} />{plan.resultLabel}</span>
+              <strong>{displayMoney(plan.priceExVat)}</strong>
+              <p>{vatLabel} · Before selling fees</p>
+              <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
             </section>
-          ) : null}
-
-          {step === 'result' && plan ? (
-            <div className={styles.result}>
-              <section className={styles.resultHero} aria-live="polite">
-                <span className={styles.resultLabel}><SaleIcon kind="demand" />Refined Saleability</span>
-                <strong>{plan.refinedScore} / 100</strong>
-                <p>Grade {plan.grade} · {plan.gradeLabel}</p>
-
-              </section>
-
-              <section className={styles.pricePlan}>
-                <div className={styles.planHeader}>
-                  <h3 className={styles.resultLabel}><SaleIcon kind="priority" />Your selling plan</h3>
-                </div>
-                <div className={styles.askingPriceRow}>
-                <div className={styles.askingPrice}>
-                  <small>Recommended asking price</small>
-                  <strong>{displayMoney(plan.recommendedAskingPriceExVat)}</strong>
-                  <em>{vatLabel}</em>
-                </div>
-                  <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
-                </div>
-                <div className={styles.resultRows}>
-                  <div><span>Likely selling range</span><strong>{displayMoney(plan.likelySellingRangeLowExVat)} – {displayMoney(plan.likelySellingRangeHighExVat)}</strong></div>
-                  <div><span>Timing with this plan</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
-                </div>
-              <p className={styles.valuationReminder}>
-                Valuation: <strong>{displayMoney(valuationExVat)} {vatLabel}</strong> · selling-price guidance only.
-              </p>
-              </section>
-
-              <details className={styles.ratingDetails}>
-                <summary>Rating details</summary>
-                <div className={styles.resultMeta}>
-                  <div>
-                    <span>General rating</span><small>Based on the asset details.</small>
-                    <strong>{general.score} / 100</strong>
-                  </div>
-                  <div>
-                    <span>Market score</span><small>Includes your market answers.</small>
-                    <strong>{plan.marketScore} / 100</strong>
-                  </div>
-                  <div>
-                    <span>Grade</span>
-                    <strong>{plan.grade} · {plan.gradeLabel}</strong>
-                  </div>
-                  <div>
-                    <span>Typical market window</span>
-                    <strong>{plan.naturalSellingWindow}</strong>
-                  </div>
-                </div>
-              </details>
-
-
-            </div>
-          ) : null}
+            <p className={styles.valuationReminder}>Based on your selling circumstances. An estimate, not a guaranteed offer.</p>
+          </div> : null}
         </div>
         {step === 'result' && recalculating ? <p className={styles.recalculateNote}>Uses your previous answers and latest asset details.</p> : null}
-        {saveError ? <p role="alert" style={{color:"#9c2626",padding:"0 1.5rem"}}>{saveError}</p> : null}
+        {error ? <p role="alert" className={styles.error}>{error}</p> : null}
         <footer className={`${styles.actions} ${estimateStyle ? modalStyles.actions : ''}`}>
-          {step !== 'result' ? (
-            <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>
-              {step === 1 ? 'Cancel' : 'Back'}
-            </button>
-          ) : (
-            <>
-              <button type="button" className={styles.secondary} disabled={saving} onClick={() => { setSaved(false); setSaveError(''); setStep(1); }}>Change answers</button>
-              {onSave && !saved ? <button type="button" className={styles.primary} disabled={saving} onClick={async () => {
-                if (!answersAreComplete(answers)) return;
-                setSaving(true); setSaveError('');
-                try { await onSave(answers); setSaved(true); onClose(); } catch(error) { setSaveError(error instanceof Error ? error.message : 'Could not save. Please try again.'); } finally { setSaving(false); }
-              }}>{saving ? (recalculating ? 'Recalculating…' : 'Saving…') : recalculating ? 'Recalculate' : 'Save market estimate'}</button> : <button type="button" className={styles.primary} onClick={onClose}>Done</button>}
-            </>
-          )}
+          {step !== 'result' ? <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>{step === 1 ? 'Cancel' : 'Back'}</button> : <>
+            <button type="button" className={styles.secondary} disabled={saving} onClick={() => { setError(''); setPlan(null); setStep(1); }}>Change answers</button>
+            {!plan && !loading ? <button type="button" className={styles.primary} onClick={() => setRetry(value => value + 1)}>Try again</button> : onSave ?
+              <button type="button" className={styles.primary} disabled={saving || loading || !plan} onClick={async () => {
+                if (!plan || !validCurrentSaleabilityAnswers(answers)) return;
+                setSaving(true); setError('');
+                try { await onSave(answers); onClose(); } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not save. Please try again.'); } finally { setSaving(false); }
+              }}>{saving ? 'Saving…' : recalculating ? 'Recalculate' : 'Save estimate'}</button>
+              : <button type="button" className={styles.primary} disabled={loading || !plan} onClick={onClose}>Done</button>}
+          </>}
         </footer>
       </section>
     </div>
   );
 }
-
-

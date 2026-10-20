@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
+import { saleabilityBasis, type SavedSaleability } from '../../../../lib/asset-saleability';
 import SaleabilityModal from '../../../../components/SaleabilityModal';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import type { DealerMaintenanceAccessSummary } from '../../../../lib/dealer-maintenance-tracker';
@@ -1589,6 +1590,17 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
   const [targetPercent, setTargetPercent] = useState(String(draft.lifeWorkedPercent ?? ''));
   const [projection, setProjection] = useState<ProjectionResponse['projection'] | null>(null);
   const [saleabilityOpen, setSaleabilityOpen] = useState(mode === 'saleability');
+  const [savedSaleability, setSavedSaleability] = useState<SavedSaleability | undefined>();
+  useEffect(() => {
+    if (mode !== 'saleability') return;
+    const controller = new AbortController();
+    void fetch('/api/asset-register/saleability', { credentials: 'include', signal: controller.signal })
+      .then(async response => { if (!response.ok) return; const data = await response.json();
+        if (!controller.signal.aborted) setSavedSaleability(data.items?.find((item: {asset_id: string}) => item.asset_id === assetId)?.assessment);
+      }).catch(() => { /* Existing answers are optional; the user can calculate again. */ });
+    return () => controller.abort();
+  }, [mode, assetId]);
+
 
   if (mode === 'landing') {
     const pricingBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing`;
@@ -1732,7 +1744,7 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
       <div className={styles.pricingPanel}>
         <div className={styles.pricingPanelHeader}>
           <strong>Refine Saleability</strong>
-          <small>Answer seven plain questions about buyers, demand and your selling goal. Your Aim4price value is never changed.</small>
+          <small>Answer five short questions about how and when you want to sell. Your Aim4price value stays unchanged.</small>
         </div>
         <button type="button" className={styles.primaryButton} onClick={() => setSaleabilityOpen(true)}>Open Saleability</button>
       </div>
@@ -1741,6 +1753,16 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
         onClose={() => setSaleabilityOpen(false)}
         assetTitle={draft.title}
         valuationExVat={draft.value}
+        assetId={draft.id}
+        basis={saleabilityBasis(draft)}
+        initialAnswers={savedSaleability?.answers}
+        onSave={async answers => {
+          const response = await fetch('/api/asset-register/saleability', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetId: draft.id, basis: saleabilityBasis(draft), answers }) });
+          const data = await response.json();
+          if (!response.ok) throw Error(data.error || 'Could not save estimate.');
+          setSavedSaleability(data.assessment);
+          setNotice({ tone: 'success', message: 'Saleability estimate saved.' });
+        }}
         input={buildAssetSaleabilityInput(draft)}
         storageKey={`aim4price-saleability:asset:${draft.id}`}
       />

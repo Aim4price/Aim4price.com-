@@ -20231,6 +20231,8 @@ export default function AssetRegisterClient({
           onClose={closeSaleabilityDialog}
           assetTitle={saleabilityAsset.title}
           valuationExVat={saleabilityAsset.value}
+          assetId={saleabilityAsset.id}
+          basis={saleabilityBasis(saleabilityAsset)}
           input={buildRegisterAssetSaleabilityInput(saleabilityAsset)}
           key={saleabilityAsset.id}
           initialAnswers={savedSaleability[saleabilityAsset.id]?.answers}

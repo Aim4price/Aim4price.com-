@@ -4,12 +4,16 @@ on:
     paths:
       - 'lib/asset-saleability.ts'
       - 'lib/saleability.ts'
+      - 'lib/server/saleability.ts'
+      - 'app/api/saleability/**'
+      - 'tests/saleability-v2.test.cjs'
       - 'app/api/asset-register/saleability/**'
       - 'components/asset-register/AssetPriceSwitch*'
       - 'components/asset-register/AssetMarketDetail.tsx'
       - 'components/asset-register/AssetDetailIcon.tsx'
       - 'components/asset-register/AssetCardDetails.module.css'
       - 'components/SaleabilityModal.tsx'
+      - 'components/saleability-modal.module.css'
       - 'app/asset-register/asset-register-client.tsx'
       - 'tests/asset-saleability.test.cjs'
       - 'scripts/verify-market-estimates.cjs'
@@ -25,6 +29,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/asset-saleability.test.cjs
+      - run: node --test tests/asset-saleability.test.cjs tests/saleability-v2.test.cjs
       - run: node --experimental-strip-types --test tests/saleability.test.mjs tests/pricing-vat.test.mjs tests/asset-register-card-ui.test.mjs tests/pricing-modal-return.test.mjs
       - run: node scripts/verify-market-estimates.cjs

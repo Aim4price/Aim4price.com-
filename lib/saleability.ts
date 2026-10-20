@@ -43,7 +43,11 @@ export type ModelFamiliarity = 'common' | 'less_common' | 'rare' | 'unknown';
 export type DesiredSellingTimeline = '14' | '30' | '60' | '90' | 'flexible';
 export type SellingPriority = 'best_price' | 'balanced' | 'fast_cashflow';
 
+export type SellingRoute = 'direct' | 'dealer' | 'consignment' | 'auction';
+
 export type SaleabilityRefinementAnswers = {
+  modelVersion?: 2;
+  sellingRoute?: SellingRoute;
   saleArea: SaleArea;
   similarAssetsAvailable: SimilarAssetsAvailable;
   realisticBuyerPool: RealisticBuyerPool;

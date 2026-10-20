@@ -87,7 +87,6 @@ import {
   marketplaceAdFilename,
 } from '../../lib/marketplace-ad-renderer';
 import {
-  calculateGeneralSaleability,
   type GeneralSaleabilityInput,
 } from '../../lib/saleability';
 
@@ -4310,12 +4309,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const replacementPriceExVat = tractorResult?.totalReplacementPriceUsedExVat ?? getCurrentResultReplacementPriceExVat();
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const appliedDealerAssessment = appliedAdvancedAssumptions?.dealerAssessment ?? null;
-    const generalSaleability = calculateGeneralSaleability(getSaleabilityInputFromResult(
-      resultState,
-      resultCondition,
-      isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
-      isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
-    ));
     const advancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedUsageMetricType = getResultUsageMetricType(resultState);
     const advancedUsageShortUnit = getUsageShortUnit(getResultUsageSectorKey(resultState), advancedUsageMetricType);
@@ -4475,11 +4468,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       clientRows: safeClientRows,
       recordRows,
       saleabilityRows: compactPdfRows([
-        { label: 'Rating', value: `${generalSaleability.score} / 100` },
-        { label: 'Grade', value: `${generalSaleability.grade} · ${generalSaleability.gradeLabel}` },
-        { label: 'Selling window', value: generalSaleability.naturalSellingWindow },
-        { label: 'Useful life left', value: `${generalSaleability.lifeRemainingPercent}%` },
-        { label: 'Confidence', value: generalSaleability.confidence },
+        { label: 'Selling estimate', value: 'Calculate Saleability separately for your selling circumstances.' },
       ]),
     };
   }
@@ -8937,12 +8926,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime in km' : 'Expected lifetime in hours';
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
-    const generalSaleability = calculateGeneralSaleability(getSaleabilityInputFromResult(
-      resultState,
-      resultCondition,
-      isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
-      isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
-    ));
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
     const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} out of 100%?`;
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
@@ -9244,9 +9227,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
               <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
-              <strong>{generalSaleability.score} / 100 · Grade {generalSaleability.grade}</strong>
-              <p>{generalSaleability.gradeLabel} · Typical selling window {generalSaleability.naturalSellingWindow.replace(/[–—]/g, ' to ')}</p>
-              <small>Selling time is indicative and may vary.</small>
+              <strong>What could it sell for?</strong>
+              <p>Get a separate estimate for how and when you want to sell.</p>
+              <small>Your Aim4price value stays unchanged.</small>
             </div>
             <button type="button" aria-label="Refine Saleability" onClick={() => setSaleabilityOpen(true)}>Refine</button>
           </section>
@@ -9358,6 +9341,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           onClose={() => setSaleabilityOpen(false)}
           assetTitle={machineTitle}
           valuationExVat={headlineValue ?? 0}
+          context={{ sectorKey: isGeneric ? genericResult?.sector.key ?? selectedSector ?? '' : 'agricultural', familyKey: isGeneric ? genericResult?.family.key ?? selectedFamily?.familyKey ?? '' : 'tractors' }}
           input={getSaleabilityInputFromResult(
             resultState,
             resultCondition,

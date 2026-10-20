@@ -45,7 +45,7 @@ test('the refined Saleability asking price is carried into the estimate PDF with
   assert.equal(formatSaleabilityPdfPrice(315_000), 'R 315 000 excl. VAT');
 
   assert.match(modal, /step !== 'result' \|\| !plan/);
-  assert.match(modal, /saleabilityPriceExVat: plan\.recommendedAskingPriceExVat/);
+  assert.match(modal, /saleabilityPriceExVat: plan\.priceExVat/);
   assert.match(modal, /sessionStorage\.setItem\(SALEABILITY_PDF_PLAN_SESSION_KEY/);
   assert.match(valuationPolish, /enrichEstimatePdfFormWithSaleabilityPrice/);
   assert.match(valuationPolish, /actionPath !== '\/api\/valuation\/report'/);
@@ -68,12 +68,10 @@ test('Manage Pricing opens the same Saleability calculator', () => {
 test('the questions use plain selectable answers and preserve the valuation boundary', () => {
   for (const wording of [
     'Where will you sell?',
-    'How many similar assets are for sale?',
-    'How many likely buyers?',
+    'How many similar assets are for sale in that area?',
+    'How would you like to sell?',
     'Current demand?',
-    'How well known is the model?',
     'When would you like to sell?',
-    'What matters most?',
   ]) {
     assert.match(modal, new RegExp(wording.replace(/[?]/g, '\\?')));
   }
@@ -85,8 +83,9 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
-  assert.match(modal, /Valuation: <strong>\{displayMoney\(valuationExVat\)\} \{vatLabel\}<\/strong>/);
-  assert.match(modal, /selling-price guidance only/);
+  assert.match(modal, /An estimate, not a guaranteed offer/);
+  assert.match(modal, /\/api\/saleability\/quote/);
+  assert.doesNotMatch(modal, /calculateGeneralSaleability|calculateRefinedSaleability|Rating details|marketScore/);
   assert.doesNotMatch(modal, /Outlook/i);
 });
 
