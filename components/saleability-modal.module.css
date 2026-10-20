@@ -909,3 +909,29 @@
 .resultModal .resultHero > strong { margin: 0; line-height: 1.12; }
 .resultModal .resultHero > p { margin: 0 0 0.35rem; }
 .resultModal .valuationReminder { margin: 0; line-height: 1.6; }
+
+/* Balanced choices and a concise selling plan, shared by every entry point. */
+.modal .singleQuestion .choiceGrid[data-options='4'] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modal .singleQuestion .choiceGrid[data-options='4'] > button { min-width: 0; }
+.modal .choiceIcon { width: 48px; height: 48px; border-radius: 15px; box-shadow: inset 0 0 0 1px rgb(28 89 66 / 6%); }
+.modal .choiceIcon svg { width: 28px; height: 28px; }
+.choiceIcon[data-kind='route'][data-value='dealer'], .choiceIcon[data-kind='location'] { background: #eaf2fc; color: #28669a; }
+.choiceIcon[data-kind='route'][data-value='consignment'] { background: #f0edfa; color: #69529a; }
+.choiceIcon[data-kind='route'][data-value='auction'], .choiceIcon[data-value='weak'] { background: #fff3df; color: #94611b; }
+.choiceIcon[data-value='unknown'] { background: #edf1f4; color: #536574; }
+.resultModal .resultHero { background: linear-gradient(120deg, #f5fbf8, #e8f5ef); border: 1px solid #bcded0; border-radius: 20px; padding: 24px; }
+.resultHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; width: 100%; }
+.resultHeading > [role='group'] { margin: 0; }
+.resultModal .resultHero > strong { font-size: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 3.5), 3rem); letter-spacing: -.035em; margin-top: 8px; }
+.resultModal .resultHero > p { font-size: .875rem; color: #52675e; }
+.sellingSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.sellingSummary > div { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 3px 10px; align-content: center; padding: 14px 12px; border: 1px solid #dce7e1; border-radius: 14px; background: #fff; }
+.sellingSummary .choiceIcon { grid-row: span 2; align-self: center; width: 36px; height: 36px; border-radius: 11px; }
+.sellingSummary .choiceIcon svg { width: 22px; height: 22px; }
+.sellingSummary dt { color: #596e64; font-size: .75rem; line-height: 1.4; }
+.sellingSummary dd { margin: 0; color: #163e30; font-size: .85rem; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .sellingSummary { grid-template-columns: 1fr; gap: 8px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sellingSummary > div { padding: 10px 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultModal .resultHero { padding: 18px; }
+}
