@@ -1,4 +1,4 @@
-export const TRACKER_INSTALL_URL = 'https://www.aim4price.com/downloads/aim4price-tracker-0.7.apk';
+export const TRACKER_INSTALL_URL = 'https://www.aim4price.com/downloads/aim4price-tracker-0.8.apk';
 export function normalizeTrackerCode(value: string): string | null {
   const code = value.trim().replace(/-/g, '').toUpperCase();
   return /^[A-F0-9]{16}$/.test(code) ? code : null;
