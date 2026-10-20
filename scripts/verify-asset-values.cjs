@@ -58,10 +58,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const page=await browser.newPage();await page.setViewport({width:1440,height:1000});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setRequestInterception(true);page.on('request',request=>request.respond({status:200,contentType:'text/html',body:'<html></html>'}));await page.goto('https://aim4price.example/asset-register');
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42)}'+sheets.join('\n')+'</style><div id="app"></div>');
- await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));window.renderValue=(suggest=false)=>window.root.render(React.createElement(require("components/asset-register/AssetValueDialog").default,{key:String(suggest)+String(window.renderCount=(window.renderCount||0)+1),suggest,endpoint:"/api/fixture/value",assetTitle:"2023 Tractor",onClose:()=>{}}));'});
+ await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));window.renderValue=(suggest=false)=>window.root.render(React.createElement(require("components/asset-register/AssetValueDialog").default,{key:String(suggest)+String(window.renderCount=(window.renderCount||0)+1),suggest,endpoint:"/api/fixture/value",assetTitle:"2023 Tractor",onClose:()=>{window.valueClosed=(window.valueClosed||0)+1}}));'});
  await page.evaluate(()=>{
  if(!crypto.randomUUID)crypto.randomUUID=()=>String(Math.random());window.writes=[];window.data={asset:{id:'asset',title:'2023 Tractor',value:700000,replacementPrice:1000000,revision:'v1',manual:false},requests:[{id:'proposal',amount:800000,reason:'Inspected equipment',actor_name:'Example Dealer',status:'pending',submitted_value:700000}],history:[]};
- window.fetch=async(url,options)=>{if(!options?.method)return {ok:true,json:async()=>({...window.data,value:window.data.asset.value,manual:window.data.asset.manual,revision:window.data.asset.revision})};const b=JSON.parse(options.body);window.writes.push(b);if(b.action==='previewReset')return {ok:true,json:async()=>({revision:window.data.asset.revision,currentValue:window.data.asset.value,recalculatedValue:700000})};if(b.action==='resetAim4price'){window.data.asset.value=700000;window.data.asset.baseline=null;}if(b.action==='restoreManual')window.data.asset.value=600000;if(b.action==='suggest'&&window.data.asset.manual){window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true,direct:true})};}if(b.action==='previewReplacement')return {ok:true,json:async()=>({revision:'v1',currentValue:window.data.asset.value,recalculatedValue:960000})};if(b.action==='approve'){window.data.asset.value=800000;window.data.requests[0].status='approved';}if(b.action==='override')window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true})};};window.renderValue();
+ window.fetch=async(url,options)=>{if(!options?.method)return {ok:true,json:async()=>({...window.data,value:window.data.asset.value,manual:window.data.asset.manual,revision:window.data.asset.revision})};const b=JSON.parse(options.body);window.writes.push(b);if(b.action==='previewReset')return {ok:true,json:async()=>({revision:window.data.asset.revision,currentValue:window.data.asset.value,recalculatedValue:700000})};if(b.action==='resetAim4price'){window.data.asset.value=700000;window.data.asset.baseline=null;}if(b.action==='restoreManual')window.data.asset.value=600000;if(b.action==='suggest'&&window.data.asset.manual){window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true,direct:true})};}if(b.action==='previewReplacement')return {ok:true,json:async()=>({revision:'v1',currentValue:window.data.asset.value,recalculatedValue:960000})};if(b.action==='replacement'){window.data.asset.replacementPrice=b.replacementPrice;if(b.mode==='recalculate')window.data.asset.value=b.expectedValue;}if(b.action==='approve'){window.data.asset.value=800000;window.data.requests[0].status='approved';}if(b.action==='override')window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true})};};window.renderValue();
  });
  // Action cards include descriptive copy; match the exact heading, not that copy.
  async function click(text){
@@ -75,7 +75,43 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function fill(selector,value){await page.waitForSelector(selector);await page.$eval(selector,(n,v)=>{Object.getOwnPropertyDescriptor(n.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(n,v);n.dispatchEvent(new Event('input',{bubbles:true}));},value);}
  await click('Review suggestion');await page.waitForSelector('textarea');assert(await page.evaluate(()=>document.body.textContent.includes('Example Dealer')));await fill('textarea','Accept inspected value');await page.screenshot({path:'/tmp/value-approval.png'});await click('Approve value');await page.waitForFunction(()=>document.body.textContent.includes('Saved.'));assert.equal(await page.evaluate(()=>window.writes[0].proposalId),'proposal');
  await click('Change current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm value change');await page.waitForFunction(()=>window.data.asset.value===750000);
- await click('Change replacement price');await fill('input[type=number]','1200000');await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('960'));await page.screenshot({path:'/tmp/value-replacement.png'});await click('Keep current value');await page.waitForFunction(()=>window.writes.some(w=>w.mode==='keep'));assert.equal(await page.evaluate(()=>window.writes.find(w=>w.mode==='keep').replacementPrice),1200000);
+ await click('Change replacement price');
+ await click('Preview change');
+ await page.waitForSelector('textarea[aria-invalid="true"]');
+ assert.equal(await page.evaluate(()=>document.activeElement===document.querySelector('textarea')),true);
+ assert.equal(await page.evaluate(()=>window.writes.filter(w=>w.action==='previewReplacement').length),0);
+ await click('Incl. VAT');
+ await page.waitForFunction(()=>document.querySelector('#replacement-price-input')?.value==='1150000');
+ await fill('#replacement-price-input','1380000');
+ await click('Excl. VAT');
+ await page.waitForFunction(()=>document.querySelector('#replacement-price-input')?.value==='1200000');
+ await click('Incl. VAT');
+ await page.waitForFunction(()=>document.querySelector('#replacement-price-input')?.value==='1380000');
+await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('960'));await page.waitForFunction(()=>document.querySelector('h2')?.textContent.includes('Review replacement change'));
+ assert.equal(await page.$('textarea'),null);
+ await click('Back');
+ await page.waitForSelector('#replacement-price-input');
+ assert.equal(await page.$eval('#replacement-price-input',n=>n.value),'1380000');
+ assert.equal(await page.$eval('textarea',n=>n.value),'Updated replacement quotation');
+ assert.equal(await page.$eval('textarea',n=>n.getAttribute('aria-invalid')),'false');
+ await click('Preview change');
+ await page.waitForFunction(()=>document.querySelector('h2')?.textContent.includes('Review replacement change'));
+ await page.setViewport({width:1366,height:768});
+ assert.equal(await page.$eval('[role="dialog"] > div',n=>n.scrollHeight>n.clientHeight+1),false,'Review fits without scrolling on desktop');
+ await page.screenshot({path:'/tmp/value-replacement.png'});
+ await page.setViewport({width:390,height:844});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ assert(await page.$eval('[role="dialog"] > footer',n=>n.getBoundingClientRect().bottom<=innerHeight));
+ await page.setViewport({width:1366,height:768});
+ await page.click('[aria-label="Close action form"]');
+ assert.equal(await page.evaluate(()=>window.valueClosed),1,'Top X closes directly from review');
+ assert.equal(await page.evaluate(()=>window.writes.find(w=>w.action==='previewReplacement').replacementPrice),1200000);await click('Keep current value');await page.waitForFunction(()=>window.writes.some(w=>w.mode==='keep'));assert.equal(await page.evaluate(()=>window.writes.find(w=>w.mode==='keep').replacementPrice),1200000);
+ await page.waitForFunction(()=>document.querySelector('h2')?.textContent.includes('Replacement price updated'));
+ assert.equal(await page.evaluate(()=>document.body.textContent.includes('Last approved starting value')||document.body.textContent.includes('No current-value suggestions')),false);
+ assert.equal(await page.$eval('[role="dialog"] > div',n=>n.scrollHeight>n.clientHeight+1),false,'Completion fits without scrolling');
+ await page.screenshot({path:'/tmp/value-replacement-complete.png'});
+ await click('Done');assert.equal(await page.evaluate(()=>window.valueClosed),2);
+ await page.setViewport({width:1440,height:1000});
  await page.evaluate(()=>window.renderValue(true));await fill('input[type=number]','850000');await fill('textarea','Professional inspection');await page.screenshot({path:'/tmp/value-suggestion-polished.png'});await click('Send suggestion');await page.waitForFunction(()=>document.body.textContent.includes('Suggestion sent.'));assert.equal(await page.evaluate(()=>window.writes.at(-1).action),'suggest');assert.equal(await page.evaluate(()=>window.data.asset.value),750000,'Suggestion does not mutate the live asset');
  await page.evaluate(()=>{
   const previous=window.fetch;window.scopeOwner=false;
@@ -90,7 +126,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.evaluate(()=>window.data.asset.value),750000,'Replacement suggestion does not mutate current value');
  await page.evaluate(()=>window.renderSharedValue(true,'replacement'));
  await page.waitForFunction(()=>document.body.textContent.includes('Change replacement price'));
- await page.waitForFunction(()=>document.querySelector('input[type=number]')?.value==='1000000');
+ await page.waitForFunction(()=>document.querySelector('input[type=number]')?.value==='1200000');
  assert.equal(await page.$$eval('button',nodes=>nodes.filter(n=>n.textContent==='Send suggestion').length),0,'Owner opens confirmed replacement flow');
  await page.evaluate(()=>window.renderSharedValue(true,'current'));
  await page.waitForFunction(()=>document.body.textContent.includes('Change current value'));
