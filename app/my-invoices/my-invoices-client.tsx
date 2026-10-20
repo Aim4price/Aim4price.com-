@@ -1621,6 +1621,15 @@ export default function MyInvoicesClient({
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
   const manualCostWizardOpen = flow === 'manual-form';
+  const manualAssetMetricLocked = manualCostWizardOpen && selectedAsset?.selectedMethod === 'manual';
+  useEffect(() => {
+    if (!manualAssetMetricLocked || !selectedAsset) return;
+    const metric = selectedAsset.usageMetric ?? 'none';
+    setUsageMetricDropdownOpen(false);
+    setDraft(current => current.usageMetric === metric ? current : {
+      ...current, usageMetric: metric, usageReading: '',
+    });
+  }, [manualAssetMetricLocked, selectedAsset]);
   const recurringOpen = flow === 'recurring';
   const flowTitle = businessPickerOpen
     ? 'Choose client business'
@@ -3247,6 +3256,7 @@ export default function MyInvoicesClient({
   }
 
   function setUsageMetric(value: UsageMetric) {
+    if (manualAssetMetricLocked) return;
     setManualCostWizardError('');
     setDraft((current) => ({
       ...current,
@@ -5148,7 +5158,9 @@ export default function MyInvoicesClient({
                   </label>
                   <div className={styles.costUsageMetricField}>
                     <span>Usage metric</span>
-                    <div
+                    {manualAssetMetricLocked ? (
+                      <input aria-label="Usage metric" value={selectedUsageMetricOption.label} readOnly title="Change usage type in Update asset" />
+                    ) : <div
                       className={`${styles.customFilterSelect} ${usageMetricDropdownOpen ? styles.customFilterSelectOpen : ''}`}
                       data-usage-metric-dropdown="true"
                     >
@@ -5184,7 +5196,7 @@ export default function MyInvoicesClient({
                           })}
                         </DropdownOverlay>
                       ) : null}
-                    </div>
+                    </div>}
                   </div>
                   <label>
                     <span>Usage reading</span>
