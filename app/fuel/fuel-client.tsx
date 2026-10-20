@@ -33,6 +33,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
+import detailLayout from '../../components/CostDetailIcon.module.css';
 import costStyles from '../my-invoices/page.module.css';
 import { appRealmForPath } from '../../lib/app-realm';
 import accountStyles from '../account/page.module.css';
@@ -3489,31 +3490,37 @@ export default function FuelClient({
                         {isExpanded ? (
                           <div className={styles.fuelSlipManagerExpanded} id={detailsId}>
                             <h4 className={styles.slipLedgerDetailsTitle}>Fuel slip details</h4>
-                            <div className={`${styles.fuelSlipManagerSecondaryGrid} ${styles.fuelSlipDetailGrid}`}>
-                              <span>
+                            <div className={`${styles.fuelSlipManagerSecondaryGrid} ${styles.fuelSlipDetailGrid} ${detailLayout.detailsGrid}`}>
+                              <div className={detailLayout.detailGroup}>
+<span>
                                 <small><FuelSlipDetailIcon kind="target" />Target type</small>
                                 <strong>{fuelSlipTargetTypeLabel(slip)}</strong>
                               </span>
-                              <span>
-                                <small><FuelSlipDetailIcon kind="card" />Card</small>
-                                <strong>{cardEndingLabel || 'Not recorded'}</strong>
-                              </span>
-                              <span>
+<span>
                                 <small><FuelSlipDetailIcon kind="work" />Work use</small>
                                 <strong>{slip.workUseExcluded ? 'Excluded' : 'Included'}</strong>
                               </span>
-                              <span>
-                                <small><FuelSlipDetailIcon kind="updated" />Last updated</small>
-                                <strong>{updatedLabel || 'Saved fuel slip'}</strong>
+                              </div>
+                              <div className={detailLayout.detailGroup}>
+<span>
+                                <small><FuelSlipDetailIcon kind="card" />Card</small>
+                                <strong>{cardEndingLabel || 'Not recorded'}</strong>
                               </span>
-                              <span>
+<span>
                                 <small><FuelSlipDetailIcon kind="reference" />Slip / reference</small>
                                 <strong>{slip.slipNumber || 'Not recorded'}</strong>
                               </span>
-                              <span>
+<span>
                                 <small><FuelSlipDetailIcon kind="transaction" />Transaction</small>
                                 <strong>{slip.transactionNumber || 'Not recorded'}</strong>
                               </span>
+                              </div>
+                              <div className={detailLayout.detailGroup}>
+<span>
+                                <small><FuelSlipDetailIcon kind="updated" />Last updated</small>
+                                <strong>{updatedLabel || 'Saved fuel slip'}</strong>
+                              </span>
+                              </div>
                             </div>
 
                           </div>

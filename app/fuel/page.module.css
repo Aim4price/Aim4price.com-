@@ -7714,5 +7714,6 @@
 
 /* Match the quiet outline treatment used by cost ledger details. */
 .slipLedgerCard .fuelSlipDetailGrid { row-gap: .9rem; }
-.fuelSlipDetailGrid > span { position: relative; padding-left: 1.65rem; }
-.fuelSlipDetailIcon { position: absolute; left: 0; top: .05rem; display: block; width: 1.1rem; height: 1.1rem; color: var(--app-muted, #648477); }
+.fuelSlipDetailGrid span { display: grid; gap: 4px; }
+.slipLedgerCard .fuelSlipDetailGrid small { font-size: .85rem; line-height: 1.4; }
+.fuelSlipDetailIcon { position: absolute; left: 0; top: .05rem; display: block; width: 1.15rem; height: 1.15rem; color: var(--app-muted, #648477); }
