@@ -1397,7 +1397,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
+                <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : 'Update document details and linked assets.'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1832,3 +1832,4 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     </div>
   );
 }
+

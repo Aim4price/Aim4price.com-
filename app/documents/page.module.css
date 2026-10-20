@@ -4113,3 +4113,39 @@
   :global(:where(html:not(:has([data-website-canvas])))) .documentCard { grid-template-columns: 1fr; }
   :global(:where(html:not(:has([data-website-canvas])))) .documentCard .fileMark { width: auto; height: 2.5rem; justify-self: start; display: flex; padding: .5rem .7rem; gap: .4rem; }
 }
+
+
+/* Edit documents: compact context, clear fields, and a stable action footer. */
+.editDocumentModal .modalFields { gap: 1.1rem; }
+.editDocumentModal .currentFile { padding: .8rem 1rem; gap: .8rem; border-radius: .9rem; background: #f6faf8; box-shadow: none; }
+.editDocumentModal .currentFile > svg { width: 1.3rem; height: 1.3rem; flex: 0 0 auto; }
+.editDocumentModal .currentFile strong { font-size: .9rem; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.editDocumentModal .currentFile span { font-size: .75rem; line-height: 1.4; }
+.editDocumentModal .formGrid { gap: 1.15rem 1.2rem; align-items: start; }
+.editDocumentModal .field { gap: .55rem; }
+.editDocumentModal .field > span,
+.editDocumentModal .field > label { font-size: .85rem; font-weight: 650; letter-spacing: 0; text-transform: none; line-height: 1.4; }
+.editDocumentModal .field :is(input, textarea) { background: #fff; border: 1px solid #cadbd3; font-weight: 450; line-height: 1.5; border-radius: .8rem; }
+.editDocumentModal .field > input { min-height: 3.25rem; padding: .75rem .9rem; }
+.editDocumentModal .field :is(input, textarea):focus-visible { outline: 2px solid #72a88c; outline-offset: 2px; }
+.editDocumentModal .documentTypeCombobox { min-height: 3.25rem; border-radius: .8rem; border-color: #cadbd3; box-shadow: none; }
+.editDocumentModal .documentTypeCombobox input { border: 0; background: transparent; }
+.editDocumentModal .documentTypeCombobox:focus-within { outline: 2px solid #72a88c; outline-offset: 2px; }
+.editDocumentModal .documentTypeCombobox input:focus-visible { outline: none; }
+.editDocumentModal .expiryFields { grid-column: 1 / -1; gap: .8rem; padding: .8rem 1rem; border: 1px solid #e1eae5; border-radius: .8rem; background: #f8fbf9; }
+.editDocumentModal .expiryToggle { min-height: 1.75rem; gap: .75rem; font-size: .9rem; font-weight: 550; }
+.editDocumentModal .expiryFields .field { max-width: 24rem; }
+.editDocumentModal .notesField textarea { min-height: 5.5rem; height: 5.5rem; padding: .8rem .9rem; resize: vertical; }
+.editDocumentModal .assetLinkSummary { min-height: 0; padding: 1rem; gap: .9rem; border-radius: .9rem; background: #f8fbf9; box-shadow: none; }
+.editDocumentModal .assetLinkSummaryIcon { width: 2.6rem; height: 2.6rem; border-radius: .75rem; }
+.editDocumentModal .assetLinkSummary h3 { font-size: 1rem; line-height: 1.4; margin: .15rem 0; }
+.editDocumentModal .assetLinkSummary p { font-size: .8rem; line-height: 1.5; margin: 0; }
+.editDocumentModal .assetLinkSummary > div > span { font-size: .72rem; font-weight: 500; }
+.editDocumentModal .assetLinkSummary > button { min-height: 2.8rem; padding: .65rem .9rem; border-radius: .8rem; font-size: .85rem; box-shadow: none; }
+.editDocumentModal .modalScroll { scroll-padding-block: 1rem; }
+.editDocumentModal .modalHeader > button { border-radius: .65rem !important; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .editDocumentModal .formGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .editDocumentModal .assetLinkSummary { grid-template-columns: auto minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .editDocumentModal .assetLinkSummary > button { grid-column: 1 / -1; width: 100%; }
+}
