@@ -19,7 +19,7 @@ function CategoryMenu({value, groups, onChange}: {value: string; groups: string[
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  const list = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement | null>(null);
   const options = ['', ...groups];
   useLayoutEffect(() => {
     if (!open) return;
