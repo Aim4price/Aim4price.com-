@@ -37,7 +37,9 @@ export default function AssetDetailChoiceField<T extends string>({
     <button type="button" className={styles.trigger} aria-labelledby={labelId}
       aria-haspopup="dialog" aria-expanded={open} onClick={() => onRequestOpen ? onRequestOpen() : setOpen(true)}>
       <span>{selected?.label || `Choose ${label.toLowerCase()}`}</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d={isCondition ? 'm12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6' : 'M4 7h16M4 17h16M8 4v6m8 4v6'} /></svg>
+      {(isCondition || value !== 'percentage') && (
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d={isCondition ? 'm12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6' : 'M4 7h16M4 17h16M8 4v6m8 4v6'} /></svg>
+      )}
     </button>
     {open && createPortal(<LeadActionDialog title={`Choose ${label.toLowerCase()}`}
       assetTitle={isCondition ? 'Select the condition that best describes this asset.' : 'Choose how usage is measured for this asset.'}
