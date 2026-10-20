@@ -1263,6 +1263,7 @@
 .loginDetailIcon { width:1.25rem; height:1.25rem; flex:0 0 1.25rem; color:var(--app-muted,#70877c); pointer-events:none; }
 .loginIdentity > .loginDetailIcon { width:1.5rem; height:1.5rem; flex-basis:1.5rem; }
 .loginActions { display:flex; align-items:center; gap:1.25rem; padding:1rem 1.25rem 1rem 0; }
+.loginSummary > .loginActions { min-width: 0; }
 .loginManageButton { display:inline-flex; align-items:center; justify-content:center; gap:.65rem; min-height:2.85rem; padding:.65rem 1rem; border:1px solid var(--app-line,#d5e1da); border-radius:.65rem; background:var(--app-surface-soft,#f3f8f5); color:var(--app-text,#195440); font:inherit; font-size:.95rem; font-weight:700; cursor:pointer; }
 .loginManageButton .loginDetailIcon { color:inherit; }
 .loginManageButton:hover { border-color:var(--app-accent,#28815f); background:var(--app-success-soft,#edf5f0); }
