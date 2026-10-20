@@ -1899,6 +1899,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
   useEffect(() => { setRequiredFeedback(false); }, [step, activeDetailsModal]);
 
+  const [usageInputFocused, setUsageInputFocused] = useState(false);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
   const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
   const [pendingAdvancedSection, setPendingAdvancedSection] = useState<string | null>(null);
@@ -5258,11 +5259,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function scrollToDetailsCard(targetId: string) {
-    if (!compactAppMode) return;
-
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById(targetId)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth', block: 'center' });
       });
     });
   }
@@ -7536,15 +7535,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {usageModalMode === 'hours' && showHoursInput ? (
             <>
-              <label className={`${styles.field} ${styles.modalInputField}`}>
+              <label className={`${styles.field} ${styles.modalInputField} ${styles.usageEntryPrompt}`}>
                 <span className={styles.fieldLabel}>Enter {selectedUsageFieldLabel.toLowerCase()}</span>
                 <input
                   type="text"
                   inputMode="numeric"
                   {...requiredProps(usageNumber === null || usageNumber < 0)}
-                  value={usageAmount}
-                  onChange={(event) => setUsageAmount(event.target.value)}
-                  placeholder={selectedUsageDisplayUnit === 'km' ? 'e.g. 196000' : 'e.g. 3500'}
+                  value={usageInputFocused ? usageAmount : usageAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                  onFocus={() => setUsageInputFocused(true)}
+                  onBlur={() => setUsageInputFocused(false)}
+                  onChange={(event) => setUsageAmount(event.target.value.replace(/\s/g, ''))}
+                  placeholder={selectedUsageDisplayUnit === 'km' ? 'e.g. 196 000' : 'e.g. 3 500'}
                 />
                 {requiredHint(usageNumber === null || usageNumber < 0)}
               </label>
