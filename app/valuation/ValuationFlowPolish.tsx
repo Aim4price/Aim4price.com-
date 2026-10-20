@@ -151,6 +151,9 @@ export default function ValuationFlowPolish() {
   const [familyModalOpen, setFamilyModalOpen] = useState(false);
   const [familyOptions, setFamilyOptions] = useState<FamilyOption[]>([]);
   const [familySearch, setFamilySearch] = useState('');
+  const [familyGroup, setFamilyGroup] = useState('');
+  const [familyHelp, setFamilyHelp] = useState(false);
+  const optionsViewportRef = useRef<HTMLDivElement | null>(null);
   const [familyTypeLabel, setFamilyTypeLabel] = useState('equipment type');
   const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
   const pickerRef = useRef<FamilyPickerNodes | null>(null);
@@ -160,11 +163,18 @@ export default function ValuationFlowPolish() {
   const modalSearchRef = useRef<HTMLInputElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
+  const familyGroups = useMemo(() => Array.from(new Set(familyOptions.map(option => option.meta).filter(Boolean))).sort((a, b) => a.localeCompare(b)), [familyOptions]);
   const visibleFamilyOptions = useMemo(() => {
-    const terms = familySearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    if (!terms.length) return familyOptions;
-    return familyOptions.filter((option) => terms.every((term) => option.searchText.includes(term)));
-  }, [familyOptions, familySearch]);
+    const normalise = (text: string) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-_/]/g, ' ').replace(/\s+/g, ' ').trim();
+    const query = normalise(familySearch);
+    const terms = query.split(' ').filter(Boolean);
+    return familyOptions.filter(option => (!familyGroup || option.meta === familyGroup)
+      && terms.every(term => normalise(option.searchText).includes(term)))
+      .sort((a, b) => Number(normalise(b.label) === query) - Number(normalise(a.label) === query)
+        || a.label.localeCompare(b.label, 'en', {numeric: true, sensitivity: 'base'}));
+  }, [familyOptions, familySearch, familyGroup]);
+
+  useLayoutEffect(() => { optionsViewportRef.current?.scrollTo({top: 0}); }, [familySearch, familyGroup]);
 
   useLayoutEffect(() => {
     const originalSubmit = HTMLFormElement.prototype.submit;
@@ -334,6 +344,8 @@ export default function ValuationFlowPolish() {
           familyModalOpenRef.current = true;
           setFamilyTypeLabel(nextPicker.typeLabel);
           setFamilySearch(nextPicker.searchInput.value);
+          setFamilyGroup('');
+          setFamilyHelp(false);
           setFamilyModalOpen(true);
         } else {
           setFamilyTypeLabel(nextPicker.typeLabel);
@@ -440,7 +452,7 @@ export default function ValuationFlowPolish() {
         <header className={styles.familyModalHeader}>
           <div className={styles.familyModalHeading}>
             <h2 data-estimate-modal-title id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
-            <p id={FAMILY_MODAL_DESCRIPTION_ID}>Choose the closest match. You can adjust its replacement price later.</p>
+            <p id={FAMILY_MODAL_DESCRIPTION_ID}>Choose the closest match to your asset.</p>
           </div>
           <button
             type="button"
@@ -475,7 +487,12 @@ export default function ValuationFlowPolish() {
           </span>
         </div>
 
-        <div className={styles.familyOptionsViewport}>
+        {familyGroups.length > 1 ? <div className={styles.familyCategories} role="group" aria-label="Equipment categories">
+          <button type="button" aria-pressed={!familyGroup} onClick={() => setFamilyGroup('')}>All</button>
+          {familyGroups.map(group => <button key={group} type="button" aria-pressed={familyGroup === group} onClick={() => setFamilyGroup(group)}>{group}</button>)}
+        </div> : null}
+        <div className={styles.familyListHeading}><strong>{familyGroup || `All ${familyTypeLabel === 'vehicle type' ? 'vehicles' : 'equipment'}`}</strong><span>{familySearch.trim() ? 'Matches · A–Z' : 'A–Z'}</span></div>
+        <div ref={optionsViewportRef} className={styles.familyOptionsViewport}>
           {visibleFamilyOptions.length ? (
             <div className={styles.familyOptionsGrid}>
               {visibleFamilyOptions.map((option) => (
@@ -495,11 +512,17 @@ export default function ValuationFlowPolish() {
           ) : (
             <div className={styles.familyEmptyState} role="status">
               <strong>No matching {familyTypeLabel}</strong>
-              <span>Try a broader search or clear the search field.</span>
+              <span>Try a shorter name or choose another category.</span>
+              {familyGroup ? <button type="button" onClick={() => setFamilyGroup('')}>Search all categories</button> : null}
               {familySearch ? <button type="button" onClick={() => setFamilySearch('')}>Clear search</button> : null}
             </div>
           )}
         </div>
+        <footer className={styles.familyFooter}>
+          <span>Can’t find your {familyTypeLabel === 'vehicle type' ? 'vehicle' : 'equipment'}?</span>
+          <button type="button" aria-expanded={familyHelp} aria-controls="family-picker-help" onClick={() => setFamilyHelp(value => !value)}>{familyHelp ? 'Hide help' : 'Get help choosing'}</button>
+          {familyHelp ? <p id="family-picker-help">Search by equipment type, rather than brand or model. Try a broader name, or close this window to check your sector. Only choose a type that matches your asset.</p> : null}
+        </footer>
       </section>
     </div>,
     overlayHost,
