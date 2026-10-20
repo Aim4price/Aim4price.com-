@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { accountAppUsername } from '../../lib/app-login-name';
+import SettingsDetailIcon from '../../components/SettingsDetailIcon';
 import AppHeader from '../../components/AppHeader';
 import FriendlySelect, { type FriendlySelectOption } from './friendly-select';
 import refinementStyles from './access-page-refinements.module.css';
@@ -1136,29 +1137,19 @@ function AppAccessManagement({ kind, configOverride }: {
         ) : selectedEdit ? (
           <>
             <button type="button" className={styles.modalBackButton} onClick={() => setSelectedId(null)} disabled={isSelectedBusy}>
-              ← Back to all logins
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg> All logins
             </button>
             <article className={`${baseStyles.managerCard} ${baseStyles.managerCardExpanded} ${styles.editorCard}`}>
               {renderRecordSummary(selectedRecord, false)}
               <div className={baseStyles.managerDropdown}>
-                <p className={`${refinementStyles.focusNote} ${styles.editorHint}`}>
-                  <span className={refinementStyles.focusDot} aria-hidden="true" />
-                  Update this login, save the changes, then return to the list.
-                </p>
-                <div className={refinementStyles.sectionHeading}>
-                  {kind === 'dealer' ? <span className={refinementStyles.stepNumber}>1</span> : null}
-                  <div className={refinementStyles.sectionHeadingCopy}>
-                    <h3>Login details and status</h3>
-                    <p>Change the name, username, role or password without affecting other app users.</p>
-                  </div>
-                </div>
-                <form className={baseStyles.inlineForm} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
+                <form className={`${baseStyles.inlineForm} ${styles.loginEditForm}`} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
                   <label className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <span>{config.displayNameLabel}</span>
-                    <input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} />
+                    <span className={styles.loginInputIcon}><SettingsDetailIcon name="person" /><input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} /></span>
                   </label>
                   <label className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <span>Person’s username</span>
+                    <span className={styles.loginInputIcon}><SettingsDetailIcon name="email" />
                     <input
                       value={selectedEdit.username}
                       onChange={(event) => {
@@ -1167,8 +1158,8 @@ function AppAccessManagement({ kind, configOverride }: {
                       }}
                       aria-invalid={Boolean(editUsernameErrors[selectedRecord.id])}
                     />
-                    <small className={styles.usernamePreview}>{selectedEdit.username === selectedRecord.username
-                      ? `Current login: ${selectedRecord.username}` : `New login: ${usernamePreview(selectedEdit.username)}`}</small>
+                    </span>
+                    {selectedEdit.username !== selectedRecord.username ? <small className={styles.usernamePreview}>New login: {usernamePreview(selectedEdit.username)}</small> : null}
                     {editUsernameErrors[selectedRecord.id] ? <small className={baseStyles.fieldError} role="alert">{editUsernameErrors[selectedRecord.id]}</small> : null}
                   </label>
                   {accountName && !selectedRecord.username.endsWith(`@${accountName}`) ? (
@@ -1176,27 +1167,28 @@ function AppAccessManagement({ kind, configOverride }: {
                       username: `${selectedRecord.username.split('@')[0]}@${accountName}`,
                     })}>Use business username</button>
                   ) : null}
-                  {renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}
-                  <div className={`${baseStyles.compactField} ${styles.compactField}`}>
+                  <div className={styles.loginEditFull}>{renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}</div>
+                  <div className={`${baseStyles.compactField} ${styles.compactField} ${styles.loginEditFull}`}>
                     <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
-                    <div className={baseStyles.passwordInputWrap}>
+                    <div className={`${baseStyles.passwordInputWrap} ${styles.loginInputIcon}`}>
+                      <SettingsDetailIcon name="lock" />
                       <input
                         id={`${kind}-password-${selectedRecord.id}`}
                         type={visiblePasswords[selectedRecord.id] ? 'text' : 'password'}
                         value={selectedEdit.password}
                         onChange={(event) => updateEditDraft(selectedRecord.id, { password: event.target.value.slice(0, config.passwordMaximum) })}
-                        placeholder={`Leave blank to keep the current ${config.passwordLabel.toLowerCase()}`}
+                        placeholder={`Enter a new ${config.passwordLabel.toLowerCase()}`}
                         minLength={config.passwordMinimum}
                         maxLength={config.passwordMaximum}
                         autoComplete="new-password"
                       />
-                      <button type="button" className={baseStyles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [selectedRecord.id]: !current[selectedRecord.id] }))}>
+                      <button type="button" aria-pressed={Boolean(visiblePasswords[selectedRecord.id])} aria-label={`${visiblePasswords[selectedRecord.id] ? 'Hide' : 'Show'} new ${config.passwordLabel.toLowerCase()}`} className={baseStyles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [selectedRecord.id]: !current[selectedRecord.id] }))}>
                         {visiblePasswords[selectedRecord.id] ? 'Hide' : 'Show'}
                       </button>
                     </div>
                     <p className={baseStyles.fieldHint}>Leave blank to keep the current {config.passwordLabel.toLowerCase()}.</p>
                   </div>
-                  <div className={`${baseStyles.managerActions} ${styles.managerActions}`}>
+                  <div className={`${baseStyles.managerActions} ${styles.managerActions} ${styles.loginEditActions}`}>
                     <button type="submit" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
                       {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
                     </button>
@@ -1217,7 +1209,8 @@ function AppAccessManagement({ kind, configOverride }: {
                   <OwnerAppAssetAccessPanel userId={selectedRecord.id} />
                 ) : null}
                 {kind === 'owner' && selectedRecord.accessRole === 'admin' ? (
-                  <section className={styles.accessPanel} aria-label="Owner App asset access">
+                  <section className={styles.loginAccessNote} aria-label="Owner App asset access">
+                    <SettingsDetailIcon name="lock" />
                     <p className={styles.accessMessage}>Owner / Admin users always have access to every umbrella and asset.</p>
                   </section>
                 ) : null}
