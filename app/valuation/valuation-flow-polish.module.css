@@ -446,11 +446,6 @@
 .familyOption:focus-visible { outline: 2px solid #237454; outline-offset: 2px; }
 
 /* Keep browsing controls fixed while only the equipment list scrolls. */
-.familyCategories { display: flex; flex-wrap: wrap; max-height: 8rem; overflow-y: auto; gap: .5rem; flex-shrink: 0; padding: 0 0 1rem; }
-.familyCategories button { font: inherit; font-size: .85rem; font-weight: 700; color: #245343; background: #f3f8f5; border: 1px solid #d6e5dc; border-radius: 999px; padding: .55rem 1rem; cursor: pointer; min-height: 40px; }
-.familyCategories button[aria-pressed='true'] { background: #17563f; color: #fff; border-color: #17563f; }
-.familyCategories button:hover { box-shadow: 0 0 0 2px #c8e5d6; }
-.familyCategories button:focus-visible, .familyFooter button:focus-visible { outline: 2px solid #237454; outline-offset: 3px; }
 .familyListHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .8rem .3rem; border-top: 1px solid #e1eae5; flex-shrink: 0; }
 .familyListHeading strong { font-size: .95rem; }
 .familyListHeading > span { font-size: .8rem; color: #5d7569; }
@@ -460,7 +455,6 @@
 .familyFooter p { flex-basis: 100%; margin: .25rem 0 0; line-height: 1.6; text-align: left; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyOptionsGrid { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .familyCategories { max-height: 7rem; overflow-y: auto; }
 }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyModal { width: calc(100% - 24px); max-height: calc(100dvh - 24px); min-height: 0; padding: 20px; }
@@ -472,4 +466,31 @@
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyOverlay { padding: 0; min-height: 100dvh; }
   :global(:where(html:not(:has([data-website-canvas])))) .familySearchField { flex: 1 1 100%; }
+}
+
+/* One compact filter row leaves the available height for actual equipment. */
+.familyModal .familySearchRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, .4fr); gap: 12px; padding: 16px 0; }
+.familySearchRow:not(:has(.familyCategoryField)) { grid-template-columns: 1fr; }
+.familyCategoryField { min-width: 0; }
+.familyCategoryField select {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 34px 10px 14px;
+  border: 1px solid #c9ddd2;
+  border-radius: 12px;
+  background-color: #f5f9f7;
+  color: #245343;
+  font: inherit;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.familyCategoryField select:hover { border-color: #237454; }
+.familyModal .familyListHeading { padding-block: 10px; }
+.familyModal .familyResultCount { font-weight: 500; white-space: nowrap; }
+.familyModal .familyModalHeader { padding-bottom: 16px; }
+.familyModal .familyFooter { padding-top: 8px; margin-top: 8px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .familyModal .familySearchRow { grid-template-columns: 1fr; gap: 10px; }
 }

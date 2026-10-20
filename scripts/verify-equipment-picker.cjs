@@ -62,10 +62,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const click=async text=>{await page.$$eval('[role=dialog] button',(els,text)=>{const el=els.find(e=>e.textContent===text);if(!el)throw Error(text);el.click()},text)};
  await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('Automatic Calf Feeder'));
  assert.deepEqual(await page.$$eval('[role=dialog] button strong',els=>els.map(e=>e.textContent)),['Automatic Calf Feeder','Baler','Feedout Wagon','Milk Cooling Tank','Tractor']);
- await click('Feeding');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('2 results'));
+ await page.select('[aria-label="Equipment category"]','Feeding');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('2 results'));
  assert.deepEqual(await page.$$eval('[role=dialog] button strong',els=>els.map(e=>e.textContent)),['Automatic Calf Feeder','Feedout Wagon']);
  await page.type('[role=dialog] input','zzzz');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('No matching'));
- await click('Clear search');await click('All');await click('Get help choosing');await page.waitForSelector('#family-picker-help');await click('Hide help');
+ await click('Clear search');await page.select('[aria-label="Equipment category"]','');await click('Get help choosing');await page.waitForSelector('#family-picker-help');await click('Hide help');
+
+ await page.evaluate(()=>{
+   const groups=['Animal Feed Equipment','Dairy & Poultry','Farm Maintenance','Farm Trailers','Grain & Produce Handling','Harvester Headers','Harvesting','Hay & Baling','Irrigation','Livestock Equipment','Orchard & Grass Care','Planting','Soil Preparation','Spraying & Spreading','Tractors'];
+   for(let i=0;i<135;i++){const b=document.createElement('button');b.dataset.familyLabel='Equipment '+String(i+1).padStart(3,'0');b.dataset.familyGroup=groups[i%groups.length];b.innerHTML='<span>'+b.dataset.familyLabel+'</span>';document.getElementById('choices').append(b)}
+ });
+ await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('140 results'));
+ await page.setViewport({width:1366,height:768});
+ await page.evaluate(()=>document.body.style.setProperty('--website-visible-height','768px'));
+ assert(await page.$eval('[role=dialog] select',el=>el.getBoundingClientRect().height<65),'Category filter stays a single row with the full catalogue');
+ assert(await page.$$eval('[role=dialog] button strong',els=>els.filter(el=>{const r=el.getBoundingClientRect();const dlg=el.closest('[role=dialog]');const footer=dlg.querySelector('footer').getBoundingClientRect();return r.top>0&&r.bottom<footer.top}).length>=8),'At least eight equipment options are visible');
  await page.screenshot({path:'/tmp/equipment-picker-desktop.png'});
  await page.type('[role=dialog] input','milk-cooling');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('1 result'));
  await click('Milk Cooling Tank');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));assert.equal(await page.evaluate(()=>window.selectedFamily),'Milk Cooling Tank');
