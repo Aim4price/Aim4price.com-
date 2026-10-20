@@ -41123,10 +41123,8 @@ button.documentOpenLink {
 .page .assetGroupSummary > .valueBlock {
   box-sizing: border-box;
   max-width: 100%;
-  padding-right: 2.25rem;
-}
-.page .assetGroupSummary .assetValueVatAmountRow .assetCardVatToggle {
-  right: -2.25rem !important;
+  /* Keep the price aligned with the actions; the shared VAT arrow sits outside. */
+  padding-right: 0;
 }
 
 /* Outstanding member updates remain visible while the umbrella is folded. */

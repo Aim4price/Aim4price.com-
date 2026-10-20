@@ -50,16 +50,16 @@
 :global(html[data-app-theme='dark']) .button:focus-visible {
   outline-color: #a5ddba;
 }
-/* Umbrella arrows sit on the light card surface, rather than the page background. */
-:global([data-asset-group-id]) .button.button {
+/* Member-card arrows sit within the light umbrella surface. */
+:global([data-asset-group-id]) :global([id^="asset-card-"]) .button.button {
   color: rgba(7, 59, 48, .78);
   opacity: .9;
 }
-:global([data-asset-group-id]) .button.button:hover {
+:global([data-asset-group-id]) :global([id^="asset-card-"]) .button.button:hover {
   color: #073b30;
   opacity: 1;
 }
-:global([data-asset-group-id]) .button.button:focus-visible {
+:global([data-asset-group-id]) :global([id^="asset-card-"]) .button.button:focus-visible {
   outline-color: rgba(43, 138, 99, .6);
 }
 @media(max-width:760px) {
