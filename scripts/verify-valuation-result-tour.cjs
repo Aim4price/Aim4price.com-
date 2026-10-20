@@ -59,13 +59,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForSelector('[aria-haspopup="dialog"]');
  assert.equal(await page.$('button[aria-label="Close walkthrough"]'),null);
  await page.waitForSelector('dialog[open]');
- await page.waitForFunction(()=>document.querySelector('#value-tour-title')?.textContent==='Your estimated value');
+ await page.waitForFunction(()=>document.querySelector('#value-tour-title')?.textContent==='Your estimated fair value');
  await page.waitForFunction(()=>!document.querySelector('dialog').getAnimations({subtree:true}).some(a=>a.playState==='running'));
  await page.screenshot({path:'/tmp/result-tour-desktop.png'});
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Replacement price');
- await click('Back');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Your estimated value');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Start with the right replacement price');
+ await click('Back');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Your estimated fair value');
  await click('Next');await click('Next');await click('Next');
- await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Fine-tune your estimate');
+ await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check the details behind the value');
  await click('Done');assert.equal(await page.$('dialog[open]'),null);
  assert(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')==='dialog'));
  await click('Show me around');await page.waitForSelector('dialog[open]');
@@ -74,7 +74,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:390,height:844});
  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
  await click('Show me around');await page.waitForSelector('dialog[open]');
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Replacement price');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Start with the right replacement price');
  await page.screenshot({path:'/tmp/result-tour-mobile.png'});
  assert(await page.evaluate(()=>{const r=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}));
  await page.keyboard.press('Tab');
@@ -83,7 +83,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>document.querySelector('[data-value-tour="replacement"]').remove());
  await click('Show me around');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 3')));
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Saleability');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Fair value and selling price can differ');
 
  await finish();
  await page.setViewport({width:1366,height:768});
@@ -113,6 +113,21 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Show me around');await page.waitForSelector('dialog[open]');
  await click('Next');await click('Next');
  await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check your asset details');
+ await finish();
+ // Match the result page's main column and right action column.
+ await page.setViewport({width:1600,height:900});
+ await page.evaluate(()=>{
+   const main=document.querySelector('main');main.style.zoom='1';main.dataset.websiteScale='1';main.style.maxWidth='1100px';
+   main.style.setProperty('--website-visible-width',innerWidth+'px');main.style.setProperty('--website-visible-height',innerHeight+'px');
+   document.querySelectorAll('section').forEach(el=>el.style.width='660px');
+ });
+ await click('Show me around');await page.waitForSelector('dialog[open]');
+ await page.waitForFunction(()=>{
+   const target=document.querySelector('[data-value-tour="value"]').getBoundingClientRect();
+   const panel=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();
+   return panel.left>=target.right+16 && panel.right<=innerWidth-16;
+ });
+ await page.screenshot({path:'/tmp/result-tour-side.png'});
  await finish();
  // Remounting a new result must start the walkthrough again.
  await page.evaluate(()=>window.root.render(React.createElement(require('components/ValuationResultTour').default,{key:'new-estimate'})));
