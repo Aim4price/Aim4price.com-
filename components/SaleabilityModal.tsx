@@ -103,8 +103,8 @@ function ChoiceQuestion<T extends string>({
             aria-pressed={value === option.value}
             onClick={() => onChange(option.value)}
           >
-            <SaleIcon kind={icon} value={option.value} /><strong>{option.label}</strong>
-            {option.help ? <small>{option.help}</small> : null}
+            <SaleIcon kind={icon} value={option.value} />
+            <span className={styles.choiceText}><strong>{option.label}</strong>{option.help ? <small>{option.help}</small> : null}</span>
           </button>
         ))}
       </div>
@@ -204,7 +204,6 @@ export default function SaleabilityModal({
   function update<K extends keyof SaleabilityRefinementAnswers>(key: K, value: SaleabilityRefinementAnswers[K]) {
     setAnswersChanged(true); setError(''); setPlan(null);
     const next = { ...answers, [key]: value };
-    if (key === 'sellingRoute' && !next.saleArea) next.saleArea = value === 'dealer' ? 'local' : 'south_africa';
     setAnswers(next);
     setStep(step === 5 ? 'result' : typeof step === 'number' ? step + 1 : 1);
   }
