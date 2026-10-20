@@ -16,6 +16,7 @@
   width: 100%; padding: .9rem 1rem; border: 1px solid var(--app-line, #d2e1d9); border-radius: 1rem;
   background: var(--app-surface, #fff); color: var(--app-text, #173c2d); font: inherit; text-align: left; cursor: pointer;
 }
+.usageChoices .choice { grid-template-columns: minmax(0, 1fr); }
 .choice:hover, .selected { border-color: #29805c; background: var(--app-surface-soft, #edf7f1); }
 .trigger:focus-visible, .choice:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
 .icon { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: .85rem; color: #176a49; background: #e4f4ec; }
