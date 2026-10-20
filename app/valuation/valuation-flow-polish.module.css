@@ -450,9 +450,6 @@
 .familyListHeading strong { font-size: .95rem; }
 .familyListHeading > span { font-size: .8rem; color: #5d7569; }
 .familyModal .familyOptionsViewport { padding-right: 1rem; }
-.familyFooter { flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: .4rem .65rem; padding: .8rem 0 0; margin-top: .65rem; border-top: 1px solid #e1eae5; color: #5d7569; font-size: .8rem; }
-.familyFooter button { font: inherit; font-weight: 700; color: #226d50; padding: .4rem; border: 0; background: transparent; cursor: pointer; }
-.familyFooter p { flex-basis: 100%; margin: .25rem 0 0; line-height: 1.6; text-align: left; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyOptionsGrid { grid-template-columns: 1fr; }
 }
@@ -471,8 +468,8 @@
 /* One compact filter row leaves the available height for actual equipment. */
 .familyModal .familySearchRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(14rem, .4fr); gap: 12px; padding: 16px 0; }
 .familySearchRow:not(:has(.familyCategoryField)) { grid-template-columns: 1fr; }
-.familyCategoryField { min-width: 0; }
-.familyCategoryField select {
+.familyCategoryField { min-width: 0; position: relative; z-index: 3; }
+.familyCategoryTrigger {
   width: 100%;
   min-height: 48px;
   padding: 10px 34px 10px 14px;
@@ -486,11 +483,35 @@
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.familyCategoryField select:hover { border-color: #237454; }
+.familyCategoryTrigger:hover { border-color: #237454; }
 .familyModal .familyListHeading { padding-block: 10px; }
 .familyModal .familyResultCount { font-weight: 500; white-space: nowrap; }
 .familyModal .familyModalHeader { padding-bottom: 16px; }
-.familyModal .familyFooter { padding-top: 8px; margin-top: 8px; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyModal .familySearchRow { grid-template-columns: 1fr; gap: 10px; }
 }
+
+.familyCategoryTrigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; text-align: left; padding: 10px 14px; }
+.familyCategoryTrigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.familyCategoryTrigger svg, .familyCategoryMenu svg { flex: 0 0 18px; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.familyCategoryTrigger[aria-expanded='true'] { border-color: #237454; box-shadow: 0 0 0 3px #2374541a; }
+.familyCategoryTrigger[aria-expanded='true'] > svg { transform: rotate(180deg); }
+.familyCategoryMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 100%;
+  max-height: min(300px, calc(var(--website-visible-height, 100dvh) - 330px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #ceded5;
+  border-radius: 14px;
+  box-shadow: 0 14px 38px #153e3026;
+  scrollbar-width: thin;
+  scrollbar-color: #8cafa0 transparent;
+}
+.familyCategoryMenu > button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 9px; color: #244f3f; background: #fff; font: inherit; font-size: .88rem; font-weight: 500; line-height: 1.4; text-align: left; cursor: pointer; }
+.familyCategoryMenu > button[aria-selected='true'] { background: #e7f3ec; color: #17563f; font-weight: 700; }
+.familyCategoryMenu > button:hover, .familyCategoryMenu > button:focus-visible { background: #f0f7f3; outline: 2px solid #91bfa7; outline-offset: -2px; }

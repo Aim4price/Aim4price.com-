@@ -14,6 +14,48 @@ import {
 } from '../../lib/saleability-pdf';
 import styles from './valuation-flow-polish.module.css';
 
+function CategoryMenu({value, groups, onChange}: {value: string; groups: string[]; onChange: (value: string) => void}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  const options = ['', ...groups];
+  useLayoutEffect(() => {
+    if (!open) return;
+    list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({preventScroll: true});
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !wrap.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open]);
+  const close = () => { setOpen(false); trigger.current?.focus({preventScroll: true}); };
+  return <div ref={wrap} className={styles.familyCategoryField} onBlur={event => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+  }} onKeyDown={event => {
+    if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault();
+      if (!open) { setOpen(true); return; }
+      const buttons = Array.from(list.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? []);
+      const current = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next]?.focus();
+    }
+  }}>
+    <button ref={trigger} type="button" className={styles.familyCategoryTrigger} aria-label="Equipment category" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'equipment-category-list' : undefined} onClick={() => setOpen(current => !current)}>
+      <span>{value || 'All categories'}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+    {open ? <div ref={list} id="equipment-category-list" role="listbox" aria-label="Equipment categories" className={styles.familyCategoryMenu}>
+      {options.map(option => <button key={option} type="button" role="option" aria-selected={value === option} tabIndex={value === option ? 0 : -1} onClick={() => { onChange(option); close(); }}>
+        <span>{option || 'All categories'}</span>
+        {value === option ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
+      </button>)}
+    </div> : null}
+  </div>;
+}
+
 const WIZARD_CARD_ID = 'valuation-wizard-card';
 const FAMILY_SEARCH_LABEL = /^Search (equipment type|vehicle type)$/i;
 const REPLACEMENT_SLIDER_LABEL = /Slide to replacement price/i;
@@ -152,7 +194,6 @@ export default function ValuationFlowPolish() {
   const [familyOptions, setFamilyOptions] = useState<FamilyOption[]>([]);
   const [familySearch, setFamilySearch] = useState('');
   const [familyGroup, setFamilyGroup] = useState('');
-  const [familyHelp, setFamilyHelp] = useState(false);
   const optionsViewportRef = useRef<HTMLDivElement | null>(null);
   const [familyTypeLabel, setFamilyTypeLabel] = useState('equipment type');
   const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
@@ -345,7 +386,6 @@ export default function ValuationFlowPolish() {
           setFamilyTypeLabel(nextPicker.typeLabel);
           setFamilySearch(nextPicker.searchInput.value);
           setFamilyGroup('');
-          setFamilyHelp(false);
           setFamilyModalOpen(true);
         } else {
           setFamilyTypeLabel(nextPicker.typeLabel);
@@ -482,13 +522,7 @@ export default function ValuationFlowPolish() {
               <button type="button" onClick={() => setFamilySearch('')} aria-label="Clear family search">×</button>
             ) : null}
           </label>
-          {familyGroups.length > 1 ? <label className={styles.familyCategoryField}>
-            <span className={styles.srOnly}>Equipment category</span>
-            <select aria-label="Equipment category" value={familyGroup} onChange={event => setFamilyGroup(event.target.value)}>
-              <option value="">All categories</option>
-              {familyGroups.map(group => <option key={group} value={group}>{group}</option>)}
-            </select>
-          </label> : null}
+          {familyGroups.length > 1 ? <CategoryMenu value={familyGroup} groups={familyGroups} onChange={setFamilyGroup} /> : null}
         </div>
         <div className={styles.familyListHeading}>
           <strong>{familyGroup || `All ${familyTypeLabel === 'vehicle type' ? 'vehicles' : 'equipment'}`}</strong>
@@ -520,11 +554,7 @@ export default function ValuationFlowPolish() {
             </div>
           )}
         </div>
-        <footer className={styles.familyFooter}>
-          <span>Can’t find your {familyTypeLabel === 'vehicle type' ? 'vehicle' : 'equipment'}?</span>
-          <button type="button" aria-expanded={familyHelp} aria-controls="family-picker-help" onClick={() => setFamilyHelp(value => !value)}>{familyHelp ? 'Hide help' : 'Get help choosing'}</button>
-          {familyHelp ? <p id="family-picker-help">Search by equipment type, rather than brand or model. Try a broader name, or close this window to check your sector. Only choose a type that matches your asset.</p> : null}
-        </footer>
+
       </section>
     </div>,
     overlayHost,
