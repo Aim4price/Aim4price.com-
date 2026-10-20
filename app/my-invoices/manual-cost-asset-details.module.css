@@ -1,0 +1,53 @@
+.details {
+  display: grid;
+  gap: .85rem;
+  min-width: 0;
+  margin-top: .35rem;
+  color: var(--app-muted, #64746a);
+  font-size: .9rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.specifications, .supporting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem 1.5rem;
+  min-width: 0;
+}
+.supporting {
+  padding-top: .85rem;
+  border-top: 1px solid var(--app-line, #e3ebe6);
+}
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 1.05rem;
+  color: var(--app-muted, #81988e);
+  opacity: .75;
+  pointer-events: none;
+}
+.serial {
+  display: grid;
+  grid-template-columns: 1.05rem auto minmax(0, 1fr);
+  align-items: start;
+  gap: .35rem .6rem;
+  min-width: 0;
+  margin-top: .15rem;
+  padding-top: .65rem;
+}
+.serialLabel { font-size: .8rem; }
+.serialValue {
+  margin-left: .4rem;
+  color: var(--app-text, #405d51);
+  font-size: .85rem;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
