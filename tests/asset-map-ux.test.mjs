@@ -152,10 +152,11 @@ test("map controls and selection preserve the user's context", () => {
   );
 });
 
-test("selected overlay keeps the original compact content without a duplicate number badge", () => {
+test("selected overlay keeps compact content without duplicate numbering or serial details", () => {
   assert.match(assetMapClient, /styles\.selectedAssetIdentity/);
   assert.doesNotMatch(assetMapClient, /styles\.selectedAssetNumber/);
-  assert.match(assetMapClient, /selectedAsset.serialNumber&&/);
+  // Serial numbers remain searchable, but the compact card deliberately omits them.
+  assert.doesNotMatch(assetMapClient, /selectedAsset\.serialNumber/);
   assert.match(assetMapClient, /Last GPS location:/);
   assert.match(assetMapClient, /Phone contact:/);
   assert.match(assetMapClient, />Open asset register</);
