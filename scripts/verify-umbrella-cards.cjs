@@ -45,14 +45,24 @@ async function check(browser, url) {
       const title=row.querySelector('h2'),panel=row.querySelector('[aria-label="Asset valuation"]'),price=row.querySelector(panel?'[aria-label="Asset valuation"] strong[aria-live="polite"]':'[class*="assetValueVatAmountRow"] strong'),rail=row.querySelector('[class*="assetSideActions"]');
       if(!price||!rail?.firstElementChild)throw new Error(`${title.textContent}: missing visible price or action rail`);
       const r=title.getBoundingClientRect(),p=price.getBoundingClientRect(),f=rail.firstElementChild.getBoundingClientRect(),v=panel?.getBoundingClientRect();
-      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:v?.top,flagY:f.y+f.height/2};
+      const summary=row.querySelector('[class*="assetHeader_"]');
+      const a=rail.getBoundingClientRect(),h=summary?.getBoundingClientRect();
+      return {title:title.textContent,titleY:r.y+parseFloat(getComputedStyle(title).lineHeight)*(r.height/title.offsetHeight)/2,titleTop:r.top,priceY:p.y+p.height/2,priceWidth:p.width,priceHeight:p.height,panelTop:v?.top,flagY:f.y+f.height/2,actionCount:rail.children.length,railY:a.y+a.height/2,summaryY:h ? h.y+h.height/2 : null};
     }));console.log(width,JSON.stringify(geometry));
     for(const g of geometry) {
       assert.ok(g.priceWidth>0&&g.priceHeight>0,`${g.title}: visible price`);
       if(g.panelTop!==undefined)assert.ok(Math.abs(g.titleTop-g.panelTop)<8,`${g.title}: valuation panel alignment`);
       else assert.ok(Math.abs(g.titleY-g.priceY)<8,`${g.title}: umbrella price alignment`);
-      assert.ok(Math.abs(g.titleY-g.flagY)<8,`${g.title}: flag alignment`);
+      if(g.summaryY!==null) {
+        // Asset cards centre the complete summary against all available actions,
+        // rather than pinning the first flag button to the title.
+        assert.ok(Math.abs(g.summaryY-g.railY)<2,`${g.title}: ${g.actionCount}-button rail centred beside summary`);
+      } else {
+        assert.ok(Math.abs(g.titleY-g.flagY)<8,`${g.title}: umbrella flag alignment`);
+      }
     }
+    assert.ok(geometry.some(g=>g.summaryY!==null && g.actionCount===3),'three-action asset covered');
+    assert.ok(geometry.some(g=>g.summaryY!==null && g.actionCount===4),'four-action asset covered');
     for (const selector of ['#asset-card-normal [class*="assetGroupButton"]', '[aria-label="Edit Asset umbrella"]']) {
       await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
       await page.mouse.move(2, 2);
