@@ -7184,6 +7184,50 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 .pageTitleBlock > div { gap: 1.25rem; }
 .pageTitleBlock h1 { flex: 1; }
 
+/* Invoice capture: one clear upload action and a compact, readable form. */
+.captureUploadBackdrop { overflow: hidden !important; }
+.accountCostModal.accountCostModal.captureUploadDialog {
+  width: min(58rem, calc(var(--website-visible-width, 100vw) - 2rem)) !important;
+  min-height: 0 !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem) !important;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden;
+}
+.captureUploadDialog .modalHeader, .captureUploadDialog .modalFooter { flex: 0 0 auto; }
+.captureUploadDialog .formModalScrollBody { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+.accountCostModal.accountCostModal.captureUploadDialog .uploadPanel { gap: 1rem !important; padding: 1rem 0 !important; }
+.captureUploadTarget {
+  position: relative; display: grid; grid-template-columns: 3rem minmax(0, 1fr) 1.75rem;
+  align-items: center; gap: 1rem; padding: 1.2rem; border: 1px solid var(--app-info-line, #bed5e6);
+  border-radius: 1rem; background: var(--app-surface, #fff); text-align: left; cursor: pointer;
+}
+.captureUploadTarget:focus-within { outline: 2px solid var(--app-accent, #187456); outline-offset: 3px; }
+.captureUploadTarget:has(input:disabled) { cursor: wait; opacity: .65; }
+.captureUploadTarget input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: inherit; }
+.captureUploadIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border-radius: .85rem; color: var(--app-info, #276b9d); background: var(--app-info-soft, #edf6fc); }
+.captureUploadIcon svg { width: 1.5rem; height: 1.5rem; }
+.captureUploadCopy { display: grid; gap: .3rem; min-width: 0; }
+.captureUploadCopy strong { color: var(--app-text, #17362c); font-size: 1.05rem; font-weight: 800; }
+.captureUploadCopy small { color: var(--app-muted, #64746a); font-size: .85rem; font-weight: 400; line-height: 1.45; }
+.captureUploadNext { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 1px solid var(--app-line, #bed5c9); border-radius: 50%; }
+.captureUploadNext svg { width: 1rem; height: 1rem; }
+.captureFileSelection { display: grid; gap: .4rem; }
+.captureFileCount { font-size: .85rem; color: var(--app-muted, #64746a); }
+.captureFileList { display: grid; gap: .4rem; max-height: 8rem; overflow-y: auto; margin: 0; padding: 0 .5rem 0 0; list-style: none; }
+.captureFileList li { display: flex; align-items: center; gap: .65rem; padding: .55rem .75rem; border-radius: .6rem; background: var(--app-surface-soft, #f2f7f4); font-size: .85rem; overflow-wrap: anywhere; }
+.captureFileList li > span:first-child { flex: 0 0 1rem; color: var(--app-muted, #64746a); }
+.captureFileList svg { width: 1rem; height: 1rem; }
+.accountCostModal.accountCostModal.captureUploadDialog .captureNoteField > span { text-transform: none; font-size: .9rem !important; font-weight: 700 !important; }
+.accountCostModal.accountCostModal.captureUploadDialog .captureNoteField textarea { min-height: 5rem !important; height: 5rem; resize: vertical; background: var(--app-surface, #fff) !important; }
+.captureServiceInfo { display: grid; gap: .3rem; padding-top: .8rem; border-top: 1px solid var(--app-line, #dbe5df); }
+.captureServiceInfo p { margin: 0; color: var(--app-muted, #64746a); font-size: .85rem; line-height: 1.5; font-weight: 400; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .captureUploadTarget { grid-template-columns: 2.5rem minmax(0, 1fr); gap: .75rem; padding: .9rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .captureUploadIcon { width: 2.5rem; height: 2.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .captureUploadNext { display: none; }
+}
+
 /* Fit invoice details into two rows while leaving the wizard footer visible. */
 .accountCostModal.manualCostWizardModal .manualCostInvoiceGrid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
