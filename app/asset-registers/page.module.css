@@ -4489,7 +4489,9 @@
 .manageWorkspace .standardAssetChoice:focus-visible { outline: 2px solid var(--app-accent, #17563f); outline-offset: 3px; }
 .manageWorkspace .standardAssetChoice:disabled { cursor: not-allowed; opacity: 1; }
 .manageWorkspace .standardAssetChoice:disabled > svg { opacity: .4; }
-.manageWorkspace .assetChoiceRegister { font-size: .82rem; color: var(--app-muted, #64746a); }
+.manageWorkspace .assetChoiceRegister { display: flex; align-items: flex-start; gap: .7rem; min-width: 0; font-size: .82rem; line-height: 1.5; color: var(--app-muted, #64746a); }
+.manageWorkspace .assetChoiceRegister > svg { flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem; margin-top: .1rem; opacity: .65; pointer-events: none; }
+.manageWorkspace .assetChoiceRegister > span { min-width: 0; overflow-wrap: anywhere; }
 .manageWorkspace .manageAssetScroller { padding: .85rem .75rem !important; scrollbar-gutter: stable; }
 
 /* QR chooser: compact options above the standard independently scrolling list. */
