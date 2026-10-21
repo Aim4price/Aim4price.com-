@@ -1,5 +1,7 @@
 'use client';
 
+import OwnerLoginSections from './owner-login-sections';
+import ownerStyles from './owner-login-sections.module.css';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import {
   useEffect,
@@ -658,6 +660,9 @@ function AppAccessManagement({ kind, configOverride }: {
   const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
   const [editDrafts, setEditDrafts] = useState<Record<string, AccessDraft>>({});
   const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
+  const [ownerDirty, setOwnerDirty] = useState(false);
+  const [ownerAccessBusy, setOwnerAccessBusy] = useState(false);
+  const [businessSettingsOpen, setBusinessSettingsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -708,7 +713,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function renderAccountNameSetup() {
-    if (accountName) return null;
+    if (accountName) return kind === 'owner' && businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
     const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
@@ -732,7 +737,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </div>
       </form>
     </section>;
-    if (activeFlow === 'manage' && records.length > 0) {
+    if (kind !== 'owner' && activeFlow === 'manage' && records.length > 0) {
       return <details className={styles.loginSetupDisclosure}>
         <summary>Set up a business login ID <span>Existing logins still work</span></summary>
         {setup}
@@ -785,11 +790,16 @@ function AppAccessManagement({ kind, configOverride }: {
   function openFlow(flow: Exclude<ActiveFlow, null>) {
     setNotice(null);
     setSelectedId(null);
+    setBusinessSettingsOpen(false);
+    setOwnerDirty(false);
     setActiveFlow(flow);
   }
 
   function closeFlow() {
-    if (creating || busyId || deletingId || namespaceBusy) return;
+    if (creating || busyId || deletingId || namespaceBusy || ownerAccessBusy) return;
+    if (ownerDirty && !window.confirm('Discard unsaved changes?')) return;
+    setOwnerDirty(false);
+    setBusinessSettingsOpen(false);
     setActiveFlow(null);
     setSelectedId(null);
   }
@@ -883,14 +893,16 @@ function AppAccessManagement({ kind, configOverride }: {
       setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
       setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
       setNotice({ tone: 'success', message: successMessage });
+      return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : `Failed to update ${config.itemLabel}.`;
-      if (/username is already in use/i.test(message)) {
+      if (kind !== 'owner' && /username is already in use/i.test(message)) {
         setEditUsernameErrors((current) => ({ ...current, [record.id]: message }));
         setNotice(null);
       } else {
         setNotice({ tone: 'error', message });
       }
+      return false;
     } finally {
       setBusyId(null);
     }
@@ -987,26 +999,27 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
     const roleSummary = config.roleSummary(record);
     return (
-      <div className={styles.loginSummary}>
+      <div className={`${styles.loginSummary} ${kind === 'owner' ? ownerStyles.userRow : ''}`}>
         <div className={styles.loginIdentity}>
           <LoginDetailIcon kind="person" />
           <div><strong>{record.displayName}</strong><span>{record.username}</span></div>
         </div>
+        {kind === 'owner' ? <span className={ownerStyles.rowRole}>{roleSummary}</span> : null}
         <div className={styles.loginActions}>
           <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
             {record.isActive ? 'Active' : 'Inactive'}
           </span>
           {includeManageButton ? (
-            <button type="button" className={styles.loginManageButton} onClick={() => setSelectedId(record.id)} aria-label={`Manage ${record.displayName}`}>
+            <button type="button" className={styles.loginManageButton} onClick={() => { setOwnerDirty(false); setSelectedId(record.id); }} aria-label={`Manage ${record.displayName}`}>
               <LoginDetailIcon kind="gear" /> Manage
             </button>
           ) : null}
         </div>
-        <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
+        {kind !== 'owner' ? <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
           {roleSummary ? <span><LoginDetailIcon kind="shield" />{roleSummary}</span> : null}
           <span><LoginDetailIcon kind="clock" /><span>Last login <span>{formatDateTime(record.lastLoginAtIso)}</span></span></span>
           {!includeManageButton ? <span><LoginDetailIcon kind="clock" /><span>Updated <span>{formatDateTime(record.updatedAtIso)}</span></span></span> : null}
-        </div>
+        </div> : null}
       </div>
     );
   }
@@ -1110,10 +1123,10 @@ function AppAccessManagement({ kind, configOverride }: {
       <AppAccessModal
         open={activeFlow === 'manage'}
         notificationStyle={kind === 'owner' || kind === 'field'}
-        title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
-        description={selectedRecord ? '' : 'Choose a login to manage.'}
+        title={businessSettingsOpen ? 'Business login settings' : selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
+        description={businessSettingsOpen ? 'One business ID for your app logins.' : selectedRecord ? (kind === 'owner' ? selectedRecord.username : '') : 'Choose a person to manage.'}
         compact={Boolean(selectedRecord)}
-        footer={selectedRecord && selectedEdit ? (
+        footer={kind !== 'owner' && selectedRecord && selectedEdit ? (
                   <div className={`${baseStyles.managerActions} ${styles.managerActions} ${styles.editorFooterActions}`}>
                     <button type="submit" form="login-edit-form" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
                       {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
@@ -1132,16 +1145,22 @@ function AppAccessManagement({ kind, configOverride }: {
                   </div>
         ) : null}
         wide
-        closeDisabled={Boolean(busyId || deletingId || namespaceBusy)}
+        closeDisabled={Boolean(busyId || deletingId || namespaceBusy || ownerAccessBusy)}
         onClose={closeFlow}
       >
         <InlineNotice notice={notice} />
-        {renderAccountNameSetup()}
-        {!selectedRecord ? (
+        {kind !== 'owner' ? renderAccountNameSetup() : null}
+        {businessSettingsOpen ? <>
+          <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>‹ All logins</button>
+          {renderAccountNameSetup()}
+        </> : !selectedRecord ? (
           <section className={`${baseStyles.card} ${styles.surface}`}>
             <div className={styles.directoryHeader}>
               <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
-              <span>Select one person to continue.</span>
+              {kind === 'owner' ? <div className={ownerStyles.listActions}>
+                <button type="button" onClick={() => setBusinessSettingsOpen(true)}>Business login settings</button>
+                <button type="button" className={ownerStyles.primary} onClick={() => openFlow('new')}>Add user</button>
+              </div> : <span>Select one person to continue.</span>}
             </div>
             {loading ? <div className={styles.emptyState}><p>Loading access details…</p></div> : null}
             {!loading && !records.length ? (
@@ -1161,7 +1180,15 @@ function AppAccessManagement({ kind, configOverride }: {
               </div>
             ) : null}
           </section>
-        ) : selectedEdit ? (
+        ) : kind === 'owner' ? <OwnerLoginSections
+          key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
+          accountName={accountName} passwordMinimum={config.passwordMinimum} passwordMaximum={config.passwordMaximum}
+          onDirtyChange={setOwnerDirty} hasUnsavedChanges={ownerDirty}
+          onSave={(changes, message) => patchRecord(selectedRecord, changes, message)}
+          onToggle={() => void toggleRecord(selectedRecord)} onDelete={() => void deleteRecord(selectedRecord)}
+          onBack={() => { if (!ownerDirty || window.confirm('Discard unsaved changes?')) { setOwnerDirty(false); setSelectedId(null); } }}
+          renderAssetAccess={(onSaved) => <OwnerAppAssetAccessPanel userId={selectedRecord.id} onSaved={() => { setOwnerDirty(false); setNotice({ tone: 'success', message: 'Asset access saved.' }); onSaved(); }} onBusyChange={setOwnerAccessBusy} onDirtyChange={setOwnerDirty} />}
+        /> : selectedEdit ? (
           <>
             <div className={styles.editorToolbar}>
             <button type="button" className={styles.modalBackButton} onClick={() => setSelectedId(null)} disabled={isSelectedBusy}>
@@ -1222,15 +1249,6 @@ function AppAccessManagement({ kind, configOverride }: {
                   </div>
                   </details>
                 </form>
-                {kind === 'owner' && selectedRecord.accessRole !== 'admin' ? (
-                  <OwnerAppAssetAccessPanel userId={selectedRecord.id} />
-                ) : null}
-                {kind === 'owner' && selectedRecord.accessRole === 'admin' ? (
-                  <section className={styles.loginAccessNote} aria-label="Owner App asset access">
-                    <SettingsDetailIcon name="lock" />
-                    <p className={styles.accessMessage}>Access to all umbrellas and assets.</p>
-                  </section>
-                ) : null}
                 {kind === 'field' ? <FieldManagerAccessPanel managerId={selectedRecord.id} /> : null}
                 <div className={styles.editorDates}>
                   <span><LoginDetailIcon kind="clock" />Last login {formatDateTime(selectedRecord.lastLoginAtIso)}</span>
@@ -1406,13 +1424,17 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
   );
 }
 
-function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
+function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange }: { userId: string; onSaved?: () => void; onBusyChange?: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void }) {
+  const savedSettings = useRef('');
   const [settings, setSettings] = useState<AssetAccessSettings | null>(null);
   const [assets, setAssets] = useState<AssetAccessOption[]>([]);
   const [groups, setGroups] = useState<AssetGroupAccessOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+
+  useEffect(() => { onBusyChange?.(saving); }, [saving, onBusyChange]);
+  useEffect(() => { onDirtyChange?.(!!settings && JSON.stringify(settings) !== savedSettings.current); }, [settings, onDirtyChange]);
 
   useEffect(() => {
     let active = true;
@@ -1421,6 +1443,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
       .then(({ response, payload }) => {
         if (!active) return;
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
+        savedSettings.current = JSON.stringify(payload.settings);
         setSettings(payload.settings);
         setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
         setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
@@ -1450,8 +1473,12 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
       });
       const payload = await response.json().catch(() => null) as OwnerAssetAccessResponse | null;
       if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
+      savedSettings.current = JSON.stringify(payload.settings);
       setSettings(payload.settings);
       setMessage('Access saved.');
+      onDirtyChange?.(false);
+      onBusyChange?.(false);
+      onSaved?.();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save access.');
     } finally {
@@ -1463,22 +1490,14 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
   if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
 
   return (
-    <section className={styles.accessPanel} aria-label="Owner App asset access">
-      <div className={refinementStyles.sectionHeading}>
-
-        <div className={refinementStyles.sectionHeadingCopy}>
-          <h3>Asset access</h3>
-          <p>Choose which umbrellas and individual assets this user may see in the Owner App.</p>
-        </div>
-      </div>
-
-      <FriendlySelect
-        label="Assets"
-        value={settings.assetScope}
-        options={ASSET_SCOPE_OPTIONS}
-        onChange={(assetScope) => setSettings((current) => current ? { ...current, assetScope } : current)}
-        className={refinementStyles.accessSelect}
-      />
+    <section className={`${styles.accessPanel} ${ownerStyles.assetPanel}`} aria-label="Owner App asset access">
+      <fieldset className={ownerStyles.fields} disabled={saving}>
+        <legend className={ownerStyles.hint}>Which assets can this person access?</legend>
+        <div className={ownerStyles.choices}>{ASSET_SCOPE_OPTIONS.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings.assetScope === option.value}>
+          <input type="radio" name="owner-asset-scope" checked={settings.assetScope === option.value} onChange={() => setSettings(current => current ? { ...current, assetScope: option.value } : current)} />
+          <span><strong>{option.label}</strong><small>{option.value === 'all' ? 'Include all current and future assets.' : 'Choose umbrellas or individual assets.'}</small></span>
+        </label>)}</div>
+      </fieldset>
 
       {settings.assetScope === 'selected' ? (
         <div className={styles.assetAccessChoices} data-asset-choice-surface="true">
@@ -1493,7 +1512,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
                     data-asset-choice-row="true"
                     data-asset-choice-selected={settings.groupIds.includes(group.id) ? 'true' : undefined}
                   >
-                    <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
+                    <input type="checkbox" disabled={saving} checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
                     <span data-asset-choice-copy="true"><strong>{group.name}</strong><small data-asset-choice-meta="true">{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
                   </label>
                 ))}
@@ -1510,7 +1529,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
                   data-asset-choice-row="true"
                   data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
                 >
-                  <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
+                  <input type="checkbox" disabled={saving} checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
                   <span data-asset-choice-copy="true"><strong>{asset.title}</strong><AssetPickerDetail>{asset.kind}</AssetPickerDetail></span>
                 </label>
               )) : <p className={styles.accessMessage}>No assets available.</p>}
@@ -1520,9 +1539,9 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
       ) : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <button type="button" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} onClick={() => void saveAccess()} disabled={saving}>
-        {saving ? 'Saving access…' : 'Save access'}
-      </button>
+      <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving}>
+        {saving ? 'Saving…' : 'Save changes'}
+      </button></footer>
     </section>
   );
 }

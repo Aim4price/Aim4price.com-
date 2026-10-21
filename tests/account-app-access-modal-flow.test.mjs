@@ -18,7 +18,7 @@ test('Owner, Field Manager and Dealer staff access use one clear New and Manage 
   assert.match(shared, /onManage=\{\(\) => openFlow\('manage'\)\}/);
   assert.match(shared, /open=\{activeFlow === 'new'\}/);
   assert.match(shared, /open=\{activeFlow === 'manage'\}/);
-  assert.match(shared, /title=\{selectedRecord \? `Manage \$\{selectedRecord\.displayName\}` : config\.itemPlural\}/);
+  assert.match(shared, /title=\{businessSettingsOpen \? 'Business login settings' : selectedRecord \? `Manage \$\{selectedRecord\.displayName\}` : config\.itemPlural\}/);
 
   assert.match(dealer, /<DealerAppAccessManagement middlemanMode=\{middlemanMode\} \/>/);
   assert.match(owner, /OwnerAppAccessManagement as default/);

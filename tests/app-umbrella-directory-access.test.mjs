@@ -100,7 +100,9 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
 
   assert.match(accessUi, /OwnerAppAssetAccessPanel/);
   assert.match(accessUi, /Choosing an umbrella includes its current and future linked assets/);
-  assert.match(accessUi, /kind === 'owner' && selectedRecord\.accessRole === 'admin'[\s\S]*?aria-label="Owner App asset access"[\s\S]*?Access to all umbrellas and assets\./);
+  const ownerSections = await read('app/account/owner-login-sections.tsx');
+  assert.match(ownerSections, /record\.accessRole === 'admin' \? <div[\s\S]*?Owner \/ Admin has access to all umbrellas and assets/);
+  assert.match(ownerSections, /: props\.renderAssetAccess/);
 });
 
 
