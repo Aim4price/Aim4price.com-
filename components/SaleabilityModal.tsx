@@ -212,8 +212,8 @@ export default function SaleabilityModal({
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) onClose(); }}>
       <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
-          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2><p>{assetTitle}</p></div>
-          <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability" data-modal-close="true"><span aria-hidden="true">×</span></button>
+          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Realistic Market Price</h2><p>{assetTitle}</p></div>
+          <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Realistic Market Price" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>
           {step !== 'result' ? <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
@@ -233,6 +233,7 @@ export default function SaleabilityModal({
               <strong>{displayMoney(plan.priceExVat)}</strong>
               <p>{vatLabel} · Before selling fees</p>
             </section>
+            <details className={styles.priceDifference}><summary>Ideal Price: <strong>{displayMoney(valuationExVat)}</strong> · Why prices differ</summary><p>Demand and selling circumstances can move the Realistic Market Price above or below Ideal Price. Neither guarantees a sale.</p></details>
             {validSaleabilityEase(plan.ease) ? <section className={styles.easeCard} aria-label="Ease of selling">
               <div className={styles.easeHeading}><div><h3>Ease of selling</h3><p>{saleabilityEaseLabel(plan.ease.score)}{plan.ease.provisional ? ' · Provisional' : ''}</p></div><strong>{plan.ease.score}<span> / 100</span></strong></div>
               <div className={styles.easeMeter} role="meter" aria-label="Ease of selling score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={plan.ease.score} aria-valuetext={`${plan.ease.score} out of 100 — ${saleabilityEaseLabel(plan.ease.score)}`} data-level={plan.ease.score >= 65 ? 'strong' : plan.ease.score >= 45 ? 'moderate' : 'limited'}><span style={{width: `${plan.ease.score}%`}} /></div>
