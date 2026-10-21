@@ -30,7 +30,7 @@ export default function AdvancedAssumptionsModal({ open, busy, locked, error, ch
       <header className={styles.header}>
         <span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M6 3v6m0 4v8M12 3v10m0 4v4M18 3v2m0 4v12M3 9h6m0 8h6m0-12h6"/></svg></span>
         <div><h2 id="advanced-assumptions-title" data-estimate-modal-title>Advanced assumptions</h2><p id="advanced-assumptions-description">Fine-tune this estimate to reflect your asset.</p></div>
-        <button type="button" className={modal.close} disabled={busy} onClick={onClose} aria-label="Close advanced assumptions">×</button>
+        <button type="button" data-modal-close className={modal.close} disabled={busy} onClick={onClose} aria-label="Close advanced assumptions">×</button>
       </header>
       <div className={styles.body}>
         {locked ? <p className={styles.note}>Editing requires an active Aim4price account.</p> : null}
