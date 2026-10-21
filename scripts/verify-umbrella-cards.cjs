@@ -63,6 +63,18 @@ async function check(browser, url) {
     }
     assert.ok(geometry.some(g=>g.summaryY!==null && g.actionCount===3),'three-action asset covered');
     assert.ok(geometry.some(g=>g.summaryY!==null && g.actionCount===4),'four-action asset covered');
+    const noticeLayout = await page.$eval('#asset-card-normal', card => {
+      const rail = card.querySelector('[class*="assetSideActions"]').getBoundingClientRect();
+      const summary = card.querySelector('[class*="assetHeader_"]').getBoundingClientRect();
+      const notice = card.querySelector('[class*="assetNoticeStack"]').getBoundingClientRect();
+      const title = card.querySelector('h2').getBoundingClientRect();
+      return {railWidth:rail.width, summaryWidth:summary.width, titleWidth:title.width,
+        noticeLeft:notice.left, summaryLeft:summary.left, noticeRight:notice.right, summaryRight:summary.right};
+    });
+    assert.ok(noticeLayout.railWidth < noticeLayout.summaryWidth / 4, 'notices cannot widen the action rail');
+    assert.ok(noticeLayout.titleWidth > noticeLayout.summaryWidth / 4, 'asset title retains readable width');
+    assert.ok(Math.abs(noticeLayout.noticeLeft - noticeLayout.summaryLeft) < 2, 'notices align with the summary content column');
+    assert.ok(Math.abs(noticeLayout.noticeRight - noticeLayout.summaryRight) < 2, 'notices stay within the summary content column');
     for (const selector of ['#asset-card-normal [class*="assetGroupButton"]', '[aria-label="Edit Asset umbrella"]']) {
       await page.$eval(selector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
       await page.mouse.move(2, 2);
