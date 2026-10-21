@@ -1,5 +1,6 @@
 'use client';
 import EstimateTools from './EstimateTools';
+import AdvancedAssumptionsModal from '../../components/AdvancedAssumptionsModal';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import EstimatePriceInput from './EstimatePriceInput';
 import EstimateUsage from './EstimateUsage';
@@ -3875,6 +3876,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
       }
 
+      setAdvancedPanelOpen(false);
       setSelectedMethod('aim4price');
       setSavedMarketplaceAssetId(null);
     } catch (error) {
@@ -8929,7 +8931,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
     const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} out of 100%?`;
-    const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
         <div className={styles.resultsMain}>
@@ -9003,8 +9004,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button
               type="button"
               className={styles.resultAccordionToggle}
-              onClick={() => setAdvancedPanelOpen((open) => !open)}
-              aria-expanded={advancedPanelOpen}
+              onClick={() => { setAdvancedError(''); setAdvancedPanelOpen(true); }}
+              aria-haspopup="dialog"
             >
               <span className={styles.resultAccordionTitleGroup}>
                 <strong className={styles.resultSectionLabel}>{renderDetailIcon('specs')}Advanced assumptions</strong>
@@ -9016,17 +9017,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     : 'For active Aim4price accounts only.'}
                 </small>
               </span>
-              <span className={styles.resultAccordionAction}>{advancedPanelOpen ? 'Hide' : canUseAdvancedAssumptions ? 'Edit' : 'Locked'}</span>
+              <span className={styles.resultAccordionAction}>{canUseAdvancedAssumptions ? 'Adjust' : 'View'}</span>
             </button>
 
-            {advancedPanelOpen ? (
-              <div className={styles.resultAccordionBody} style={{ paddingTop: '1rem' }}>
-                <div className={`${styles.advancedControlsPreview} ${!canUseAdvancedAssumptions ? styles.advancedControlsPreviewLocked : ''}`}>
-                  {!canUseAdvancedAssumptions ? (
-                    <p className={styles.advancedLockedCopy}>Advanced assumptions are for active Aim4price accounts only.</p>
-                  ) : null}
-
-                  <div className={`${styles.advancedControlsContent} ${!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}`}>
+            <AdvancedAssumptionsModal open={advancedPanelOpen} busy={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
+              locked={!canUseAdvancedAssumptions} error={advancedError}
+              onClose={() => setAdvancedPanelOpen(false)} onApply={() => { void updateAdvancedAssumptionsAndRecalculate(); }}>
                     <div className={`${styles.advancedAssumptionsGrid} ${appliedDealerAssessment ? styles.advancedAssumptionsGridSingle : ''}`}>
                     {advancedShowLifetimeInput ? (
                       <label className={styles.field}>
@@ -9034,13 +9030,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <input
                           type="text"
                           inputMode="numeric"
-                          value={advancedLifetimeUsage}
-                          onChange={(event) => setAdvancedLifetimeUsage(event.target.value)}
-                          placeholder={resultUsageMetricType === 'km' ? 'e.g. 350,000' : 'e.g. 12,000'}
+                          value={advancedLifetimeUsage.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}
+                          onChange={(event) => setAdvancedLifetimeUsage(event.target.value.replace(/\s/g, ''))}
+                          placeholder={resultUsageMetricType === 'km' ? 'e.g. 350 000' : 'e.g. 12 000'}
                           disabled={!canUseAdvancedAssumptions}
                         />
                         <small className={styles.advancedFieldHelp}>
-                          Allowed range: {formatPlainNumber(advancedLifetimeMin)} to {formatPlainNumber(advancedLifetimeMax)} {advancedLifetimeShortUnit}.
+                          Total lifetime, including usage already worked. Range: {formatPlainNumber(advancedLifetimeMin)} to {formatPlainNumber(advancedLifetimeMax)} {advancedLifetimeShortUnit}.
                         </small>
                       </label>
                     ) : null}
@@ -9060,21 +9056,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       </label>
                     ) : null}
                   </div>
-
-                  {canUseAdvancedAssumptions && advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
-
-                    <button
-                      type="button"
-                      className={styles.assetButton}
-                      onClick={updateAdvancedAssumptionsAndRecalculate}
-                      disabled={advancedControlsDisabled}
-                    >
-                      {advancedRecalculateLoading ? 'Recalculating...' : 'Update assumptions and recalculate'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            </AdvancedAssumptionsModal>
           </section> : null}
 
           <div className={styles.resultCalculationPanel}>
