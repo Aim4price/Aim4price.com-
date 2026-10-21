@@ -1184,7 +1184,10 @@ export default function FuelScanClient({
       <div className={styles.confirmationBackdrop} role="dialog" aria-modal="true" aria-labelledby="storage-refill-warning-title">
         <div className={styles.confirmationCard}>
           <div className={styles.confirmationIcon} aria-hidden="true">!</div>
-          <h2 id="storage-refill-warning-title">Warning</h2>
+          <div data-modal-close-row>
+              <h2 id="storage-refill-warning-title">Warning</h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={cancelStorageRefillStart} />
+            </div>
           <p>You are about to add fuel to the storage tank. This will change the tank level and fuel ledger records.</p>
           <div className={styles.confirmationActions}>
             <button type="button" className={styles.secondaryButton} onClick={cancelStorageRefillStart}>

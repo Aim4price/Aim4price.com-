@@ -844,6 +844,7 @@ export default function AssetGroupManagerModal({
             onClick={onClose}
             disabled={busy || reportBusy}
             aria-label="Close umbrella manager"
+            data-modal-close="true"
           >
             ×
           </button>

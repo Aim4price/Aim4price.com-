@@ -1882,6 +1882,7 @@ export default function AdminClient({
                 onClick={() => setGroupNotificationComposer(null)}
                 disabled={isSendingGroupNotification}
                 aria-label="Close group notification"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -2109,6 +2110,7 @@ export default function AdminClient({
                 disabled={busyUserAction !== null}
                 aria-label="Close account options"
                 autoFocus
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -2179,6 +2181,7 @@ export default function AdminClient({
                       onClick={() => setNotificationComposer(null)}
                       disabled={busyUserAction !== null}
                       aria-label="Close notification composer"
+                      data-modal-close="true"
                     >
                       ×
                     </button>
@@ -2499,6 +2502,7 @@ export default function AdminClient({
                 onClick={() => setQrModal(null)}
                 disabled={qrModal.isGenerating}
                 aria-label="Close QR label modal"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -2669,6 +2673,7 @@ export default function AdminClient({
                   assetNameModal.isCommitting
                 }
                 aria-label="Close Asset Name Manager modal"
+                data-modal-close="true"
               >
                 ×
               </button>

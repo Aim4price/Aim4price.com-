@@ -109,7 +109,7 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         <header className={accessStyles.modalHeader}>
           <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? 'Connect your assistant' : 'Your connections'}</h2>
           <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
-          <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`}>×</button>
+          <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel}`}>
           {flow === 'connect' ? setup : management}

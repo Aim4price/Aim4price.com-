@@ -2187,7 +2187,7 @@ export default function AssetDiscoveryClient({
                   <div className={accountStyles.modalHeader}>
                     <h2 id="discovery-settings-title">Discovery settings</h2>
                     <p id="discovery-settings-description">Manage how your assets appear in Discovery.</p>
-                    <button type="button" className={accountStyles.modalCloseButton} onClick={() => setIsSettingsModalOpen(false)} aria-label="Close Discovery settings" disabled={isUpdatingParticipation}>×</button>
+                    <button type="button" className={accountStyles.modalCloseButton} onClick={() => setIsSettingsModalOpen(false)} aria-label="Close Discovery settings" disabled={isUpdatingParticipation} data-modal-close="true">×</button>
                   </div>
 
                   {notice?.tone === "error" ? (
@@ -2261,6 +2261,7 @@ export default function AssetDiscoveryClient({
                 className={`${workspaceStyles.modalClose} ${styles.contactCloseButton} ${dialogStyles.close}`}
                 onClick={() => setActiveEnquiry(null)}
                 aria-label="Close approved contact"
+                data-modal-close="true"
               >
                 ×
               </button>

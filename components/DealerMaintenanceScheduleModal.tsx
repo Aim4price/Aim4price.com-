@@ -458,7 +458,7 @@ export default function DealerMaintenanceScheduleModal({
               <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Create schedule' : 'Schedule maintenance'}</h2>
               <p>{loading ? 'Loading the shared asset…' : 'The shared asset could not be opened.'}</p>
             </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance schedule">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance schedule" data-modal-close="true">
               <CloseIcon />
             </button>
           </header>
@@ -490,7 +490,7 @@ export default function DealerMaintenanceScheduleModal({
               <p>{asset.assetTitle}</p>
               <p>{selectedAssetLabel(asset)}</p>
             </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance trigger selection">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance trigger selection" data-modal-close="true">
               <CloseIcon />
             </button>
           </header>
@@ -545,7 +545,7 @@ export default function DealerMaintenanceScheduleModal({
             <p>{asset.assetTitle}</p>
             <p>{selectedAssetLabel(asset)}</p>
           </div>
-          <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} disabled={saving} aria-label="Close maintenance form">
+          <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} disabled={saving} aria-label="Close maintenance form" data-modal-close="true">
             <CloseIcon />
           </button>
         </header>

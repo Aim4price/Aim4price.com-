@@ -778,6 +778,7 @@ export default function AdminDiscoveryClient({
                 className={styles.modalCloseButton}
                 aria-label="Close Discovery viewer summary"
                 onClick={closeActivityModal}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -915,6 +916,7 @@ export default function AdminDiscoveryClient({
                 onClick={() => {
                   if (!openingOwnerId) setSelectedAsset(null);
                 }}
+                data-modal-close="true"
               >
                 ×
               </button>

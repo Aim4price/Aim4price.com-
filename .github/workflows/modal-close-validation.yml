@@ -1,0 +1,26 @@
+name: Standard modal close validation
+on:
+  pull_request:
+    paths:
+      - 'app/**/*.tsx'
+      - 'components/**/*.tsx'
+      - 'app/modal-close.css'
+      - 'tests/modal-close.test.mjs'
+      - 'scripts/verify-modal-close.cjs'
+      - '.github/workflows/modal-close-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/modal-close.test.mjs
+      - run: node scripts/verify-modal-close.cjs

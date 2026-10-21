@@ -137,6 +137,7 @@ export default function LeadPhotoViewerModal({
             className={`${leadStyles.leadPhotoModalCloseButton} ${closeButtonClassName}`}
             onClick={onClose}
             aria-label="Close asset photos"
+            data-modal-close="true"
           >
             <CloseIcon className={assetStyles.buttonIcon} />
           </button>

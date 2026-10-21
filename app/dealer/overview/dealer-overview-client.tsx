@@ -306,7 +306,7 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
                 <h2 id="dealer-assignment-title">{assignmentItem.assetTitle}</h2>
                 <p>{assignmentItem.headline}</p>
               </div>
-              <button type="button" onClick={() => setAssignmentItem(null)} aria-label="Close assignment">×</button>
+              <button type="button" onClick={() => setAssignmentItem(null)} aria-label="Close assignment" data-modal-close="true">×</button>
             </header>
 
             <div className={dealerStyles.dealerAssignmentFields}>

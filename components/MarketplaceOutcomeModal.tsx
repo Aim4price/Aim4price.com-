@@ -350,6 +350,7 @@ export default function MarketplaceOutcomeModal({
                 onClick={closeModal}
                 disabled={submitting}
                 aria-label="Close remove advert dialog"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -388,6 +389,7 @@ export default function MarketplaceOutcomeModal({
                 onClick={closeModal}
                 disabled={submitting}
                 aria-label="Close remove advert dialog"
+                data-modal-close="true"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="m6 6 12 12M18 6 6 18" />

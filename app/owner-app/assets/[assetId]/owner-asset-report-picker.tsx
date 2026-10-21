@@ -367,7 +367,7 @@ export default function OwnerAssetReportPicker({
               <h2 id="owner-share-report-title">{selectedReportDetails?.title || 'Add Aim4price report'}</h2>
               {!selectedReport ? <p>Choose a report to attach.</p> : null}
             </div>
-            <button type="button" onClick={onDismiss} aria-label="Close Aim4price reports">×</button>
+            <button type="button" onClick={onDismiss} aria-label="Close Aim4price reports" data-modal-close="true">×</button>
           </div>
           {selectedReport ? filters : <>{reportList}<footer data-download-footer="true"><button type="button" onClick={onDismiss}>Cancel</button></footer></>}
         </section>
@@ -384,7 +384,7 @@ export default function OwnerAssetReportPicker({
           <section className={`${styles.reportFilterModal} ${true ? downloadStyles.dialog : ''}`} data-download-dialog="true">
             <div className={styles.reportFilterModalHeader} data-download-header="true">
               <div><h2 id="owner-report-filter-title">{selectedReportDetails.title}</h2></div>
-              <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters">×</button>
+              <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters" data-modal-close="true">×</button>
             </div>
             {filters}
           </section>

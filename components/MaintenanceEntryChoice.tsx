@@ -35,7 +35,7 @@ export default function MaintenanceEntryChoice(props: Props) {
     <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
       <header className={styles.modalHeader}>
         <div><h2 id={titleId}>{props.step === 'timing' ? 'Already done or upcoming?' : props.timing === 'done' ? 'What was done?' : 'What needs doing?'}</h2><p>{props.assetTitle}</p>{props.assetDetails ? <p>{props.assetDetails}</p> : null}</div>
-        <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={props.onClose} aria-label="Close maintenance"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" /></svg></button>
+        <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={props.onClose} aria-label="Close maintenance" data-modal-close="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" /></svg></button>
       </header>
       <div className={styles.modalDivider} />
       <div className={styles.maintenanceChoiceBody}><div className={styles.maintenanceChoiceGrid}>

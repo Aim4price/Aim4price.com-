@@ -1401,7 +1401,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
                 <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : 'Update document details and linked assets.'}</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
@@ -1410,7 +1410,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <div className={styles.modalNotice} role="alert">
                     <Icon name="info" />
                     <span>{modalNotice.message}</span>
-                    <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error"><Icon name="close" /></button>
+                    <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error" data-modal-close="true"><Icon name="close" /></button>
                   </div>
                 ) : null}
 
@@ -1693,7 +1693,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <h2 id="asset-picker-title">Choose assets</h2>
                 <p id="asset-picker-description">Select the saved assets these documents belong to.</p>
               </div>
-              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser"><span aria-hidden="true">×</span></button>
+              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <div className={styles.assetSelectionBody} data-asset-choice-surface="true">
@@ -1784,7 +1784,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     : 'Are you sure you want to delete this document?'}
                 </h2>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <div className={styles.confirmationBody}>
@@ -1792,7 +1792,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <div className={styles.modalNotice} role="alert">
                   <Icon name="info" />
                   <span>{modalNotice.message}</span>
-                  <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error"><Icon name="close" /></button>
+                  <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error" data-modal-close="true"><Icon name="close" /></button>
                 </div>
               ) : null}
               <p>

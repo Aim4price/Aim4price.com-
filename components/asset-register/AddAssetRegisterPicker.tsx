@@ -23,7 +23,7 @@ export default function AddAssetRegisterPicker({options,targetId,onSelect,onClos
   }}>
    <header className={`${registerStyles.modalHeader} ${registerStyles.changeRegisterModalHeader}`}>
     <div className={registerStyles.modalHeaderText}><h3 id={id}>Choose asset register</h3><p>Where should this asset be saved?</p></div>
-    <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={busy} aria-label="Close register selection">×</button>
+    <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={busy} aria-label="Close register selection" data-modal-close="true">×</button>
    </header>
    <div className={registerStyles.changeRegisterToolbar}>
     <label className={registerStyles.changeRegisterSearchWrap}>

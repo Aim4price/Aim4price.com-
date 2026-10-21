@@ -213,7 +213,7 @@ export default function SaleabilityModal({
       <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Saleability</h2><p>{assetTitle}</p></div>
-          <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
+          <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>
           {step !== 'result' ? <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>

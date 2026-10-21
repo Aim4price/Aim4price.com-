@@ -193,7 +193,10 @@ export default function CaptureRequestStatusList({
             catch (error) { setReplyError(error instanceof Error ? error.message : 'Your reply could not be sent.'); }
             finally { setReplySending(false); }
           }}>
-            <h3 id="capture-reply-title">Reply to Aim4price</h3>
+            <div data-modal-close-row>
+              <h3 id="capture-reply-title">Reply to Aim4price</h3>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setReplyCandidate(null)} disabled={replySending} />
+            </div>
             <p>{replyCandidate.informationNeeded || 'Tell us what we need to know.'}</p>
             <label className={styles.replyField}>Your reply<textarea autoFocus value={reply} onChange={(event) => setReply(event.target.value)} maxLength={1000} rows={4} required disabled={replySending} /></label>
             {replyError ? <p role="alert">{replyError}</p> : null}
@@ -217,7 +220,10 @@ export default function CaptureRequestStatusList({
             onMouseDown={(event) => event.stopPropagation()}
           >
             <span className={styles.modalEyebrow}>Aim4price assisted capture</span>
-            <h3 id="capture-retract-title">Retract this submission?</h3>
+            <div data-modal-close-row>
+              <h3 id="capture-retract-title">Retract this submission?</h3>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={closeRetractConfirmation} disabled={isRetracting} />
+            </div>
             <p id="capture-retract-description">
               Aim4price will stop processing it and it won&apos;t be added to your ledger.
             </p>

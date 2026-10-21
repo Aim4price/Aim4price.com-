@@ -48,7 +48,7 @@ export function InvoicePreview({ id, number, draft = false, busy = false, action
     <div className={styles.layout}>
       <header className={styles.header}>
         <div><h2>{draft ? 'Preview invoice draft' : number || 'Invoice preview'}</h2><p>{draft ? 'Download a draft, or issue a final invoice with or without emailing it.' : 'Review your invoice, then download a copy.'}</p></div>
-        <button className={styles.close} aria-label="Close invoice preview" disabled={busy} onClick={onClose}>×</button>
+        <button className={styles.close} aria-label="Close invoice preview" disabled={busy} onClick={onClose} data-modal-close="true">×</button>
       </header>
       <div className={styles.document}>
         {error ? <div className={styles.message} role="alert"><p>{error}</p><button onClick={() => setAttempt(value => value + 1)}>Try again</button></div> : !ready ? <p className={styles.message} role="status">Preparing invoice preview…</p> : null}

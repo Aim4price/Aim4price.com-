@@ -1535,6 +1535,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   onClick={closeDeleteTrackingModal}
                   aria-label="Close tracking delete confirmation"
                   disabled={isDeletingTracking}
+                  data-modal-close="true"
                 >
                   <CloseIcon className={assetStyles.buttonIcon} />
                 </button>
@@ -1602,7 +1603,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       : 'Choose how far back the history should go.'
                     : `${historyAsset.assetTitle} · Newest records first.`}</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={closeHistory} aria-label="Close maintenance history">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={closeHistory} aria-label="Close maintenance history" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </header>
@@ -1807,7 +1808,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                 <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
                 <p>{trackingAssetMeta(managedAsset)}</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
@@ -1925,7 +1926,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <span className={styles.serviceSuccessIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
             </span>
-            <h2 id="dealer-service-success-title">Saved to asset</h2>
+            <div data-modal-close-row>
+              <h2 id="dealer-service-success-title">Saved to asset</h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setServiceSuccess(null)} />
+            </div>
             <p>{serviceSuccess.actionLabel} saved successfully for <strong>{serviceSuccess.assetTitle}</strong>.</p>
             <small>Returning to Maintenance…</small>
             <button type="button" onClick={() => setServiceSuccess(null)}>Back to Maintenance</button>
@@ -2008,7 +2012,7 @@ function DealerWorkChoice({ asset, onClose, onChoose }: { asset: DealerMaintenan
   return <div className={`${assetStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
     <div className={assetStyles.modalBackdrop} onClick={onClose} />
     <section ref={ref} tabIndex={-1} className={`${assetStyles.modalCard} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="dealer-work-choice-title">
-      <header className={assetStyles.modalHeader}><div><h3 id="dealer-work-choice-title">Add maintenance</h3><p>{asset.assetTitle}</p></div><button type="button" className={dialogStyles.close} aria-label="Close add maintenance" onClick={onClose}>×</button></header>
+      <header className={assetStyles.modalHeader}><div><h3 id="dealer-work-choice-title">Add maintenance</h3><p>{asset.assetTitle}</p></div><button type="button" className={dialogStyles.close} aria-label="Close add maintenance" onClick={onClose} data-modal-close="true">×</button></header>
       <p>What work was completed?</p>
       <div className={maintenanceActionStyles.grid}>{(['checkup', 'service'] as const).map(type => <button type="button" key={type} className={maintenanceActionStyles.card} onClick={() => onChoose(type)}><span className={maintenanceActionStyles.icon}><ManageIcon className={assetStyles.buttonIcon}/></span><span><strong>{type === 'checkup' ? 'Check-up' : 'Service or repair'}</strong><small>{type === 'checkup' ? 'Record an inspection and its findings.' : 'Record completed work, parts and notes.'}</small></span></button>)}</div>
     </section>

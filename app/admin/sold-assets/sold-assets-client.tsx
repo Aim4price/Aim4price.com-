@@ -556,6 +556,7 @@ export default function SoldAssetsClient({
                 onClick={closeAction}
                 disabled={actionBusy}
                 aria-label="Close"
+                data-modal-close="true"
               >
                 ×
               </button>

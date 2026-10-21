@@ -224,7 +224,10 @@ export default function DealerMaintenanceNotificationsClient({
             aria-modal="true"
             aria-labelledby="dealer-assigned-clear-title"
           >
-            <h2 id="dealer-assigned-clear-title">Assigned to you</h2>
+            <div data-modal-close-row>
+              <h2 id="dealer-assigned-clear-title">Assigned to you</h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setClearRequest(null)} disabled={marking} />
+            </div>
             <p>
               {clearRequest.bulk
                 ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'

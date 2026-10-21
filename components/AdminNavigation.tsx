@@ -213,6 +213,7 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                 className={styles.closeButton}
                 aria-label="Close Admin menu"
                 onClick={closeManage}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>

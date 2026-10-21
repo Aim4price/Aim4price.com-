@@ -2127,6 +2127,7 @@ export default function AssetMapClient() {
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeExportModal}
                 aria-label="Close download options"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>

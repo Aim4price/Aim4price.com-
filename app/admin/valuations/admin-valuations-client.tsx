@@ -656,7 +656,7 @@ export default function AdminValuationsClient({
           <section ref={detailsRef} className={styles.detailsModal} role="dialog" aria-modal="true" aria-labelledby="admin-valuation-detail-title" tabIndex={-1}>
             <header className={styles.modalHeader}>
               <h2 id="admin-valuation-detail-title">{assetTitle(selectedValuation)}</h2>
-              <button type="button" aria-label="Close valuation details" onClick={() => { if (!openingAccount) setSelectedValuation(null); }}>×</button>
+              <button type="button" aria-label="Close valuation details" onClick={() => { if (!openingAccount) setSelectedValuation(null); }} data-modal-close="true">×</button>
             </header>
 
             <div className={styles.estimateHero}>
@@ -783,7 +783,7 @@ export default function AdminValuationsClient({
                   ? 'Delete this valuation?'
                   : `Delete ${deleteTargets.valuations.length.toLocaleString('en-ZA')} valuations?`}
               </h2>
-              <button type="button" aria-label="Close deletion confirmation" disabled={deleteBusy} onClick={closeDeleteModal}>×</button>
+              <button type="button" aria-label="Close deletion confirmation" disabled={deleteBusy} onClick={closeDeleteModal} data-modal-close="true">×</button>
             </header>
 
             <div className={styles.deleteSummary}>

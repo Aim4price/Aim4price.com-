@@ -3831,7 +3831,7 @@ export default function FuelClient({
                     : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
                 </p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close exclusions"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close exclusions" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
 
@@ -3986,7 +3986,7 @@ export default function FuelClient({
                 <h2>Fuel slips</h2>
                 <p>Review saved fuel slips or add one to an included asset or storage tank.</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close fuel slips"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close fuel slips" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4036,7 +4036,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
                 <p>Review fuel purchases and their linked assets.</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close manage fuel slips"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close manage fuel slips" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`} ref={fuelSlipManagerListRef}>
@@ -4093,7 +4093,7 @@ export default function FuelClient({
           <section className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manage-title" onClick={(event) => event.stopPropagation()}>
             <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
               <div className={registerStyles.modalHeaderText}><h2 id="fuel-slip-manage-title">Manage fuel slip</h2><p>{managedFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(managedFuelSlip.documentDate)}</p></div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip">×</button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip" data-modal-close="true">×</button>
             </header>
             <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
@@ -4158,7 +4158,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-history-title">Change history</h2>
                 <p>{historyFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(historyFuelSlip.documentDate)}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipHistory} aria-label="Close change history"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipHistory} aria-label="Close change history" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelHistoryList}>
@@ -4193,6 +4193,7 @@ export default function FuelClient({
               onClick={() => setDeleteCandidateFuelSlip(null)}
               aria-label="Close void fuel slip confirmation"
               disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}
+              data-modal-close="true"
             ><span aria-hidden="true">×</span></button>
 
             <div className={styles.deleteConfirmContent}>
@@ -4228,7 +4229,7 @@ export default function FuelClient({
           <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div><h2 id="asset-add-fuel-title">{modalMode === 'add-fuel-choice' ? 'Add fuel' : 'Choose fuel storage'}</h2><p>{quickLaunchAsset.title}</p><p>{fuelSlipAssetMeta(quickLaunchAsset)}</p></div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton}`} onClick={dismissModal} aria-label="Close add fuel">×</button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton}`} onClick={dismissModal} aria-label="Close add fuel" data-modal-close="true">×</button>
 
             </div>
             <div className={styles.modalDivider} />
@@ -4268,7 +4269,7 @@ export default function FuelClient({
                   ? `Save this fuel slip against ${quickLaunchAsset.title}. Choose how you want to capture it.`
                   : 'Choose how to capture a fuel slip for an included asset or storage tank.'}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close add fuel slip"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close add fuel slip" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4312,7 +4313,7 @@ export default function FuelClient({
                 <h2>{fuelSlipTargetPickerTitle}</h2>
                 <p>Select an included asset or the storage tank this fuel slip belongs to.</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
@@ -4385,7 +4386,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-upload-title">Upload fuel slip/photo</h2>
                 <p>{selectedFuelSlipTargetName} · Aim4price assisted capture</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
@@ -4422,7 +4423,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-manual-title">Enter fuel slip manually</h2>
                 <p>{selectedFuelSlipTargetName} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
@@ -4458,7 +4459,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-review-title">{fuelSlipDraft.id ? 'Review / complete fuel slip' : 'Review fuel slip details'}</h2>
                 <p>{selectedFuelSlipTargetName} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
@@ -4518,7 +4519,7 @@ export default function FuelClient({
               <div>
                 <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} data-modal-close="true" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={styles.formGrid}>
@@ -4577,7 +4578,7 @@ export default function FuelClient({
               <div>
                 <h2>{selectedStorage.name}</h2>
               </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} data-modal-close="true" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
             </div>
             <label className={styles.pinField}>
               New PIN
@@ -4602,7 +4603,7 @@ export default function FuelClient({
                 <p>Use this permanent QR for fuel scan access. Public QR scans always ask for the fuel PIN.</p>
               </div>
 
-              <button type="button" className={`${styles.modalCloseButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close QR code"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${styles.modalCloseButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close QR code" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.qrModalScrollBody}`}>
@@ -4662,6 +4663,7 @@ export default function FuelClient({
               onClick={() => setDeleteCandidateStorage(null)}
               aria-label="Close archive confirmation"
               disabled={busyDeleteId === deleteCandidateStorage.id}
+              data-modal-close="true"
             ><span aria-hidden="true">×</span></button>
 
             <div className={styles.deleteConfirmContent}>

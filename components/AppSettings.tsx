@@ -42,7 +42,7 @@ export default function AppSettings({ offlineHref }: { offlineHref?: string }) {
         }}>
         <header className={styles.heading}>
           <h2 id={title}>App settings</h2>
-          <button type="button" className={styles.close} aria-label="Close app settings" onClick={() => dialog.current?.close()}>×</button>
+          <button type="button" className={styles.close} aria-label="Close app settings" onClick={() => dialog.current?.close()} data-modal-close="true">×</button>
         </header>
         <p className={styles.intro}>Make this app comfortable to use.</p>
         <button type="button" role="switch" aria-checked={dark} aria-label="Dark mode" aria-describedby={description} className={styles.themeRow}

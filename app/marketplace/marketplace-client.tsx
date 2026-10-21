@@ -3431,6 +3431,7 @@ export default function MarketplaceClient({
               className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCreateListingClose}`}
               onClick={() => setCreateListingModalOpen(false)}
               aria-label="Close create listing options"
+              data-modal-close="true"
             >
               <span aria-hidden="true">×</span>
             </button>
@@ -3510,7 +3511,7 @@ export default function MarketplaceClient({
             aria-labelledby="marketplace-listing-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing" data-tooltip="Close listing">
+            <button type="button" className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing" data-tooltip="Close listing" data-modal-close="true">
               <IconClose />
             </button>
 
@@ -3740,7 +3741,7 @@ export default function MarketplaceClient({
         <div className={styles.marketplacePhotoViewer} role="dialog" aria-modal="true" aria-label={`${listingDisplayTitle(activeListing)} photo viewer`}>
           <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer" />
           <div className={styles.marketplacePhotoViewerCard}>
-            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer">
+            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer" data-modal-close="true">
               <IconClose />
             </button>
             <ListingImage
@@ -3781,6 +3782,7 @@ export default function MarketplaceClient({
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.marketplaceSquareClose}`}
                 onClick={closeManageListingModal}
                 aria-label="Close marketplace listing manager" data-tooltip="Close marketplace listing manager"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -3860,7 +3862,7 @@ export default function MarketplaceClient({
                 <span>Edit listing</span>
                 <h2 id="dealer-listing-edit-title">{listingDisplayTitle(editListingTarget)}</h2>
               </div>
-              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit || listingPhotosBusy} aria-label="Close listing editor">×</button>
+              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit || listingPhotosBusy} aria-label="Close listing editor" data-modal-close="true">×</button>
             </header>
 
             <div className={dealerStyles.editListingBody}>
@@ -3929,7 +3931,7 @@ export default function MarketplaceClient({
             aria-labelledby="share-listing-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className={styles.shareCloseButton} onClick={closeShareSheet} aria-label="Close share dialog" data-tooltip="Close share dialog">
+            <button type="button" className={styles.shareCloseButton} onClick={closeShareSheet} aria-label="Close share dialog" data-tooltip="Close share dialog" data-modal-close="true">
               <IconClose />
             </button>
 

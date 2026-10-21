@@ -45,7 +45,7 @@ export default function CaptureAllowanceModal({ endpoint, ledger, onClose }: Pro
       }}>
       <div className={styles.modalHeader}>
         <div><h2 id="capture-allowance-title">{sent ? 'Request received' : 'Need help with more documents?'}</h2><p>{ledger} Ledger · 10 daily Aim4price captures</p></div>
-        <button type="button" disabled={busy} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={onClose} aria-label="Close"><span aria-hidden="true">×</span></button>
+        <button type="button" disabled={busy} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={onClose} aria-label="Close" data-modal-close="true"><span aria-hidden="true">×</span></button>
       </div>
       <div className={styles.modalDivider} />
       <div className={styles.formModalScrollBody}><section className={styles.uploadPanel}>

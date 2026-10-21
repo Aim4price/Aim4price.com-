@@ -2398,7 +2398,7 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="invoices-modal-title">Your invoices</h2>
                 <p id="invoices-modal-description">View your invoices and recorded payments.</p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices">×</button>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices" data-modal-close="true">×</button>
               </div>
               <AccountInvoices />
               <div className={styles.modalActions}>
@@ -2433,6 +2433,7 @@ export default function AccountClient({
                   onClick={closeActionModal}
                   aria-label="Close password editor"
                   disabled={isChangingPassword}
+                  data-modal-close="true"
                 >
                   ×
                 </button>
@@ -2565,7 +2566,7 @@ export default function AccountClient({
                 <p>
                   Your changes are saved together on the final step.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details" data-modal-close="true">×</button>
               </div>
 
               <ModalInlineNotice notice={actionModalNotice} />
@@ -2754,7 +2755,7 @@ export default function AccountClient({
                 <p>
                   Create or update the 4 to 8 digit PIN used for QR scan updates.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor" data-modal-close="true">×</button>
               </div>
 
               <ModalInlineNotice notice={actionModalNotice} />
@@ -2855,7 +2856,7 @@ export default function AccountClient({
                 <h2 id="notifications-modal-title">Notifications</h2>
                 <p>Choose the phone alerts for your account.</p>
                 <button type="button" className={styles.modalCloseButton} disabled={isSavingNotifications}
-                  onClick={closeActionModal} aria-label="Close notification settings">×</button>
+                  onClick={closeActionModal} aria-label="Close notification settings" data-modal-close="true">×</button>
               </div>
               <DesktopNotificationSettings onClose={closeActionModal}
                 onBusyChange={(busy) => { activeActionModalBusyRef.current = busy; setIsSavingNotifications(busy); }}
@@ -2883,7 +2884,7 @@ export default function AccountClient({
                   These details are shown when customers contact you from the
                   marketplace.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor" data-modal-close="true">×</button>
               </div>
 
               <ModalInlineNotice notice={actionModalNotice} />
@@ -3017,6 +3018,7 @@ export default function AccountClient({
                   className={styles.modalCloseButton}
                   onClick={closeActionModal}
                   aria-label="Close Discovery participation"
+                  data-modal-close="true"
                 >
                   ×
                 </button>
@@ -3097,7 +3099,7 @@ export default function AccountClient({
                   Choose your visibility, place your map pin, then add the
                   details owners will see.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor" data-modal-close="true">×</button>
               </div>
 
               <ModalInlineNotice notice={actionModalNotice} />
@@ -3253,6 +3255,7 @@ export default function AccountClient({
                   onClick={closeDeleteDialog}
                   aria-label="Close account deletion"
                   disabled={isDeletingAccount}
+                  data-modal-close="true"
                 >
                   ×
                 </button>

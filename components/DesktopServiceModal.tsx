@@ -309,7 +309,7 @@ export default function DesktopServiceModal({
               <p>{record.assetTitle}</p>
               <p>{serviceAssetDetails(record)}</p>
             </div>
-            <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={previousStage} aria-label="Close service choice" disabled={busy}>
+            <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={previousStage} aria-label="Close service choice" disabled={busy} data-modal-close="true">
               <CloseIcon />
             </button>
           </header>
@@ -347,7 +347,7 @@ export default function DesktopServiceModal({
             <p>{record.assetTitle}</p>
               <p>{serviceAssetDetails(record)}</p>
           </div>
-          <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={previousStage} aria-label="Close service form" disabled={busy}>
+          <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={previousStage} aria-label="Close service form" disabled={busy} data-modal-close="true">
             <CloseIcon />
           </button>
         </header>

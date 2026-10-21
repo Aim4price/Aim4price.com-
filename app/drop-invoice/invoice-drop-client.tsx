@@ -506,6 +506,7 @@ export default function InvoiceDropClient() {
                 onClick={closeModal}
                 disabled={isSubmitting}
                 aria-label="Close invoice modal"
+                data-modal-close="true"
               >
                 <CloseIcon />
               </button>

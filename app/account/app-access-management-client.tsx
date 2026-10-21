@@ -509,6 +509,7 @@ function AppAccessModal({
             onClick={onClose}
             disabled={closeDisabled}
             aria-label="Close dialog"
+            data-modal-close="true"
           >
             ×
           </button>

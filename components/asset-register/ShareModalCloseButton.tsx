@@ -5,7 +5,7 @@ type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'classNa
 
 /** Match the account/password close control throughout the sharing flow. */
 export default function ShareModalCloseButton(props: Props) {
-  return <button {...props} type="button" className={styles.close}>
+  return <button aria-label="Close dialog" {...props} type="button" className={styles.close} data-modal-close="true">
     <span aria-hidden="true">×</span>
   </button>;
 }

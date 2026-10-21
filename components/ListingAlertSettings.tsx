@@ -46,7 +46,7 @@ export default function ListingAlertSettings({app,initialFilters,inline=false}:{
   if(inline)return <details className={form.details}><summary>Listing interests</summary><Editor app={app} /></details>;
   return <><button ref={trigger} type="button" className={styles.button} aria-haspopup="dialog" onClick={()=>setOpen(true)}>Notify me of similar assets</button>
     {open&&typeof document!=='undefined'?createPortal(<dialog ref={node=>{dialog.current=node;if(node&&!node.open)node.showModal();}} className={styles.dialog} aria-labelledby="listing-alert-heading" onClose={()=>{setOpen(false);trigger.current?.focus();}}>
-      <header className={styles.modalHeading}><h2 id="listing-alert-heading">Listing alerts</h2><button type="button" className={styles.close} aria-label="Close listing alerts" onClick={()=>dialog.current?.close()}>×</button></header>
+      <header className={styles.modalHeading}><h2 id="listing-alert-heading">Listing alerts</h2><button type="button" className={styles.close} aria-label="Close listing alerts" onClick={()=>dialog.current?.close()} data-modal-close="true">×</button></header>
       <Editor app={app} initialFilters={initialFilters} /><button type="button" className={styles.button} onClick={()=>dialog.current?.close()}>Done</button>
     </dialog>,document.body):null}</>;
 }

@@ -11,6 +11,7 @@ import AppThemeSync from '../components/AppThemeSync';
 import HoverLabels from '../components/HoverLabels';
 import ScrollbarInteractionGuard from '../components/ScrollbarInteractionGuard';
 import './globals.css';
+import './modal-close.css';
 import './hover-labels.css';
 import '../public/app-theme.css';
 import './asset-register-view-tuning.css';

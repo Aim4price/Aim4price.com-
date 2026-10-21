@@ -23,7 +23,7 @@ export default function LeadNoteDialog({assetTitle,noteDraft,setNoteDraft,noteAt
                 <p>{assetTitle}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dialogStyles.close}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dialogStyles.close}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote} data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>

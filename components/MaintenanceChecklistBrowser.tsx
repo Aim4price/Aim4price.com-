@@ -106,7 +106,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
       if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">{choosingAsset ? 'Maintenance checklists' : asset?.title}</h2><p>{choosingAsset ? 'Choose an asset.' : asset?.headerMeta || 'No key details saved yet'}</p></div><button type="button" className={dialogStyles.close} disabled={!!busy} onClick={() => editing ? cancelEditor() : onClose()} aria-label="Close maintenance checklists">×</button></header>
+      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">{choosingAsset ? 'Maintenance checklists' : asset?.title}</h2><p>{choosingAsset ? 'Choose an asset.' : asset?.headerMeta || 'No key details saved yet'}</p></div><button type="button" className={dialogStyles.close} disabled={!!busy} onClick={() => editing ? cancelEditor() : onClose()} aria-label="Close maintenance checklists" data-modal-close="true">×</button></header>
       {choosingAsset ? <>
         <div data-asset-choice-toolbar="true">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search assets or serial numbers" />

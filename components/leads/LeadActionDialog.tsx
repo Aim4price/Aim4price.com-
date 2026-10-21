@@ -13,7 +13,7 @@ export default function LeadActionDialog({title, titleIcon, assetTitle, assetSub
     <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${dialogStyles.surface} ${className}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <header className={`${styles.modalHeader} ${dialogStyles.header}`}>
         <div className={styles.modalTitleGroup}><div className={styles.modalHeaderCopy}><h2 id={titleId}>{titleIcon}{title}</h2><p>{assetTitle}</p>{assetSubtitle ? <p>{assetSubtitle}</p> : null}</div></div>
-        <button type="button" className={`${styles.closeButton} ${dialogStyles.close}`} onClick={onClose} disabled={busy} aria-label={closeLabel}>×</button>
+        <button type="button" className={`${styles.closeButton} ${dialogStyles.close}`} onClick={onClose} disabled={busy} aria-label={closeLabel} data-modal-close="true">×</button>
       </header>
       <div className={`${styles.modalBody} ${dialogStyles.body}`}>{children}</div>
       {footer && <footer className={`${styles.modalFooter} ${dialogStyles.footer}`}>{footer}</footer>}

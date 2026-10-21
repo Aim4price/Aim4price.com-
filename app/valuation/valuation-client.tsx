@@ -6296,7 +6296,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         >
           <div className={styles.specificationModalHeader}>
             <h3 data-estimate-modal-title id="replacement-help-title">Which price should I enter?</h3>
-            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => replacementHelpDialogRef.current?.close()} aria-label="Close replacement price help">×</button>
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => replacementHelpDialogRef.current?.close()} aria-label="Close replacement price help" data-modal-close="true">×</button>
           </div>
           <div id="replacement-help-description" className={styles.replacementHelpCopy}>
             <div className={styles.replacementHelpStep}>
@@ -6329,7 +6329,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         >
           <div className={styles.specificationModalHeader}>
             <h3 data-estimate-modal-title id="replacement-specification-title">Change specification</h3>
-            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => specificationDialogRef.current?.close()} aria-label="Close specification options">×</button>
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => specificationDialogRef.current?.close()} aria-label="Close specification options" data-modal-close="true">×</button>
           </div>
           <p className={`${styles.specificationModalHint} ${modalStyles.description}`}>Where does this asset roughly sit in the new-asset market?</p>
           {renderSpecificationChoices(specificationDraft, setSpecificationDraft)}
@@ -7408,7 +7408,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </>
               ) : null}
             </div>
-            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">
               ×
             </button>
           </div>
@@ -7528,7 +7528,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </>
               ) : null}
             </div>
-            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">
               ×
             </button>
           </div>
@@ -7774,7 +7774,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div>
                   {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>Condition</span></h3> : null}
                 </div>
-                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
               </div>
 
               <div className={styles.conditionRouteGrid}>
@@ -7914,7 +7914,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div>
                 {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</span></h3> : null}
               </div>
-              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
             </div>
 
             <div className={styles.conditionModalBody}>
@@ -8021,7 +8021,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </>
                 ) : null}
               </div>
-              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
             </div>
 
             <p className={styles.popularityGuidance}>How popular are this brand and model? Age and condition are assessed separately.</p>
@@ -8097,7 +8097,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div>
                   {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3> : null}
                 </div>
-                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
               </div>
 
               <div className={styles.conditionRouteGrid}>
@@ -8163,7 +8163,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </>
                 ) : null}
               </div>
-              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
             </div>
 
             <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
@@ -9106,7 +9106,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div className={styles.specificationModalHeader}>
                   <h3 data-estimate-modal-title id="replacement-price-dialog-title" className={styles.detailsModalTitle}>{renderDetailIcon('brand')}<span>Replacement price</span></h3>
                   <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} aria-label="Close replacement price"
-                    disabled={replacementRecalculateLoading || advancedRecalculateLoading} onClick={() => setReplacementPanelOpen(false)}>×</button>
+                    disabled={replacementRecalculateLoading || advancedRecalculateLoading} onClick={() => setReplacementPanelOpen(false)} data-modal-close="true">×</button>
                 </div>
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
@@ -9528,7 +9528,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.replacementNoticeTitle}>
+              <div data-modal-close-row>
               <h2 data-estimate-modal-title id="replacement-notice-title">Ready for your estimate?</h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={closeReplacementPriceNotice} />
+            </div>
             </div>
             <div id="replacement-notice-description" className={`${styles.replacementNoticeIntro} ${modalStyles.description}`}>
               <p>Aim4price uses your replacement price and asset details.<br />Its depreciation logic calculates an estimated current value.</p>
@@ -9578,6 +9581,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               className={`${styles.finalSaveClose} ${modalStyles.close}`}
               onClick={closeDealerRegisterDestination}
               aria-label="Close Asset Register destination chooser"
+              data-modal-close="true"
             >
               ×
             </button>
@@ -9636,6 +9640,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               className={`${styles.finalSaveClose} ${modalStyles.close}`}
               onClick={closeDealerClientRegisterPicker}
               aria-label="Close client Asset Register picker"
+              data-modal-close="true"
             >
               ×
             </button>
@@ -9706,6 +9711,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               onClick={closeFinalSaveModal}
               aria-label="Close final save step"
               disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading}
+              data-modal-close="true"
             >
               ×
             </button>
@@ -9796,6 +9802,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               className={`${styles.marketplaceIntroClose} ${modalStyles.close}`}
               onClick={closeMarketplaceIntroModal}
               aria-label="Close marketplace listing path note"
+              data-modal-close="true"
             >
               ×
             </button>
@@ -9852,6 +9859,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               onClick={closeMarketplacePublishModal}
               aria-label="Close marketplace modal"
               disabled={isPublishingMarketplace}
+              data-modal-close="true"
             >
               ×
             </button>
@@ -10084,9 +10092,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             onClick={(event) => event.stopPropagation()}
           >
             <span className={styles.marketplaceIntroKicker}>Advert created</span>
-            <h2 data-estimate-modal-title id="advert-download-title">
+            <div data-modal-close-row>
+              <h2 data-estimate-modal-title id="advert-download-title">
               {publishedAdvertDownload.status === 'downloaded' ? 'Your JPEG is ready.' : 'Your listing is live.'}
             </h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setPublishedAdvertDownload(null)} />
+            </div>
             <p>{publishedAdvertDownload.message}</p>
             <div className={styles.marketplaceAdvertSuccessChecklist}>
               <span>✓ Published to Marketplace</span>
