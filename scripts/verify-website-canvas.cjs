@@ -326,32 +326,18 @@ async function check(browser, url) {
     await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Asset')?.click());
     const destination = '[role="dialog"]';
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"]')).some(dialog=>dialog.textContent.includes('Choose asset register')));
-    const cardPicker = await page.$(`${destination} [aria-label="Available asset registers"]`);
-    if (cardPicker) {
-      assert.ok(await page.$(`${destination} input[aria-label="Search asset registers"]`));
-      assert.ok(await page.$$eval(`${destination} button`, elements=>elements.some(element=>element.textContent.includes('Add Register'))));
-      await page.$$eval(`${destination} [aria-label="Available asset registers"] button`, elements=>{
-        const register=elements.find(element=>element.textContent.includes('Test farm'));
-        if(!register) throw new Error('Fixture Asset Register is missing from destination cards');
-        register.click();
-      });
-      assert.ok(await page.$(`${destination} [aria-label="Available asset registers"] button[aria-pressed="true"]`));
-    } else {
-      // Older branches still use the dropdown until the card-picker change is merged.
-      await page.$eval(`${destination} [aria-haspopup="listbox"]`, element=>element.click());
-      await page.waitForSelector('[role="option"]');
-      await page.$$eval('[role="option"]', elements=>{
-        const register=elements.find(element=>element.textContent.includes('Test farm'));
-        if(!register) throw new Error('Fixture Asset Register is missing from destination options');
-        register.click();
-      });
-    }
-    await page.$$eval(`${destination} button`, elements=>{
-      const next=elements.find(element=>element.textContent.trim()==='Continue');
-      if(!next || next.disabled) throw new Error('Selected register must enable Continue');
-      next.click();
+    const registers = `${destination} [aria-label="Available asset registers"]`;
+    await page.waitForSelector(registers);
+    assert.ok(await page.$(`${destination} input[aria-label="Search asset registers"]`));
+    assert.ok(await page.$$eval(`${destination} button`, elements=>elements.some(element=>element.textContent.includes('Add Register'))));
+    assert.equal(await page.$$eval(`${destination} button`, elements=>elements.some(element=>element.textContent.trim()==='Continue')),false,'Register selection must not require a separate Continue action');
+    await page.$$eval(`${registers} button`, elements=>{
+      const register=elements.find(element=>element.textContent.includes('Test farm'));
+      if(!register) throw new Error('Fixture Asset Register is missing from destination cards');
+      register.click();
     });
     await page.waitForSelector('[aria-labelledby="add-asset-choice-title"]');
+    assert.equal(await page.$(registers),null,'Choosing a register closes the destination picker and opens Add Asset options directly');
   }
   await openAssetChoice();
   assert.equal(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>Boolean(e.closest('[data-website-canvas]'))),true);
