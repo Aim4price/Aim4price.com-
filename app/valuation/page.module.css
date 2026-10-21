@@ -15447,18 +15447,24 @@
 .wizardCard:focus { outline: none; }
 
 /* Fit year controls naturally instead of spending height on repeated gutters. */
-.yearDetailsModal.yearDetailsModal { padding-bottom: 20px; }
-.yearDetailsModal.yearDetailsModal .detailsModalHeader { margin-bottom: 16px; padding-bottom: 16px; }
+/* Keep the year selector compact without a visible scrollbar. Retain scrolling
+   for short screens and enlarged text so no controls become unreachable. */
+.yearDetailsModal.yearDetailsModal {
+  padding: 20px;
+  gap: 12px;
+  scrollbar-width: none;
+  scrollbar-gutter: auto;
+}
+.yearDetailsModal.yearDetailsModal::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.yearDetailsModal.yearDetailsModal .detailsModalHeader { margin-bottom: 8px; padding-bottom: 12px; }
 .yearDetailsModal .yearSliderReadout { padding: 18px 22px; gap: 10px; }
 .yearDetailsModal .yearSliderReadout strong { font-size: 3.6rem; }
 .yearDetailsModal.yearDetailsModal .detailsModalActions.detailsModalActions { margin-top: 12px; padding: 14px 0 0; }
-.yearDetailsModal .yearSecondaryControls { margin-top: 12px; }
+.yearDetailsModal .yearSecondaryControls { margin-top: 4px; }
 .usageDetailsModal .usageEntryPrompt.usageEntryPrompt input { min-height: 64px; font-size: 1.65rem; font-variant-numeric: tabular-nums; }
 .usageDetailsModal .usageEntryPrompt .fieldLabel { font-size: 1.15rem; }
 .usageEntryPrompt:not(:focus-within) { animation: usage-entry-pulse 2s ease-in-out infinite; }
 @keyframes usage-entry-pulse { 0%, 100% { box-shadow: 0 0 0 0 #23745400; } 50% { box-shadow: 0 0 0 5px #23745420, 0 0 24px #23745415; } }
 @media (prefers-reduced-motion: reduce) { .usageEntryPrompt:not(:focus-within) { animation: none; } }
-.conditionRouteCard:has(.extraRouteIcon[data-kind='none']) { background: #fff4f3; border-color: #edc9c4; color: #993c32; }
 .extraRouteIcon[data-kind='none'] { color: #a74b40; background: #fbe4e0; }
-.conditionRouteCard:has(.extraRouteIcon[data-kind='none']) strong { color: #993c32; }
 .specStepCard { scroll-margin-block: 24px; }
