@@ -380,7 +380,10 @@ async function check(browser, url) {
   for (const requestedScale of [.91, .5]) {
     await page.setViewport({width:1920,height:1080,deviceScaleFactor:1});
     await page.goto(url+'/valuation',{waitUntil:'networkidle2',timeout:120000});
+    // Network idle can precede hydration of the page-size controls.
+    await page.waitForSelector('[aria-label="Zoom in"]', {visible:true});
     await page.click('[aria-label="Zoom in"]');
+    await page.waitForSelector('#website-zoom-slider', {visible:true});
     await page.$eval('#website-zoom-slider',(e,scale)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,String(scale*100));e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},requestedScale);
     await page.click('[aria-label="Close page size"]');
     await page.waitForFunction(scale=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===scale,{},requestedScale);
