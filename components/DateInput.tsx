@@ -148,7 +148,7 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
       </span>
       {mounted ? createPortal(<dialog ref={dialog} className={styles.dateDialog} aria-label="Choose a date" onCancel={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <div className={styles.calendar}>
-        <header className={styles.dialogHeader}><div className={styles.heading}><span className={styles.headingIcon}><CalendarIcon /></span><h3>Choose a date</h3></div><button type="button" aria-label="Close calendar" onClick={() => dialog.current?.close()}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></header>
+        <header className={styles.dialogHeader}><div className={styles.heading}><span className={styles.headingIcon}><CalendarIcon /></span><h3>Choose a date</h3></div><button type="button" aria-label="Close calendar" onClick={() => dialog.current?.close()} data-modal-close="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></header>
       <div className={styles.navigation}>
         <button type="button" aria-label="Previous month" onClick={() => setMonth(new Date(year, monthIndex - 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg></button>
         <div className={styles.selectors}>

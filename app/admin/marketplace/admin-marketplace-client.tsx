@@ -609,7 +609,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
           >
             <header className={styles.modalHeader}>
               <h2 id="marketplace-view-activity-title">Activity · {activityTarget.title}</h2>
-              <button type="button" className={styles.modalCloseButton} aria-label="Close Marketplace view activity" onClick={closeActivityModal}>
+              <button type="button" className={styles.modalCloseButton} aria-label="Close Marketplace view activity" onClick={closeActivityModal} data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </header>
@@ -736,7 +736,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
           >
             <header className={styles.deleteModalHeader}>
               <h2 id="delete-marketplace-listing-title">Delete listing?</h2>
-              <button type="button" className={styles.deleteCloseButton} aria-label="Close delete confirmation" disabled={deleteBusy} onClick={closeDeleteModal}>
+              <button type="button" className={styles.deleteCloseButton} aria-label="Close delete confirmation" disabled={deleteBusy} onClick={closeDeleteModal} data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </header>

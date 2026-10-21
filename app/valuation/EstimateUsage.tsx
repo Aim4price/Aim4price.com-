@@ -25,7 +25,7 @@ export default function EstimateUsage({ unit, lifetime, settings, busy, error, o
     <button type="button" className={modal.adjustButton} aria-haspopup="dialog" disabled={busy} onClick={() => { setDraft(String(lifetime)); setLocalError(''); dialog.current?.showModal(); }}>Check / adjust</button>
     <dialog ref={dialog} className={`${styles.dialog} ${modal.surface}`} aria-labelledby="usage-limit-title" onCancel={event => { if (busy) event.preventDefault(); }}>
       <form onSubmit={event => { event.preventDefault(); void apply(); }}>
-        <header className={styles.modalHeader}><div><h2 id="usage-limit-title" data-estimate-modal-title>Maximum usage</h2><p>Set the total lifetime expected from this asset. Drag the slider or type a value.</p></div><button type="button" className={modal.close} disabled={busy} onClick={() => dialog.current?.close()} aria-label="Close maximum usage">×</button></header>
+        <header className={styles.modalHeader}><div><h2 id="usage-limit-title" data-estimate-modal-title>Maximum usage</h2><p>Set the total lifetime expected from this asset. Drag the slider or type a value.</p></div><button type="button" className={modal.close} disabled={busy} onClick={() => dialog.current?.close()} aria-label="Close maximum usage" data-modal-close="true">×</button></header>
         <div className={modal.valueControl}>
           <label className={modal.valueLabel} htmlFor="maximum-usage-input">Expected lifetime ({unit})</label>
           <div className={modal.amountEntry}>

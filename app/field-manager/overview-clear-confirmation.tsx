@@ -85,6 +85,7 @@ export default function OverviewClearConfirmation({
           onClick={onCancel}
           disabled={isClearing}
           aria-label="Close Overview clear confirmation"
+          data-modal-close="true"
         >
           <svg
             viewBox="0 0 24 24"

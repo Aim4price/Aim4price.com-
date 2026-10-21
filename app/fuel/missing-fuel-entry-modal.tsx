@@ -280,7 +280,7 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
       <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.manageStorageChoiceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
         <div className={styles.modalHeader}>
           <div><h2 id="manage-storage-choice-title">{storage.name}</h2><p>Choose what you need to manage.</p></div>
-          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close storage options"><span aria-hidden="true">×</span></button>
+          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close storage options" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </div>
         <div className={styles.modalDivider} />
         <div className={styles.sourceChoiceGrid}>
@@ -518,7 +518,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
       <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${step === 'asset' && !saved ? pickerStyles.modal : ''}`} data-asset-choice-modal={step === 'asset' && !saved ? 'true' : undefined}>
         <header className={styles.missingEntryHeader} data-asset-choice-header={step === 'asset' && !saved ? 'true' : undefined}>
           <div><h2 id="missing-fuel-title">Back Track Fuel</h2><p>{selectedAsset?.title ?? 'Choose an asset'}</p></div>
-          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><span aria-hidden="true">×</span></button>
+          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
 
         <div className={step === 'asset' && !saved ? pickerStyles.contents : styles.missingEntryScrollBody}>
@@ -686,7 +686,7 @@ export function ReconcileFuelBalanceModal({ storage, onClose, onLedgerUpdated }:
   return (
     <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="reconcile-fuel-title">
       <div className={`${styles.reconcileBalanceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
-        <header className={styles.missingEntryHeader}><div><span className={styles.missingEntryEyebrow}>Physical reconciliation</span><h2 id="reconcile-fuel-title">Reconcile Balance</h2><p>{storage.name}</p></div><button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close reconciliation"><span aria-hidden="true">×</span></button></header>
+        <header className={styles.missingEntryHeader}><div><span className={styles.missingEntryEyebrow}>Physical reconciliation</span><h2 id="reconcile-fuel-title">Reconcile Balance</h2><p>{storage.name}</p></div><button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close reconciliation" data-modal-close="true"><span aria-hidden="true">×</span></button></header>
         <div className={styles.missingEntryScrollBody}>
           <div className={styles.balanceWarningBox}><WarningIcon /><div><strong>Balance needs checking</strong><span>{storage.balanceCheckReason || 'Measure the tank physically before replacing the recorded current balance.'}</span></div></div>
           {error ? <div className={styles.missingEntryError} role="alert">{error}</div> : null}

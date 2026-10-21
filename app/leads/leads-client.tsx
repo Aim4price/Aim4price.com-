@@ -3957,7 +3957,7 @@ export default function LeadsClient({
                 <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadQrModal} aria-label="Close QR code">
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadQrModal} aria-label="Close QR code" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
@@ -4012,7 +4012,7 @@ export default function LeadsClient({
                 <p>{assetTitle(photoUploadLead)} · {assetPhotos(photoUploadLead).length} of {MAX_LEAD_ASSET_PHOTOS} photos saved</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeLeadPhotoUploadModal} aria-label="Close photos" disabled={isUploadingLeadPhotos}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeLeadPhotoUploadModal} aria-label="Close photos" disabled={isUploadingLeadPhotos} data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
@@ -4097,7 +4097,7 @@ export default function LeadsClient({
                 <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeEmailModal} aria-label="Close email draft">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeEmailModal} aria-label="Close email draft" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
@@ -4230,6 +4230,7 @@ export default function LeadsClient({
                   onClick={closeDeleteLeadModal}
                   aria-label="Close delete confirmation"
                   disabled={isDeletingLead}
+                  data-modal-close="true"
                 >
                   <CloseIcon className={assetStyles.buttonIcon} />
                 </button>
@@ -4286,6 +4287,7 @@ export default function LeadsClient({
                 className={assetStyles.photoViewerCloseButton}
                 onClick={closeAssetPhotoModal}
                 aria-label="Close photo viewer"
+                data-modal-close="true"
               >
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
@@ -4346,6 +4348,7 @@ export default function LeadsClient({
                 className={assetStyles.photoViewerCloseButton}
                 onClick={closeSentPhotoModal}
                 aria-label="Close photo viewer"
+                data-modal-close="true"
               >
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>

@@ -98,7 +98,7 @@ export default function FuelLocationModal({
   return (
     <div className={styles.backdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
       <section className={`${styles.card} ${locationState === 'error' ? styles.cardError : ''}`}>
-        <div className={styles.header}>
+        <div className={styles.header} data-modal-close-row>
           <div className={styles.icon} aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
               <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
@@ -106,6 +106,7 @@ export default function FuelLocationModal({
             </svg>
           </div>
           <h2 id="fuel-location-title">Location required</h2>
+          <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={onCancel} />
         </div>
 
         <p className={styles.subject}>{subject}</p>

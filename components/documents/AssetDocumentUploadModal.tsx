@@ -401,7 +401,7 @@ export default function AssetDocumentUploadModal({
             <h2 id="asset-document-modal-title">Add documents</h2>
             <p>Choose a type, then upload directly to this asset’s document record.</p>
           </div>
-          <button type="button" className={accountDesign ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : undefined} onClick={() => { if (!busyRef.current) onClose(); }} disabled={busy} aria-label="Close document upload"><span aria-hidden="true">×</span></button>
+          <button type="button" className={accountDesign ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : undefined} onClick={() => { if (!busyRef.current) onClose(); }} disabled={busy} aria-label="Close document upload" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
 
         <form onSubmit={submit}>

@@ -80,7 +80,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
             <p id="move-asset-name" className={styles.assetName}>{props.assetName}</p>
             <p id="move-destination-description" className={styles.assetDetails}>{props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
           </div>
-          <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal">×</button>
+          <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal" data-modal-close="true">×</button>
         </header>
         <div className={`${styles.body} ${step === 'destination' ? styles.pickerBody : ''}`}>
           {step === 'choice' ? (

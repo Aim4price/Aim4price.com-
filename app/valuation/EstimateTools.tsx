@@ -70,7 +70,7 @@ export default function EstimateTools({ report, busy, error, onApply }: {
       <form onSubmit={(event) => { event.preventDefault(); void apply(); }}>
         <header className={styles.modalHeader}><div><h2 data-estimate-modal-title id="estimate-settings-title">Estimate settings</h2>
           <p>Tweak this estimate, then apply your changes to recalculate.</p></div>
-          <button type="button" className={`${styles.close} ${modalStyles.close}`} onClick={() => setOpen(false)} disabled={busy} aria-label="Close estimate settings">×</button>
+          <button type="button" className={`${styles.close} ${modalStyles.close}`} onClick={() => setOpen(false)} disabled={busy} aria-label="Close estimate settings" data-modal-close="true">×</button>
         </header>
         <fieldset className={styles.settingGroup} disabled={busy}>
           <legend>Depreciation per year</legend>

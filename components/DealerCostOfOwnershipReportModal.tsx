@@ -273,7 +273,7 @@ export default function DealerCostOfOwnershipReportModal({
             <h3 id="dealer-cost-of-ownership-report-title">{assetTitle}</h3>
             <p>{assetMeta}</p>
           </div>
-          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close Cost of Ownership report">
+          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close Cost of Ownership report" data-modal-close="true">
             <CloseIcon className={assetStyles.buttonIcon} />
           </button>
         </div>

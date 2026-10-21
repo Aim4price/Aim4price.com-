@@ -112,7 +112,7 @@ export default function ValuationResultTour() {
       {active ? <>
         <div className={styles.spotlight} style={box ?? {inset:0}} aria-hidden="true"/>
         <div ref={card} className={styles.card} style={position}>
-          <div className={styles.top}><span>{index+1} of {available.length}</span></div>
+          <div className={styles.top}><span>{index+1} of {available.length}</span><button type="button" data-modal-close="true" aria-label="Close dialog" onClick={close} /></div>
           <h2 id="value-tour-title">{available[index].title}</h2>
           <div id="value-tour-description" aria-live="polite"><p>{available[index].text}</p><p className={styles.hint}>{available[index].action}</p></div>
           <div className={styles.actions}>

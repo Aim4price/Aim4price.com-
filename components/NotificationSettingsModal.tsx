@@ -19,7 +19,7 @@ export default function NotificationSettingsModal({ app }: { app: PushApp }) {
       className={styles.dialog} aria-labelledby="phone-notification-settings-title" onClose={()=>{setOpen(false);trigger.current?.focus();}}
       onClick={event=>{if(event.target===dialog.current){const r=dialog.current.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.current.close();}}}>
       <header className={styles.modalHeading}><h2 id="phone-notification-settings-title">Notification settings</h2>
-        <button type="button" className={styles.close} aria-label="Close notification settings" onClick={()=>dialog.current?.close()}>×</button></header>
+        <button type="button" className={styles.close} aria-label="Close notification settings" onClick={()=>dialog.current?.close()} data-modal-close="true">×</button></header>
       <PhoneNotificationSettings app={app} modal />
       <button type="button" className={styles.button} onClick={()=>dialog.current?.close()}>Done</button>
     </dialog>,document.body):null}

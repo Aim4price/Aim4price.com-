@@ -46,6 +46,7 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
                 onClick={onClose}
                 disabled={busy}
                 aria-label="Close add asset register modal"
+                data-modal-close="true"
               >
                 ×
               </button>

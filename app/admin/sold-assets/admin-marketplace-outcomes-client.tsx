@@ -496,6 +496,7 @@ export default function AdminMarketplaceOutcomesClient({
                 type="button"
                 onClick={() => setDetailOutcome(null)}
                 aria-label="Close"
+                data-modal-close="true"
               >
                 ×
               </button>

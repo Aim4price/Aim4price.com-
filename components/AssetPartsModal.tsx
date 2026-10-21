@@ -115,7 +115,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   </footer>;
   return <div className={`${checklistStyles.overlay} ${styles.overlay}`} data-website-overlay onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
     <section ref={dialogRef} tabIndex={-1} className={`${checklistStyles.dialog} ${maintenanceStyles.dialog} ${styles.modal}`} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={data ? `${id}-context` : undefined}>
-      <header className={checklistStyles.header}><div><h2 id={`${id}-title`}>{assetTitle}</h2>{assetSubtitle && <p>{assetSubtitle}</p>}</div><button type="button" className={maintenanceStyles.close} onClick={onClose} disabled={busy} aria-label="Back to maintenance">×</button></header>
+      <header className={checklistStyles.header}><div><h2 id={`${id}-title`}>{assetTitle}</h2>{assetSubtitle && <p>{assetSubtitle}</p>}</div><button type="button" className={maintenanceStyles.close} onClick={onClose} disabled={busy} aria-label="Back to maintenance" data-modal-close="true">×</button></header>
       <div className={`${maintenanceStyles.body} ${styles.body}`}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {notice && <p role="status" className={styles.notice}>{notice}</p>}

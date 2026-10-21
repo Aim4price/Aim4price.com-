@@ -29,7 +29,7 @@ function ModalSurface({ open, title, onClose, children, owner = false, compact =
     if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   }}>
-    <header className={styles.header}><h2 id={titleId}>{title}</h2><button type="button" aria-label={closeLabel} onClick={onClose}>×</button></header>
+    <header className={styles.header}><h2 id={titleId}>{title}</h2><button type="button" aria-label={closeLabel} onClick={onClose} data-modal-close="true">×</button></header>
     <div className={styles.body}>{children}</div>
     </div>
   </div>;

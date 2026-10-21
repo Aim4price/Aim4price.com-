@@ -243,6 +243,9 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     >
       <div className={styles.landscapeBackdropPattern} aria-hidden="true" />
       <div className={styles.landscapePanel}>
+        <div data-modal-close-row style={{ justifyContent: 'flex-end' }}>
+          <button type="button" data-modal-close="true" aria-label="Close rotation prompt and continue in portrait" onClick={continueInPortrait} />
+        </div>
         <Image
           src="/brand/aim4price-mark-black.png"
           alt="Aim4price"
@@ -297,7 +300,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
             <div className={styles.zoomPanel}>
               <div className={styles.zoomHeading}>
                 <h2 id="website-zoom-title">Page size</h2>
-                <button type="button" className={styles.zoomClose} aria-label="Close page size" onClick={() => setShowZoom(false)}>×</button>
+                <button type="button" className={styles.zoomClose} data-modal-close="true" aria-label="Close page size" onClick={() => setShowZoom(false)}>×</button>
               </div>
               <label className={styles.sliderLabel} htmlFor="website-zoom-slider">Adjust page size</label>
               <div className={styles.zoomStepper} role="group" aria-label="Adjust page size">

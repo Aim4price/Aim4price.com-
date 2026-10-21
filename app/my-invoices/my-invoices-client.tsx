@@ -3612,7 +3612,7 @@ export default function MyInvoicesClient({
                 <h2 id="budget-manager-title">{budgetManagerView === 'choice' ? 'Spending budgets' : 'Manage budgets'}</h2>
                 <p>{budgetManagerView === 'choice' ? 'Choose what you would like to do.' : 'View spending, edit limits and manage alerts.'}</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetManager} aria-label="Close spending budgets" data-budget-manager-close><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetManager} aria-label="Close spending budgets" data-budget-manager-close data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
 
@@ -3828,7 +3828,7 @@ export default function MyInvoicesClient({
                   <h2 id="budget-scope-picker-title">Choose Saved Assets</h2>
                   <p>{editingBudgetId ? 'Choose the asset for this budget.' : 'Select one or more saved assets.'}</p>
                 </div>
-                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetAssetPicker} aria-label="Back to budget"><span aria-hidden="true">×</span></button>
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetAssetPicker} aria-label="Back to budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
               <div className={styles.modalDivider} />
               <div
@@ -3936,7 +3936,7 @@ export default function MyInvoicesClient({
                         ? 'Set the limit and warning level.'
                         : 'Review and save.'}</p>
                 </div>
-                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget"><span aria-hidden="true">×</span></button>
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body, budgetWizardStep === 4 ? reviewStyles.body : ''].join(' ')}>
@@ -4166,7 +4166,7 @@ export default function MyInvoicesClient({
                 <h2 id="delete-budget-title">Remove this spending budget?</h2>
                 <p id="delete-budget-description">This removes the limit and alerts. Cost records stay unchanged.</p>
               </div>
-              <button type="button" className={budgetModalStyles.close} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)} aria-label="Close delete budget confirmation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+              <button type="button" className={budgetModalStyles.close} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)} aria-label="Close delete budget confirmation" data-modal-close="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
             </div>
             <div className={`${styles.budgetDeleteSummary} ${budgetModalStyles.context}`}>
               <strong>{budgetDeleteCandidate.assetTitle}</strong>
@@ -4191,7 +4191,7 @@ export default function MyInvoicesClient({
                 <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
                 <p>Create a code for suppliers to upload invoices for your assets.</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
 
             <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
@@ -4413,7 +4413,7 @@ export default function MyInvoicesClient({
                 <h2 id="invoice-drop-asset-picker-title">Choose one asset</h2>
                 <p>Select the saved asset for this Invoice Drop code.</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropAssetPicker} aria-label="Close asset search"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropAssetPicker} aria-label="Close asset search" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.invoiceDropAssetPickerToolbar} data-asset-choice-toolbar="true">
@@ -4475,7 +4475,7 @@ export default function MyInvoicesClient({
                 <h2>Add asset cost</h2>
                 <p>Choose how to capture a cost for {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4539,7 +4539,7 @@ export default function MyInvoicesClient({
                   <h2 id="recurring-asset-picker-title">Choose Saved Assets</h2>
                   <p>Select every asset covered by this recurring cost.</p>
                 </div>
-                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeRecurringAssetPicker} aria-label="Back to recurring cost">
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeRecurringAssetPicker} aria-label="Back to recurring cost" data-modal-close="true">
                   <span aria-hidden="true">×</span>
                 </button>
               </div>
@@ -4628,7 +4628,7 @@ export default function MyInvoicesClient({
                       ? 'Add the cost and schedule.'
                       : 'Review and save.'}</p>
                 </div>
-                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost">
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost" data-modal-close="true">
                   <span aria-hidden="true">×</span>
                 </button>
               </div>
@@ -4964,7 +4964,7 @@ export default function MyInvoicesClient({
                 <h2>{flowTitle}</h2>
                 <p>{businessPickerOpen ? 'Select the business this cost belongs to.' : dealerMode ? pickerBusiness?.name : 'Select the saved asset this cost belongs to.'}</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
@@ -5048,7 +5048,7 @@ export default function MyInvoicesClient({
                 <h2>Upload invoice or photos</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'}</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting}><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
@@ -5108,7 +5108,7 @@ export default function MyInvoicesClient({
                     : captureMethodLabel(draft.source)}
                 </p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
@@ -5407,7 +5407,7 @@ export default function MyInvoicesClient({
           <div ref={manageCostRef} className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} role="dialog" aria-modal="true" aria-labelledby="manage-cost-title" aria-describedby="manage-cost-supplier" onClick={(event) => event.stopPropagation()}>
             <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
               <div className={registerStyles.modalHeaderText}><h2 id="manage-cost-title">Manage cost</h2><p id="manage-cost-supplier">{managedInvoice.supplierName || 'Unknown supplier'} · {formatMoney(managedInvoice.totalIncVat)}</p></div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeManageCost} aria-label="Close manage cost"><span aria-hidden="true">×</span></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeManageCost} aria-label="Close manage cost" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
             <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
@@ -5441,6 +5441,7 @@ export default function MyInvoicesClient({
                 onClick={closeDeleteInvoiceDialog}
                 aria-label="Close delete confirmation"
                 disabled={deletingInvoiceId === deleteCandidateInvoice.id}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>

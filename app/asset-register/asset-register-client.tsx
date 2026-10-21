@@ -15891,6 +15891,7 @@ export default function AssetRegisterClient({
                     onClick={closeChangeRegisterModal}
                     aria-label="Close change asset register modal"
                     disabled={Boolean(changingRegisterId)}
+                    data-modal-close="true"
                   >
                     ×
                   </button>
@@ -17481,6 +17482,7 @@ export default function AssetRegisterClient({
               className={styles.photoViewerCloseButton}
               onClick={closePhotoViewer}
               aria-label="Close photo viewer"
+              data-modal-close="true"
             >
               <CloseIcon className={styles.buttonIcon} />
             </button>
@@ -17597,6 +17599,7 @@ export default function AssetRegisterClient({
                 onClick={backFromShareModal}
                 aria-label="Back to previous share step"
                 disabled={isExporting || isSendingQuoteLead}
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -17716,6 +17719,7 @@ export default function AssetRegisterClient({
                   className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                   onClick={closeSummaryModal}
                   aria-label="Close register summary"
+                  data-modal-close="true"
                 >
                   ×
                 </button>
@@ -17849,6 +17853,7 @@ export default function AssetRegisterClient({
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAddAssetChoiceModal}
                 aria-label="Close add asset options"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -17882,7 +17887,7 @@ export default function AssetRegisterClient({
                 <h3 id="new-acquisition-title">Newly acquired asset?</h3>
                 <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Choose how this asset entered the register.</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question" data-modal-close="true">
                 ×
               </button>
             </div>
@@ -17986,6 +17991,7 @@ export default function AssetRegisterClient({
                 onClick={navigateBackFromAssetForm}
                 aria-label={assetUpdateMenuEnabled ? showAssetUpdateMenu ? 'Close update asset menu' : 'Back to update asset menu' : 'Close asset form'}
                 disabled={isAssetAutosaveBusy}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -18914,6 +18920,7 @@ export default function AssetRegisterClient({
                 onClick={closeAssetSettingsModal}
                 aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close advanced settings'}
                 disabled={isAssetSettingsBusy}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -19189,6 +19196,7 @@ export default function AssetRegisterClient({
                 onClick={cancelAim4priceUsageOverrideConfirmation}
                 aria-label="Close usage override confirmation"
                 disabled={isSavingAssetSettings}
+                data-modal-close="true"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -19236,6 +19244,7 @@ export default function AssetRegisterClient({
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={() => setIsManualConversionConfirmOpen(false)}
                 aria-label="Close conversion confirmation"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -19835,6 +19844,7 @@ export default function AssetRegisterClient({
                 className={styles.modalCloseButton}
                 onClick={closeReplacementPriceRevaluePrompt}
                 aria-label="Close replacement price recalculation confirmation"
+                data-modal-close="true"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -19876,6 +19886,7 @@ export default function AssetRegisterClient({
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeActionDialog}
                 aria-label="Close asset management"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -20058,6 +20069,7 @@ export default function AssetRegisterClient({
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={() => setOwnerAssetCommandPanel(null)}
                 aria-label="Close maintenance choices"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -20135,7 +20147,7 @@ export default function AssetRegisterClient({
                 <p>{activeAsset.title}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close Shared maintenance">
+              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close Shared maintenance" data-modal-close="true">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
@@ -20180,7 +20192,7 @@ export default function AssetRegisterClient({
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closePricingDialog} aria-label="Close pricing options">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closePricingDialog} aria-label="Close pricing options" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
@@ -20271,6 +20283,7 @@ export default function AssetRegisterClient({
                 onClick={closePricingPreviewDialog}
                 aria-label="Close value preview"
                 disabled={isSavingPricingPreview}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -20460,7 +20473,7 @@ export default function AssetRegisterClient({
                 <p>{isAttachingExternalReport ? 'Choose a report to attach.' : buildAssetMeta(reportAsset)}</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeAssetReportDialog} aria-label="Close report options">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeAssetReportDialog} aria-label="Close report options" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
@@ -20780,6 +20793,7 @@ export default function AssetRegisterClient({
                 onClick={closeDeleteConfirmDialog}
                 aria-label="Close delete confirmation"
                 disabled={busyDeleteId === deleteCandidateAsset.id}
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -20818,7 +20832,7 @@ export default function AssetRegisterClient({
                 <h3 id="bulk-finance-assets-title">Choose assets for bulk finance</h3>
                 <p>Select every asset covered by the same finance agreement.</p>
               </div>
-              <button type="button" className={styles.modalCloseButton} onClick={() => setBulkFinanceAssetPickerOpen(false)} aria-label="Close bulk finance asset picker">
+              <button type="button" className={styles.modalCloseButton} onClick={() => setBulkFinanceAssetPickerOpen(false)} aria-label="Close bulk finance asset picker" data-modal-close="true">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
@@ -20889,7 +20903,7 @@ export default function AssetRegisterClient({
                   <h2 id="disposal-title">Sell or remove this asset</h2>
                   <p>{disposalCandidateAsset.title}</p>
                 </div>
-                <button type="button" className={disposalStyles.closeButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id} aria-label="Close disposal details">
+                <button type="button" className={disposalStyles.closeButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id} aria-label="Close disposal details" data-modal-close="true">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
                 </button>
               </header>
@@ -20999,7 +21013,7 @@ export default function AssetRegisterClient({
                 <h3 id="asset-transfer-receipt-title">Asset ready to send</h3>
                 <p>Share both details with the {assetTransferReceipt.transferReason === 'traded_in' ? 'dealer' : 'buyer'}. The code works once and expires in 30 days.</p>
               </div>
-              <button type="button" className={styles.modalCloseButton} onClick={() => setAssetTransferReceipt(null)} aria-label="Close transfer details">
+              <button type="button" className={styles.modalCloseButton} onClick={() => setAssetTransferReceipt(null)} aria-label="Close transfer details" data-modal-close="true">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
@@ -21040,7 +21054,7 @@ export default function AssetRegisterClient({
                 <p>{isAttachingExternalReport ? 'Choose a report to attach.' : 'Choose which assets to include.'}</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeExportModal} aria-label="Close export options">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeExportModal} aria-label="Close export options" data-modal-close="true">
                 ×
               </button>
             </div>
@@ -21282,7 +21296,7 @@ export default function AssetRegisterClient({
                 <p>Check the listing title, asking price, photos and seller details before it goes live.</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeMarketplaceModal} aria-label="Close marketplace modal" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
@@ -21441,7 +21455,7 @@ export default function AssetRegisterClient({
                 <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeQrDialog} aria-label="Close QR code">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeQrDialog} aria-label="Close QR code" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </div>
@@ -21496,7 +21510,7 @@ export default function AssetRegisterClient({
                 <p>{projectionAsset.title}</p>
               </div>
 
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </div>

@@ -1513,7 +1513,7 @@ export default function MaintenanceClient({
           <section ref={manageRef} className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} role="dialog" aria-modal="true" aria-labelledby="maintenance-manage-title" onClick={(event) => event.stopPropagation()}>
             <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
               <div className={registerStyles.modalHeaderText}><h2 id="maintenance-manage-title">Manage maintenance</h2><p>{managedRecord.assetTitle}</p></div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance">×</button>
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance" data-modal-close="true">×</button>
             </header>
             <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
@@ -1537,7 +1537,7 @@ export default function MaintenanceClient({
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
                 <p>Choose a saved asset.</p>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close asset picker">
+              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close asset picker" data-modal-close="true">
                 <span aria-hidden="true">×</span>
               </button>
             </header>
@@ -1613,7 +1613,7 @@ export default function MaintenanceClient({
                 <h2 id="maintenance-trigger-title">Due by date or usage?</h2>
                 <p>{typeLabel(draft.maintenanceType)} · {selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection" data-modal-close="true">
                 <CloseIcon />
               </button>
             </header>
@@ -1648,7 +1648,7 @@ export default function MaintenanceClient({
                 <h2 id="maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
                 <p>{cleanMaintenanceAssetTitle(selectedDraftAsset?.title || selectedDraftRecord?.assetTitle || 'Selected asset')}</p>
               </div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance form">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance form" data-modal-close="true">
                 <CloseIcon />
               </button>
             </header>
@@ -1749,6 +1749,7 @@ export default function MaintenanceClient({
                 onClick={closeModal}
                 disabled={busyCompleteId === recordPendingQuickClear.id}
                 aria-label="Close maintenance completion confirmation"
+                data-modal-close="true"
               >
                 <span aria-hidden="true">×</span>
               </button>
@@ -1799,7 +1800,7 @@ export default function MaintenanceClient({
               <div>
                 <h2 id="maintenance-delete-title">Are you sure you want to delete this?</h2>
               </div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close delete confirmation">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close delete confirmation" data-modal-close="true">
                 <CloseIcon />
               </button>
             </header>

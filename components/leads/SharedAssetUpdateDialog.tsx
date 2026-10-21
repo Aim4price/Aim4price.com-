@@ -79,7 +79,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
   <section ref={dialog} tabIndex={-1} className={shell} role="dialog" aria-modal="true" aria-label={section==='menu'?'Update asset':title}>
    <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
     <div className={styles.modalHeaderText}><h3>{section==='menu'?'Update asset':title}</h3><p>{section==='menu'?title:section==='details'?'Details':section==='paperwork'?'Paperwork':'Documents'}</p></div>
-    <button type="button" className={`${account.modalCloseButton} ${account.passwordModalCloseButton}`} aria-label="Close action form" onClick={close} disabled={busy||changed||paperDirty}>×</button>
+    <button type="button" className={`${account.modalCloseButton} ${account.passwordModalCloseButton}`} aria-label="Close action form" onClick={close} disabled={busy||changed||paperDirty} data-modal-close="true">×</button>
    </div>
    <div className={`${styles.modalScrollBody} ${section==='menu'?styles.assetUpdateMenuBody:styles.manualStepScrollBody} ${local.body}`}>
     {error&&<p role="alert" className={local.error}>{error}</p>}

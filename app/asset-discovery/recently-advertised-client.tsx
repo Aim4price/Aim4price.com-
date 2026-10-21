@@ -1002,7 +1002,7 @@ export default function RecentlyAdvertisedClient({
                 </h3>
                 <p>They can reply using your saved contact details.</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setSourcingRequest(null)} aria-label="Close contact request confirmation">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setSourcingRequest(null)} aria-label="Close contact request confirmation" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>

@@ -480,6 +480,7 @@ export default function ValuationFlowPolish() {
             className={`${styles.familyModalClose} ${modalStyles.close}`}
             onClick={closeFamilyModal}
             aria-label="Close family selector"
+            data-modal-close="true"
           >
             <span aria-hidden="true">×</span>
           </button>

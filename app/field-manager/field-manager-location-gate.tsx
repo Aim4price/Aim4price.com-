@@ -110,7 +110,7 @@ export default function FieldManagerLocationGate({
       <section
         className={`${styles.locationGateCard} ${locationState === 'error' ? styles.locationGateCardError : ''}`}
       >
-        <div className={styles.locationGateHeader}>
+        <div className={styles.locationGateHeader} data-modal-close-row>
           <div className={styles.locationGateIcon} aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
               <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
@@ -120,6 +120,7 @@ export default function FieldManagerLocationGate({
           <div className={styles.locationGateCopy}>
             <h2 id="location-gate-title">Location required</h2>
           </div>
+          <button type="button" data-modal-close="true" aria-label="Cancel location request" onClick={onCancel} />
         </div>
 
         <p className={styles.locationGateAsset}>{assetTitle}</p>

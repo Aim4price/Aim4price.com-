@@ -112,6 +112,7 @@ export default function ContactSupportModal({ className }: { className?: string 
                 className={styles.modalCloseButton}
                 type="button"
                 onClick={() => setIsOpen(false)}
+                data-modal-close="true"
               >
                 ×
               </button>

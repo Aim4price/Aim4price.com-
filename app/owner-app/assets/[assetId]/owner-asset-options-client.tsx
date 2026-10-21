@@ -658,7 +658,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
                 <h2 id="owner-tracking-picker-title">Asset link settings</h2>
                 <p>{assetTitle}</p>
               </div>
-              <button type="button" onClick={cancelTrackingPermissions} aria-label="Close Asset link settings">×</button>
+              <button type="button" onClick={cancelTrackingPermissions} aria-label="Close Asset link settings" data-modal-close="true">×</button>
             </header>
             <div className={styles.ownerTrackingPickerBody}>
               <div className={styles.ownerTrackingPickerIntro}>

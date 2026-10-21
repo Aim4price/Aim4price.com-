@@ -340,7 +340,7 @@ export default function DealerMaintenanceReportModal({
             <h3 id="dealer-maintenance-report-title">{asset?.assetTitle || 'Maintenance report'}</h3>
             <p>{assetMeta}</p>
           </div>
-          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close maintenance report">
+          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close maintenance report" data-modal-close="true">
             <CloseIcon className={assetStyles.buttonIcon} />
           </button>
         </div>

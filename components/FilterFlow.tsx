@@ -60,7 +60,7 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
       }}>
         <header className={styles.header} data-asset-choice-header={assetPicker ? "true" : undefined}>
           <div><h2 id={titleId}>{assetPicker?.title || title}</h2>{assetPicker ? <p>Choose a saved asset, or include all assets.</p> : null}</div>
-          <button className={styles.close} type="button" onClick={onClose} aria-label="Close filters">×</button>
+          <button className={styles.close} type="button" onClick={onClose} aria-label="Close filters" data-modal-close="true">×</button>
         </header>
         <div className={assetPicker ? picker.contents : styles.body} ref={bodyRef} tabIndex={-1} key={currentStep}>
           {!assetPicker && !overview ? <p className={styles.progress}>Question {currentStep + 1} of {steps.length}</p> : null}

@@ -3000,6 +3000,7 @@ export default function AssetRegistersClient({
                 onClick={closeExportFlow}
                 disabled={isExporting}
                 aria-label={isSummaryFlow ? "Close summaries modal" : "Close download asset registers modal"}
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -3361,6 +3362,7 @@ export default function AssetRegistersClient({
                 onClick={closeManagePanel}
                 disabled={isSavingDetails || Boolean(movingAssetId)}
                 aria-label="Close manage asset register modal"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -3510,7 +3512,7 @@ export default function AssetRegistersClient({
             }}>
             <div className={styles.modalHeader}>
               <div><h2 id="move-register-title">Change Asset Register</h2><p className={styles.modalIntro}>{moveCandidate.title}</p></div>
-              <button type="button" className={styles.closeButton} onClick={closeMoveDialog} disabled={Boolean(movingAssetId)} aria-label="Close register selection">×</button>
+              <button type="button" className={styles.closeButton} onClick={closeMoveDialog} disabled={Boolean(movingAssetId)} aria-label="Close register selection" data-modal-close="true">×</button>
             </div>
             <div className={styles.moveDestinationBody}>
               <label className={styles.searchWrap}>
@@ -3565,6 +3567,7 @@ export default function AssetRegistersClient({
                 onClick={closeQrModal}
                 disabled={isGeneratingQrPdf}
                 aria-label="Close QR Codes modal"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -3724,6 +3727,7 @@ export default function AssetRegistersClient({
                 onClick={closeManagedEditModal}
                 disabled={isSavingDetails}
                 aria-label="Close edit asset register modal"
+                data-modal-close="true"
               >
                 ×
               </button>
@@ -3842,6 +3846,7 @@ export default function AssetRegistersClient({
               onClick={closeDeleteRegisterDialog}
               aria-label="Close delete confirmation"
               disabled={removingRegisterId === deleteCandidateRegister.id}
+              data-modal-close="true"
             >
               ×
             </button>

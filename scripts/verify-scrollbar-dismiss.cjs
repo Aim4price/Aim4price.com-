@@ -34,6 +34,9 @@ const source = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../lib/s
         });
         document.querySelector('#close').onclick = () => { window.cardClosed = true; };
       }, source);
+      // Native scrollbar hit testing uses the compositor's painted geometry.
+      // setContent/layout alone can finish before the first frame is presented.
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const points = await page.evaluate(() => {
         const el = document.querySelector('#scroller'), r = el.getBoundingClientRect();
         return { viewportX: innerWidth - 5, viewportY: innerHeight - 5,
@@ -41,15 +44,26 @@ const source = ts.transpileModule(fs.readFileSync(path.join(__dirname, '../lib/s
           gutter: el.offsetWidth - el.clientWidth };
       });
       assert(points.gutter > 4, 'fixture must have a real native scrollbar');
+      // Hold each native track press until it scrolls, then release. A zero-delay
+      // down/up can be coalesced before Chromium processes a native scrollbar.
+      async function pressTrack(x, y, hasScrolled) {
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+        try { await page.waitForFunction(hasScrolled, { timeout: 3000 }); }
+        finally {
+          await page.mouse.up();
+          // Let Chromium deliver the native release before another press.
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      }
       // Native track clicks must still scroll, and never dismiss the card.
-      await page.mouse.click(points.viewportX, 500);
+      await pressTrack(points.viewportX, 500, () => scrollY > 0);
       assert.equal(await page.evaluate(() => window.cardClosed), false);
-      await page.waitForFunction(() => scrollY > 0, { timeout: 3000 });
-      await page.mouse.click(700, points.viewportY);
+      await pressTrack(700, points.viewportY, () => scrollX > 0);
       assert.equal(await page.evaluate(() => window.cardClosed), false);
-      await page.waitForFunction(() => scrollX > 0, { timeout: 3000 });
-      await page.mouse.click(points.nestedX, points.nestedBottom);
+      await pressTrack(points.nestedX, points.nestedBottom, () => document.querySelector('#scroller').scrollTop > 0);
       assert.equal(await page.evaluate(() => window.cardClosed), false);
+      await page.evaluate(() => { document.querySelector('#scroller').scrollTop = 0; });
       await page.mouse.move(points.nestedX - 60, points.nestedY);
       await page.mouse.wheel({ deltaY: 200 });
       await page.waitForFunction(() => document.querySelector('#scroller').scrollTop > 0, { timeout: 3000 });

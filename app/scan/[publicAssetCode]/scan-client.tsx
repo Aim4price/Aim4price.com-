@@ -3313,7 +3313,10 @@ export default function ScanClient({
                   <div className={styles.locationPromptIcon} aria-hidden="true">
                     ⌖
                   </div>
-                  <h2 id="asset-location-title">Location{"\u00a0"}on</h2>
+                  <div data-modal-close-row>
+                    <h2 id="asset-location-title">Location{"\u00a0"}on</h2>
+                    <button type="button" data-modal-close="true" aria-label="Exit location request" onClick={() => window.location.assign("/")} />
+                  </div>
                   <p>
                     Every QR save stores a GPS point automatically. Allow
                     location access on this phone before saving updates.
@@ -3503,7 +3506,10 @@ export default function ScanClient({
             <div className={styles.locationReminderIcon}>
               <LocationIcon className={styles.locationReminderSvg} />
             </div>
-            <h3 id="location-reminder-title">Location{"\u00a0"}on</h3>
+            <div data-modal-close-row>
+              <h3 id="location-reminder-title">Location{"\u00a0"}on</h3>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setShowLocationReminder(false)} />
+            </div>
             <p>
               {isFieldManagerMode
                 ? "Every field update stores a GPS point automatically. Allow location access on this phone before saving updates."
@@ -3556,6 +3562,7 @@ export default function ScanClient({
                   className={styles.iconButton}
                   onClick={closeShareModal}
                   aria-label="Close dealer share"
+                  data-modal-close="true"
                 >
                   <CloseIcon className={styles.closeIcon} />
                 </button>
@@ -3883,6 +3890,7 @@ export default function ScanClient({
                     type="button"
                     onClick={cancelShareTrackingPermissions}
                     aria-label="Close Asset link settings"
+                    data-modal-close="true"
                   >
                     <CloseIcon className={styles.closeIcon} />
                   </button>
@@ -3931,6 +3939,7 @@ export default function ScanClient({
                 onClick={() => setScheduleChoiceOptions(null)}
                 aria-label="Return to maintenance form"
                 disabled={isSaving}
+                data-modal-close="true"
               >
                 <CloseIcon className={styles.closeIcon} />
               </button>
@@ -4025,6 +4034,7 @@ export default function ScanClient({
                   className={styles.iconButton}
                   onClick={closeEditor}
                   aria-label="Close editor"
+                  data-modal-close="true"
                 >
                   <CloseIcon className={styles.closeIcon} />
                 </button>

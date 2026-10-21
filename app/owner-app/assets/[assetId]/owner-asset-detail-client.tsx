@@ -985,7 +985,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <div className={styles.ownerPhotoViewer} role="dialog" aria-modal="true" aria-label={`${draft.title} photo viewer`}>
             <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
             <div className={styles.ownerPhotoViewerCard}>
-              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
+              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-modal-close="true">×</button>
               <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
                 onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
                 onDelete={async () => {
@@ -1209,7 +1209,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <div className={styles.ownerPhotoViewer} role="dialog" aria-modal="true" aria-label={`${draft.title} photo viewer`}>
             <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
             <div className={styles.ownerPhotoViewerCard}>
-              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
+              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-modal-close="true">×</button>
               <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
                 onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
                 onDelete={async () => {
@@ -1493,7 +1493,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <section className={`${styles.reportFilterModal} ${styles.transferReceiptModal}`}>
           <header className={styles.reportFilterModalHeader}>
             <div><h2 id="asset-transfer-ready-title">Asset ready to send</h2><p>Share both details below with the {transferReceipt.transferReason === 'traded_in' ? 'dealer' : 'buyer'}. The code works once and expires in 30 days.</p></div>
-            <button type="button" onClick={() => window.location.assign('/owner-app/assets')} aria-label="Close transfer details">×</button>
+            <button type="button" onClick={() => window.location.assign('/owner-app/assets')} aria-label="Close transfer details" data-modal-close="true">×</button>
           </header>
           <div className={styles.transferReceiptDetails}>
             <div><span>{transferReceipt.assetIdentifierLabel}</span><strong>{transferReceipt.assetIdentifier}</strong></div>

@@ -2018,6 +2018,7 @@ export default function AppHeader({
             className={styles.mobileMenuCloseButton}
             aria-label="Close navigation menu"
             onClick={closeMobileMenu}
+            data-modal-close="true"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />
@@ -2131,6 +2132,7 @@ export default function AppHeader({
                     className={inboxStyles.close}
                     aria-label="Close notifications"
                     onClick={() => setNotificationOpen(false)}
+                    data-modal-close="true"
                   >
                     ×
                   </button>
@@ -2298,7 +2300,7 @@ export default function AppHeader({
                     <h2 id="notification-error-title">Could not complete this action</h2>
                     <p>{notificationDetailError}</p>
                   </div>
-                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification error">
+                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification error" data-modal-close="true">
                     ×
                   </button>
                 </div>
@@ -2325,7 +2327,7 @@ export default function AppHeader({
                     <h2 id="notification-outcome-title">{notificationDetailOutcome.title}</h2>
                     <p>{notificationDetailOutcome.message}</p>
                   </div>
-                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification result">
+                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification result" data-modal-close="true">
                     ×
                   </button>
                 </div>
@@ -2357,7 +2359,7 @@ export default function AppHeader({
                   <h2 id="leave-account-title">Leave this account?</h2>
                   <p>{'Are you sure you want to leave this account? You will return to My Leads.'}</p>
                 </div>
-                <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account">
+                <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account" data-modal-close="true">
                   ×
                 </button>
               </div>

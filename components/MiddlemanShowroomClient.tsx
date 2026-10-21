@@ -620,7 +620,7 @@ export function MiddlemanShowroomManager({
           <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="create-advert-title" tabIndex={-1}>
             <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
               <div><h2 id="create-advert-title">Create advert</h2><p>Start with an estimate or an asset you already own.</p></div>
-              <button type="button" className={dialogStyles.close} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)}>×</button>
+              <button type="button" className={dialogStyles.close} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)} data-modal-close="true">×</button>
             </header>
             <div className={`${styles.listingManagerActions} ${styles.createAdvertActions}`}>
               <Link href={valuationHref}>
@@ -664,6 +664,7 @@ export function MiddlemanShowroomManager({
                 type="button"
                 onClick={() => setManageListingTarget(null)}
                 aria-label="Close advert manager"
+                data-modal-close="true"
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path d="m6 6 12 12M18 6 6 18" />
@@ -749,7 +750,10 @@ export function MiddlemanShowroomManager({
         <div className={styles.deleteBackdrop} data-website-overlay onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
           <section className={`${styles.deleteDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
             <span className={styles.deleteIcon}>!</span>
-            <h2 id="delete-showroom-title">Delete showroom?</h2>
+            <div data-modal-close-row>
+              <h2 id="delete-showroom-title">Delete showroom?</h2>
+              <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setDeleteDialogOpen(false)} disabled={deletingShowroom} />
+            </div>
             <p>This removes the public showroom. Advert history, valuations and assets stay saved.</p>
             <label>
               <span>Type DELETE to confirm</span>

@@ -515,7 +515,7 @@ function TransferModal({
             <h2 id={titleId}>{title}</h2>
             <p id={descriptionId}>{description}</p>
           </div>
-          <button ref={closeRef} type="button" className={styles.modalCloseButton} onClick={onClose} disabled={closeDisabled} aria-label="Close dialog">×</button>
+          <button ref={closeRef} type="button" className={styles.modalCloseButton} onClick={onClose} disabled={closeDisabled} aria-label="Close dialog" data-modal-close="true">×</button>
         </header>
         <div className={styles.modalBody}>{children}</div>
         {footer ? <footer className={styles.modalFooter}>{footer}</footer> : null}
