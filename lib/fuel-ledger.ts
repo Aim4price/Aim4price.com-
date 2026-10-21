@@ -3919,7 +3919,7 @@ export async function recordFuelAssetIssue(
       throw new Error(`Enter the current ${requestedUsageMetric === 'km' ? 'kilometre' : requestedUsageMetric === 'hours' ? 'hour' : 'percentage'} reading, or choose no meter reading.`);
     }
 
-    const currentUsageReading = normalizeUsageReading(assetRow.hours);
+    const currentUsageReading = normalizeUsageReading(asRecord(asRecord(assetRow.specs_json).trackingUsage).estimated ? asRecord(asRecord(assetRow.specs_json).trackingUsage).baselineValue : assetRow.hours);
     if (assetUsageReading !== null && currentUsageReading !== null && assetUsageReading < currentUsageReading) {
       throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
     }
@@ -3975,6 +3975,7 @@ export async function recordFuelAssetIssue(
       workUseExclusionReason: assetWorkUse.reason || null,
     });
 
+    if (assetUsageReading !== null) await client.query("SELECT set_config('aim4price.confirm_usage','on',true)");
     await client.query(
       `
         update public.asset_register_items
@@ -5392,7 +5393,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       // The activity is sufficient for operational capture. An unrecorded work
       // area stays blank; never substitute the supplier or require invented data.
 
-      const currentUsageReading = normalizeUsageReading(assetRow.hours);
+      const currentUsageReading = normalizeUsageReading(asRecord(asRecord(assetRow.specs_json).trackingUsage).estimated ? asRecord(asRecord(assetRow.specs_json).trackingUsage).baselineValue : assetRow.hours);
       if (updateAssetUsage && usageReading !== null && currentUsageReading !== null && usageReading < currentUsageReading) {
         throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
       }
@@ -5814,11 +5815,14 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         ? markFuelAssetValuationNeedsUpdate(fuelSlipSpecs, ['usage changed'])
         : fuelSlipSpecs;
 
+      if (updateAssetUsage && usageReading !== null) await client.query("SELECT set_config('aim4price.confirm_usage','on',true)");
       await client.query(
         `
           update public.asset_register_items
           set
             hours = case
+              when $6::boolean and $3::numeric is not null and specs_json->'trackingUsage'->>'estimated'='true'
+                then $3::numeric
               when $6::boolean and $3::numeric is not null
                 then greatest(coalesce(hours, $3::numeric), $3::numeric)
               else hours

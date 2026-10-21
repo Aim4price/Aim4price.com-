@@ -820,6 +820,7 @@ async function revalueTractorAsset(input: {
       expectedUpdatedAtIso: input.asset.updatedAtIso,
       saveReplacementPrice: input.saveReplacementPrice === true,
       allowUsageDecrease: input.allowUsageDecrease === true,
+      preserveUsageReading: input.usageAmountOverride === undefined && asRecord(input.asset.specsJson.trackingUsage).estimated === true,
     });
     return { saved, item };
   });
@@ -1012,6 +1013,7 @@ async function revalueGenericAsset(input: {
       expectedUpdatedAtIso: input.asset.updatedAtIso,
       saveReplacementPrice: input.saveReplacementPrice === true,
       allowUsageDecrease: input.allowUsageDecrease === true,
+      preserveUsageReading: input.usageAmountOverride === undefined && asRecord(input.asset.specsJson.trackingUsage).estimated === true,
     });
     return { saved, item };
   });

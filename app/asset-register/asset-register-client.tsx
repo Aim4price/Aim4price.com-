@@ -1,4 +1,6 @@
 'use client';
+
+import AssetTrackingUsage from '../../components/asset-register/AssetTrackingUsage';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
@@ -5076,7 +5078,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
     assetUsesPercentUsage(asset);
 
   if (asset.kind === 'vehicle') {
-    return hasHours ? `${Math.round(hours).toLocaleString('en-ZA')} km` : '—';
+    return hasHours ? `${hours.toLocaleString('en-ZA', {maximumFractionDigits: 1})} km${resolveAssetUsage(asset).estimated ? ' · Estimated' : ''}` : '—';
   }
 
   if (percent !== null && (usesPercentDepreciation || !hasHours)) {
@@ -5084,7 +5086,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
   }
 
   if (hasHours) {
-    return `${Math.round(hours).toLocaleString('en-ZA')} ${usageMetricLabel(usageMetric)}`;
+    return `${hours.toLocaleString('en-ZA', {maximumFractionDigits: 1})} ${usageMetricLabel(usageMetric)}${resolveAssetUsage(asset).estimated ? ' · Estimated' : ''}`;
   }
 
   if (percent !== null) {
@@ -19099,6 +19101,8 @@ export default function AssetRegisterClient({
                   </div>
                 </section>
               ) : null}
+
+              {assetSettingsView === 'usage' && <AssetTrackingUsage key={editingAsset.id} assetId={editingAsset.id}/>}
 
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>

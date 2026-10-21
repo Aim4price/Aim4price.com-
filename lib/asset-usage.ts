@@ -3,6 +3,7 @@ export type AssetUsageMetric = 'hours' | 'km' | 'percentage' | 'not_applicable';
 export type ResolvedAssetUsage = {
   value: number | null;
   metric: AssetUsageMetric;
+  estimated?: boolean;
 };
 
 type AssetUsageInput = {
@@ -196,7 +197,7 @@ function meterReading(input: AssetUsageInput, specs: Record<string, unknown>): n
   return candidates.find((value) => value > 0) ?? candidates[0] ?? null;
 }
 
-export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
+function resolveBaseAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
   const specs = asRecord(input.specsJson);
   const explicitBasis = explicitUsageBasis(specs);
   const percent = percentageReading(input, specs);
@@ -248,6 +249,13 @@ export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
   return { value: null, metric };
 }
 
+export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
+  const usage = resolveBaseAssetUsage(input);
+  const metadata = asRecord(asRecord(input.specsJson).trackingUsage);
+  return metadata.estimated === true && (usage.metric === 'hours' || usage.metric === 'km')
+    ? {...usage, estimated: true} : usage;
+}
+
 export function formatResolvedAssetUsage(
   usage: ResolvedAssetUsage,
   emptyLabel = 'Not captured',
@@ -260,7 +268,7 @@ export function formatResolvedAssetUsage(
   });
 
   if (usage.metric === 'percentage') return `${value}%`;
-  return `${value} ${usage.metric}`;
+  return `${value} ${usage.metric}${usage.estimated ? ' · Estimated' : ''}`;
 }
 
 
