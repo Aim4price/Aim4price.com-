@@ -5,10 +5,11 @@ import {websiteLogicalRect, websiteVisibleViewport} from '../lib/website-canvas'
 import styles from './valuation-result-tour.module.css';
 
 const steps = [
-  {target:'value', title:'Your estimated fair value', text:'This is the Aim4price fair-value estimate based on your asset details. It is a guide, not a guaranteed selling price.', action:'Value feel too high or too low? Check the replacement price, age, usage and condition before you save.'},
-  {target:'replacement', title:'Start with the right replacement price', text:'Use what a comparable new asset would cost today, with the correct VAT basis. This is the starting point for depreciation.', action:'After this guide, choose Adjust price if this amount needs correcting.'},
-  {target:'saleability', title:'Fair value and selling price can differ', text:'Buyer demand, time available to sell and selling circumstances affect the likely market price. Saleability estimates that effect separately from fair value.', action:'After this guide, choose Refine to explore your estimated selling price. The actual sale price may differ.'},
-  {target:'settings', title:'Check the details behind the value', text:'If the estimate feels wrong, review the inputs so they accurately reflect your asset.', action:'Use the steps above to edit age, usage or condition. Use Estimate settings to review the calculation assumptions.'},
+  {target:'value', title:'Your estimated fair value', text:'Aim4price uses your asset details to estimate fair value. Our goal is to help you reach the most applicable value for your asset.', action:'Does the value feel too high or too low? Start by checking the inputs. This estimate is not a guaranteed selling price.'},
+  {target:'replacement', title:'Start with the right replacement price', text:'What would a comparable new asset cost today? This amount is the starting point for depreciation, so use the correct price and VAT basis.', action:'Choose Adjust price after the walkthrough to correct it. Your replacement price directly affects the result.'},
+  {target:'saleability', title:'Fair value and selling price can differ', text:'Demand, selling method and time available can move the likely selling price above or below fair value. Saleability considers these circumstances separately.', action:'Open Saleability to explore a market estimate. Your Aim4price fair value stays unchanged, and the actual sale price may differ.'},
+  {target:'details', title:'Make the details match your asset', text:'Check the year, usage, condition and popularity. Accurate details help the estimate reflect the asset you actually own.', action:'If something is incorrect, use the steps above to edit it and calculate again. Change inputs to reflect the asset, rather than a preferred price.'},
+  {target:'assumptions', title:'Review advanced assumptions', text:'Assets do not all have the same working life. Where available, review total expected lifetime in hours or kilometres and the other valuation assumptions.', action:'Adjust only what you can support, then recalculate. Together, accurate details, replacement price and realistic assumptions help you reach the most applicable value.'},
 ];
 type Box = {top:number; left:number; width:number; height:number};
 
@@ -34,8 +35,8 @@ export default function ValuationResultTour() {
   function start() {
     const visible = steps.filter(step => document.querySelector<HTMLElement>(`[data-value-tour="${step.target}"]`)?.getClientRects().length);
     if (!visible.length) return;
-    const tailored=visible.map(step => step.target==='settings' && document.querySelector('[data-value-tour="settings"][data-value-tour-readonly="true"]')
-      ? {...step, title:'Check your asset details', action:'After this guide, use the steps above to correct the year, usage or condition. Then calculate your estimate again.'}
+    const tailored=visible.map(step => step.target==='assumptions' && document.querySelector('[data-value-tour="assumptions"][data-value-tour-readonly="true"]')
+      ? {...step, action:'Editing advanced assumptions requires an active Aim4price account. You can still correct your asset details and replacement price to improve this estimate.'}
       : step);
     setAvailable(tailored); setIndex(0); setBox(null); setActive(true);
   }
@@ -111,7 +112,7 @@ export default function ValuationResultTour() {
       {active ? <>
         <div className={styles.spotlight} style={box ?? {inset:0}} aria-hidden="true"/>
         <div ref={card} className={styles.card} style={position}>
-          <div className={styles.top}><span>{index+1} of {available.length}</span><span>Quick guide</span></div>
+          <div className={styles.top}><span>{index+1} of {available.length}</span></div>
           <h2 id="value-tour-title">{available[index].title}</h2>
           <div id="value-tour-description" aria-live="polite"><p>{available[index].text}</p><p className={styles.hint}>{available[index].action}</p></div>
           <div className={styles.actions}>
