@@ -27,10 +27,10 @@ export async function trackingUsageStatus(client: Pick<PoolClient, 'query'>, own
    WHERE a.id=$1 AND a.user_id=$2`, [assetId, ownerId])).rows[0];
   if (!row) throw Error('ASSET_UNAVAILABLE');
   const usage = resolveAssetUsage({hours: row.hours, kind: row.kind, specsJson: row.specs_json});
-  const estimated = row.specs_json?.trackingUsage?.estimated === true;
+  const estimated = usage.estimated === true;
   return {enabled: row.enabled === true && row.metric === usage.metric, metric: usage.metric, reading: usage.value, estimated,
-    baselineValue: row.baseline_value == null ? null : Number(row.baseline_value),
-    baselineAt: row.baseline_at ? iso(row.baseline_at) : null,
+    baselineValue: row.metric !== usage.metric || row.baseline_value == null ? null : Number(row.baseline_value),
+    baselineAt: row.metric === usage.metric && row.baseline_at ? iso(row.baseline_at) : null,
     lastTrackedAt: row.last_tracked_at ? iso(row.last_tracked_at) : null};
 }
 

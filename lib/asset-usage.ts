@@ -252,7 +252,7 @@ function resolveBaseAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
 export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
   const usage = resolveBaseAssetUsage(input);
   const metadata = asRecord(asRecord(input.specsJson).trackingUsage);
-  return metadata.estimated === true && (usage.metric === 'hours' || usage.metric === 'km')
+  return metadata.estimated === true && metadata.metric === usage.metric && (usage.metric === 'hours' || usage.metric === 'km')
     ? {...usage, estimated: true} : usage;
 }
 

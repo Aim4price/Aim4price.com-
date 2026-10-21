@@ -36,7 +36,7 @@ BEGIN
   CASE WHEN OLD.specs_json ? 'trackingUsage' THEN jsonb_build_object('trackingUsage',OLD.specs_json->'trackingUsage') ELSE '{}'::jsonb END;
  IF NEW.user_id IS DISTINCT FROM OLD.user_id THEN
   UPDATE public.asset_tracking_usage SET enabled=false WHERE asset_id=NEW.id;
-  NEW.specs_json:=NEW.specs_json-'trackingUsage';
+  -- Keep the estimate label with the asset; the new owner must opt in again.
   RETURN NEW;
  END IF;
  IF NEW.hours IS DISTINCT FROM OLD.hours OR confirm_reading THEN
