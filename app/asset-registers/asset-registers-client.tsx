@@ -3469,7 +3469,10 @@ export default function AssetRegistersClient({
                           </small>
                           <AssetPickerDetail>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</AssetPickerDetail>
                           <AssetSerialNumber value={asset.serialNumber} />
-                          {isManagingCombined ? <small className={styles.assetChoiceRegister}>{asset.registerName || managedRegister.businessName}</small> : null}
+                          {isManagingCombined ? <small className={styles.assetChoiceRegister}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="3" width="15" height="18" rx="2" /><path d="M5 7H3m2 5H3m2 5H3M9 7h7m-7 5h7m-7 5h4" /></svg>
+                            <span>{asset.registerName || managedRegister.businessName}</span>
+                          </small> : null}
                         </span>
                         <ShareNextIcon />
                       </button>
