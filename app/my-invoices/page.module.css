@@ -7260,3 +7260,110 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   border-color: var(--app-line, #b6d9c9);
   background: var(--app-surface-soft, #edf8f1);
 }
+
+/* Manual cost entry: shared proportions for invoice and work details. */
+.accountCostModal.manualCostWizardModal.polishedCostEntry {
+  width: min(1320px, var(--website-dialog-reference-width, 100%)) !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .manualCostWizardPanel {
+  padding: 1.15rem !important;
+  gap: 1.1rem !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .manualCostInvoiceGrid,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .textAreaGrid {
+  gap: 1.25rem 1.65rem !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .textAreaGrid > label {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry :is(.formGrid, .textAreaGrid) > label > span:first-child,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .costUsageMetricField > span {
+  color: var(--app-text, #234b3d) !important;
+  font-size: .95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  text-transform: none;
+}
+.costEntryInput { position: relative; display: block; min-width: 0; }
+.costEntryIcon {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 1rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--app-muted, #739083);
+  pointer-events: none;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .costEntryInput > :is(input, textarea) {
+  width: 100%;
+  padding-inline-start: 3.1rem !important;
+  background: var(--app-surface-soft, #edf5f0) !important;
+  border-color: var(--app-line, #d4e2da) !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .costEntryInput > textarea {
+  min-height: 5.5rem !important;
+  height: 5.5rem;
+  padding-top: .9rem;
+  padding-bottom: .9rem;
+  border-radius: .95rem;
+  color: var(--app-text, #234b3d);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+  resize: vertical;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .customFilterSelectButtonText {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  font-size: 1rem;
+}
+.manualCostAttachment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 4rem;
+  padding: .8rem 1.2rem;
+  border: 1px dashed var(--app-accent, #87baa5);
+  border-radius: .9rem;
+  color: var(--app-text, #345c4b);
+  background: var(--app-surface-soft, #eff7f2);
+  cursor: pointer;
+}
+.manualCostAttachment > svg { flex: 0 0 1.6rem; width: 1.6rem; height: 1.6rem; color: var(--app-accent, #28765a); }
+.manualCostAttachment > span { flex: 1; min-width: 0; font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.manualCostAttachment strong { display: block; font-weight: 650; }
+.manualCostAttachment small { color: var(--app-muted, #647c70); font-size: .85rem; }
+.manualCostAttachment > input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: inherit; }
+.manualCostAttachment:focus-within,
+.manualCostAttachment[data-dragging='true'] { outline: 2px solid var(--app-accent, #28765a); outline-offset: 3px; }
+.manualCostAttachment[data-disabled='true'] { opacity: .6; cursor: wait; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .polishedCostEntry .textAreaGrid { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostAttachment { gap: .65rem; padding: .8rem; }
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .formGrid input,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .customFilterSelectButton,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .invoiceCurrencyInput,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .costEntryInput > textarea {
+  border: 1px solid var(--app-line, #d4e2da) !important;
+  background: var(--app-surface-soft, #edf5f0) !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .formGrid input,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .customFilterSelectButton,
+.accountCostModal.manualCostWizardModal.polishedCostEntry .invoiceCurrencyInput {
+  min-height: 3.4rem !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .invoiceCurrencyInput input {
+  min-height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry :is(input, textarea)::placeholder {
+  color: var(--app-muted, #637d71) !important;
+  font-weight: 400 !important;
+}
