@@ -457,6 +457,15 @@ function ContributionIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function AssetFolderIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2" />
+      <path d="M3 7h6l2 3h10l-3 10H3z" />
+    </IconBase>
+  );
+}
+
 function ShieldCheckIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -4188,8 +4197,8 @@ export default function MyInvoicesClient({
           <div className={`${styles.invoiceDropCodeModal} ${wizardStyles.dialog} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
-                <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
-                <p>Create a code for suppliers to upload invoices for your assets.</p>
+                <h2 id="invoice-drop-code-title">Invoice Drop</h2>
+                <p>Create a code your suppliers can use to upload invoices.</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
@@ -4197,12 +4206,12 @@ export default function MyInvoicesClient({
             <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
 
               {invoiceDropWizardStep === 1 ? (
-                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-scope-title">
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${styles.invoiceDropScopePanel}`} aria-labelledby="invoice-drop-scope-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
-                    <h3 id="invoice-drop-scope-title">Where should invoices go?</h3>
+                    <h3 id="invoice-drop-scope-title">What should this code cover?</h3>
                   </div>
-                  <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-label="Invoice route">
+                  <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-labelledby="invoice-drop-scope-title">
                     <button
                       type="button"
                       role="radio"
@@ -4210,9 +4219,10 @@ export default function MyInvoicesClient({
                       className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'all' ? styles.invoiceDropScopeOptionActive : ''}`}
                       onClick={() => selectInvoiceDropScope('all')}
                     >
-                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ContributionIcon /></span>
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><AssetFolderIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
                         <strong>All assets</strong>
+                        <small>One code for invoices across your assets.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
                     </button>
@@ -4223,16 +4233,17 @@ export default function MyInvoicesClient({
                       className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'asset' ? styles.invoiceDropScopeOptionActive : ''}`}
                       onClick={() => selectInvoiceDropScope('asset')}
                     >
-                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><LedgerIcon /></span>
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ReportFileIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
-                        <strong>Specific asset</strong>
+                        <strong>One specific asset</strong>
+                        <small>A code linked to a single asset.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
                     </button>
                   </div>
                   <div className={styles.invoiceDropPrivacyRow}>
                     <ShieldCheckIcon />
-                    <span>Invoice uploads only. No asset access.</span>
+                    <span>Suppliers can upload invoices only. No access to your asset records.</span>
                   </div>
                 </section>
               ) : null}

@@ -62,10 +62,10 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
   assert.match(ledger, /type InvoiceDropWizardStep = 1 \| 2 \| 3/);
   assert.match(ledger, /useState<InvoiceDropWizardStep>\(1\)/);
   assert.doesNotMatch(ledger, /\[\['Access', 1\], \['Routing', 2\], \['Code', 3\]\]/);
-  assert.match(ledger, /invoiceDropWizardStep === 1[\s\S]*?Where should invoices go\?/);
+  assert.match(ledger, /invoiceDropWizardStep === 1[\s\S]*?What should this code cover\?/);
   assert.match(ledger, /Invoice uploads only\. No asset access\./);
   assert.match(ledger, /<strong>All assets<\/strong>/);
-  assert.match(ledger, /<strong>One asset<\/strong>/);
+  assert.match(ledger, /<strong>One specific asset<\/strong>/);
   assert.match(ledger, /selectInvoiceDropScope\('all'\)/);
   assert.match(ledger, /selectInvoiceDropScope\('asset'\)/);
   assert.match(ledger, /invoiceDropWizardStep === 2[\s\S]*?Choose an asset/);
