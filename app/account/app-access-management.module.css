@@ -1315,3 +1315,36 @@
   :global(:where(html:not(:has([data-website-canvas])))) .loginEditActions > button:first-child { width: 100%; margin-right: 0; }
   :global(:where(html:not(:has([data-website-canvas])))) .loginEditActions > button:not(:first-child) { flex: 1; }
 }
+
+/* Login editing keeps identity fields together and actions outside the scroller. */
+.compactEditorModal .modalHeader { padding-bottom: 1rem; }
+.compactEditorModal .modalBody { padding-top: 1rem; padding-bottom: 1.25rem; }
+.editorToolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.editorToolbar .modalBackButton { margin: 0; padding: .55rem .8rem; min-height: 2.5rem; font-size: .9rem; }
+.compactEditorModal .editorCard { padding: 0 !important; border: 0; background: transparent; box-shadow: none; }
+.compactEditorModal .editorCard > div { margin-top: 0; border-top: 0; padding-top: 0; }
+.compactEditorModal .loginEditForm { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem 1.25rem; margin: 0; }
+.passcodeDisclosure { border: 1px solid var(--app-line, #dae5df); border-radius: .85rem; padding: 0 1rem; }
+.passcodeDisclosure summary { display: flex; align-items: center; gap: .7rem; padding: .85rem 0; cursor: pointer; color: var(--app-text, #174e3d); font-weight: 650; list-style: none; }
+.passcodeDisclosure summary::-webkit-details-marker { display: none; }
+.passcodeDisclosure summary > span { margin-left: auto; font-size: 1.3rem; }
+.passcodeDisclosure[open] summary > span { transform: rotate(45deg); }
+.passcodeDisclosure > div { padding-bottom: 1rem; }
+.passcodeDisclosure summary:focus-visible { outline: 2px solid var(--app-accent, #19865d); outline-offset: 3px; border-radius: .5rem; }
+.editorDates { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-top: 1rem; font-size: .78rem; color: var(--app-muted, #687a72); }
+.editorDates > span { display: inline-flex; align-items: center; gap: .5rem; }
+.editorDates svg { width: 1rem; height: 1rem; }
+.editorFooter { flex: 0 0 auto; padding: 1rem 2rem; border-top: 1px solid var(--app-line, #e0e6e3); background: var(--app-surface, #fff); }
+.editorFooter .editorFooterActions { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem; margin: 0; padding: 0; border: 0; }
+.editorFooterActions > button { min-height: 2.9rem; padding: .65rem 1rem; border-radius: .7rem; }
+.editorFooterActions > button:first-child { order: 3; margin-left: auto; min-width: 10rem; }
+.deactivateLoginButton { border: 1px solid var(--app-line, #d7e2dc); background: var(--app-surface, #fff); color: var(--app-muted, #596e63); font: inherit; font-weight: 650; cursor: pointer; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .compactEditorModal .loginEditForm { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .editorFooter { padding: .85rem 1.1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .editorFooterActions > button:first-child { min-width: 0; }
+}
+
+.compactEditorModal { grid-template-rows: auto minmax(0, 1fr) auto; }
+.editorToolbar { margin-bottom: 1rem; }
+.editorFooter .editorFooterActions > button:first-child { background: var(--app-accent, #175b45); color: var(--app-on-accent, #fff); border: 1px solid var(--app-accent, #175b45); }
