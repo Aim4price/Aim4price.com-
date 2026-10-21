@@ -6,10 +6,9 @@ import registerStyles from '../../app/asset-register/page.module.css';
 import accountStyles from '../../app/account/page.module.css';
 
 type Option={value:string;label:string;description?:string};
-export default function AddAssetRegisterPicker({options,targetId,onSelect,onClose,onContinue,onCreate,busy}:{options:Option[];targetId:string;onSelect:(id:string)=>void;onClose:()=>void;onContinue:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
+export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreate,busy}:{options:Option[];onSelect:(id:string)=>void;onClose:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
  const id=useId(),dialog=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null);
  const [search,setSearch]=useState(''),[creating,setCreating]=useState(false),[draft,setDraft]=useState<RegisterDetailsDraft>({businessName:'',email:'',phone:'',addressLine1:''}),[error,setError]=useState('');
- const selected=options.find(option=>option.value===targetId);
  const visible=options.filter(option=>`${option.label} ${option.description||''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
  useEffect(()=>{const previous=document.activeElement as HTMLElement|null;return()=>{if(previous?.isConnected)previous.focus();};},[]);
  useEffect(()=>{input.current?.focus();},[creating]);
@@ -35,14 +34,13 @@ export default function AddAssetRegisterPicker({options,targetId,onSelect,onClos
      <span>Add Register</span>
     </button>
    </div>
-   <div className={`${registerStyles.changeRegisterList} ${styles.options}`} role="group" aria-label="Available asset registers">
-    {visible.map(option=><button key={option.value} type="button" className={`${registerStyles.changeRegisterCard} ${targetId===option.value?registerStyles.changeRegisterCardActive:''}`} disabled={busy} aria-pressed={targetId===option.value} onClick={()=>onSelect(option.value)}>
+   <div className={registerStyles.changeRegisterList} role="group" aria-label="Available asset registers">
+    {visible.map(option=><button key={option.value} type="button" className={registerStyles.changeRegisterCard} disabled={busy} onClick={()=>onSelect(option.value)}>
      <span className={registerStyles.changeRegisterCardText}><strong>{option.label}</strong><small>{option.description}</small></span>
-     <span className={registerStyles.changeRegisterCardAction} aria-hidden="true">{targetId===option.value?'Selected':'Select'}</span>
+     <span className={registerStyles.changeRegisterCardAction} aria-hidden="true">Select</span>
     </button>)}
     {!visible.length?<div className={registerStyles.changeRegisterEmptyState}>{search?'No registers match your search.':'Add your first register to continue.'}</div>:null}
    </div>
-   <footer className={styles.footer}><div className={styles.confirmation} aria-live="polite">{selected?<><span>Selected asset register</span><strong>{selected.label}</strong></>:<span>Select a register to continue.</span>}</div><div className={styles.actions}><button type="button" onClick={onClose} disabled={busy}>Cancel</button><button type="button" className={styles.primary} disabled={busy||!selected} onClick={onContinue}>Continue</button></div></footer>
   </div>
  </div>;
 }
