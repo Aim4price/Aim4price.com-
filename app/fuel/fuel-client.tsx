@@ -566,6 +566,20 @@ function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
 }
 
+function StorageFieldIcon({ kind }: { kind: 'name' | 'fuel' | 'capacity' | 'stock' | 'reorder' | 'location' | 'pin' | 'notes' }) {
+  const paths = {
+    name: <><ellipse cx="12" cy="5" rx="7" ry="3" /><path d="M5 5v14c0 4 14 4 14 0V5M5 12c0 4 14 4 14 0" /></>,
+    fuel: <path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12ZM9 15a3 3 0 0 0 3 3" />,
+    capacity: <><rect x="6" y="3" width="12" height="18" rx="2" /><path d="M6 7h5M6 12h4M6 17h5" /></>,
+    stock: <><path d="M5 3v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3M5 12c3-3 11 3 14 0" /><path d="M9 16h6" /></>,
+    reorder: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></>,
+    location: <><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></>,
+    pin: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
+    notes: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></>,
+  };
+  return <IconBase className={styles.storageFieldIcon} strokeWidth="1.7">{paths[kind]}</IconBase>;
+}
+
 function FuelSlipDetailIcon({kind}: {kind: 'target' | 'card' | 'work' | 'updated' | 'reference' | 'transaction'}) {
   const paths = {
     target: <><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M9 6V3h6v3M8 11h8M8 15h5"/></>,
@@ -928,6 +942,7 @@ function StorageFuelTypeSelect({ value, isOpen, onToggle, onChange }: StorageFue
   return (
     <div className={`${styles.storageFuelTypeSelect} ${isOpen ? styles.storageFuelTypeSelectOpen : ''}`} data-storage-fuel-select-root="true">
       <button type="button" className={styles.storageFuelTypeButton} onClick={onToggle} aria-haspopup="listbox" aria-expanded={isOpen} aria-label="Select fuel type">
+        <StorageFieldIcon kind="fuel" />
         <span>{selectedOption?.label ?? formatFuelType(value)}</span>
         <ChevronDownIcon className={styles.storageFuelTypeChevron} />
       </button>
@@ -4513,49 +4528,71 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'create-storage' || modalMode === 'edit-storage' ? (
-        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true">
-          <form className={`${styles.modalCard} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={handleStorageSubmit}>
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="storage-editor-title" aria-describedby="storage-editor-description">
+          <form className={`${styles.modalCard} ${styles.accountFuelModal} ${styles.storageEditor} ${accountStyles.modalTheme}`} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
+                <h2 id="storage-editor-title">{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
+                <p id="storage-editor-description">{modalMode === 'create-storage' ? 'Set up your storage details, fuel levels and QR access.' : 'Update your storage details and fuel levels.'}</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} data-modal-close="true" aria-label="Close dialog"><span aria-hidden="true">×</span></button>
             </div>
 
-            <div className={styles.formGrid}>
+            <div className={`${styles.formGrid} ${styles.storageEditorGrid}`}>
               <label className={styles.storageNameField}>
                 Storage name
-                <input value={storageDraft.name} onChange={(event) => setStorageDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Main diesel tank" required />
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="name" />
+                  <input value={storageDraft.name} onChange={(event) => setStorageDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Main diesel tank" required />
+                </span>
               </label>
               <div className={styles.storageFuelTypeField}>
                 <span>Fuel type</span>
                 <StorageFuelTypeSelect value={storageDraft.fuelType} isOpen={isStorageFuelSelectOpen} onToggle={toggleStorageFuelSelect} onChange={selectStorageFuelType} />
               </div>
-              <label>
-                Capacity litres
-                <input type="number" min="0" step="0.01" value={storageDraft.capacityLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, capacityLitres: event.target.value }))} placeholder="10000" />
-              </label>
-              <label>
-                Current litres
-                <input type="number" min="0" step="0.01" value={storageDraft.currentLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, currentLitres: event.target.value }))} placeholder="6500" />
-              </label>
-              <label>
-                Reorder level
-                <input type="number" min="0" step="0.01" value={storageDraft.reorderLevelLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, reorderLevelLitres: event.target.value }))} placeholder="1500" />
-              </label>
-              <label className={styles.locationLabelField}>
-                Location label
-                <input value={storageDraft.locationLabel} onChange={(event) => setStorageDraft((current) => ({ ...current, locationLabel: event.target.value }))} placeholder="Yard / Workshop / Farm 1" />
+              <label className={`${styles.locationLabelField} ${modalMode === 'edit-storage' ? styles.fullField : ''}`}>
+                Location
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="location" />
+                  <input value={storageDraft.locationLabel} onChange={(event) => setStorageDraft((current) => ({ ...current, locationLabel: event.target.value }))} placeholder="Yard / Workshop / Farm 1" />
+                </span>
               </label>
               {modalMode === 'create-storage' ? (
                 <label>
                   QR PIN
-                  <input value={storageDraft.pin} onChange={(event) => setStorageDraft((current) => ({ ...current, pin: event.target.value }))} placeholder="4 to 8 digits" inputMode="numeric" required />
+                  <span className={styles.storageInput}>
+                    <StorageFieldIcon kind="pin" />
+                    <input value={storageDraft.pin} onChange={(event) => setStorageDraft((current) => ({ ...current, pin: event.target.value }))} placeholder="4 to 8 digits" inputMode="numeric" required />
+                  </span>
                 </label>
               ) : null}
+              <label className={styles.storageAmountField}>
+                Capacity (litres)
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="capacity" />
+                  <input type="number" min="0" step="0.01" value={storageDraft.capacityLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, capacityLitres: event.target.value }))} placeholder="10000" />
+                </span>
+              </label>
+              <label className={styles.storageAmountField}>
+                Current stock (litres)
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="stock" />
+                  <input type="number" min="0" step="0.01" value={storageDraft.currentLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, currentLitres: event.target.value }))} placeholder="6500" />
+                </span>
+              </label>
+              <label className={styles.storageAmountField}>
+                Reorder at (litres)
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="reorder" />
+                  <input type="number" min="0" step="0.01" value={storageDraft.reorderLevelLitres} onChange={(event) => setStorageDraft((current) => ({ ...current, reorderLevelLitres: event.target.value }))} placeholder="1500" />
+                </span>
+              </label>
               <label className={styles.fullField}>
-                Notes
-                <textarea value={storageDraft.notes} onChange={(event) => setStorageDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional storage notes" rows={2} />
+                Notes (optional)
+                <span className={styles.storageInput}>
+                  <StorageFieldIcon kind="notes" />
+                  <textarea value={storageDraft.notes} onChange={(event) => setStorageDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional storage notes" rows={2} />
+                </span>
               </label>
             </div>
 
