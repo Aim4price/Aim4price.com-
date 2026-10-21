@@ -1718,14 +1718,16 @@
   accent-color: var(--app-danger, #ae302a);
 }
 
-/* Grouped assets keep their value switch inside the selected card. */
+/* Grouped assets keep their value switch inside the selected card.
+   Apply hover/focus to the complete card, including its value control. */
 .pickerAssetItemSelected {
   border: 1px solid var(--app-accent, #80b9a4);
   border-radius: 1rem;
-  background: var(--app-success-soft, #f0f8f4);
-  box-shadow: inset 0 0 0 1px var(--app-success-line, #bad9cb);
+  background: var(--app-surface-soft, #f0f8f4);
+  box-shadow: inset 0 0 0 1px var(--app-line, #bad9cb);
 }
-.assetPickerModal.assetPickerModal.assetPickerModal .pickerAssetItemSelected > .assetRowMain[data-asset-choice-row] {
+.assetPickerModal.assetPickerModal.assetPickerModal[data-asset-choice-modal] .pickerAssetItemSelected > .assetRowMain[data-asset-choice-row],
+.assetPickerModal.assetPickerModal.assetPickerModal[data-asset-choice-modal] .pickerAssetItemSelected > .assetRowMain[data-asset-choice-row]:hover:not(:disabled) {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -1738,7 +1740,7 @@
   gap: .8rem;
   margin: 0 1.1rem;
   padding: .9rem 0 1rem;
-  border-top: 1px solid var(--app-success-line, #d3e4db);
+  border-top: 1px solid var(--app-line, #d3e4db);
   cursor: pointer;
 }
 .totalSwitchIcon { width: 1.25rem; height: 1.25rem; color: var(--app-muted, #70897d); }
@@ -1747,11 +1749,27 @@
 .totalSwitchCopy small { color: var(--app-muted, #637a6e); font-size: .82rem; line-height: 1.45; }
 .totalSwitchRow input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .totalSwitchTrack { display: block; width: 3rem; height: 1.75rem; padding: .2rem; box-sizing: border-box; border-radius: 999px; background: var(--app-muted, #8b9b94); transition: background 150ms ease; }
-.totalSwitchTrack::after { content: ''; display: block; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform 150ms ease; }
+.totalSwitchTrack::after { content: ''; display: block; width: 1.35rem; height: 1.35rem; border-radius: 50%; background: var(--app-surface, #fff); box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: transform 150ms ease; }
 .totalSwitchRow input:checked + .totalSwitchTrack { background: var(--app-accent, #17634a); }
 .totalSwitchRow input:checked + .totalSwitchTrack::after { transform: translateX(1.25rem); }
 .totalSwitchRow input:focus-visible + .totalSwitchTrack { outline: 3px solid var(--app-accent, #17634a); outline-offset: 4px; }
 .totalSwitchRow:has(input:disabled) { cursor: default; opacity: .6; }
 @media (prefers-reduced-motion: reduce) {
   .totalSwitchTrack, .totalSwitchTrack::after { transition: none; }
+}
+
+.pickerAssetItemSelected:hover,
+.pickerAssetItemSelected:focus-within {
+  box-shadow: var(--action-hover-shadow, 0 0 0 3px #c1e2d1);
+}
+.assetPickerModal.assetPickerModal.assetPickerModal .pickerAssetItemSelected > .assetRowMain[data-asset-choice-row]:focus-within {
+  outline: none;
+}
+@media (max-width: 480px) {
+  .totalSwitchRow {
+    grid-template-columns: 1rem minmax(0, 1fr) auto;
+    gap: .6rem;
+    margin-inline: .85rem;
+  }
+  .totalSwitchIcon { width: 1rem; height: 1rem; }
 }
