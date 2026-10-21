@@ -51,7 +51,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try{
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewport({width:1366,height:768});
- await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#edf4ef;font-family:Arial}main{max-width:850px;margin:24px auto}section{background:white;border-radius:18px;margin:16px 0;padding:24px;min-height:140px}'+sheets.join('\n')+'</style><main><div id="app"></div><section data-value-tour="value"><h2>Estimated asset value</h2><h1>R 459 000</h1></section><section data-value-tour="replacement"><h2>Replacement price</h2>R 1 080 000</section><section data-value-tour="saleability"><h2>How easily could it sell?</h2>Refine Saleability</section><section data-value-tour="settings"><h2>Valuation settings</h2>Review usage and condition</section></main>');
+ await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#edf4ef;font-family:Arial}main{max-width:850px;margin:24px auto}section{background:white;border-radius:18px;margin:16px 0;padding:24px;min-height:140px}'+sheets.join('\n')+'</style><main><div id="app"></div><section data-value-tour="value"><h2>Estimated asset value</h2><h1>R 459 000</h1></section><section data-value-tour="replacement"><h2>Replacement price</h2>R 1 080 000</section><section data-value-tour="saleability"><h2>How easily could it sell?</h2>Refine Saleability</section><section data-value-tour="details"><h2>Asset details</h2>Review usage and condition</section><section data-value-tour="assumptions"><h2>Advanced assumptions</h2>Expected lifetime</section></main>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+"window.root=ReactDOM.createRoot(document.getElementById('app'));window.root.render(React.createElement(require('components/ValuationResultTour').default));"});
  const click=async text=>{await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(n=>n.textContent.trim()===t).click(),text)};
@@ -65,7 +65,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Start with the right replacement price');
  await click('Back');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Your estimated fair value');
  await click('Next');await click('Next');await click('Next');
- await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check the details behind the value');
+ await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Make the details match your asset');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Review advanced assumptions');
+ assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('5 of 5') && !document.querySelector('dialog').textContent.includes('Quick guide')));
  await click('Done');assert.equal(await page.$('dialog[open]'),null);
  assert(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')==='dialog'));
  await click('Explain my value');await page.waitForSelector('dialog[open]');
@@ -82,7 +84,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await finish();
  await page.evaluate(()=>document.querySelector('[data-value-tour="replacement"]').remove());
  await click('Explain my value');await page.waitForSelector('dialog[open]');
- assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 3')));
+ assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 4')));
  await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Fair value and selling price can differ');
 
  await finish();
@@ -109,10 +111,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await finish();
  }
 
- await page.evaluate(()=>document.querySelector('[data-value-tour="settings"]').dataset.valueTourReadonly='true');
+ await page.evaluate(()=>document.querySelector('[data-value-tour="assumptions"]').dataset.valueTourReadonly='true');
  await click('Explain my value');await page.waitForSelector('dialog[open]');
- await click('Next');await click('Next');
- await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check your asset details');
+ await click('Next');await click('Next');await click('Next');
+ await page.waitForFunction(()=>document.querySelector('#value-tour-description').textContent.includes('requires an active Aim4price account'));
  await finish();
  // Match the result page's main column and right action column.
  await page.setViewport({width:1600,height:900});
@@ -146,6 +148,6 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });
  await page.waitForFunction(()=>document.activeElement?.id==='valuation-wizard-card' && Math.abs(document.getElementById('valuation-wizard-card').getBoundingClientRect().top-112)<2);
  assert.deepEqual(errors,[]);
- console.log('PASS mandatory start on every result, four steps, Back/Done, keyboard, mobile, zoom alignment');
+ console.log('PASS mandatory start on every result, five steps, Back/Done, keyboard, mobile, zoom alignment');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

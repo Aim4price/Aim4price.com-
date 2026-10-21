@@ -41694,8 +41694,11 @@ button.documentOpenLink {
   grid-row: 1;
   align-self: center;
 }
-.page .assetCard:has(> .assetSideActions) > .assetBody {
+/* Notices must share the content column, never size the quick-action rail. */
+.page .assetCard:has(> .assetSideActions) > .assetBody,
+.page .assetCard:has(> .assetSideActions) > .assetNoticeStack {
   grid-column: 2;
+  min-width: 0;
 }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .page .assetCardRow > .assetCard:has(> .assetSideActions) {

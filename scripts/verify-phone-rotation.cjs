@@ -28,7 +28,7 @@ async function main() {
     for (const engine of (process.env.PHONE_BROWSER_ENGINES || 'chromium,firefox,webkit').split(',')) {
       const browser = await playwright[engine].launch({ headless: true });
       try {
-        for (const profile of ['modern', 'legacy', 'layout-only', 'desktop-mode', 'blocked-storage', 'desktop', 'tablet']) {
+        for (const profile of ['modern', 'legacy', 'layout-only', 'desktop-mode', 'blocked-storage', 'desktop', 'tablet', 'close-button']) {
           console.log(`Checking ${engine}: ${profile}`);
           const context = await browser.newContext({ viewport: { width: profile === 'desktop-mode' ? 980 : 390, height: 844 } });
           const page = await context.newPage();
@@ -88,7 +88,11 @@ async function main() {
             await page.setViewportSize({ width: 390, height: 844 });
             await page.evaluate(() => window.rotateTestPhone(false));
             await page.locator(gate).waitFor({ state: 'visible' });
-            await page.getByRole('button', { name: 'Continue in portrait' }).click();
+            if (profile === 'close-button') {
+              await page.getByRole('button', { name: 'Close rotation prompt and continue in portrait', exact: true }).click();
+            } else {
+              await page.getByRole('button', { name: 'Continue in portrait', exact: true }).click();
+            }
             await page.locator(gate).waitFor({ state: 'hidden' });
             await page.evaluate(() => { window.dispatchEvent(new Event('pageshow')); window.rotateTestPhone(false); });
             await page.waitForTimeout(350);

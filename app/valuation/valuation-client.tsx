@@ -8976,7 +8976,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Older passenger-car marketability adjustment applied: {formatPrecisePercent(genericSelectedCalculation.marketabilityReductionPercent)}%.
               </div>
             ) : null}
-            <div data-value-tour={breakdownAccess && activeBreakdown ? undefined : "settings"} data-value-tour-readonly={!breakdownAccess || !activeBreakdown || undefined} className={styles.resultFactsGrid}>
+            <div data-value-tour="details" className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('year')}<span>Year model</span>
                 <strong>{yearSummary}</strong>
@@ -8999,7 +8999,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
           </section>
 
-          {!breakdownAccess ? <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
+          {!breakdownAccess ? <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
             <button
               type="button"
               className={styles.resultAccordionToggle}
@@ -9217,13 +9217,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </dialog>
             </section>
           ) : null}
+          {breakdownAccess && activeBreakdown ? <div data-value-tour="assumptions">
           {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
             <EstimateUsage unit={getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'} lifetime={getResultMaxLifetimeUsage(resultState)!}
               settings={activeBreakdown.report.settings ?? null} busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
               error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
-          {breakdownAccess && activeBreakdown ? <div data-value-tour="settings"><EstimateTools report={activeBreakdown.report}
+          {breakdownAccess && activeBreakdown ? <div><EstimateTools report={activeBreakdown.report}
             busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
             error={advancedError} onApply={applyPrivateEstimateSettings} /></div> : null}
+          </div> : null}
           </div>
           <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>

@@ -446,6 +446,8 @@ function AppAccessModal({
   closeDisabled = false,
   onClose,
   children,
+  footer,
+  compact = false,
 }: {
   open: boolean;
   title: string;
@@ -455,6 +457,8 @@ function AppAccessModal({
   closeDisabled?: boolean;
   onClose: () => void;
   children: ReactNode;
+  footer?: ReactNode;
+  compact?: boolean;
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -493,15 +497,15 @@ function AppAccessModal({
         onClick={() => { if (!closeDisabled) onClose(); }}
       />
       <section
-        className={`${styles.modal} ${wide ? styles.modalWide : ''} ${notificationStyle ? styles.notificationStyle : ''}`}
+        className={`${styles.modal} ${wide ? styles.modalWide : ''} ${notificationStyle ? styles.notificationStyle : ''} ${compact ? styles.compactEditorModal : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={descriptionId}
+        aria-describedby={description ? descriptionId : undefined}
       >
         <header className={styles.modalHeader}>
           <h2 id={titleId}>{title}</h2>
-          <p id={descriptionId}>{description}</p>
+          {description ? <p id={descriptionId}>{description}</p> : null}
           <button
             ref={closeRef}
             type="button"
@@ -515,6 +519,7 @@ function AppAccessModal({
           </button>
         </header>
         <div className={styles.modalBody}>{children}</div>
+        {footer ? <footer className={styles.editorFooter}>{footer}</footer> : null}
       </section>
     </div>
   );
@@ -918,6 +923,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   async function toggleRecord(record: AccessRecord) {
+    if (record.isActive && !window.confirm(`Deactivate the login for ${record.displayName}? They will no longer be able to sign in with this login.`)) return;
     await patchRecord(record, { isActive: !record.isActive }, record.isActive ? config.inactiveSuccess : config.activeSuccess);
   }
 
@@ -1105,7 +1111,26 @@ function AppAccessManagement({ kind, configOverride }: {
         open={activeFlow === 'manage'}
         notificationStyle={kind === 'owner' || kind === 'field'}
         title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
-        description={selectedRecord ? 'Edit this login.' : 'Choose a login to manage.'}
+        description={selectedRecord ? '' : 'Choose a login to manage.'}
+        compact={Boolean(selectedRecord)}
+        footer={selectedRecord && selectedEdit ? (
+                  <div className={`${baseStyles.managerActions} ${styles.managerActions} ${styles.editorFooterActions}`}>
+                    <button type="submit" form="login-edit-form" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
+                      {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button
+                      type="button"
+                      className={selectedRecord.isActive ? styles.deactivateLoginButton : baseStyles.primaryButton}
+                      disabled={isSelectedBusy}
+                      onClick={() => void toggleRecord(selectedRecord)}
+                    >
+                      {selectedRecord.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button type="button" className={baseStyles.deleteButton} disabled={isSelectedBusy} onClick={() => void deleteRecord(selectedRecord)}>
+                      {deletingId === selectedRecord.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+        ) : null}
         wide
         closeDisabled={Boolean(busyId || deletingId || namespaceBusy)}
         onClose={closeFlow}
@@ -1138,13 +1163,15 @@ function AppAccessManagement({ kind, configOverride }: {
           </section>
         ) : selectedEdit ? (
           <>
+            <div className={styles.editorToolbar}>
             <button type="button" className={styles.modalBackButton} onClick={() => setSelectedId(null)} disabled={isSelectedBusy}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg> All logins
             </button>
+            <span className={`${baseStyles.statusText} ${selectedRecord.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>{selectedRecord.isActive ? 'Active' : 'Inactive'}</span>
+            </div>
             <article className={`${baseStyles.managerCard} ${baseStyles.managerCardExpanded} ${styles.editorCard}`}>
-              {renderRecordSummary(selectedRecord, false)}
               <div className={baseStyles.managerDropdown}>
-                <form className={`${baseStyles.inlineForm} ${styles.loginEditForm}`} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
+                <form id="login-edit-form" className={`${baseStyles.inlineForm} ${styles.loginEditForm}`} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
                   <label className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <span>{config.displayNameLabel}</span>
                     <span className={styles.loginInputIcon}><SettingsDetailIcon name="person" /><input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} /></span>
@@ -1170,12 +1197,15 @@ function AppAccessManagement({ kind, configOverride }: {
                     })}>Use business username</button>
                   ) : null}
                   <div className={styles.loginEditFull}>{renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}</div>
-                  <div className={`${baseStyles.compactField} ${styles.compactField} ${styles.loginEditFull}`}>
+                  <details key={selectedRecord.id} className={`${styles.passcodeDisclosure} ${styles.loginEditFull}`}>
+                    <summary><SettingsDetailIcon name="lock" />Change {config.passwordLabel.toLowerCase()}<span aria-hidden="true">+</span></summary>
+                  <div className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
                     <div className={`${baseStyles.passwordInputWrap} ${styles.loginInputIcon}`}>
                       <SettingsDetailIcon name="lock" />
                       <input
                         id={`${kind}-password-${selectedRecord.id}`}
+                        onInvalid={(event) => { const disclosure = event.currentTarget.closest('details'); if (disclosure) disclosure.open = true; }}
                         type={visiblePasswords[selectedRecord.id] ? 'text' : 'password'}
                         value={selectedEdit.password}
                         onChange={(event) => updateEditDraft(selectedRecord.id, { password: event.target.value.slice(0, config.passwordMaximum) })}
@@ -1190,22 +1220,7 @@ function AppAccessManagement({ kind, configOverride }: {
                     </div>
                     <p className={baseStyles.fieldHint}>Leave blank to keep the current {config.passwordLabel.toLowerCase()}.</p>
                   </div>
-                  <div className={`${baseStyles.managerActions} ${styles.managerActions} ${styles.loginEditActions}`}>
-                    <button type="submit" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
-                      {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
-                    </button>
-                    <button
-                      type="button"
-                      className={selectedRecord.isActive ? baseStyles.dangerButton : baseStyles.primaryButton}
-                      disabled={isSelectedBusy}
-                      onClick={() => void toggleRecord(selectedRecord)}
-                    >
-                      {selectedRecord.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button type="button" className={baseStyles.deleteButton} disabled={isSelectedBusy} onClick={() => void deleteRecord(selectedRecord)}>
-                      {deletingId === selectedRecord.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
+                  </details>
                 </form>
                 {kind === 'owner' && selectedRecord.accessRole !== 'admin' ? (
                   <OwnerAppAssetAccessPanel userId={selectedRecord.id} />
@@ -1213,10 +1228,14 @@ function AppAccessManagement({ kind, configOverride }: {
                 {kind === 'owner' && selectedRecord.accessRole === 'admin' ? (
                   <section className={styles.loginAccessNote} aria-label="Owner App asset access">
                     <SettingsDetailIcon name="lock" />
-                    <p className={styles.accessMessage}>Owner / Admin users always have access to every umbrella and asset.</p>
+                    <p className={styles.accessMessage}>Access to all umbrellas and assets.</p>
                   </section>
                 ) : null}
                 {kind === 'field' ? <FieldManagerAccessPanel managerId={selectedRecord.id} /> : null}
+                <div className={styles.editorDates}>
+                  <span><LoginDetailIcon kind="clock" />Last login {formatDateTime(selectedRecord.lastLoginAtIso)}</span>
+                  <span>Updated {formatDateTime(selectedRecord.updatedAtIso)}</span>
+                </div>
               </div>
             </article>
           </>
