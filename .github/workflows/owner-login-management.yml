@@ -1,0 +1,28 @@
+name: Owner login management validation
+on:
+  pull_request:
+    paths:
+      - 'app/account/app-access-management-client.tsx'
+      - 'app/account/app-access-management.module.css'
+      - 'app/account/owner-login-sections*'
+      - 'scripts/verify-owner-login-sections.cjs'
+      - 'tests/account-app-access-modal-flow.test.mjs'
+      - 'tests/app-umbrella-directory-access.test.mjs'
+      - '.github/workflows/owner-login-management.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/account-app-access-modal-flow.test.mjs tests/app-umbrella-directory-access.test.mjs tests/app-login-name.test.mjs tests/modal-close.test.mjs
+      - run: node scripts/verify-owner-login-sections.cjs
