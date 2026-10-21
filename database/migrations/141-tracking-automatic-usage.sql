@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS public.asset_tracking_usage_events (
 CREATE INDEX IF NOT EXISTS tracking_usage_events_asset ON public.asset_tracking_usage_events(owner_id,asset_id,id DESC);
 CREATE OR REPLACE FUNCTION public.reconcile_tracking_usage_reading() RETURNS trigger LANGUAGE plpgsql AS $usage$
 DECLARE config public.asset_tracking_usage%ROWTYPE;
+ confirm_reading boolean := current_setting('aim4price.confirm_usage',true)='on';
 BEGIN
  IF current_setting('aim4price.tracking_usage_write',true)='on' THEN RETURN NEW; END IF;
+ PERFORM set_config('aim4price.confirm_usage','',true);
  SELECT * INTO config FROM public.asset_tracking_usage WHERE asset_id=NEW.id FOR UPDATE;
  IF NOT FOUND THEN
   NEW.specs_json:=coalesce(NEW.specs_json,'{}'::jsonb)-'trackingUsage';
@@ -37,7 +39,7 @@ BEGIN
   NEW.specs_json:=NEW.specs_json-'trackingUsage';
   RETURN NEW;
  END IF;
- IF NEW.hours IS DISTINCT FROM OLD.hours OR current_setting('aim4price.confirm_usage',true)='on' THEN
+ IF NEW.hours IS DISTINCT FROM OLD.hours OR confirm_reading THEN
   INSERT INTO public.asset_tracking_usage_events(asset_id,owner_id,action,reading,metric,baseline_value,baseline_at)
    VALUES(NEW.id,NEW.user_id,'Meter reading confirmed',NEW.hours,config.metric,config.baseline_value,config.baseline_at);
   UPDATE public.asset_tracking_usage SET baseline_value=coalesce(NEW.hours,0),baseline_at=clock_timestamp(),moving_seconds=0,distance_km=0,
