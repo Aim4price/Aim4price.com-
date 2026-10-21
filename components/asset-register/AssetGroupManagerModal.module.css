@@ -1766,10 +1766,10 @@
   outline: none;
 }
 @media (max-width: 480px) {
-  .totalSwitchRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .totalSwitchRow {
     grid-template-columns: 1rem minmax(0, 1fr) auto;
     gap: .6rem;
     margin-inline: .85rem;
   }
-  .totalSwitchIcon { width: 1rem; height: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .totalSwitchIcon { width: 1rem; height: 1rem; }
 }
