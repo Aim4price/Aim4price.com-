@@ -1,3 +1,4 @@
+import { sharedMarketAssessments } from './shared-market-assessment';
 import { createHash, randomBytes } from 'node:crypto';
 import { getDb } from './db';
 import { getAssetGroupById } from './asset-groups';
@@ -73,10 +74,12 @@ export async function readPublicAssetShare(token: string): Promise<PublicAssetSh
   // Fail closed on transfer/deletion. Never return stored snapshot data.
   if (assets.length !== ids.length) return null;
   const includePhotos = row.include_photos ?? (Array.isArray(row.snapshot) && row.snapshot.some((asset: ExternalAssetShareItem) => asset.photoUrls?.length));
+  const marketAssessments = await sharedMarketAssessments(row.user_id, assets, row.display_options?.valuation !== false);
   return {
     assets: ids.map(id => {
       const asset = assets.find(item => item.id === id)!;
       const item = assetShareSnapshot(asset, includePhotos);
+      if (marketAssessments[id]) item.marketAssessment = marketAssessments[id];
       if (row.display_options?.valuation === false) { item.valueExVat = null; item.replacementPriceExVat = null; }
       if (row.display_options?.replacementPrice === false) item.replacementPriceExVat = null;
       if (row.display_options?.mainPhotoOnly === true) item.photoUrls = item.photoUrls.slice(0, 1);

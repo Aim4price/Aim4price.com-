@@ -210,7 +210,7 @@ export default function SharedAssetCards({
                         details={<>
                           {enquiry && item.assetId && (enquiry.permissions.loggedProblems || enquiry.access === 'owner') && ['owner','active','read-only'].includes(enquiry.access) && <SharedProblems endpoint={`/api/asset-share-links/${enquiry.token}/assets/${item.assetId}/problems`} assetTitle={item.title} notesOnly canWrite={enquiry.access !== 'read-only'}/>}
 
-                          <SharedAssetFacts vatIncluded={!!vatIncluded[item.assetId||String(index)]} assetTitle={item.title} serial={item.serialNumber} year={item.yearModel} usage={item.usage} condition={item.condition} replacementPrice={item.replacementPriceExVat}
+                          <SharedAssetFacts vatIncluded={!!vatIncluded[item.assetId||String(index)]} assetTitle={item.title} serial={item.serialNumber} year={item.yearModel} usage={item.usage} condition={item.condition} replacementPrice={item.replacementPriceExVat} marketAssessment={item.marketAssessment}
                             statuses={{finance:statusMark(item.financeStatus),insurance:statusMark(item.insuranceStatus),license:statusMark(item.licenseStatus),location:statusMark(item.mapped===undefined?'unknown':item.mapped?'yes':'no')}}
                             permissions={enquiry && item.assetId && ['active','owner'].includes(enquiry.access) ? {
                               serial:enquiry.access==='owner'||enquiry.permissions.serialNumber,

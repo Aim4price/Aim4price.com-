@@ -1,5 +1,8 @@
+import type { SharedMarketAssessment } from './shared-market-assessment';
+
 export type ExternalAssetShareItem = {
   assetId?: string;
+  marketAssessment?: SharedMarketAssessment;
   financeStatus?: string;
   insuranceStatus?: string;
   licenseStatus?: string;

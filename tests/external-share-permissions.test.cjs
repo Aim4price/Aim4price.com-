@@ -16,7 +16,7 @@ async function setup(){
  const assetDb={getAssetRegisterItemsByRefs:async refs=>(await pg.query('SELECT * FROM asset_register_items')).rows.filter(r=>refs.some(ref=>ref.userId===r.user_id&&ref.assetId===r.id)).map(r=>({id:r.id,title:r.title,serialNumber:r.serial_number,replacementPriceExVat:Number(r.replacement_price_ex_vat),photos:[]})),getAssetRegisterItemById:async(user,id)=>(await assetDb.getAssetRegisterItemsByRefs([{userId:user,assetId:id}]))[0]};
  const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/asset-usage.ts'),'./tractor-logic':{conditionLabel:k=>k}});
  const groups={getAssetGroupById:async(user,id)=>{const g=(await pg.query('SELECT * FROM asset_groups WHERE id=$1 AND user_id=$2',[id,user])).rows[0];return g?{id:g.id,name:g.name,members:(await pg.query('SELECT asset_id FROM asset_group_members WHERE group_id=$1',[id])).rows.map(r=>({assetId:r.asset_id}))}:null;}};
- const base=load('lib/asset-share-links.ts',{'./asset-groups':groups,'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
+ const base=load('lib/asset-share-links.ts',{'./shared-market-assessment':{sharedMarketAssessments:async()=>({})},'./asset-groups':groups,'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
  const schema=load('lib/guest-lead-schema.ts',{'./db':{getDb:()=>db},'./asset-share-links':base,'./business-network':{ensureBusinessNetwork:async()=>{}}});
  const state={guestAccess:'sign-in',user:null,approved:false,type:'business',status:'active'};
  const foundation=load('lib/sharing-foundation.ts',{'./db':{getDb:()=>db}});

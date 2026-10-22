@@ -16,6 +16,8 @@ import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
 import SharedCardValue from '../../components/leads/SharedCardValue';
+import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
+import cardLayout from '../../components/asset-register/AssetCardDetails.module.css';
 import SharedAssetFacts from '../../components/leads/SharedAssetFacts';
 import SharedAssetExport from '../../components/leads/SharedAssetExport';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
@@ -3235,19 +3237,19 @@ export default function LeadsClient({
             <div className={assetStyles.assetDetailsGrid}>
               <div className={assetStyles.assetPrimaryDetails}>
                 <div className={assetStyles.assetDetailRow}>
-                  <span>Serial / VIN</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="serial"/>Serial / VIN</span>
                   <strong>{serialNumber || '—'}</strong>
                 </div>
                 <div className={assetStyles.assetDetailRow}>
-                  <span>{asText(asset.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>{asText(asset.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
                   <strong>{asset.yearModel ? String(asset.yearModel) : '—'}</strong>
                 </div>
                 <div className={assetStyles.assetDetailRow}>
-                  <span>Usage</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>Usage</span>
                   <strong>{snapshotUsageValue(asset)}</strong>
                 </div>
                 <div className={assetStyles.assetDetailRow}>
-                  <span>Condition</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="condition"/>Condition</span>
                   <strong>{conditionLabel(asset.condition)}</strong>
                 </div>
               </div>
@@ -3274,7 +3276,7 @@ export default function LeadsClient({
             </div>
 
             <div className={assetStyles.assetReplacementPriceBubble}>
-              <span>Replacement Price</span>
+              <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span>
               <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
               <small>Excl. VAT</small>
             </div>

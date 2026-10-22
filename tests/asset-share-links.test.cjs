@@ -34,6 +34,7 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
   let title = 'Original tractor';
   const db = { query: (sql, params) => params ? pg.query(sql, params) : pg.exec(sql) };
   const mod = load('lib/asset-share-links.ts', {
+    './shared-market-assessment':{sharedMarketAssessments:async(owner,assets,shared)=>shared?Object.fromEntries(assets.map(asset=>[asset.id,{priceExVat:50000,assessedAt:'2026-10-22T10:00:00Z',needsReview:false}])):{}},
     './asset-groups':{getAssetGroupById:async()=>({id:'30000000-0000-4000-8000-000000000001',name:'Tractor fleet',members:[{assetId:A}]})},
     './db': { getDb: () => db }, './asset-share-snapshot': snapshot,
     './asset-register-db': { getAssetRegisterItemsByRefs: async refs => {
@@ -49,6 +50,11 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     assert.notEqual(grouped.token, first.token);
     assert.equal((await mod.readPublicAssetShare(first.token)).umbrellaName, '');
     assert.equal(first.sender_name, 'Alice Farming');
+    assert.equal((await mod.readPublicAssetShare(first.token)).assets[0].marketAssessment.priceExVat,50000);
+    await pg.query('UPDATE asset_share_links SET display_options=$1 WHERE token=$2',[{valuation:false},first.token]);
+    const hidden=(await mod.readPublicAssetShare(first.token)).assets[0];
+    assert.equal(hidden.marketAssessment,undefined);assert.equal(hidden.valueExVat,null);
+    await pg.query('UPDATE asset_share_links SET display_options=NULL WHERE token=$1',[first.token]);
     assert.equal((await mod.readPublicAssetShare(first.token)).senderName, 'Alice Farming');
     await pg.query('UPDATE account_profiles SET business_name=$1 WHERE user_id=$2', ['Alice & Co', 'alice']);
     assert.equal((await mod.readPublicAssetShare(first.token)).senderName, 'Alice & Co');
