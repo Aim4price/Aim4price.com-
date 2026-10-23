@@ -36,7 +36,7 @@ test('manual wizard validates the total and saves only from review', () => {
   assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost record/);
 });
 
-test('review preserves every manual cost field and attachment before save', () => {
+test('review preserves manual cost details without an attachment upload', () => {
   for (const label of [
     'Asset',
     'Supplier',
@@ -50,11 +50,10 @@ test('review preserves every manual cost field and attachment before save', () =
     'Parts supplied',
     'Repair work',
     'Notes',
-    'Attachment',
   ]) {
     assert.match(costFormModal, new RegExp(`<dt>${label}<\\/dt>`));
   }
-  assert.match(costFormModal, /manualUploadFile\?\.name \|\| uploadedDocument\?\.fileName \|\| 'None'/);
+  assert.doesNotMatch(costFormModal, /ManualCostAttachment|<dt>Attachment<\/dt>/);
   assert.match(client, /maintenanceWorkDone: draft\.maintenanceWorkDone/);
   assert.match(client, /partsSupplied: draft\.partsSupplied/);
   assert.match(client, /repairWorkDone: draft\.repairWorkDone/);

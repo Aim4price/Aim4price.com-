@@ -26,7 +26,6 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
-import ManualCostAttachment from './manual-cost-attachment';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
@@ -1099,7 +1098,6 @@ export default function MyInvoicesClient({
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
   const [quickLaunchActive, setQuickLaunchActive] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
-  const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
   const [automaticUploadFile, setAutomaticUploadFile] = useState<File | null>(null);
   const [automaticUploadPages, setAutomaticUploadPages] = useState<File[]>([]);
   const [captureNote, setCaptureNote] = useState('');
@@ -2151,7 +2149,7 @@ export default function MyInvoicesClient({
     const candidateAssetId = typeof requestedAssetId === 'string' ? requestedAssetId : budgetLaunchAssetId || activeFilters.assetId;
     const defaultAssetId = candidateAssetId !== 'all' && budgetAssets.some((asset) => asset.id === candidateAssetId) ? candidateAssetId : '';
     setEditingBudgetId(null);
-    setBudgetWizardStep(1);
+    setBudgetWizardStep(defaultAssetId ? 2 : 1);
     setBudgetDraft(buildEmptyCostBudgetDraft(defaultAssetId));
     setBudgetSelectedAssetIds(defaultAssetId ? [defaultAssetId] : []);
     setBudgetPickerAssetIds(defaultAssetId ? [defaultAssetId] : []);
@@ -2195,13 +2193,16 @@ export default function MyInvoicesClient({
 
   function confirmBudgetAssetPicker() {
     const selectedIds = editingBudgetId ? budgetPickerAssetIds.slice(0, 1) : budgetPickerAssetIds;
+    if (!selectedIds.length) return;
     setBudgetSelectedAssetIds(selectedIds);
     setBudgetDraft((current) => ({
       ...current,
       assetId: selectedIds[0] ?? (editingBudgetId && current.assetId === 'all' ? 'all' : ''),
     }));
     setBudgetFormError('');
-    closeBudgetAssetPicker();
+    setBudgetAssetPickerOpen(false);
+    setBudgetAssetSearch('');
+    setBudgetWizardStep(2);
   }
 
   function toggleBudgetPickerAsset(assetId: string) {
@@ -2489,7 +2490,6 @@ export default function MyInvoicesClient({
     setSelectedAssetId('');
     setPickerSearch('');
     setEditingInvoiceId(null);
-    setManualUploadFile(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -2596,6 +2596,8 @@ export default function MyInvoicesClient({
   }
 
   function chooseInvoiceDropAsset(assetId: string) {
+    setInvoiceDropCodeLoading(true);
+    setInvoiceDropWizardStep(3);
     setInvoiceDropAssetId(assetId);
     setInvoiceDropAssetPickerOpen(false);
     setInvoiceDropAssetSearch('');
@@ -2757,7 +2759,6 @@ export default function MyInvoicesClient({
     setPickerOwnerId(assets.find((asset) => asset.id === normalizedAssetId)?.ownerUserId ?? '');
     setPickerSearch('');
     setEditingInvoiceId(null);
-    setManualUploadFile(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -2814,7 +2815,7 @@ export default function MyInvoicesClient({
     setRecurringPickerAssetIds(presetAssetIds);
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
-    setRecurringWizardStep(1);
+    setRecurringWizardStep(presetAssetIds.length ? 2 : 1);
     setRecurringCategoryDropdownOpen(false);
     setRecurringError('');
     setFlow('recurring');
@@ -2834,9 +2835,12 @@ export default function MyInvoicesClient({
   }
 
   function confirmRecurringAssetPicker() {
+    if (!recurringPickerAssetIds.length) return;
     setRecurringAssetIds(recurringPickerAssetIds);
     setRecurringError('');
-    closeRecurringAssetPicker();
+    setRecurringAssetPickerOpen(false);
+    setRecurringAssetSearch('');
+    setRecurringWizardStep(2);
   }
 
   function toggleRecurringAsset(assetId: string) {
@@ -3153,12 +3157,7 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
-      let invoiceDocumentId = draft.invoiceDocumentId;
-
-      if (manualUploadFile && !sharedFlow) {
-        const document = await uploadInvoiceFile(selectedAssetId, draft.source, manualUploadFile);
-        invoiceDocumentId = document.id;
-      }
+      const invoiceDocumentId = draft.invoiceDocumentId;
 
       const payload = {
         assetId: selectedAssetId,
@@ -3179,7 +3178,7 @@ export default function MyInvoicesClient({
       };
 
       if (sharedFlow) {
-        await sharedFlow.save(payload,manualUploadFile);
+        await sharedFlow.save(payload,null);
         sharedFlow.onSaved('Cost record saved to the asset.');
         return;
       }
@@ -3225,7 +3224,6 @@ export default function MyInvoicesClient({
     setNotice(null);
     setSelectedAssetId(invoice.assetId);
     setEditingInvoiceId(invoice.id);
-    setManualUploadFile(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -5131,14 +5129,14 @@ export default function MyInvoicesClient({
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
-            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''}`}>
+            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''} ${manualCostWizardOpen && manualCostWizardStep === 3 ? reviewStyles.body : ''}`}>
               {extractionWarnings.length ? (
                 <div className={styles.warningBox}>
                   {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
                 </div>
               ) : null}
 
-              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel}` : ''}`}>
+              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? styles.manualCostReviewPanel : ''}` : ''}`}>
                 {manualCostWizardOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">{manualCostWizardStep}</span>
@@ -5152,7 +5150,7 @@ export default function MyInvoicesClient({
                     <p>{manualCostWizardStep === 1
                       ? 'Capture the supplier, date, usage and totals.'
                       : manualCostWizardStep === 2
-                        ? 'Add the work completed and an optional supporting file.'
+                        ? 'Add maintenance, repairs, parts and notes.'
                         : 'Check the complete record before saving.'}</p>
                   </div>
                 ) : null}
@@ -5297,9 +5295,6 @@ export default function MyInvoicesClient({
                   </label>
                 </div>
 
-                {draft.source === 'manual' ? (
-                  <ManualCostAttachment fileName={manualUploadFile?.name || uploadedDocument?.fileName || ''} disabled={isSaving} onFile={setManualUploadFile} />
-                ) : null}
 
                 {uploadedDocument?.uploadUrl ? (
                   <DocumentFileLink className={styles.fileLink} href={accountScopedUrl(uploadedDocument.uploadUrl)} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</DocumentFileLink>
@@ -5350,26 +5345,23 @@ export default function MyInvoicesClient({
                       <dt>Total incl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
                     </div>
-                    <div className={styles.manualCostReviewWide}>
+                    {draft.maintenanceWorkDone.trim() ? <div className={styles.manualCostReviewWide}>
                       <dt>Maintenance work</dt>
-                      <dd>{draft.maintenanceWorkDone.trim() || 'None'}</dd>
-                    </div>
-                    <div className={styles.manualCostReviewWide}>
+                      <dd>{draft.maintenanceWorkDone}</dd>
+                    </div> : null}
+                    {draft.partsSupplied.trim() ? <div className={styles.manualCostReviewWide}>
                       <dt>Parts supplied</dt>
-                      <dd>{draft.partsSupplied.trim() || 'None'}</dd>
-                    </div>
-                    <div className={styles.manualCostReviewWide}>
+                      <dd>{draft.partsSupplied}</dd>
+                    </div> : null}
+                    {draft.repairWorkDone.trim() ? <div className={styles.manualCostReviewWide}>
                       <dt>Repair work</dt>
-                      <dd>{draft.repairWorkDone.trim() || 'None'}</dd>
-                    </div>
-                    <div className={styles.manualCostReviewWide}>
+                      <dd>{draft.repairWorkDone}</dd>
+                    </div> : null}
+                    {draft.notes.trim() ? <div className={styles.manualCostReviewWide}>
                       <dt>Notes</dt>
-                      <dd>{draft.notes.trim() || 'None'}</dd>
-                    </div>
-                    <div className={styles.manualCostReviewWide}>
-                      <dt>Attachment</dt>
-                      <dd>{manualUploadFile?.name || uploadedDocument?.fileName || 'None'}</dd>
-                    </div>
+                      <dd>{draft.notes}</dd>
+                    </div> : null}
+
                   </dl>
                 ) : null}
 
