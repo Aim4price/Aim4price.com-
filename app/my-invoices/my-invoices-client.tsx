@@ -26,6 +26,7 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
+import ManualCostAttachment from './manual-cost-attachment';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
@@ -406,6 +407,18 @@ const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
+}
+
+function CostEntryIcon({ kind }: { kind: 'supplier' | 'invoice' | 'maintenance' | 'parts' | 'repairs' | 'notes' }) {
+  const paths = {
+    supplier: <><circle cx="12" cy="7" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2Z" /></>,
+    invoice: <><path d="M6 3h8l4 4v14H6ZM14 3v5h4M9 12h6M9 16h6" /></>,
+    maintenance: <path d="M21 3a6 6 0 0 1-8 8L5 20a2 2 0 0 1-3-3l9-8a6 6 0 0 1 8-8l-4 4 4 2Z" />,
+    parts: <><path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 2-1 3 2 3-2 2 1 3-2-1-3 2-2-2-3-3-1-1-3Z" /><circle cx="12" cy="11" r="3" /></>,
+    repairs: <><path d="m4 3 4 4-2 2-4-4M8 9l12 12M20 3a5 5 0 0 1-6 6L4 20a2 2 0 0 1-3-3L12 7a5 5 0 0 1 6-6l-3 3 2 2Z" /></>,
+    notes: <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></>,
+  };
+  return <IconBase className={styles.costEntryIcon} strokeWidth="1.7">{paths[kind]}</IconBase>;
 }
 
 function ManageCostIcon(props: SVGProps<SVGSVGElement>) {
@@ -3281,10 +3294,6 @@ export default function MyInvoicesClient({
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function handleManualFileChange(event: ChangeEvent<HTMLInputElement>) {
-    setManualUploadFile(event.target.files?.[0] ?? null);
-  }
-
   function handleAutomaticFiles(pages: File[]) {
     const error = validateInvoicePages(pages);
     setCaptureUploadError(error || '');
@@ -5102,7 +5111,7 @@ export default function MyInvoicesClient({
       {formOpen ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
-            className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${wizardStyles.dialog}` : ''}`}
+            className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${styles.polishedCostEntry} ${wizardStyles.dialog}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
           >
             <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''}`}>
@@ -5161,11 +5170,11 @@ export default function MyInvoicesClient({
                     <div className={`${styles.formGrid} ${manualCostWizardOpen ? styles.manualCostInvoiceGrid : ''}`}>
                   <label>
                     <span>Supplier name</span>
-                    <input value={draft.supplierName} onChange={(event) => setDraftField('supplierName', event.target.value)} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="supplier" /> : null}<input value={draft.supplierName} onChange={(event) => setDraftField('supplierName', event.target.value)} placeholder="Supplier" /></span>
                   </label>
                   <label>
                     <span>Invoice number</span>
-                    <input value={draft.invoiceNumber} onChange={(event) => setDraftField('invoiceNumber', event.target.value)} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="invoice" /> : null}<input value={draft.invoiceNumber} onChange={(event) => setDraftField('invoiceNumber', event.target.value)} placeholder="Invoice no." /></span>
                   </label>
                   <label>
                     <span>Invoice date</span>
@@ -5272,32 +5281,24 @@ export default function MyInvoicesClient({
                     <div className={styles.textAreaGrid}>
                   <label>
                     <span>Maintenance work done</span>
-                    <textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={4} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="maintenance" /> : null}<textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={3} placeholder="Describe maintenance completed" /></span>
                   </label>
                   <label>
                     <span>Parts supplied</span>
-                    <textarea value={draft.partsSupplied} onChange={(event) => setDraftField('partsSupplied', event.target.value)} rows={4} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="parts" /> : null}<textarea value={draft.partsSupplied} onChange={(event) => setDraftField('partsSupplied', event.target.value)} rows={3} placeholder="List parts supplied" /></span>
                   </label>
                   <label>
                     <span>Repair work done</span>
-                    <textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={4} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="repairs" /> : null}<textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={3} placeholder="Describe repairs completed" /></span>
                   </label>
                   <label>
                     <span>Notes</span>
-                    <textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={4} />
+                    <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="notes" /> : null}<textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={3} placeholder="Additional notes" /></span>
                   </label>
                 </div>
 
                 {draft.source === 'manual' ? (
-                  <section className={`${styles.uploadInline} ${manualUploadFile || uploadedDocument ? styles.uploadInlineReady : ''}`}>
-                    <span>Optional document/photo</span>
-                    <label className={styles.uploadButtonSmall}>
-                      <UploadIcon />
-                      Add file
-                      <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleManualFileChange} />
-                    </label>
-                    <strong>{manualUploadFile ? manualUploadFile.name : uploadedDocument?.fileName || 'No file selected'}</strong>
-                  </section>
+                  <ManualCostAttachment fileName={manualUploadFile?.name || uploadedDocument?.fileName || ''} disabled={isSaving} onFile={setManualUploadFile} />
                 ) : null}
 
                 {uploadedDocument?.uploadUrl ? (
