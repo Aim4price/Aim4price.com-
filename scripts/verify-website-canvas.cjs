@@ -336,6 +336,7 @@ async function check(browser, url) {
       if(!register) throw new Error('Fixture Asset Register is missing from destination cards');
       register.click();
     });
+    assert.equal(await page.$('[aria-labelledby="add-asset-choice-title"]'),null,'Selecting a register waits for confirmation');
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(button=>button.textContent.trim()==='Continue'&&!button.disabled));
     assert.ok(await page.$eval(`${registers} button[aria-pressed="true"]`,element=>element.textContent.includes('Test farm')),'The chosen register is visibly selected');
     await page.$$eval(`${destination} button`,elements=>elements.find(element=>element.textContent.trim()==='Continue').click());

@@ -62,6 +62,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$$eval('a',els=>els.filter(e=>e.target==='_blank'&&e.rel.includes('noopener')).length),2);
  await page.screenshot({path:'/tmp/facebook-advert-'+width+'.png'});
  }
+ // At the same phone width, native controls stack but the website canvas stays two-column.
+ const columns=()=>page.$eval('a',link=>getComputedStyle(link.parentElement).gridTemplateColumns.split(' ').length);
+ assert.equal(await columns(),1,'native 320px destinations stack');
+ await page.evaluate(()=>{const app=document.getElementById('app');app.setAttribute('data-website-canvas','');app.style.width='640px';});
+ assert.equal(await columns(),2,'canonical canvas retains desktop destinations at 320px');
+ await page.evaluate(()=>{const app=document.getElementById('app');app.removeAttribute('data-website-canvas');app.style.width='';});
+ assert.equal(await columns(),1,'returning to native restores stacking');
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copied=text;}}}));
  await page.click('button');await page.waitForFunction(()=>document.body.textContent.includes('Advert text copied.'));
  assert.match(await page.evaluate(()=>window.copied),/30% worked/);

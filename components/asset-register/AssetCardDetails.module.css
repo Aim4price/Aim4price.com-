@@ -40,7 +40,7 @@
 .marketOpen:not(:disabled):hover { background:#e2effc; }
 .marketOpen:focus-visible { outline:2px solid var(--app-accent,#158061); outline-offset:2px; }
 .marketHeading { display:flex; align-items:center; gap:.55rem; min-width:0; }
-.marketTitle strong { font-size:.78rem; font-weight:900; letter-spacing:.052em; line-height:1.15; text-transform:uppercase; }
+.marketTitle strong { font-size:.9rem; font-weight:750; letter-spacing:0; line-height:1.3; }
 .marketAmount { display:flex; flex-direction:column; align-items:flex-end; gap:.16rem; min-width:0; text-align:right; font-size:.8rem; line-height:1.4; }
 .marketAmount>strong { color:#174f84; font-size:clamp(1.08rem,calc(var(--website-design-vw,1vw) * 1.35),1.34rem); font-weight:880; letter-spacing:-.036em; line-height:1.05; white-space:nowrap; }
 .marketAmount>small { color:#5c7184; font-size:.72rem; font-weight:820; letter-spacing:-.005em; line-height:1.12; }
@@ -64,5 +64,3 @@
 .marketNeedsUpdate button:hover { background:#ffe4e6; }
 .marketNeedsUpdate button:focus-visible { outline-color:#b91c1c; }
 .marketNeedsUpdate .marketInfo { border-color:#efb8bd; }
-
-.marketExplanation { margin: 0; padding: 0 16px 14px; font-size: .78rem; line-height: 1.5; color: inherit; }

@@ -1031,13 +1031,12 @@
 }
 
 .assetPreviewIdentity p {
-  overflow: hidden;
+  overflow-wrap: anywhere;
   color: #5d6d7c;
   font-size: 0.58rem;
   line-height: 1.25;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
   margin-top: 0.4rem;
 }
 

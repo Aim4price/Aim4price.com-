@@ -8,18 +8,19 @@ const chromium = require(root + '/node_modules/@sparticuz/chromium');
  fs.mkdirSync('.next/canvas-validation', { recursive: true });
  const js = ts.transpileModule(fs.readFileSync('components/asset-register/MoveAssetDestinationPicker.tsx','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 }}).outputText;
  const css = fs.readFileSync('components/asset-register/MoveAssetDestinationPicker.module.css','utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))');
+ const choiceCss = fs.readFileSync('components/asset-register/InsideShareDialog.module.css','utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))');
  const rowJs = ts.transpileModule(fs.readFileSync('components/asset-register/RegisterPickerRow.tsx','utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 }}).outputText;
  const rowCss = fs.readFileSync('components/asset-register/RegisterPickerRow.module.css','utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))').replace(/\.([a-zA-Z_][\w-]*)/g, '.row_$1');
  const browser = await puppeteer.launch({executablePath: process.env.CANVAS_BROWSER_PATH || await chromium.executablePath(),args:process.env.CANVAS_BROWSER_PATH ? ['--no-sandbox', '--disable-dev-shm-usage'] : chromium.args,headless:true,pipe:!process.env.CANVAS_BROWSER_PATH});
  try {
  const page = await browser.newPage();
- page.on('pageerror', error => { console.error('Picker browser error:', error); });
- await page.setContent('<html><head><style>*{box-sizing:border-box}body{font-family:Arial;margin:0}'+css+rowCss+'</style></head><body><div id="root"></div></body></html>');
+ const errors=[]; page.on('pageerror', error => { errors.push(error.message); console.error('Picker browser error:', error); });
+ await page.setContent('<html><head><style>*{box-sizing:border-box}body{font-family:Arial;margin:0}'+css+choiceCss+rowCss+'</style></head><body><div id="root"></div></body></html>');
  await page.addScriptTag({path: root+'/node_modules/react/umd/react.development.js'});
  await page.addScriptTag({path: root+'/node_modules/react-dom/umd/react-dom.development.js'});
  await page.addScriptTag({content: `const rowExports = {}; (function(exports, require){${rowJs}})(rowExports, name => { if(name==='react')return React; if(name.endsWith('.module.css'))return {default:new Proxy({}, {get:(_,key)=>'row_'+key})}; throw Error('Unexpected row dependency: '+name); });
  const exports = {}; const require = name => { if(name==='react')return React; if(name==='./RegisterPickerRow')return rowExports; if(name.endsWith('.module.css'))return { default: new Proxy({}, {get: (_, key) => key}) }; throw Error('Unexpected picker dependency: '+name); }; ${js};
- function Demo(){const [destination,setDestination]=React.useState('register');const [targetId,setTarget]=React.useState('');const [overrides,setOverrides]=React.useState({});window.setOverrides=setOverrides;return React.createElement(exports.default,{assetName:'2000 Deutz 85kW Genset',assetDetails:'Year model: 2000 · Usage: 50% · Condition: Good',sourceName:'Gre Kuyler Trust',destination,onDestinationChange:v=>{setDestination(v);setTarget('')},options:Array.from({length:12},(_,i)=>({value:String(i),label:(destination==='register'?'Asset register ':'Umbrella ')+(i+1),description:'8 assets · R 32 620 000 current value'})),targetId,onSelect:setTarget,canUseUmbrellas:true,loading:false,loadError:'',error:'',busy:false,managementHref:'#',onRetry:()=>{},onClose:()=>{},onMove:()=>window.moves=(window.moves||0)+1,...overrides})} ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Demo));`});
+ function Demo(){const [destination,setDestination]=React.useState('register');const [targetId,setTarget]=React.useState('');const [overrides,setOverrides]=React.useState({});window.setOverrides=setOverrides;return React.createElement(exports.default,{assetName:'2000 Deutz 85kW Genset',assetDetails:'Year model: 2000 · Usage: 50% · Condition: Good',sourceName:'Gre Kuyler Trust',destination,onDestinationChange:v=>{setDestination(v);setTarget('')},options:Array.from({length:12},(_,i)=>({value:String(i),label:(destination==='register'?'Asset register ':'Umbrella ')+(i+1),description:'8 assets',currentValueInclVat:32620000})),targetId,onSelect:setTarget,canUseUmbrellas:true,loading:false,loadError:'',error:'',busy:false,managementHref:'#',onRetry:()=>{},onClose:()=>{},onMove:()=>window.moves=(window.moves||0)+1,...overrides})} ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Demo));`});
  async function assertSingleColumn() {
    const rows = await page.$$eval('.options > button', nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return {left:r.left, top:r.top, bottom:r.bottom, width:r.width}; }));
    if(rows.length < 2 || rows.some((row,i) => Math.abs(row.left-rows[0].left)>1 || Math.abs(row.width-rows[0].width)>1 || (i && row.top<rows[i-1].bottom-1)))throw Error('Destinations must be full-width rows in one column');
@@ -72,6 +73,7 @@ const chromium = require(root + '/node_modules/@sparticuz/chromium');
  await page.keyboard.press('Escape');
  await page.waitForSelector('.types', {visible:true});
  await page.screenshot({path:'.next/canvas-validation/move-choice-mobile.png'});
+ if(errors.length)throw Error(errors.join('\n'));
  console.log('PASS: two-step entry, back navigation, loading guards, keyboard navigation,  search, selection, confirmation, destination reset and mobile bounds');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});
