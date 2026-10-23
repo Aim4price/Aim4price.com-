@@ -41775,3 +41775,33 @@ button.documentOpenLink {
   :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetDetailRow > strong { padding-top: .35rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetStatusDetails { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Compact category choosers retain readable, single-line descriptions. */
+.managementAccountModal.ownerCommandModal:is(.pricingModal, .maintenanceMenuModal) {
+  width: min(var(--website-dialog-reference-width, 100%), 68rem) !important;
+}
+.managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction :is(strong, small) {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+  overflow-wrap: normal;
+}
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) {
+    --management-padding: .8rem;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction {
+    padding: .75rem !important;
+    gap: .65rem !important;
+    grid-template-columns: 2rem minmax(0, 1fr) !important;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction > .buttonIcon {
+    width: 2rem !important; height: 2rem !important; padding: .3rem;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction strong { font-size: .85rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction small { font-size: .75rem !important; }
+}
