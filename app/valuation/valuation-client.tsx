@@ -71,6 +71,7 @@ import {
   ADVANCED_LIFETIME_KM_MAX,
   ADVANCED_LIFETIME_KM_MIN,
   CONDITION_FACTORS,
+  resolveDefaultLifetimeUsage,
   type NormalizedAdvancedAssumptions,
 } from '../../lib/valuation/shared';
 import type {
@@ -103,7 +104,7 @@ type ReplacementPriceBasis = 'aim4price' | 'user';
 type VatDisplayMode = 'excl' | 'incl';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
 type DetailsModal = 'year' | 'usage' | 'condition' | 'popularity' | 'extras' | null;
-type UsageModalMode = 'hours' | 'percent';
+type UsageModalMode = 'hours' | 'percent' | 'lifetime';
 type ConditionModalView = 'choose' | 'basic' | 'advanced';
 type ExtrasModalView = 'choose' | 'options';
 
@@ -1904,6 +1905,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   const [usageInputFocused, setUsageInputFocused] = useState(false);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
+  const [usageLifetimeOverride, setUsageLifetimeOverride] = useState<number | null>(null);
+  const [usageLifetimeDraft, setUsageLifetimeDraft] = useState('');
+  const lifetimeTitleRef = useRef<HTMLHeadingElement>(null);
   const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
   const [pendingAdvancedSection, setPendingAdvancedSection] = useState<string | null>(null);
   useEffect(() => {
@@ -2131,6 +2135,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     [selectedMotorCanonicalModel, motorSelectedTypeKey],
   );
   const motorTypeOptions = selectedMotorCanonicalModel?.typeOptions ?? [];
+  useEffect(() => {
+    setUsageLifetimeOverride(null);
+    setUsageLifetimeDraft('');
+  }, [selectedSector, familyKey, modelId, genericModelId, motorCanonicalModelId, motorSelectedTypeKey]);
+
+  useEffect(() => {
+    if (usageModalMode !== 'lifetime') return;
+    lifetimeTitleRef.current?.focus({ preventScroll: true });
+    lifetimeTitleRef.current?.closest('[role="dialog"]')?.scrollTo({ top: 0 });
+  }, [usageModalMode]);
+
   const motorTypeRequiredForSelectedModel = motorTypeOptions.length > 1;
   const motorSearchFlowActive = !basicEstimateActive && isMotorSector(selectedSector);
   const submittedGenericModelName =
@@ -2602,6 +2617,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const defaultLifetime = getResultMaxLifetimeUsage(resultState);
+    setUsageLifetimeOverride(appliedAdvancedAssumptions?.maxLifetimeUsage ?? null);
     const resultCondition = resultState.kind === 'generic' ? resultState.result.condition : condition;
     const conditionFactorPercent =
       appliedAdvancedAssumptions?.conditionFactorPercent ?? getDefaultConditionFactorPercent(resultCondition);
@@ -3725,7 +3741,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const detailedAssessment = detailedAssessmentOpen ? buildDealerAssessmentRequest() : null;
     return {
       privateSettings: applied?.privateSettings ?? null,
-      maxLifetimeUsage: applied?.maxLifetimeUsage ?? null,
+      maxLifetimeUsage: usageLifetimeOverride ?? applied?.maxLifetimeUsage ?? null,
       conditionFactorPercent: detailedAssessment ? null : applied?.conditionFactorPercent ?? null,
       dealerAssessment: detailedAssessment,
       popularityStars: popularityStepComplete ? popularityStars : null,
@@ -7358,8 +7374,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     scrollToDetailsCard(basicUsageNotRequired ? 'valuation-condition-step' : 'valuation-usage-step');
   }
 
-  function saveUsageAnswer(showHoursInput: boolean) {
-    if (usageModalMode === 'hours' && showHoursInput) {
+  function saveUsageAnswer(showHoursInput: boolean, lifetimeConfirmed = false) {
+    if ((usageModalMode === 'hours' || (lifetimeConfirmed && usageAmount !== '')) && showHoursInput) {
       const hours = toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue));
       if (hours === null || (selectedFamily?.basicCatalogue && hours < 0)) {
         setMessage(`Enter the ${selectedUsageFieldLabel.toLowerCase()}, or choose that you do not know it.`);
@@ -7368,6 +7384,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       setUsageAmount(String(Math.round(hours)));
       setLifeWorkedPercent('');
+      if (!lifetimeConfirmed) {
+        openLifetimeModal();
+        return;
+      }
       setUsageStepComplete(true);
       setActiveDetailsModal(null);
       setMessage('');
@@ -7384,6 +7404,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     setLifeWorkedPercent(String(workedPercent));
     setUsageAmount('');
+    if (showHoursInput && !lifetimeConfirmed) {
+      openLifetimeModal();
+      return;
+    }
     setUsageStepComplete(true);
     setActiveDetailsModal(null);
     setMessage('');
@@ -7511,7 +7535,83 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function getUsageLifetimeDefault(): number {
+    if (flowMode === 'exact_model' && selectedModel) return tractorLifetimeHoursFromModel(selectedModel);
+    const profile = selectedFamily?.basicCatalogue?.usageProfile;
+    return resolveDefaultLifetimeUsage({
+      familyKey: selectedFamily?.familyKey ?? '',
+      usageMetricType: selectedUsageDisplayUnit === 'km' ? 'km' : 'hours',
+      basicLifetime: profile && profile.primaryMetric !== 'percent' ? profile.expectedLifetime : undefined,
+      specsJson: enrichedSpecsJson,
+    });
+  }
+
+  function openLifetimeModal() {
+    setUsageLifetimeDraft(String(usageLifetimeOverride ?? getUsageLifetimeDefault()));
+    setUsageModalMode('lifetime');
+    setMessage('');
+  }
+
+  function renderLifetimeModal(showHoursInput: boolean) {
+    const unit = selectedUsageDisplayUnit === 'km' ? 'km' : 'hours';
+    const defaultLifetime = getUsageLifetimeDefault();
+    const minimum = unit === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
+    const maximum = unit === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
+    const increment = unit === 'km' ? 10_000 : 500;
+    const parsed = Number(usageLifetimeDraft);
+    const valid = usageLifetimeDraft.trim() !== '' && Number.isInteger(parsed) && parsed >= minimum && parsed <= maximum;
+    const sliderValue = valid ? parsed : defaultLifetime;
+    // Keep the slider useful around this asset's default; exact entry supports the full range.
+    const sliderMin = Math.min(sliderValue, Math.max(minimum, Math.floor(defaultLifetime / 2 / increment) * increment));
+    const sliderMax = Math.max(sliderValue, Math.min(maximum, Math.ceil(defaultLifetime * 2 / increment) * increment));
+    const format = (value: number) => String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    const update = (value: number) => { setUsageLifetimeDraft(String(Math.max(minimum, Math.min(maximum, value)))); setMessage(''); };
+    return (
+      <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="usage-lifetime-title">
+        <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+        <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.yearDetailsModal}`}>
+          <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+            <div>
+              <h3 id="usage-lifetime-title" ref={lifetimeTitleRef} tabIndex={-1} data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('usage')}<span>Expected total lifetime</span></h3>
+              <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Total {unit === 'km' ? 'kilometres' : 'working hours'}, including usage already worked.</p>
+            </div>
+            <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
+          </div>
+          <div className={styles.yearSliderPanel}>
+            <div className={`${styles.yearSliderReadout} ${styles.lifetimeReadout}`}>
+              <span>Expected lifetime</span><strong>{valid ? format(parsed) : '—'}</strong><small>{unit}</small>
+            </div>
+            <label className={styles.yearSliderControl}>
+              <span className={styles.fieldLabel}>Adjust expected lifetime</span>
+              <input className={styles.yearRangeInput} aria-label="Expected total lifetime" style={{ '--year-progress': `${(sliderValue - sliderMin) / Math.max(1, sliderMax - sliderMin) * 100}%` } as CSSProperties} type="range" min={sliderMin} max={sliderMax} step="1" value={sliderValue} onChange={(event) => update(Math.round(Number(event.target.value) / increment) * increment)} />
+              <span className={styles.yearSliderMeta}><span>{format(sliderMin)} {unit}</span><span>{format(sliderMax)} {unit}</span></span>
+            </label>
+            <div className={styles.yearFineTuneRow}>
+              <button type="button" className={styles.yearFineTuneButton} onClick={() => update(sliderValue - increment)} disabled={sliderValue <= minimum}>− {format(increment)} {unit}</button>
+              <button type="button" className={styles.yearFineTuneButton} onClick={() => update(sliderValue + increment)} disabled={sliderValue >= maximum}>+ {format(increment)} {unit}</button>
+            </div>
+          </div>
+          <div className={styles.yearSecondaryControls}>
+            <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
+              <span className={styles.fieldLabel}>Or enter total {unit}</span>
+              <input type="text" inputMode="numeric" value={usageLifetimeDraft.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} onChange={(event) => setUsageLifetimeDraft(event.target.value.replace(/\s/g, ''))} aria-invalid={!valid} aria-describedby="lifetime-guidance" />
+              {!valid ? <span className={styles.modalMessage}>Enter {format(minimum)} to {format(maximum)} {unit}.</span> : null}
+            </label>
+            <button type="button" className={styles.unknownAnswerButton} onClick={() => update(defaultLifetime)}>Reset to default</button>
+          </div>
+          <p id="lifetime-guidance" className={styles.detailsModalText}>Keep the default if you’re unsure. This is a valuation assumption, not an expiry date.</p>
+          {valid && usageNumber !== null && usageNumber > parsed ? <p className={styles.detailsModalText}>The entered reading exceeds this lifetime. Review it, or continue if it reflects your asset.</p> : null}
+          <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setUsageModalMode(usageAmount !== '' ? 'hours' : 'percent')}>Back</button>
+            <button type="button" className={styles.primaryButton} disabled={!valid} onClick={() => { setUsageLifetimeOverride(parsed); saveUsageAnswer(showHoursInput, true); }}>Continue</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderUsageModal(showHoursInput: boolean) {
+    if (usageModalMode === 'lifetime') return renderLifetimeModal(showHoursInput);
     const percentageValue = toPercentOrNull(lifeWorkedPercent) ?? 50;
 
     return (

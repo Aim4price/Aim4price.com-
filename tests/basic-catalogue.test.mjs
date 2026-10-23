@@ -349,3 +349,19 @@ test('Basic passenger cars apply the Advanced age adjustment and preserve manual
     assert.equal(unknown.userReplacementCalculation.marketabilityFactor, 1);
   }
 });
+
+test('usage-step lifetime overrides the catalogue default and survives saving and recalculation', async () => {
+  process.env.AIM4PRICE_BASIC_CATALOGUE_RELEASE = release;
+  const h = harness();
+  const request = input({ usageAmount: 3500, lifeWorkedPercent: null, advancedAssumptions: { maxLifetimeUsage: 16000 } });
+  const result = await h.runGenericValuation(request);
+  assert.equal(result.maxLifetimeHours, 16000);
+  assert.equal(result.usageAmount, 3500);
+  assert.equal(result.advancedAssumptions.maxLifetimeUsage, 16000);
+  await h.saveGenericValuationRunFromResult({ result, selectedMethod: 'aim4price', userId: 'test-user' });
+  const insert = h.queries.find(({ sql }) => /insert into/.test(sql));
+  assert.ok(insert.values.some(v => typeof v === 'string' && v.includes('"maxLifetimeUsage":16000')));
+  const again = await h.runGenericValuation({ ...request, specsJson: result.specsJson, advancedAssumptions: result.advancedAssumptions });
+  assert.equal(again.maxLifetimeHours, 16000);
+  assert.equal(again.genericEstimateExVat, result.genericEstimateExVat);
+});
