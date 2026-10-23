@@ -38,7 +38,8 @@ import ShareModalCloseButton from '../../components/asset-register/ShareModalClo
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
-import type { RegisterPickerOption } from "../../components/asset-register/RegisterPickerRow";
+import RegisterPickerRow, { type RegisterPickerOption } from "../../components/asset-register/RegisterPickerRow";
+import registerPickerStyles from "../../components/asset-register/MoveAssetDestinationPicker.module.css";
 import AddAssetRegisterPicker from "../../components/asset-register/AddAssetRegisterPicker";
 import { FilterQuestion } from "../../components/FilterFlow";
 import exportReportStyles from "../../components/RegisterReportOptions.module.css";
@@ -7537,7 +7538,7 @@ export default function AssetRegisterClient({
       ))
       .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA'));
   }, [assetRegisterMoveAsset?.id, assetRegisterMoveGroups, assetRegisterMoveSourceId]);
-  const assetRegisterMoveGroupOptions = useMemo<Array<ModalSelectOption<string>>>(
+  const assetRegisterMoveGroupOptions = useMemo<RegisterPickerOption[]>(
     () => assetRegisterMoveGroupTargets.map((group) => {
       const registerName = group.registerId
         ? assetRegisters.find((register) => register.id === group.registerId)?.businessName || 'Asset Register'
@@ -7551,7 +7552,9 @@ export default function AssetRegisterClient({
       return {
         value: group.id,
         label: group.name,
-        description: `${group.members.length} grouped ${group.members.length === 1 ? 'asset' : 'assets'} · ${scopeDescription} · ${assetGroupValueModeLabel(group)}`,
+        description: `${scopeDescription} · ${assetGroupValueModeLabel(group)}`,
+        detailLabel: 'Grouped assets',
+        detailValue: group.members.length.toLocaleString('en-ZA'),
       };
     }),
     [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
@@ -15883,18 +15886,18 @@ export default function AssetRegisterClient({
           ) : null}
 
           {isChangeRegisterModalOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-              <div className={styles.modalBackdrop} data-website-overlay onClick={closeChangeRegisterModal} />
+            <div className={registerPickerStyles.overlay} data-website-overlay data-account-asset-modal>
+              <div className={registerPickerStyles.backdrop} onClick={closeChangeRegisterModal} />
 
               <div
-                className={`${styles.modalCard} ${styles.changeRegisterModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
+                className={`${styles.modalCard} ${styles.changeRegisterModal} ${styles.assetEntryModal} ${accountStyles.modalTheme} ${registerPickerStyles.addRegisterBody}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="asset-register-change-title"
               >
                 <div className={`${styles.modalHeader} ${styles.changeRegisterModalHeader}`}>
                   <div className={styles.modalHeaderText}>
-                    <h3 id="asset-register-change-title">Change Asset Register</h3>
+                    <h3 id="asset-register-change-title">Change asset register</h3>
                     <p>{dealerRegisterMode ? 'Choose your dealership register or a client register.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
                   </div>
 
@@ -15933,7 +15936,7 @@ export default function AssetRegisterClient({
                   </Link>
                 </div>
 
-                <div className={styles.changeRegisterList}>
+                <div className={`${styles.changeRegisterList} ${registerPickerStyles.registerRows}`} role="group" aria-label="Available asset registers">
                   {visibleRegisterSwitcherOptions.map((register) => {
                     const isCurrentRegister = register.id === activeRegister?.id || register.id === activeRegisterId;
                     const isChangingThisRegister = changingRegisterId === register.id;
@@ -15942,32 +15945,27 @@ export default function AssetRegisterClient({
                     const registerUnnotedAlertCount = registerUnnotedAlertCounts.get(register.id) ?? registerSummaryUnnotedAlertCount(register);
 
                     return (
-                      <button
-                        type="button"
+                      <RegisterPickerRow
                         key={register.id}
-                        className={`${styles.changeRegisterCard} ${isCurrentRegister ? styles.changeRegisterCardActive : ''}`}
-                        onClick={() => void handleChangeRegisterSelect(register)}
+                        option={{
+                          value: register.id,
+                          label: register.businessName || 'Asset Register',
+                          description: `${assetCountLabel}${isChangingThisRegister ? ' · Opening...' : isCurrentRegister ? ' · Current' : ''}`,
+                          currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
+                        }}
+                        selected={isCurrentRegister}
+                        current={isCurrentRegister}
                         disabled={Boolean(changingRegisterId)}
-                        aria-current={isCurrentRegister ? 'page' : undefined}
-                      >
-                        <span className={styles.changeRegisterCardText}>
-                          <strong>{register.businessName || 'Asset Register'}</strong>
-                          <small>{assetCountLabel} · {money(Number(register.totalValue) || 0)} current value</small>
-                        </span>
-                        <span className={styles.changeRegisterCardAside}>
-                          {registerUnnotedAlertCount > 0 ? (
-                            <span
-                              className={styles.changeRegisterCardAlertBadge}
-                              aria-label={`${formatAlertBadgeCount(registerUnnotedAlertCount)} unnoted alert${registerUnnotedAlertCount === 1 ? '' : 's'} in this asset register`}
-                            >
-                              {formatAlertBadgeCount(registerUnnotedAlertCount)}
-                            </span>
-                          ) : null}
-                          <span className={styles.changeRegisterCardAction}>
-                            {isChangingThisRegister ? 'Opening...' : isCurrentRegister ? 'Current' : 'Open'}
+                        onSelect={() => void handleChangeRegisterSelect(register)}
+                        badge={registerUnnotedAlertCount > 0 ? (
+                          <span
+                            className={styles.changeRegisterCardAlertBadge}
+                            aria-label={`${formatAlertBadgeCount(registerUnnotedAlertCount)} unnoted alert${registerUnnotedAlertCount === 1 ? '' : 's'} in this asset register`}
+                          >
+                            {formatAlertBadgeCount(registerUnnotedAlertCount)}
                           </span>
-                        </span>
-                      </button>
+                        ) : undefined}
+                      />
                     );
                   })}
 
