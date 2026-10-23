@@ -32,6 +32,8 @@ on:
       - 'components/AppHeader.tsx'
       - 'components/AccountantAssetManageModal.tsx'
       - 'components/MarketplaceOutcomeModal*'
+      - 'components/FacebookAdvertActions*'
+      - 'scripts/verify-marketplace-sharing.cjs'
       - 'components/MiddlemanShowroomClient*'
       - 'database/migrations/88-sold-asset-transfers.sql'
       - 'database/migrations/89-asset-transfer-pending-state.sql'
@@ -117,6 +119,9 @@ jobs:
 
       - name: Test Admin Marketplace
         run: npm run test:admin-marketplace
+
+      - name: Marketplace sharing dialogs
+        run: node scripts/verify-marketplace-sharing.cjs
 
       - name: Test Admin simplification
         run: npm run test:admin-simplification
