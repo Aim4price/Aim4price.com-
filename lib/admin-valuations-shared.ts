@@ -168,7 +168,7 @@ const DETAIL_FIELD_LABELS: Record<string, string> = {
   typedModelName: 'Model entered',
   normalizedTypedModelName: 'Normalized model',
   catalogModeUsed: 'Estimate path',
-  equipmentType: 'Equipment type',
+  equipmentType: 'Asset type',
   tractorType: 'Tractor type',
   driveType: 'Drive',
   cabType: 'Cab',

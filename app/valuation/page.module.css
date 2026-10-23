@@ -15473,3 +15473,10 @@
 .resultHeroHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
 .resultHeroHeader .resultHeroHeading { margin-bottom: 0; }
 .resultFactCard .resultConditionNote { display: block; margin-top: 8px; font-size: .8rem; line-height: 1.5; color: var(--app-muted, #617483); }
+
+/* Lifetime values can contain seven digits; retain the year modal layout. */
+.yearDetailsModal .lifetimeReadout strong {
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.8), 2.1rem);
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}

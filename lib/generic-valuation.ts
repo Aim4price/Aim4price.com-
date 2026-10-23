@@ -15,7 +15,7 @@ import {
   getValuationConditionFactorOverride,
   normalizeAdvancedAssumptions,
   tractorAgeDepPct,
-  tractorLifetimeHours,
+  resolveDefaultLifetimeUsage,
   type AdvancedAssumptionsInput,
   type NormalizedAdvancedAssumptions,
 } from './valuation/shared';
@@ -470,54 +470,7 @@ function specsUseExplicitPercentageBasis(specs: Record<string, unknown>): boolea
 
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
   const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.privateSettings?.lifetimeUsage ?? input.advancedAssumptions?.maxLifetimeUsage);
-  if (advancedLifetime !== null) return advancedLifetime;
-  if (input.basicLifetime !== undefined) return input.basicLifetime;
-
-  const specs = input.specsJson;
-  const explicit =
-    positiveUsageAmount(specs.max_lifetime_hours) ??
-    positiveUsageAmount(specs.expected_lifetime_hours) ??
-    positiveUsageAmount(specs.lifetime_hours) ??
-    positiveUsageAmount(specs.design_life_hours) ??
-    positiveUsageAmount(specs.max_lifetime_km) ??
-    positiveUsageAmount(specs.expected_lifetime_km) ??
-    positiveUsageAmount(specs.lifetime_km) ??
-    positiveUsageAmount(specs.design_life_km);
-
-  if (explicit !== null) return explicit;
-
-  const familyKey = cleanText(input.familyKey).toLowerCase();
-
-  // Motor uses the existing engine-hours depreciation path. In this case
-  // maxLifetimeHours is intentionally interpreted as max lifetime kilometres.
-  if (input.usageMetricType === 'km') {
-    if (familyKey.includes('car') || familyKey.includes('suv')) return 300_000;
-    if (familyKey.includes('bakkie') || familyKey.includes('ldv') || familyKey.includes('pickup')) return 350_000;
-    if (familyKey.includes('light_commercial') || familyKey.includes('van')) return 450_000;
-    if (familyKey.includes('truck')) return 800_000;
-    if (familyKey.includes('bus')) return 900_000;
-    if (familyKey.includes('trailer')) return 700_000;
-    return 350_000;
-  }
-
-  if (input.familyKey === 'tractors') {
-    const powerKw = toNumber(specs.power_kw) ?? 75;
-    const tractorType = cleanText(specs.tractor_type).toLowerCase() === 'orchard' ? 'orchard' : 'field';
-    return tractorLifetimeHours(tractorType, powerKw);
-  }
-
-  if (familyKey.includes('harvester')) return 8_000;
-  if (familyKey.includes('sprayer')) return 8_000;
-  if (familyKey.includes('loader')) return 10_000;
-  if (familyKey.includes('excavator')) return 12_000;
-  if (familyKey.includes('forklift')) return 12_000;
-  if (familyKey.includes('generator')) return 15_000;
-  if (familyKey.includes('compressor')) return 12_000;
-  if (familyKey.includes('telehandler')) return 10_000;
-  if (familyKey.includes('grader')) return 12_000;
-  if (familyKey.includes('roller') || familyKey.includes('compactor')) return 10_000;
-
-  return 12_000;
+  return advancedLifetime ?? resolveDefaultLifetimeUsage(input);
 }
 
 function normalizeResidualFloorFactor(value: unknown, fallbackPercent: number): number {

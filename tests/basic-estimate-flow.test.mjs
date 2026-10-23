@@ -170,7 +170,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
 test('typed Brand and optional Model stay simple and user-facing', () => {
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="Enter the manufacturer"/);
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="Model name or number"/);
-  assert.match(client, /Name your asset\. The starting price guide comes from its equipment type and specification level\./);
+  assert.match(client, /Name your asset\. The starting price guide comes from its asset type and specification level\./);
   assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
   assert.doesNotMatch(client, /Brand and model are stored with the estimate and Asset Register without creating catalogue records/);

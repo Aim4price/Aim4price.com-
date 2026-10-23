@@ -1393,7 +1393,7 @@ const LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; d
 ];
 
 const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
-  { step: 1, label: 'Equipment type' },
+  { step: 1, label: 'Asset type' },
   { step: 2, label: 'Details' },
   { step: 3, label: 'Status' },
   { step: 4, label: 'Documents' },
@@ -10292,7 +10292,7 @@ export default function AssetRegisterClient({
 
   async function saveManualAssetTypeSetting() {
     if (!isSavedManualAsset(editingAsset)) {
-      setAssetSettingsError('Only saved manual assets can change equipment type here.');
+      setAssetSettingsError('Only saved manual assets can change asset type here.');
       return;
     }
 
@@ -18982,7 +18982,7 @@ export default function AssetRegisterClient({
                       >
                         <OptionsIcon className={styles.assetSettingsOptionIcon} />
                         <span>
-                          <strong>Equipment Type</strong>
+                          <strong>Asset Type</strong>
                           <small>Change this manual asset’s category.</small>
                         </span>
                       </button>
@@ -19061,7 +19061,7 @@ export default function AssetRegisterClient({
                 <section className={styles.assetSettingsSection}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Manual asset</span>
-                    <h4>Equipment Type</h4>
+                    <h4>Asset Type</h4>
                     <p>Change the saved type on this same asset record. Existing values, files, notes, finance and insurance details are preserved. Licence details are only kept for non-property assets.</p>
                   </div>
 

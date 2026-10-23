@@ -180,8 +180,8 @@ export function advancedAssumptionsWereRequested(value: unknown): boolean {
 export function advancedAssumptionsRequireActiveAccess(value: unknown): boolean {
   const source = asAdvancedObject(value);
   if (!source) return false;
-  return hasAdvancedValue(pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']))
-    || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']));
+  // Lifetime is now a standard usage input; custom condition remains restricted.
+  return hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']));
 }
 
 export function normalizeAdvancedAssumptions(
@@ -404,4 +404,68 @@ export function calculatePercentUsedValue(input: PercentUsedMethodInput): Percen
     isSalvageEstimate: salvage.isSalvageEstimate,
     finalValueExVat: salvage.finalValueExVat,
   };
+}
+
+// Shared by the usage wizard and valuation engine so defaults cannot drift.
+function finiteLifetimeNumber(value: unknown): number | null {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+function positiveLifetime(value: unknown): number | null {
+  const number = finiteLifetimeNumber(value);
+  return number !== null && number > 0 ? Math.round(number) : null;
+}
+export function resolveDefaultLifetimeUsage(input: {
+  basicLifetime?: number;
+  specsJson: Record<string, unknown>;
+  familyKey: string;
+  usageMetricType: string;
+}): number {
+  if (input.basicLifetime !== undefined) return input.basicLifetime;
+
+  const specs = input.specsJson;
+  const explicit =
+    positiveLifetime(specs.max_lifetime_hours) ??
+    positiveLifetime(specs.expected_lifetime_hours) ??
+    positiveLifetime(specs.lifetime_hours) ??
+    positiveLifetime(specs.design_life_hours) ??
+    positiveLifetime(specs.max_lifetime_km) ??
+    positiveLifetime(specs.expected_lifetime_km) ??
+    positiveLifetime(specs.lifetime_km) ??
+    positiveLifetime(specs.design_life_km);
+
+  if (explicit !== null) return explicit;
+
+  const familyKey = String(input.familyKey).toLowerCase();
+
+  // Motor uses the existing engine-hours depreciation path. In this case
+  // maxLifetimeHours is intentionally interpreted as max lifetime kilometres.
+  if (input.usageMetricType === 'km') {
+    if (familyKey.includes('car') || familyKey.includes('suv')) return 300_000;
+    if (familyKey.includes('bakkie') || familyKey.includes('ldv') || familyKey.includes('pickup')) return 350_000;
+    if (familyKey.includes('light_commercial') || familyKey.includes('van')) return 450_000;
+    if (familyKey.includes('truck')) return 800_000;
+    if (familyKey.includes('bus')) return 900_000;
+    if (familyKey.includes('trailer')) return 700_000;
+    return 350_000;
+  }
+
+  if (input.familyKey === 'tractors') {
+    const powerKw = finiteLifetimeNumber(specs.power_kw) ?? 75;
+    const tractorType = String(specs.tractor_type ?? '').toLowerCase() === 'orchard' ? 'orchard' : 'field';
+    return tractorLifetimeHours(tractorType, powerKw);
+  }
+
+  if (familyKey.includes('harvester')) return 8_000;
+  if (familyKey.includes('sprayer')) return 8_000;
+  if (familyKey.includes('loader')) return 10_000;
+  if (familyKey.includes('excavator')) return 12_000;
+  if (familyKey.includes('forklift')) return 12_000;
+  if (familyKey.includes('generator')) return 15_000;
+  if (familyKey.includes('compressor')) return 12_000;
+  if (familyKey.includes('telehandler')) return 10_000;
+  if (familyKey.includes('grader')) return 12_000;
+  if (familyKey.includes('roller') || familyKey.includes('compactor')) return 10_000;
+
+  return 12_000;
 }

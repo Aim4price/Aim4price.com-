@@ -21,6 +21,7 @@ on:
       - 'app/api/equipment-families/route.ts'
       - 'app/valuation/valuation-client.tsx'
       - 'tests/basic-*.test.mjs'
+      - 'scripts/verify-usage-lifetime.cjs'
       - '.github/workflows/basic-catalogue-validation.yml'
   workflow_dispatch:
 
@@ -48,6 +49,8 @@ jobs:
         run: node --test tests/estimate-breakdown.test.cjs
       - name: Equipment picker browsing and selection
         run: node scripts/verify-equipment-picker.cjs
+      - name: Usage and lifetime modal flow
+        run: node scripts/verify-usage-lifetime.cjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash

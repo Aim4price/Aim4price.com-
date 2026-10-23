@@ -90,7 +90,7 @@ test('Get Estimate keeps the website viewport stable, uses R5k replacement slide
   assert.match(polishSource, /const WIZARD_CARD_ID = 'valuation-wizard-card'/);
   assert.doesNotMatch(polishSource, /wizard\.scrollIntoView\s*=/);
   assert.doesNotMatch(polishSource, /Element\.prototype\.scrollIntoView|HTMLElement\.prototype\.scrollIntoView/);
-  assert.match(polishSource, /FAMILY_SEARCH_LABEL = \/\^Search \(equipment type\|vehicle type\)\$\/i/);
+  assert.match(polishSource, /FAMILY_SEARCH_LABEL = \/\^Search \(asset type\|vehicle type\)\$\/i/);
   assert.match(polishSource, /REPLACEMENT_SLIDER_LABEL = \/Slide to replacement price\/i/);
   assert.match(polishSource, /slider\.step = String\(BASIC_REPLACEMENT_SLIDER_STEP\)/);
   assert.match(polishSource, /data-basic-replacement-slider-step/);

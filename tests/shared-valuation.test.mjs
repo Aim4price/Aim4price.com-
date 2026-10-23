@@ -103,3 +103,31 @@ test('the real percentage-used valuation keeps the salvage floor after a strong 
   assert.equal(result.finalValueExVat, 18_000);
   assert.equal(result.isSalvageEstimate, true);
 });
+
+test('lifetime is a public usage input while condition overrides remain restricted', () => {
+  assert.equal(shared.advancedAssumptionsRequireActiveAccess({ maxLifetimeUsage: 12000 }), false);
+  assert.equal(shared.advancedAssumptionsRequireActiveAccess({ maxLifetimeHours: 300000 }), false);
+  assert.equal(shared.advancedAssumptionsRequireActiveAccess({ maxLifetimeUsage: 12000, conditionFactorPercent: 80 }), true);
+  for (const value of [0, -100, 'invalid']) assert.throws(() => shared.normalizeAdvancedAssumptions({ maxLifetimeUsage: value }, 'hours'));
+});
+
+test('usage wizard and engine share equipment, catalogue and model lifetime defaults', () => {
+  const defaults = (familyKey, usageMetricType = 'hours', specsJson = {}, basicLifetime) => shared.resolveDefaultLifetimeUsage({ familyKey, usageMetricType, specsJson, basicLifetime });
+  assert.equal(defaults('tractors', 'hours', { power_kw: 20 }), 8000);
+  assert.equal(defaults('tractors', 'hours', { power_kw: 90 }), 14000);
+  assert.equal(defaults('generator'), 15000);
+  assert.equal(defaults('cars_suvs', 'km'), 300000);
+  assert.equal(defaults('trucks', 'km'), 800000);
+  assert.equal(defaults('cars_suvs', 'km', { max_lifetime_km: 250000 }), 250000);
+  assert.equal(defaults('compact_tractor', 'hours', { max_lifetime_hours: 14000 }, 8000), 8000);
+});
+
+test('chosen lifetime changes usage depreciation without changing the entered reading', () => {
+  const input = { replacementPriceExVat: 1000000, yearModel: 2020, baseYear: 2026, hours: 3500, condition: 'good' };
+  const short = shared.calculateEngineHoursValue({ ...input, maxLifetimeHours: 8000 });
+  const long = shared.calculateEngineHoursValue({ ...input, maxLifetimeHours: 16000 });
+  assert.ok(short.usageDepPct > long.usageDepPct);
+  assert.ok(short.finalValueExVat < long.finalValueExVat);
+  const normalized = shared.normalizeAdvancedAssumptions({ maxLifetimeUsage: 16000 }, 'hours');
+  assert.equal(normalized.maxLifetimeUsage, 16000);
+});
