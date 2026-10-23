@@ -20283,7 +20283,7 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.pricingResultModal} ${styles.revalueQuestionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="pricing-preview-title"><ProjectionIcon kind="value" />Recalculate value</h3>
+                <h3 id="pricing-preview-title">Recalculate value</h3>
                 <p>{pricingPreview.asset.title}</p>
               </div>
 
@@ -20305,9 +20305,9 @@ export default function AssetRegisterClient({
                   {pricingPreviewWizardStep !== 3 && pricingPreview.method === 'aim4price' ? (
                     <section key={`${pricingPreview.replacementMode}-${revalueQuestion}`} className={styles.revalueQuestionPanel}>
                       {revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? (<>
-                        <h4><ProjectionIcon kind="value" />Use the saved replacement price?</h4>
+                        <h4>Use the saved replacement price?</h4>
                         <div className={styles.revalueSavedReplacementCard}>
-                          <span>Current replacement price</span>
+                          <span>Replacement price</span>
                           <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${pricingMoney(pricingPreviewSavedReplacementPriceExVat)} ${pricingVatLabel}` : 'No saved price'}</strong>
                         </div>
                         <div className={styles.revalueDecisionActions}>
@@ -20316,7 +20316,7 @@ export default function AssetRegisterClient({
                         </div>
                       </>) : null}
                       {revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom' ? (<>
-                        <h4><ProjectionIcon kind="value" />What is the replacement price?</h4>
+                        <h4>What is the replacement price?</h4>
                         <label className={styles.revalueReplacementField}>
                           <span>Replacement price · {pricingVatLabel}</span>
                           <input
@@ -20331,7 +20331,7 @@ export default function AssetRegisterClient({
 
                       </>) : null}
                       {revalueQuestion === 'save' ? (<>
-                        <h4><ProjectionIcon kind="condition" />Save this replacement price to the asset?</h4>
+                        <h4>Save this replacement price to the asset?</h4>
                         <p>{pricingMoney(normalizedRevalueReplacementPriceInput ?? 0)} {pricingVatLabel}</p>
                         <div className={styles.revalueDecisionActions}>
                           <button type="button" className={styles.revalueCustomReplacementButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, true)}><ProjectionIcon kind="save" /><span>Save with the new value</span></button>
@@ -20340,7 +20340,7 @@ export default function AssetRegisterClient({
                         <p>The asset updates only after you review and save the new value.</p>
                       </>) : null}
                       {revalueQuestion === 'lifetime' ? (<>
-                        <h4><ProjectionIcon kind="usage" />What is the expected lifetime?</h4>
+                        <h4>What is the expected lifetime?</h4>
                         {renderRevalueLifetimeField(pricingPreview.asset)}
                       </>) : null}
                       {revalueReplacementPriceError ? <p role="alert" className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
@@ -20362,7 +20362,7 @@ export default function AssetRegisterClient({
                           <div className={styles.revalueReplacementHeader}>
                             <div>
                               <span>Your new value</span>
-                              <h4><ProjectionIcon kind="condition" />Preview and save</h4>
+                              <h4>Preview and save</h4>
                               <p className={styles.revalueStepCopy}>Review the new value before saving it to the Asset Register.</p>
                             </div>
                           </div>
@@ -21516,7 +21516,7 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${styles.projectionQuestionModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="projection-title"><ProjectionIcon kind="value" />Future asset value</h3>
+                <h3 id="projection-title">Future asset value</h3>
                 <p>{projectionAsset.title}</p>
               </div>
 
@@ -21527,11 +21527,10 @@ export default function AssetRegisterClient({
 
             <div ref={projectionQuestionRef} tabIndex={-1} aria-label="Future price questions" className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
               <div className={styles.projectionSimpleBody}>
-                <div className={styles.projectionProgress} hidden={projectionStep === 'result'}><p className={styles.projectionQuestionProgress} role="status">{projectionStep === 'result' ? 'Your future price' : `Question ${projectionStep} of 4`}</p><div className={styles.projectionProgressTrack} aria-hidden="true"><span style={{ width: `${projectionStep === 'result' ? 100 : projectionStep / 4 * 100}%` }} /></div></div>
                 {projectionStep !== 'result' ? (
                   <section key={projectionStep} className={styles.projectionSimpleCard}>
                     {projectionStep === 1 ? (<>
-                      <h4><ProjectionIcon kind="year" />Which year would you like to estimate?</h4>
+                      <h4>Which year would you like to estimate?</h4>
                     <ModalSelect<string>
                       label="Target year"
                       value={projectionForm.targetYear}
@@ -21542,7 +21541,7 @@ export default function AssetRegisterClient({
 
                     </>) : null}
                     {projectionStep === 2 ? (<>
-                      <h4><ProjectionIcon kind="inflation" />What annual inflation rate do you expect?</h4>
+                      <h4>What annual inflation rate do you expect?</h4>
                     <div className={styles.projectionQuickButtons}>
                       {PROJECTION_INFLATION_PRESETS.map((rate) => {
                         const isSelected = projectionForm.inflationRatePct === rate;
@@ -21575,7 +21574,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 3 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4><ProjectionIcon kind="usage" />{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
+                        <h4>{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
                         <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
                       </div>
                       <p id="projection-usage-help">{projectionUsageHelpText}</p>
@@ -21600,7 +21599,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 4 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4><ProjectionIcon kind="condition" />What will its future condition be?</h4>
+                        <h4>What will its future condition be?</h4>
                         <p>In {projectionForm.targetYear} · Current condition: {conditionLabel(projectionAsset.condition)}</p>
                       </div>
                     <div className={styles.projectionConditionGrid}>

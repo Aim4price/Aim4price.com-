@@ -132,3 +132,9 @@
 .reviewActions,.completionActions { grid-column:1/-1; }
 .completionActions { display:flex; justify-content:flex-end; }
 .completionActions button { min-width:8rem; }
+
+/* Match the uncluttered market-price chooser. */
+.dialog .toolbar { justify-content:flex-end; }
+.dialog .toolbar:has(> button:nth-child(2)) { justify-content:space-between; }
+.dialog .summary > div { gap:.6rem; padding:1.1rem; }
+.dialog .menuActions { gap:.8rem; }
