@@ -19,7 +19,7 @@ export async function restoreAssetDetails(ownerId:string,assetId:string,eventId:
   if(!event)throw Error('This history entry cannot be retracted.');
   const current=(await client.query('SELECT * FROM asset_register_items WHERE id=$1::uuid AND user_id=$2 FOR UPDATE',[assetId,ownerId])).rows[0];
   if(!current)throw Error('Asset unavailable.');
-  const normalize=(data:Record<string,unknown>)=>legacy?Object.fromEntries(Object.entries(data).filter(([key])=>key in legacyDetailFields).map(([key,value])=>[legacyDetailFields[key],value])):data;
+  const normalize=(data:Record<string,unknown>)=>legacy?Object.fromEntries(Object.entries(data).filter(([key])=>key in legacyDetailFields).map(([key,value])=>[legacyDetailFields[key],value])):{...data,...(!('life_worked_percent' in data)&&data.specs_json&&typeof data.specs_json==='object'?{life_worked_percent:(data.specs_json as Record<string,unknown>).life_worked_percent??(data.specs_json as Record<string,unknown>).lifeWorkedPercent}:{})};
   const before=normalize(event.before_data),after=normalize(event.after_data);
   // Legacy shared usage is the resolved metric: hours/km or life-worked percentage.
   const usage=resolveAssetUsage({kind:current.kind,hours:current.hours,lifeWorkedPercent:current.life_worked_percent,specsJson:current.specs_json});
@@ -28,7 +28,8 @@ export async function restoreAssetDetails(ownerId:string,assetId:string,eventId:
   const keys=restorableChanges(before,after);if(!keys.length)throw Error('Open the original record to correct this change.');
   const numeric=new Set(['year_model','hours','life_worked_percent']);
   for(const key of keys){
-   const currentValue=legacy&&['hours','life_worked_percent'].includes(key)?usage.value:current[key];
+   if((key==='life_worked_percent'&&!percentage)||(key==='hours'&&percentage&&!legacy))throw Error('Newer changes exist. The usage metric has changed; open Update asset to review it.');
+   const currentValue=['hours','life_worked_percent'].includes(key)?usage.value:current[key];
    const same=numeric.has(key)&&currentValue!=null&&after[key]!=null?Number(currentValue)===Number(after[key]):JSON.stringify(currentValue)===JSON.stringify(after[key]);
    if(!same)throw Error('Newer changes exist. Open Update asset to review them before retracting this change.');
    if(numeric.has(key)&&before[key]!=null&&(!Number.isFinite(Number(before[key]))||Number(before[key])<0))throw Error('This history entry has no valid previous reading.');
