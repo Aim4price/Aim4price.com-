@@ -393,3 +393,11 @@
 :global(body:has([data-account-access-page])) .footer {
   margin-top: 0;
 }
+
+/* Site chrome must never cover modal actions, even across stacking contexts.
+   Keep its layout space so opening a dialog does not move the page. */
+.footer[data-modal-blocked],
+.footer[data-modal-blocked] * {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

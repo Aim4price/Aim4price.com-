@@ -7,6 +7,9 @@ on:
       - 'app/modal-close.css'
       - 'tests/modal-close.test.mjs'
       - 'scripts/verify-modal-close.cjs'
+      - 'scripts/verify-footer-modal-layering.cjs'
+      - 'lib/modal-presence.ts'
+      - 'components/AppFooter.module.css'
       - '.github/workflows/modal-close-validation.yml'
   workflow_dispatch:
 permissions:
@@ -24,3 +27,4 @@ jobs:
       - run: npm ci
       - run: node --test tests/modal-close.test.mjs
       - run: node scripts/verify-modal-close.cjs
+      - run: node scripts/verify-footer-modal-layering.cjs
