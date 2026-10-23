@@ -15480,3 +15480,8 @@
   letter-spacing: -0.045em;
   white-space: nowrap;
 }
+
+.conditionChoiceIcon[data-condition="unspecified"] {
+  color: #61736e;
+  background: #edf1ef;
+}

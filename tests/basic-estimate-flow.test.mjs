@@ -134,7 +134,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /\{ step: 1, label: 'Equipment' \}[\s\S]*?\{ step: 2, label: 'Brand & Model' \}[\s\S]*?\{ step: 3, label: 'Level' \}[\s\S]*?\{ step: 4, label: 'Specs' \}[\s\S]*?\{ step: 5, label: 'Replacement' \}[\s\S]*?\{ step: 6, label: 'Value' \}/);
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);[\s\S]*?if \(step === 4\) return renderDetailsStep\(\);[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);/);
   assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>/);
-  const estimateChoices = client.slice(client.indexOf('if (!estimateExperience) {', client.indexOf('Choose sector')), client.indexOf('function renderBasicBrandModelStep'));
+  const estimateChoices = client.slice(client.indexOf('if (!estimateExperience) {', client.indexOf('Choose a sector')), client.indexOf('function renderBasicBrandModelStep'));
   assert.doesNotMatch(estimateChoices, /Start estimate/);
   assert.match(client, /renderEstimateChoiceIcon\('basic'\)/);
   const advancedCardStart = client.indexOf('estimateModeAdvancedCard');
@@ -170,7 +170,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
 test('typed Brand and optional Model stay simple and user-facing', () => {
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="Enter the manufacturer"/);
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="Model name or number"/);
-  assert.match(client, /Name your asset\. The starting price guide comes from its asset type and specification level\./);
+  assert.match(client, /Name your asset\./);
   assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
   assert.doesNotMatch(client, /Brand and model are stored with the estimate and Asset Register without creating catalogue records/);
@@ -442,6 +442,24 @@ test('replacement slider uses clean R5,000 amounts and reachable upper limits in
       assert.ok(Math.abs(selected - displayed) <= 2500);
       const nextExVat = (selected + REPLACEMENT_SLIDER_STEP) / multiplier;
       assert.ok(Math.abs(nextExVat * multiplier - selected - 5000) < 0.000001);
+    }
+  }
+});
+
+test('unspecified condition uses Fair and an explicit condition clears the unspecified selection', async () => {
+  const client = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  const handlers = [...client.matchAll(/onClick=\{\(\) => \{([^}]*setCondition\(option\.key === 'unspecified'[^}]*)\}\}/g)];
+  assert.equal(handlers.length, 2, 'modal and inline condition choices use the same fallback');
+  for (const [, body] of handlers) {
+    for (const key of ['unspecified', 'fair', 'good', 'excellent']) {
+      const state = {};
+      new Function('option', 'setCondition', 'setConditionUnspecified', 'setConditionStepComplete', 'clearDetailedAssessment', 'setMessage', 'resetResult', 'scrollToDetailsCard', body)(
+        { key }, value => state.condition = value, value => state.unspecified = value,
+        value => state.complete = value, () => {}, () => {}, () => {}, () => {},
+      );
+      assert.equal(state.condition, key === 'unspecified' ? 'fair' : key);
+      assert.equal(state.unspecified, key === 'unspecified');
+      assert.equal(state.complete, true);
     }
   }
 });

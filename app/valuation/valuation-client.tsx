@@ -94,6 +94,8 @@ import {
   type GeneralSaleabilityInput,
 } from '../../lib/saleability';
 
+const valuationConditionOptions = [...conditionOptions, { key: 'unspecified' as const, label: 'Not specified' }];
+
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 type EstimateExperience = 'basic' | 'advanced' | '';
 type MethodKey = 'aim4price';
@@ -1861,6 +1863,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [year, setYear] = useState(String(CURRENT_YEAR));
   const [usageAmount, setUsageAmount] = useState('');
   const [condition, setCondition] = useState<ConditionKey>('good');
+  const [conditionUnspecified, setConditionUnspecified] = useState(false);
   const [frontPto, setFrontPto] = useState(false);
   const [frontLoader, setFrontLoader] = useState(false);
   const [frontLoaderYear, setFrontLoaderYear] = useState('');
@@ -2766,6 +2769,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           if (assetCondition) {
             setCondition(assetCondition);
+            setConditionUnspecified(false);
             setConditionStepComplete(true);
           }
 
@@ -2972,6 +2976,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUserReplacementPrice('');
     setBasicReplacementPrice(null);
     setCondition('good');
+    setConditionUnspecified(false);
     setYearStepComplete(false);
     setUsageStepComplete(false);
     setConditionStepComplete(false);
@@ -3058,6 +3063,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setUsageStepComplete(false);
       setConditionStepComplete(false);
       setCondition('good');
+    setConditionUnspecified(false);
       clearDetailedAssessment();
       setActiveDetailsModal(null);
       setUsageModalMode('hours');
@@ -3117,6 +3123,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageStepComplete(false);
     setConditionStepComplete(false);
     setCondition('good');
+    setConditionUnspecified(false);
     clearDetailedAssessment();
     setActiveDetailsModal(null);
     setUsageModalMode('hours');
@@ -3632,6 +3639,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setOtherExtraName('');
     setOtherExtraReplacementPrice('');
     setCondition('good');
+    setConditionUnspecified(false);
     setSpecAnswers(isMotorSector(selectedSector) ? getMotorCanonicalTypeSpecs(selectedFamily?.familyKey, selectedMotorTypeOption) : selectedMotorSubtypeSpecs);
     setOpenSpecDropdownKey(null);
     setGpsTypeDropdownOpen(false);
@@ -5897,7 +5905,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
             <h2 className={styles.stepTitle}>What is your asset worth?</h2>
-            {!compactAppMode ? <p className={styles.stepText}>Choose sector to start valuing your asset.</p> : null}
+            {!compactAppMode ? <p className={styles.stepText}>Choose a sector your asset belongs to.</p> : null}
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -6126,7 +6134,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Name your asset. The starting price guide comes from its asset type and specification level.'}</p>
+          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Name your asset.'}</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
@@ -6213,7 +6221,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
         <div>
           <h2 className={styles.stepTitle}>Specification level</h2>
-          {!compactAppMode ? <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p> : null}
+          {!compactAppMode ? <p className={styles.stepText}>What would you say is the specification level of your asset?</p> : null}
         </div>
 
         {renderSpecificationChoices(basicSpecLevel, (level) => {
@@ -6352,7 +6360,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <h3 data-estimate-modal-title id="replacement-specification-title">Change specification</h3>
             <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => specificationDialogRef.current?.close()} aria-label="Close specification options" data-modal-close="true">×</button>
           </div>
-          <p className={`${styles.specificationModalHint} ${modalStyles.description}`}>Where does this asset roughly sit in the new-asset market?</p>
+          <p className={`${styles.specificationModalHint} ${modalStyles.description}`}>What would you say is the specification level of your asset?</p>
           {renderSpecificationChoices(specificationDraft, setSpecificationDraft)}
           <div className={styles.specificationModalFooter}>
             <p>Changing the level resets the replacement price to its suggested value.</p>
@@ -7900,6 +7908,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </button>
               </div>
 
+              <button type="button" className={styles.conditionRouteCard} onClick={() => {
+                clearDetailedAssessment(false);
+                setCondition('fair');
+                setConditionUnspecified(true);
+                setConditionStepComplete(true);
+                setMessage('');
+                resetResult();
+                setActiveDetailsModal(null);
+                scrollToDetailsCard('valuation-popularity-step');
+              }}>
+                <span className={styles.conditionChoiceIcon} data-condition="unspecified" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 12h14" /></svg></span>
+                <span className={styles.conditionRouteCopy}><strong>Not specified</strong><small>Uses Fair for valuation.</small></span>
+              </button>
+
               <div className={`${styles.detailsModalActions} ${modalStyles.actions} ${styles.conditionRouteActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
               </div>
@@ -8026,8 +8048,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {!advancedCondition ? (
                 <div className={styles.conditionQuestionCard}>
                   <div className={styles.dealerAssessmentOptions}>
-                    {conditionOptions.map((option) => {
-                      const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
+                    {valuationConditionOptions.map((option) => {
+                      const selected = conditionStepComplete && !detailedAssessmentOpen && (option.key === 'unspecified' ? conditionUnspecified : !conditionUnspecified && condition === option.key);
                       return (
                         <button
                           key={option.key}
@@ -8036,7 +8058,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           aria-pressed={selected}
                           onClick={() => {
                             clearDetailedAssessment(false);
-                            setCondition(option.key);
+                            setCondition(option.key === 'unspecified' ? 'fair' : option.key);
+                            setConditionUnspecified(option.key === 'unspecified');
                             setConditionStepComplete(true);
                             setMessage('');
                             resetResult();
@@ -8048,12 +8071,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                                 : option.key === 'good' ? <path d="m5 12 4 4L19 6" />
                                 : option.key === 'fair' ? <path d="M5 7h14M5 12h14M5 17h9" />
                                 : option.key === 'used' ? <><path d="M4 7h16v14H4ZM8 7V3h8v4M8 12h8" /></>
+                                : option.key === 'unspecified' ? <path d="M5 12h14" />
                                 : <><path d="m12 3 10 18H2ZM12 9v5" /><path d="M12 17h.01" /></>}
                             </svg>
                           </span>
                           <span className={styles.conditionChoiceCopy}>
                             <strong>{option.label}</strong>
-                            <small>{option.key === 'excellent' ? 'Very little wear.' : option.key === 'good' ? 'Well maintained, with light wear.' : option.key === 'fair' ? 'Visible wear from regular use.' : option.key === 'used' ? 'Previously used equipment.' : 'Significant wear; needs inspection or repairs.'}</small>
+                            <small>{option.key === 'excellent' ? 'Very little wear.' : option.key === 'good' ? 'Well maintained, with light wear.' : option.key === 'fair' ? 'Visible wear from regular use.' : option.key === 'used' ? 'Previously used equipment.' : option.key === 'unspecified' ? 'Uses Fair for valuation.' : 'Significant wear; needs inspection or repairs.'}</small>
                           </span>
                           <span className={styles.estimateSelectionCheck} aria-hidden="true">{selected ? '✓' : ''}</span>
                         </button>
@@ -8475,7 +8499,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {renderDetailIcon('condition', conditionReady)}
               <span className={styles.specStepContent}>
                 <strong>Condition</strong>
-                <small>{conditionReady ? (detailedAssessmentOpen ? 'Advanced condition' : conditionLabel(condition)) : 'Choose Basic or Advanced condition.'}</small>
+                <small>{conditionReady ? (detailedAssessmentOpen ? 'Advanced condition' : conditionUnspecified ? 'Not specified · Fair assumed' : conditionLabel(condition)) : 'Choose Basic or Advanced condition.'}</small>
               </span>
               <span className={styles.specStepAction}>{conditionReady ? 'Edit' : 'Add condition'}</span>
             </button>
@@ -8491,7 +8515,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
                 {conditionStepComplete ? (
                   <span className={styles.selectedSummaryPill} data-selection-status="selected">
-                    {detailedAssessmentOpen ? 'Detailed condition' : conditionLabel(condition)}
+                    {detailedAssessmentOpen ? 'Detailed condition' : conditionUnspecified ? 'Not specified · Fair assumed' : conditionLabel(condition)}
                   </span>
                 ) : !compactAppMode ? (
                   <span className={styles.selectedSummaryPill} data-selection-status="pending">Choose one</span>
@@ -8500,8 +8524,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
               {!compactAppMode || !detailedAssessmentOpen ? (
                 <div className={styles.conditionButtonGrid}>
-                  {conditionOptions.map((option) => {
-                    const selected = conditionStepComplete && condition === option.key;
+                  {valuationConditionOptions.map((option) => {
+                    const selected = conditionStepComplete && (option.key === 'unspecified' ? conditionUnspecified : !conditionUnspecified && condition === option.key);
                     return (
                       <button
                         key={option.key}
@@ -8509,7 +8533,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
                         aria-pressed={selected}
                         onClick={() => {
-                          setCondition(option.key);
+                          setCondition(option.key === 'unspecified' ? 'fair' : option.key);
+                            setConditionUnspecified(option.key === 'unspecified');
                           setConditionStepComplete(true);
                           clearDetailedAssessment();
                           resetResult();
