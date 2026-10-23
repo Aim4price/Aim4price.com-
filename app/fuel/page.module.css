@@ -3662,12 +3662,12 @@
 .exclusionSelectedAssets {
   display: grid;
   gap: 0.55rem;
-  max-height: min(calc(var(--website-design-vh) * 28), 14rem);
+  max-height: none;
   padding: 0.7rem;
   border: 1px solid #dce7e2;
   border-radius: 1rem;
   background: #f7fbf9;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .exclusionSelectedAssets > div {
@@ -7603,7 +7603,8 @@
   margin: 1.25rem 0;
   padding: 1.25rem;
   gap: 1.25rem;
-  flex-shrink: 1;
+  flex-shrink: 0;
+  overflow: visible;
 }
 .accountFuelModal.exclusionsModal .exclusionEditorHeading {
   gap: .65rem;
@@ -7719,9 +7720,28 @@
 .fuelSlipDetailIcon { position: absolute; left: 0; top: .05rem; display: block; width: 1.15rem; height: 1.15rem; color: var(--app-muted, #648477); }
 
 /* Match Marketplace contact's inset icons and calm field surfaces. */
+.storageEditorBackdrop.storageEditorBackdrop {
+  /* Keep the entire form reachable on short screens without nested scrollbars. */
+  overflow: auto;
+  align-items: safe center;
+  scrollbar-width: none;
+}
+.storageEditorBackdrop::-webkit-scrollbar { display: none; }
+.accountFuelModal.storageEditor {
+  max-height: none !important;
+  overflow: visible !important;
+  gap: .8rem;
+  --fuel-dialog-padding: 1.5rem;
+}
+.accountFuelModal.storageEditor .modalHeader {
+  padding-bottom: .8rem !important;
+}
+.accountFuelModal.storageEditor .fuelModalFooter {
+  padding-top: .8rem !important;
+}
 .accountFuelModal.storageEditor .storageEditorGrid {
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 1rem 1.15rem;
+  gap: .75rem 1.15rem;
 }
 .accountFuelModal.storageEditor .storageEditorGrid > :is(label, div) {
   grid-column: span 3;
