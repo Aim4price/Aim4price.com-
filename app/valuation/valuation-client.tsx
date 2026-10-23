@@ -4459,7 +4459,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       confidenceNote,
       yearSummary,
       usageSummary,
-      conditionSummary: appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition),
+      conditionSummary: appliedDealerAssessment ? `${getDealerOptionLabel(DEALER_MECHANICAL_OPTIONS, appliedDealerAssessment.mechanicalCondition)} · Detailed assessment` : conditionLabel(resultCondition),
       replacementPriceExVat,
       replacementBasisText,
       notes: [
@@ -4471,7 +4471,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       clientRows: safeClientRows,
       recordRows,
       saleabilityRows: compactPdfRows([
-        { label: 'Selling estimate', value: 'Calculate Saleability separately for your selling circumstances.' },
+        { label: 'Realistic Market Price', value: 'Calculate separately for your selling circumstances.' },
+        { label: 'Why prices differ', value: 'Ideal Price reflects the asset details and depreciation assumptions. Realistic Market Price also considers demand, competing assets, selling method and time available. It may be higher or lower; neither price guarantees a sale.' },
       ]),
     };
   }
@@ -8934,13 +8935,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
         <div className={styles.resultsMain}>
-          <ValuationResultTour />
           <section data-value-tour="value" className={`${styles.resultHero} ${resultHeroTone}`}>
             {isSalvageEstimate || !basicEstimateActive ? <div className={styles.resultHeroTopline}>
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
-            <div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2 id="valuation-result-heading" tabIndex={-1}>Estimated asset value</h2></div>
+            <div className={styles.resultHeroHeader}><div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2 id="valuation-result-heading" tabIndex={-1}>Ideal Price</h2></div><ValuationResultTour /></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -8989,7 +8989,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('condition')}<span>Condition</span>
                 <strong>{appliedDealerAssessment ? getDealerOptionLabel(DEALER_MECHANICAL_OPTIONS, appliedDealerAssessment.mechanicalCondition) : conditionLabel(resultCondition)}</strong>
-                {appliedDealerAssessment ? <small>Working condition · detailed assessment</small> : null}
+                {appliedDealerAssessment ? <small className={styles.resultConditionNote}>Detailed assessment</small> : null}
               </div>
               <div className={styles.resultFactCard}>
                 {renderDetailIcon('popularity')}<span>Popularity</span>
@@ -9212,11 +9212,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
               <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
-              <strong>What could it sell for?</strong>
-              <p>Get a separate estimate for how and when you want to sell.</p>
-              <small>Your Aim4price value stays unchanged.</small>
+              <strong>Realistic Market Price</strong>
+              <p>Demand and selling circumstances can move this above or below your Ideal Price.</p>
+              <small>Your Ideal Price stays unchanged. Neither is a guaranteed selling price.</small>
             </div>
-            <button type="button" aria-label="Refine Saleability" onClick={() => setSaleabilityOpen(true)}>Refine</button>
+            <button type="button" aria-label="Calculate Realistic Market Price" onClick={() => setSaleabilityOpen(true)}>Refine</button>
           </section>
         </div>
 

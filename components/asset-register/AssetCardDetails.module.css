@@ -64,3 +64,5 @@
 .marketNeedsUpdate button:hover { background:#ffe4e6; }
 .marketNeedsUpdate button:focus-visible { outline-color:#b91c1c; }
 .marketNeedsUpdate .marketInfo { border-color:#efb8bd; }
+
+.marketExplanation { margin: 0; padding: 0 16px 14px; font-size: .78rem; line-height: 1.5; color: inherit; }

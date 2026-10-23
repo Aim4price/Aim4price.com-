@@ -6,7 +6,7 @@ const money = (value: number) => `R ${value.toLocaleString('en-ZA', { minimumFra
 
 /** The caller supplies only a server-verified snapshot, never posted report rows. */
 export function appendEstimateBreakdownHtml(html: string, report: EstimateBreakdown, include: boolean): string {
-  if (report.settings) html = html.replace('<h2>Estimated Value</h2>', '<h2>Manually adjusted estimate</h2>');
+  if (report.settings) html = html.replace(/<h2>(?:Ideal Price|Estimated Value)<\/h2>/, '<h2>Manually adjusted estimate</h2>');
   if (!include) return html;
   const pages: { rows: EstimateBreakdown['rows']; notes: string[] }[] = [];
   for (let i = 0; i < report.rows.length; i += 8) pages.push({ rows: report.rows.slice(i, i + 8), notes: [] });

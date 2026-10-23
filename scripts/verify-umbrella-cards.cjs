@@ -186,17 +186,17 @@ async function check(browser, url) {
     await click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),true,'card click opens standalone details');
 
-    await page.waitForSelector('#asset-card-normal [aria-label="Estimated selling price"]');
+    await page.waitForSelector('#asset-card-normal [aria-label="Realistic Market Price"]');
     const detailOrder=await page.$eval('#asset-card-normal',card=>{
-      const market=card.querySelector('[aria-label="Estimated selling price"]');
+      const market=card.querySelector('[aria-label="Realistic Market Price"]');
       const replacement=card.querySelector('[data-asset-return-action="detail-replacement"]');
       const documents=card.querySelector('[aria-label^="View documents for"]');
       return {afterReplacement:!!(replacement.compareDocumentPosition(market)&Node.DOCUMENT_POSITION_FOLLOWING),beforeDocuments:!!(market.compareDocumentPosition(documents)&Node.DOCUMENT_POSITION_FOLLOWING),calculate:market.textContent.includes('Calculate')};
     });
     assert.deepEqual(detailOrder,{afterReplacement:true,beforeDocuments:true,calculate:true});
-    await click('#asset-card-normal [aria-label="Open saleability assessment"]');
-    await page.waitForSelector('[aria-label="Close Saleability"]');
-    await click('[aria-label="Close Saleability"]');
+    await click('#asset-card-normal [aria-label="Open Realistic Market Price"]');
+    await page.waitForSelector('[aria-label="Close Realistic Market Price"]');
+    await click('[aria-label="Close Realistic Market Price"]');
     await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
     assert.equal(await isOpen('normal'),true,'closing saleability returns to expanded card, not a pricing menu');
 

@@ -940,7 +940,7 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           </div>
 
           <aside class="assetReportValuationCard">
-            <h2>Estimated Value</h2>
+            <h2>Ideal Price</h2>
             <strong class="assetReportValue">${escapeHtml(payload.selectedValue)}</strong>
             <span class="assetReportVat">VAT excluded</span>
             <div class="assetReportValueMeta">
@@ -965,8 +965,8 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           <aside class="assetReportSide">
             ${payload.saleabilityRows.length ? `
               <section class="assetReportSideCard assetReportRecordRows assetReportSaleabilityRows">
-                <h2>Saleability</h2>
-                ${renderReportRows(payload.saleabilityRows, 'No Saleability details available.')}
+                <h2>Realistic Market Price</h2>
+                ${renderReportRows(payload.saleabilityRows, 'No market price details available.')}
               </section>
             ` : ''}
             <section class="assetReportSideCard assetReportRecordRows">

@@ -173,10 +173,10 @@ function enrichEstimatePdfFormWithSaleabilityPrice(form: HTMLFormElement): void 
     const rows = Array.isArray(payload.saleabilityRows) ? [...payload.saleabilityRows] : [];
     const withoutExistingPrice = rows.filter((row) => {
       if (!isRecord(row)) return true;
-      return !/^Saleability price$/i.test(String(row.label ?? '').trim());
+      return !/^(Saleability price|Realistic Market Price)$/i.test(String(row.label ?? '').trim());
     });
     const priceRow = {
-      label: 'Saleability price',
+      label: 'Realistic Market Price',
       value: formatSaleabilityPdfPrice(snapshot.saleabilityPriceExVat),
     };
     const gradeIndex = withoutExistingPrice.findIndex((row) =>

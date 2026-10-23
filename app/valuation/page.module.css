@@ -15468,3 +15468,8 @@
 @media (prefers-reduced-motion: reduce) { .usageEntryPrompt:not(:focus-within) { animation: none; } }
 .extraRouteIcon[data-kind='none'] { color: #a74b40; background: #fbe4e0; }
 .specStepCard { scroll-margin-block: 24px; }
+
+/* Keep the value explanation in the estimate card, beside its heading. */
+.resultHeroHeader { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.resultHeroHeader .resultHeroHeading { margin-bottom: 0; }
+.resultFactCard .resultConditionNote { display: block; margin-top: 8px; font-size: .8rem; line-height: 1.5; color: var(--app-muted, #617483); }
