@@ -1,0 +1,49 @@
+.wrapper { min-width: 0; width: 100%; }
+.dropzone {
+  position: relative;
+  min-height: 8rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1.5px dashed var(--app-line, #8dcbae);
+  border-radius: 1.1rem;
+  color: var(--app-text, #225449);
+  background: var(--app-surface-soft, #f3fbf7);
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.dropzone:hover:not([aria-disabled='true']), .dragging {
+  border-color: var(--app-accent, #3f9c75);
+  background: var(--app-surface-soft, #edf9f3);
+}
+.dropzone:focus-within { outline: 3px solid var(--app-accent, #80b9a4); outline-offset: 3px; }
+.selected { border-style: solid; }
+.dropzone[aria-disabled='true'] { opacity: .6; }
+.icon {
+  width: 3.6rem; height: 3.6rem;
+  display: grid; place-items: center;
+  border: 1px solid var(--app-line, #acd9c4);
+  border-radius: 1rem;
+  color: var(--app-accent, #146749);
+  background: var(--app-surface, #fff);
+}
+.icon svg { width: 1.55rem; height: 1.55rem; }
+.copy { min-width: 0; display: grid; gap: .35rem; }
+.copy strong { font-size: .95rem; font-weight: 800; line-height: 1.4; }
+.copy small { color: var(--app-muted, #6b7f78); font-size: .8rem; font-weight: 500; line-height: 1.5; }
+.input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.dropzone .browse {
+  min-height: 2.8rem; padding: .65rem 1rem;
+  border: 1px solid var(--app-line, #afd7c3); border-radius: .8rem;
+  color: var(--app-text, #146449); background: var(--app-surface, #fff);
+  font: inherit; font-size: .8rem; font-weight: 800; white-space: nowrap; cursor: pointer;
+}
+.browse:focus-visible { outline: none; }
+.browse:disabled { cursor: default; }
+.error { color: var(--app-danger, #a72f31); margin: .6rem 0 0; font-size: .85rem; line-height: 1.5; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dropzone { grid-template-columns: auto minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .browse { grid-column: 1 / -1; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .dropzone { transition: none; } }

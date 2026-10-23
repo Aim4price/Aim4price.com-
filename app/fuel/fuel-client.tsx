@@ -1,4 +1,5 @@
 'use client';
+import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
@@ -1794,7 +1795,6 @@ export default function FuelClient({
     () => getVisibleFuelSlipExtractionWarnings(fuelSlipDraft.extractionWarnings),
     [fuelSlipDraft.extractionWarnings],
   );
-  const fuelSlipUploadReady = Boolean(fuelSlipUploadFile);
   const fuelSlipManagerSearchTerm = fuelSlipManagerSearch.trim().toLowerCase();
 
   const fuelSlipManagerTargetOptions = useMemo<ReportSelectOption[]>(
@@ -2647,8 +2647,8 @@ export default function FuelClient({
     setFuelSlipFlow(fuelSlipFlow === 'target-manual' ? 'manual-form' : 'upload');
   }
 
-  function handleFuelSlipUploadChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
+  function handleFuelSlipUploadFiles(files: File[]) {
+    const file = files[0] ?? null;
     resetFuelSlipValidationState();
     setFuelSlipUploadFile(file);
     setFuelSlipUploadFileName(file?.name ?? '');
@@ -2665,7 +2665,6 @@ export default function FuelClient({
       extractionStatus: 'needs_review',
       reviewRequired: true,
     }));
-    event.target.value = '';
   }
 
   const allowanceEndpoint = scopedApiUrl('/api/capture-allowance?type=fuel_slip');
@@ -4407,17 +4406,17 @@ export default function FuelClient({
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
                 <h3>Documents and photos</h3>
-                <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
-                  <label className={styles.uploadButton}>
-                    <UploadIcon />
-                    Add fuel slip/photo
-                    <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
-                  </label>
-                  <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
+                <CaptureUploadDropzone
+                  title="Drop fuel slip here or browse"
+                  description="One PDF or photo · PDF, JPG, PNG or WebP · 12 MB per file"
+                  inputLabel="Choose fuel slip or photo"
+                  selectedCount={fuelSlipUploadFile ? 1 : 0}
+                  disabled={isSaving || isExtractingFuelSlip}
+                  onFiles={handleFuelSlipUploadFiles}
+                />
+                {fuelSlipUploadFileName ? <p role="status">Selected: {fuelSlipUploadFileName}</p> : null}
                 <p role="status">{captureAllowance.label}</p>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
-                  {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
-                </div>
               </section>
             </div>
             <div className={styles.modalFooter}>

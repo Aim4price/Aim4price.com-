@@ -1,4 +1,5 @@
 'use client';
+import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import BudgetDetailIcon from '../../components/BudgetDetailIcon';
@@ -3284,8 +3285,7 @@ export default function MyInvoicesClient({
     setManualUploadFile(event.target.files?.[0] ?? null);
   }
 
-  function handleAutomaticFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const pages = Array.from(event.target.files ?? []);
+  function handleAutomaticFiles(pages: File[]) {
     const error = validateInvoicePages(pages);
     setCaptureUploadError(error || '');
     setAutomaticUploadPages(error ? [] : pages);
@@ -5064,16 +5064,15 @@ export default function MyInvoicesClient({
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
-                <label className={styles.captureUploadTarget}>
-                  <span className={styles.captureUploadIcon} aria-hidden="true"><UploadIcon /></span>
-                  <span className={styles.captureUploadCopy}>
-                    <strong>{automaticUploadPages.length ? 'Change files' : 'Choose invoice or photos'}</strong>
-                    <small>One PDF or up to 12 photos of the same invoice</small>
-                    <small>PDF, JPG, PNG or WebP · 12 MB per file</small>
-                  </span>
-                  <span className={styles.captureUploadNext} aria-hidden="true"><ChevronRightIcon /></span>
-                  <input type="file" aria-label="Choose invoice or photos" accept="application/pdf,image/jpeg,image/png,image/webp" multiple disabled={isExtracting} onChange={handleAutomaticFileChange} />
-                </label>
+                <CaptureUploadDropzone
+                  title="Drop invoice or photos here or browse"
+                  description="One PDF or up to 12 photos of the same invoice · PDF, JPG, PNG or WebP · 12 MB per file"
+                  inputLabel="Choose invoice or photos"
+                  selectedCount={automaticUploadPages.length}
+                  multiple
+                  disabled={isExtracting}
+                  onFiles={handleAutomaticFiles}
+                />
                 {automaticUploadPages.length ? <div className={styles.captureFileSelection}>
                   <span className={styles.captureFileCount} role="status">{automaticUploadPages.length} {automaticUploadPages.length === 1 ? 'file' : 'files'} selected</span>
                   <ul className={styles.captureFileList} aria-label="Selected files">
