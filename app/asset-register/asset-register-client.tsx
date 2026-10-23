@@ -9593,12 +9593,14 @@ export default function AssetRegisterClient({
     }
   }
 
-  function continueAddAssetForRegister() {
-    if (!addAssetRegisterOptions.some((option) => option.value === addAssetTargetRegisterId)) {
+  function continueAddAssetForRegister(registerId: string) {
+    if (!addAssetRegisterOptions.some((option) => option.value === registerId)) {
       setNotice({ tone: 'error', message: 'Choose the Asset Register that should own this asset.' });
       return;
     }
 
+    setAddAssetTargetRegisterId(registerId);
+    setNotice(null);
     setIsAddAssetDestinationModalOpen(false);
     setIsAddChoiceModalOpen(true);
   }
@@ -17831,10 +17833,8 @@ export default function AssetRegisterClient({
       {isAddAssetDestinationModalOpen ? (
         <AddAssetRegisterPicker
           options={addAssetRegisterOptions}
-          targetId={addAssetTargetRegisterId}
-          onSelect={(value) => { setAddAssetTargetRegisterId(value); setNotice(null); }}
+          onSelect={continueAddAssetForRegister}
           onClose={closeAddAssetDestinationModal}
-          onContinue={continueAddAssetForRegister}
           onCreate={createRegisterFromAddAsset}
           busy={isCreatingAddAssetRegister}
         />
