@@ -90,6 +90,11 @@ jobs:
 
   phone-rotation:
     runs-on: ubuntu-latest
+    # Keep this image version aligned with the Playwright package below.
+    # Browsers and OS dependencies are preinstalled, avoiding slow apt mirrors.
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -98,11 +103,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Install browser test engines
-        run: |
-          npm install --prefix /tmp/phone-browser-tests --no-audit --no-fund playwright@1.56.1
-          /tmp/phone-browser-tests/node_modules/.bin/playwright install --with-deps chromium firefox webkit
+      - name: Install matching Playwright client
+        run: npm install --prefix /tmp/phone-browser-tests --no-audit --no-fund playwright@1.56.1
       - name: Phone rotation across browser engines
         env:
+          # Firefox requires the home directory to belong to the container user.
+          HOME: /root
           PHONE_PLAYWRIGHT_PATH: /tmp/phone-browser-tests/node_modules/playwright
         run: node scripts/verify-phone-rotation.cjs

@@ -65,7 +65,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
       <div className={styles.backdrop} onClick={props.onClose} />
-      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : !isUmbrella ? styles.registerDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="move-asset-name" aria-describedby="move-destination-description" aria-busy={props.busy}
+      <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : styles.registerDialog}`} role="dialog" aria-modal="true" aria-labelledby="move-asset-name" aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
           if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
@@ -96,7 +96,6 @@ export default function MoveAssetDestinationPicker(props: Props) {
               </button> : null}
             </div>
           ) : <>
-          <div className={styles.listHeading}><h4>{isUmbrella ? 'Available umbrellas' : 'Available asset registers'}</h4><span>{props.loading ? 'Loading' : `${visible.length} available`}</span></div>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
@@ -104,9 +103,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
           {props.loading ? <p className={styles.empty} role="status">Loading umbrellas...</p>
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
             : visible.length ? <div className={styles.options} role="group" aria-label={isUmbrella ? 'Target umbrella' : 'Target asset register'}>
-              {visible.map((option) => !isUmbrella ? <RegisterPickerRow key={option.value} option={option} selected={props.targetId === option.value} disabled={props.busy} onSelect={props.onSelect} /> : <button key={option.value} type="button" className={styles.option} aria-pressed={props.targetId === option.value} disabled={props.busy} onClick={() => props.onSelect(option.value)}>
-                <span className={styles.optionCopy}><strong>{option.label}</strong><small>{option.description}</small></span><span className={styles.selection} aria-hidden="true">{props.targetId === option.value ? 'Selected' : 'Select'}</span>
-              </button>)}
+              {visible.map((option) => <RegisterPickerRow key={option.value} option={{...option, icon: isUmbrella ? 'umbrella' : 'folder'}} selected={props.targetId === option.value} disabled={props.busy} onSelect={props.onSelect} />)}
             </div>
             : <div className={styles.empty}>
               {query ? <><p>No destinations match “{search}”.</p><button type="button" onClick={() => setSearch('')}>Clear search</button></>

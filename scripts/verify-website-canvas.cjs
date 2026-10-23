@@ -330,18 +330,18 @@ async function check(browser, url) {
     await page.waitForSelector(registers);
     assert.ok(await page.$(`${destination} input[aria-label="Search asset registers"]`));
     assert.ok(await page.$$eval(`${destination} button`, elements=>elements.some(element=>element.textContent.includes('Add Register'))));
-    assert.ok(await page.$$eval(`${destination} button`, elements=>elements.some(element=>element.textContent.trim()==='Continue' && element.disabled)), 'Continue stays disabled until a register is selected');
+    assert.equal(await page.$$eval(`${destination} button`, elements=>elements.find(element=>element.textContent.trim()==='Continue')?.disabled),true,'Continue stays disabled until a register is selected');
     await page.$$eval(`${registers} button`, elements=>{
       const register=elements.find(element=>element.textContent.includes('Test farm'));
       if(!register) throw new Error('Fixture Asset Register is missing from destination cards');
       register.click();
     });
-    await page.waitForSelector(`${registers} button[aria-pressed="true"]`);
     assert.equal(await page.$('[aria-labelledby="add-asset-choice-title"]'),null,'Selecting a register waits for confirmation');
-    await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(button=>button.textContent.trim()==='Continue' && !button.disabled));
-    await page.$$eval(`${destination} button`, elements=>elements.find(element=>element.textContent.trim()==='Continue').click());
+    await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(button=>button.textContent.trim()==='Continue'&&!button.disabled));
+    assert.ok(await page.$eval(`${registers} button[aria-pressed="true"]`,element=>element.textContent.includes('Test farm')),'The chosen register is visibly selected');
+    await page.$$eval(`${destination} button`,elements=>elements.find(element=>element.textContent.trim()==='Continue').click());
     await page.waitForSelector('[aria-labelledby="add-asset-choice-title"]');
-    assert.equal(await page.$(registers),null,'Continue closes the register picker and opens Add Asset options');
+    assert.equal(await page.$(registers),null,'Continuing with the selected register closes the picker and opens Add Asset options');
   }
   await openAssetChoice();
   assert.equal(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>Boolean(e.closest('[data-website-canvas]'))),true);
@@ -436,7 +436,7 @@ async function main() {
       await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Next startup timed out')),90000);server.stdout.on('data',data=>{if(data.toString().includes('Ready')){clearTimeout(timer);resolve()}});server.stderr.on('data',data=>process.stderr.write(data));server.once('exit',code=>{clearTimeout(timer);reject(Error(`Next exited ${code}`))})});
     }
     await fs.mkdir(output,{recursive:true});
-    browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
+    browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:process.env.CANVAS_BROWSER_PATH?['--no-sandbox','--disable-dev-shm-usage']:chromium.args,headless:true,pipe:!process.env.CANVAS_BROWSER_PATH});
     await check(browser,external||'http://127.0.0.1:3030');
   } finally {
     if(browser) await browser.close();
