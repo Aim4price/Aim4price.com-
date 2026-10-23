@@ -16952,6 +16952,30 @@ export default function AssetRegisterClient({
                                         {asset.kind !== 'property' ? (
                                           renderAssetDetailRow('serial', 'Serial / VIN', asset.serialNumber, asset.serialNumber || 'Not provided')
                                         ) : null}
+                                        {registrationNumber ? (
+                                          canUseOwnerOnlyAssetActions ? (
+                                            <button
+                                              type="button"
+                                              className={`${styles.assetDetailRow} ${styles.assetDetailRowButton}`}
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                openQuickAssetStatusEditor(asset, 'license', event.currentTarget);
+                                              }}
+                                              data-asset-return-action="registration-number"
+                                              data-tooltip="Update registration number"
+                                              aria-haspopup="dialog"
+                                              aria-label={`Update registration number for ${asset.title}. Current value: ${registrationNumber}`}
+                                            >
+                                              <span className={cardLayout.detailLabel}><AssetDetailIcon kind="registration"/>Registration</span>
+                                              <strong title={registrationNumber}>{registrationNumber}</strong>
+                                            </button>
+                                          ) : (
+                                            <div className={styles.assetDetailRow}>
+                                              <span className={cardLayout.detailLabel}><AssetDetailIcon kind="registration"/>Registration</span>
+                                              <strong title={registrationNumber}>{registrationNumber}</strong>
+                                            </div>
+                                          )
+                                        ) : null}
                                         {renderAssetDetailRow(
                                           'year',
                                           asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year',
@@ -17065,13 +17089,13 @@ export default function AssetRegisterClient({
                                       data-tooltip="Update replacement price"
                                           aria-label={`Edit replacement price for ${asset.title}`}
                                         >
-                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span>
+                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span>
                                           <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </button>
                                       ) : (
                                         <div className={styles.assetReplacementPriceBubble}>
-                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span>
+                                          <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span>
                                           <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </div>
@@ -17093,31 +17117,6 @@ export default function AssetRegisterClient({
                                           <strong>{money(insuredValueExVat * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1))}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </div>
-                                      ) : null}
-
-                                      {registrationNumber ? (
-                                        canUseOwnerOnlyAssetActions ? (
-                                          <button
-                                            type="button"
-                                            className={`${styles.assetRegistrationNumberBubble} ${styles.assetDetailRowButton}`}
-                                            onClick={(event) => {
-                                              event.stopPropagation();
-                                              openQuickAssetStatusEditor(asset, 'license', event.currentTarget);
-                                            }}
-                                            data-asset-return-action="registration-number"
-                                            data-tooltip="Update registration number"
-                                            aria-haspopup="dialog"
-                                            aria-label={`Update registration number for ${asset.title}. Current value: ${registrationNumber}`}
-                                          >
-                                            <span>Registration No</span>
-                                            <strong>{registrationNumber}</strong>
-                                          </button>
-                                        ) : (
-                                          <div className={styles.assetRegistrationNumberBubble}>
-                                            <span>Registration No</span>
-                                            <strong>{registrationNumber}</strong>
-                                          </div>
-                                        )
                                       ) : null}
                                     </div>
 
