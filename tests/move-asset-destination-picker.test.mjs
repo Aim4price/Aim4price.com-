@@ -10,7 +10,16 @@ const require = createRequire(import.meta.url);
 const source = readFileSync(new URL('../components/asset-register/MoveAssetDestinationPicker.tsx', import.meta.url), 'utf8');
 const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 } }).outputText;
 const module = { exports: {} };
-new Function('module', 'exports', 'require', output)(module, module.exports, (name) => name.endsWith('.css') ? { default: {} } : require(name));
+new Function('module', 'exports', 'require', output)(module, module.exports, (name) => {
+  if (name.endsWith('.css')) return { default: {} };
+  if (name === './RegisterPickerRow') {
+    const row = { exports: {} };
+    const code = ts.transpileModule(readFileSync(new URL('../components/asset-register/RegisterPickerRow.tsx', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
+    new Function('module', 'exports', 'require', code)(row, row.exports, (dep) => dep.endsWith('.css') ? { default: {} } : require(dep));
+    return row.exports;
+  }
+  return require(name);
+});
 const Picker = module.exports.default;
 const noop = () => {};
 const defaults = { assetName: 'Tractor', assetDetails: 'Year model: 2020 · Usage: 500 hours · Condition: Good', sourceName: 'Farm', destination: 'register', onDestinationChange: noop, options: [{ value: 'r2', label: 'Workshop', description: '4 assets' }], targetId: '', onSelect: noop, canUseUmbrellas: true, loading: false, loadError: '', error: '', busy: false, managementHref: '/asset-registers', onRetry: noop, onClose: noop, onMove: noop };

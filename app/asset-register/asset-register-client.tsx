@@ -38,6 +38,7 @@ import ShareModalCloseButton from '../../components/asset-register/ShareModalClo
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
+import type { RegisterPickerOption } from "../../components/asset-register/RegisterPickerRow";
 import AddAssetRegisterPicker from "../../components/asset-register/AddAssetRegisterPicker";
 import { FilterQuestion } from "../../components/FilterFlow";
 import exportReportStyles from "../../components/RegisterReportOptions.module.css";
@@ -7518,11 +7519,12 @@ export default function AssetRegisterClient({
     )),
     [assetRegisterMoveSourceId, assetRegisters],
   );
-  const assetRegisterMoveTargetOptions = useMemo<Array<ModalSelectOption<string>>>(
+  const assetRegisterMoveTargetOptions = useMemo<RegisterPickerOption[]>(
     () => assetRegisterMoveTargets.map((register) => ({
       value: register.id,
       label: register.businessName || 'Asset Register',
-      description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
+      description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'}`,
+      currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
     })),
     [assetRegisterMoveTargets],
   );
@@ -7558,7 +7560,7 @@ export default function AssetRegisterClient({
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions
     ;
-  const addAssetRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
+  const addAssetRegisterOptions = useMemo<RegisterPickerOption[]>(
     () => (activeRegister && !assetRegisters.some((register) => register.id === activeRegister.id)
       ? [...assetRegisters, activeRegister]
       : assetRegisters)
@@ -7566,7 +7568,8 @@ export default function AssetRegisterClient({
       .map((register) => ({
         value: register.id,
         label: register.businessName || 'Asset Register',
-        description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
+        description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'}`,
+        currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
       })),
     [assetRegisters, activeRegister, activeRegisterId],
   );
