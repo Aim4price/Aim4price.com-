@@ -177,6 +177,18 @@ await fill('textarea','Updated replacement quotation');await click('Preview chan
  await fill('input[type="search"]','2022');assert.equal(await page.$$eval('details',nodes=>nodes.length),13);
  await fill('input[type="search"]','Example Workshop');await page.click('details summary');
  assert.equal(await page.$$eval('details[open] a',nodes=>nodes.length),0);
+
+ // History remains wide on desktop and readable without arrows on native phones.
+ for(const width of [1440,768,390,320]){
+  await page.setViewport({width,height:1000});
+  const geometry=await page.$eval('[role="dialog"]',dialog=>({width:dialog.getBoundingClientRect().width,overflow:dialog.scrollWidth-dialog.clientWidth,arrows:dialog.textContent.includes('→'),clipped:[...dialog.querySelectorAll('dl dd')].some(node=>node.scrollWidth>node.clientWidth+2)}));
+  assert(geometry.width<=width,`History fits ${width}px viewport`);
+  if(width===1440)assert(geometry.width>=1000,'History uses the wider desktop surface');
+  assert(geometry.overflow<=2&&!geometry.clipped,`History values fit at ${width}px`);
+  assert.equal(geometry.arrows,false);
+  assert.equal(await page.$$eval('details[open] dd small',nodes=>nodes.map(node=>node.textContent).join(',')),'Before,After,Before,After');
+ }
+ await page.setViewport({width:1440,height:1000});
  await page.screenshot({path:'/tmp/asset-history-expanded.png'});
  await click('Retract');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Retract');await page.waitForFunction(()=>document.body.textContent.includes('Change retracted.'));
  await page.evaluate(()=>{window.historyItem={...window.historyItem,category:'values',action:'Value overridden',before:{value:327133},after:{value:300000,reason:'Might be a bit too high for market conditions.'},restorable:false,valueRestorable:true};window.fetch=async(url,options)=>{const body=options?.body?JSON.parse(options.body):null;if(body){window.writes.push(body);return {ok:true,json:async()=>body.action==='previewValueRestore'?{currentValue:300000,previousValue:327133,manual:false,revision:'restore-v1'}:{ok:true}};}return {ok:true,json:async()=>({items:[window.historyItem],nextBefore:null})};};window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{key:'value-restore',endpoint:'/api/asset-register/asset',assetTitle:'2022 New Holland TT4.90 4WD Openstation',assetSubtitle:'Year Model: 2022 • Usage: 1 300 hours • Condition: Good',onClose:()=>{}}));});
