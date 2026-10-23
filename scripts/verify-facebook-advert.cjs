@@ -45,43 +45,55 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 
 (async()=>{
- const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-gpu","--disable-dev-shm-usage"],headless:true,pipe:true});
+ const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-gpu","--disable-dev-shm-usage"],headless:true,pipe:false});
  try {
  const page=await browser.newPage();
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setRequestInterception(true);page.on('request',r=>r.respond({contentType:'text/html',body:'<html></html>'}));
  await page.goto('https://advert.test');
- const listing={id:'sample',title:'2014 Agrico Track Filler',yearModel:2014,usageUnit:'percent',lifeWorkedPercent:30,conditionLabel:'Good',familyLabel:'Disc Harrows',askingPriceExVat:39015,sellerCompany:'Example dealer',sellerName:'Dealer contact',sellerPhone:'0821234567',description:'Ready for inspection.',imageUrls:[]};
+ const listing={id:'sample',title:'2014 Agrico Track Filler',yearModel:2014,usageUnit:'percent',lifeWorkedPercent:30,conditionLabel:'Good',familyLabel:'Disc Harrows',askingPriceExVat:39015,sellerCompany:'Example dealer',sellerName:'Dealer contact',sellerPhone:'0821234567',description:'Ready for inspection.',imageSrc:'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',imageUrls:[]};
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial}#app{padding:16px;max-width:640px}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+';window.renderer=require("lib/marketplace-ad-renderer");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/FacebookAdvertActions").default,{listing:'+JSON.stringify(listing)+'}));'});
- await page.waitForSelector('a');
+ await page.click('button');
+ await page.waitForSelector('dialog[open]');
  for(const width of [640,390,320]){
  await page.setViewport({width,height:800});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
- assert.equal(await page.$$eval('a',els=>els.filter(e=>e.target==='_blank'&&e.rel.includes('noopener')).length),2);
+ assert.equal(await page.$$eval('a',els=>els.filter(e=>e.href.includes('facebook.com')&&e.target==='_blank'&&e.rel.includes('noopener')).length),2);
  await page.screenshot({path:'/tmp/facebook-advert-'+width+'.png'});
  }
  // At the same phone width, native controls stack but the website canvas stays two-column.
- const columns=()=>page.$eval('a',link=>getComputedStyle(link.parentElement).gridTemplateColumns.split(' ').length);
+ const columns=()=>page.$eval('a[href*="facebook.com"]',link=>getComputedStyle(link.parentElement).gridTemplateColumns.split(' ').length);
  assert.equal(await columns(),1,'native 320px destinations stack');
  await page.evaluate(()=>{const app=document.getElementById('app');app.setAttribute('data-website-canvas','');app.style.width='640px';});
  assert.equal(await columns(),2,'canonical canvas retains desktop destinations at 320px');
  await page.evaluate(()=>{const app=document.getElementById('app');app.removeAttribute('data-website-canvas');app.style.width='';});
  assert.equal(await columns(),1,'returning to native restores stacking');
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.copied=text;}}}));
- await page.click('button');await page.waitForFunction(()=>document.body.textContent.includes('Advert text copied.'));
+ await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Copy caption').click());await page.waitForFunction(()=>document.body.textContent.includes('Caption copied.'));
  assert.match(await page.evaluate(()=>window.copied),/30% worked/);
- assert.match(await page.evaluate(()=>window.copied),/Ready for inspection/);
+ assert.match(await page.evaluate(()=>window.copied),/Contact for more information: 0821234567/);
  await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Denied');}}}));
- await page.click('button');await page.waitForSelector('textarea');
+ await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Copy caption').click());
+ await page.waitForFunction(()=>document.body.textContent.includes('Select and copy'));
  assert.match(await page.$eval('textarea',e=>e.value),/0821234567/);
+ await page.evaluate(()=>{ window.downloadCount=0; HTMLAnchorElement.prototype.click=function(){if(this.download) window.downloadCount++;}; });
+ await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Download photos').click());
+ await page.waitForFunction(()=>document.body.textContent.includes('Photo downloads started'));
+ assert.equal(await page.evaluate(()=>window.downloadCount),1);
+ await page.evaluate(()=>{window.fetch=async()=>{throw Error('Unavailable');};});
+ await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Download photos').click());
+ await page.waitForFunction(()=>document.body.textContent.includes('save them manually'));
+ await page.keyboard.press('Escape');
+ await page.waitForFunction(()=>!document.querySelector('dialog'));
+ assert.equal(await page.$eval('button',e=>e===document.activeElement),true,'focus returns to Facebook trigger');
  await page.evaluate(async listing=>{
  const canvas=document.createElement('canvas');document.body.replaceChildren(canvas);
  await window.renderer.renderMarketplaceAdCanvas(canvas,window.renderer.marketplaceListingToAdContent(listing),{includeImages:false});
  canvas.style.width='100%';canvas.style.height='auto';
  },listing);
  await page.setViewport({width:1600,height:900});await page.screenshot({path:'/tmp/standard-advert.png'});
- assert.deepEqual(errors,[]);console.log('PASS: responsive Facebook actions, destinations, copy success/fallback and standard canvas rendering.');
+ assert.deepEqual(errors,[]);console.log('PASS: Facebook modal, responsive destinations, copy and download success/fallback, focus return and standard canvas rendering.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
