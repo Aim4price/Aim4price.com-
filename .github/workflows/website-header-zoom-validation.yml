@@ -107,5 +107,7 @@ jobs:
         run: npm install --prefix /tmp/phone-browser-tests --no-audit --no-fund playwright@1.56.1
       - name: Phone rotation across browser engines
         env:
+          # Firefox requires the home directory to belong to the container user.
+          HOME: /root
           PHONE_PLAYWRIGHT_PATH: /tmp/phone-browser-tests/node_modules/playwright
         run: node scripts/verify-phone-rotation.cjs
