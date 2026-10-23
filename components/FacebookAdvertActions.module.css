@@ -10,4 +10,4 @@
 .panel a:focus-visible, .panel button:focus-visible, .panel textarea:focus-visible { outline: 3px solid #387c59; outline-offset: 3px; }
 .panel small { display: block; color: #607467; font-size: .8rem; line-height: 1.5; }
 .panel textarea { box-sizing: border-box; width: 100%; padding: .75rem; font: inherit; color: #173c2e; background: white; border: 1px solid #b6cdbf; border-radius: 8px; resize: vertical; }
-@media (max-width: 360px) { .destinations { grid-template-columns: 1fr; } }
+@media (max-width: 360px) { :global(:where(html:not(:has([data-website-canvas])))) .destinations { grid-template-columns: 1fr; } }
