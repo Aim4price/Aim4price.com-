@@ -160,7 +160,7 @@ export default function Validation(){
    const details=await page.evaluate(id=>document.getElementById(id)?.textContent,panelId);
    assert.match(details,/DEMO-001/);
    assert.match(details,/85 000 km/);
-   assert.match(details,/Replacement Price/);
+   assert.match(details,/Replacement price/);
    assert.ok(await page.evaluate(id=>{const card=document.getElementById(id)?.closest('article');return card&&card.scrollWidth<=card.clientWidth+1;},panelId),'Expanded details fit the lead card in the website canvas');
    await page.screenshot({path:path.join(output,`enquiry-expanded-${width}.png`),fullPage:true});
    const layout=await page.$eval(manageCard,button=>{

@@ -39,7 +39,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
  const price=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
  return <>
   {readError&&<p role="alert">{readError}</p>}
-  <div className={styles.assetDetailsGrid}>
+  <div className={styles.assetDetailsGrid} data-shared-asset-facts>
    <div className={styles.assetPrimaryDetails}>{row('serial','Serial / VIN',serial||'Not saved')}{row('year','Year',year||'Not saved')}{row('usage','Usage',usage||'Not saved')}{row('condition','Condition',condition||'Not saved')}</div>
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
