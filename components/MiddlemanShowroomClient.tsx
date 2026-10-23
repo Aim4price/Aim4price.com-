@@ -1,4 +1,6 @@
 'use client';
+
+import FacebookAdvertActions from './FacebookAdvertActions';
 import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
@@ -735,6 +737,7 @@ export function MiddlemanShowroomManager({
                 <ShowroomManageActionArrow direction="right" />
               </button>
             </div>
+            <FacebookAdvertActions key={manageListingTarget.id} listing={manageListingTarget} />
           </section>
         </div>
       ) : null}

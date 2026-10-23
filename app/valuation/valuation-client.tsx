@@ -1,4 +1,6 @@
 'use client';
+
+import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
 import AdvancedAssumptionsModal from '../../components/AdvancedAssumptionsModal';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
@@ -10083,6 +10085,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={() => setPublishedAdvertDownload(null)} />
             </div>
             <p>{publishedAdvertDownload.message}</p>
+            <FacebookAdvertActions key={publishedAdvertDownload.listing.id} listing={publishedAdvertDownload.listing} />
             <div className={styles.marketplaceAdvertSuccessChecklist}>
               <span>✓ Published to Marketplace</span>
               <span>{publishedAdvertDownload.status === 'downloaded' ? '✓ JPEG downloaded' : '! JPEG download needs another try'}</span>

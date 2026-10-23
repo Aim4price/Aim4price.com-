@@ -14,7 +14,6 @@ import {
 
 export const MARKETPLACE_AD_WIDTH = 1600;
 export const MARKETPLACE_AD_HEIGHT = 900;
-const AIM4PRICE_STANDARD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
 const AIM4PRICE_STANDARD_WATERMARK_SRC = '/brand/aim4price-mark-black.png';
 
 export type MarketplaceAdContent = {
@@ -475,7 +474,7 @@ function isGenericEquipmentPlaceholder(source: string): boolean {
   return normalized.endsWith('/brand/tractor.png') || normalized === 'brand/tractor.png';
 }
 
-function drawCameraIcon(context: CanvasRenderingContext2D, rect: Rect, color: string) {
+function drawCameraIcon(context: CanvasRenderingContext2D, rect: Rect, color: string, subtle = false) {
   const tileSize = Math.max(78, Math.min(132, Math.min(rect.width, rect.height) * .34));
   const tile: Rect = {
     x: rect.x + (rect.width - tileSize) / 2,
@@ -483,7 +482,7 @@ function drawCameraIcon(context: CanvasRenderingContext2D, rect: Rect, color: st
     width: tileSize,
     height: tileSize,
   };
-  const foreground = contrast(color);
+  const foreground = subtle ? '#91a69c' : contrast(color);
   const width = tileSize * .57;
   const height = tileSize * .38;
   const x = tile.x + (tile.width - width) / 2;
@@ -491,14 +490,14 @@ function drawCameraIcon(context: CanvasRenderingContext2D, rect: Rect, color: st
   const lineWidth = Math.max(4, tileSize * .047);
 
   context.save();
-  context.shadowColor = 'rgba(8, 35, 28, .2)';
+  context.shadowColor = subtle ? 'transparent' : 'rgba(8, 35, 28, .2)';
   context.shadowBlur = 16;
   context.shadowOffsetY = 7;
-  fillRounded(context, tile, tileSize * .25, color);
+  if (!subtle) fillRounded(context, tile, tileSize * .25, color);
   context.shadowColor = 'transparent';
   context.strokeStyle = foreground;
   context.fillStyle = foreground;
-  context.lineWidth = lineWidth;
+  context.lineWidth = subtle ? Math.max(2, tileSize * .03) : lineWidth;
   context.lineCap = 'round';
   context.lineJoin = 'round';
 
@@ -816,7 +815,7 @@ function drawAim4priceStandardPhoto(
     gradient.addColorStop(0, '#eff5f2');
     gradient.addColorStop(1, '#dfeae5');
     fillRounded(context, rect, primary ? 27 : 16, gradient);
-    drawCameraIcon(context, rect, content.brand.primaryColor);
+    drawCameraIcon(context, rect, content.brand.primaryColor, true);
     if (primary) {
       context.save();
       context.fillStyle = '#60766e';
@@ -828,38 +827,6 @@ function drawAim4priceStandardPhoto(
   }
 
   strokeRounded(context, rect, primary ? 27 : 16, primary ? '#d2ded9' : '#ffffff', primary ? 2 : 3);
-}
-
-function drawAim4priceStandardLogo(
-  context: CanvasRenderingContext2D,
-  logo: HTMLImageElement | null,
-  rect: Rect,
-) {
-  context.save();
-  context.shadowColor = 'rgba(8, 31, 25, .16)';
-  context.shadowBlur = 16;
-  context.shadowOffsetY = 7;
-  fillRounded(context, rect, 15, 'rgba(255,255,255,.97)');
-  context.restore();
-  strokeRounded(context, rect, 15, 'rgba(16, 50, 40, .12)', 1);
-
-  if (logo) {
-    const sourceWidth = logo.naturalWidth || logo.width;
-    const sourceHeight = Math.max(1, logo.naturalHeight || logo.height);
-    const scale = Math.min((rect.width - 28) / sourceWidth, (rect.height - 20) / sourceHeight);
-    const width = sourceWidth * scale;
-    const height = sourceHeight * scale;
-    context.drawImage(logo, rect.x + (rect.width - width) / 2, rect.y + (rect.height - height) / 2, width, height);
-    return;
-  }
-
-  context.save();
-  context.fillStyle = '#102f26';
-  context.font = '900 23px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText('Aim4price', rect.x + rect.width / 2, rect.y + rect.height / 2 + 1);
-  context.restore();
 }
 
 function drawAim4priceStandardWatermark(
@@ -932,8 +899,7 @@ async function renderAim4priceStandardCanvas(
   requireImages = false,
 ): Promise<void> {
   const sources = includeImages ? content.imageUrls.slice(0, 4) : [];
-  const [aim4priceLogo, aim4priceWatermark, ...images] = await Promise.all([
-    loadImage(AIM4PRICE_STANDARD_LOGO_SRC),
+  const [aim4priceWatermark, ...images] = await Promise.all([
     loadImage(AIM4PRICE_STANDARD_WATERMARK_SRC),
     ...sources.map((source) => isGenericEquipmentPlaceholder(source) ? Promise.resolve(null) : loadImage(source)),
   ]);
@@ -984,12 +950,6 @@ async function renderAim4priceStandardCanvas(
       height: thumbHeight,
     }, false);
   }
-  drawAim4priceStandardLogo(context, aim4priceLogo, {
-    x: photoArea.x + 22,
-    y: photoArea.y + 22,
-    width: 250,
-    height: 70,
-  });
 
   context.save();
   context.strokeStyle = '#e0e8e4';
