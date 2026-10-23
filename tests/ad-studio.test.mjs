@@ -736,7 +736,7 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   assert.match(marketplace, /design: isDealerAccount && listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'/);
   assert.match(rendererSource, /export type MarketplaceAdDesign = 'saved-brand' \| 'aim4price-marketplace'/);
   assert.match(rendererSource, /options\.design \?\? \(listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'\)/);
-  assert.match(rendererSource, /AIM4PRICE_STANDARD_LOGO_SRC = '\/brand\/Aim4price_Home_Logo\.png'/);
+  assert.doesNotMatch(rendererSource, /AIM4PRICE_STANDARD_LOGO_SRC|drawAim4priceStandardLogo/);
   assert.match(rendererSource, /AIM4PRICE_STANDARD_WATERMARK_SRC = '\/brand\/aim4price-mark-black\.png'/);
   assert.match(rendererSource, /content\.design === 'aim4price-marketplace'[\s\S]*?renderAim4priceStandardCanvas/);
   assert.match(rendererSource, /drawAim4priceStandardDetail\(context, 'Year'/);
@@ -790,7 +790,8 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   assert.equal(renderedTemplate, 'showcase');
   assert.equal(canvas.width, 1600);
   assert.equal(canvas.height, 900);
-  assert.ok(drawnText.includes('Aim4price'));
+  assert.ok(!drawnText.includes('Aim4price'));
+  assert.ok(drawnText.includes('Powered by Aim4price.com'));
   assert.ok(drawnText.includes('Year'));
   assert.ok(drawnText.includes('Condition'));
   assert.ok(drawnText.includes('N/A'));

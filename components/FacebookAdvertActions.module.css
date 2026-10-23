@@ -1,0 +1,13 @@
+.panel { margin: 1rem 0; padding: 1rem; border: 1px solid #dce6e0; border-radius: 16px; background: #f7faf8; color: #173c2e; min-width: 0; }
+.heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+.heading strong { font-size: 1rem; }
+.heading button { min-height: 44px; padding: .6rem .85rem; border: 1px solid #cfddd4; border-radius: 10px; background: white; color: #215640; font: inherit; font-size: .9rem; font-weight: 650; cursor: pointer; }
+.panel p { margin: .75rem 0; font-size: .9rem; line-height: 1.55; color: #52675c; }
+.destinations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: .85rem 0; }
+.destinations a { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 54px; padding: .75rem; border: 1px solid #d3dfd7; border-radius: 12px; background: white; color: #215640; font-size: .95rem; font-weight: 650; text-decoration: none; }
+.destinations svg { width: 24px; height: 24px; flex-shrink: 0; color: #6c8e7c; }
+.destinations a:hover, .heading button:hover { background: #edf5f0; border-color: #94b6a2; }
+.panel a:focus-visible, .panel button:focus-visible, .panel textarea:focus-visible { outline: 3px solid #387c59; outline-offset: 3px; }
+.panel small { display: block; color: #607467; font-size: .8rem; line-height: 1.5; }
+.panel textarea { box-sizing: border-box; width: 100%; padding: .75rem; font: inherit; color: #173c2e; background: white; border: 1px solid #b6cdbf; border-radius: 8px; resize: vertical; }
+@media (max-width: 360px) { .destinations { grid-template-columns: 1fr; } }

@@ -1,4 +1,6 @@
 'use client';
+
+import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import ListPagination from '../../components/ListPagination';
 import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
@@ -3841,6 +3843,8 @@ export default function MarketplaceClient({
               </button>
             </div>
 
+            <FacebookAdvertActions key={manageListingTarget.id} listing={manageListingTarget} />
+
             {manageListingFeedback ? (
               <p className={styles.marketplaceManageFeedback} role="status">{manageListingFeedback}</p>
             ) : null}
@@ -3976,6 +3980,8 @@ export default function MarketplaceClient({
                   <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
                 </button>
               </div>
+
+              <FacebookAdvertActions key={shareListing.id} listing={shareListing} />
 
               <label className={styles.shareLinkField}>
                 <span>Direct link</span>
