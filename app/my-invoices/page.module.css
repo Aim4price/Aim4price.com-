@@ -5958,7 +5958,43 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.manualCostReviewGrid > div:last-child,
+/* Review uses quiet separators and a prominent total instead of stacked cards. */
+.manualCostWizardModal .manualCostReviewPanel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 12px;
+}
+
+.manualCostReviewGrid {
+  gap: 0 24px;
+}
+
+.manualCostReviewGrid > div {
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--app-line, #d8e6de);
+  border-radius: 0;
+  background: transparent;
+}
+
+.manualCostReviewGrid dd {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.manualCostReviewGrid .manualCostReviewTotal {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border-radius: 12px;
+}
+
 .manualCostReviewWide {
   grid-column: 1 / -1;
 }
@@ -5999,7 +6035,6 @@
     grid-template-columns: 1fr;
   }
 
-  :global(:where(html:not(:has([data-website-canvas])))) .manualCostReviewGrid > div:last-child,
   :global(:where(html:not(:has([data-website-canvas])))) .manualCostReviewWide {
     grid-column: auto;
   }

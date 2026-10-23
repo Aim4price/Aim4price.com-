@@ -123,11 +123,11 @@ test('limit validation happens before review and the review preserves every choi
   assert.match(client, /budgetWarningValue >= 1/);
   assert.match(client, /budgetWarningValue <= 99/);
   assert.match(client, /if \(!budgetLimitIsValid\)[\s\S]*?setBudgetFormError/);
-  assert.match(budgetModal, /<dt>Assets<\/dt>/);
-  assert.match(budgetModal, /<dt>Period<\/dt>/);
-  assert.match(budgetModal, /<dt>Budget<\/dt>/);
-  assert.match(budgetModal, /<dt>Warning level<\/dt>/);
-  assert.match(budgetModal, /<dt>Fuel slips<\/dt>/);
+  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Assets<\/dt>/);
+  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Period<\/dt>/);
+  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Budget<\/dt>/);
+  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Warning level<\/dt>/);
+  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Fuel slips<\/dt>/);
 });
 
 test('multi-asset creation saves one independently editable budget per selected asset', () => {
