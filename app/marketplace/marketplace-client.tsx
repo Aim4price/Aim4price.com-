@@ -1,6 +1,6 @@
 'use client';
 
-import FacebookAdvertActions from '../../components/FacebookAdvertActions';
+import FacebookAdvertActions, { marketplaceShareCaption } from '../../components/FacebookAdvertActions';
 import ListPagination from '../../components/ListPagination';
 import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
@@ -2758,7 +2758,7 @@ export default function MarketplaceClient({
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
-  async function handleShareAction(channel: 'whatsapp' | 'facebook' | 'copy') {
+  async function handleShareAction(channel: 'whatsapp' | 'copy') {
     if (!shareListing) {
       return;
     }
@@ -2773,13 +2773,10 @@ export default function MarketplaceClient({
       }
 
       if (channel === 'whatsapp') {
-        openShareWindow(`https://wa.me/?text=${encodeURIComponent(nextShareUrl)}`);
+        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${marketplaceShareCaption(shareListing)}\n\n${nextShareUrl}`)}`);
         closeShareSheet();
         return;
       }
-
-      openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(nextShareUrl)}`);
-      closeShareSheet();
     } catch {
       setShareFeedback('Sharing did not complete. Please try again.');
     }
@@ -3967,10 +3964,10 @@ export default function MarketplaceClient({
                   <BrandIcon src="/brand/whatsapp.png" />
                   <span>WhatsApp</span>
                 </button>
-                <button type="button" onClick={() => void handleShareAction('facebook')}>
+                <FacebookAdvertActions key={shareListing.id} listing={shareListing}>
                   <BrandIcon src="/brand/facebook.png" />
                   <span>Facebook</span>
-                </button>
+                </FacebookAdvertActions>
                 <button type="button" onClick={() => void handleShareAction('copy')}>
                   <IconCopy />
                   <span>Copy link</span>
@@ -3980,8 +3977,6 @@ export default function MarketplaceClient({
                   <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
                 </button>
               </div>
-
-              <FacebookAdvertActions key={shareListing.id} listing={shareListing} />
 
               <label className={styles.shareLinkField}>
                 <span>Direct link</span>
