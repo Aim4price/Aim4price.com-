@@ -32,6 +32,5 @@ export default function AssetMarketDetail({saved, stale, included, loading, erro
         </> : loading ? <span role="status">Loading…</span> : error ? <span role="status">Unavailable. Reload to retry.</span> : canCalculate ? <span className={styles.calculateMarket}><AssetDetailIcon kind="calculator"/>Calculate</span> : <span>Not calculated</span>}
       </span>
     </button>
-    <p className={styles.marketExplanation}>Demand and selling circumstances can move this above or below Ideal Price. Neither guarantees a sale.</p>
   </div>;
 }

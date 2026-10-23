@@ -41709,3 +41709,69 @@ button.documentOpenLink {
     margin: 0 0 .8rem !important;
   }
 }
+
+/* Expanded asset details: calm labels, aligned icons and compact statuses. */
+.assetDetailsPanel .assetDetailsGrid {
+  grid-template-columns: minmax(0, 1fr) 10.5rem;
+  gap: .8rem;
+}
+.assetDetailsPanel .assetPrimaryDetails,
+.assetDetailsPanel .assetStatusDetails { gap: .65rem; }
+.assetDetailsPanel .assetDetailRow {
+  grid-template-columns: 10rem minmax(0, 1fr);
+  min-height: 3.5rem;
+  height: auto;
+}
+.assetDetailsPanel .assetDetailRow > span,
+.assetDetailsPanel .assetStatusRow > span {
+  font-size: .88rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: .6rem .85rem;
+}
+.assetDetailsPanel .assetDetailRow > span { white-space: nowrap; }
+.assetDetailsPanel .assetDetailRow > strong {
+  display: flex;
+  align-items: center;
+  line-height: 1.35;
+  padding: .65rem .85rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.assetDetailsPanel .assetStatusRow {
+  grid-template-columns: minmax(0, 1fr) 3.25rem;
+  min-height: 3.5rem;
+  height: 3.5rem;
+  padding-right: .35rem;
+  align-items: center;
+}
+.assetDetailsPanel .assetStatusRow > span { background: transparent; border: 0; }
+.assetDetailsPanel .assetStatusMark {
+  width: 2.75rem;
+  min-height: 2.65rem;
+  height: 2.65rem;
+  border: 0;
+  border-radius: .65rem;
+  font-size: 1.35rem !important;
+}
+.assetDetailsPanel .statusMarkYes { background: #e8f6ef !important; color: #15804c !important; }
+.assetDetailsPanel .statusMarkNo { background: #fdf0f1 !important; color: #bf3545 !important; }
+.assetDetailsPanel .statusMarkUnknown { background: #fff6e5 !important; color: #936315 !important; }
+.assetDetailsPanel .statusMarkNotApplicable { background: #eef2f5 !important; color: #596b79 !important; font-size: .75rem !important; }
+.assetDetailsPanel .assetReplacementPriceBubble > span {
+  font-size: .9rem !important;
+  font-weight: 750 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+@media (max-width: 1100px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetDetailsGrid { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetStatusDetails { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetDetailRow { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetDetailRow > span { border-right: 0; padding-bottom: .35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetDetailRow > strong { padding-top: .35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .assetDetailsPanel .assetStatusDetails { grid-template-columns: minmax(0, 1fr); }
+}
