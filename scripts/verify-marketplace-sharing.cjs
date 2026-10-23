@@ -47,19 +47,22 @@ const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setRequestInterception(true);page.on('request',r=>r.respond({contentType:r.url().endsWith('.png')?'image/png':'text/html',body:r.url().endsWith('.png')?Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1XkAAAAASUVORK5CYII=','base64'):'<html></html>'}));
  const click=async text=>{await page.evaluate(text=>{const b=[...document.querySelectorAll('button')].find(b=>(b.querySelector('strong')?.textContent || b.textContent)===text);if(!b)throw Error('Missing '+text);b.click()},text);};
- for(const width of [1440,390]){
-  await page.setViewport({width,height:950});await page.goto('https://sharing.test/');await page.setContent('<style>body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
-  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});await page.waitForSelector('button');await click('Open sharing');await page.waitForSelector('dialog[open]');
+ for(const width of [1440,390,320]){
+  await page.setViewport({width,height:width===320?640:950});await page.goto('https://sharing.test/');await page.setContent('<style>body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
+  if(width===320)await page.evaluate(()=>document.documentElement.dataset.background='dark');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});await page.waitForSelector('button');await click('Open sharing');await page.waitForSelector('dialog[open]');
   assert((await page.$eval('textarea',e=>e.value)).includes('**082 328 1614**'));
   assert.equal(await page.$('a[href="https://www.facebook.com/groups/"]'),null);
+  await page.screenshot({path:'/tmp/share-details-'+width+'.png'});
+  assert(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth),'No horizontal overflow');
+  assert(await page.$eval('footer',e=>e.getBoundingClientRect().bottom<=innerHeight),'Footer stays visible');
   await page.type('textarea',' edited');const edited=await page.$eval('textarea',e=>e.value);
-  await click('Continue');await page.waitForSelector('a[href="https://www.facebook.com/groups/"]');assert.equal(await page.$('textarea'),null);
+  await click('Continue');await page.waitForSelector('a[href="https://www.facebook.com/groups/"]');assert.equal(await page.$('textarea'),null);await page.screenshot({path:'/tmp/share-destination-'+width+'.png'});
   await click('Back');await page.waitForSelector('textarea');assert.equal(await page.$eval('textarea',e=>e.value),edited);
   assert(await page.$eval('dialog',e=>e.getBoundingClientRect().width<=innerWidth));
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
   await page.evaluate(async()=>{mount(true);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))});await click('Open sharing');await page.waitForSelector('dialog[open]');
   assert((await page.$eval('dialog',e=>e.textContent)).includes('Send Marketplace Ad Details'));
-  const href=await page.$eval('dialog a',e=>e.href);assert(decodeURIComponent(href).includes('https://www.aim4price.com/marketplace/browse?listing=test'));
+  await page.screenshot({path:'/tmp/share-options-'+width+'.png'});const href=await page.$eval('dialog a',e=>e.href);assert(decodeURIComponent(href).includes('https://www.aim4price.com/marketplace/browse?listing=test'));
   await click('Send Marketplace Ad Details');await page.waitForFunction(()=>document.querySelector('dialog')?.textContent.includes('Open WhatsApp'));
   assert((await page.$eval('textarea',e=>e.value)).includes('**082 328 1614**'));
   await page.evaluate(()=>{window.shared=null;Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared={files:data.files.map(f=>f.name),text:data.text};}})});
