@@ -1111,7 +1111,7 @@ export default function AssetGroupManagerModal({
 
                       return (
                         <div
-                          className={styles.pickerAssetItem}
+                          className={`${styles.pickerAssetItem} ${selected && !hasPrimaryAsset ? styles.pickerAssetItemSelected : ''}`}
                           key={asset.id}
                         >
                           <label className={styles.assetRowMain} data-asset-choice-row="true" data-asset-choice-selected={selected ? 'true' : undefined}>
@@ -1142,10 +1142,32 @@ export default function AssetGroupManagerModal({
                             </span>
                           </label>
 
-                          {selected ? (
+                          {selected && !hasPrimaryAsset ? (
+                            <label className={styles.totalSwitchRow}>
+                              <svg className={styles.totalSwitchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <rect x="5" y="2" width="14" height="20" rx="2" />
+                                <path d="M8 6h8M8 10h1m3 0h1m3 0h.01M8 14h1m3 0h1m3 0h.01M8 18h1m3 0h1m3 0h.01" />
+                              </svg>
+                              <span className={styles.totalSwitchCopy}>
+                                <strong>Include in umbrella total</strong>
+                                <small>{countsTowardTotalByAssetId[asset.id] === false
+                                  ? 'Keeps this asset in the umbrella without adding its value.'
+                                  : 'Adds this asset’s value to the total.'}</small>
+                              </span>
+                              <input
+                                type="checkbox"
+                                role="switch"
+                                aria-label={`Include ${asset.title} in umbrella total`}
+                                checked={countsTowardTotalByAssetId[asset.id] !== false}
+                                disabled={busy}
+                                onChange={(event) => handleMemberValueChange(asset.id, event.target.checked ? 'included' : 'excluded')}
+                              />
+                              <span className={styles.totalSwitchTrack} aria-hidden="true" />
+                            </label>
+                          ) : selected ? (
                             <div className={styles.memberControls}>
                               <AssetGroupMemberSelect
-                                label={hasPrimaryAsset ? 'Role and value' : 'Value in total'}
+                                label="Role and value"
                                 value={hasPrimaryAsset
                                   ? asset.id === primaryAssetId
                                     ? 'primary'

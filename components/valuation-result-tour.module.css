@@ -1,4 +1,4 @@
-.launch { display:flex; justify-content:flex-end; margin-bottom:12px; }
+.launch { display:flex; justify-content:flex-end; margin-bottom:0; flex-shrink:0; }
 .launch button { display:inline-flex; align-items:center; gap:10px; min-height:44px; padding:7px 14px 7px 7px; border:1px solid #c9ded2; border-radius:14px; background:#fff; color:#195b43; font:inherit; font-size:.9rem; font-weight:650; line-height:1.25; cursor:pointer; box-shadow:0 2px 6px #173d3010; transition:background .15s ease,border-color .15s ease; }
 .launch button:hover { background:#f2f8f4; border-color:#82b59c; }
 .launch button:active { background:#e7f2ec; }

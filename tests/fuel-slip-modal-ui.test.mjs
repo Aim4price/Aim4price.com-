@@ -81,7 +81,9 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(uploadModal, /Upload fuel slip\/photo/);
   assert.match(uploadModal, /Aim4price assisted capture/);
   assert.match(uploadModal, /<section className=\{styles\.uploadPanel\}>[\s\S]*?Documents and photos/);
-  assert.match(uploadModal, /styles\.uploadBox/);
+  assert.match(uploadModal, /<CaptureUploadDropzone[\s\S]*?onFiles=\{handleFuelSlipUploadFiles\}/);
+  assert.match(uploadModal, /disabled=\{isSaving \|\| isExtractingFuelSlip\}/);
+  assert.match(uploadModal, /inputLabel="Choose fuel slip or photo"/);
   assert.match(uploadModal, /styles\.modalFooter/);
   assert.doesNotMatch(uploadModal, /wizardStyles\.|fuelSlipUploadWizardModal|fuelSlipWizardPanel|fuelSlipWizardHeading/);
   assert.doesNotMatch(uploadModal, /renderFuelSlipExtraFields\(\)|renderFuelSlipValidationNotice\(\)|operational details/);

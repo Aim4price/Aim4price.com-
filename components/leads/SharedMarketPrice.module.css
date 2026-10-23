@@ -1,0 +1,12 @@
+.summary { display:grid; gap:1rem; color:var(--app-text,#193c31); line-height:1.6; }
+.summary p { margin:0; }
+.amount { display:flex; align-items:baseline; flex-wrap:wrap; gap:.65rem; padding:1.2rem; border:1px solid var(--app-info-line,#c6ddf4); border-radius:1rem; background:var(--app-info-soft,#f0f7ff); }
+.amount strong { font-size:2rem; line-height:1.2; }
+.amount span { color:var(--app-muted,#5c7184); font-size:.85rem; }
+.review { padding:1rem; border-radius:.8rem; color:var(--app-danger,#991b1b); background:var(--app-danger-soft,#fff1f2); border:1px solid var(--app-danger-line,#efb8bd); }
+
+:global(html[data-app-theme='dark']) .market.market { background:var(--app-info-soft); border-color:var(--app-info-line); color:var(--app-info); }
+:global(html[data-app-theme='dark']) .market strong,
+:global(html[data-app-theme='dark']) .market small { color:inherit; }
+:global(html[data-app-theme='dark']) .market button:hover { background:var(--app-surface-soft); }
+:global(html[data-app-theme='dark']) .market[data-needs-review='true'] { background:var(--app-danger-soft); border-color:var(--app-danger-line); color:var(--app-danger); }

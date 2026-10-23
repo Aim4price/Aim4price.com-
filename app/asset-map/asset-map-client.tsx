@@ -840,6 +840,9 @@ export default function AssetMapClient() {
 
   useEffect(() => {
     void fetchMapData("initial");
+    const refreshUsage = () => {void fetchMapData("background");};
+    window.addEventListener('aim4price:asset-register-updated', refreshUsage);
+    return () => window.removeEventListener('aim4price:asset-register-updated', refreshUsage);
   }, [fetchMapData]);
 
   useEffect(

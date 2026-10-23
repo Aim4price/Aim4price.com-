@@ -25,9 +25,9 @@ const revaluation = read('lib/asset-register-revaluation.ts');
 
 test('the estimate result and standard PDF include General Saleability', () => {
   assert.match(valuationClient, /aria-label="How easily could it sell\?"/);
-  assert.match(valuationClient, /Refine Saleability/);
+  assert.match(valuationClient, /Calculate Realistic Market Price/);
   assert.match(valuationClient, /saleabilityRows:/);
-  assert.match(reportRoute, /<h2>Saleability<\/h2>/);
+  assert.match(reportRoute, /<h2>Realistic Market Price<\/h2>/);
   assert.match(reportRoute, /payload\.saleabilityRows/);
 });
 
@@ -49,7 +49,7 @@ test('the refined Saleability asking price is carried into the estimate PDF with
   assert.match(modal, /sessionStorage\.setItem\(SALEABILITY_PDF_PLAN_SESSION_KEY/);
   assert.match(valuationPolish, /enrichEstimatePdfFormWithSaleabilityPrice/);
   assert.match(valuationPolish, /actionPath !== '\/api\/valuation\/report'/);
-  assert.match(valuationPolish, /label: 'Saleability price'/);
+  assert.match(valuationPolish, /label: 'Realistic Market Price'/);
   assert.match(valuationPolish, /formatSaleabilityPdfPrice\(snapshot\.saleabilityPriceExVat\)/);
   assert.match(valuationPolish, /saleabilityPdfPlanMatchesEstimate\(snapshot, payload\.machineTitle, payload\.selectedValueExVat\)/);
   assert.match(valuationPolish, /HTMLFormElement\.prototype\.submit = submitWithSaleabilityPrice/);
@@ -60,7 +60,7 @@ test('Manage Pricing opens the same Saleability calculator', () => {
   assert.match(ownerAsset, /pricingBase}\/saleability/);
   assert.match(ownerAsset, /<SaleabilityModal/);
   assert.match(pricingRoute, /\['recalculate', 'future', 'saleability'\]/);
-  assert.match(assetRegister, /<strong>Saleability<\/strong>/);
+  assert.match(assetRegister, /<strong>Realistic Market Price<\/strong>/);
   assert.match(assetRegister, /setSaleabilityAsset\(asset\)/);
   assert.match(assetRegister, /buildRegisterAssetSaleabilityInput/);
 });
@@ -95,9 +95,9 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(modalStyles, /\.header p\s*\{[\s\S]*?white-space:\s*nowrap;/);
   assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
-  assert.match(modal, /id="saleability-title"><SaleIcon kind="demand" \/>Saleability<\/h2>/);
+  assert.match(modal, /id="saleability-title"><SaleIcon kind="demand" \/>Realistic Market Price<\/h2>/);
   assert.match(modal, /<p>\{assetTitle\}<\/p>/);
-  assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
+  assert.doesNotMatch(modal, /<span>Realistic Market Price<\/span>/);
   assert.doesNotMatch(modal, /styles\.baselineStrip/);
   assert.match(modal, /styles\.settingsCard/);
   assert.match(modal, /styles\.resultHero/);

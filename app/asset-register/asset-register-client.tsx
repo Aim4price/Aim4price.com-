@@ -1,4 +1,6 @@
 'use client';
+
+import AssetTrackingUsage from '../../components/asset-register/AssetTrackingUsage';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
@@ -1425,7 +1427,7 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'lowest-value', label: 'Lowest current value' },
   { value: 'highest-replacement-price', label: 'Highest replacement price' },
   { value: 'lowest-replacement-price', label: 'Lowest replacement price' },
-  { value: 'aim4price-value', label: 'Aim4price value' },
+  { value: 'aim4price-value', label: 'Ideal Price' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
   { value: 'property', label: PROPERTY_ASSET_LABEL },
@@ -5076,7 +5078,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
     assetUsesPercentUsage(asset);
 
   if (asset.kind === 'vehicle') {
-    return hasHours ? `${Math.round(hours).toLocaleString('en-ZA')} km` : '—';
+    return hasHours ? `${hours.toLocaleString('en-ZA', {maximumFractionDigits: 1})} km${resolveAssetUsage(asset).estimated ? ' · Estimated' : ''}` : '—';
   }
 
   if (percent !== null && (usesPercentDepreciation || !hasHours)) {
@@ -5084,7 +5086,7 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
   }
 
   if (hasHours) {
-    return `${Math.round(hours).toLocaleString('en-ZA')} ${usageMetricLabel(usageMetric)}`;
+    return `${hours.toLocaleString('en-ZA', {maximumFractionDigits: 1})} ${usageMetricLabel(usageMetric)}${resolveAssetUsage(asset).estimated ? ' · Estimated' : ''}`;
   }
 
   if (percent !== null) {
@@ -9591,12 +9593,14 @@ export default function AssetRegisterClient({
     }
   }
 
-  function continueAddAssetForRegister() {
-    if (!addAssetRegisterOptions.some((option) => option.value === addAssetTargetRegisterId)) {
+  function continueAddAssetForRegister(registerId: string) {
+    if (!addAssetRegisterOptions.some((option) => option.value === registerId)) {
       setNotice({ tone: 'error', message: 'Choose the Asset Register that should own this asset.' });
       return;
     }
 
+    setAddAssetTargetRegisterId(registerId);
+    setNotice(null);
     setIsAddAssetDestinationModalOpen(false);
     setIsAddChoiceModalOpen(true);
   }
@@ -13831,13 +13835,19 @@ export default function AssetRegisterClient({
           { label: 'Last Updated', value: assetStatusDateLabel(asset) },
         ];
 
+    const marketAssessment = savedSaleability[asset.id];
+    if (marketAssessment) assetRows.push({
+      label: 'Realistic Market Price',
+      value: `${money(marketAssessment.priceExVat)} excl. VAT${marketAssessment.basis !== saleabilityBasis(asset) ? ' · Update needed' : ''}`,
+    });
+
     const reportPayload: AssetSheetPayload = {
       logoUrl: reportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: 'Estimated Value',
+      valueLabel: asset.selectedMethod === 'manual' ? 'Manual value' : 'Ideal Price',
       value: money(asset.value),
       valueNote: methodLabel(asset.selectedMethod),
       statusLabel: assetStatusDateLabel(asset),
@@ -13858,7 +13868,7 @@ export default function AssetRegisterClient({
       notes: [],
       methodCards,
       footerNote:
-        'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
+        'Ideal Price reflects asset details and depreciation assumptions. Realistic Market Price also considers demand and selling circumstances, so it may be higher or lower. Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
     };
     const reportHtml = buildAssetSheetReportHtml(reportPayload);
     const fileName = `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`;
@@ -16643,7 +16653,7 @@ export default function AssetRegisterClient({
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
-                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
+                              <span className={styles.assetValueMethodLabel}>{asset.selectedMethod === 'manual' ? 'Manual value' : asset.selectedMethod === 'aim4price' ? 'Ideal Price' : `${methodLabel(asset.selectedMethod)} value`}</span>
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
 
@@ -17823,10 +17833,8 @@ export default function AssetRegisterClient({
       {isAddAssetDestinationModalOpen ? (
         <AddAssetRegisterPicker
           options={addAssetRegisterOptions}
-          targetId={addAssetTargetRegisterId}
-          onSelect={(value) => { setAddAssetTargetRegisterId(value); setNotice(null); }}
+          onSelect={continueAddAssetForRegister}
           onClose={closeAddAssetDestinationModal}
-          onContinue={continueAddAssetForRegister}
           onCreate={createRegisterFromAddAsset}
           busy={isCreatingAddAssetRegister}
         />
@@ -19100,6 +19108,8 @@ export default function AssetRegisterClient({
                 </section>
               ) : null}
 
+              {assetSettingsView === 'usage' && <AssetTrackingUsage key={editingAsset.id} assetId={editingAsset.id}/>}
+
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>
                   <div className={styles.assetSettingsSectionCopy}>
@@ -20234,7 +20244,7 @@ export default function AssetRegisterClient({
                 >
                   <SaleabilityIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Saleability</strong>
+                    <strong>Realistic Market Price</strong>
                     <small>Assess how easily it could sell.</small>
                   </span>
                 </button>

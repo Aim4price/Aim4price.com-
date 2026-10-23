@@ -401,7 +401,10 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modal, /editorStep === 2/);
   assert.match(modal, /editorStep === 3/);
   assert.match(modal, /editorStep < 3 \? 'Next'/);
-  assert.match(modal, /hasPrimaryAsset \? 'Role and value' : 'Value in total'/);
+  assert.match(modal, /label="Role and value"/);
+  assert.match(modal, /selected && !hasPrimaryAsset/);
+  assert.match(modal, /role="switch"/);
+  assert.match(modal, /event\.target\.checked \? 'included' : 'excluded'/);
   assert.match(modal, /countsTowardTotalByAssetId/);
   assert.match(modal, /primaryAssetId: hasPrimaryAsset \? primaryAssetId : null/);
   assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);

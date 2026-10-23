@@ -7,6 +7,7 @@ import AssetAccessSettingsDialog from "./AssetAccessSettingsDialog";
 import { trackerPairingUrl } from "../../lib/asset-tracking-links";
 import TrackerInstallShareDialog from "./TrackerInstallShareDialog";
 import styles from "./AssetTrackingPanel.module.css";
+import AssetTrackingUsage from "./AssetTrackingUsage";
 export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
   const [showMovement,setShowMovement]=useState(false),[replace,setReplace]=useState(false),[title,setTitle]=useState('Tracked asset');
   const [expiresAt,setExpiresAt]=useState(0),[now,setNow]=useState(Date.now()),[copied,setCopied]=useState(false),[loading,setLoading]=useState(true);
@@ -124,6 +125,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports</button>
         <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>Manage device</button></div>
       </div>}
+      {device && !replace && !showManage && <AssetTrackingUsage assetId={assetId}/>}
       {(!device||replace)&&<>
       <div className={styles.setupSteps}>
         <div className={styles.setupStep}>

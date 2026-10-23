@@ -7717,3 +7717,63 @@
 .fuelSlipDetailGrid span { display: grid; gap: 4px; }
 .slipLedgerCard .fuelSlipDetailGrid small { font-size: .85rem; line-height: 1.4; }
 .fuelSlipDetailIcon { position: absolute; left: 0; top: .05rem; display: block; width: 1.15rem; height: 1.15rem; color: var(--app-muted, #648477); }
+
+/* Match Marketplace contact's inset icons and calm field surfaces. */
+.accountFuelModal.storageEditor .storageEditorGrid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem 1.15rem;
+}
+.accountFuelModal.storageEditor .storageEditorGrid > :is(label, div) {
+  grid-column: span 3;
+  gap: 0.45rem;
+  color: #234b3d;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: normal;
+}
+.accountFuelModal.storageEditor .storageEditorGrid > .storageAmountField { grid-column: span 2; }
+.accountFuelModal.storageEditor .storageEditorGrid > .fullField { grid-column: 1 / -1; }
+.storageInput { display: block; position: relative; min-width: 0; }
+.storageInput > .storageFieldIcon,
+.storageEditor .storageFuelTypeButton > .storageFieldIcon {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 1.05rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #739083;
+  pointer-events: none;
+}
+.accountFuelModal.storageEditor .storageInput > :is(input, textarea),
+.accountFuelModal.storageEditor .storageFuelTypeButton {
+  min-width: 0;
+  min-height: 3.4rem !important;
+  padding: 0.85rem 1rem 0.85rem 3rem !important;
+  background: #edf5f0 !important;
+  border: 1px solid #d4e2da !important;
+  color: #234b3d !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5;
+}
+.storageEditor .storageFuelTypeButton { position: relative; }
+.accountFuelModal.storageEditor .storageInput > textarea { min-height: 4.4rem !important; }
+.accountFuelModal.storageEditor .storageInput > :is(input, textarea)::placeholder {
+  color: #637d71;
+  font-weight: 400;
+  opacity: 1;
+}
+.accountFuelModal.storageEditor .storageInput > :is(input, textarea):focus,
+.accountFuelModal.storageEditor .storageFuelTypeButton:focus-visible {
+  border-color: #527d68 !important;
+  box-shadow: 0 0 0 3px rgba(35, 75, 61, 0.12);
+}
+.storageEditor .modalHeader p { margin: 0; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountFuelModal.storageEditor .storageEditorGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountFuelModal.storageEditor .storageEditorGrid > :is(label, div) {
+    grid-column: 1 / -1;
+  }
+}

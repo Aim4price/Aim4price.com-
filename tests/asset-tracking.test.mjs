@@ -1,3 +1,4 @@
+import {trackingRuntimeModule} from './helpers/tracking-runtime.mjs';
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -71,10 +72,10 @@ test("time calculation uses timestamps, never assumed point count", () => {
 });
 const db = new PGlite();
 await db.exec(
-  "CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text)",
+  "CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text,hours numeric(14,2),kind text DEFAULT 'tractor',specs_json jsonb DEFAULT '{}',updated_at timestamptz DEFAULT now())",
 );
 const asset = "11111111-1111-4111-8111-111111111111";
-await db.query("INSERT INTO asset_register_items VALUES($1,$2,$3)", [
+await db.query("INSERT INTO asset_register_items(id,user_id,title) VALUES($1,$2,$3)", [
   asset,
   "owner",
   "Tractor",
@@ -98,7 +99,7 @@ const tracking = readFileSync(
   /import\s*\{\s*getDb\s*\}\s*from\s*['"]\.\/db['"];?/,
   "const getDb=()=>globalThis.__trackingTestDb;",
 );
-const api = await import(compile(tracking));
+const api = await import(trackingRuntimeModule('asset-tracking','__trackingTestDb'));
 let token;
 test("pairing checks ownership, expires, is one-time and stores only credential hashes", async () => {
   await assert.rejects(api.createPairing("intruder", asset));
@@ -273,7 +274,7 @@ test("diagnostics are bounded and older phones remain compatible",()=>{
 
 test('disconnect, phone failure and replacement retain asset location and every phone’s readings', async () => {
   const assetId=crypto.randomUUID();
-  await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[assetId,'lifecycle-owner','Replacement test']);
+  await db.query('INSERT INTO asset_register_items(id,user_id,title) VALUES($1,$2,$3)',[assetId,'lifecycle-owner','Replacement test']);
   const pair=async()=>api.pairDevice((await api.createPairing('lifecycle-owner',assetId)).replaceAll('-',''),'Equipment phone');
   const old=await pair();
   const captured=Date.now()-60000;
@@ -310,7 +311,7 @@ test('disconnect, phone failure and replacement retain asset location and every 
 });
 
 test('partial uploads isolate expired readings without blocking valid readings',async()=>{
- const assetId=crypto.randomUUID();await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[assetId,'recovery-owner','Recovery asset']);
+ const assetId=crypto.randomUUID();await db.query('INSERT INTO asset_register_items(id,user_id,title) VALUES($1,$2,$3)',[assetId,'recovery-owner','Recovery asset']);
  const paired=await api.pairDevice((await api.createPairing('recovery-owner',assetId)).replaceAll('-',''),'Original');
  const make=(time)=>({id:crypto.randomUUID(),sessionId:crypto.randomUUID(),capturedAt:new Date(time).toISOString(),latitude:-33,longitude:18,accuracy:5,motion:'moving'});
  const old=make(Date.now()-31*86400000),good=make(Date.now()-60000);
@@ -327,7 +328,7 @@ test('partial uploads isolate expired readings without blocking valid readings',
  const again=await api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing],recoveryToken:paired.token}));assert.deepEqual(again.accepted,[missing.id]);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM asset_tracking_points WHERE sample_id=$1',[missing.id])).rows[0].n,1);
  await assert.rejects(api.ingestTracking(paired.token,api.validateUpload({...payload,points:[missing]})),/DEVICE_REVOKED/);
- const different=crypto.randomUUID();await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[different,'recovery-owner','Other asset']);
+ const different=crypto.randomUUID();await db.query('INSERT INTO asset_register_items(id,user_id,title) VALUES($1,$2,$3)',[different,'recovery-owner','Other asset']);
  const other=await api.pairDevice((await api.createPairing('recovery-owner',different)).replaceAll('-',''),'Other');
  await assert.rejects(api.ingestTracking(other.token,api.validateUpload({...payload,points:[missing],recoveryToken:paired.token})),/RECOVERY_UNAVAILABLE/);
  await assert.rejects(api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing],recoveryToken:'0'.repeat(64)})),/RECOVERY_UNAVAILABLE/);

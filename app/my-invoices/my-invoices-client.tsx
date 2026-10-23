@@ -1,4 +1,5 @@
 'use client';
+import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import BudgetDetailIcon from '../../components/BudgetDetailIcon';
@@ -466,6 +467,15 @@ function ContributionIcon(props: SVGProps<SVGSVGElement>) {
       <circle cx="18" cy="19" r="2.25" />
       <path d="m8 11 7.8-4.6" />
       <path d="m8 13 7.8 4.6" />
+    </IconBase>
+  );
+}
+
+function AssetFolderIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v2" />
+      <path d="M3 7h6l2 3h10l-3 10H3z" />
     </IconBase>
   );
 }
@@ -3284,8 +3294,7 @@ export default function MyInvoicesClient({
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function handleAutomaticFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const pages = Array.from(event.target.files ?? []);
+  function handleAutomaticFiles(pages: File[]) {
     const error = validateInvoicePages(pages);
     setCaptureUploadError(error || '');
     setAutomaticUploadPages(error ? [] : pages);
@@ -4197,8 +4206,8 @@ export default function MyInvoicesClient({
           <div className={`${styles.invoiceDropCodeModal} ${wizardStyles.dialog} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
-                <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
-                <p>Create a code for suppliers to upload invoices for your assets.</p>
+                <h2 id="invoice-drop-code-title">Invoice Drop</h2>
+                <p>Create a code your suppliers can use to upload invoices.</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
@@ -4206,12 +4215,12 @@ export default function MyInvoicesClient({
             <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
 
               {invoiceDropWizardStep === 1 ? (
-                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-scope-title">
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${styles.invoiceDropScopePanel}`} aria-labelledby="invoice-drop-scope-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
-                    <h3 id="invoice-drop-scope-title">Where should invoices go?</h3>
+                    <h3 id="invoice-drop-scope-title">What should this code cover?</h3>
                   </div>
-                  <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-label="Invoice route">
+                  <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-labelledby="invoice-drop-scope-title">
                     <button
                       type="button"
                       role="radio"
@@ -4219,9 +4228,10 @@ export default function MyInvoicesClient({
                       className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'all' ? styles.invoiceDropScopeOptionActive : ''}`}
                       onClick={() => selectInvoiceDropScope('all')}
                     >
-                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ContributionIcon /></span>
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><AssetFolderIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
                         <strong>All assets</strong>
+                        <small>One code for invoices across your assets.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
                     </button>
@@ -4232,16 +4242,17 @@ export default function MyInvoicesClient({
                       className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'asset' ? styles.invoiceDropScopeOptionActive : ''}`}
                       onClick={() => selectInvoiceDropScope('asset')}
                     >
-                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><LedgerIcon /></span>
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ReportFileIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
-                        <strong>Specific asset</strong>
+                        <strong>One specific asset</strong>
+                        <small>A code linked to a single asset.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
                     </button>
                   </div>
                   <div className={styles.invoiceDropPrivacyRow}>
                     <ShieldCheckIcon />
-                    <span>Invoice uploads only. No asset access.</span>
+                    <span>Suppliers can upload invoices only. No access to your asset records.</span>
                   </div>
                 </section>
               ) : null}
@@ -5062,16 +5073,15 @@ export default function MyInvoicesClient({
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
-                <label className={styles.captureUploadTarget}>
-                  <span className={styles.captureUploadIcon} aria-hidden="true"><UploadIcon /></span>
-                  <span className={styles.captureUploadCopy}>
-                    <strong>{automaticUploadPages.length ? 'Change files' : 'Choose invoice or photos'}</strong>
-                    <small>One PDF or up to 12 photos of the same invoice</small>
-                    <small>PDF, JPG, PNG or WebP · 12 MB per file</small>
-                  </span>
-                  <span className={styles.captureUploadNext} aria-hidden="true"><ChevronRightIcon /></span>
-                  <input type="file" aria-label="Choose invoice or photos" accept="application/pdf,image/jpeg,image/png,image/webp" multiple disabled={isExtracting} onChange={handleAutomaticFileChange} />
-                </label>
+                <CaptureUploadDropzone
+                  title="Drop invoice or photos here or browse"
+                  description="One PDF or up to 12 photos of the same invoice · PDF, JPG, PNG or WebP · 12 MB per file"
+                  inputLabel="Choose invoice or photos"
+                  selectedCount={automaticUploadPages.length}
+                  multiple
+                  disabled={isExtracting}
+                  onFiles={handleAutomaticFiles}
+                />
                 {automaticUploadPages.length ? <div className={styles.captureFileSelection}>
                   <span className={styles.captureFileCount} role="status">{automaticUploadPages.length} {automaticUploadPages.length === 1 ? 'file' : 'files'} selected</span>
                   <ul className={styles.captureFileList} aria-label="Selected files">

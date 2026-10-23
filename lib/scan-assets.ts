@@ -2006,10 +2006,12 @@ export async function saveScanAssetEvent(
       throw new Error("ASSET_DOES_NOT_ACCEPT_FUEL");
     }
 
+    const confirmedUsage = asRecord(asRecord(existingRow.specs_json).trackingUsage);
+    const minimumReading = confirmedUsage.estimated === true ? Number(confirmedUsage.baselineValue) : currentAsset.hours;
     if (
       !historicalScan && nextHours !== null &&
-      currentAsset.hours !== null &&
-      nextHours < currentAsset.hours
+      minimumReading !== null &&
+      nextHours < minimumReading
     ) {
       throw new Error("USAGE_READING_CANNOT_DECREASE");
     }
@@ -2176,6 +2178,7 @@ export async function saveScanAssetEvent(
       existingScanManagedPhotos,
     );
     await client.query("SELECT set_config('aim4price.valuation_input_at',$1,true)", [clientCapturedAt ?? new Date().toISOString()]);
+    if (!historicalScan && nextHours !== null) await client.query("SELECT set_config('aim4price.confirm_usage','on',true)");
     const updatedAsset = await client.query<ScanAccessRow>(
       `
         with updated as (
