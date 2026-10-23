@@ -7577,7 +7577,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return (
       <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="usage-lifetime-title">
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-        <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.yearDetailsModal}`}>
+        <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.yearDetailsModal} ${styles.lifetimeModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               <h3 id="usage-lifetime-title" ref={lifetimeTitleRef} tabIndex={-1} data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('usage')}<span>Expected total lifetime</span></h3>
@@ -7590,7 +7590,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <span>Expected lifetime</span><strong>{valid ? format(parsed) : '—'}</strong><small>{unit}</small>
             </div>
             <label className={styles.yearSliderControl}>
-              <span className={styles.fieldLabel}>Adjust expected lifetime</span>
+              <span className={styles.fieldLabel}>Adjust lifetime</span>
               <input className={styles.yearRangeInput} aria-label="Expected total lifetime" style={{ '--year-progress': `${(sliderValue - sliderMin) / Math.max(1, sliderMax - sliderMin) * 100}%` } as CSSProperties} type="range" min={sliderMin} max={sliderMax} step="1" value={sliderValue} onChange={(event) => update(Math.round(Number(event.target.value) / increment) * increment)} />
               <span className={styles.yearSliderMeta}><span>{format(sliderMin)} {unit}</span><span>{format(sliderMax)} {unit}</span></span>
             </label>
@@ -7599,15 +7599,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" className={styles.yearFineTuneButton} onClick={() => update(sliderValue + increment)} disabled={sliderValue >= maximum}>+ {format(increment)} {unit}</button>
             </div>
           </div>
-          <div className={styles.yearSecondaryControls}>
+          <div className={`${styles.yearSecondaryControls} ${styles.lifetimeSecondary}`}>
             <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
               <span className={styles.fieldLabel}>Or enter total {unit}</span>
               <input type="text" inputMode="numeric" value={usageLifetimeDraft.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} onChange={(event) => setUsageLifetimeDraft(event.target.value.replace(/\s/g, ''))} aria-invalid={!valid} aria-describedby="lifetime-guidance" />
               {!valid ? <span className={styles.modalMessage}>Enter {format(minimum)} to {format(maximum)} {unit}.</span> : null}
             </label>
-            <button type="button" className={styles.unknownAnswerButton} onClick={() => update(defaultLifetime)}>Reset to default</button>
+            <button type="button" className={`${styles.unknownAnswerButton} ${styles.lifetimeReset}`} onClick={() => update(defaultLifetime)}>Reset to default</button>
           </div>
-          <p id="lifetime-guidance" className={styles.detailsModalText}>Keep the default if you’re unsure. This is a valuation assumption, not an expiry date.</p>
+          <p id="lifetime-guidance" className={styles.detailsModalText}>Unsure? Keep the default. Lifetime is a valuation guide, not an expiry date.</p>
           {valid && usageNumber !== null && usageNumber > parsed ? <p className={styles.detailsModalText}>The entered reading exceeds this lifetime. Review it, or continue if it reflects your asset.</p> : null}
           <div className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
             <button type="button" className={styles.secondaryButton} onClick={() => setUsageModalMode(usageAmount !== '' ? 'hours' : 'percent')}>Back</button>

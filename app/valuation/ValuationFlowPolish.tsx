@@ -15,15 +15,24 @@ import {
 } from '../../lib/saleability-pdf';
 import styles from './valuation-flow-polish.module.css';
 
-function CategoryMenu({value, groups, onChange}: {value: string; groups: string[]; onChange: (value: string) => void}) {
+function CategoryMenu({value, groups, counts, total, pulseKey, onChange}: {value: string; groups: string[]; counts: Record<string, number>; total: number; pulseKey: string; onChange: (value: string) => void}) {
   const [open, setOpen] = useState(false);
+  const [noticed, setNoticed] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  useLayoutEffect(() => {
+    setPulse(false);
+    if (!pulseKey || noticed) return;
+    const timer = window.setTimeout(() => setPulse(true), 450);
+    return () => window.clearTimeout(timer);
+  }, [pulseKey, noticed]);
+  useLayoutEffect(() => { if (open) { setNoticed(true); setPulse(false); } }, [open]);
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement | null>(null);
   const options = ['', ...groups];
   useLayoutEffect(() => {
     if (!open) return;
-    list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({preventScroll: true});
+    (list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]') ?? list.current?.querySelector<HTMLButtonElement>('[role="option"]'))?.focus({preventScroll: true});
     const outside = (event: PointerEvent) => {
       if (event.target instanceof Node && !wrap.current?.contains(event.target) && !list.current?.contains(event.target)) setOpen(false);
     };
@@ -45,14 +54,14 @@ function CategoryMenu({value, groups, onChange}: {value: string; groups: string[
       buttons[next]?.focus();
     }
   }}>
-    <button ref={trigger} type="button" className={styles.familyCategoryTrigger} aria-label="Equipment category" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'equipment-category-list' : undefined} onClick={() => setOpen(current => !current)}>
-      <span>{value || 'All categories'}</span>
+    <button ref={trigger} type="button" className={`${styles.familyCategoryTrigger} ${pulse ? styles.familyCategoryPulse : ''}`} aria-label="Filter by category" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'equipment-category-list' : undefined} onClick={() => setOpen(current => !current)}>
+      <span className={styles.familyCategoryLabel}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M7 12h10M10 19h4" /></svg><span>{value || 'Filter by category'}</span></span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
     </button>
-    {open ? <DropdownOverlay anchorRef={trigger} maxHeight={300} id="equipment-category-list" role="listbox" aria-label="Equipment categories" className={styles.familyCategoryMenu}>
-      <div ref={node => { list.current = node; if (node) node.querySelector<HTMLButtonElement>('[aria-selected="true"]')?.focus({preventScroll: true}); }}>
+    {open ? <DropdownOverlay anchorRef={trigger} maxHeight={320} minimumWidth={330} id="equipment-category-list" role="listbox" aria-label="Asset categories" className={styles.familyCategoryMenu}>
+      <div ref={node => { list.current = node; if (node) (node.querySelector<HTMLButtonElement>('[aria-selected="true"]') ?? node.querySelector<HTMLButtonElement>('[role="option"]'))?.focus({preventScroll: true}); }}>
       {options.map(option => <button key={option} type="button" role="option" aria-selected={value === option} tabIndex={value === option ? 0 : -1} onClick={() => { onChange(option); close(); }}>
-        <span>{option || 'All categories'}</span>
+        <span>{option || 'All categories'}</span><span className={styles.familyCategoryCount}>{option ? counts[option] : total}</span>
         {value === option ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
       </button>)}
       </div>
@@ -208,16 +217,23 @@ export default function ValuationFlowPolish() {
   const modalSearchRef = useRef<HTMLInputElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  const familyGroups = useMemo(() => Array.from(new Set(familyOptions.map(option => option.meta).filter(Boolean))).sort((a, b) => a.localeCompare(b)), [familyOptions]);
-  const visibleFamilyOptions = useMemo(() => {
+  const searchMatchedOptions = useMemo(() => {
     const normalise = (text: string) => text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[-_/]/g, ' ').replace(/\s+/g, ' ').trim();
     const query = normalise(familySearch);
     const terms = query.split(' ').filter(Boolean);
-    return familyOptions.filter(option => (!familyGroup || option.meta === familyGroup)
-      && terms.every(term => normalise(option.searchText).includes(term)))
+    return familyOptions.filter(option => terms.every(term => normalise(option.searchText).includes(term)))
       .sort((a, b) => Number(normalise(b.label) === query) - Number(normalise(a.label) === query)
         || a.label.localeCompare(b.label, 'en', {numeric: true, sensitivity: 'base'}));
-  }, [familyOptions, familySearch, familyGroup]);
+  }, [familyOptions, familySearch]);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    searchMatchedOptions.forEach(option => { if (option.meta) counts[option.meta] = (counts[option.meta] ?? 0) + 1; });
+    return counts;
+  }, [searchMatchedOptions]);
+  const familyGroups = Object.keys(categoryCounts).sort((a, b) => a.localeCompare(b));
+  const visibleFamilyOptions = searchMatchedOptions.filter(option => !familyGroup || option.meta === familyGroup);
+  const showCategoryFilter = familyOptions.some(option => Boolean(option.meta));
+  const suggestCategory = Boolean(familySearch.trim() && !familyGroup && searchMatchedOptions.length > 12 && familyGroups.length > 1);
 
   useLayoutEffect(() => { optionsViewportRef.current?.scrollTo({top: 0}); }, [familySearch, familyGroup]);
 
@@ -504,11 +520,11 @@ export default function ValuationFlowPolish() {
               <button type="button" onClick={() => setFamilySearch('')} aria-label="Clear family search">×</button>
             ) : null}
           </label>
-          {familyGroups.length > 1 ? <CategoryMenu value={familyGroup} groups={familyGroups} onChange={setFamilyGroup} /> : null}
+          {showCategoryFilter ? <CategoryMenu value={familyGroup} groups={familyGroups} counts={categoryCounts} total={searchMatchedOptions.length} pulseKey={suggestCategory ? familySearch.trim() : ''} onChange={setFamilyGroup} /> : null}
         </div>
         <div className={styles.familyListHeading}>
-          <strong>{familyGroup || `All ${familyTypeLabel === 'vehicle type' ? 'vehicles' : 'equipment'}`}</strong>
-          <span className={styles.familyResultCount} aria-live="polite">{visibleFamilyOptions.length} {visibleFamilyOptions.length === 1 ? 'result' : 'results'} · A–Z</span>
+          <strong>{familyGroup || 'All asset types'}</strong>
+          <span className={styles.familyResultCount} aria-live="polite">{visibleFamilyOptions.length} matching asset {visibleFamilyOptions.length === 1 ? 'type' : 'types'}{suggestCategory ? ' · Narrow by category' : ''}</span>
         </div>
         <div ref={optionsViewportRef} className={styles.familyOptionsViewport}>
           {visibleFamilyOptions.length ? (
