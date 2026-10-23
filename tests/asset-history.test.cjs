@@ -64,3 +64,33 @@ test('manual restoration uses the exact saved amount and a missing prior baselin
  assert.equal(preview.previousValue,manual?327133:320000);await restore.restoreAssetValueHistory('owner','asset',eventId,{id:'owner',name:'Owner'},{confirmed:true,revision:'v1',expectedValue:preview.previousValue});assert.deepEqual(saved,{value:preview.previousValue,baseline:null});
  }
 });
+
+test('percentage retraction restores metadata readings, preserves price and blocks stale or changed metrics',async()=>{
+ const {pg,schema,db,history}=await setup();try{
+ const asset=randomUUID();
+ await pg.query("INSERT INTO asset_register_items VALUES($1,'owner','Tractor',251100,2023,'good','keep',$2,now())",[asset,JSON.stringify({usageBasis:'percentage',lifeWorkedPercent:30})]);
+ await pg.query("UPDATE asset_register_items SET value=247050,specs_json=$2 WHERE id=$1",[asset,JSON.stringify({usageBasis:'percentage',lifeWorkedPercent:33})]);
+ const event=(await pg.query("SELECT id FROM asset_history_events WHERE operation='UPDATE'")).rows[0].id;
+ assert.equal((await history.listUnifiedAssetHistory('owner',asset)).items.find(i=>i.id===event).restorable,true);
+ let fail=false;
+ const restore=load('lib/asset-history-restore.ts',{'./asset-usage':load('lib/asset-usage.ts',{}),'./asset-history-fields':load('lib/asset-history-fields.ts',{}),'./db':db,'./asset-history-schema':schema,'./shared-asset-activity':load('lib/shared-asset-activity.ts',{'./db':db}),'./asset-register-db':{updateSharedAssetDetails:async(client,owner,id,patch,options)=>{
+ assert.deepEqual(patch,{usage:30});assert.equal(options.allowUsageDecrease,true);
+ await client.query("UPDATE asset_register_items SET specs_json=jsonb_set(specs_json,'{lifeWorkedPercent}', $2::jsonb) WHERE id=$1",[id,JSON.stringify(patch.usage)]);
+ if(fail)throw Error('Write failed');
+ return {before:{usage:33},after:{usage:30}};
+ }}});
+ const run=()=>restore.restoreAssetDetails('owner',asset,event,{id:'owner',name:'Owner'},true);
+ await assert.rejects(restore.restoreAssetDetails('other',asset,event,{id:'other',name:'Other'},true),/cannot be retracted/);
+ fail=true;await assert.rejects(run(),/Write failed/);
+ assert.equal((await pg.query('SELECT specs_json FROM asset_register_items')).rows[0].specs_json.lifeWorkedPercent,33,'failed writes roll back');fail=false;
+ await pg.query("UPDATE asset_register_items SET specs_json=$2 WHERE id=$1",[asset,JSON.stringify({usageBasis:'hours',lifeWorkedPercent:33,hours:33})]);
+ await assert.rejects(run(),/usage metric has changed/);
+ await pg.query("UPDATE asset_register_items SET specs_json=$2 WHERE id=$1",[asset,JSON.stringify({usageBasis:'percentage',lifeWorkedPercent:34})]);
+ await assert.rejects(run(),/Newer changes/);
+ await pg.query("UPDATE asset_register_items SET specs_json=$2 WHERE id=$1",[asset,JSON.stringify({usageBasis:'percentage',lifeWorkedPercent:33})]);
+ await run();const row=(await pg.query('SELECT * FROM asset_register_items')).rows[0];
+ assert.equal(row.specs_json.lifeWorkedPercent,30);assert.equal(row.value,'247050');assert.equal(row.note,'keep');
+ assert.equal((await pg.query("SELECT * FROM shared_asset_activity WHERE action='Asset change retracted'")).rows.length,1);
+ await assert.rejects(run(),/Newer changes/);
+ }finally{await pg.close();}
+});

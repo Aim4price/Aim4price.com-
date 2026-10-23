@@ -17,8 +17,18 @@ function maintenanceWork(value:unknown):string {
  return [heading,...lines].filter(Boolean).join('\n')||'No work items recorded';
 }
 
+// History amounts are ZAR; budgets and recorded fuel totals use inclusive amounts.
+function moneyBasis(key:string){
+ if(key==='vat_amount')return 'VAT';
+ if(['amount','total_amount','total_inc_vat'].includes(key)||/_inc(?:l)?_vat$/.test(key))return 'incl. VAT';
+ if(key==='value'||/_ex_vat$/.test(key))return 'excl. VAT';
+ return null;
+}
+
 export function display(value:unknown,key?:string):string {
  if(empty(value))return 'Not saved';
+ const basis=moneyBasis(key||'');
+ if(basis&&(typeof value==='number'||typeof value==='string')&&String(value).trim()!==''&&Number.isFinite(Number(value)))return `R ${Number(value).toLocaleString('en-ZA',{maximumFractionDigits:2}).replace(/[,\s]/g,' ')} · ${basis}`;
  if(key==='maintenance_work')return maintenanceWork(value);
  if(typeof value==='boolean')return value?'Yes':'No';
  if(typeof value==='number')return key==='year_model'?String(value):value.toLocaleString('en-ZA').replace(/,/g,' ');

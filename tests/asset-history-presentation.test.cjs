@@ -18,3 +18,13 @@ test('history search finds human-readable maintenance and part details',()=>{
  const item={action:'Maintenance added',actorName:'Gerald',source:'owner',category:'maintenance',createdAt:'2026-10-14T15:04:25Z',before:{},after:{maintenance_work:[{mode:'repaired',items:[{label:'Radiator',parts:[{partNumber:'RAD-42'}]}]}]}};
  assert.equal(matchesHistorySearch(item,'rad-42'),true);assert.equal(matchesHistorySearch(item,'repaired'),true);assert.equal(matchesHistorySearch(item,'unknown part'),false);
 });
+test('all history money fields show ZAR and their VAT basis, including numeric database strings',()=>{
+ for(const key of ['value','selected_value_ex_vat','replacement_price_ex_vat','insured_value_ex_vat','subtotal_ex_vat','finance_monthly_payment_ex_vat']){
+  assert.equal(display('251100',key),'R 251 100 · excl. VAT');
+  assert.equal(display(0,key),'R 0 · excl. VAT');
+ }
+ for(const key of ['amount','total_amount','total_inc_vat'])assert.equal(display(115,key),'R 115 · incl. VAT');
+ assert.equal(display(15,'vat_amount'),'R 15 · VAT');
+ assert.equal(display(null,'value'),'Not saved');
+ assert.equal(display(2023,'year_model'),'2023');assert.equal(display(33,'life_worked_percent'),'33');
+});
