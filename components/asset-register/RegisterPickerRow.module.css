@@ -14,3 +14,5 @@
   :global(:where(html:not(:has([data-website-canvas])))) .value { grid-column: 2; text-align: left; }
   :global(:where(html:not(:has([data-website-canvas])))) .check { grid-column: 3; grid-row: 1; }
 }
+
+.name { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
