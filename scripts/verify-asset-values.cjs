@@ -205,6 +205,28 @@ await fill('textarea','Updated replacement quotation');await click('Preview chan
  assert.equal(await page.$eval('[role="dialog"]',d=>d.textContent.includes('Review values')),false);await page.screenshot({path:'/tmp/simple-value-restore.png'});await click('Cancel');await click('Restore');await page.waitForFunction(()=>document.body.textContent.includes('Restore previous value?'));await click('Restore');await page.waitForFunction(()=>document.body.textContent.includes('Previous value restored.'));assert.equal(await page.evaluate(()=>window.writes.filter(w=>w.action==='restoreValue').at(-1).expectedValue),327133);
 
  assert.equal(await page.evaluate(()=>window.writes.at(-1).eventId),'event');
+ // Central management corrections preview effects, require a reason and restore the same item.
+ for(const [action,restoreAction,category] of [['Retract cost','Restore item','costs'],['Retract fuel entry','Restore item','fuel'],['Undo completion','Restore completion','maintenance'],['Retract schedule','Restore schedule','maintenance']]){
+  await page.evaluate(({action,restoreAction,category})=>{
+   window.recordRetracted=false;window.recordWrites=[];
+   window.fetch=async(url,options)=>{const body=options?.body?JSON.parse(options.body):null;
+    if(body?.action==='previewRecordCorrection')return {ok:true,json:async()=>({title:window.recordRetracted?restoreAction:action,effect:'Linked totals and records are corrected together. History is retained.',details:{supplier_name:'Example Workshop',total_inc_vat:1150},revision:window.recordRetracted?'restore-v1':'retract-v1',restoring:window.recordRetracted})};
+    if(body){window.recordWrites.push(body);window.recordRetracted=!window.recordRetracted;return {ok:true,json:async()=>({ok:true})};}
+    return {ok:true,json:async()=>({items:[{id:'event',category,action:'Recorded item',actorName:'Owner',source:'Owner',createdAt:'2026-10-04T10:00:00Z',before:{},after:{total_inc_vat:1150},recordId:'record',recordTable:'asset_invoices',restorable:false,recordAction:window.recordRetracted?restoreAction:action,recordState:window.recordRetracted?'Retracted':undefined}],nextBefore:null})};
+   };
+   window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{key:action,endpoint:'/api/asset-register/asset',assetTitle:'2023 Tractor',onClose:()=>{}}));
+  },{action,restoreAction,category});
+  await page.waitForSelector('details');await page.click('details summary');await click(action);await page.waitForSelector('textarea');
+  assert.equal(await page.$$eval('button',(nodes,text)=>nodes.find(n=>n.textContent===text).disabled,action),true);
+  await click('Cancel');assert.equal(await page.evaluate(()=>window.recordWrites.length),0);
+  await click(action);await page.waitForSelector('textarea');await fill('textarea','Duplicate entry');
+  for(const width of [1440,390,320]){await page.setViewport({width,height:1000});assert.equal(await page.$eval('[role="dialog"]',d=>d.scrollWidth<=d.clientWidth+2),true);}
+  await page.screenshot({path:'/tmp/history-record-correction-mobile.png'});await page.setViewport({width:1440,height:1000});
+  await click(action);await page.waitForFunction(()=>document.body.textContent.includes('Correction saved.'));
+  assert.deepEqual(await page.evaluate(()=>window.recordWrites[0]),{eventId:'event',confirmed:true,action:'correctRecord',revision:'retract-v1',reason:'Duplicate entry'});
+  if(!await page.$('details[open]'))await page.click('details summary');await click(restoreAction);await page.waitForSelector('textarea');await fill('textarea','Restore original entry');await click(restoreAction);
+  await page.waitForFunction(()=>document.body.textContent.includes('Item restored.'));assert.equal(await page.evaluate(()=>window.recordWrites.length),2);assert.equal(await page.evaluate(()=>window.recordWrites[1].revision),'restore-v1');
+ }
  await page.evaluate(()=>{
   window.data.requests=[{id:'proposal',amount:800000,reason:'Inspected equipment',actor_name:'Example Dealer',status:'pending',submitted_value:700000}];
   window.fetch=async()=>({ok:true,json:async()=>structuredClone(window.data)});
