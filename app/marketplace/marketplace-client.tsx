@@ -3832,8 +3832,6 @@ export default function MarketplaceClient({
               </button>
             </div>
 
-            <FacebookAdvertActions key={manageListingTarget.id} listing={manageListingTarget} />
-
             {manageListingFeedback ? (
               <p className={styles.marketplaceManageFeedback} role="status">{manageListingFeedback}</p>
             ) : null}
