@@ -44,21 +44,21 @@
 :global(html[data-background='dark']) .dialog { --share-surface: #182c24; --share-soft: #20382d; --share-ink: #e8f4ee; --share-muted: #b9cec1; --share-line: #415e4f; }
 :global(html[data-background='dark']) .summary { background: #20382d; }
 @media (max-width: 640px) {
- .header { padding: 22px 20px; gap: 12px; }
- .header h2 { font-size: 26px; }
- .header p { font-size: 14px; }
- .body { padding: 20px; gap: 18px; }
- .detailsGrid, .destinations { grid-template-columns: 1fr; gap: 18px; }
- .photos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
- .photos a:first-child { grid-column: auto; aspect-ratio: 1.2; }
- .summary { padding: 14px; gap: 10px; }
- .summary strong { font-size: 18px; }
- .options :is(a, button), .destinations a { padding: 16px; gap: 12px; }
- .optionIcon { width: 46px; height: 46px; border-radius: 13px; }
- .optionCopy strong { font-size: 17px; }
- .dialog small { font-size: 13px; }
- .footer { padding: 16px 20px; }
- .footer small { max-width: 45%; }
- .footer button, .dialog .primary { min-width: 110px; }
- .captionHeader button { padding-inline: 12px; font-size: 14px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .header { padding: 22px 20px; gap: 12px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .header h2 { font-size: 26px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .header p { font-size: 14px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 20px; gap: 18px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .detailsGrid, :global(:where(html:not(:has([data-website-canvas])))) .destinations { grid-template-columns: 1fr; gap: 18px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .photos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+ :global(:where(html:not(:has([data-website-canvas])))) .photos a:first-child { grid-column: auto; aspect-ratio: 1.2; }
+ :global(:where(html:not(:has([data-website-canvas])))) .summary { padding: 14px; gap: 10px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .summary strong { font-size: 18px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .options :is(a, button), :global(:where(html:not(:has([data-website-canvas])))) .destinations a { padding: 16px; gap: 12px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .optionIcon { width: 46px; height: 46px; border-radius: 13px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .optionCopy strong { font-size: 17px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog small { font-size: 13px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 16px 20px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .footer small { max-width: 45%; }
+ :global(:where(html:not(:has([data-website-canvas])))) .footer button, :global(:where(html:not(:has([data-website-canvas])))) .dialog .primary { min-width: 110px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .captionHeader button { padding-inline: 12px; font-size: 14px; }
 }
