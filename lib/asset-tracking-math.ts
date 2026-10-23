@@ -37,6 +37,8 @@ export function summarizeTracking(input: TrackingPoint[]) {
     (a, b) => Date.parse(a.capturedAt) - Date.parse(b.capturedAt),
   );
   const segments: TrackingPoint[][] = [];
+  // Exact observed intervals support usage rollups without counting stops or gaps.
+  const movementIntervals: Array<{from: string; to: string; distanceKm: number}> = [];
   let distance = 0,
     movingSeconds = 0,
     stationarySeconds = 0,
@@ -111,6 +113,7 @@ export function summarizeTracking(input: TrackingPoint[]) {
     const shortRun=anchorSeconds>seconds&&anchorSeconds<=60;
     const travelled = shortRun?distanceMeters(anchor,point):distanceMeters(previous, point);
     distance += travelled;
+    movementIntervals.push({from: (shortRun ? anchor : previous).capturedAt, to: point.capturedAt, distanceKm: travelled / 1000});
     movingSeconds += shortRun?anchorSeconds:seconds;
     if(shortRun)stationarySeconds=Math.max(0,stationarySeconds-(anchorSeconds-seconds));
     maxSpeed = Math.max(maxSpeed, speed);
@@ -132,6 +135,7 @@ export function summarizeTracking(input: TrackingPoint[]) {
       reason:point.breakBefore?'Readings removed from history':before.sessionId!==point.sessionId||before.deviceId!==point.deviceId?'Recording changed':'Missing or unreliable GPS'}];
   });
   return {
+    movementIntervals,
     gaps,
     rejectedReadings:points.length-readings.length,
     points,

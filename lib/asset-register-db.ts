@@ -3343,6 +3343,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   saveReplacementPrice?: boolean;
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
+  preserveUsageReading?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
@@ -3362,6 +3363,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   if (input.expectedUpdatedAtIso && existing.updatedAtIso !== input.expectedUpdatedAtIso) throw new Error('The asset changed. Reopen the value preview and try again.');
   const revisionColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
   const now = new Date();
+  const savedUsage = input.preserveUsageReading ? existing.hours : Math.max(0, Math.round(input.hours));
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
@@ -3381,7 +3383,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   if (
     input.allowUsageDecrease !== true &&
     existing.hours !== null &&
-    Math.max(0, Math.round(input.hours)) < existing.hours
+    savedUsage !== null && savedUsage < existing.hours
   ) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
@@ -3405,7 +3407,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['cab_type', 'cab'], model.cab);
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
   pushField(fields, schema, ['year_model', 'year'], savedYearModel);
-  pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['hours', 'engine_hours'], savedUsage);
   pushField(fields, schema, ['condition'], normalizeConditionForDb(input.condition));
   pushField(fields, schema, ['estimated_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['max_lifetime_hours'], input.result.maxLifetimeHours);
@@ -3498,6 +3500,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   saveReplacementPrice?: boolean;
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
+  preserveUsageReading?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
@@ -3537,7 +3540,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   }
 
   const existingUsageAmount = existing.hours;
-  const nextUsageAmount = valuationResult.usageAmount ?? null;
+  const nextUsageAmount = input.preserveUsageReading ? existing.hours : valuationResult.usageAmount ?? null;
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
   const shouldProtectLifeWorkedPercent = !genericValuationResultUsesUsageReading(valuationResult);
 
@@ -3613,7 +3616,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['year_model', 'year'], savedYearModel);
-  pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
+  pushField(fields, schema, ['hours', 'engine_hours'], nextUsageAmount);
   pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationResult.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
@@ -4031,6 +4034,7 @@ export async function updateSharedAssetDetails(client: import('pg').PoolClient, 
  if(patch.condition!==undefined)pushField(fields,schema,['condition'],condition);
  pushField(fields,schema,['specs_json'],specs,'::jsonb');pushField(fields,schema,['updated_at','modified_at','updatedon'],now);
  const update=buildUpdateSetClause(fields);
+ if(patch.usage!==undefined)await client.query("SELECT set_config('aim4price.confirm_usage','on',true)");
  const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[userId,assetId,...update.values]);
  return {before:{title:existing.title,brand:existing.brandName,model:existing.modelName,note:existing.note,yearModel:existing.yearModel,usage:current,condition:existing.condition},after:{title:patch.title??existing.title,brand:patch.brand??existing.brandName,model:patch.model??existing.modelName,note:patch.note??existing.note,yearModel:year,usage:percentage?life:hours,condition},item:mapAssetRegisterRow(result.rows[0])};
 }

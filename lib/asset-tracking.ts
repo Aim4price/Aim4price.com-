@@ -1,5 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getDb } from "./db";
+import { TRACKING_USAGE_SCHEMA } from "./asset-tracking-usage-schema";
+import { refreshTrackingUsage } from "./asset-tracking-usage";
 import type { TrackingPoint } from "./asset-tracking-math";
 let schema: Promise<unknown> | undefined;
 export function ensureTrackingTables() {
@@ -31,6 +33,7 @@ export function ensureTrackingTables() {
  CREATE INDEX IF NOT EXISTS tracking_points_time ON public.asset_tracking_points(device_id,captured_at DESC);
  `,
       )
+      .then(() => getDb().query(TRACKING_USAGE_SCHEMA))
       .catch((e) => {
         schema = undefined;
         throw e;
@@ -185,6 +188,12 @@ export async function ingestTracking(
   const client = await getDb().connect();
   try {
     await client.query("BEGIN");
+    // Match pairing/disconnect lock order: asset first, then device. This also
+    // serializes meter confirmations with uploads from replacement phones.
+    const lookup = await client.query('SELECT asset_id,owner_id FROM public.asset_tracking_devices WHERE token_hash=$1', [hashToken(token)]);
+    if (!lookup.rows[0]) throw Error("DEVICE_REVOKED");
+    const locked = await client.query('SELECT id FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE', [lookup.rows[0].asset_id, lookup.rows[0].owner_id]);
+    if (!locked.rowCount) throw Error("DEVICE_REVOKED");
     const result = await client.query(
       `SELECT d.* FROM public.asset_tracking_devices d JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id WHERE token_hash=$1 AND revoked_at IS NULL FOR UPDATE OF d`,
       [hashToken(token)],
@@ -236,6 +245,7 @@ export async function ingestTracking(
       `UPDATE public.asset_tracking_devices SET last_seen_at=now(),active=CASE WHEN state_at IS NULL OR state_at <= $3::timestamptz THEN $2 ELSE active END,diagnostics=CASE WHEN state_at IS NULL OR state_at <= $3::timestamptz THEN COALESCE($4::jsonb,diagnostics) ELSE diagnostics END,state_at=GREATEST(state_at,$3::timestamptz) WHERE id=$1`,
       [device.id, body.active, body.stateAt,body.diagnostics?JSON.stringify(body.diagnostics):null],
     );
+    await refreshTrackingUsage(client, device.owner_id, device.asset_id, points.map(p => p.capturedAt));
     await client.query("COMMIT");
     return { accepted: points.map((p) => p.id), rejected };
   } catch (e) {

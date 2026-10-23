@@ -405,7 +405,7 @@ function formatUsageDisplay(item: AssetRegisterItem): string {
   }
 
   if (usageReading !== null) {
-    return `${formatNumber(usageReading)} ${usageMetric === "km" ? "km" : "hours"}`;
+    return `${formatNumber(usageReading)} ${usageMetric === "km" ? "km" : "hours"}${(item.specsJson?.trackingUsage as {estimated?: boolean} | undefined)?.estimated ? " · Estimated" : ""}`;
   }
 
   if (lifeWorkedPercent !== null) {
