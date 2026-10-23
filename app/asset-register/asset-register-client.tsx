@@ -7538,7 +7538,7 @@ export default function AssetRegisterClient({
       ))
       .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA'));
   }, [assetRegisterMoveAsset?.id, assetRegisterMoveGroups, assetRegisterMoveSourceId]);
-  const assetRegisterMoveGroupOptions = useMemo<Array<ModalSelectOption<string>>>(
+  const assetRegisterMoveGroupOptions = useMemo<RegisterPickerOption[]>(
     () => assetRegisterMoveGroupTargets.map((group) => {
       const registerName = group.registerId
         ? assetRegisters.find((register) => register.id === group.registerId)?.businessName || 'Asset Register'
@@ -7552,7 +7552,9 @@ export default function AssetRegisterClient({
       return {
         value: group.id,
         label: group.name,
-        description: `${group.members.length} grouped ${group.members.length === 1 ? 'asset' : 'assets'} · ${scopeDescription} · ${assetGroupValueModeLabel(group)}`,
+        description: `${scopeDescription} · ${assetGroupValueModeLabel(group)}`,
+        detailLabel: 'Grouped assets',
+        detailValue: group.members.length.toLocaleString('en-ZA'),
       };
     }),
     [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
