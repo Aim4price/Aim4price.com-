@@ -25,7 +25,7 @@ async function setup(){
  const pg=new PGlite();await pg.exec('CREATE TABLE sharing_usage_events(token text,account_id text,metric text); CREATE TABLE asset_groups(id uuid,user_id text,name text); CREATE TABLE asset_group_members(group_id uuid,asset_id uuid); CREATE TABLE account_profiles(user_id text PRIMARY KEY,business_name text); CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text NOT NULL)');await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)',[A,'owner',B,'other']);
  const query=(sql,params)=>params?pg.query(sql,params):pg.exec(sql).then(rows=>rows.at(-1));const client={query,release(){}},db={query,connect:async()=>client};
  const assetDb={getAssetRegisterItemsByRefs:async refs=>{const rows=(await pg.query('SELECT * FROM asset_register_items')).rows;return rows.filter(row=>refs.some(ref=>ref.assetId===row.id&&ref.userId===row.user_id)).map(row=>({...asset,id:row.id,userId:row.user_id}));}};
- const base=load('lib/asset-share-links.ts',{'./db':{getDb:()=>db},'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot});
+ const base=load('lib/asset-share-links.ts',{'./shared-market-assessment':{sharedMarketAssessments:async()=>({})},'./db':{getDb:()=>db},'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot});
  const schema=load('lib/guest-lead-schema.ts',{'./db':{getDb:()=>db},'./asset-share-links':base,'./business-network':{ensureBusinessNetwork:async()=>{await pg.exec("CREATE TABLE IF NOT EXISTS business_network(id uuid PRIMARY KEY,email text UNIQUE,name text,status text)");}}});
  await schema.ensureGuestLeadSchema();return{pg,db,assetDb,base,schema};
 }

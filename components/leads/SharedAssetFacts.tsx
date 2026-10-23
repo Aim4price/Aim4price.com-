@@ -7,11 +7,15 @@ import SharedAssetLocationDialog from './SharedAssetLocationDialog';
 import type {DealerAssetCorrectionRequest} from '../../lib/dealer-asset-corrections';
 import type {ExternalAssetShareItem} from '../../lib/asset-external-share';
 import {pricingVatAmount} from '../../lib/pricing-vat';
+import AssetDetailIcon from '../asset-register/AssetDetailIcon';
+import cardLayout from '../asset-register/AssetCardDetails.module.css';
+import SharedMarketPrice from './SharedMarketPrice';
+import type {SharedMarketAssessment} from '../../lib/shared-market-assessment';
 import styles from '../../app/asset-register/page.module.css';
 export type FactField = 'serial'|'year'|'usage'|'condition'|'replacement'|'finance'|'insurance'|'license'|'location';
 export type FactPermissions = Partial<Record<FactField, boolean>>;
-export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
- assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;vatIncluded?:boolean;
+export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,marketAssessment,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
+ assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;marketAssessment?:SharedMarketAssessment;vatIncluded?:boolean;
  statuses:{finance:ReactNode;insurance:ReactNode;license:ReactNode;location:ReactNode};permissions?:FactPermissions;
  endpoint:string;sourceId:string;externalShare?:{token:string;assetId:string};directUpdates?:boolean;correction?:DealerAssetCorrectionRequest|null;onSaved?:()=>void;
 }) {
@@ -24,15 +28,15 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
  },[endpoint]);
  useEffect(()=>{const controller=new AbortController();setLive(null);void refresh(controller.signal);return()=>controller.abort();},[refresh]);
  const saved=()=>{void refresh();onSaved?.();};
- if(live){serial=live.serialNumber||'';year=live.yearModel;usage=live.usage;condition=live.condition;replacementPrice=live.replacementPriceExVat??null;statuses={finance:factStatusMark(live.financeStatus),insurance:factStatusMark(live.insuranceStatus),license:factStatusMark(live.licenseStatus),location:factStatusMark(live.mapped?'yes':'no')};}
+ if(live){serial=live.serialNumber||'';year=live.yearModel;usage=live.usage;condition=live.condition;replacementPrice=live.replacementPriceExVat??null;marketAssessment=live.marketAssessment;statuses={finance:factStatusMark(live.financeStatus),insurance:factStatusMark(live.insuranceStatus),license:factStatusMark(live.licenseStatus),location:factStatusMark(live.mapped?'yes':'no')};}
  const [field,setField]=useState<FactField|null>(null);
  const close=()=>setField(null);
  function row(key:FactField,label:string,value:ReactNode,status=false){
   const classes=status?styles.assetStatusRow:styles.assetDetailRow;
-  const contents=<><span>{label}</span>{status?value:<strong>{value}</strong>}</>;
+  const contents=<><span className={!status?cardLayout.detailLabel:undefined}>{!status&&<AssetDetailIcon kind={key}/ >}{label}</span>{status?value:<strong>{value}</strong>}</>;
   return permissions[key] ? <button key={key} type="button" className={`${classes} ${status?styles.assetStatusRowButton:styles.assetDetailRowButton}`} aria-label={`Edit ${label.toLowerCase()} for ${assetTitle}`} onClick={()=>setField(key)}>{contents}</button> : <div key={key} className={classes}>{contents}</div>;
  }
- const price=<><span>Replacement Price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
+ const price=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
  return <>
   {readError&&<p role="alert">{readError}</p>}
   <div className={styles.assetDetailsGrid}>
@@ -40,6 +44,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
   {permissions.replacement?<button type="button" className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`} aria-label={`Edit replacement price for ${assetTitle}`} onClick={()=>setField('replacement')}>{price}</button>:<div className={styles.assetReplacementPriceBubble}>{price}</div>}
+  {marketAssessment && <SharedMarketPrice assessment={marketAssessment} assetTitle={assetTitle} vatIncluded={vatIncluded}/>}
   {field && permissions[field] && createPortal(field==='replacement'?<SharedAssetValueDialog endpoint={endpoint} assetTitle={assetTitle} field="replacement" onClose={close} onSaved={saved}/>:field==='location'?<SharedAssetLocationDialog endpoint={endpoint} assetTitle={assetTitle} onClose={close} onSaved={saved}/>:<SharedAssetWorkDialog key={field} endpoint={endpoint} action="details" initialField={field} assetTitle={assetTitle} onClose={close} onSaved={saved}/>,document.body)}
  </>;
 }

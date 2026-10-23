@@ -1,3 +1,4 @@
+import {sharedMarketAssessments} from '../../../../../lib/shared-market-assessment';
 import {getServerSession} from '../../../../../lib/auth-session';
 import {getAccountProfile} from '../../../../../lib/account-profile';
 import {getAssetLeadForPartner} from '../../../../../lib/partner-access';
@@ -18,6 +19,7 @@ export async function GET(_request:Request,{params}:{params:{leadId:string}}){
   const asset=await getAssetRegisterItemById(lead.ownerUserId,lead.assetRegisterItemId);
   if(!asset)return businessJson({error:'Asset unavailable.'},404);
   // Only the basic public facts: never paperwork, finance amounts or GPS coordinates.
-  return businessJson({asset:assetShareSnapshot(asset,false)});
+  const summaries = await sharedMarketAssessments(lead.ownerUserId, [asset], lead.includedSections?.valuationSummary === true);
+  return businessJson({asset:{...assetShareSnapshot(asset,false), ...(summaries[asset.id] ? {marketAssessment:summaries[asset.id]} : {})}});
  }catch(error){return businessError(error);}
 }

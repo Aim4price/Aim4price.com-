@@ -3183,7 +3183,7 @@
 
 /* === Leads page: owner share photos + better lead asset media proportions === */
 .leadAssetBody.leadAssetBody {
-  grid-template-columns: minmax(205px, 275px) 1px minmax(390px, 1.55fr);
+  grid-template-columns: minmax(0, .9fr) 1px minmax(0, 1.1fr);
   gap: 1rem;
 }
 
@@ -3213,7 +3213,7 @@
 }
 
 .leadPreviewImage {
-  object-fit: cover !important;
+  object-fit: contain !important;
   object-position: center !important;
 }
 
@@ -5755,7 +5755,7 @@
   margin: 0 !important;
 }
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody.leadAssetBody {
-  grid-template-columns: minmax(0, 17rem) 1px minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, .9fr) 1px minmax(0, 1.1fr) !important;
   gap: 1rem;
 }
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody > * {
@@ -5868,3 +5868,20 @@
 .assetPhotoModal .leadPhotoModalBody { grid-template-rows:minmax(0,1fr) auto; align-content:stretch; }
 .assetPhotoModal .leadPhotoModalFrame { height:min(calc(var(--website-visible-height, 100dvh) - 17rem),650px); min-height:100px; max-height:none; }
 .assetPhotoModal .leadPhotoModalFrame > img { width:100% !important; height:100% !important; min-height:0; object-fit:contain !important; }
+
+/* Shared cards use the owner's detail icons without squeezing their labels. */
+.leadAssetBody.leadAssetBody [class*='assetDetailRow'] {
+  grid-template-columns: minmax(10rem, 1fr) minmax(0, 1fr) !important;
+  height: auto;
+  min-height: 3.08rem;
+}
+.leadAssetBody.leadAssetBody [class*='assetDetailRow'] > span {
+  font-size: .75rem;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+@media (max-width: 860px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody.leadAssetBody {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
