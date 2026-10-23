@@ -36,7 +36,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
   const contents=<><span className={!status?cardLayout.detailLabel:undefined}>{!status&&<AssetDetailIcon kind={key}/ >}{label}</span>{status?value:<strong>{value}</strong>}</>;
   return permissions[key] ? <button key={key} type="button" className={`${classes} ${status?styles.assetStatusRowButton:styles.assetDetailRowButton}`} aria-label={`Edit ${label.toLowerCase()} for ${assetTitle}`} onClick={()=>setField(key)}>{contents}</button> : <div key={key} className={classes}>{contents}</div>;
  }
- const price=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement Price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
+ const price=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
  return <>
   {readError&&<p role="alert">{readError}</p>}
   <div className={styles.assetDetailsGrid}>
