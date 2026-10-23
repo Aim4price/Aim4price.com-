@@ -1429,7 +1429,7 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'lowest-value', label: 'Lowest current value' },
   { value: 'highest-replacement-price', label: 'Highest replacement price' },
   { value: 'lowest-replacement-price', label: 'Lowest replacement price' },
-  { value: 'aim4price-value', label: 'Ideal Price' },
+  { value: 'aim4price-value', label: 'Aim4price Value' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
   { value: 'property', label: PROPERTY_ASSET_LABEL },
@@ -13853,7 +13853,7 @@ export default function AssetRegisterClient({
       assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: asset.selectedMethod === 'manual' ? 'Manual value' : 'Ideal Price',
+      valueLabel: asset.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price Value',
       value: money(asset.value),
       valueNote: methodLabel(asset.selectedMethod),
       statusLabel: assetStatusDateLabel(asset),
@@ -13874,7 +13874,7 @@ export default function AssetRegisterClient({
       notes: [],
       methodCards,
       footerNote:
-        'Ideal Price reflects asset details and depreciation assumptions. Realistic Market Price also considers demand and selling circumstances, so it may be higher or lower. Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
+        'Aim4price Value reflects asset details and depreciation assumptions. Realistic Market Price also considers demand and selling circumstances, so it may be higher or lower. Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
     };
     const reportHtml = buildAssetSheetReportHtml(reportPayload);
     const fileName = `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`;
@@ -16654,7 +16654,7 @@ export default function AssetRegisterClient({
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
-                              <span className={styles.assetValueMethodLabel}>{asset.selectedMethod === 'manual' ? 'Manual value' : asset.selectedMethod === 'aim4price' ? 'Ideal Price' : `${methodLabel(asset.selectedMethod)} value`}</span>
+                              <span className={styles.assetValueMethodLabel}>{asset.selectedMethod === 'manual' ? 'Manual value' : asset.selectedMethod === 'aim4price' ? 'Aim4price Value' : `${methodLabel(asset.selectedMethod)} value`}</span>
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
 
