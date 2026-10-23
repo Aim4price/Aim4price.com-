@@ -20087,7 +20087,7 @@ export default function AssetRegisterClient({
 
             <div className={styles.ownerCommandChoiceBody}>
               {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.error ? <p role="alert">{maintenanceAvailability.error}</p> : null}
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid} ${actionColours.pricingMaintenance}`} data-manage-actions>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid} ${actionColours.maintenance}`} data-manage-actions>
                 <Link data-manage-action="addMaintenance"
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
@@ -20095,7 +20095,7 @@ export default function AssetRegisterClient({
                   <PlusIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Add maintenance</strong>
-                    <small>Record completed checks, services or repairs.</small>
+                    <small>Log services or repairs.</small>
                   </span>
                 </Link>
 
@@ -20103,11 +20103,11 @@ export default function AssetRegisterClient({
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { checklists: true }, ownerCommandReturnLocation)}
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                 >
-                  <DocumentIcon className={styles.buttonIcon} /><span><strong>Maintenance checklists</strong><small>Choose checks and service tasks for this asset.</small></span>
+                  <DocumentIcon className={styles.buttonIcon} /><span><strong>Maintenance checklists</strong><small>Choose checks and tasks.</small></span>
                 </Link>
 
                 <button data-manage-action="viewParts" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => setPartsOpen(true)}>
-                  <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong><small>View and add part numbers linked to maintenance.</small></span>
+                  <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong><small>View and add parts.</small></span>
                 </button>
 
                 {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.hasRecords ? (
@@ -20118,7 +20118,7 @@ export default function AssetRegisterClient({
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Manage maintenance</strong>
-                      <small>View records and manage scheduled work.</small>
+                      <small>Records and schedules.</small>
                     </span>
                   </Link>
                 ) : null}
@@ -20136,7 +20136,7 @@ export default function AssetRegisterClient({
                     <ShareIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Shared maintenance</strong>
-                      <small>Manage business and dealer access.</small>
+                      <small>Manage shared access.</small>
                     </span>
                   </button>
                 ) : null}
@@ -20208,8 +20208,8 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
-                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Current value, replacement price and history.</small></span></button>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid} ${actionColours.pricing}`} data-manage-actions>
+                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Values and price history.</small></span></button>
                 <button data-manage-action="suggestValue"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
@@ -20219,7 +20219,7 @@ export default function AssetRegisterClient({
                   <RecalculateIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Recalculate value</strong>
-                    <small>{getRecalculationUnavailableReason(activeAsset) ?? 'Refresh the saved estimate.'}</small>
+                    <small title={getRecalculationUnavailableReason(activeAsset) ?? undefined} aria-label={getRecalculationUnavailableReason(activeAsset) ?? undefined}>{getRecalculationUnavailableReason(activeAsset) ? (activeAsset.selectedMethod === 'manual' ? 'Save an estimate first.' : 'Update asset details.') : 'Refresh saved value.'}</small>
                   </span>
                 </button>
 
@@ -20232,7 +20232,7 @@ export default function AssetRegisterClient({
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
-                    <small>{getProjectionUnavailableReason(activeAsset) ?? 'Estimate a future value.'}</small>
+                    <small title={getProjectionUnavailableReason(activeAsset) ?? undefined} aria-label={getProjectionUnavailableReason(activeAsset) ?? undefined}>{getProjectionUnavailableReason(activeAsset) ? (activeAsset.selectedMethod === 'manual' ? 'Save an estimate first.' : 'Update asset details.') : 'Estimate a future value.'}</small>
                   </span>
                 </button>
 
@@ -20245,7 +20245,7 @@ export default function AssetRegisterClient({
                   <SaleabilityIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Realistic Market Price</strong>
-                    <small>Assess how easily it could sell.</small>
+                    <small>Estimate a selling price.</small>
                   </span>
                 </button>
               </div>

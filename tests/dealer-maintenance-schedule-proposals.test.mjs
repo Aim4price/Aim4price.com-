@@ -42,7 +42,7 @@ test('My Leads exposes the owner-style maintenance report and schedule creation 
 });
 
 test('Tracking and My Leads describe direct schedule creation', () => {
-  assert.match(maintenanceMenu, /Create and manage scheduled work\./);
+  assert.match(maintenanceMenu, /Plan upcoming work\./);
   assert.match(trackerClient, /AppMaintenanceActions/);
   assert.match(read('components/AppMaintenanceActions.tsx'), /Create a schedule for this asset\./);
   assert.doesNotMatch(trackerClient, /Send a proposed schedule for owner approval\./);
