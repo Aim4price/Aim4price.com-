@@ -61,7 +61,7 @@ function CategoryMenu({value, groups, onChange}: {value: string; groups: string[
 }
 
 const WIZARD_CARD_ID = 'valuation-wizard-card';
-const FAMILY_SEARCH_LABEL = /^Search (equipment type|vehicle type)$/i;
+const FAMILY_SEARCH_LABEL = /^Search (asset type|vehicle type)$/i;
 const REPLACEMENT_SLIDER_LABEL = /Slide to replacement price/i;
 const FAMILY_MODAL_TITLE_ID = 'valuation-family-modal-title';
 const FAMILY_MODAL_DESCRIPTION_ID = 'valuation-family-modal-description';
@@ -95,7 +95,7 @@ function findFamilyPicker(): FamilyPickerNodes | null {
     const searchInput = candidate.querySelector<HTMLInputElement>('input:not([type="hidden"])');
     const trigger = candidate.querySelector<HTMLButtonElement>('button[aria-expanded]');
     if (searchInput && trigger) {
-      const typeLabel = (label.textContent?.trim() ?? 'Search equipment type').replace(/^Search\s+/i, '');
+      const typeLabel = (label.textContent?.trim() ?? 'Search asset type').replace(/^Search\s+/i, '');
       return { card: candidate, searchInput, trigger, typeLabel };
     }
     candidate = candidate.parentElement;
@@ -199,7 +199,7 @@ export default function ValuationFlowPolish() {
   const [familySearch, setFamilySearch] = useState('');
   const [familyGroup, setFamilyGroup] = useState('');
   const optionsViewportRef = useRef<HTMLDivElement | null>(null);
-  const [familyTypeLabel, setFamilyTypeLabel] = useState('equipment type');
+  const [familyTypeLabel, setFamilyTypeLabel] = useState('asset type');
   const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
   const pickerRef = useRef<FamilyPickerNodes | null>(null);
   const optionButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());

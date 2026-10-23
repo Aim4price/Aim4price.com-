@@ -808,7 +808,7 @@ function getCatalogImportLabel(sectorKey?: SectorKey | null): string {
 }
 
 function getAssetTypeLabel(sectorKey?: SectorKey | null): string {
-  return isMotorSector(sectorKey) ? 'vehicle type' : 'equipment type';
+  return isMotorSector(sectorKey) ? 'vehicle type' : 'asset type';
 }
 
 function getAssetItemLabel(sectorKey?: SectorKey | null): string {
@@ -5289,7 +5289,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function nextRequiredMessage(): string | null {
     if (step === 6) return null;
-    if (step === 1) return selectedFamily ? null : 'Choose an equipment type.';
+    if (step === 1) return selectedFamily ? null : 'Choose an asset type.';
     if (basicEstimateActive) {
       if (step === 2) return normalizeText(unlistedBrandName) ? null : 'Enter the brand name.';
       if (step === 3) return basicSpecLevel ? null : 'Choose a specification level.';
@@ -6126,7 +6126,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Name your asset. The starting price guide comes from its equipment type and specification level.'}</p>
+          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Name your asset. The starting price guide comes from its asset type and specification level.'}</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>

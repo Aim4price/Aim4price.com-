@@ -51,7 +51,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try {
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewport({width:1366,height:900});
- await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#e5eee8;font:16px Arial;--website-visible-height:900px}button,input{font:inherit}'+sheets.join('\n')+'</style><div id="valuation-wizard-card"><div><span>Search equipment type</span><input><button aria-expanded="false" id="trigger">Choose</button><div id="choices"></div></div></div><div id="app"></div>');
+ await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#e5eee8;font:16px Arial;--website-visible-height:900px}button,input{font:inherit}'+sheets.join('\n')+'</style><div id="valuation-wizard-card"><div><span>Search asset type</span><input><button aria-expanded="false" id="trigger">Choose</button><div id="choices"></div></div></div><div id="app"></div>');
  await page.evaluate(()=>{
  const choices=[['Tractor','Tractors'],['Feedout Wagon','Feeding'],['Automatic Calf Feeder','Feeding'],['Milk Cooling Tank','Dairy'],['Baler','Implements']];
  for(const [label,group] of choices){const button=document.createElement('button');button.dataset.familyLabel=label;button.dataset.familyGroup=group;button.innerHTML='<span>'+label+'</span>';button.onclick=()=>{window.selectedFamily=label;document.getElementById('trigger').setAttribute('aria-expanded','false')};document.getElementById('choices').append(button)}
