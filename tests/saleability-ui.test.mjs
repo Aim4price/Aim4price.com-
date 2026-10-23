@@ -95,7 +95,9 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(modalStyles, /\.header p\s*\{[\s\S]*?white-space:\s*nowrap;/);
   assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
-  assert.match(modal, /id="saleability-title"><SaleIcon kind="demand" \/>Realistic Market Price<\/h2>/);
+  assert.match(modal, /id="saleability-title">Realistic Market Price<\/h2>/);
+  assert.match(modal, /<legend>\{label\}<\/legend>/);
+  assert.match(modal, /<SaleIcon kind=\{icon\} value=\{option.value\} \/>/);
   assert.match(modal, /<p>\{assetTitle\}<\/p>/);
   assert.doesNotMatch(modal, /<span>Realistic Market Price<\/span>/);
   assert.doesNotMatch(modal, /styles\.baselineStrip/);

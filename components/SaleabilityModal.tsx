@@ -93,7 +93,7 @@ function ChoiceQuestion<T extends string>({
 }) {
   return (
     <fieldset className={styles.question}>
-      <legend><SaleIcon kind={icon} />{label}</legend>
+      <legend>{label}</legend>
       <div className={styles.choiceGrid} data-options={options.length}>
         {options.map((option) => (
           <button
@@ -212,7 +212,7 @@ export default function SaleabilityModal({
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) onClose(); }}>
       <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
-          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title"><SaleIcon kind="demand" />Realistic Market Price</h2><p>{assetTitle}</p></div>
+          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title">Realistic Market Price</h2><p>{assetTitle}</p></div>
           <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Realistic Market Price" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>

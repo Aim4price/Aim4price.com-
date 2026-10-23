@@ -949,7 +949,6 @@
 
 /* Compact, readable questions: icon beside copy rather than above it. */
 .modal.modal .header { padding-bottom: 12px; }
-.modal .header h2 > .choiceIcon { width: 40px; height: 40px; }
 .modal .singleQuestion .question legend {
   gap: 14px;
   margin-bottom: 18px;
@@ -957,7 +956,6 @@
   text-transform: none;
   letter-spacing: -.015em;
 }
-.modal .singleQuestion .question legend > .choiceIcon { width: 40px; height: 40px; }
 .modal .singleQuestion :is(.choice, .choiceActive) {
   flex-direction: row;
   justify-content: flex-start;
