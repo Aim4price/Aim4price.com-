@@ -1,5 +1,5 @@
 .trigger { min-height: 44px; padding: 12px 16px; border: 1px solid #d1dff1; border-radius: 12px; background: #eff5ff; color: #28588f; font: inherit; font-weight: 650; cursor: pointer; }
-.dialog { box-sizing: border-box; width: min(640px, calc(var(--website-visible-width, 100vw) - 32px)); max-height: calc(var(--website-visible-height, 100dvh) - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid #d5e3dc; border-radius: 22px; background: #fff; color: #173c2e; box-shadow: 0 24px 80px #102b2940; }
+.dialog { box-sizing: border-box; width: min(760px, calc(var(--website-visible-width, 100vw) - 32px)); max-height: calc(var(--website-visible-height, 100dvh) - 32px); margin: auto; padding: 0; overflow: auto; border: 1px solid #d5e3dc; border-radius: 22px; background: #fff; color: #173c2e; box-shadow: 0 24px 80px #102b2940; }
 .dialog::backdrop { background: #152e3266; backdrop-filter: blur(6px); }
 .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 24px 16px; }
 .header h2 { margin: 0; font-size: 24px; line-height: 1.25; }
@@ -26,3 +26,9 @@
 :global(html[data-background='dark']) .dialog :is(button,textarea) { background: #203b2d; color: #e6f2eb; border-color: #436052; }
 
 @media (max-width: 360px) { :global(html:not(:has([data-website-canvas]))) .destinations { grid-template-columns: 1fr; } }
+
+.options { display: grid; gap: 12px; }
+.options :is(a, button) { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 18px; border: 1px solid #cfddd4; border-radius: 12px; background: #f4f9f6; color: inherit; text-decoration: none; text-align: left; }
+.adPreview { width: 100%; border-radius: 12px; }
+.dialog :is(button,a):hover { box-shadow: inset 0 0 0 1px #73a58a, 0 0 10px #73a58a26; }
+:global(html[data-background='dark']) .options a { background: #203b2d; border-color: #436052; }

@@ -1,6 +1,6 @@
 'use client';
 
-import FacebookAdvertActions, { marketplaceShareCaption } from '../../components/FacebookAdvertActions';
+import FacebookAdvertActions, { WhatsAppAdvertActions } from '../../components/FacebookAdvertActions';
 import ListPagination from '../../components/ListPagination';
 import MarketplacePriceInput from '../../components/MarketplacePriceInput';
 import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
@@ -2754,11 +2754,7 @@ export default function MarketplaceClient({
     }
   }
 
-  function openShareWindow(url: string) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
-
-  async function handleShareAction(channel: 'whatsapp' | 'copy') {
+  async function handleShareAction(channel: 'copy') {
     if (!shareListing) {
       return;
     }
@@ -2772,11 +2768,7 @@ export default function MarketplaceClient({
         return;
       }
 
-      if (channel === 'whatsapp') {
-        openShareWindow(`https://wa.me/?text=${encodeURIComponent(`${marketplaceShareCaption(shareListing)}\n\n${nextShareUrl}`)}`);
-        closeShareSheet();
-        return;
-      }
+
     } catch {
       setShareFeedback('Sharing did not complete. Please try again.');
     }
@@ -2788,14 +2780,14 @@ export default function MarketplaceClient({
     }
 
     setIsCreatingJpegAd(true);
-    setShareFeedback('Creating JPEG ad...');
+    setShareFeedback('Creating ad...');
 
     try {
       const { blob } = await createSharedMarketplaceAdJpeg(shareListing);
       downloadMarketplaceAd(blob, marketplaceAdFilename(listingDisplayTitle(shareListing)));
-      setShareFeedback('JPEG ad downloaded.');
+      setShareFeedback('Ad downloaded.');
     } catch {
-      setShareFeedback('JPEG ad could not be created. Please try again.');
+      setShareFeedback('Ad could not be created. Please try again.');
     } finally {
       setIsCreatingJpegAd(false);
     }
@@ -3939,7 +3931,7 @@ export default function MarketplaceClient({
             <div className={styles.shareDialogScroll}>
               <div className={styles.shareHeader}>
                 <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
-                <p>Share the direct listing link or create a ready-to-post JPEG ad.</p>
+                <p>Share the direct listing link or create a ready-to-post ad.</p>
               </div>
 
               <div
@@ -3960,10 +3952,10 @@ export default function MarketplaceClient({
               </div>
 
               <div className={styles.shareGrid}>
-                <button type="button" onClick={() => void handleShareAction('whatsapp')}>
+                <WhatsAppAdvertActions key={shareListing.id} listing={shareListing} shareUrl={shareUrl}>
                   <BrandIcon src="/brand/whatsapp.png" />
                   <span>WhatsApp</span>
-                </button>
+                </WhatsAppAdvertActions>
                 <FacebookAdvertActions key={shareListing.id} listing={shareListing}>
                   <BrandIcon src="/brand/facebook.png" />
                   <span>Facebook</span>
@@ -3974,7 +3966,7 @@ export default function MarketplaceClient({
                 </button>
                 <button type="button" onClick={() => void handleCreateJpegAd()} disabled={isCreatingJpegAd}>
                   <IconPhoto />
-                  <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
+                  <span>{isCreatingJpegAd ? 'Creating...' : 'Create Ad'}</span>
                 </button>
               </div>
 
