@@ -26,6 +26,7 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
+import CostReviewIcon from './CostReviewIcon';
 import costReviewStyles from './cost-review.module.css';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
@@ -5134,7 +5135,7 @@ export default function MyInvoicesClient({
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
-            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''} ${manualCostWizardOpen && manualCostWizardStep === 3 ? reviewStyles.body : ''}`}>
+            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''} ${manualCostWizardOpen && manualCostWizardStep === 3 ? costReviewStyles.body : ''}`}>
               {extractionWarnings.length ? (
                 <div className={styles.warningBox}>
                   {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
@@ -5152,11 +5153,11 @@ export default function MyInvoicesClient({
                           ? 'Describe the work'
                           : 'Review your cost'}
                     </h3>
-                    <p>{manualCostWizardStep === 1
+                    {manualCostWizardStep < 3 ? <p>{manualCostWizardStep === 1
                       ? 'Capture the supplier, date, usage and totals.'
                       : manualCostWizardStep === 2
                         ? 'Add maintenance, repairs, parts and notes.'
-                        : 'Check the complete record before saving.'}</p>
+                        : 'Check the complete record before saving.'}</p> : null}
                   </div>
                 ) : null}
 
@@ -5321,49 +5322,49 @@ export default function MyInvoicesClient({
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
                     <div>
-                      <dt>Supplier</dt>
+                      <dt><CostReviewIcon kind="supplier" />Supplier</dt>
                       <dd>{draft.supplierName.trim() || 'Not entered'}</dd>
                     </div>
                     <div>
-                      <dt>Invoice number</dt>
+                      <dt><CostReviewIcon kind="invoice" />Invoice number</dt>
                       <dd>{draft.invoiceNumber.trim() || 'Not entered'}</dd>
                     </div>
                     <div>
-                      <dt>Invoice date</dt>
+                      <dt><CostReviewIcon kind="calendar" />Invoice date</dt>
                       <dd>{formatDate(draft.invoiceDate)}</dd>
                     </div>
                     <div>
-                      <dt>Usage</dt>
+                      <dt><CostReviewIcon kind="usage" />Usage</dt>
                       <dd>{draft.usageMetric === 'none'
                         ? 'Not recorded'
                         : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
                     </div>
                     <div className={costReviewStyles.amount}>
-                      <dt>Subtotal excl. VAT</dt>
+                      <dt><CostReviewIcon kind="subtotal" />Subtotal excl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
                     </div>
                     <div className={costReviewStyles.amount}>
-                      <dt>VAT amount</dt>
+                      <dt><CostReviewIcon kind="vat" />VAT amount</dt>
                       <dd>{formatReviewMoney(manualCostVatValue)}</dd>
                     </div>
                     <div className={`${costReviewStyles.amount} ${costReviewStyles.total}`}>
-                      <dt>Total incl. VAT</dt>
+                      <dt><CostReviewIcon kind="total" />Total incl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
                     </div>
                     {draft.maintenanceWorkDone.trim() ? <div className={costReviewStyles.work}>
-                      <dt>Maintenance work</dt>
+                      <dt><CostReviewIcon kind="maintenance" />Maintenance work</dt>
                       <dd>{draft.maintenanceWorkDone}</dd>
                     </div> : null}
                     {draft.partsSupplied.trim() ? <div className={costReviewStyles.work}>
-                      <dt>Parts supplied</dt>
+                      <dt><CostReviewIcon kind="parts" />Parts supplied</dt>
                       <dd>{draft.partsSupplied}</dd>
                     </div> : null}
                     {draft.repairWorkDone.trim() ? <div className={costReviewStyles.work}>
-                      <dt>Repair work</dt>
+                      <dt><CostReviewIcon kind="repairs" />Repair work</dt>
                       <dd>{draft.repairWorkDone}</dd>
                     </div> : null}
                     {draft.notes.trim() ? <div className={costReviewStyles.work}>
-                      <dt>Notes</dt>
+                      <dt><CostReviewIcon kind="notes" />Notes</dt>
                       <dd>{draft.notes}</dd>
                     </div> : null}
 
