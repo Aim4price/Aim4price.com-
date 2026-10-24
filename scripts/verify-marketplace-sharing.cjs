@@ -42,7 +42,7 @@ const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/packag
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
  'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}'+
- 'const components=require('+JSON.stringify(entry)+');const listing={title:"Test tractor",askingPriceExVat:15000,sellerPhone:"082 328 1614",imageSrc:"https://sharing.test/photo.png",imageUrls:["https://sharing.test/photo2.png","https://sharing.test/photo3.png"],year:"2020",usage:"100 hours",condition:"Used",location:"Western Cape"};const root=ReactDOM.createRoot(document.getElementById("app"));window.mount=(whatsapp)=>root.render(React.createElement(whatsapp?components.WhatsAppAdvertActions:components.default,{key:String(whatsapp),listing,shareUrl:"https://www.aim4price.com/marketplace/browse?listing=test"},"Open sharing"));mount(false);';
+ 'const components=require('+JSON.stringify(entry)+');const listing={title:"Test tractor",askingPriceExVat:15000,sellerPhone:"082 328 1614",imageSrc:"https://sharing.test/photo.png",imageUrls:["https://sharing.test/photo2.png","https://sharing.test/photo3.png"],year:"2020",usage:"100 hours",condition:"Used",location:"Western Cape"};window.captionFor=overrides=>components.marketplaceShareCaption({...listing,...overrides});const root=ReactDOM.createRoot(document.getElementById("app"));window.mount=(whatsapp)=>root.render(React.createElement(whatsapp?components.WhatsAppAdvertActions:components.default,{key:String(whatsapp),listing,shareUrl:"https://www.aim4price.com/marketplace/browse?listing=test"},"Open sharing"));mount(false);';
 (async()=>{const browser=await puppeteer.launch({executablePath:await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});try{
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setRequestInterception(true);page.on('request',r=>r.respond({contentType:r.url().endsWith('.png')?'image/png':'text/html',body:r.url().endsWith('.png')?Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1XkAAAAASUVORK5CYII=','base64'):'<html></html>'}));
@@ -51,6 +51,10 @@ const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.setViewport({width,height:width===320?640:width===1120?680:950});await page.goto('https://sharing.test/');await page.setContent('<style>body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app" role="dialog"></div>');
   if(width===320)await page.evaluate(()=>document.documentElement.dataset.background='dark');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});await page.waitForSelector('button');await click('Open sharing');await page.waitForSelector('dialog[open]');
   assert((await page.$eval('textarea',e=>e.value)).includes('**082 328 1614**'));
+  const cleaned=await page.evaluate(()=>captionFor({year:'N/A',location:'Western Cape, western cape'}));
+  assert(!cleaned.includes('N/A'));assert.equal(cleaned.split('\n').filter(line=>line==='Western Cape').length,1);
+  assert((await page.evaluate(()=>captionFor({location:'George, Western Cape'}))).includes('George, Western Cape'));
+  assert(!/Step [12] of 2/.test(await page.$eval('dialog',e=>e.textContent)));
   assert((await page.$eval('header',e=>e.textContent)).includes('Year Model: 2020'));
   assert((await page.$eval('header',e=>e.textContent)).includes('Usage: 100 hours'));
   assert((await page.$eval('header',e=>e.textContent)).includes('Condition: Used'));
@@ -61,7 +65,7 @@ const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
   assert(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth),'No horizontal overflow');
   assert(await page.$eval('footer',e=>e.getBoundingClientRect().bottom<=innerHeight),'Footer stays visible');
   await page.type('textarea',' edited');const edited=await page.$eval('textarea',e=>e.value);
-  await click('Continue');await page.waitForSelector('a[href="https://www.facebook.com/groups/"]');assert.equal(await page.$('textarea'),null);await page.screenshot({path:'/tmp/share-destination-'+width+'.png'});
+  await click('Choose destination');await page.waitForSelector('a[href="https://www.facebook.com/groups/"]');assert.equal(await page.$('textarea'),null);await page.screenshot({path:'/tmp/share-destination-'+width+'.png'});
   await click('Back');await page.waitForSelector('textarea');assert.equal(await page.$eval('textarea',e=>e.value),edited);
   assert(await page.$eval('dialog',e=>e.getBoundingClientRect().width<=innerWidth));
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));assert.equal(await page.$eval('#app',e=>e.style.visibility),'');

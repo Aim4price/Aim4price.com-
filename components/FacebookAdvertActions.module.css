@@ -16,11 +16,11 @@
 .detailsGrid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 24px; }
 .photoPanel, .captionPanel { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .sectionHeading, .captionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; font-size: 18px; font-weight: 700; }
-.photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
-.photos a { border: 1px solid var(--share-line); border-radius: 12px; overflow: hidden; background: var(--share-soft); height: 88px; }
+.photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 272px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
+.photos a { border: 1px solid var(--share-line); border-radius: 12px; overflow: hidden; background: var(--share-soft); height: 132px; }
 .photos img { width: 100%; height: 100%; object-fit: contain; }
 .photos a:first-child { grid-column: auto; }
-.body textarea { width: 100%; min-height: 190px; flex: 1; padding: 18px; border: 1px solid var(--share-line); border-radius: 16px; background: var(--share-soft); color: inherit; font: inherit; font-size: 16px; font-weight: 500; line-height: 1.65; resize: none; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
+.body textarea { width: 100%; min-height: 170px; flex: 1; padding: 18px; border: 1px solid var(--share-line); border-radius: 16px; background: var(--share-soft); color: inherit; font: inherit; font-size: 16px; font-weight: 500; line-height: 1.65; resize: none; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
 .destinations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .destinations a { justify-content: flex-start; padding: 24px; min-height: 112px; border-color: #c9dbea; }
 .options { display: grid; gap: 10px; }
@@ -78,3 +78,5 @@
 
 .dialog .download { background: #edf4ff; border-color: #c8dbf2; color: #2c6097; }
 :global(html[data-background='dark']) .dialog .download { background: #243b4d; border-color: #46637c; color: #c7e1ff; }
+
+.footer > .primary:only-child { margin-left: auto; }
