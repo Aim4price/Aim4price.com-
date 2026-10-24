@@ -8030,3 +8030,28 @@
 .fuelSlipTypeMenu { background: var(--app-surface, #fff); }
 .fuelSlipTypeMenu button { justify-content: space-between; color: var(--app-text, #234b3d); }
 .fuelSlipTypeMenu .storageFuelTypeOptionActive { color: #fff; }
+
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary {
+  background: var(--app-surface-soft, #edf6f0);
+  color: var(--app-text, #234b3d);
+  gap: 1rem;
+  list-style: none;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary::-webkit-details-marker { display: none; }
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary > svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails[open] > summary > svg { transform: rotate(180deg); }
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails[open] > .formGrid { padding-top: 1rem; }
+.accountFuelModal.manualFuelSlipModal .formModalScrollBody:has(.fuelSlipMoreDetails[open]) {
+  scrollbar-width: thin;
+  scrollbar-color: #7ca494 #edf4f0;
+  scrollbar-gutter: stable;
+}
+.accountFuelModal.manualFuelSlipModal .formModalScrollBody:has(.fuelSlipMoreDetails[open])::-webkit-scrollbar {
+  display: block;
+  width: .9rem;
+}

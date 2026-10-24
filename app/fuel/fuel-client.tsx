@@ -3309,7 +3309,7 @@ export default function FuelClient({
         </div>
 
         <details className={styles.fuelSlipMoreDetails}>
-          <summary>Payment references &amp; VAT (optional)</summary>
+          <summary><span>Payment details (optional)</span><ChevronDownIcon /></summary>
           <div className={styles.formGrid}>
           <label>
             <span>Card last 4</span>
@@ -3324,10 +3324,6 @@ export default function FuelClient({
             <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Optional" />
           </label>
             <label>
-              <span>Supplier VAT number</span>
-              <input value={fuelSlipDraft.supplierVatNumber} onChange={(event) => setFuelSlipField('supplierVatNumber', event.target.value)} placeholder="Optional" />
-            </label>
-            <label>
               <span>Slip time</span>
               <input type="time" value={fuelSlipDraft.documentTime} onChange={(event) => setFuelSlipField('documentTime', event.target.value)} />
             </label>
@@ -3338,34 +3334,6 @@ export default function FuelClient({
             <label>
               <span>Card type</span>
               <input value={fuelSlipDraft.cardType} onChange={(event) => setFuelSlipField('cardType', event.target.value)} placeholder="Optional" />
-            </label>
-            <label>
-              <span>VAT amount</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.vatAmount} onChange={(event) => setFuelSlipField('vatAmount', event.target.value)} placeholder="Optional" />
-            </label>
-            <label>
-              <span>VAT included</span>
-              <select value={fuelSlipDraft.vatIncluded} onChange={(event) => setFuelSlipField('vatIncluded', event.target.value)}>
-                <option value="">Unknown</option>
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-              </select>
-            </label>
-            <label>
-              <span>VAT rate</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.vatRate} onChange={(event) => setFuelSlipField('vatRate', event.target.value)} placeholder="15" />
-            </label>
-            <label>
-              <span>Merchant number</span>
-              <input value={fuelSlipDraft.merchantNumber} onChange={(event) => setFuelSlipField('merchantNumber', event.target.value)} placeholder="Optional" />
-            </label>
-            <label>
-              <span>Terminal number</span>
-              <input value={fuelSlipDraft.terminalNumber} onChange={(event) => setFuelSlipField('terminalNumber', event.target.value)} placeholder="Optional" />
-            </label>
-            <label>
-              <span>Site number</span>
-              <input value={fuelSlipDraft.siteNumber} onChange={(event) => setFuelSlipField('siteNumber', event.target.value)} placeholder="Optional" />
             </label>
           </div>
         </details>

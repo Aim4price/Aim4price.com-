@@ -239,5 +239,5 @@ test('manual capture exposes six main purchase fields and no file input', () => 
   assert.equal((fields.split('<details')[0].match(/className=\{styles\.fuelEntryLabel\}/g) ?? []).length, 6);
   const allFields = fields + sliceBetween(client, 'function renderFuelSlipExtraFields()', 'const fuelSlipResults');
   assert.doesNotMatch(allFields + manualModal, /type="file"|CaptureUploadDropzone|documentFileUrl/);
-  assert.match(allFields, /Payment references &amp; VAT \(optional\)/);
+  assert.match(allFields, /Payment details \(optional\)/);
 });
