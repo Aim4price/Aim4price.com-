@@ -10,7 +10,7 @@
 .tabs button[aria-pressed=true] { background: #fff; border-color: #b9d0c5; box-shadow: 0 2px 6px #123b3008; }
 .sectionHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
 .addButton, .editor button, .error button, .footer button { padding: .65rem 1rem; color: #173b62; background: #f3f7fb; border: 1px solid #d4e0ed; border-radius: .8rem; }
-.items { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .65rem; list-style: none; margin: 0; padding: 0; }
+.items { display: grid; grid-template-columns: minmax(0,1fr); gap: .65rem; list-style: none; margin: 0; padding: 0; }
 .items li { display: flex; align-items: center; gap: .5rem; border: 1px solid #d6e4dd; border-radius: .8rem; background: #fff; }
 .items li[data-selected=true] { border-color: #71ac92; background: #f0f8f4; }
 .itemLabel { display: flex; align-items: flex-start; gap: .7rem; flex: 1; min-width: 0; padding: .85rem; cursor: pointer; }
