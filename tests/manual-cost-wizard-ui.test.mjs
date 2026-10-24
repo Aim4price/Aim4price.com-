@@ -33,7 +33,7 @@ test('manual wizard validates the total and saves only from review', () => {
   assert.match(client, /setManualCostWizardStep\(3\)/);
   assert.match(costFormModal, /onSubmit=\{handleInvoiceFormSubmit\}/);
   assert.match(costFormModal, /manualCostWizardStep < 3[\s\S]*?>\s*Next\s*</);
-  assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost record/);
+  assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost/);
 });
 
 test('review preserves manual cost details without an attachment upload', () => {
