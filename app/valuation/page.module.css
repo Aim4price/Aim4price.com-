@@ -15567,3 +15567,7 @@
   font-weight: 650;
   line-height: 1.5;
 }
+
+/* A deliberate market-price choice before the existing save review. */
+.marketSaveChoices { display: grid; gap: 14px; margin-top: 24px; }
+.marketSaveChoices button { width: 100%; min-height: 52px; padding: 14px 20px; }

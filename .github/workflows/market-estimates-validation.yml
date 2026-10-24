@@ -5,6 +5,10 @@ on:
       - 'lib/asset-saleability.ts'
       - 'lib/saleability.ts'
       - 'lib/server/saleability.ts'
+      - 'lib/server/save-valuation-saleability.ts'
+      - 'app/api/valuation-runs/route.ts'
+      - 'app/valuation/valuation-client.tsx'
+      - 'tests/saleability-ui.test.mjs'
       - 'app/api/saleability/**'
       - 'tests/saleability-v2.test.cjs'
       - 'app/api/asset-register/saleability/**'
@@ -30,5 +34,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/asset-saleability.test.cjs tests/saleability-v2.test.cjs
-      - run: node --experimental-strip-types --test tests/saleability.test.mjs tests/pricing-vat.test.mjs tests/asset-register-card-ui.test.mjs tests/pricing-modal-return.test.mjs
+      - run: node --experimental-strip-types --test tests/saleability.test.mjs tests/saleability-ui.test.mjs tests/pricing-vat.test.mjs tests/asset-register-card-ui.test.mjs tests/pricing-modal-return.test.mjs
       - run: node scripts/verify-market-estimates.cjs

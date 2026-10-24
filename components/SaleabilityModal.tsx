@@ -15,6 +15,7 @@ type SaleabilityModalProps = {
   assetTitle: string; valuationExVat: number; input: GeneralSaleabilityInput;
   context?: SaleabilityContext; assetId?: string; basis?: string;
   storageKey?: string; initialAnswers?: SaleabilityRefinementAnswers;
+  onComplete?: (answers: SaleabilityRefinementAnswers) => void;
   onSave?: (answers: SaleabilityRefinementAnswers) => Promise<void>;
 };
 type Choice<T extends string> = { value: T; label: string; help?: string };
@@ -114,7 +115,7 @@ function ChoiceQuestion<T extends string>({
 
 export default function SaleabilityModal({
   estimateStyle = false, open, onClose, assetTitle, valuationExVat,
-  context, assetId, basis, storageKey, initialAnswers, onSave,
+  context, assetId, basis, storageKey, initialAnswers, onSave, onComplete,
 }: SaleabilityModalProps) {
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>(defaults);
   const [step, setStep] = useState<number | 'result'>(1);
@@ -256,7 +257,10 @@ export default function SaleabilityModal({
                 setSaving(true); setError('');
                 try { await onSave(answers); onClose(); } catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not save. Please try again.'); } finally { setSaving(false); }
               }}>{saving ? 'Saving…' : recalculating ? 'Recalculate' : 'Save estimate'}</button>
-              : <button type="button" className={styles.primary} disabled={loading || !plan} onClick={onClose}>Done</button>}
+              : <button type="button" className={styles.primary} disabled={loading || !plan} onClick={() => {
+                if (!plan || !validCurrentSaleabilityAnswers(answers)) return;
+                if (onComplete) onComplete(answers); else onClose();
+              }}>Done</button>}
           </>}
         </footer>
       </section>

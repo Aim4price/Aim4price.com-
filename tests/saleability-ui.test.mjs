@@ -118,3 +118,18 @@ test('valuation inputs needed by saved assets are retained without a database mi
 });
 
 
+
+test('saving offers a deliberate market-price choice and carries only a current completed assessment', () => {
+  assert.match(valuationClient, /Add a realistic market price\?/);
+  assert.match(valuationClient, /Save with Ideal Price only/);
+  assert.match(valuationClient, /setSaveMarketChoice\('calculating'\); setSaleabilityOpen\(true\)/);
+  assert.match(valuationClient, /saveMarketChoice === 'calculating'\) setSaveMarketChoice\('prompt'\)/);
+  assert.match(valuationClient, /completedMarketAssessment\?\.result === resultState && completedMarketAssessment.value === headlineValue/);
+  assert.match(valuationClient, /savePayload.saleabilityAnswers = completedMarketAssessment.answers/);
+  assert.match(modal, /if \(!plan \|\| !validCurrentSaleabilityAnswers\(answers\)\) return/);
+  assert.match(modal, /if \(onComplete\) onComplete\(answers\); else onClose\(\)/);
+  const route=read('app/api/valuation-runs/route.ts');
+  assert.equal((route.match(/await saveValuationSaleability\(/g)||[]).length,2);
+  assert.match(route,/validCurrentSaleabilityAnswers\(body.saleabilityAnswers\)/);
+  assert.match(valuationClient,/data.warning && options.redirectToAssetRegister && data.assetId/);
+});

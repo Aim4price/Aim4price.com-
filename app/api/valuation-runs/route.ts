@@ -1,7 +1,9 @@
+import { validCurrentSaleabilityAnswers } from '../../../lib/asset-saleability';
+import { saveValuationSaleability } from '../../../lib/server/save-valuation-saleability';
 import { normalizeEstimateReplacementPrice } from '../../../lib/estimate-replacement';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventsSafely, type AdminUsageEventInput } from '../../../lib/admin-usage-events';
-import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
+import { getServerSession, isAdminSupportSession, isOwnerAppSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegisterItemFromGenericValuation,
@@ -426,7 +428,14 @@ export async function POST(request: NextRequest) {
       conversionMode?: unknown;
       accountantShareId?: unknown;
       registerId?: unknown;
+      saleabilityAnswers?: unknown;
     };
+
+    if (body.saleabilityAnswers !== undefined && !validCurrentSaleabilityAnswers(body.saleabilityAnswers)) {
+      return badRequest('Complete all market price questions before saving the assessment.');
+    }
+    const saleabilityAnswers = body.saleabilityAnswers;
+    const assessmentActorId = isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id;
 
     const saveForMarketplace = parseBoolean(body.saveForMarketplace);
     const photoUrls = saveForMarketplace ? normalizePhotos(body.photos) : [];
@@ -550,6 +559,8 @@ export async function POST(request: NextRequest) {
               photos: effectivePhotoUrls,
             });
 
+        const warning = await saveValuationSaleability(effectiveOwnerUserId, assessmentActorId, asset, saleabilityAnswers);
+
         await recordSavedValuationUsage({
           userId: getUsageUserId(session),
           assetId: asset.id,
@@ -563,6 +574,7 @@ export async function POST(request: NextRequest) {
           ok: true,
           runId: savedRun.runId,
           assetId: asset.id,
+          warning,
           createdAtIso: savedRun.createdAtIso,
           selectedValueExVat: savedRun.selectedValueExVat,
         });
@@ -636,6 +648,8 @@ export async function POST(request: NextRequest) {
             photos: effectivePhotoUrls,
           });
 
+      const warning = await saveValuationSaleability(effectiveOwnerUserId, assessmentActorId, asset, saleabilityAnswers);
+
       await recordSavedValuationUsage({
         userId: getUsageUserId(session),
         assetId: asset.id,
@@ -649,6 +663,7 @@ export async function POST(request: NextRequest) {
         ok: true,
         runId: savedRun.runId,
         assetId: asset.id,
+        warning,
         createdAtIso: savedRun.createdAtIso,
         selectedValueExVat,
       });

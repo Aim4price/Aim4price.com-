@@ -40,6 +40,33 @@ function add(file){
 add('components/asset-register/AssetPriceSwitch');
 add('components/asset-register/AssetMarketDetail');
 add('components/SaleabilityModal');
+
+// Exercise the actual pre-save prompt and entry guard with a synthetic estimate.
+const valuationSource=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
+const saveEntry=valuationSource.slice(valuationSource.indexOf('  function openFinalSaveModal('),valuationSource.indexOf('  function closeFinalSaveModal()'));
+const savePrompt=valuationSource.slice(valuationSource.indexOf("      {finalSaveIntent && saveMarketChoice === 'prompt'"),valuationSource.indexOf("      {finalSaveIntent && !conversionAssetId && !saveMarketChoice"));
+const completionProps=valuationSource.slice(valuationSource.indexOf('          onClose={() => {\n            setSaleabilityOpen(false);'),valuationSource.indexOf('          assetTitle={machineTitle}',valuationSource.indexOf('        <SaleabilityModal')));
+add('app/valuation/page.module.css');
+const saveFixture=`import React,{useState} from 'react';
+import SaleabilityModal from 'components/SaleabilityModal';
+import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
+export default function SaveFixture(){
+const [resultState,setResultState]=useState({id:1}),headlineValue=459000;
+const [finalSaveIntent,setFinalSaveIntent]=useState(null),[saveMarketChoice,setSaveMarketChoice]=useState(null);
+const [saleabilityOpen,setSaleabilityOpen]=useState(false),[completedMarketAssessment,setCompletedMarketAssessment]=useState(null);
+const dealerSaveTargetRegisterId='',isSignedIn=true,canSaveToAssetRegister=true,isDealerAccount=false,canUseMarketplacePublishFlow=true,conversionAssetId=null,userReplacementPrice='500000';
+const getCurrentResultReplacementPriceExVat=()=>500000,setMessage=()=>{},setFinalSaveError=()=>{},setReplacementPanelOpen=()=>{},setUserReplacementPrice=()=>{};
+function closeFinalSaveModal(){setFinalSaveIntent(null);setSaveMarketChoice(null);}
+${saveEntry}
+return <><button onClick={()=>openFinalSaveModal('asset-register')}>Save asset</button>
+<button onClick={()=>setResultState({id:2})}>Change estimate</button>
+${savePrompt}
+{finalSaveIntent&&!saveMarketChoice?<output>Save review</output>:null}
+<SaleabilityModal open={saleabilityOpen} ${completionProps}
+ assetTitle="Fixture" valuationExVat={headlineValue} input={{}} />
+</>;
+}`;
+modules['save-fixture']=ts.transpileModule(saveFixture,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -160,6 +187,30 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-label="Your selling estimate"]',el=>el.scrollHeight<=el.clientHeight+1),'Result should fit a compact desktop viewport');
  await page.screenshot({path:'/tmp/saleability-spacing-result.png'});
  assert(!Object.keys(modules).some(name=>name.includes('server/saleability')));
+
+// Save review: skip, cancel, finish assessment, and invalidate after editing.
+ await page.evaluate(()=>window.root.render(React.createElement(require('save-fixture').default)));
+ await click('Save asset');await page.waitForSelector('#market-save-title');
+ await click('Save with Ideal Price only');await page.waitForSelector('output');
+ await click('Save asset');await page.waitForSelector('#market-save-title');
+ await click('Calculate market price');await page.waitForSelector('[aria-label="Question 1 of 5"]');
+ await page.click('[aria-label="Close Realistic Market Price"]');await page.waitForSelector('#market-save-title');
+ await click('Calculate market price');await page.waitForSelector('[aria-label="Question 1 of 5"]');
+ await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.includes('Dealer / trade-in')).click());
+ await page.waitForSelector('[aria-label="Question 2 of 5"]');
+ await page.$$eval('button',nodes=>nodes.find(n=>n.querySelector('strong')?.textContent==='Within 30 days').click());
+ await page.waitForSelector('[aria-label="Question 3 of 5"]');await click('Near me');
+ await page.waitForSelector('[aria-label="Question 4 of 5"]');await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.startsWith('Normal')).click());
+ await page.waitForSelector('[aria-label="Question 5 of 5"]');await click('Several');
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Done'&&!b.disabled));
+ await click('Done');await page.waitForSelector('output');
+ await click('Save asset');assert.equal(await page.$('#market-save-title'),null,'Current assessment skips prompt');
+ await click('Change estimate');await click('Save asset');await page.waitForSelector('#market-save-title');
+ await page.setViewport({width:1366,height:768});
+ await page.screenshot({path:'/tmp/market-save-prompt.png'});
+ assert(await page.$eval('[aria-labelledby="market-save-title"]',el=>el.scrollHeight<=el.clientHeight+1));
+ await page.setViewport({width:390,height:844});
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  assert.deepEqual(errors,[]);console.log('PASS all three price views, replacement actions, independent VAT, empty states, mobile fit and save retry');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
