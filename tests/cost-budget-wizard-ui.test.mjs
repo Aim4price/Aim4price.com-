@@ -27,7 +27,7 @@ test('spending budget uses a guided four-step flow with a dedicated period step'
   assert.match(budgetModal, /What should this budget cover\?/);
   assert.match(budgetModal, /Choose the budget period/);
   assert.match(budgetModal, /Set the spending limit/);
-  assert.match(budgetModal, /Review your budget/);
+  assert.match(budgetModal, /Review budget/);
   assert.match(budgetModal, /onClick=\{continueBudgetWizard\}/);
   assert.match(budgetModal, /goBackBudgetWizard/);
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Budget coverage|Choose budget scope/);
@@ -123,11 +123,14 @@ test('limit validation happens before review and the review preserves every choi
   assert.match(client, /budgetWarningValue >= 1/);
   assert.match(client, /budgetWarningValue <= 99/);
   assert.match(client, /if \(!budgetLimitIsValid\)[\s\S]*?setBudgetFormError/);
-  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Assets<\/dt>/);
-  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Period<\/dt>/);
-  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Budget<\/dt>/);
-  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Warning level<\/dt>/);
-  assert.match(budgetModal, /<dt><BudgetDetailIcon kind="[^"]+" \/>Fuel slips<\/dt>/);
+  assert.match(budgetModal, /selectedBudgetAssets.length === 1 \? 'Asset' : 'Assets'/);
+  for (const label of ['Period', 'Alert at', 'Fuel costs']) {
+    assert.ok(budgetModal.includes(`<dt>${label}</dt>`));
+  }
+  assert.match(budgetModal, /'Monthly budget' : 'Annual budget'/);
+  assert.match(budgetModal, /budgetAmountValue \* budgetWarningValue \/ 100/);
+  assert.match(budgetModal, /'Included' : 'Excluded'/);
+
 });
 
 test('multi-asset creation saves one independently editable budget per selected asset', () => {

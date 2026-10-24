@@ -4,7 +4,6 @@ import dropFinalStyles from './invoice-drop-final.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
-import BudgetDetailIcon from '../../components/BudgetDetailIcon';
 import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
@@ -3950,14 +3949,14 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 id="budget-modal-title">{editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
+                  <h2 ref={budgetWizardStep === 4 ? budgetWizardStepHeadingRef : undefined} tabIndex={budgetWizardStep === 4 ? -1 : undefined} id="budget-modal-title">{budgetWizardStep === 4 ? 'Review budget' : editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
                   <p>{budgetWizardStep === 1
                     ? 'Choose what to track.'
                     : budgetWizardStep === 2
                       ? 'Choose a monthly or annual budget.'
                       : budgetWizardStep === 3
                         ? 'Set the limit and warning level.'
-                        : 'Review and save.'}</p>
+                        : 'Check the details before saving.'}</p>
                 </div>
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
@@ -4102,16 +4101,11 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {budgetWizardStep === 4 ? (
-                  <section className={reviewStyles.panel} aria-labelledby="budget-review-title">
-                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <h3 ref={budgetWizardStepHeadingRef} id="budget-review-title" tabIndex={-1}>Review your budget</h3>
-                      
-                    </div>
-
+                  <section className={reviewStyles.panel} aria-labelledby="budget-modal-title">
                     <dl className={reviewStyles.grid}>
-                      <div>
-                        <dt><BudgetDetailIcon kind="asset" />Assets</dt>
-                        <dd title={selectedBudgetAssets.map((asset) => asset.title).join(', ')}>
+                      <div className={reviewStyles.asset}>
+                        <dt>{selectedBudgetAssets.length === 1 ? 'Asset' : 'Assets'}</dt>
+                        <dd>
                           {selectedBudgetAssets.length
                             ? selectedBudgetAssets.map((asset) => asset.title).join(', ')
                             : budgetDraft.assetId === 'all'
@@ -4119,21 +4113,25 @@ export default function MyInvoicesClient({
                               : 'No assets selected'}
                         </dd>
                       </div>
-                      <div>
-                        <dt><BudgetDetailIcon kind="calendar" />Period</dt>
+                      <div className={reviewStyles.period}>
+                        <dt>Period</dt>
                         <dd>{budgetDraft.period === 'monthly' ? 'Monthly' : 'Annual'}</dd>
                       </div>
-                      <div>
-                        <dt><BudgetDetailIcon kind="budget" />Budget</dt>
+                      <div className={reviewStyles.amount}>
+                        <dt>{budgetDraft.period === 'monthly' ? 'Monthly budget' : 'Annual budget'}</dt>
                         <dd>{formatMoney(budgetAmountValue)}</dd>
                       </div>
-                      <div>
-                        <dt><BudgetDetailIcon kind="alert" />Warning level</dt>
-                        <dd>{budgetDraft.warningPercent}%</dd>
+                      <div className={reviewStyles.alert}>
+                        <dt>Alert at</dt>
+                        <dd>{budgetDraft.warningPercent}% of budget
+                          <small>{formatMoney(budgetAmountValue * budgetWarningValue / 100)} spent</small>
+                        </dd>
                       </div>
-                      <div>
-                        <dt><BudgetDetailIcon kind="fuel" />Fuel slips</dt>
-                        <dd>{budgetDraft.includeFuelSlipCosts ? 'Counted' : 'Not counted'}</dd>
+                      <div className={reviewStyles.fuel}>
+                        <dt>Fuel costs</dt>
+                        <dd className={budgetDraft.includeFuelSlipCosts ? reviewStyles.included : reviewStyles.excluded}>
+                          {budgetDraft.includeFuelSlipCosts ? 'Included' : 'Excluded'}
+                        </dd>
                       </div>
                     </dl>
 
