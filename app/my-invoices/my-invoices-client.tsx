@@ -3968,7 +3968,6 @@ export default function MyInvoicesClient({
                 {budgetWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-coverage-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-coverage-title" tabIndex={-1}>What should this budget cover?</h3>
                       <p>Choose one or more saved assets.</p>
                     </div>
@@ -4002,7 +4001,6 @@ export default function MyInvoicesClient({
                 {budgetWizardStep === 2 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-period-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-period-title" tabIndex={-1}>Choose the budget period</h3>
                       <p>Decide when the spending limit starts again.</p>
                     </div>
@@ -4050,7 +4048,6 @@ export default function MyInvoicesClient({
                 {budgetWizardStep === 3 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-limit-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-limit-title" tabIndex={-1}>Set the spending limit</h3>
                       <p>Amounts include VAT.</p>
                     </div>
@@ -4108,7 +4105,6 @@ export default function MyInvoicesClient({
                 {budgetWizardStep === 4 ? (
                   <section className={reviewStyles.panel} aria-labelledby="budget-review-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">4</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-review-title" tabIndex={-1}>Review your budget</h3>
                       
                     </div>
@@ -4223,7 +4219,6 @@ export default function MyInvoicesClient({
               {invoiceDropWizardStep === 1 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${styles.invoiceDropScopePanel}`} aria-labelledby="invoice-drop-scope-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                    <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                     <h3 id="invoice-drop-scope-title">What should this code cover?</h3>
                   </div>
                   <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-labelledby="invoice-drop-scope-title">
@@ -4266,7 +4261,6 @@ export default function MyInvoicesClient({
               {invoiceDropWizardStep === 2 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-routing-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                    <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
                     <h3 id="invoice-drop-routing-title">{invoiceDropScope === 'all' ? 'All assets' : 'Choose an asset'}</h3>
                   </div>
                   {invoiceDropScope === 'all' ? (
@@ -4315,7 +4309,6 @@ export default function MyInvoicesClient({
               {invoiceDropWizardStep === 3 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${dropFinalStyles.panel}`} aria-labelledby="invoice-drop-code-step-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                    <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                     <h3 id="invoice-drop-code-step-title">Create your code</h3>
                   </div>
                   <div className={`${styles.invoiceDropSelectionSummary} ${dropFinalStyles.summary}`}>
@@ -4664,7 +4657,6 @@ export default function MyInvoicesClient({
                 {recurringWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-coverage-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-coverage-title" tabIndex={-1}>What should this cost cover?</h3>
                       <p>Choose one or more saved assets.</p>
                     </div>
@@ -4700,7 +4692,6 @@ export default function MyInvoicesClient({
                 {recurringWizardStep === 2 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${styles.recurringDetailsPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-details-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-details-title" tabIndex={-1}>Set the recurring cost</h3>
                       <p>Add the amount, timing and useful reference details.</p>
                     </div>
@@ -4846,7 +4837,6 @@ export default function MyInvoicesClient({
                 {recurringWizardStep === 3 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-review-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-review-title" tabIndex={-1}>Review your commitment</h3>
                       <p>Check the details before saving.</p>
                     </div>
@@ -5147,7 +5137,6 @@ export default function MyInvoicesClient({
               <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? costReviewStyles.panel : ''}` : ''}`}>
                 {manualCostWizardOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                    <span className={wizardStyles.panelNumber} aria-hidden="true">{manualCostWizardStep}</span>
                     <h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>
                       {manualCostWizardStep === 1
                         ? 'Add the invoice details'

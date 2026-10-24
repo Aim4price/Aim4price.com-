@@ -322,23 +322,11 @@
 
 .wizardHeading {
   display: grid;
-  grid-template-columns: 2.65rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   align-items: start;
 }
 
-.wizardHeadingNumber {
-  display: grid;
-  place-items: center;
-  width: 2.65rem;
-  height: 2.65rem;
-  border-radius: 0.9rem;
-  color: #ffffff;
-  background: linear-gradient(180deg, #278b67 0%, #17664d 100%);
-  box-shadow: 0 8px 18px rgba(20, 104, 76, 0.16);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
 
 .wizardHeadingText {
   display: grid;

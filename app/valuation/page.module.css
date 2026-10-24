@@ -15521,6 +15521,27 @@
 .multipleExtras > .removeExtra { justify-self: end; min-height: 38px; padding: 6px 12px; }
 .extrasDetailModal:has(.multipleExtras) .detailsModalActions { position: sticky; bottom: -28px; z-index: 1; margin-top: 18px; padding: 18px 0; background: var(--app-surface, #fff); }
 
+/* Extras editor: one scrollable body, with title and actions always visible. */
+.detailsModal.extrasDetailModal.extrasEditorModal { display: flex; flex-direction: column; gap: 0; width: min(880px, calc(var(--website-visible-width, 100vw) - 32px)); overflow: hidden; padding: 24px; }
+.extrasEditorModal .detailsModalHeader { flex-shrink: 0; margin-bottom: 0; padding-bottom: 18px; }
+.extrasEditorBody { min-height: 0; overflow-y: auto; padding: 16px 8px 16px 2px; scrollbar-width: thin; scrollbar-color: #8cafa0 transparent; }
+.extrasEditorModal .basicExtrasGrid { margin: 0 0 16px; gap: 12px; }
+.extrasEditorModal .basicExtrasGrid .choiceCard { min-height: 86px; padding: 14px 36px 14px 16px; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 12px; }
+.extrasEditorModal .basicExtrasGrid .detailIcon { width: 40px; height: 40px; border-radius: 12px; }
+.extrasEditorModal .basicExtrasGrid .choiceCard strong { font-size: 1rem; }
+.extrasEditorModal .basicExtrasGrid .choiceCardNote { font-size: .85rem; }
+.primaryExtraEntry, .extrasEditorModal .extraEntry { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 16px; border: 1px solid #d5e3da; border-radius: 16px; background: #f7faf8; }
+.extrasEditorModal .extraEntry { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+.extrasEditorModal .basicExtraFields, .extrasEditorModal .basicExtraPriceField { margin: 0; padding: 0; border: 0; background: transparent; }
+.extrasEditorModal .fieldLabel { text-transform: none; letter-spacing: 0; font-size: .9rem; }
+.extrasEditorModal .removeExtra { display: grid; place-items: center; width: 40px; height: 40px; min-height: 40px; padding: 9px; align-self: end; margin-bottom: 5px; }
+.extrasEditorModal .removeExtra svg { width: 20px; height: 20px; }
+.extrasEditorModal .multipleExtras { gap: 14px; margin-top: 14px; }
+.extrasEditorModal .multipleExtras > .secondaryButton { justify-self: start; padding: 10px 16px; min-height: 44px; box-shadow: none; font-size: .95rem; }
+.extrasEditorModal .extrasTotal { padding: 14px 16px; align-items: center; font-size: 1rem; }
+.extrasDetailModal.extrasEditorModal .detailsModalActions { position: static; flex-shrink: 0; margin-top: 0; padding: 18px 0 0; gap: 12px; }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry { grid-template-columns: minmax(0, 1fr) auto; } :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry > .field { grid-column: 1; } :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry > .removeExtra { grid-column: 2; grid-row: 2; } }
+
 /* Client register selection follows the shared register picker proportions. */
 .finalSaveModal.dealerClientRegisterPicker {
   width: min(var(--website-dialog-reference-width, 100%), 64rem);

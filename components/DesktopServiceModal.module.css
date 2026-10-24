@@ -201,23 +201,12 @@
 
 .sectionHeading {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 11px;
   align-items: start;
   margin-bottom: 16px;
 }
 
-.sectionHeading > span {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border-radius: 10px;
-  background: #0d5847;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 900;
-}
 
 .sectionHeading h3 {
   margin: 1px 0 3px;
@@ -471,7 +460,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .section { padding: 15px; }
   :global(:where(html:not(:has([data-website-canvas])))) .fieldGrid, :global(:where(html:not(:has([data-website-canvas])))) .checklist, :global(:where(html:not(:has([data-website-canvas])))) .choiceComparison { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { grid-template-columns: 30px minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { grid-template-columns: minmax(0, 1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 14px 16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .cancelButton, :global(:where(html:not(:has([data-website-canvas])))) .submitButton { flex: 1; padding: 0 12px; }
 }
