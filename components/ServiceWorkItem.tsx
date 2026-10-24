@@ -36,7 +36,7 @@ export default function ServiceWorkItem({ itemKey, value, description, selected,
       </button>
       <div className={styles.workActions}>
         <ItemActionButton action="edit" name={value.label} disabled={busy} onClick={() => { setName(value.label); setError(''); setEditor(editing ? null : `${itemKey}:edit`); }} />
-        <button type="button" className={styles.partsAction} aria-label={`Add parts to ${value.label}`} title={`Add parts to ${value.label}`} aria-expanded={adding} disabled={busy} onClick={() => { setError(''); setEditor(adding ? null : `${itemKey}:parts`); }}>
+        <button type="button" className={styles.partsAction} aria-label={`Add parts to ${value.label}`} data-tooltip={`Add parts to ${value.label}`} aria-expanded={adding} disabled={busy} onClick={() => { setError(''); setEditor(adding ? null : `${itemKey}:parts`); }}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9M7.5 5.5l9 5" /></svg>
         </button>
         {onRemove ? <ItemActionButton action="delete" name={value.label} disabled={busy} onClick={onRemove} /> : null}
