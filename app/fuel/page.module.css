@@ -7807,7 +7807,7 @@
 .fuelSlipFlowBackdrop .accountFuelModal.manualFuelSlipModal {
   width: min(1560px, var(--website-dialog-reference-width, 100%)) !important;
 }
-.accountFuelModal.manualFuelSlipModal .formGrid > label > .fuelEntryLabel,
+.accountFuelModal.manualFuelSlipModal .formGrid > :is(label, div) > .fuelEntryLabel,
 .accountFuelModal.manualFuelSlipModal .fuelWorkFieldGroup > .fuelEntryLabel {
   display: flex;
   align-items: center;
@@ -7855,6 +7855,7 @@
   grid-column: 1;
 }
 .accountFuelModal.manualFuelSlipModal .formGrid > label > span:first-child,
+.accountFuelModal.manualFuelSlipModal .formGrid > div > .fuelEntryLabel,
 .accountFuelModal.manualFuelSlipModal .fuelWorkFieldGroup > .fuelEntryLabel {
   color: var(--app-text, #234b3d) !important;
   font-size: .95rem !important;
