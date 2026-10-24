@@ -10,7 +10,7 @@ const chromium = require('@sparticuz/chromium');
     const page = await browser.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    const css = fs.readFileSync('components/DateInput.module.css', 'utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))');
+    const css = fs.readFileSync('components/DateInput.module.css', 'utf8').replaceAll(':global(:where(html:not(:has([data-website-canvas]))))', ':where(html:not(:has([data-website-canvas])))').replaceAll(':global(html)', 'html').replaceAll(':global(body)', 'body');
     await page.setContent(`<style>body{margin:0;background:#dce8e2;font-family:Arial}*{box-sizing:border-box}${css}</style><form id="root"></form>`);
     await page.addScriptTag({path:'node_modules/react/umd/react.development.js'});
     await page.addScriptTag({path:'node_modules/react-dom/umd/react-dom.development.js'});
@@ -53,6 +53,26 @@ const chromium = require('@sparticuz/chromium');
       if(width>=1000) {assert.ok(layout.width>900,'Wide desktop calendar');assert.equal(await page.$eval('dialog',el=>el.scrollHeight>el.clientHeight+1),false,'Desktop needs no scrollbar');}
       await page.click('.summary > button');
     }
+    // Six-week months must fit without clipping, including the user's enlarged desktop view.
+    for (const [width,height,zoom] of [[1440,900,1],[1366,768,1],[1920,870,1.25],[390,844,1],[320,640,1],[844,390,1]]) {
+      await page.setViewport({width,height});
+      await page.evaluate(({width,height,zoom})=>{
+        document.body.style.minHeight='200vh';
+        document.documentElement.style.setProperty('--website-visible-height',`${height/zoom}px`);
+        document.documentElement.style.setProperty('--website-visible-width',`${width/zoom}px`);
+        document.querySelector('dialog').style.zoom=String(zoom);
+      },{width,height,zoom});
+      await open();await page.click('[aria-label="Month"]');
+      await page.evaluate(()=>[...document.querySelectorAll('[role="option"]')].find(el=>el.textContent==='August').click());
+      await page.waitForSelector('[data-date="2026-08-31"]');
+      assert.equal(await page.$$eval('.days > *', els=>els.length),49);
+      assert.equal(await page.$eval('dialog',el=>el.scrollHeight>el.clientHeight+1),false,'Six weeks fit without scrolling');
+      assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflow),'hidden','Background scrolling locked');
+      assert.equal(await page.$eval('.summary > button',el=>{const r=el.getBoundingClientRect();return r.bottom<=innerHeight&&el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));}),true,'Confirmation visible and clickable');
+      await page.click('[aria-label="Close calendar"]');
+      assert.notEqual(await page.evaluate(()=>getComputedStyle(document.documentElement).overflow),'hidden','Background scrolling restored');
+    }
+    await page.evaluate(()=>{document.documentElement.style.removeProperty('--website-visible-height');document.documentElement.style.removeProperty('--website-visible-width');document.querySelector('dialog').style.zoom='1';});
     // Blank dates require a selection; close does not submit a surrounding form.
     await page.evaluate(()=>renderCalendar({defaultValue:''}));await open();
     assert.equal(await page.$eval('.summary > button',el=>el.disabled),true);

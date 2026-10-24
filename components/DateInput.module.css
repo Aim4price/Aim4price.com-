@@ -24,14 +24,17 @@
 
 
 /* Shared calendar standard. Size against the zoom-aware canvas, not the device. */
-.dateDialog.dateDialog { width: min(64rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-width: calc(var(--website-visible-width, 100vw) - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #173f30); box-shadow: 0 28px 90px #00000045; font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
+.dateDialog.dateDialog { width: min(64rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-width: calc(var(--website-visible-width, 100vw) - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; overflow: hidden; scrollbar-gutter: auto; overscroll-behavior: contain; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #173f30); box-shadow: 0 28px 90px #00000045; font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
 .dateDialog::backdrop { background: rgb(24 27 29 / 74%); backdrop-filter: blur(12px) grayscale(1); -webkit-backdrop-filter: blur(12px) grayscale(1); }
 .dateDialog *, .dateDialog *::before, .dateDialog *::after { box-sizing: border-box; }
-.calendar { padding: 1.75rem; }
+.calendar { height: min(48rem, calc(var(--website-visible-height, 100dvh) - 2.25rem)); min-height: 0; padding: clamp(.65rem, calc(var(--website-visible-height, 100dvh) * .025), 1.5rem); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+/* Lock only while this top-layer calendar is open; closing restores page scrolling. */
+:global(html):has(.dateDialog[open]), :global(body):has(.dateDialog[open]) { overflow: hidden !important; scrollbar-width: none !important; }
+:global(html):has(.dateDialog[open])::-webkit-scrollbar, :global(body):has(.dateDialog[open])::-webkit-scrollbar { display: none; }
 .calendar button { font: inherit; color: inherit; cursor: pointer; }
 .calendar button:disabled { cursor: not-allowed; }
 .calendar button:focus-visible, .dateField button:focus-visible { outline: 2px solid var(--app-accent, #318969); outline-offset: 2px; }
-.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.2rem; margin-bottom: 1.2rem; border-bottom: 1px solid var(--app-line, #dce8e2); }
+.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: .8rem; margin-bottom: .8rem; border-bottom: 1px solid var(--app-line, #dce8e2); }
 .heading { display: flex; align-items: center; gap: 1rem; min-width: 0; }
 .headingIcon { display: grid; place-items: center; flex: 0 0 3.5rem; height: 3.5rem; border-radius: .85rem; background: var(--app-success-soft, #e2f0e8); color: var(--app-accent, #176346); }
 .headingIcon svg { width: 1.75rem; height: 1.75rem; }
@@ -49,12 +52,12 @@
 .navigationActions .todayButton { padding-inline: 1rem; }
 .navigationActions svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .calendar :is(.navigationActions, .dialogHeader) button:hover:not(:disabled), .calendar .selectTrigger:hover { border-color: var(--app-accent, #318969); box-shadow: 0 0 0 2px var(--app-success-soft, #e2f0e8); }
-.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 1px; padding: 1px; border-radius: .75rem; background: var(--app-line, #dce8e2); isolation: isolate; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: auto repeat(var(--calendar-weeks, 6), minmax(0, 1fr)); min-height: 0; gap: 1px; padding: 1px; border-radius: .75rem; background: var(--app-line, #dce8e2); isolation: isolate; }
 .weekday { padding: .65rem .2rem; text-align: center; font-size: .85rem; font-weight: 700; background: var(--app-surface, #fff); }
 .weekday:first-child { border-top-left-radius: .7rem; }
 .weekday:nth-child(7) { border-top-right-radius: .7rem; }
 .days > :nth-child(7n + 6), .days > :nth-child(7n) { background: var(--app-surface-soft, #f1f7f4); }
-.days button, .outsideDay { min-width: 0; min-height: clamp(3rem, calc((var(--website-visible-height, 100dvh) - 22rem) / 6), 5.5rem); padding: .45rem; border: 0; border-radius: 0; background: var(--app-surface, #fff); text-align: left; font-size: 1rem; font-weight: 550; }
+.days button, .outsideDay { min-width: 0; min-height: 0; padding: .45rem; border: 0; border-radius: 0; background: var(--app-surface, #fff); text-align: left; font-size: 1rem; font-weight: 550; }
 .days button { display: flex; align-items: flex-start; justify-content: flex-start; position: relative; }
 .days button > span { display: grid; place-items: center; min-width: 2rem; height: 2rem; border-radius: .55rem; }
 .days > :nth-last-child(7) { border-bottom-left-radius: .7rem; }
@@ -64,9 +67,9 @@
 .days button[aria-pressed='true'] { z-index: 1; border-radius: .65rem; background: var(--app-success-soft, #e2f0e8); box-shadow: inset 0 0 0 2px var(--app-accent, #165540); }
 .days button[aria-pressed='true'] > span { background: #165540; color: #fff; font-weight: 800; }
 .days button:focus-visible { z-index: 2; outline-offset: -3px; border-radius: .65rem; }
-.outsideDay { padding: .8rem 1rem; color: var(--app-muted, #718078); }
-.days button:disabled > span, .outsideDay { opacity: .5; }
-.summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #dce8e2); }
+.outsideDay { padding: .8rem 1rem; color: color-mix(in srgb, var(--app-muted, #718078) 55%, var(--app-surface, #fff)); }
+.days button:disabled > span { opacity: .5; }
+.summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--app-line, #dce8e2); }
 .selectedDate { display: grid; gap: .25rem; min-width: 0; }
 .selectedDate > span { color: var(--app-muted, #718078); font-size: .8rem; }
 .selectedDate > strong { font-size: 1.05rem; font-weight: 750; }
@@ -86,9 +89,22 @@
   :global(:where(html:not(:has([data-website-canvas])))) .selectRoot:first-child { max-width: none; }
   :global(:where(html:not(:has([data-website-canvas])))) .navigationActions { width: 100%; justify-content: flex-end; }
   :global(:where(html:not(:has([data-website-canvas])))) .navigationActions .todayButton { margin-right: auto; }
-  :global(:where(html:not(:has([data-website-canvas])))) .days button { padding: .15rem; min-height: 2.75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .outsideDay { padding: .5rem .25rem; text-align: center; min-height: 2.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .days button { padding: .15rem; min-height: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .outsideDay { padding: .5rem .25rem; text-align: center; min-height: 0; }
   :global(:where(html:not(:has([data-website-canvas])))) .days button > span { min-width: 1.75rem; height: 1.75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .summary { flex-wrap: wrap; }
   :global(:where(html:not(:has([data-website-canvas])))) .summary > button { width: 100%; }
+}
+
+/* Short role-app windows still show all weeks and the confirmation action. */
+@media (max-height: 500px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogHeader { padding-bottom: .4rem; margin-bottom: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .headingIcon { flex-basis: 2.5rem; height: 2.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .heading p { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigation { margin-bottom: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .weekday { padding-block: .2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .days button, :global(:where(html:not(:has([data-website-canvas])))) .outsideDay { padding: 0 .3rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .days button > span { min-width: 1.5rem; height: 100%; max-height: 1.8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .summary { margin-top: .4rem; padding-top: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .selectedDate > span { display: none; }
 }

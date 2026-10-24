@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type InputHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './DateInput.module.css';
 
@@ -162,7 +162,7 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
         <button type="button" aria-label="Next month" onClick={() => setMonth(new Date(year, monthIndex + 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg></button>
         </div>
       </div>
-      <div className={styles.days} ref={grid}>
+      <div className={styles.days} ref={grid} style={{ '--calendar-weeks': Math.ceil((offset + count) / 7) } as CSSProperties}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <span key={day} className={styles.weekday}>{day}</span>)}
         {Array.from({ length: Math.ceil((offset + count) / 7) * 7 }, (_, i) => {
           const date = new Date(year, monthIndex, i - offset + 1, 12);
