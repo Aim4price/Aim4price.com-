@@ -15520,3 +15520,15 @@
 .detailsModal.extrasDetailModal:has(.multipleExtras) { width: min(960px, calc(var(--website-visible-width, 100vw) - 32px)); overflow-y: auto; }
 .multipleExtras > .removeExtra { justify-self: end; min-height: 38px; padding: 6px 12px; }
 .extrasDetailModal:has(.multipleExtras) .detailsModalActions { position: sticky; bottom: -28px; z-index: 1; margin-top: 18px; padding: 18px 0; background: var(--app-surface, #fff); }
+
+/* Client register selection follows the shared register picker proportions. */
+.finalSaveModal.dealerClientRegisterPicker {
+  width: min(var(--website-dialog-reference-width, 100%), 64rem);
+}
+.dealerClientRegisterPicker .finalSaveHeader p,
+.dealerClientRegisterPicker .dealerClientRegisterPickerRow small {
+  color: var(--app-muted, #64746a);
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}

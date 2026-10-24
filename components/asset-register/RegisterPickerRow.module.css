@@ -2,7 +2,7 @@
 .folder { width: 1.5rem; height: 1.5rem; color: var(--app-muted, #789387); }
 .copy, .value { display: grid; gap: .35rem; min-width: 0; }
 .copy strong { font-size: 1.05rem; line-height: 1.35; overflow-wrap: anywhere; }
-.copy small, .value small { font-size: .85rem; line-height: 1.4; color: var(--app-muted, #6c8075); }
+.copy small, .value small { font-size: .88rem; font-weight: 650; line-height: 1.5; color: var(--app-muted, #64746a); }
 .value { text-align: right; }
 .value strong { font-size: 1.05rem; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .check { color: var(--app-accent, #187456); font-size: 1.2rem; }
