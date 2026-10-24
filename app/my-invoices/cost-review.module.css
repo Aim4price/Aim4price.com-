@@ -1,5 +1,6 @@
 /* Keep the review compact without inheriting the entry-step card padding. */
-.panel.panel.panel {
+.panel.panel.panel.panel.panel {
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -29,7 +30,7 @@
 .grid dd {
   margin: 0;
   font-size: 1rem;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
@@ -75,10 +76,31 @@
 
 /* Scroll only when content exceeds the available modal height. */
 .body.body.body.body.body {
-  padding: 8px 30px !important;
+  padding: 20px 30px 16px !important;
   overflow-y: auto !important;
   scrollbar-gutter: auto;
 }
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body.body { padding: 12px 18px !important; }
+}
+
+/* Match the review header, content and actions to one shared inset. */
+.header.header.header.header {
+  margin: 0 !important;
+  padding: 24px 30px 18px !important;
+}
+.header h2:focus { outline: none; }
+.footer.footer.footer.footer {
+  padding: 14px 30px !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
+}
+.footer.footer.footer.footer > button {
+  min-height: 48px !important;
+  padding: 12px 24px !important;
+}
+.grid .work:nth-last-child(-n + 2) { border-bottom: 0; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .header.header.header.header { padding: 20px 18px 16px !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer.footer.footer.footer { padding: 12px 18px !important; }
 }

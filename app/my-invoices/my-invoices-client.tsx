@@ -1662,7 +1662,8 @@ export default function MyInvoicesClient({
   const flowTitle = businessPickerOpen
     ? 'Choose client business'
     : flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
-  const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
+  const manualCostReviewOpen = manualCostWizardOpen && manualCostWizardStep === 3;
+  const formTitle = manualCostReviewOpen ? 'Review cost' : flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
 
@@ -5109,11 +5110,11 @@ export default function MyInvoicesClient({
             className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${styles.polishedCostEntry} ${wizardStyles.dialog}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
           >
-            <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''}`}>
+            <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''} ${manualCostReviewOpen ? costReviewStyles.header : ''}`}>
               <div className={manualCostWizardOpen ? wizardStyles.headerText : undefined}>
-                <h2>{formTitle}</h2>
+                <h2 ref={manualCostReviewOpen ? manualCostWizardStepHeadingRef : undefined} tabIndex={manualCostReviewOpen ? -1 : undefined}>{formTitle}</h2>
                 <p>
-                  {selectedAsset?.title ?? 'Selected asset'} · {manualCostWizardOpen
+                  {manualCostReviewOpen ? '' : `${selectedAsset?.title ?? 'Selected asset'} · `}{manualCostWizardOpen
                     ? manualCostWizardStep === 1
                       ? 'Invoice details'
                       : manualCostWizardStep === 2
@@ -5134,7 +5135,7 @@ export default function MyInvoicesClient({
               ) : null}
 
               <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? costReviewStyles.panel : ''}` : ''}`}>
-                {manualCostWizardOpen ? (
+                {manualCostWizardOpen && !manualCostReviewOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>
                       {manualCostWizardStep === 1
@@ -5367,7 +5368,7 @@ export default function MyInvoicesClient({
               </section>
             </div>
 
-            <div className={`${styles.modalFooter} ${manualCostWizardOpen ? `${styles.manualCostWizardFooter} ${wizardStyles.footer}` : ''}`}>
+            <div className={`${styles.modalFooter} ${manualCostWizardOpen ? `${styles.manualCostWizardFooter} ${wizardStyles.footer}` : ''} ${manualCostReviewOpen ? costReviewStyles.footer : ''}`}>
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${manualCostWizardOpen ? wizardStyles.secondaryAction : ''}`}
@@ -5389,7 +5390,7 @@ export default function MyInvoicesClient({
                 </button>
               ) : manualCostWizardOpen ? (
                 <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={() => void saveInvoiceDraft()} disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Save cost record'}
+                  {isSaving ? 'Saving...' : 'Save cost'}
                 </button>
               ) : (
                 <button type="submit" className={styles.primaryButton} disabled={isSaving}>
