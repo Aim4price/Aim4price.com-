@@ -628,3 +628,12 @@
 .attachedParts li > span { min-width:0; overflow-wrap:anywhere; }
 .attachedParts small { display:block; margin-top:.2rem; color:var(--app-muted, #607168); }
 .checklist:has(.workRow) { grid-template-columns:1fr; }
+
+.saveChoiceModal .scheduleSummary > small {
+  color: var(--app-text, #123f35);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 750;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
