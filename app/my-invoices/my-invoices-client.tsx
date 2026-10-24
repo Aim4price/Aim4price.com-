@@ -5119,7 +5119,7 @@ export default function MyInvoicesClient({
       {formOpen ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
-            className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${styles.polishedCostEntry} ${wizardStyles.dialog}` : ''}`}
+            className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${styles.polishedCostEntry} ${wizardStyles.dialog} ${manualCostReviewOpen ? costReviewStyles.dialog : ''}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
           >
             <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''} ${manualCostReviewOpen ? costReviewStyles.header : ''}`}>
@@ -5319,11 +5319,16 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {manualCostWizardOpen && manualCostWizardStep === 3 ? (
-                  <dl className={costReviewStyles.grid}>
+                  <div className={costReviewStyles.stack}>
+                    <dl className={costReviewStyles.grid}>
                     <div className={costReviewStyles.asset}>
                       <dt>Asset</dt>
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
+                    </dl>
+                    <section className={costReviewStyles.group} aria-labelledby="cost-review-invoice-title">
+                      <h3 id="cost-review-invoice-title">Invoice details</h3>
+                      <dl className={costReviewStyles.grid}>
                     <div>
                       <dt>Supplier</dt>
                       <dd>{draft.supplierName.trim() || 'Not entered'}</dd>
@@ -5342,18 +5347,12 @@ export default function MyInvoicesClient({
                         ? 'Not recorded'
                         : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
                     </div>
-                    <div className={costReviewStyles.amount}>
-                      <dt>Subtotal excl. VAT</dt>
-                      <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
-                    </div>
-                    <div className={costReviewStyles.amount}>
-                      <dt>VAT amount</dt>
-                      <dd>{formatReviewMoney(manualCostVatValue)}</dd>
-                    </div>
-                    <div className={`${costReviewStyles.amount} ${costReviewStyles.total}`}>
-                      <dt>Total incl. VAT</dt>
-                      <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
-                    </div>
+                      </dl>
+                    </section>
+                    {[draft.maintenanceWorkDone, draft.partsSupplied, draft.repairWorkDone, draft.notes].some((value) => value.trim()) ? (
+                      <section className={costReviewStyles.group} aria-labelledby="cost-review-work-title">
+                        <h3 id="cost-review-work-title">Work details</h3>
+                        <dl className={costReviewStyles.grid}>
                     {draft.maintenanceWorkDone.trim() ? <div className={costReviewStyles.work}>
                       <dt>Maintenance work</dt>
                       <dd>{draft.maintenanceWorkDone}</dd>
@@ -5370,8 +5369,27 @@ export default function MyInvoicesClient({
                       <dt>Notes</dt>
                       <dd>{draft.notes}</dd>
                     </div> : null}
-
-                  </dl>
+                        </dl>
+                      </section>
+                    ) : null}
+                    <section className={costReviewStyles.group} aria-labelledby="cost-review-amounts-title">
+                      <h3 id="cost-review-amounts-title">Amounts</h3>
+                      <dl className={costReviewStyles.grid}>
+                    <div className={costReviewStyles.amount}>
+                      <dt>Subtotal excl. VAT</dt>
+                      <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
+                    </div>
+                    <div className={costReviewStyles.amount}>
+                      <dt>VAT amount</dt>
+                      <dd>{formatReviewMoney(manualCostVatValue)}</dd>
+                    </div>
+                    <div className={`${costReviewStyles.amount} ${costReviewStyles.total}`}>
+                      <dt>Total incl. VAT</dt>
+                      <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
+                    </div>
+                      </dl>
+                    </section>
+                  </div>
                 ) : null}
 
                 {manualCostWizardOpen && manualCostWizardError ? (
