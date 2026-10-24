@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   readCachedHeaderSession,
   refreshCachedHeaderSession,
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
 import styles from './AppFooter.module.css';
+import { observeModalPresence } from '../lib/modal-presence';
 
 const footerContentId = 'aim4price-footer-content';
 
@@ -89,6 +90,11 @@ export default function AppFooter() {
   const footerRef = useRef<HTMLElement | null>(null);
   const [session, setSession] = useState<HeaderSessionUser | null>();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  useLayoutEffect(() => observeModalPresence(setModalOpen), []);
+  useLayoutEffect(() => {
+    if (footerRef.current) footerRef.current.inert = modalOpen;
+  }, [modalOpen, pathname]);
   const currentYear = new Date().getFullYear();
   const workspace = useMemo(() => getWorkspace(session), [session]);
 
@@ -137,7 +143,7 @@ export default function AppFooter() {
 
     if (nextExpanded) {
       window.setTimeout(() => {
-        footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        if (!footerRef.current?.inert) footerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
       }, 140);
     }
   }
@@ -145,6 +151,8 @@ export default function AppFooter() {
   return (
     <footer
       ref={footerRef}
+      data-modal-blocked={modalOpen || undefined}
+      aria-hidden={modalOpen || undefined}
       className={`${styles.footer} ${isExpanded ? styles.footerExpanded : ''}`}
     >
       <div id={footerContentId} className={styles.drawerRegion} aria-hidden={!isExpanded}>
