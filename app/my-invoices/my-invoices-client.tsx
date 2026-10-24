@@ -4211,7 +4211,7 @@ export default function MyInvoicesClient({
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="invoice-drop-code-title">Invoice Drop</h2>
-                <p>Create a code your suppliers can use to upload invoices.</p>
+                <p>Share a code so suppliers and other outside users can upload invoices.</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
@@ -4235,7 +4235,7 @@ export default function MyInvoicesClient({
                       <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><AssetFolderIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
                         <strong>All assets</strong>
-                        <small>One code for invoices across your assets.</small>
+                        <small>One code for all assets.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
                     </button>
@@ -4249,14 +4249,14 @@ export default function MyInvoicesClient({
                       <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ReportFileIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
                         <strong>One specific asset</strong>
-                        <small>A code linked to a single asset.</small>
+                        <small>One code for one asset.</small>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
                     </button>
                   </div>
                   <div className={styles.invoiceDropPrivacyRow}>
                     <ShieldCheckIcon />
-                    <span>Suppliers can upload invoices only. No access to your asset records.</span>
+                    <span>Outside users can upload invoices with your code, without access to your asset records.</span>
                   </div>
                 </section>
               ) : null}
