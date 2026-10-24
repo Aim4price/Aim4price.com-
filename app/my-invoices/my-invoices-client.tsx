@@ -28,7 +28,6 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
-import CostReviewIcon from './CostReviewIcon';
 import costReviewStyles from './cost-review.module.css';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
@@ -5309,53 +5308,53 @@ export default function MyInvoicesClient({
                 {manualCostWizardOpen && manualCostWizardStep === 3 ? (
                   <dl className={costReviewStyles.grid}>
                     <div className={costReviewStyles.asset}>
-                      <dt><BudgetDetailIcon kind="asset" />Asset</dt>
+                      <dt>Asset</dt>
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
                     <div>
-                      <dt><CostReviewIcon kind="supplier" />Supplier</dt>
+                      <dt>Supplier</dt>
                       <dd>{draft.supplierName.trim() || 'Not entered'}</dd>
                     </div>
                     <div>
-                      <dt><CostReviewIcon kind="invoice" />Invoice number</dt>
+                      <dt>Invoice number</dt>
                       <dd>{draft.invoiceNumber.trim() || 'Not entered'}</dd>
                     </div>
                     <div>
-                      <dt><CostReviewIcon kind="calendar" />Invoice date</dt>
+                      <dt>Invoice date</dt>
                       <dd>{formatDate(draft.invoiceDate)}</dd>
                     </div>
                     <div>
-                      <dt><CostReviewIcon kind="usage" />Usage</dt>
+                      <dt>Usage</dt>
                       <dd>{draft.usageMetric === 'none'
                         ? 'Not recorded'
                         : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
                     </div>
                     <div className={costReviewStyles.amount}>
-                      <dt><CostReviewIcon kind="subtotal" />Subtotal excl. VAT</dt>
+                      <dt>Subtotal excl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
                     </div>
                     <div className={costReviewStyles.amount}>
-                      <dt><CostReviewIcon kind="vat" />VAT amount</dt>
+                      <dt>VAT amount</dt>
                       <dd>{formatReviewMoney(manualCostVatValue)}</dd>
                     </div>
                     <div className={`${costReviewStyles.amount} ${costReviewStyles.total}`}>
-                      <dt><CostReviewIcon kind="total" />Total incl. VAT</dt>
+                      <dt>Total incl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
                     </div>
                     {draft.maintenanceWorkDone.trim() ? <div className={costReviewStyles.work}>
-                      <dt><CostReviewIcon kind="maintenance" />Maintenance work</dt>
+                      <dt>Maintenance work</dt>
                       <dd>{draft.maintenanceWorkDone}</dd>
                     </div> : null}
                     {draft.partsSupplied.trim() ? <div className={costReviewStyles.work}>
-                      <dt><CostReviewIcon kind="parts" />Parts supplied</dt>
+                      <dt>Parts supplied</dt>
                       <dd>{draft.partsSupplied}</dd>
                     </div> : null}
                     {draft.repairWorkDone.trim() ? <div className={costReviewStyles.work}>
-                      <dt><CostReviewIcon kind="repairs" />Repair work</dt>
+                      <dt>Repair work</dt>
                       <dd>{draft.repairWorkDone}</dd>
                     </div> : null}
                     {draft.notes.trim() ? <div className={costReviewStyles.work}>
-                      <dt><CostReviewIcon kind="notes" />Notes</dt>
+                      <dt>Notes</dt>
                       <dd>{draft.notes}</dd>
                     </div> : null}
 
