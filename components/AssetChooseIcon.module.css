@@ -1,0 +1,2 @@
+.tile.tile { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 2rem; width: 2rem; height: 2rem; padding: .375rem; border-radius: .6rem; background: var(--app-success-soft, #e5f3ec); color: var(--app-accent, #176346); pointer-events: none; }
+.tile.tile > .glyph { display: block; flex: none; width: 1.25rem; height: 1.25rem; margin: 0; transform: none; }

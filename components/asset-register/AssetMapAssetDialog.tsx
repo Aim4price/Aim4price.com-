@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../AssetChooseIcon';
 import AssetPickerDetail from '../AssetPickerDetail';
 
 import { useEffect, useId, useRef, useState } from 'react';
@@ -6,7 +7,6 @@ import { createPortal } from '../WebsitePortal';
 import { useLeadDialog } from '../leads/useLeadDialog';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import AssetSerialNumber from '../AssetSerialNumber';
-import ShareNextIcon from './ShareNextIcon';
 import picker from '../AssetPicker.module.css';
 import frame from './AssetMapRegisterDialog.module.css';
 import styles from './AssetMapAssetDialog.module.css';
@@ -48,7 +48,7 @@ export default function AssetMapAssetDialog({ assets, onSelect, onClose }: Props
       <div className={styles.list} data-asset-choice-list="true" aria-label="Saved assets">
         {visible.map(asset => <button key={asset.id} type="button" className={styles.asset} data-asset-choice-row="true" onClick={() => onSelect(asset.id)}>
           <span className={styles.copy} data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.subtitle}</small><AssetPickerDetail>{asset.register}</AssetPickerDetail><AssetSerialNumber value={asset.serial} /><small className={asset.mapped ? styles.mapped : styles.unmapped}>{asset.mapped ? 'Already mapped' : 'No location saved'}</small></span>
-          <ShareNextIcon />
+          <AssetChooseIcon />
         </button>)}
         {!visible.length && <div className={styles.empty}><strong>{assets.length ? 'No matching assets' : 'No saved assets yet'}</strong><p>{assets.length ? 'Try another name, register or serial number.' : 'Add an asset to your register before placing it on the map.'}</p>{query && <button type="button" className={frame.clear} onClick={() => setSearch('')}>Clear search</button>}</div>}
       </div>

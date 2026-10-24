@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 
 import AssetTrackingUsage from '../../components/asset-register/AssetTrackingUsage';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -18668,7 +18669,7 @@ export default function AssetRegisterClient({
                                   </div>
                                   <button type="button" className={styles.bulkFinanceChooseButton} onClick={() => setBulkFinanceAssetPickerOpen(true)}>
                                     <span>{bulkFinanceAssetIds.length} selected</span>
-                                    <strong>Choose assets</strong>
+                                    <strong>Choose assets</strong><AssetChooseIcon />
                                   </button>
                                   <div className={styles.bulkFinanceSelectedAssets}>
                                     {selectedBulkFinanceAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}

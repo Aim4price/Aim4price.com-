@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -547,7 +548,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                           <AssetPickerDetail>{assetPickerDetail(asset)}</AssetPickerDetail>
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
-                        <span data-asset-choice-value="true"><span className={pickerStyles.select}><i aria-hidden="true" /><strong>Select</strong></span></span>
+                        <span data-asset-choice-value="true"><AssetChooseIcon /></span>
                       </button>
                     ))}
                     {!filteredAssets.length ? <div className={styles.emptyState}>No matching included assets found.</div> : null}
