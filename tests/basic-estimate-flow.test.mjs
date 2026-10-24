@@ -256,7 +256,7 @@ test('year_condition remains inside the shared generic engine and does not fabri
 
 test('popularity, explicit extras and replacement-price confirmation are mandatory before Basic calculation', () => {
   assert.match(client, /if \(!popularityStepComplete\) return 'Choose a popularity rating from 1 to 5 stars\.'/);
-  assert.match(client, /if \(!basicExtraChoice\) return 'Confirm whether an extra is fitted\.'/);
+  assert.match(client, /if \(!basicExtraChoice\) return 'Confirm whether extras are fitted\.'/);
   assert.match(client, /None fitted/);
   assert.match(client, /Other extra/);
   assert.match(client, /Asset replacement price/);

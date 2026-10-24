@@ -1817,6 +1817,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [basicReplacementBandsLoading, setBasicReplacementBandsLoading] = useState(false);
   const [basicReplacementBandsError, setBasicReplacementBandsError] = useState('');
   const [basicExtraChoice, setBasicExtraChoice] = useState<BasicExtraChoice>('');
+  const [additionalBasicExtras, setAdditionalBasicExtras] = useState<Array<{id: string; name: string; price: string}>>([]);
   const [basicFamilyExtraReplacementPrice, setBasicFamilyExtraReplacementPrice] = useState('');
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
   const [familiesLoading, setFamiliesLoading] = useState(false);
@@ -2067,11 +2068,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ? basicReplacementEnteredPrice / (1 + VAT_RATE)
           : basicReplacementEnteredPrice
       );
-  const basicExtraReplacementPriceExVat = basicExtraChoice === 'family'
+  const primaryExtraReplacementPriceExVat = basicExtraChoice === 'family'
     ? parseMoneyInput(basicFamilyExtraReplacementPrice)
     : basicExtraChoice === 'other'
       ? parseMoneyInput(otherExtraReplacementPrice)
       : 0;
+  const basicExtras = useMemo(() => basicExtraChoice === 'family' || basicExtraChoice === 'other' ? [
+    { name: basicExtraChoice === 'family' ? basicFamilyExtra?.label ?? '' : normalizeText(otherExtraName), replacementPriceExVat: primaryExtraReplacementPriceExVat ?? 0 },
+    ...additionalBasicExtras.map(extra => ({name: normalizeText(extra.name), replacementPriceExVat: parseMoneyInput(extra.price) ?? 0})),
+  ] : [], [basicExtraChoice, basicFamilyExtra, otherExtraName, primaryExtraReplacementPriceExVat, additionalBasicExtras]);
+  const basicExtrasValid = basicExtras.length > 0 && basicExtras.every(extra => extra.name && Number.isFinite(extra.replacementPriceExVat) && extra.replacementPriceExVat > 0);
+  const basicExtraReplacementPriceExVat = basicExtras.reduce((total, extra) => total + extra.replacementPriceExVat, 0);
   const basicTotalReplacementPriceExVat = basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0
     ? basicBaseReplacementPriceExVat + (basicExtraReplacementPriceExVat ?? 0)
     : null;
@@ -2337,17 +2344,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             valuation_mode: selectedFamily?.valuationMode ?? '',
             basic_asset_replacement_price_ex_vat: basicBaseReplacementPriceExVat,
             basic_extra_choice: basicExtraChoice || 'none',
+            basic_extras: basicExtras,
+            basic_extra_count: basicExtras.length,
             ...(basicExtraChoice === 'family' && basicFamilyExtra
               ? {
                   basic_extra_key: basicFamilyExtra.key,
-                  basic_extra_name: basicFamilyExtra.label,
+                  basic_extra_name: basicExtras.map(extra => extra.name).join(', '),
                   basic_extra_replacement_price_ex_vat: basicExtraReplacementPriceExVat,
                 }
               : {}),
             ...(basicExtraChoice === 'other'
               ? {
                   basic_extra_key: 'other',
-                  basic_extra_name: normalizeText(otherExtraName),
+                  basic_extra_name: basicExtras.map(extra => extra.name).join(', '),
                   basic_extra_replacement_price_ex_vat: basicExtraReplacementPriceExVat,
                 }
               : {}),
@@ -2438,6 +2447,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     basicExtraChoice,
     basicFamilyExtra,
     basicExtraReplacementPriceExVat,
+    basicExtras,
     basicTotalReplacementPriceExVat,
     otherExtraName,
     basicUsageNotRequired,
@@ -3070,6 +3080,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setFlowMode('generic_specs');
       setBasicSpecLevel('');
       setBasicExtraChoice('');
+      setAdditionalBasicExtras([]);
       setBasicFamilyExtraReplacementPrice('');
       setOtherExtraEnabled(false);
       setOtherExtraName('');
@@ -3696,7 +3707,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!popularityStepComplete) return 'Choose a popularity rating from 1 to 5 stars.';
 
     if (basicEstimateActive) {
-      if (!basicExtraChoice) return 'Confirm whether an extra is fitted.';
+      if (!basicExtraChoice) return 'Confirm whether extras are fitted.';
+      if (basicExtraChoice !== 'none' && !basicExtrasValid) return 'Enter a name and positive replacement price for every extra.';
       if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
         return `Enter the replacement price for ${basicFamilyExtra?.label ?? 'the fitted extra'}, excluding VAT.`;
       }
@@ -5449,6 +5461,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setBasicReplacementBandsLoading(false);
     setBasicReplacementBandsError('');
     setBasicExtraChoice('');
+      setAdditionalBasicExtras([]);
     setBasicFamilyExtraReplacementPrice('');
     setFamilies([]);
     setFamilyKey('');
@@ -5683,6 +5696,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setFlowMode('generic_specs');
       setBasicSpecLevel('');
       setBasicExtraChoice('');
+      setAdditionalBasicExtras([]);
       setBasicFamilyExtraReplacementPrice('');
       setBasicReplacementPrice(null);
       setOtherExtraEnabled(false);
@@ -7818,18 +7832,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const currentDetailedSectionIndex = detailedAssessmentSections.findIndex((section) => section.label === currentDetailedSection);
     const currentDetailedSectionNumber = currentDetailedSectionIndex >= 0 ? currentDetailedSectionIndex + 1 : detailedAssessmentSections.length;
     const conditionReady = Boolean(conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete));
-    const basicExtrasComplete = Boolean(
-      basicExtraChoice === 'none'
-      || (basicExtraChoice === 'family' && basicFamilyExtra && basicExtraReplacementPriceExVat)
-      || (basicExtraChoice === 'other' && normalizeText(otherExtraName) && basicExtraReplacementPriceExVat),
-    );
-    const basicExtrasSummary = basicExtraChoice === 'none'
-      ? 'None fitted'
-      : basicExtraChoice === 'family'
-        ? basicFamilyExtra?.label ?? 'Family extra'
-        : basicExtraChoice === 'other'
-          ? normalizeText(otherExtraName) || 'Other extra'
-          : 'Choose fitted extras';
+    const basicExtrasComplete = basicExtraChoice === 'none' || basicExtrasValid;
+    const basicExtrasSummary = basicExtraChoice === 'none' ? 'None fitted'
+      : basicExtrasValid ? `${basicExtras.length} ${basicExtras.length === 1 ? 'extra' : 'extras'} · ${moneyExVat(basicExtraReplacementPriceExVat)}` : 'Confirm fitted extras';
 
     function openBasicConditionModal() {
       setConditionModalView('choose');
@@ -8222,6 +8227,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   aria-label="No fitted extras"
                   onClick={() => {
                     setBasicExtraChoice('none');
+                    setAdditionalBasicExtras([]);
                     setBasicFamilyExtraReplacementPrice('');
                     setOtherExtraEnabled(false);
                     setOtherExtraName('');
@@ -8244,6 +8250,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   onClick={() => {
                     if (basicExtraChoice === 'none') {
                       setBasicExtraChoice('');
+      setAdditionalBasicExtras([]);
                     }
                     setExtrasModalView('options');
                     setMessage('');
@@ -8274,7 +8281,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {!compactAppMode ? (
                   <>
                     <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3>
-                    <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Choose the fitted extra that applies, or add another.</p>
+                    <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Add fitted extras and their replacement prices.</p>
                   </>
                 ) : null}
               </div>
@@ -8314,7 +8321,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 }}
               >
                 {renderDetailIcon('extras')}<strong>Other extra</strong>
-                <span className={styles.choiceCardNote}>Add one other fitted extra</span>
+                <span className={styles.choiceCardNote}>Name a fitted extra</span>
               </button>
             </div>
 
@@ -8324,7 +8331,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <input
                   type="text"
                   inputMode="decimal"
-                  {...requiredProps(!basicExtraReplacementPriceExVat)}
+                  {...requiredProps(!primaryExtraReplacementPriceExVat)}
                   value={basicFamilyExtraReplacementPrice}
                   onChange={(event) => {
                     setBasicFamilyExtraReplacementPrice(event.target.value);
@@ -8333,7 +8340,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   }}
                   placeholder="e.g. 150 000"
                 />
-                {requiredHint(!basicExtraReplacementPriceExVat)}
+                {requiredHint(!primaryExtraReplacementPriceExVat)}
               </label>
             ) : null}
 
@@ -8373,6 +8380,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
+            {basicExtraChoice === 'family' || basicExtraChoice === 'other' ? <div className={styles.multipleExtras}>
+              <button type="button" className={styles.removeExtra} onClick={() => {
+                const [next, ...rest] = additionalBasicExtras;
+                setAdditionalBasicExtras(rest);
+                setBasicFamilyExtraReplacementPrice('');
+                setBasicExtraChoice(next ? 'other' : '');
+                setOtherExtraEnabled(Boolean(next));
+                setOtherExtraName(next?.name ?? '');
+                setOtherExtraReplacementPrice(next?.price ?? '');
+                resetResult();
+              }}>Remove first extra</button>
+              {additionalBasicExtras.map((extra, index) => <div key={extra.id} className={styles.extraEntry}>
+                <label className={styles.field}><span className={styles.fieldLabel}>Extra {index + 2} name</span>
+                  <input aria-label={`Extra ${index + 2} name`} value={extra.name} maxLength={100} {...requiredProps(!normalizeText(extra.name))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, name: event.target.value} : row)); resetResult(); }} />
+                  {requiredHint(!normalizeText(extra.name))}
+                </label>
+                <label className={styles.field}><span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
+                  <input aria-label={`Extra ${index + 2} replacement price`} inputMode="decimal" value={extra.price} placeholder="e.g. 25 000" {...requiredProps(!(parseMoneyInput(extra.price)! > 0))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, price: event.target.value} : row)); resetResult(); }} />
+                  {requiredHint(!(parseMoneyInput(extra.price)! > 0))}
+                </label>
+                <button type="button" className={styles.removeExtra} aria-label={`Remove extra ${index + 2}`} onClick={() => { setAdditionalBasicExtras(rows => rows.filter(row => row.id !== extra.id)); resetResult(); }}>Remove</button>
+              </div>)}
+              <button type="button" className={styles.secondaryButton} disabled={!basicExtrasValid} onClick={() => { setAdditionalBasicExtras(rows => [...rows, {id: crypto.randomUUID(), name: '', price: ''}]); resetResult(); }}>+ Add another extra</button>
+              <div className={styles.extrasTotal}><span>Total extras replacement price</span><strong>{moneyExVat(basicExtraReplacementPriceExVat)}</strong></div>
+            </div> : null}
+
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
             <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
               <button
@@ -8388,13 +8421,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button
                 type="button"
                 className={styles.primaryButton}
-                disabled={!basicExtraChoice || basicExtraChoice === 'none' || !basicExtraReplacementPriceExVat || (basicExtraChoice === 'family' && !basicFamilyExtra) || (basicExtraChoice === 'other' && !normalizeText(otherExtraName))}
+                disabled={!basicExtrasValid}
                 onClick={() => {
+                  if (!basicExtrasValid) { setMessage('Enter a name and positive replacement price for every extra.'); return; }
                   if (!basicExtraChoice || basicExtraChoice === 'none') {
                     setMessage('Choose a fitted extra, or go back and choose No extras.');
                     return;
                   }
-                  if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
+                  if (basicExtraChoice === 'family' && (!basicFamilyExtra || !primaryExtraReplacementPriceExVat)) {
                     setMessage(`Enter the replacement price for ${basicFamilyExtra?.label ?? 'the fitted extra'}, excluding VAT.`);
                     return;
                   }
@@ -8402,7 +8436,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     setMessage('Enter a name for the other fitted extra.');
                     return;
                   }
-                  if (basicExtraChoice === 'other' && !basicExtraReplacementPriceExVat) {
+                  if (basicExtraChoice === 'other' && !primaryExtraReplacementPriceExVat) {
                     setMessage('Enter the replacement price for the other fitted extra, excluding VAT.');
                     return;
                   }
