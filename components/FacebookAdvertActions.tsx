@@ -11,7 +11,11 @@ export function marketplaceShareCaption(listing: MarketplaceListing) {
   const price = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(content.brand.vatLabel === 'vat-included' ? content.askingPriceExVat * 1.15 : content.askingPriceExVat);
   const vat = content.brand.vatLabel === 'vat-included' ? 'VAT included' : content.brand.vatLabel === 'no-vat' ? 'No VAT' : '+ VAT';
   const phone = content.sellerPhone?.trim();
-  return [content.title, `${price} ${vat}`, [content.year, content.usage, content.condition].filter(Boolean).join(' · '), content.location,
+  const details = [content.year, content.usage, content.condition]
+    .filter(value => value && value.trim().toUpperCase() !== 'N/A');
+  const locations = (content.location || '').split(',').map(value => value.trim()).filter(Boolean);
+  const location = locations.filter((value, index) => locations.findIndex(other => other.toLowerCase() === value.toLowerCase()) === index).join(', ');
+  return [content.title, `${price} ${vat}`, details.join(' · '), location,
     phone && !/^\+27\s*00\s*000\s*0000$/.test(phone) ? `Contact for more information: **${phone}**` : content.brand.email ? `Contact for more information: ${content.brand.email}` : null,
   ].filter(Boolean).join('\n');
 }
@@ -108,7 +112,7 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
   return createPortal(<dialog ref={ref} className={styles.dialog} aria-labelledby="facebook-share-title" onCancel={onClose} onKeyDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
     <header className={styles.header}><div><h2 id="facebook-share-title">{isWhatsApp ? 'Share on WhatsApp' : 'Share on Facebook'}</h2><div className={styles.assetHeading}><strong>{asset.title}</strong><p><span>Year Model: {asset.year === 'N/A' ? 'Not recorded' : asset.year || 'Not recorded'}</span><span>Usage: {asset.usage || 'Not recorded'}</span><span>Condition: {asset.condition || 'Not recorded'}</span></p></div></div><button type="button" className={styles.close} data-modal-close="true" aria-label="Close sharing" onClick={onClose}>×</button></header>
     <div className={styles.body}>
-      {(!isWhatsApp || mode) && <div className={styles.stageLabel}><Icon kind={isWhatsApp ? mode === 'ad' ? 'photo' : mode === 'details' ? 'details' : 'share' : step === 1 ? 'details' : 'groups'} /><span>{isWhatsApp ? mode === 'ad' ? 'Send Ad' : 'Send Marketplace Ad Details' : step === 1 ? 'Step 1 of 2 · Asset details' : 'Step 2 of 2 · Choose destination'}</span></div>}
+      {isWhatsApp && mode && <div className={styles.stageLabel}><Icon kind={mode === 'ad' ? 'photo' : 'details'} /><span>{mode === 'ad' ? 'Send Ad' : 'Send Marketplace Ad Details'}</span></div>}
       {isWhatsApp && !mode ? <div className={styles.options}>
         <a href={`https://wa.me/?text=${encodeURIComponent(`${marketplaceListingToAdContent(listing).title}\n${whatsappUrl}`)}`} target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="link" /></span><span className={styles.optionCopy}><strong>Send Aim4price Link</strong><small>Open the listing inside Aim4price.</small></span></a>
         <button type="button" onClick={() => void prepareFiles('ad')}><span className={styles.optionIcon}><Icon kind="photo" /></span><span className={styles.optionCopy}><strong>Send Ad</strong><small>Share the ad image created by Aim4price.</small></span></button>
@@ -118,12 +122,12 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
       <section className={styles.photoPanel} aria-label="Advert photos"><div className={styles.sectionHeading}><span><Icon kind="photo" />Photos</span> <small>{photos.length} available</small></div><div className={styles.photos}>{photos.map((src, index) => <a key={src} href={src} target="_blank" rel="noopener noreferrer" aria-label={`Open photo ${index + 1} to save`}><img src={src} alt={`Advert photo ${index + 1}`} /></a>)}</div>
       {!isWhatsApp && <button type="button" className={styles.download} disabled={busy || !photos.length} onClick={() => void downloadPhotos()}><Icon kind="download" />{busy ? 'Downloading…' : photos.length ? 'Download photos' : 'No photos available'}</button>}
       </section><section className={styles.captionPanel}><div className={styles.captionHeader}><label htmlFor="facebook-advert-caption"><Icon kind="details" />Caption</label><button type="button" onClick={() => void copyCaption()}><Icon kind="copy" />Copy caption</button></div>
-      <textarea id="facebook-advert-caption" value={caption} onChange={event => setCaption(event.target.value)} rows={6} />
+      <textarea id="facebook-advert-caption" value={caption} onChange={event => setCaption(event.target.value)} rows={5} />
       </section></div>}
 
       {!isWhatsApp && step === 2 && <>
         <div className={styles.destinations}><a href="https://www.facebook.com/marketplace/" target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="marketplace" /></span><span className={styles.optionCopy}><strong>Marketplace</strong><small>Create a listing</small></span></a><a href="https://www.facebook.com/groups/" target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="groups" /></span><span className={styles.optionCopy}><strong>Groups</strong><small>Post to your groups</small></span></a></div>
-        <small>Facebook opens in a new tab. Upload your photos and paste the caption to publish.</small>
+        <small>Upload your photos and paste your caption on Facebook.</small>
 
       </>}
       {isWhatsApp && mode && <>
@@ -140,8 +144,8 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
       {feedback && <p role="status">{feedback}</p>}
     </div>
     {(!isWhatsApp || mode) && <footer className={styles.footer}>
-      {(!isWhatsApp && step === 2) || mode ? <button type="button" disabled={busy} onClick={() => { if (isWhatsApp) { setMode(null); setFiles([]); } else setStep(1); setFeedback(''); }}>Back</button> : <small>Prepare your photos and caption.</small>}
-      {!isWhatsApp && step === 1 && <button type="button" className={styles.primary} onClick={() => { setStep(2); setFeedback(''); }}>Continue</button>}
+      {(!isWhatsApp && step === 2) || mode ? <button type="button" disabled={busy} onClick={() => { if (isWhatsApp) { setMode(null); setFiles([]); } else setStep(1); setFeedback(''); }}>Back</button> : null}
+      {!isWhatsApp && step === 1 && <button type="button" className={styles.primary} onClick={() => { setStep(2); setFeedback(''); }}>Choose destination</button>}
     </footer>}
   </dialog>, document.body);
 }
