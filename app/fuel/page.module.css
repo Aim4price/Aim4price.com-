@@ -7797,3 +7797,110 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Match the wide Cost Ledger entry surface without changing the website canvas. */
+.fuelSlipFlowBackdrop .accountFuelModal.manualFuelSlipModal {
+  width: min(1560px, var(--website-dialog-reference-width, 100%)) !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid > label > .fuelEntryLabel,
+.accountFuelModal.manualFuelSlipModal .fuelWorkFieldGroup > .fuelEntryLabel {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #274f40;
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.fuelSlipFlowBackdrop .manualFuelSlipModal .fuelUsageGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails {
+  margin-top: .3rem;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary {
+  padding: .75rem 1rem;
+  border-radius: .85rem;
+  cursor: pointer;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary:hover {
+  box-shadow: inset 0 0 0 1px rgba(40, 118, 90, .35);
+}
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .fuelSlipFlowBackdrop .manualFuelSlipModal .fuelUsageGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Manual fuel inputs follow the Cost Ledger's inset icons and quiet labels. */
+.accountFuelModal.manualFuelSlipModal .fuelSlipWizardPanel {
+  padding: 1.15rem !important;
+  gap: 1.1rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid {
+  gap: 1.25rem 1.65rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipWizardHeading {
+  grid-template-columns: minmax(0, 1fr);
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipWizardHeading > :is(h3, p) {
+  grid-column: 1;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid > label > span:first-child,
+.accountFuelModal.manualFuelSlipModal .fuelWorkFieldGroup > .fuelEntryLabel {
+  color: var(--app-text, #234b3d) !important;
+  font-size: .95rem !important;
+  font-weight: 700 !important;
+  letter-spacing: normal !important;
+  text-transform: none;
+}
+.fuelEntryInput {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput > svg {
+  position: absolute;
+  inset-inline-start: 1rem;
+  top: 1rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  color: var(--app-muted, #739083);
+  pointer-events: none;
+  z-index: 1;
+}
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput > :is(input, textarea),
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput > div > input {
+  width: 100%;
+  padding-inline-start: 3.1rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid :is(input, textarea),
+.accountFuelModal.manualFuelSlipModal .invoiceCurrencyInput {
+  border: 1px solid var(--app-line, #d4e2da) !important;
+  background: var(--app-surface-soft, #edf5f0) !important;
+  color: var(--app-text, #234b3d);
+  border-radius: 1rem;
+  font-weight: 400;
+  text-transform: none;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid input,
+.accountFuelModal.manualFuelSlipModal .invoiceCurrencyInput {
+  min-height: 3.4rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .invoiceCurrencyInput input {
+  min-height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+.accountFuelModal.manualFuelSlipModal :is(input, textarea)::placeholder {
+  color: var(--app-muted, #637d71) !important;
+  font-weight: 400 !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid label.fuelSlipFieldMissing :is(input, textarea),
+.accountFuelModal.manualFuelSlipModal .formGrid label.fuelSlipFieldMissing .invoiceCurrencyInput,
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput input[aria-invalid="true"] {
+  border-color: #bf3b35 !important;
+}

@@ -41,7 +41,7 @@ import costStyles from '../my-invoices/page.module.css';
 import { appRealmForPath } from '../../lib/app-realm';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
-import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
+import { fuelSlipDecimalToInput, formatFuelSlipPriceInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
 
 type FuelStorageStatus = 'active' | 'archived';
@@ -581,8 +581,13 @@ function StorageFieldIcon({ kind }: { kind: 'name' | 'fuel' | 'capacity' | 'stoc
   return <IconBase className={styles.storageFieldIcon} strokeWidth="1.7">{paths[kind]}</IconBase>;
 }
 
-function FuelSlipDetailIcon({kind}: {kind: 'target' | 'card' | 'work' | 'updated' | 'reference' | 'transaction'}) {
+function FuelSlipDetailIcon({kind}: {kind: 'target' | 'card' | 'work' | 'updated' | 'reference' | 'transaction' | 'supplier' | 'calendar' | 'operator' | 'gauge'}) {
   const paths = {
+    supplier: <><path d="M3 10h18L19 3H5zM5 10v11h14V10M9 21v-7h6v7" /></>,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3" /></>,
+    operator: <><circle cx="12" cy="7" r="4" /><path d="M4 21v-3a8 8 0 0 1 16 0v3Z" /></>,
+    gauge: <><path d="M4 19a10 10 0 1 1 16 0ZM12 14l5-6M6 12H4M12 6V4M20 12h-2" /></>,
+
     target: <><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M9 6V3h6v3M8 11h8M8 15h5"/></>,
     card: <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></>,
     work: <><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V3h8v4M3 12h18M10 12v3h4v-3"/></>,
@@ -2145,6 +2150,8 @@ export default function FuelClient({
     const timer = window.setTimeout(() => {
       const element = document.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[data-fuel-slip-field="${fuelSlipFocusField}"]`);
       if (element) {
+        const disclosure = element.closest('details');
+        if (disclosure) disclosure.open = true;
         element.focus({ preventScroll: false });
         element.scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
@@ -2593,7 +2600,7 @@ export default function FuelClient({
   }
 
   function setFuelSlipNumericField(field: 'litres' | 'pricePerLitre' | 'totalAmount', value: string) {
-    setFuelSlipDraft((current) => ({ ...current, [field]: value }));
+    setFuelSlipDraft((current) => ({ ...current, [field]: field === 'pricePerLitre' ? formatFuelSlipPriceInput(value) : value }));
   }
 
   function handleFuelSlipCardLast4Change(value: string) {
@@ -3207,39 +3214,45 @@ export default function FuelClient({
       <section className={styles.invoiceFormCard}>
         <div className={styles.formGrid}>
           <label>
-            <span>Supplier / garage</span>
-            <input value={fuelSlipDraft.supplierName} onChange={(event) => setFuelSlipField('supplierName', event.target.value)} placeholder="Supplier name" />
+            <span className={styles.fuelEntryLabel}>Supplier / garage</span>
+            <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="supplier" /><input value={fuelSlipDraft.supplierName} onChange={(event) => setFuelSlipField('supplierName', event.target.value)} placeholder="Supplier name" /></span>
           </label>
           <label className={fuelSlipFieldClassName('documentDate')}>
-            <span>Slip date</span>
+            <span className={styles.fuelEntryLabel}>Slip date</span>
             <DateInput value={fuelSlipDraft.documentDate} onValueChange={(value) => setFuelSlipField('documentDate', value)} aria-invalid={fuelSlipAriaInvalid('documentDate')} data-fuel-slip-field="documentDate" />
             {fuelSlipRequiredHint('documentDate')}
           </label>
           <label className={fuelSlipFieldClassName('fuelType')}>
-            <span>Fuel type</span>
-            <input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType" />
+            <span className={styles.fuelEntryLabel}>Fuel type</span>
+            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="fuel" /><input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType" /></span>
             {fuelSlipRequiredHint('fuelType')}
           </label>
           <label className={fuelSlipFieldClassName('litres')}>
-            <span>Litres</span>
-            <input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" aria-invalid={fuelSlipAriaInvalid('litres')} data-fuel-slip-field="litres" />
+            <span className={styles.fuelEntryLabel}>Litres</span>
+            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="capacity" /><input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" aria-invalid={fuelSlipAriaInvalid('litres')} data-fuel-slip-field="litres" /></span>
             {fuelSlipRequiredHint('litres', 'Required: must be greater than 0')}
           </label>
           <label className={styles.invoiceCurrencyField}>
-            <span>Price per litre</span>
+            <span className={styles.fuelEntryLabel}>Price per litre</span>
             <div className={styles.invoiceCurrencyInput}>
               <span aria-hidden="true">R</span>
               <input type="text" inputMode="decimal" value={fuelSlipDraft.pricePerLitre} onChange={(event) => setFuelSlipNumericField('pricePerLitre', event.target.value)} placeholder="19.83" />
             </div>
           </label>
           <label className={fuelSlipFieldClassName('totalAmount', styles.invoiceCurrencyField)}>
-            <span>Total amount</span>
+            <span className={styles.fuelEntryLabel}>Total amount</span>
             <div className={styles.invoiceCurrencyInput}>
               <span aria-hidden="true">R</span>
               <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipNumericField('totalAmount', event.target.value)} placeholder="500.00" aria-invalid={fuelSlipAriaInvalid('totalAmount')} data-fuel-slip-field="totalAmount" />
             </div>
             {fuelSlipRequiredHint('totalAmount')}
           </label>
+
+        </div>
+
+        <details className={styles.fuelSlipMoreDetails}>
+          <summary>Payment references &amp; VAT (optional)</summary>
+          <div className={styles.formGrid}>
           <label>
             <span>Card last 4</span>
             <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{0,4}" placeholder="Last 4 only" />
@@ -3252,11 +3265,6 @@ export default function FuelClient({
             <span>Transaction Number</span>
             <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Optional" />
           </label>
-        </div>
-
-        <details className={styles.fuelSlipMoreDetails}>
-          <summary>VAT and payment metadata</summary>
-          <div className={styles.formGrid}>
             <label>
               <span>Supplier VAT number</span>
               <input value={fuelSlipDraft.supplierVatNumber} onChange={(event) => setFuelSlipField('supplierVatNumber', event.target.value)} placeholder="Optional" />
@@ -3321,49 +3329,57 @@ export default function FuelClient({
       <section className={styles.invoiceFormCard}>
         {usageHelp ? <p className={styles.fuelSlipHelperText}>{usageHelp}</p> : null}
 
-        <div className={styles.formGrid}>
+        <div className={`${styles.formGrid} ${styles.fuelUsageGrid}`}>
           {isAssetSlip && showFuelSlipOdometer ? (
             <label className={fuelSlipFieldClassName('odometerReading')}>
-              <span>Current km / odometer</span>
-              <input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" aria-invalid={fuelSlipAriaInvalid('odometerReading')} data-fuel-slip-field="odometerReading" />
+              <span className={styles.fuelEntryLabel}>Current km / odometer</span>
+              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="gauge" /><input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" aria-invalid={fuelSlipAriaInvalid('odometerReading')} data-fuel-slip-field="odometerReading" /></span>
               {fuelSlipRequiredHint('odometerReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
             </label>
           ) : null}
           {isAssetSlip && showFuelSlipHours ? (
             <label className={fuelSlipFieldClassName('hourMeterReading')}>
-              <span>Current hours</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" aria-invalid={fuelSlipAriaInvalid('hourMeterReading')} data-fuel-slip-field="hourMeterReading" />
+              <span className={styles.fuelEntryLabel}>Current hours</span>
+              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="updated" /><input type="text" inputMode="decimal" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" aria-invalid={fuelSlipAriaInvalid('hourMeterReading')} data-fuel-slip-field="hourMeterReading" /></span>
               {fuelSlipRequiredHint('hourMeterReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
             </label>
           ) : null}
           <label className={isAssetSlip ? fuelSlipFieldClassName('operatorName') : undefined}>
-            <span>Operator / manager name</span>
-            <input value={fuelSlipDraft.operatorName} onChange={(event) => setFuelSlipField('operatorName', event.target.value)} placeholder="Who captured or approved this slip" aria-invalid={isAssetSlip ? fuelSlipAriaInvalid('operatorName') : undefined} data-fuel-slip-field="operatorName" />
+            <span className={styles.fuelEntryLabel}>Operator / manager name</span>
+            <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="operator" /><input value={fuelSlipDraft.operatorName} onChange={(event) => setFuelSlipField('operatorName', event.target.value)} placeholder="Name of operator / manager" aria-invalid={isAssetSlip ? fuelSlipAriaInvalid('operatorName') : undefined} data-fuel-slip-field="operatorName" /></span>
             {isAssetSlip ? fuelSlipRequiredHint('operatorName') : null}
           </label>
           {isAssetSlip ? (
             <>
-              <div className={`${styles.fuelWorkFieldGroup} ${fuelSlipFieldClassName('activityText')}`}>
-                <span>Activity / reason for fuel</span>
-                <FuelWorkField asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
+              <div className={`${styles.fuelWorkFieldGroup} ${styles.fuelSlipFullField} ${fuelSlipFieldClassName('activityText')}`}>
+                <span className={styles.fuelEntryLabel}>Activity / reason for fuel</span>
+                <div className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="work" /><FuelWorkField asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} /></div>
                 {fuelSlipRequiredHint('activityText')}
               </div>
+            </>
+          ) : null}
+
+        </div>
+        <details className={styles.fuelSlipMoreDetails}>
+          <summary>Location, fuel level &amp; notes (optional)</summary>
+          <div className={styles.formGrid}>
+            {isAssetSlip ? (<>
               <label className={fuelSlipFieldClassName('workAreaText')}>
-                <span>Where / direction / work area (optional)</span>
-                <input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" />
+                <span className={styles.fuelEntryLabel}>Where / direction / work area (optional)</span>
+                <span className={styles.fuelEntryInput}><StorageFieldIcon kind="location" /><input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" /></span>
                 {fuelSlipRequiredHint('workAreaText')}
               </label>
               <label>
-                <span>Asset fuel percentage after fill</span>
-                <input type="text" inputMode="numeric" value={fuelSlipDraft.assetFuelPercentAfter} onChange={(event) => setFuelSlipField('assetFuelPercentAfter', event.target.value.replace(/[^0-9]/g, '').slice(0, 3))} placeholder="0 - 100" />
+                <span className={styles.fuelEntryLabel}>Asset fuel percentage after fill</span>
+                <span className={styles.fuelEntryInput}><StorageFieldIcon kind="stock" /><input type="text" inputMode="numeric" value={fuelSlipDraft.assetFuelPercentAfter} onChange={(event) => setFuelSlipField('assetFuelPercentAfter', event.target.value.replace(/[^0-9]/g, '').slice(0, 3))} placeholder="0 - 100" /></span>
               </label>
-            </>
-          ) : null}
+            </>) : null}
           <label className={styles.fuelSlipFullField}>
-            <span>Optional note</span>
-            <textarea value={fuelSlipDraft.note} onChange={(event) => setFuelSlipField('note', event.target.value)} placeholder="Optional note for this fuel slip" rows={3} />
+            <span className={styles.fuelEntryLabel}>Optional note</span>
+            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="notes" /><textarea value={fuelSlipDraft.note} onChange={(event) => setFuelSlipField('note', event.target.value)} placeholder="Optional note for this fuel slip" rows={3} /></span>
           </label>
-        </div>
+          </div>
+        </details>
       </section>
     );
   }
@@ -4443,11 +4459,12 @@ export default function FuelClient({
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
               <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
                 <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
-                  <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>
                   <h3>{fuelSlipFormPage === 'details' ? 'Add the slip details' : 'Add usage and work details'}</h3>
                   <p>{fuelSlipFormPage === 'details'
-                    ? 'Capture the supplier, date, fuel and totals.'
-                    : 'Record the reading, operator and work context.'}</p>
+                    ? 'Enter the fuel purchase details.'
+                    : selectedFuelSlipTargetType === 'asset'
+                      ? 'Add the current reading, operator and activity, then save.'
+                      : 'Add the manager name or a note, then save.'}</p>
                 </div>
                 {renderFuelSlipValidationNotice()}
                 {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
@@ -4479,7 +4496,6 @@ export default function FuelClient({
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
               <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
                 <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
-                  <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>
                   <h3>{fuelSlipFormPage === 'details' ? 'Check the slip details' : 'Check usage and work details'}</h3>
                   <p>{fuelSlipFormPage === 'details'
                     ? 'Confirm the supplier, date, fuel and totals.'

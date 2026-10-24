@@ -208,3 +208,13 @@ export function reconcileFuelSlipNumbers(input: FuelSlipNumericFields): FuelSlip
     mismatch: false,
   };
 }
+
+/** Format typed rates without changing imported/existing values or other amounts. */
+export function formatFuelSlipPriceInput(value: string): string {
+  const clean = value.replace(/[^0-9.,]/g, '');
+  const separator = clean.search(/[.,]/);
+  if (separator >= 0) {
+    return `${clean.slice(0, separator)}.${clean.slice(separator + 1).replace(/[.,]/g, '').slice(0, 4)}`;
+  }
+  return clean.length > 2 ? `${clean.slice(0, 2)}.${clean.slice(2, 6)}` : clean;
+}
