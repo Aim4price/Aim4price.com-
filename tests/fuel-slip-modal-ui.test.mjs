@@ -211,3 +211,33 @@ test('manager and two-step wizard stay usable on desktop and mobile viewports', 
   assert.match(redesignStyles, /\.fuelSlipManagerFilterModal \.fuelSlipFilterGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
+
+// Exercise the rate formatter under the same Node 20 runtime as CI.
+import ts from 'typescript';
+import vm from 'node:vm';
+const numberExports = {};
+vm.runInNewContext(ts.transpileModule(read('lib/fuel-slip-number.ts'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText, { exports: numberExports });
+
+test('typed and pasted fuel rates insert a decimal after two digits', () => {
+  const format = numberExports.formatFuelSlipPriceInput;
+  let typed = '';
+  for (const digit of '3660') typed = format(typed + digit);
+  assert.equal(typed, '36.60');
+  for (const [input, expected] of [
+    ['3660', '36.60'], ['36,60', '36.60'], ['36.60', '36.60'],
+    ['', ''], ['3', '3'], ['36', '36'], ['36.', '36.'],
+    ['36.6', '36.6'], ['9,50', '9.50'], ['R 36,60', '36.60'],
+    ['19.8345', '19.8345'], ['0.50', '0.50'],
+  ]) assert.equal(format(input), expected, input);
+  assert.equal(numberExports.parseFuelSlipDecimal(format('3660'), 4), 36.6);
+});
+
+test('manual capture exposes six main purchase fields and no file input', () => {
+  const fields = sliceBetween(client, 'function renderFuelSlipDetailsFields()', 'function renderFuelSlipExtraFields()');
+  assert.equal((fields.split('<details')[0].match(/<label[ >]/g) ?? []).length, 6);
+  const allFields = fields + sliceBetween(client, 'function renderFuelSlipExtraFields()', 'const fuelSlipResults');
+  assert.doesNotMatch(allFields + manualModal, /type="file"|CaptureUploadDropzone|documentFileUrl/);
+  assert.match(allFields, /Payment references &amp; VAT \(optional\)/);
+});

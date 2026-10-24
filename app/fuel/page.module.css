@@ -7797,3 +7797,45 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Match the wide Cost Ledger entry surface without changing the website canvas. */
+.fuelSlipFlowBackdrop .accountFuelModal.manualFuelSlipModal {
+  width: min(1560px, var(--website-dialog-reference-width, 100%)) !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid > label > .fuelEntryLabel,
+.accountFuelModal.manualFuelSlipModal .fuelWorkFieldGroup > .fuelEntryLabel {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  color: #274f40;
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.3;
+}
+.fuelEntryLabel > svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 1.2rem;
+  color: #528772;
+}
+.fuelSlipFlowBackdrop .manualFuelSlipModal .fuelUsageGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails {
+  margin-top: .3rem;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary {
+  padding: .75rem 1rem;
+  border-radius: .85rem;
+  cursor: pointer;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipMoreDetails > summary:hover {
+  box-shadow: inset 0 0 0 1px rgba(40, 118, 90, .35);
+}
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .fuelSlipFlowBackdrop .manualFuelSlipModal .fuelUsageGrid {
+    grid-template-columns: 1fr;
+  }
+}
