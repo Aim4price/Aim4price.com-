@@ -162,6 +162,15 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
       assert.deepEqual(replay.completed.maintenanceWork, customWork);
     }
     assert.equal((await pg.query('select count(*)::int as n from asset_maintenance_records where generated_from_maintenance_id=$1', [endedId])).rows[0].n, 0);
+    // Removing maintenance preserves its details and includes it only in report queries.
+    await assert.rejects(mod.cancelAssetMaintenanceRecord('other-owner', endedId), /MAINTENANCE_NOT_FOUND/);
+    await mod.cancelAssetMaintenanceRecord(owner, endedId);
+    assert.ok(!(await mod.listAssetMaintenanceRecords(owner)).some(record => record.id === endedId));
+    const retained = (await mod.listAssetMaintenanceRecords(owner, { includeCancelled: true })).find(record => record.id === endedId);
+    assert.equal(retained.status, 'cancelled');
+    assert.deepEqual(retained.maintenanceWork, customWork);
+    assert.ok(retained.completedAtIso);
+    assert.ok(!(await mod.listAssetMaintenanceRecords('other-owner', { includeCancelled: true })).some(record => record.id === endedId));
     // The same saved schedule must use the latest asset meter on every read.
     const meterId = '66666666-6666-4666-8666-666666666666';
     await pg.query(`insert into asset_maintenance_records(id,user_id,asset_register_item_id,maintenance_type,trigger_type,status,title,due_usage,usage_metric) values($1,$2,$3,'service','usage','upcoming','Meter service',1000,'hours')`, [meterId, owner, assetId]);

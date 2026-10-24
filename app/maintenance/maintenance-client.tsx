@@ -803,6 +803,7 @@ export default function MaintenanceClient({
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
   const [recordPendingComplete, setRecordPendingComplete] = useState<MaintenanceRecord | null>(null);
+  const [stopFutureRepeats, setStopFutureRepeats] = useState(false);
   const [recordPendingQuickClear, setRecordPendingQuickClear] = useState<MaintenanceRecord | null>(null);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
@@ -1163,6 +1164,7 @@ export default function MaintenanceClient({
 
   function openQuickClear(record: MaintenanceRecord) {
     setNotice(null);
+    setStopFutureRepeats(false);
     setRecordPendingQuickClear(record);
     setModalMode('quick-clear');
   }
@@ -1229,6 +1231,7 @@ export default function MaintenanceClient({
           status: 'done',
           confirmedComplete: true,
           quickComplete: true,
+          continueSchedule: !stopFutureRepeats,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
@@ -1242,6 +1245,8 @@ export default function MaintenanceClient({
         type: 'success',
         text: record.recurringEnabled && payload.nextRecord
           ? `Maintenance marked completed. The next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+          : stopFutureRepeats && record.recurringEnabled
+          ? 'Maintenance marked completed. Future repeats have stopped.'
           : 'Maintenance marked completed.',
       });
       closeModal();
@@ -1278,7 +1283,7 @@ export default function MaintenanceClient({
       }
 
       applyPayload(payload);
-      setNotice({ type: 'success', text: 'Maintenance record deleted.' });
+      setNotice({ type: 'success', text: 'Removed from maintenance. The record is kept in reports.' });
       closeModal();
     } catch (error) {
       setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Maintenance record could not be deleted.' });
@@ -1522,7 +1527,7 @@ export default function MaintenanceClient({
               <button className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update maintenance details.</small></span></button>
               {managedRecord.status === 'upcoming' ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Mark as completed</strong><small className={umbrellaStyles.menuOptionSubtitle}>Save completion without extra details.</small></span></button> : null}
               <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 7 1 1 2-2M13 8h4m-4 6h4" /></svg></i><span><strong>Download checklist</strong><small className={umbrellaStyles.menuOptionSubtitle}>Choose PDF checklist items for this asset.</small></span></button>
-              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this maintenance record.</small></span></button>
+              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove from maintenance. Keep in reports.</small></span></button>
                 </div>
               </div>
             </div>
@@ -1761,7 +1766,10 @@ export default function MaintenanceClient({
                 Confirm only if the work is finished. This saves a basic completion record for today, without extra details.
               </p>
               {recordPendingQuickClear.triggerType === 'usage' ? <p className={styles.maintenanceQuickClearNote}>The current saved usage reading will be used.</p> : null}
-              {recordPendingQuickClear.recurringEnabled ? <p className={styles.maintenanceQuickClearNote}>Your recurring schedule will continue and the next maintenance record will be created automatically.</p> : null}
+              {recordPendingQuickClear.recurringEnabled ? <label className={styles.repeatChoice}>
+                <input type="checkbox" checked={stopFutureRepeats} disabled={busyCompleteId === recordPendingQuickClear.id} onChange={(event) => setStopFutureRepeats(event.target.checked)} />
+                <span><strong>Stop future repeats</strong><small>{stopFutureRepeats ? 'Save this completion without scheduling another. History stays in reports.' : 'Leave unchecked to create the next maintenance automatically.'}</small></span>
+              </label> : null}
               {notice?.type === 'error' ? <p role="alert">{notice.text}</p> : null}
               <div className={styles.deleteRecordSummary}>
                 <strong>{cleanMaintenanceAssetTitle(recordPendingQuickClear.assetTitle)}</strong>
@@ -1807,7 +1815,7 @@ export default function MaintenanceClient({
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.deleteConfirmBody}>
-              <p>This maintenance record will be permanently removed, including its saved schedule, assignment and notes.</p>
+              <p>This removes the record from the maintenance flow and cancels this scheduled work. It stays in reports as cancelled, with its saved details. Previous maintenance history is kept.</p>
               <div className={styles.deleteRecordSummary}>
                 <span>Selected maintenance record</span>
                 <strong>{recordPendingDelete.assetTitle}</strong>
