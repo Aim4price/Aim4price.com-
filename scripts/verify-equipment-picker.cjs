@@ -103,7 +103,16 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('135 matching asset types'));
  await page.click('[aria-label="Filter by category"]');
  assert.equal(await page.$$eval('[role=option] > span:first-child',els=>els.some(e=>e.textContent==='Feeding')),false,'Categories without search matches are omitted');
- await click('Animal Feed Equipment');
+ await page.type('[aria-label="Search categories"]','no-such-category');
+ await page.waitForFunction(()=>document.body.textContent.includes('No matching categories.'));
+ assert.equal(await page.$$eval('[role=option]',els=>els.length),1,'All categories remains available');
+ await page.$eval('[aria-label="Search categories"]',el=>{el.select()});
+ await page.keyboard.type('animal');
+ await page.waitForFunction(()=>document.querySelectorAll('[role=option]').length===2);
+ assert.equal(await page.$eval('[aria-label="Search categories"]',el=>el.value),'animal','Typing retains focus and search text');
+ await page.keyboard.press('ArrowDown');
+ await page.keyboard.press('End');
+ await page.keyboard.press('Enter');
  assert.equal(await page.$eval('[role=dialog] input',el=>el.value),'Equipment','Category selection preserves search');
  await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('9 matching asset types'));
  await page.click('[aria-label="Filter by category"]');await click('All categories');await click('Clear family search');

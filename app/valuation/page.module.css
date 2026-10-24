@@ -15507,3 +15507,7 @@
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .lifetimeModal .lifetimeSecondary { grid-template-columns: 1fr; gap: .65rem; }
 }
+
+/* Keep asset selection inputs as visible as Brand & Model. */
+.equipmentPickerCard .searchInput,
+.equipmentPickerCard .equipmentDropdownTrigger { background: #edf5f0; border-color: #c4dcd0; color: #244f3f; }
