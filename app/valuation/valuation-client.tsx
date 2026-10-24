@@ -8273,7 +8273,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
 
       return (
-        <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose fitted extras">
+        <div className={`${styles.detailsModalOverlay} ${styles.extrasEditorOverlay}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose fitted extras">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
           <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal} ${styles.extrasEditorModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -8408,7 +8408,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <button type="button" className={styles.removeExtra} aria-label={`Remove extra ${index + 2}`} onClick={() => { setAdditionalBasicExtras(rows => rows.filter(row => row.id !== extra.id)); resetResult(); }} title="Remove extra"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7" /></svg></button>
               </div>)}
               <button type="button" className={styles.secondaryButton} disabled={!basicExtrasValid} onClick={() => { setAdditionalBasicExtras(rows => [...rows, {id: crypto.randomUUID(), name: '', price: ''}]); resetResult(); }}>+ Add another extra</button>
-              <div className={styles.extrasTotal}><span>Extras total</span><strong>{moneyExVat(basicExtraReplacementPriceExVat)}</strong></div>
             </div> : null}
 
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
