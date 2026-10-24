@@ -92,6 +92,7 @@ import {
 } from '../../lib/marketplace-ad-renderer';
 import {
   type GeneralSaleabilityInput,
+  type SaleabilityRefinementAnswers,
 } from '../../lib/saleability';
 
 const valuationConditionOptions = [...conditionOptions, { key: 'unspecified' as const, label: 'Not specified' }];
@@ -376,6 +377,7 @@ type GenericValuationApiResponse = {
 };
 
 type SaveValuationRunApiResponse = {
+  warning?: string;
   ok: boolean;
   runId?: number;
   assetId?: string;
@@ -1954,9 +1956,44 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
   const [saleabilityOpen, setSaleabilityOpen] = useState(false);
+  const [saveMarketChoice, setSaveMarketChoice] = useState<'prompt' | 'calculating' | null>(null);
+  const [completedMarketAssessment, setCompletedMarketAssessment] = useState<{ answers: SaleabilityRefinementAnswers; result: typeof resultState; value: number | null } | null>(null);
+  const [savedMarketWarning, setSavedMarketWarning] = useState<{ message: string; href: string } | null>(null);
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
   const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
+  useEffect(() => {
+    if (saveMarketChoice !== 'prompt' && !savedMarketWarning) return;
+    const dialog = document.querySelector<HTMLElement>(savedMarketWarning
+      ? '[aria-labelledby="market-save-warning"]' : '[aria-labelledby="market-save-title"]');
+    const previous = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    dialog?.querySelector<HTMLElement>('button')?.focus({ preventScroll: true });
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (savedMarketWarning) setSavedMarketWarning(null);
+        else { setSaveMarketChoice(null); setFinalSaveIntent(null); }
+      }
+      if (event.key !== 'Tab') return;
+      const buttons = Array.from(dialog?.querySelectorAll<HTMLElement>('button:not(:disabled)') ?? []);
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (!first) return;
+      if (event.shiftKey && (document.activeElement === first || !dialog?.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog?.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', keydown);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener('keydown', keydown);
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
+    };
+  }, [saveMarketChoice, savedMarketWarning]);
+
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
   const [marketplaceMode, setMarketplaceMode] = useState(false);
@@ -4748,6 +4785,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMessage('');
     setFinalSaveError('');
     setFinalSaveIntent(intent);
+    setSaveMarketChoice(intent === 'asset-register' && !conversionAssetId &&
+      !(completedMarketAssessment?.result === resultState && completedMarketAssessment?.value === headlineValue)
+      ? 'prompt' : null);
     setReplacementPanelOpen(false);
 
     if (!userReplacementPrice.trim() && currentReplacementPrice !== null && Number.isFinite(currentReplacementPrice) && currentReplacementPrice > 0) {
@@ -4757,6 +4797,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function closeFinalSaveModal() {
     if (saveLoading || replacementRecalculateLoading) return;
+    setSaveMarketChoice(null);
     setFinalSaveIntent(null);
     setFinalSaveError('');
   }
@@ -4835,6 +4876,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         saveForMarketplace: options.saveForMarketplace,
         photos: options.photos,
       });
+      if (!options.saveForMarketplace && completedMarketAssessment?.result === resultState && completedMarketAssessment.value === headlineValue) {
+        savePayload.saleabilityAnswers = completedMarketAssessment.answers;
+      }
       const resolvedTargetRegisterId = isDealerAccount
         ? options.saveForMarketplace
           ? dealerOwnedRegister?.id || ''
@@ -4856,6 +4900,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         throw new Error(data.error ?? 'Failed to save estimate.');
       }
 
+      if (data.warning && options.redirectToAssetRegister && data.assetId) {
+        setFinalSaveIntent(null);
+        setSavedMarketWarning({ message: data.warning, href: ownerAppMode
+          ? `/owner-app/assets/${encodeURIComponent(data.assetId)}`
+          : `/asset-register?convertedAssetId=${encodeURIComponent(data.assetId)}${resolvedTargetRegisterId ? `&registerId=${encodeURIComponent(resolvedTargetRegisterId)}` : ''}` });
+        return data;
+      }
       if (options.redirectToAssetRegister) {
         const focusAssetId = data.assetId ?? conversionAssetId;
         {
@@ -9475,7 +9526,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <SaleabilityModal
           estimateStyle
           open={saleabilityOpen}
-          onClose={() => setSaleabilityOpen(false)}
+          onClose={() => {
+            setSaleabilityOpen(false);
+            if (saveMarketChoice === 'calculating') setSaveMarketChoice('prompt');
+          }}
+          initialAnswers={completedMarketAssessment?.result === resultState ? completedMarketAssessment.answers : undefined}
+          onComplete={(answers) => {
+            setCompletedMarketAssessment({ answers, result: resultState, value: headlineValue });
+            setSaleabilityOpen(false);
+            setSaveMarketChoice(null);
+          }}
           assetTitle={machineTitle}
           valuationExVat={headlineValue ?? 0}
           context={{ sectorKey: isGeneric ? genericResult?.sector.key ?? selectedSector ?? '' : 'agricultural', familyKey: isGeneric ? genericResult?.family.key ?? selectedFamily?.familyKey ?? '' : 'tractors' }}
@@ -9831,7 +9891,31 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
       ) : null}
 
-      {finalSaveIntent && !conversionAssetId ? (
+      {savedMarketWarning ? (
+        <div className={styles.finalSaveOverlay} data-website-overlay>
+          <section className={`${styles.finalSaveModal} ${modalStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="market-save-warning">
+            <button type="button" className={`${styles.finalSaveClose} ${modalStyles.close}`} data-modal-close="true" aria-label="Close" onClick={() => setSavedMarketWarning(null)}>×</button>
+            <div className={styles.finalSaveHeader}><h2 id="market-save-warning">Asset saved</h2><p>{savedMarketWarning.message}</p></div>
+            <div className={styles.finalSaveActions}><button type="button" className={styles.primaryButton} onClick={() => router.push(savedMarketWarning.href)}>Open asset</button></div>
+          </section>
+        </div>
+      ) : null}
+      {finalSaveIntent && saveMarketChoice === 'prompt' ? (
+        <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
+          <section className={`${styles.finalSaveModal} ${modalStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="market-save-title" onClick={event => event.stopPropagation()}>
+            <button type="button" className={`${styles.finalSaveClose} ${modalStyles.close}`} data-modal-close="true" aria-label="Close" onClick={closeFinalSaveModal}>×</button>
+            <div className={styles.finalSaveHeader}>
+              <h2 id="market-save-title">Add a realistic market price?</h2>
+              <p>Your Ideal Price is ready. Answer a few questions to estimate what your asset could sell for.</p>
+            </div>
+            <div className={styles.marketSaveChoices}>
+              <button type="button" className={styles.primaryButton} onClick={() => { setSaveMarketChoice('calculating'); setSaleabilityOpen(true); }}>Calculate market price</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => { setCompletedMarketAssessment(null); setSaveMarketChoice(null); }}>Save with Ideal Price only</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {finalSaveIntent && !conversionAssetId && !saveMarketChoice ? (
         <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
           <section
             className={`${styles.finalSaveModal} ${modalStyles.surface}`}

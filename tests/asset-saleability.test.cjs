@@ -62,3 +62,28 @@ test('assessment API persists history, scopes access and rejects stale or forged
  await db.query('DELETE FROM asset_register_items');assert.equal((await db.query('SELECT count(*) FROM asset_saleability_assessments')).rows[0].count,0);
  }finally{await db.close();}
 });
+
+test('valuation save persists an assessment from the saved asset, and safely reports partial failure',async()=>{
+ const {PGlite}=require('@electric-sql/pglite');const db=new PGlite();
+ try{
+  await db.exec('CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,updated_at timestamptz)');
+  await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3)',[asset.id,'dealer-client-owner',asset.updatedAtIso]);
+  const api=load('lib/server/save-valuation-saleability.ts',{
+   'server-only':{},'../db':{getDb:()=>db},'./saleability':server,
+  });
+  assert.equal(await api.saveValuationSaleability('dealer-client-owner','dealer-actor',asset,undefined),undefined);
+  assert.equal(await api.saveValuationSaleability('dealer-client-owner','dealer-actor',asset,answers),undefined);
+  const rows=(await db.query('SELECT * FROM asset_saleability_assessments')).rows;
+  assert.equal(rows.length,1);assert.equal(rows[0].owner_id,'dealer-client-owner');assert.equal(rows[0].actor_id,'dealer-actor');
+  assert.equal(rows[0].assessment.priceExVat,asset.value);
+  assert.deepEqual(rows[0].assessment.answers,answers);
+  assert.equal(rows[0].assessment.basis,model.saleabilityBasis(asset));
+  const warning=await api.saveValuationSaleability('other-owner','actor',asset,answers);
+  assert.match(warning,/asset was saved/);
+  assert.equal((await db.query('SELECT * FROM asset_saleability_assessments')).rows.length,1);
+  const failure=load('lib/server/save-valuation-saleability.ts',{
+   'server-only':{},'../db':{getDb:()=>{throw Error('offline')}},'./saleability':server,
+  });
+  assert.match(await failure.saveValuationSaleability('owner','actor',asset,answers),/could not be saved/);
+ }finally{await db.close();}
+});
