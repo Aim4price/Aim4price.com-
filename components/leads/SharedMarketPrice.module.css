@@ -10,3 +10,5 @@
 :global(html[data-app-theme='dark']) .market small { color:inherit; }
 :global(html[data-app-theme='dark']) .market button:hover { background:var(--app-surface-soft); }
 :global(html[data-app-theme='dark']) .market[data-needs-review='true'] { background:var(--app-danger-soft); border-color:var(--app-danger-line); color:var(--app-danger); }
+
+.editButton { justify-self: start; padding: .85rem 1.2rem; border: 1px solid var(--app-line,#c5d9cc); border-radius: .8rem; background: var(--app-surface-soft,#edf6f1); color: var(--app-text,#15392f); font: inherit; font-weight: 750; cursor: pointer; }

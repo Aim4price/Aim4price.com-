@@ -230,3 +230,6 @@
 
 /* History starts close to its header in both saved-location and tracking views. */
 .dialog.dialog .body.body.body:has([data-location-history]) { padding-top:.55rem !important; }
+
+/* Avoid stacking the history panel inset with the shared dialog inset. */
+.dialog.dialog .body.body.body:has(> [data-share-history]) { padding-top: .55rem !important; }
