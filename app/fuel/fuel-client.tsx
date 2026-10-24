@@ -4527,7 +4527,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'create-storage' || modalMode === 'edit-storage' ? (
-        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="storage-editor-title" aria-describedby="storage-editor-description">
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop} ${styles.storageEditorBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="storage-editor-title" aria-describedby="storage-editor-description">
           <form className={`${styles.modalCard} ${styles.accountFuelModal} ${styles.storageEditor} ${accountStyles.modalTheme}`} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
