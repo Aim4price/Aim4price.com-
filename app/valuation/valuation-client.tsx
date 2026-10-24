@@ -8275,7 +8275,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose fitted extras">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-          <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal}`}>
+          <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal} ${styles.extrasEditorModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
                 {!compactAppMode ? (
@@ -8288,6 +8288,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
             </div>
 
+            <div className={styles.extrasEditorBody}>
             <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
               {basicFamilyExtra ? (
                 <button
@@ -8304,7 +8305,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   }}
                 >
                   {renderDetailIcon('extras')}<strong>{basicFamilyExtra.label}</strong>
-                  <span className={styles.choiceCardNote}>Common family extra</span>
+                  <span className={styles.choiceCardNote}>Suggested extra</span>
                 </button>
               ) : null}
 
@@ -8321,10 +8322,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 }}
               >
                 {renderDetailIcon('extras')}<strong>Other extra</strong>
-                <span className={styles.choiceCardNote}>Name a fitted extra</span>
+                <span className={styles.choiceCardNote}>Enter a name and price</span>
               </button>
             </div>
 
+            {basicExtraChoice === 'family' || basicExtraChoice === 'other' ? <div className={styles.primaryExtraEntry}>
             {basicExtraChoice === 'family' && basicFamilyExtra ? (
               <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
                 <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
@@ -8380,8 +8382,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
-            {basicExtraChoice === 'family' || basicExtraChoice === 'other' ? <div className={styles.multipleExtras}>
-              <button type="button" className={styles.removeExtra} onClick={() => {
+              <button type="button" className={styles.removeExtra} aria-label="Remove first extra" title="Remove extra" onClick={() => {
                 const [next, ...rest] = additionalBasicExtras;
                 setAdditionalBasicExtras(rest);
                 setBasicFamilyExtraReplacementPrice('');
@@ -8390,7 +8391,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setOtherExtraName(next?.name ?? '');
                 setOtherExtraReplacementPrice(next?.price ?? '');
                 resetResult();
-              }}>Remove first extra</button>
+              }}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7" /></svg></button>
+            </div> : null}
+
+            {basicExtraChoice === 'family' || basicExtraChoice === 'other' ? <div className={styles.multipleExtras}>
+
               {additionalBasicExtras.map((extra, index) => <div key={extra.id} className={styles.extraEntry}>
                 <label className={styles.field}><span className={styles.fieldLabel}>Extra {index + 2} name</span>
                   <input aria-label={`Extra ${index + 2} name`} value={extra.name} maxLength={100} {...requiredProps(!normalizeText(extra.name))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, name: event.target.value} : row)); resetResult(); }} />
@@ -8400,13 +8405,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <input aria-label={`Extra ${index + 2} replacement price`} inputMode="decimal" value={extra.price} placeholder="e.g. 25 000" {...requiredProps(!(parseMoneyInput(extra.price)! > 0))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, price: event.target.value} : row)); resetResult(); }} />
                   {requiredHint(!(parseMoneyInput(extra.price)! > 0))}
                 </label>
-                <button type="button" className={styles.removeExtra} aria-label={`Remove extra ${index + 2}`} onClick={() => { setAdditionalBasicExtras(rows => rows.filter(row => row.id !== extra.id)); resetResult(); }}>Remove</button>
+                <button type="button" className={styles.removeExtra} aria-label={`Remove extra ${index + 2}`} onClick={() => { setAdditionalBasicExtras(rows => rows.filter(row => row.id !== extra.id)); resetResult(); }} title="Remove extra"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7" /></svg></button>
               </div>)}
               <button type="button" className={styles.secondaryButton} disabled={!basicExtrasValid} onClick={() => { setAdditionalBasicExtras(rows => [...rows, {id: crypto.randomUUID(), name: '', price: ''}]); resetResult(); }}>+ Add another extra</button>
-              <div className={styles.extrasTotal}><span>Total extras replacement price</span><strong>{moneyExVat(basicExtraReplacementPriceExVat)}</strong></div>
+              <div className={styles.extrasTotal}><span>Extras total</span><strong>{moneyExVat(basicExtraReplacementPriceExVat)}</strong></div>
             </div> : null}
 
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
+            </div>
             <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
               <button
                 type="button"
