@@ -76,9 +76,17 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>document.body.style.setProperty('--website-visible-height','768px'));
  assert(await page.$eval('[aria-label="Filter by category"]',el=>el.getBoundingClientRect().height<65),'Category filter stays a single row with the full catalogue');
  assert(await page.$$eval('[role=dialog] button strong',els=>els.filter(el=>{const r=el.getBoundingClientRect();const dlg=el.closest('[role=dialog]');const bounds=dlg.getBoundingClientRect();return r.top>0&&r.bottom<bounds.bottom-28}).length>=8),'At least eight equipment options are visible');
+ await page.keyboard.press('Escape');
+ await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+ await page.click('#trigger');
+ await page.waitForFunction(()=>getComputedStyle(document.querySelector('[aria-label="Filter by category"]')).animationIterationCount==='infinite');
+ await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
+ assert.equal(await page.$eval('[aria-label="Filter by category"]',el=>getComputedStyle(el).animationName),'none');
+ await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'no-preference'}]);
  await page.screenshot({path:'/tmp/equipment-picker-desktop.png'});
  await page.click('[aria-label="Filter by category"]');
  await page.waitForSelector('[role="listbox"]');
+ assert.equal(await page.$eval('[aria-label="Filter by category"]',el=>getComputedStyle(el).animationName),'none','Opening the filter stops the pulse');
  await page.screenshot({path:'/tmp/equipment-category-menu.png'});
  await page.keyboard.press('End');
  assert.equal(await page.evaluate(()=>document.activeElement.querySelector('span')?.textContent),'Tractors');
