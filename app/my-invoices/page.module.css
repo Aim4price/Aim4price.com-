@@ -7332,6 +7332,29 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   color: var(--app-muted, #739083);
   pointer-events: none;
 }
+.costWorkIcon {
+  position: absolute;
+  inset-inline-start: .8rem;
+  top: .65rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  box-sizing: border-box;
+  border: 1px solid var(--app-line, #cbded3);
+  border-radius: .7rem;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-accent, #28765a);
+  pointer-events: none;
+}
+.costWorkIcon > svg {
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+}
+.accountCostModal.manualCostWizardModal.polishedCostEntry .costEntryInput:has(.costWorkIcon) > textarea {
+  padding-inline-start: 3.75rem !important;
+}
 .accountCostModal.manualCostWizardModal.polishedCostEntry .costEntryInput > :is(input, textarea) {
   width: 100%;
   padding-inline-start: 3.1rem !important;
