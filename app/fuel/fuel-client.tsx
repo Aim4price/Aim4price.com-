@@ -1714,6 +1714,7 @@ export default function FuelClient({
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
   const [exclusionSearch, setExclusionSearch] = useState('');
+  const [exclusionGroup, setExclusionGroup] = useState<'included' | 'excluded' | null>(null);
   const [selectedExclusionAssetIds, setSelectedExclusionAssetIds] = useState<string[]>([]);
   const [isExclusionEditorOpen, setIsExclusionEditorOpen] = useState(false);
   const [exclusionReason, setExclusionReason] = useState('');
@@ -1761,20 +1762,18 @@ export default function FuelClient({
     () => new Set(selectedExclusionAssetIds),
     [selectedExclusionAssetIds],
   );
-  const exclusionSelectionAction = selectedExclusionAssets[0]?.workUseExcluded ? 'include' : 'exclude';
+  const exclusionSelectionAction = exclusionGroup === 'excluded' ? 'include' : 'exclude';
   const quickLaunchAsset = useMemo(
     () => quickLaunchAssetId ? assets.find((asset) => asset.id === quickLaunchAssetId) ?? null : null,
     [assets, quickLaunchAssetId],
   );
   const filteredExclusionAssets = useMemo(() => {
     const term = exclusionSearch.trim().toLowerCase();
-    if (!term) return assets;
-    return assets.filter((asset) => matchesFuelSlipAsset(asset, term));
-  }, [assets, exclusionSearch]);
-  const bulkSelectableExclusionAssets = useMemo(() => {
-    const targetStatus = selectedExclusionAssets[0]?.workUseExcluded ?? false;
-    return filteredExclusionAssets.filter((asset) => asset.workUseExcluded === targetStatus);
-  }, [filteredExclusionAssets, selectedExclusionAssets]);
+    return assets.filter((asset) => exclusionGroup !== null
+      && Boolean(asset.workUseExcluded) === (exclusionGroup === 'excluded')
+      && (!term || matchesFuelSlipAsset(asset, term)));
+  }, [assets, exclusionSearch, exclusionGroup]);
+  const bulkSelectableExclusionAssets = filteredExclusionAssets;
   const areAllBulkSelectableExclusionAssetsSelected = Boolean(bulkSelectableExclusionAssets.length)
     && bulkSelectableExclusionAssets.every((asset) => selectedExclusionAssetIdSet.has(asset.id));
 
@@ -2406,12 +2405,22 @@ export default function FuelClient({
   }
 
   function openExclusionsModal() {
+    setExclusionGroup(null);
     setExclusionSearch('');
     setSelectedExclusionAssetIds([]);
     setIsExclusionEditorOpen(false);
     setExclusionReason('');
     setNotice(null);
     setModalMode('exclusions');
+  }
+
+  function chooseExclusionGroup(group: 'included' | 'excluded' | null) {
+    setExclusionGroup(group);
+    setExclusionSearch('');
+    setSelectedExclusionAssetIds([]);
+    setIsExclusionEditorOpen(false);
+    setExclusionReason('');
+    setNotice(null);
   }
 
   function toggleExclusionAsset(asset: FuelLedgerAsset) {
@@ -3902,12 +3911,12 @@ export default function FuelClient({
                 <h2>
                   {isExclusionEditorOpen
                     ? exclusionSelectionAction === 'exclude' ? 'Confirm Fuel Exclusions' : 'Confirm Work-use Inclusion'
-                    : 'Choose Saved Assets'}
+                    : exclusionGroup === null ? 'Asset Exclusions' : exclusionGroup === 'included' ? 'Included assets' : 'Excluded assets'}
                 </h2>
                 <p>
                   {isExclusionEditorOpen
                     ? `${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'} selected.`
-                    : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
+                    : exclusionGroup === null ? 'Choose which assets you want to manage.' : exclusionGroup === 'included' ? 'Select assets to exclude from work-use totals.' : 'Select assets to include in work-use totals again.'}
                 </p>
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={dismissModal} aria-label="Close exclusions" data-modal-close="true"><span aria-hidden="true">×</span></button>
@@ -3916,7 +3925,24 @@ export default function FuelClient({
 
             {notice ? <div className={`${styles.exclusionNotice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
-            {isExclusionEditorOpen ? (
+            {exclusionGroup === null ? (
+              <div className={styles.exclusionChoiceGrid}>
+                <button type="button" className={styles.exclusionChoiceCard} onClick={() => chooseExclusionGroup('included')}>
+                  <span className={styles.exclusionChoiceIcon} aria-hidden="true"><IconBase><circle cx="12" cy="12" r="9" /><path d="m8 12 3 3 5-6" /></IconBase></span>
+                  <strong>Included</strong>
+                  <small>Assets counting towards work use.</small>
+                  <span className={styles.exclusionChoiceCount}>{assets.filter((asset) => !asset.workUseExcluded).length} assets</span>
+                  <ChevronRightIcon />
+                </button>
+                <button type="button" className={styles.exclusionChoiceCard} onClick={() => chooseExclusionGroup('excluded')}>
+                  <span className={styles.exclusionChoiceIcon} aria-hidden="true"><ExclusionIcon /></span>
+                  <strong>Excluded</strong>
+                  <small>Assets outside work-use totals.</small>
+                  <span className={styles.exclusionChoiceCount}>{assets.filter((asset) => asset.workUseExcluded).length} assets</span>
+                  <ChevronRightIcon />
+                </button>
+              </div>
+            ) : isExclusionEditorOpen ? (
               <div className={styles.exclusionEditor}>
                 <div className={styles.exclusionEditorHeading}>
                   <h3>{exclusionSelectionAction === 'exclude' ? 'Exclude these assets from work-use totals?' : 'Include these assets in work-use totals again?'}</h3>
@@ -4007,13 +4033,15 @@ export default function FuelClient({
                         </span>
                       </button>
                     );
-                  }) : <div className={styles.emptyState}>No matching saved assets found.</div>}
+                  }) : <div className={styles.emptyState}>{exclusionSearch ? 'No matching assets found.' : exclusionGroup === 'excluded' ? 'No excluded assets.' : 'No included assets.'}</div>}
                 </div>
               </>
             )}
 
             <div className={styles.modalFooter} data-asset-choice-footer="true">
-              {isExclusionEditorOpen ? (
+              {exclusionGroup === null ? (
+                <button type="button" className={styles.secondaryButton} onClick={dismissModal}>Close</button>
+              ) : isExclusionEditorOpen ? (
                 <>
                   <button type="button" className={styles.secondaryButton} onClick={() => setIsExclusionEditorOpen(false)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
                   <button
@@ -4039,7 +4067,7 @@ export default function FuelClient({
                   {selectedExclusionAssets.length ? (
                     <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetIds([])}>Clear selection</button>
                   ) : null}
-                  <button type="button" className={styles.secondaryButton} onClick={dismissModal}>Close</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => chooseExclusionGroup(null)}>Back</button>
                   <button type="button" className={styles.primaryButton} data-asset-choice-action="primary" onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
                     {selectedExclusionAssets.length
                       ? exclusionSelectionAction === 'exclude'

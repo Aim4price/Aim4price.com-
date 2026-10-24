@@ -30,7 +30,8 @@ test('asset exclusion is additive and propagated to existing and future ledger r
 });
 
 test('fuel exclusions stay manageable on desktop but are hidden from operational app pickers', () => {
-  assert.match(fuelClient, /Choose Saved Assets/);
+  assert.match(fuelClient, /chooseExclusionGroup\('included'\)/);
+  assert.match(fuelClient, /chooseExclusionGroup\('excluded'\)/);
   assert.match(fuelClient, /const includedFuelAssets = useMemo/);
   assert.match(fuelClient, /function isIncludedFuelEntryAsset/);
   assert.match(fuelClient, /asset\.canReceiveFuel && asset\.isActive !== false && !asset\.workUseExcluded/);
@@ -107,7 +108,8 @@ test('fuel exclusions support multi-select review without an included status pil
 
 test('bulk exclusion selection stays status-safe and excluded assets can be included again', () => {
   assert.match(fuelClient, /function toggleAllVisibleExclusionAssets\(\)/);
-  assert.match(fuelClient, /asset\.workUseExcluded === targetStatus/);
+  assert.match(fuelClient, /Boolean\(asset\.workUseExcluded\) === \(exclusionGroup === 'excluded'\)/);
+  assert.match(fuelClient, /const bulkSelectableExclusionAssets = filteredExclusionAssets/);
   assert.match(fuelClient, /Select all shown/);
   assert.match(fuelClient, /Review inclusions/);
   assert.match(fuelClient, /const excluded = exclusionSelectionAction === 'exclude'/);
