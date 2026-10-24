@@ -38,7 +38,6 @@ test('manual wizard validates the total and saves only from review', () => {
 
 test('review preserves manual cost details without an attachment upload', () => {
   for (const label of [
-    'Asset',
     'Supplier',
     'Invoice number',
     'Invoice date',
@@ -53,6 +52,7 @@ test('review preserves manual cost details without an attachment upload', () => 
   ]) {
     assert.match(costFormModal, new RegExp(`<dt>${label}<\\/dt>`));
   }
+  assert.match(costFormModal, /<dt><BudgetDetailIcon kind="asset" \/>Asset<\/dt>/);
   assert.doesNotMatch(costFormModal, /ManualCostAttachment|<dt>Attachment<\/dt>/);
   assert.match(client, /maintenanceWorkDone: draft\.maintenanceWorkDone/);
   assert.match(client, /partsSupplied: draft\.partsSupplied/);

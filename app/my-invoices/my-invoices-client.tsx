@@ -26,6 +26,7 @@ import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
+import costReviewStyles from './cost-review.module.css';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
@@ -5140,7 +5141,7 @@ export default function MyInvoicesClient({
                 </div>
               ) : null}
 
-              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? styles.manualCostReviewPanel : ''}` : ''}`}>
+              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? costReviewStyles.panel : ''}` : ''}`}>
                 {manualCostWizardOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">{manualCostWizardStep}</span>
@@ -5314,9 +5315,9 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {manualCostWizardOpen && manualCostWizardStep === 3 ? (
-                  <dl className={`${styles.budgetReviewGrid} ${styles.manualCostReviewGrid}`}>
-                    <div className={styles.manualCostReviewWide}>
-                      <dt>Asset</dt>
+                  <dl className={costReviewStyles.grid}>
+                    <div className={costReviewStyles.asset}>
+                      <dt><BudgetDetailIcon kind="asset" />Asset</dt>
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
                     <div>
@@ -5337,31 +5338,31 @@ export default function MyInvoicesClient({
                         ? 'Not recorded'
                         : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
                     </div>
-                    <div>
+                    <div className={costReviewStyles.amount}>
                       <dt>Subtotal excl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
                     </div>
-                    <div>
+                    <div className={costReviewStyles.amount}>
                       <dt>VAT amount</dt>
                       <dd>{formatReviewMoney(manualCostVatValue)}</dd>
                     </div>
-                    <div className={styles.manualCostReviewTotal}>
+                    <div className={`${costReviewStyles.amount} ${costReviewStyles.total}`}>
                       <dt>Total incl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
                     </div>
-                    {draft.maintenanceWorkDone.trim() ? <div className={styles.manualCostReviewWide}>
+                    {draft.maintenanceWorkDone.trim() ? <div className={costReviewStyles.work}>
                       <dt>Maintenance work</dt>
                       <dd>{draft.maintenanceWorkDone}</dd>
                     </div> : null}
-                    {draft.partsSupplied.trim() ? <div className={styles.manualCostReviewWide}>
+                    {draft.partsSupplied.trim() ? <div className={costReviewStyles.work}>
                       <dt>Parts supplied</dt>
                       <dd>{draft.partsSupplied}</dd>
                     </div> : null}
-                    {draft.repairWorkDone.trim() ? <div className={styles.manualCostReviewWide}>
+                    {draft.repairWorkDone.trim() ? <div className={costReviewStyles.work}>
                       <dt>Repair work</dt>
                       <dd>{draft.repairWorkDone}</dd>
                     </div> : null}
-                    {draft.notes.trim() ? <div className={styles.manualCostReviewWide}>
+                    {draft.notes.trim() ? <div className={costReviewStyles.work}>
                       <dt>Notes</dt>
                       <dd>{draft.notes}</dd>
                     </div> : null}
