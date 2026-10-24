@@ -5301,3 +5301,38 @@
 .simpleScheduleDialog .maintenanceInlineFields { align-items: start; gap: .85rem; }
 .simpleScheduleDialog .scheduleQuestion .customFilterSelectChevron { width: 1.5rem; height: 1.5rem; padding: .2rem; border: 1px solid var(--app-line, #d5e3dc); border-radius: 50%; }
 .simpleScheduleDialog .scheduleQuestion small { line-height: 1.5; font-weight: 500; color: var(--app-muted, #6c8177); }
+
+/* Keep the chooser steady while separating consecutive questions. */
+.maintenanceTransitionBody {
+  position: relative;
+}
+
+.maintenanceTransitionStatus {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  color: var(--app-text, #17362c);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.maintenanceTransitionSpinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid var(--app-line, #dce8e1);
+  border-top-color: var(--app-accent, #23845f);
+  border-radius: 50%;
+  animation: maintenanceQuestionSpin 0.7s linear infinite;
+}
+
+@keyframes maintenanceQuestionSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maintenanceTransitionSpinner { animation: none; }
+}

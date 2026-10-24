@@ -11,7 +11,14 @@ export default function Page(){const [action,setAction]=useState<'details'|'main
  browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true});
  const page=await browser.newPage(),errors=[],writes=[];page.on('pageerror',e=>errors.push(e.message));await page.setRequestInterception(true);
  page.on('request',r=>{const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();if(r.method()==='POST')writes.push({path:u.pathname,body:JSON.parse(r.postData()||'{}')});const data=u.pathname.includes('session')?null:u.pathname==='/api/fixture-work/checklist'?{items:[]}:u.pathname.startsWith('/api/fixture-work')&&r.method()==='GET'?{asset:{id:'10000000-0000-4000-8000-000000000001',title:'Toyota Hilux',kind:'vehicle',yearModel:2020,usageReading:100,usageMetric:'hours',condition:'good'},permissions:{yearModel:true,usage:true,condition:true}}:{ok:true};return r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});});
- async function click(text){await page.$$eval('button',(nodes,text)=>{const button=nodes.find(n=>n.textContent.trim()===text||n.querySelector('strong')?.textContent===text);if(!button)throw Error('Missing '+text);button.click();},text);}
+ async function click(text){
+  // Shared maintenance uses the same delayed question transitions as the owner flow.
+  const button=await page.waitForFunction(text=>[...document.querySelectorAll('button')].find(n=>
+   (n.textContent.trim()===text||n.querySelector('strong')?.textContent===text)
+   && !n.disabled && n.getClientRects().length && getComputedStyle(n).visibility==='visible'
+  ),{timeout:10000},text);
+  try { await button.asElement().click(); } finally { await button.dispose(); }
+ }
  await page.setViewport({width:1440,height:900});await page.goto('http://127.0.0.1:3039/business/shared-work-validation',{waitUntil:'networkidle0',timeout:120000});
  await click('Details');await page.waitForSelector('[data-manage-action=details]');await page.click('[data-manage-action=details]');await page.waitForSelector('[role=dialog] input');
  const input=await page.$('[data-asset-detail-edit-target=year] input');await input.click({clickCount:3});await input.type('2021');
