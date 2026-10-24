@@ -34,8 +34,20 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
   useEffect(() => {
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = ref.current;
+    // The child is portalled outside the parent: hide the previous sheet while
+    // it is open, then restore it (and its focus) on Back/close.
+    const parent = trigger?.closest<HTMLElement>('[role="dialog"]');
+    const previousVisibility = parent?.style.visibility ?? '';
+    const previousOverflow = document.documentElement.style.overflow;
+    if (parent) parent.style.visibility = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     dialog?.showModal();
-    return () => { dialog?.close(); if (trigger?.isConnected) trigger.focus(); };
+    return () => {
+      dialog?.close();
+      if (parent) parent.style.visibility = previousVisibility;
+      document.documentElement.style.overflow = previousOverflow;
+      if (trigger?.isConnected) trigger.focus();
+    };
   }, []);
 
   async function copyCaption() {
