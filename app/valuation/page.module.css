@@ -14629,9 +14629,16 @@
 .finalEstimateLayout .resultVatToggle { margin: 0; flex-shrink: 0; }
 .finalEstimateLayout .resultVatToggleButton { padding: 10px 12px; font-size: 0.78rem; }
 .finalEstimateLayout .resultConfidenceNote { margin: 12px 0 0; font-size: 0.85rem; line-height: 1.5; }
-.finalEstimateLayout .resultFactsGrid { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--app-line, #d5e4dc); gap: 0; }
+.finalEstimateLayout .resultFactsGrid {
+  margin-top: 22px;
+  padding: 20px 6px;
+  border: 1px solid var(--app-line, #d5e4dc);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--app-surface, #fff) 94%, var(--app-text, #17382f) 6%);
+  gap: 0;
+}
 .finalEstimateLayout .resultFactCard { min-height: 0; align-content: start; gap: 8px; padding: 0 14px; border: 0; border-left: 1px solid var(--app-line, #d5e4dc); border-radius: 0; box-shadow: none; background: transparent; min-width: 0; }
-.finalEstimateLayout .resultFactCard:first-child { padding-left: 0; border-left: 0; }
+.finalEstimateLayout .resultFactCard:first-child { border-left: 0; }
 .finalEstimateLayout .resultFactCard span { text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
 .finalEstimateLayout .resultFactCard strong { font-size: 0.95rem; overflow-wrap: anywhere; }
 .resultCalculationPanel { order: 1; min-width: 0; border: 1px solid var(--app-line, #d5e4dc); border-radius: 18px; background: var(--app-surface, #fff); }
