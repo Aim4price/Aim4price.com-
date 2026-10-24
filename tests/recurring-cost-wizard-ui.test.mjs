@@ -10,9 +10,9 @@ const modalStart = client.indexOf('{recurringOpen ?');
 const modalEnd = client.indexOf('{filterOpen ?', modalStart);
 const recurringModal = client.slice(modalStart, modalEnd);
 
-test('recurring costs use the guided three-step Spending budget pattern', () => {
+test('recurring costs use the coverage, details, schedule and review flow', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'recurring cost modal should be present');
-  assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3/);
+  assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /const \[recurringWizardStep, setRecurringWizardStep\]/);
   assert.doesNotMatch(recurringModal, /\[\['Coverage', 1\], \['Details', 2\], \['Review', 3\]\]/);
   assert.match(recurringModal, /styles\.invoiceDropCodeModal/);
@@ -20,8 +20,8 @@ test('recurring costs use the guided three-step Spending budget pattern', () => 
   assert.doesNotMatch(recurringModal, /styles\.invoiceDropWizardProgress/);
   assert.match(recurringModal, /styles\.invoiceDropWizardPanel/);
   assert.match(recurringModal, /What should this cost cover\?/);
-  assert.match(recurringModal, /Set the recurring cost/);
-  assert.match(recurringModal, /Review your commitment/);
+  assert.match(recurringModal, /Commitment details/);
+  assert.match(recurringModal, /Review commitment/);
   assert.match(recurringModal, /onClick=\{continueRecurringWizard\}/);
   assert.match(recurringModal, /goBackRecurringWizard/);
 });
@@ -45,7 +45,7 @@ test('each step validates before advancing and save only runs from review', () =
   assert.match(client, /if \(!recurringDraft\.description\.trim\(\)\)/);
   assert.match(client, /recurringAmountValue <= 0/);
   assert.match(client, /recurringDraft\.endDate < recurringDraft\.startDate/);
-  assert.match(client, /if \(recurringWizardStep !== 3\)[\s\S]*?continueRecurringWizard\(\)/);
+  assert.match(client, /if \(recurringWizardStep !== 4\)[\s\S]*?continueRecurringWizard\(\)/);
   assert.match(client, /setRecurringWizardStep\(3\)/);
 });
 

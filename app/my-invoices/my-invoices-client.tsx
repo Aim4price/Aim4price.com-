@@ -4,6 +4,7 @@ import dropFinalStyles from './invoice-drop-final.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
+import recurringStyles from './recurring-wizard.module.css';
 import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
@@ -315,7 +316,7 @@ type Notice = {
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
 type ManualCostWizardStep = 1 | 2 | 3;
-type RecurringWizardStep = 1 | 2 | 3;
+type RecurringWizardStep = 1 | 2 | 3 | 4;
 
 type RecurringCommitmentDraft = {
   description: string;
@@ -2872,6 +2873,10 @@ export default function MyInvoicesClient({
   function recurringDetailsError(): string {
     if (!recurringDraft.description.trim()) return 'Add a short description for this recurring cost.';
     if (!Number.isFinite(recurringAmountValue) || recurringAmountValue <= 0) return 'Enter an amount greater than R 0.';
+    return '';
+  }
+
+  function recurringScheduleError(): string {
     if (!recurringDraft.startDate) return 'Choose a start date.';
     if (recurringDraft.endDate && recurringDraft.endDate < recurringDraft.startDate) {
       return 'The end date cannot be before the start date.';
@@ -2897,19 +2902,28 @@ export default function MyInvoicesClient({
       }
       setRecurringCategoryDropdownOpen(false);
       setRecurringWizardStep(3);
+      return;
+    }
+    if (recurringWizardStep === 3) {
+      const validationError = recurringScheduleError();
+      if (validationError) {
+        setRecurringError(validationError);
+        return;
+      }
+      setRecurringWizardStep(4);
     }
   }
 
   function goBackRecurringWizard() {
     setRecurringError('');
     setRecurringCategoryDropdownOpen(false);
-    setRecurringWizardStep((current) => (current === 3 ? 2 : 1));
+    setRecurringWizardStep((current) => (current === 4 ? 3 : current === 3 ? 2 : 1));
   }
 
   async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRecurringError('');
-    if (recurringWizardStep !== 3) {
+    if (recurringWizardStep !== 4) {
       continueRecurringWizard();
       return;
     }
@@ -2922,6 +2936,12 @@ export default function MyInvoicesClient({
     if (validationError) {
       setRecurringWizardStep(2);
       setRecurringError(validationError);
+      return;
+    }
+    const scheduleError = recurringScheduleError();
+    if (scheduleError) {
+      setRecurringWizardStep(3);
+      setRecurringError(scheduleError);
       return;
     }
     setIsSaving(true);
@@ -4638,19 +4658,21 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 id="recurring-modal-title">Add recurring commitment</h2>
+                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 2 ? 'Commitment details' : recurringWizardStep === 3 ? 'Payment schedule' : 'Review commitment'}</h2>
                   <p>{recurringWizardStep === 1
                     ? 'Choose which assets this cost covers.'
                     : recurringWizardStep === 2
-                      ? 'Add the cost and schedule.'
-                      : 'Review and save.'}</p>
+                      ? 'Describe the cost and add the amount.'
+                      : recurringWizardStep === 3
+                        ? 'Choose when this cost repeats.'
+                        : 'Check the details before saving.'}</p>
                 </div>
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost" data-modal-close="true">
                   <span aria-hidden="true">×</span>
                 </button>
               </div>
 
-              <div ref={recurringWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
+              <div ref={recurringWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body, recurringStyles.body].join(' ')}>
 
                 {recurringWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-coverage-title">
@@ -4688,11 +4710,8 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 2 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${styles.recurringDetailsPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-details-title">
-                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <h3 ref={recurringWizardStepHeadingRef} id="recurring-details-title" tabIndex={-1}>Set the recurring cost</h3>
-                      <p>Add the amount, timing and useful reference details.</p>
-                    </div>
+                  <section className={`${styles.recurringDetailsPanel} ${recurringStyles.panel}`} aria-labelledby="recurring-modal-title">
+
 
                     <div className={styles.recurringDetailsGrid}>
                       <label className={`${styles.budgetField} ${styles.recurringDescriptionField}`}>
@@ -4786,6 +4805,21 @@ export default function MyInvoicesClient({
                       </label>
                     </div>
 
+                    <div className={styles.recurringOptionalGrid}>
+                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                        <span>Source / reference <small>(optional)</small></span>
+                        <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
+                      </label>
+                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                        <span>Note <small>(optional)</small></span>
+                        <textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={2} placeholder="Anything useful to remember" disabled={isSaving} />
+                      </label>
+                    </div>
+                  </section>
+                ) : null}
+
+                {recurringWizardStep === 3 ? (
+                  <section className={`${styles.recurringDetailsPanel} ${recurringStyles.panel}`} aria-labelledby="recurring-modal-title">
                     <div className={`${styles.budgetPeriodField} ${styles.budgetWizardPeriodField}`}>
                       <span className={styles.budgetPeriodLabel}>How often?</span>
                       <div className={`${styles.budgetPeriodControl} ${styles.recurringFrequencyControl}`} role="group" aria-label="Recurring cost frequency">
@@ -4819,32 +4853,23 @@ export default function MyInvoicesClient({
                       </label>
                     </div>
 
-                    <div className={styles.recurringOptionalGrid}>
-                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
-                        <span>Source / reference <small>(optional)</small></span>
-                        <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
-                      </label>
-                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
-                        <span>Note <small>(optional)</small></span>
-                        <textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={2} placeholder="Anything useful to remember" disabled={isSaving} />
-                      </label>
-                    </div>
+                    <p className={recurringStyles.scheduleSummary}>
+                      {formatMoney(recurringAmountValue)} {recurringDraft.frequency === 'monthly' ? 'every month' : recurringDraft.frequency === 'quarterly' ? 'every three months' : recurringDraft.frequency === 'six_monthly' ? 'every six months' : 'every year'}
+                      {recurringDraft.startDate ? `, starting ${new Date(`${recurringDraft.startDate}T12:00:00`).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}.` : '. Choose a start date.'}
+                    </p>
                   </section>
                 ) : null}
 
-                {recurringWizardStep === 3 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-review-title">
-                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <h3 ref={recurringWizardStepHeadingRef} id="recurring-review-title" tabIndex={-1}>Review your commitment</h3>
-                      <p>Check the details before saving.</p>
-                    </div>
+                {recurringWizardStep === 4 ? (
+                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
 
-                    <dl className={`${styles.budgetReviewGrid} ${styles.recurringReviewGrid}`}>
-                      <div className={styles.recurringReviewWide}>
+
+                    <dl className={recurringStyles.review}>
+                      <div className={recurringStyles.wide}>
                         <dt>Assets</dt>
                         <dd title={recurringSelectedAssets.map((asset) => asset.title).join(', ')}>{recurringSelectedAssets.map((asset) => asset.title).join(', ')}</dd>
                       </div>
-                      <div className={styles.recurringReviewWide}>
+                      <div className={recurringStyles.wide}>
                         <dt>Description</dt>
                         <dd>{recurringDraft.description.trim()}</dd>
                       </div>
@@ -4852,7 +4877,7 @@ export default function MyInvoicesClient({
                         <dt>Category</dt>
                         <dd>{recurringCategoryLabel}</dd>
                       </div>
-                      <div>
+                      <div className={recurringStyles.amount}>
                         <dt>Amount</dt>
                         <dd>{formatMoney(recurringAmountValue)}</dd>
                       </div>
@@ -4876,7 +4901,7 @@ export default function MyInvoicesClient({
                         <dt>Reference</dt>
                         <dd>{recurringDraft.sourceReference.trim() || 'Not set'}</dd>
                       </div>
-                      <div className={styles.recurringReviewWide}>
+                      <div className={recurringStyles.wide}>
                         <dt>Note</dt>
                         <dd>{recurringDraft.note.trim() || 'None'}</dd>
                       </div>
@@ -4897,7 +4922,7 @@ export default function MyInvoicesClient({
                 >
                   Back
                 </button>
-                {recurringWizardStep < 3 ? (
+                {recurringWizardStep < 4 ? (
                   <button key="recurring-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueRecurringWizard} disabled={isSaving}>
                     Next
                   </button>
