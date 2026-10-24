@@ -67,6 +67,8 @@ async function main() {
       await page.click('button[aria-label="Open calendar"]');
       await page.waitForSelector('dialog[open]');
       await page.$eval('dialog[open] button[aria-pressed="true"]', e => e.click());
+      await page.waitForSelector('dialog[open]');
+      await clickText('Confirm date');
       await page.waitForFunction(() => !document.querySelector('dialog[open]'));
       assert.equal(await page.$eval('input[aria-label="Completion date"]', e => e.value), completionDate);
       assert.equal(await page.$('input[placeholder="Name of person who checked the asset"]'), null);

@@ -89,7 +89,11 @@ function CloseIcon() {
 }
 
 function serviceAssetDetails(record: DesktopServiceRecord): string {
-  if (record.assetMeta) return record.assetMeta;
+  if (record.assetMeta) return record.assetMeta
+    .split(/[·•]/)
+    .map(detail => detail.trim())
+    .filter(detail => detail && !/^(manual|aim4price)(?:\s+value)?$/i.test(detail))
+    .join(' • ');
   const metric = record.assetUsageMetric ?? record.usageMetric;
   const usage = record.currentUsage != null && metric
     ? `${record.currentUsage.toLocaleString('en-ZA')} ${metric === 'percentage' ? '%' : metric}`
@@ -307,7 +311,7 @@ export default function DesktopServiceModal({
             <div>
               <h2 id="scheduled-service-choice-title">Which work was done?</h2>
               <p>{record.assetTitle}</p>
-              <p>{serviceAssetDetails(record)}</p>
+              {serviceAssetDetails(record) ? <p>{serviceAssetDetails(record)}</p> : null}
             </div>
             <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={previousStage} aria-label="Close service choice" disabled={busy} data-modal-close="true">
               <CloseIcon />
@@ -345,7 +349,7 @@ export default function DesktopServiceModal({
           <div>
             <h2 id="desktop-service-title">{standalone || isSeparateCompletion ? `Record completed ${actionName}` : `Complete scheduled ${actionName}`}</h2>
             <p>{record.assetTitle}</p>
-              <p>{serviceAssetDetails(record)}</p>
+              {serviceAssetDetails(record) ? <p>{serviceAssetDetails(record)}</p> : null}
           </div>
           <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={previousStage} aria-label="Close service form" disabled={busy} data-modal-close="true">
             <CloseIcon />
