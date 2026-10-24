@@ -3092,7 +3092,7 @@ export default function MyInvoicesClient({
     try {
       if (sharedFlow) {
         const request = await sharedFlow.capture(await prepareInvoiceUpload(automaticUploadPages),captureNote.trim());
-        sharedFlow.onSaved(`${request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`);
+        sharedFlow.onSaved(`${request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`);
         return;
       }
       const formData = new FormData();
@@ -3117,7 +3117,7 @@ export default function MyInvoicesClient({
         tone: 'success',
         message: dealerMode
           ? `${data.request.referenceCode} received. Aim4price will check it within 24 hours, then the owner approves it.`
-          : `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
+          : `${data.request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`,
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'CAPTURE_DAILY_LIMIT') { captureAllowance.markBlocked(); return; }
@@ -4534,8 +4534,8 @@ export default function MyInvoicesClient({
                   <AutomaticInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Upload for Aim4price capture</strong>
-                  <small>Upload a photo or PDF for capture within 24 hours.</small>
+                  <strong>Automatic upload</strong>
+                  <small>Upload a photo or PDF. Aim4price captures and allocates it within 24 hours.</small>
                 </span>
                 <span className={styles.costChoiceArrow} aria-hidden="true">
                   <ChevronRightIcon />
@@ -5069,7 +5069,7 @@ export default function MyInvoicesClient({
           <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.captureUploadDialog} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Upload invoice or photos</h2>
+                <h2>Automatic upload</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting} data-modal-close="true"><span aria-hidden="true">×</span></button>
@@ -5096,7 +5096,7 @@ export default function MyInvoicesClient({
                   <span>Notes <small>Optional</small></span>
                   <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={2} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
                 </label>
-                <div className={styles.captureServiceInfo}><p>{dealerMode ? 'Aim4price checks the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture and verify it within 24 hours.'}</p>
+                <div className={styles.captureServiceInfo}><p>{dealerMode ? 'Aim4price captures and allocates the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture, verify and allocate it within 24 hours.'}</p>
                 <p role="status">{captureAllowance.label}</p></div>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}
@@ -5105,7 +5105,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
-                {isExtracting ? 'Sending invoice/photo...' : 'Send for capture'}
+                {isExtracting ? 'Sending invoice/photo...' : 'Upload automatically'}
               </button>
             </div>
           </div>

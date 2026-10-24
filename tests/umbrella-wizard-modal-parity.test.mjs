@@ -216,7 +216,7 @@ test("Aim4price capture is the full-width final choice in Add asset cost", () =>
   );
   const manualIndex = costChoices.indexOf("Enter cost manually");
   const recurringIndex = costChoices.indexOf("Add recurring commitment");
-  const captureIndex = costChoices.indexOf("Upload for Aim4price capture");
+  const captureIndex = costChoices.indexOf("Automatic upload");
 
   assert.ok(
     manualIndex >= 0 && manualIndex < recurringIndex && recurringIndex < captureIndex,
@@ -224,7 +224,7 @@ test("Aim4price capture is the full-width final choice in Add asset cost", () =>
   );
   assert.match(
     costChoices,
-    /styles\.aim4priceCaptureChoiceOption[\s\S]*?Upload for Aim4price capture/,
+    /styles\.aim4priceCaptureChoiceOption[\s\S]*?Automatic upload/,
   );
   assert.match(
     invoiceStyles,

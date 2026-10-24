@@ -11,7 +11,7 @@ const output = process.env.PICKER_OUTPUT_DIR || path.join(root, '.next/picker-va
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const scenarios = [
   ['manual', 'costs', ['+Add Cost', 'Enter cost manually']],
-  ['capture', 'costs', ['+Add Cost', 'Upload for Aim4price capture']],
+  ['capture', 'costs', ['+Add Cost', 'Automatic upload']],
   ['budget', 'budgets', ['Add Budget', 'Choose assets']],
   ['recurring', 'costs', ['+Add Cost', 'Add recurring commitment', 'Choose assets']],
   ['invoice-drop', 'costs', ['Invoice Drop', 'Specific asset', 'Next', 'Choose an asset']],
@@ -20,7 +20,7 @@ const scenarios = [
   ['maintenance-report', 'maintenance', ['Download', 'Specific asset']],
   ['exclusions', 'fuel', ['Asset Exclusions']],
   ['fuel-manual', 'fuel', ['Switch to Fuel Slips', 'Add fuel slip', 'Enter slip manually']],
-  ['fuel-capture', 'fuel', ['Switch to Fuel Slips', 'Add fuel slip', 'Upload for Aim4price capture']],
+  ['fuel-capture', 'fuel', ['Switch to Fuel Slips', 'Add fuel slip', 'Automatic upload']],
   ['export', 'register', ['Download', 'PDF report', 'Next', 'Choose Specific Assets']],
 ];
 const assets = Array.from({ length: 12 }, (_, i) => ({

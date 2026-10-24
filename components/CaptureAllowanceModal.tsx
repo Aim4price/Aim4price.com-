@@ -44,13 +44,13 @@ export default function CaptureAllowanceModal({ endpoint, ledger, onClose }: Pro
         else if (!event.shiftKey && (document.activeElement === last || document.activeElement === dialog.current)) { event.preventDefault(); first?.focus(); }
       }}>
       <div className={styles.modalHeader}>
-        <div><h2 id="capture-allowance-title">{sent ? 'Request received' : 'Need help with more documents?'}</h2><p>{ledger} Ledger · 10 daily Aim4price captures</p></div>
+        <div><h2 id="capture-allowance-title">{sent ? 'Request received' : 'Need help with more documents?'}</h2><p>{ledger} Ledger · 10 daily upload credits</p></div>
         <button type="button" disabled={busy} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={onClose} aria-label="Close" data-modal-close="true"><span aria-hidden="true">×</span></button>
       </div>
       <div className={styles.modalDivider} />
       <div className={styles.formModalScrollBody}><section className={styles.uploadPanel}>
         {sent ? <p role="status">Aim4price has received your request. We’ll contact you to discuss the volume, timing and hourly cost before any additional work starts.</p> : <>
-          <p>Aim4price is happy to help. You’ve used today’s 10 captures for this ledger. Request assistance for a larger upload and we’ll agree on the work and hourly cost with you first.</p>
+          <p>Aim4price is happy to help. You’ve used today’s 10 credits for this ledger. Request assistance for a larger upload and we’ll agree on the work and hourly cost with you first.</p>
           <p>You can still enter records and upload documents manually. Your allowance resets at midnight, South African time.</p>
           <label className={styles.captureNoteField}><span>Anything we should know? <small>Optional</small></span>
             <textarea rows={3} maxLength={1000} value={note} disabled={busy} onChange={event => setNote(event.target.value)} placeholder={`For example, I have 40 ${ledger === 'Cost' ? 'invoices' : 'fuel slips'} to capture.`} /></label>
