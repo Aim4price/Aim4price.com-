@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import DateInput from '../../components/DateInput';
@@ -1634,7 +1635,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     </div>
                     <button type="button" onClick={openAssetPickerModal} disabled={busy}>
                       {draft.assetIds.length ? 'Change assets' : 'Choose assets'}
-                      <Icon name="chevron-right" />
+                      <AssetChooseIcon />
                     </button>
                   </section>
                 )) : null}

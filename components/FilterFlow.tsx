@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from './AssetChooseIcon';
 
 import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import styles from './FilterFlow.module.css';
@@ -132,7 +133,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
       const asset=assetPicker.assets.find(asset=>asset.id === option.value);
       return <button key={option.value} type="button" data-asset-choice-row="true" data-asset-choice-selected={value === option.value} aria-pressed={value === option.value} onClick={()=>onChange(option.value)}>
         <span data-asset-choice-copy="true"><strong>{option.label}</strong>{asset?.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset?.selectedMethod ? <AssetPickerDetail>{[asset.categoryLabel, asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'].filter(Boolean).join(' · ')}</AssetPickerDetail> : null}{asset ? <AssetSerialNumber value={asset.serialNumber} /> : null}</span>
-        <span data-asset-choice-value="true"><span className={picker.select}><i aria-hidden="true">{value === option.value ? '✓' : ''}</i>Select</span></span>
+        <span data-asset-choice-value="true"><AssetChooseIcon selected={value === option.value} /></span>
       </button>;
     })}</div>
   </>;

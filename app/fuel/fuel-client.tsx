@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -4420,7 +4421,7 @@ export default function FuelClient({
                         <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
-                        <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
+                        <AssetChooseIcon />
                       </span>
                     </button>
                   ))}
@@ -4438,7 +4439,7 @@ export default function FuelClient({
                         <AssetPickerDetail>Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</AssetPickerDetail>
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
-                        <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
+                        <AssetChooseIcon />
                       </span>
                     </button>
                   ))}

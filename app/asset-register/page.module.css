@@ -36339,6 +36339,8 @@ button.documentOpenLink {
 }
 
 .bulkFinanceChooseButton {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: .65rem !important;
   min-height: 3.35rem !important;
   display: grid !important;
   justify-items: end !important;
@@ -41818,3 +41820,5 @@ button.documentOpenLink {
   font-weight: 650 !important;
   line-height: 1.5 !important;
 }
+
+.bulkFinanceChooseButton > [data-asset-choose-icon] { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--app-accent, #176346) !important; }

@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import CostDetailIcon from '../../components/CostDetailIcon';
@@ -1562,7 +1563,7 @@ export default function MaintenanceClient({
                       <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
-                      <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
+                      <AssetChooseIcon />
                     </span>
                   </button>
                 ))

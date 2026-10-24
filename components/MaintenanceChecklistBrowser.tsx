@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from './AssetChooseIcon';
 import AssetPickerDetail from './AssetPickerDetail';
 
 import { useEffect, useRef, useState } from 'react';
@@ -119,7 +120,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
               {item.selectedMethod ? <AssetPickerDetail>{item.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail> : null}
               <AssetSerialNumber value={item.serialNumber} />
             </span>
-            <span data-asset-choice-value="true"><span className={pickerStyles.select}><i aria-hidden="true" /><strong>Select</strong></span></span>
+            <span data-asset-choice-value="true"><AssetChooseIcon /></span>
           </button>) : <div className={pickerStyles.empty}>No matching assets found.</div>}
         </div>
         <footer className={styles.footer} data-asset-choice-footer="true">

@@ -1,4 +1,5 @@
 'use client';
+import AssetChooseIcon from '../../components/AssetChooseIcon';
 import InvoiceDropIcon from './InvoiceDropIcon';
 import dropFinalStyles from './invoice-drop-final.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
@@ -4011,7 +4012,7 @@ export default function MyInvoicesClient({
                               ? 'Select one or more saved assets.'
                               : 'Add an asset first.'}</small>
                       </span>
-                      <span className={styles.budgetScopeAction}>{selectedBudgetAssets.length ? 'Change' : 'Choose'} <ChevronRightIcon /></span>
+                      <AssetChooseIcon />
                     </button>
 
                   </section>
@@ -4304,10 +4305,7 @@ export default function MyInvoicesClient({
                                 <small>{invoiceDropAssetDetails || [invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')}</small>
                               ) : null}
                             </span>
-                            <span className={styles.invoiceDropAssetPickerAction}>
-                              <SearchIcon aria-hidden="true" />
-                              {invoiceDropAsset ? 'Change' : 'Choose'}
-                            </span>
+                            <AssetChooseIcon />
                           </button>
                         </div>
                       ) : (
@@ -4484,10 +4482,7 @@ export default function MyInvoicesClient({
                       <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
-                      <span className={pickerStyles.select}>
-                        <i aria-hidden="true">{selected ? '✓' : ''}</i>
-                        <strong>{selected ? 'Selected' : 'Select'}</strong>
-                      </span>
+                      <AssetChooseIcon selected={selected} />
                     </span>
                   </button>
                 );
@@ -4701,10 +4696,7 @@ export default function MyInvoicesClient({
                                 ? 'Select every asset covered by this recurring cost.'
                                 : 'Add an asset first.'}</small>
                       </span>
-                      <span className={styles.budgetScopeAction}>
-                        {assetLockedForFlow ? 'Locked' : recurringSelectedAssets.length ? 'Change' : 'Choose'}
-                        {!assetLockedForFlow ? <ChevronRightIcon /> : null}
-                      </span>
+                      {assetLockedForFlow ? <span className={styles.budgetScopeAction}>Locked</span> : <AssetChooseIcon />}
                     </button>
                   </section>
                 ) : null}
@@ -5056,10 +5048,7 @@ export default function MyInvoicesClient({
                     )}
                   </span>
                   <span className={styles.assetValue} data-asset-choice-value="true">
-                    <span className={pickerStyles.select}>
-                      <i aria-hidden="true" />
-                      <strong>Select</strong>
-                    </span>
+                    <AssetChooseIcon />
                   </span>
                 </button>
               )) : <div className={styles.emptyState}>{dealerMode ? <>No matching shared assets found. Ask the owner to share the asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></> : 'No matching assets found.'}</div>}
