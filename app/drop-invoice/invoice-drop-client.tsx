@@ -535,7 +535,6 @@ export default function InvoiceDropClient() {
                 <div ref={modalBodyRef} className={styles.modalBody} aria-live="polite">
                   <section className={styles.wizardPanel} hidden={currentStep !== 1}>
                     <div className={styles.wizardHeading}>
-                      <span className={styles.wizardHeadingNumber}>1</span>
                       <div className={styles.wizardHeadingText}>
                         <h3>Identify the asset</h3>
                         <span>Use the Invoice Drop Code from the owner where possible.</span>
@@ -677,7 +676,6 @@ export default function InvoiceDropClient() {
 
                   <section className={styles.wizardPanel} hidden={currentStep !== 2}>
                     <div className={styles.wizardHeading}>
-                      <span className={styles.wizardHeadingNumber}>2</span>
                       <div className={styles.wizardHeadingText}>
                         <h3>Attach the invoice</h3>
                         <span>Choose one PDF or photos of the same invoice.</span>
@@ -719,7 +717,6 @@ export default function InvoiceDropClient() {
 
                   <section className={styles.wizardPanel} hidden={currentStep !== 3}>
                     <div className={styles.wizardHeading}>
-                      <span className={styles.wizardHeadingNumber}>3</span>
                       <div className={styles.wizardHeadingText}>
                         <h3>Tell us who sent it</h3>
                         <span>We only use these details to verify and follow up on this submission.</span>

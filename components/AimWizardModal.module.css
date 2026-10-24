@@ -636,3 +636,11 @@
   }
 }
 
+
+/* Number-free ledger and fuel headings use the full panel width. */
+.panelHeading:not(:has(.panelNumber)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.panelHeading:not(:has(.panelNumber)) > :is(h3, p) {
+  grid-column: 1;
+}

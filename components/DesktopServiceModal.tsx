@@ -356,7 +356,6 @@ export default function DesktopServiceModal({
           <div className={styles.body} ref={stageRef} tabIndex={-1} aria-label={`Step ${stage} of ${stageCount}`}>
             {stage === 1 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
-                <span>1</span>
                 <div>
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
                   <p>{checklist.label} · {mode === 'checked' ? 'Inspect condition and safe operation.' : 'Select service work completed.'} Select only the work actually completed.</p>
@@ -399,7 +398,6 @@ export default function DesktopServiceModal({
 
             {stage === 2 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
-                <span>2</span>
                 <div><h3>When was it completed?</h3><p>Enter the date and reading at the time.</p></div>
               </div>
               <div className={styles.fieldGrid}>
@@ -420,7 +418,6 @@ export default function DesktopServiceModal({
 
             {stage === 3 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
-                <span>3</span>
                 <div>
                   <h3>{mode === 'checked' ? 'Who completed the check-up?' : copy.detailsHeader}</h3>
                   <p>{mode === 'checked' ? 'Save the person responsible for this inspection.' : copy.detailsSubheader}</p>
