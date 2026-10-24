@@ -102,7 +102,7 @@ export function DealerMaintenancePermissionPicker({
               ))}
               {group.title === 'Costs and values' && marketPrice && <label className={`${styles.permission} ${marketPrice.enabled ? styles.permissionEnabled : ''}`}>
                 <input type="checkbox" checked={marketPrice.enabled} disabled={disabled} onChange={event => marketPrice.onChange(event.target.checked)} />
-                <span><strong>Update market price</strong><small>Review and save the market assessment.</small></span>
+                <span><strong>Update market price</strong><small>Review the assessment.</small></span>
               </label>}
             </div>
             {group.note && <p className={styles.permissionNote} data-permission-note>{group.note}</p>}
