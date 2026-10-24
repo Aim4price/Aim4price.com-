@@ -4443,10 +4443,12 @@
   padding: 0.9rem 1.5rem 1.05rem;
 }
 
-.invoiceDropCodeModal .invoiceDropWizardHeading > h3:last-child {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
+/* Questions stay aligned with the content after removing step-number tiles. */
+.invoiceDropCodeModal .invoiceDropWizardHeading > :is(h3, p) {
+  grid-column: 1 / -1;
+  grid-row: auto;
+  justify-self: start;
+  text-align: left;
 }
 
 .invoiceDropWizardProgress {
