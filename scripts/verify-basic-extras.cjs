@@ -74,9 +74,9 @@ assert(await page.$$eval('button',bs=>bs.find(b=>b.textContent.trim()==='Continu
 await click('Edit');await page.click('[aria-label="Choose fitted extras"]');await page.screenshot({path:'/tmp/multiple-extras.png'});
 for (const viewport of [{width:1366,height:768},{width:390,height:650}]) {
  await page.setViewport(viewport);
- assert(await page.$eval('[class*=extrasEditorBody]',el=>!['auto','scroll'].includes(getComputedStyle(el).overflowY)),'No inner scrollbar');
- assert(await page.$eval('[class*=extrasEditorModal]',el=>getComputedStyle(el).maxHeight==='none'),'Modal grows with extras');
- assert(await page.$eval('[class*=extrasEditorOverlay]',el=>getComputedStyle(el).overflowY==='auto'),'Outer overlay owns scrolling');
+ assert(await page.$eval('[class*=extrasEditorBody]',el=>getComputedStyle(el).overflowY==='auto'),'Extras body scrolls internally');
+ assert(await page.$eval('[class*=extrasEditorModal]',el=>el.scrollHeight<=el.clientHeight+2),'Modal stays within available height');
+ assert(await page.$eval('[class*=extrasEditorOverlay]',el=>getComputedStyle(el).overflowY==='hidden'),'Outer overlay does not scroll');
  assert(!await page.$('[class*=extrasTotal]'),'No extras total strip');
  assert(await page.$$eval('[class*=removeExtra]',buttons=>buttons.every(b=>{
  const row=b.parentElement, inputs=row.querySelectorAll('input'), input=inputs[inputs.length-1];

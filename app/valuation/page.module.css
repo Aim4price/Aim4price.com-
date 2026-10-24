@@ -15521,12 +15521,12 @@
 .multipleExtras > .removeExtra { justify-self: end; min-height: 38px; padding: 6px 12px; }
 .extrasDetailModal:has(.multipleExtras) .detailsModalActions { position: sticky; bottom: -28px; z-index: 1; margin-top: 18px; padding: 18px 0; background: var(--app-surface, #fff); }
 
-/* Extras editor: only the outer overlay scrolls, leaving room beside the form. */
-.detailsModalOverlay.extrasEditorOverlay { overflow-y: auto; align-items: safe center; padding: 24px 32px; scrollbar-gutter: stable; }
+/* Extras editor: the body scrolls internally; title and actions stay visible. */
+.detailsModalOverlay.extrasEditorOverlay { overflow: hidden; align-items: center; padding: 24px 32px; scrollbar-gutter: stable; }
 .extrasEditorOverlay > .detailsModalBackdrop { position: fixed; }
-.detailsModal.extrasDetailModal.extrasEditorModal { display: flex; flex-direction: column; gap: 0; width: min(880px, calc(var(--website-visible-width, 100vw) - 32px)); overflow: visible; max-height: none; flex-shrink: 0; margin-block: auto; padding: 24px; }
+.detailsModal.extrasDetailModal.extrasEditorModal { display: flex; flex-direction: column; gap: 0; width: min(880px, calc(var(--website-visible-width, 100vw) - 32px)); overflow: hidden; max-height: calc(var(--website-visible-height, 100dvh) - 48px); flex-shrink: 0; margin-block: auto; padding: 24px; }
 .extrasEditorModal .detailsModalHeader { flex-shrink: 0; margin-bottom: 0; padding-bottom: 18px; }
-.extrasEditorBody { padding: 16px 2px 24px; }
+.extrasEditorBody { min-height: 0; overflow-y: auto; padding: 16px 20px 24px 2px; scrollbar-gutter: stable; overscroll-behavior: contain; }
 .extrasEditorModal .basicExtrasGrid { margin: 0 0 16px; gap: 12px; }
 .extrasEditorModal .basicExtrasGrid .choiceCard { min-height: 86px; padding: 14px 36px 14px 16px; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 12px; }
 .extrasEditorModal .basicExtrasGrid .detailIcon { width: 40px; height: 40px; border-radius: 12px; }
@@ -15571,3 +15571,5 @@
 /* A deliberate market-price choice before the existing save review. */
 .marketSaveChoices { display: grid; gap: 14px; margin-top: 24px; }
 .marketSaveChoices button { width: 100%; min-height: 52px; padding: 14px 20px; }
+
+.sharedLifetimeFields { display: grid; gap: 16px; min-width: 0; border: 0; margin: 0; padding: 0; }
