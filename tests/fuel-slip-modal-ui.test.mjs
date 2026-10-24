@@ -236,7 +236,7 @@ test('typed and pasted fuel rates insert a decimal after two digits', () => {
 
 test('manual capture exposes six main purchase fields and no file input', () => {
   const fields = sliceBetween(client, 'function renderFuelSlipDetailsFields()', 'function renderFuelSlipExtraFields()');
-  assert.equal((fields.split('<details')[0].match(/<label[ >]/g) ?? []).length, 6);
+  assert.equal((fields.split('<details')[0].match(/className=\{styles\.fuelEntryLabel\}/g) ?? []).length, 6);
   const allFields = fields + sliceBetween(client, 'function renderFuelSlipExtraFields()', 'const fuelSlipResults');
   assert.doesNotMatch(allFields + manualModal, /type="file"|CaptureUploadDropzone|documentFileUrl/);
   assert.match(allFields, /Payment references &amp; VAT \(optional\)/);

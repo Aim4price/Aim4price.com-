@@ -7949,3 +7949,30 @@
   background-size: 1rem !important;
   cursor: pointer;
 }
+
+.fuelSlipTypeSelect { margin-top: .45rem; }
+.accountFuelModal.manualFuelSlipModal .fuelSlipTypeTrigger {
+  width: 100%;
+  min-height: 3.4rem;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: .8rem 1rem;
+  border: 1px solid var(--app-line, #d4e2da);
+  border-radius: 1rem;
+  background: var(--app-surface-soft, #edf5f0);
+  color: var(--app-text, #234b3d);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fuelSlipTypeTrigger span { flex: 1; }
+.fuelSlipTypeTrigger svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--app-muted, #648779); }
+.fuelSlipTypeTrigger:hover, .fuelSlipTypeTrigger:focus-visible {
+  outline: 2px solid rgba(26, 115, 85, .25);
+  outline-offset: 2px;
+}
+.fuelSlipTypeTrigger[aria-invalid="true"] { border-color: #c34242 !important; }
+.fuelSlipTypeMenu { background: var(--app-surface, #fff); }
+.fuelSlipTypeMenu button { justify-content: space-between; color: var(--app-text, #234b3d); }
+.fuelSlipTypeMenu .storageFuelTypeOptionActive { color: #fff; }
