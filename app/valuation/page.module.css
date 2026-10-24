@@ -15511,3 +15511,12 @@
 /* Keep asset selection inputs as visible as Brand & Model. */
 .equipmentPickerCard .searchInput,
 .equipmentPickerCard .equipmentDropdownTrigger { background: #edf5f0; border-color: #c4dcd0; color: #244f3f; }
+
+.multipleExtras { display: grid; gap: 18px; }
+.extraEntry { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 14px; padding-top: 18px; border-top: 1px solid #d5e4dc; }
+.removeExtra { min-height: 44px; padding: 10px 14px; border: 1px solid #ecc2bc; border-radius: 12px; background: #fff0ee; color: #a23830; font: inherit; cursor: pointer; }
+.extrasTotal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding: 16px; border-radius: 12px; background: #edf5f0; color: #244f3f; }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .extraEntry { grid-template-columns: 1fr; } }
+.detailsModal.extrasDetailModal:has(.multipleExtras) { width: min(960px, calc(var(--website-visible-width, 100vw) - 32px)); overflow-y: auto; }
+.multipleExtras > .removeExtra { justify-self: end; min-height: 38px; padding: 6px 12px; }
+.extrasDetailModal:has(.multipleExtras) .detailsModalActions { position: sticky; bottom: -28px; z-index: 1; margin-top: 18px; padding: 18px 0; background: var(--app-surface, #fff); }

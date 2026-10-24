@@ -44,11 +44,13 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Basic and shared valuation regressions
-        run: node --experimental-strip-types --test tests/estimate-replacement-consistency.test.mjs tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
+        run: node --experimental-strip-types --test tests/estimate-replacement-consistency.test.mjs tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/basic-multiple-extras.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
       - name: Private estimate breakdown regressions
         run: node --test tests/estimate-breakdown.test.cjs
       - name: Equipment picker browsing and selection
         run: node scripts/verify-equipment-picker.cjs
+      - name: Multiple fitted extras
+        run: node scripts/verify-basic-extras.cjs
       - name: Usage and lifetime modal flow
         run: node scripts/verify-usage-lifetime.cjs
       - run: npm run typecheck
