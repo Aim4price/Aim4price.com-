@@ -3949,7 +3949,7 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 ref={budgetWizardStep === 4 ? budgetWizardStepHeadingRef : undefined} tabIndex={budgetWizardStep === 4 ? -1 : undefined} id="budget-modal-title">{budgetWizardStep === 4 ? 'Review budget' : editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
+                  <h2 className={reviewStyles.title} ref={budgetWizardStep === 4 ? budgetWizardStepHeadingRef : undefined} tabIndex={budgetWizardStep === 4 ? -1 : undefined} id="budget-modal-title">{budgetWizardStep === 4 ? 'Review budget' : editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
                   <p>{budgetWizardStep === 1
                     ? 'Choose what to track.'
                     : budgetWizardStep === 2
