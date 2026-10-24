@@ -13,7 +13,7 @@ import SharedMarketPrice from './SharedMarketPrice';
 import type {SharedMarketAssessment} from '../../lib/shared-market-assessment';
 import styles from '../../app/asset-register/page.module.css';
 export type FactField = 'serial'|'year'|'usage'|'condition'|'replacement'|'finance'|'insurance'|'license'|'location';
-export type FactPermissions = Partial<Record<FactField, boolean>>;
+export type FactPermissions = Partial<Record<FactField | 'market', boolean>>;
 export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,marketAssessment,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
  assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;marketAssessment?:SharedMarketAssessment;vatIncluded?:boolean;
  statuses:{finance:ReactNode;insurance:ReactNode;license:ReactNode;location:ReactNode};permissions?:FactPermissions;
@@ -44,7 +44,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
   {permissions.replacement?<button type="button" className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`} aria-label={`Edit replacement price for ${assetTitle}`} onClick={()=>setField('replacement')}>{price}</button>:<div className={styles.assetReplacementPriceBubble}>{price}</div>}
-  {marketAssessment && <SharedMarketPrice assessment={marketAssessment} assetTitle={assetTitle} vatIncluded={vatIncluded}/>}
+  {(marketAssessment || permissions.market) && <SharedMarketPrice assessment={marketAssessment} assetTitle={assetTitle} vatIncluded={vatIncluded} editEndpoint={permissions.market ? `${endpoint}/market-price` : undefined} onSaved={saved}/>}
   {field && permissions[field] && createPortal(field==='replacement'?<SharedAssetValueDialog endpoint={endpoint} assetTitle={assetTitle} field="replacement" onClose={close} onSaved={saved}/>:field==='location'?<SharedAssetLocationDialog endpoint={endpoint} assetTitle={assetTitle} onClose={close} onSaved={saved}/>:<SharedAssetWorkDialog key={field} endpoint={endpoint} action="details" initialField={field} assetTitle={assetTitle} onClose={close} onSaved={saved}/>,document.body)}
  </>;
 }

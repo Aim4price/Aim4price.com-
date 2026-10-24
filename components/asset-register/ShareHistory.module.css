@@ -1,4 +1,4 @@
-.panel { display:flex; flex-direction:column; min-height:0; padding-top:1.25rem; font-family:var(--font-heading, 'Montserrat'),var(--font-body, 'Inter'),sans-serif; font-weight:650; color:var(--app-text,#15392f); }
+.panel { display:flex; flex-direction:column; min-height:0; padding-top:0; font-family:var(--font-heading, 'Montserrat'),var(--font-body, 'Inter'),sans-serif; font-weight:650; color:var(--app-text,#15392f); }
 .panel p { margin:0 0 1rem; line-height:1.5; }
 .intro { color:var(--app-muted,#64746a); font-size:.95rem; font-weight:650; flex:none; }
 .list { display:grid; gap:.75rem; min-height:0; overflow-y:auto; padding:.2rem; }
