@@ -518,10 +518,10 @@
 .familyCategoryLabel > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .familyCategoryMenu { padding: 8px 14px 8px 8px; scrollbar-gutter: stable; }
 .familyCategoryCount { margin-left: auto; min-width: 1.8rem; text-align: center; color: #526c60; font-variant-numeric: tabular-nums; }
-.familyCategoryPulse { animation: categoryFilterHint 1.1s ease-in-out 2; }
+.familyCategoryPulse { animation: categoryFilterHint 2s ease-in-out infinite; }
 @keyframes categoryFilterHint {
-  0%, 100% { box-shadow: 0 0 0 0 #23745400; }
-  50% { box-shadow: 0 0 0 5px #23745430; border-color: #237454; }
+  0%, 100% { border-color: #8db8a1; box-shadow: inset 0 0 0 1px transparent, 0 0 0 0 rgb(35 116 84 / 0%); }
+  50% { border-color: #176344; box-shadow: inset 0 0 0 3px rgb(35 116 84 / 65%), 0 0 0 6px rgb(35 116 84 / 18%); }
 }
 @media (prefers-reduced-motion: reduce) { .familyCategoryPulse { animation: none; border-color: #237454; } }
 @media (max-width: 600px) {

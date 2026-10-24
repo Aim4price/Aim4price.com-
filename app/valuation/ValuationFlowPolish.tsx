@@ -520,7 +520,7 @@ export default function ValuationFlowPolish() {
               <button type="button" onClick={() => setFamilySearch('')} aria-label="Clear family search">×</button>
             ) : null}
           </label>
-          {showCategoryFilter ? <CategoryMenu value={familyGroup} groups={familyGroups} counts={categoryCounts} total={searchMatchedOptions.length} pulseKey={suggestCategory ? familySearch.trim() : ''} onChange={setFamilyGroup} /> : null}
+          {showCategoryFilter ? <CategoryMenu value={familyGroup} groups={familyGroups} counts={categoryCounts} total={searchMatchedOptions.length} pulseKey={!familyGroup && familyGroups.length > 1 ? familySearch.trim() || 'browse' : ''} onChange={setFamilyGroup} /> : null}
         </div>
         <div className={styles.familyListHeading}>
           <strong>{familyGroup || 'All asset types'}</strong>
