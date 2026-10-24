@@ -50,7 +50,7 @@ test('review preserves manual cost details without an attachment upload', () => 
     'Repair work',
     'Notes',
   ]) {
-    assert.match(costFormModal, new RegExp(`<dt>${label}<\\/dt>`));
+    assert.match(costFormModal, new RegExp(`<dt><CostReviewIcon kind="[^" ]+" \/>${label}<\\/dt>`));
   }
   assert.match(costFormModal, /<dt><BudgetDetailIcon kind="asset" \/>Asset<\/dt>/);
   assert.doesNotMatch(costFormModal, /ManualCostAttachment|<dt>Attachment<\/dt>/);
