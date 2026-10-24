@@ -267,7 +267,7 @@
   border: 1px solid rgba(18, 91, 68, 0.095);
   border-radius: 1rem;
   color: #173f34;
-  background: rgba(255, 255, 255, 0.76);
+  background: #edf5f0;
   box-shadow: 0 0.3rem 0.9rem rgba(12, 61, 46, 0.035);
   text-align: left;
   cursor: pointer;
@@ -507,9 +507,9 @@
   scrollbar-width: thin;
   scrollbar-color: #8cafa0 transparent;
 }
-.familyCategoryMenu > div > button { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 9px; color: #244f3f; background: #fff; font: inherit; font-size: .88rem; font-weight: 500; line-height: 1.4; text-align: left; cursor: pointer; }
-.familyCategoryMenu > div > button[aria-selected='true'] { background: #e7f3ec; color: #17563f; font-weight: 700; }
-.familyCategoryMenu > div > button:hover, .familyCategoryMenu > div > button:focus-visible { background: #f0f7f3; outline: 2px solid #91bfa7; outline-offset: -2px; }
+.familyCategoryMenu [role="option"] { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 9px; color: #244f3f; background: #fff; font: inherit; font-size: .95rem; font-weight: 600; line-height: 1.4; text-align: left; cursor: pointer; }
+.familyCategoryMenu [role="option"][aria-selected='true'] { background: #e7f3ec; color: #17563f; font-weight: 700; }
+.familyCategoryMenu [role="option"]:hover, .familyCategoryMenu [role="option"]:focus-visible { background: #f0f7f3; outline: 2px solid #91bfa7; outline-offset: -2px; }
 
 /* Keep the filter visible outside the independently scrolling result list. */
 .familyModal .familySearchRow { grid-template-columns: minmax(0, 1fr) minmax(17rem, .48fr); flex-shrink: 0; }
@@ -528,3 +528,12 @@
   :global(:where(html:not(:has([data-website-canvas])))) .familyModal .familySearchRow { grid-template-columns: 1fr; }
   :global(:where(html:not(:has([data-website-canvas])))) .familyModal .familyResultCount { white-space: normal; text-align: right; }
 }
+
+/* Match the valuation inputs, including when the menu is rendered in a portal. */
+.familySearchField input { background: #edf5f0; border-color: #c4dcd0; }
+.familyCategoryMenu { font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif; }
+.familyCategorySearch { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 1; padding: 10px; margin-bottom: 6px; border: 1px solid #c4dcd0; border-radius: 10px; background: #edf5f0; color: #36735a; }
+.familyCategorySearch input { width: 100%; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; color: #244f3f; font: inherit; font-size: .9rem; }
+.familyCategorySearch input::placeholder { color: #63796e; }
+.familyCategorySearch:focus-within { border-color: #237454; box-shadow: inset 0 0 0 1px #237454; }
+.familyCategoryEmpty { padding: 10px 12px; margin: 0; color: #63796e; font-size: .9rem; }

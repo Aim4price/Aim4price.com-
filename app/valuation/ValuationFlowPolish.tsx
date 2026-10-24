@@ -4,7 +4,7 @@ import modalStyles from '../../components/estimate-modal.module.css';
 
 import { submitCanonicalReportForm } from '../../lib/report-open';
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASIC_REPLACEMENT_SLIDER_STEP } from '../../lib/basic-estimate';
 import {
@@ -18,6 +18,7 @@ import styles from './valuation-flow-polish.module.css';
 function CategoryMenu({value, groups, counts, total, pulseKey, onChange}: {value: string; groups: string[]; counts: Record<string, number>; total: number; pulseKey: string; onChange: (value: string) => void}) {
   const [open, setOpen] = useState(false);
   const [noticed, setNoticed] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
   const [pulse, setPulse] = useState(false);
   useLayoutEffect(() => {
     setPulse(false);
@@ -29,7 +30,11 @@ function CategoryMenu({value, groups, counts, total, pulseKey, onChange}: {value
   const wrap = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const list = useRef<HTMLDivElement | null>(null);
-  const options = ['', ...groups];
+  const attachList = useCallback((node: HTMLDivElement | null) => {
+    list.current = node;
+    if (node) (node.querySelector<HTMLButtonElement>('[aria-selected="true"]') ?? node.querySelector<HTMLButtonElement>('[role="option"]'))?.focus({preventScroll: true});
+  }, []);
+  const options = ['', ...groups.filter(group => group.toLocaleLowerCase().includes(categorySearch.trim().toLocaleLowerCase()))];
   useLayoutEffect(() => {
     if (!open) return;
     (list.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]') ?? list.current?.querySelector<HTMLButtonElement>('[role="option"]'))?.focus({preventScroll: true});
@@ -46,6 +51,7 @@ function CategoryMenu({value, groups, counts, total, pulseKey, onChange}: {value
     if (event.key === 'Tab' && open) { event.preventDefault(); event.stopPropagation(); close(); return; }
     if (event.key === 'Escape' && open) { event.preventDefault(); event.stopPropagation(); close(); }
     if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      if (event.target instanceof HTMLInputElement && ['Home', 'End', 'ArrowUp'].includes(event.key)) return;
       event.preventDefault();
       if (!open) { setOpen(true); return; }
       const buttons = Array.from(list.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? []);
@@ -54,16 +60,23 @@ function CategoryMenu({value, groups, counts, total, pulseKey, onChange}: {value
       buttons[next]?.focus();
     }
   }}>
-    <button ref={trigger} type="button" className={`${styles.familyCategoryTrigger} ${pulse ? styles.familyCategoryPulse : ''}`} aria-label="Filter by category" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'equipment-category-list' : undefined} onClick={() => setOpen(current => !current)}>
+    <button ref={trigger} type="button" className={`${styles.familyCategoryTrigger} ${pulse ? styles.familyCategoryPulse : ''}`} aria-label="Filter by category" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? 'equipment-category-list' : undefined} onClick={() => { setCategorySearch(''); setOpen(current => !current); }}>
       <span className={styles.familyCategoryLabel}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M7 12h10M10 19h4" /></svg><span>{value || 'Filter by category'}</span></span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
     </button>
-    {open ? <DropdownOverlay anchorRef={trigger} maxHeight={320} minimumWidth={330} id="equipment-category-list" role="listbox" aria-label="Asset categories" className={styles.familyCategoryMenu}>
-      <div ref={node => { list.current = node; if (node) (node.querySelector<HTMLButtonElement>('[aria-selected="true"]') ?? node.querySelector<HTMLButtonElement>('[role="option"]'))?.focus({preventScroll: true}); }}>
+    {open ? <DropdownOverlay anchorRef={trigger} maxHeight={320} minimumWidth={330} className={styles.familyCategoryMenu}>
+      <div ref={attachList}>
+      <label className={styles.familyCategorySearch}>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
+        <input type="search" aria-label="Search categories" placeholder="Search categories" value={categorySearch} onChange={event => setCategorySearch(event.target.value)} />
+      </label>
+      <div id="equipment-category-list" role="listbox" aria-label="Asset categories">
       {options.map(option => <button key={option} type="button" role="option" aria-selected={value === option} tabIndex={value === option ? 0 : -1} onClick={() => { onChange(option); close(); }}>
         <span>{option || 'All categories'}</span><span className={styles.familyCategoryCount}>{option ? counts[option] : total}</span>
         {value === option ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
       </button>)}
+      </div>
+      {options.length === 1 && categorySearch.trim() ? <p className={styles.familyCategoryEmpty} role="status">No matching categories.</p> : null}
       </div>
     </DropdownOverlay> : null}
   </div>;
