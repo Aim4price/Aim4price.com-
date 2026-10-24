@@ -1,4 +1,6 @@
 'use client';
+import InvoiceDropIcon from './InvoiceDropIcon';
+import dropFinalStyles from './invoice-drop-final.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -4216,7 +4218,7 @@ export default function MyInvoicesClient({
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
 
-            <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
+            <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body} ${invoiceDropWizardStep === 3 ? dropFinalStyles.body : ''}`}>
 
               {invoiceDropWizardStep === 1 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${styles.invoiceDropScopePanel}`} aria-labelledby="invoice-drop-scope-title">
@@ -4311,12 +4313,12 @@ export default function MyInvoicesClient({
               ) : null}
 
               {invoiceDropWizardStep === 3 ? (
-                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-code-step-title">
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel} ${dropFinalStyles.panel}`} aria-labelledby="invoice-drop-code-step-title">
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                     <h3 id="invoice-drop-code-step-title">Create your code</h3>
                   </div>
-                  <div className={styles.invoiceDropSelectionSummary}>
+                  <div className={`${styles.invoiceDropSelectionSummary} ${dropFinalStyles.summary}`}>
                     <span className={styles.invoiceDropSelectionIcon} aria-hidden="true">{invoiceDropScope === 'all' ? <ContributionIcon /> : <LedgerIcon />}</span>
                     <div>
                       <strong>{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'Specific asset'}</strong>
@@ -4326,48 +4328,48 @@ export default function MyInvoicesClient({
                   {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Loading code...</div> : null}
 
                   {!invoiceDropCodeLoading ? (
-                    <div className={styles.invoiceDropCodeCard} aria-live="polite">
+                    <div className={`${styles.invoiceDropCodeCard} ${dropFinalStyles.card}`} aria-live="polite">
                       {invoiceDropCode ? (
                         <div className={styles.invoiceDropCodeCardHeader}>
-                          <div><strong>Active code</strong></div>
+                          <div><strong className={dropFinalStyles.label}><InvoiceDropIcon kind="code" />Active code</strong></div>
                         </div>
                       ) : null}
 
                       {visibleInvoiceDropCode ? (
-                        <div className={styles.invoiceDropCodeReveal}>
+                        <div className={`${styles.invoiceDropCodeReveal} ${dropFinalStyles.code}`}>
                           <code>{visibleInvoiceDropCode}</code>
                           <p>{newInvoiceDropCode
                             ? 'Copy or share this code.'
                             : 'Visible here only.'}</p>
                           <div className={styles.invoiceDropCodeInlineActions}>
                             <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(visibleInvoiceDropCode, 'Invoice Drop code copied.')}>
-                              Copy code
+                              <InvoiceDropIcon kind="copy" />Copy code
                             </button>
                             <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropInstructions()}>
-                              Copy link + code
+                              <InvoiceDropIcon kind="link" />Copy link + code
                             </button>
                             {revealedInvoiceDropCode ? (
                               <button type="button" className={styles.secondaryButton} onClick={hideRevealedInvoiceDropCode}>
-                                Hide code
+                                <InvoiceDropIcon kind="hide" />Hide code
                               </button>
                             ) : null}
                           </div>
                         </div>
                       ) : invoiceDropCode ? (
                         <>
-                          <div className={styles.invoiceDropCodeMasked}>
+                          <div className={`${styles.invoiceDropCodeMasked} ${dropFinalStyles.code}`}>
                             <code aria-label={`Active code ending in ${invoiceDropCode.lastFour}`}>A4P-••••-••••-{invoiceDropCode.lastFour}</code>
-                            <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}.</small>
+                            <small className={dropFinalStyles.label}><InvoiceDropIcon kind="calendar" />Created {formatDateTime(invoiceDropCode.createdAtIso)}.</small>
                           </div>
                           <div className={styles.invoiceDropCodeActions}>
                             <button type="button" className={styles.secondaryButton} onClick={() => void revealSelectedInvoiceDropCode()} disabled={invoiceDropCodeRevealing || invoiceDropCodeSaving}>
-                              {invoiceDropCodeRevealing ? 'Viewing...' : 'View code'}
+                              <InvoiceDropIcon kind="view" />{invoiceDropCodeRevealing ? 'Viewing...' : 'View code'}
                             </button>
                             <button type="button" className={styles.secondaryButton} onClick={() => void issueSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving || invoiceDropCodeRevealing}>
-                              {invoiceDropCodeSaving ? 'Changing...' : 'Change code'}
+                              <InvoiceDropIcon kind="change" />{invoiceDropCodeSaving ? 'Changing...' : 'Change code'}
                             </button>
                             <button type="button" className={styles.invoiceDropRevokeButton} onClick={() => void revokeSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving || invoiceDropCodeRevealing}>
-                              Revoke code
+                              <InvoiceDropIcon kind="revoke" />Revoke code
                             </button>
                           </div>
                         </>
@@ -4380,22 +4382,22 @@ export default function MyInvoicesClient({
                             onClick={() => void issueSelectedInvoiceDropCode()}
                             disabled={!invoiceDropTargetKey || invoiceDropCodeSaving}
                           >
-                            {invoiceDropCodeSaving ? 'Creating...' : 'Create code'}
+                            <InvoiceDropIcon kind="code" />{invoiceDropCodeSaving ? 'Creating...' : 'Create code'}
                           </button>
                         </div>
                       )}
                     </div>
                   ) : null}
 
-                  <div className={styles.invoiceDropLinkCard}>
+                  <div className={`${styles.invoiceDropLinkCard} ${dropFinalStyles.link}`}>
                     <div>
-                      <span>Upload link</span>
+                      <span className={dropFinalStyles.label}><InvoiceDropIcon kind="link" />Upload link</span>
                       <strong>{invoiceDropPublicUrl}</strong>
                     </div>
                     <div className={styles.invoiceDropCodeInlineActions}>
-                      <a className={styles.secondaryButton} href="/drop-invoice" target="_blank" rel="noreferrer">Open</a>
-                      <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.')}>Copy</button>
-                      <button type="button" className={styles.secondaryButton} onClick={() => void shareInvoiceDropLink()}>Share</button>
+                      <a className={styles.secondaryButton} href="/drop-invoice" target="_blank" rel="noreferrer"><InvoiceDropIcon kind="open" />Open</a>
+                      <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.')}><InvoiceDropIcon kind="copy" />Copy</button>
+                      <button type="button" className={styles.secondaryButton} onClick={() => void shareInvoiceDropLink()}><InvoiceDropIcon kind="share" />Share</button>
                     </div>
                   </div>
 

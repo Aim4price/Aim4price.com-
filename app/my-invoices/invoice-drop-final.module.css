@@ -1,0 +1,25 @@
+.body.body.body.body.body {
+  padding: 12px 30px !important;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
+}
+.panel.panel.panel.panel {
+  padding: 0 !important;
+  gap: 12px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.panel .summary { padding: 10px 14px; gap: 12px; }
+.panel .summary > span { width: 36px; height: 36px; flex: 0 0 36px; }
+.panel .card { padding: 14px; gap: 10px; box-shadow: none; border-color: var(--app-line, #d8e6de); }
+.panel .code { padding: 12px 14px; gap: 6px; border: 0; background: var(--app-surface-soft, #f0f7f3); }
+.panel .link { padding: 12px 14px; gap: 12px; border-color: var(--app-line, #d8e6de); background: var(--app-surface-soft, #f0f7f3); }
+.label { display: flex; align-items: center; gap: 8px; }
+.icon { display: inline-block; width: 18px; height: 18px; flex: 0 0 18px; opacity: .6; vertical-align: middle; }
+.panel :is(button, a) { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px !important; padding: 8px 12px !important; }
+.panel .link > div > strong { white-space: normal; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body.body { padding: 12px 18px !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .panel .link { grid-template-columns: minmax(0, 1fr); }
+}
