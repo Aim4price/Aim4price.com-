@@ -4575,8 +4575,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       clientRows: safeClientRows,
       recordRows,
       saleabilityRows: compactPdfRows([
-        { label: 'Realistic Market Price', value: 'Calculate separately for your selling circumstances.' },
-        { label: 'Why prices differ', value: 'Ideal Price reflects the asset details and depreciation assumptions. Realistic Market Price also considers demand, competing assets, selling method and time available. It may be higher or lower; neither price guarantees a sale.' },
+        { label: 'Realistic Market Value', value: 'Calculate separately for your selling circumstances.' },
+        { label: 'Why prices differ', value: 'Ideal Price reflects the asset details and depreciation assumptions. Realistic Market Value also considers demand, competing assets, selling method and time available. It may be higher or lower; neither price guarantees a sale.' },
       ]),
     };
   }
@@ -9370,11 +9370,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
             <div>
               <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
-              <strong>Realistic Market Price</strong>
+              <strong>Realistic Market Value</strong>
               <p>Demand and selling circumstances can move this above or below your Aim4price Ideal Value.</p>
               <small>Your Aim4price Ideal Value stays unchanged. Neither is a guaranteed selling price.</small>
             </div>
-            <button type="button" aria-label="Calculate Realistic Market Price" onClick={() => setSaleabilityOpen(true)}>Refine</button>
+            <button type="button" aria-label="Calculate Realistic Market Value" onClick={() => setSaleabilityOpen(true)}>Refine</button>
           </section>
         </div>
 
@@ -9861,11 +9861,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <section className={`${styles.finalSaveModal} ${modalStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="market-save-title" onClick={event => event.stopPropagation()}>
             <button type="button" className={`${styles.finalSaveClose} ${modalStyles.close}`} data-modal-close="true" aria-label="Close" onClick={closeFinalSaveModal}>×</button>
             <div className={styles.finalSaveHeader}>
-              <h2 id="market-save-title">Add a realistic market price?</h2>
+              <h2 id="market-save-title">Add a realistic market value?</h2>
               <p>Your Ideal Price is ready. Answer a few questions to estimate what your asset could sell for.</p>
             </div>
             <div className={styles.marketSaveChoices}>
-              <button type="button" className={styles.primaryButton} onClick={() => { setSaveMarketChoice('calculating'); setSaleabilityOpen(true); }}>Calculate market price</button>
+              <button type="button" className={styles.primaryButton} onClick={() => { setSaveMarketChoice('calculating'); setSaleabilityOpen(true); }}>Calculate market value</button>
               <button type="button" className={styles.secondaryButton} onClick={() => { setCompletedMarketAssessment(null); setSaveMarketChoice(null); }}>Save with Ideal Price only</button>
             </div>
           </section>

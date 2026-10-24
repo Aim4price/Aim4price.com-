@@ -54,7 +54,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+`const h=React.createElement,s=require('app/asset-register/page.module.css'),c=require('components/asset-register/AssetCardDetails.module.css'),Icon=require('components/asset-register/AssetDetailIcon').default,Market=require('components/asset-register/AssetMarketDetail').default;window.opens=0;const root=ReactDOM.createRoot(document.getElementById('app'));window.render=(canvas,saved)=>{document.documentElement.toggleAttribute('data-test-canvas',canvas);root.render(h('div',canvas?{'data-website-canvas':true,style:{width:1440}}:{},h('div',{className:s.assetDetailsPanel,style:{width:canvas?750:'100%',maxWidth:750,margin:'auto',padding:16}},h('div',{className:s.assetDetailsGrid},h('div',{className:s.assetPrimaryDetails},[['serial','Serial / VIN','SKB 4'],['registration','Registration','CAW 122851'],['year','Year','2023'],['usage','Usage','162 602 km'],['condition','Condition','Requires attention']].map(([kind,label,value])=>h('button',{className:s.assetDetailRow,key:kind},h('span',{className:c.detailLabel},h(Icon,{kind}),label),h('strong',null,value)))),h('div',{className:s.assetStatusDetails},[['Financed','No'],['Insured','Unknown'],['Licensed','Yes'],['Mapped','NotApplicable']].map(([label,status])=>h('button',{className:s.assetStatusRow,key:label},h('span',null,label),h('strong',{className:s.assetStatusMark+' '+s['statusMark'+status]},status==='Yes'?'✓':status==='No'?'×':status==='Unknown'?'?':'N/A'))))),h('div',{className:s.assetReplacementPriceBubble},h('span',{className:c.detailLabel},h(Icon,{kind:'replacement'}),'Replacement price'),h('strong',null,'R 450 000'),h('small',null,'Excl. VAT')),h(Market,{saved:saved?{priceExVat:300000}:undefined,stale:saved,included:false,loading:false,error:false,canCalculate:true,onCalculate:()=>window.opens++}))));};window.render(false,false);`});
- await page.waitForSelector('[aria-label="Realistic Market Price"]');
+ await page.waitForSelector('[aria-label="Realistic Market Value"]');
  for(const width of [1440,900,390,320]){
   await page.setViewport({width,height:1000});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'native overflow '+width);
@@ -62,7 +62,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   const serial=await page.$eval('[data-detail-icon="serial"]',e=>({height:e.parentElement.getBoundingClientRect().height,text:e.parentElement.textContent}));assert.equal(serial.text,'Serial / VIN');
   await page.screenshot({path:'/tmp/asset-polish-'+width+'.png'});
  }
- await page.click('[aria-label="Open Realistic Market Price"]');assert.equal(await page.evaluate(()=>window.opens),1);
+ await page.click('[aria-label="Open Realistic Market Value"]');assert.equal(await page.evaluate(()=>window.opens),1);
  await page.evaluate(()=>window.render(true,true));await page.waitForSelector('[role=status]');
  assert(await page.$eval('[role=status]',e=>e.textContent==='Update needed'));
  await page.setViewport({width:1440,height:1000});await page.screenshot({path:'/tmp/asset-polish-canvas.png'});

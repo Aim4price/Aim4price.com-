@@ -18,11 +18,11 @@ type Props = {
 export default function AssetMarketDetail({saved, stale, included, loading, error, canCalculate, onCalculate}: Props) {
   const needsUpdate = Boolean(saved && stale);
   const money = saved ? new Intl.NumberFormat('en-ZA', {style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(saved.priceExVat, included)) : null;
-  return <div className={`${styles.marketDetail} ${needsUpdate ? styles.marketNeedsUpdate : ''}`} aria-label="Realistic Market Price">
-    <button type="button" className={styles.marketOpen} disabled={!canCalculate || (!saved && (loading || error))} onClick={onCalculate} aria-haspopup={canCalculate?'dialog':undefined} aria-label={canCalculate ? (needsUpdate ? 'Update needed: open Realistic Market Price' : 'Open Realistic Market Price') : 'Realistic Market Price'}>
+  return <div className={`${styles.marketDetail} ${needsUpdate ? styles.marketNeedsUpdate : ''}`} aria-label="Realistic Market Value">
+    <button type="button" className={styles.marketOpen} disabled={!canCalculate || (!saved && (loading || error))} onClick={onCalculate} aria-haspopup={canCalculate?'dialog':undefined} aria-label={canCalculate ? (needsUpdate ? 'Update needed: open Realistic Market Value' : 'Open Realistic Market Value') : 'Realistic Market Value'}>
       <span className={styles.marketHeading}>
         <AssetDetailIcon kind={needsUpdate ? "alert" : "market"}/>
-        <span className={styles.marketTitle}><strong>Realistic Market Price</strong></span>
+        <span className={styles.marketTitle}><strong>Realistic Market Value</strong></span>
       </span>
       <span className={styles.marketAmount}>
         {saved ? <>

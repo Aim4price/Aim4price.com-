@@ -14,12 +14,12 @@ export default function SharedMarketPrice({assessment, assetTitle, vatIncluded}:
   const date=new Intl.DateTimeFormat('en-ZA',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(assessment.assessedAt));
   return <>
     <div data-needs-review={assessment.needsReview} className={`${summaryStyles.market} ${styles.marketDetail} ${assessment.needsReview?styles.marketNeedsUpdate:''}`}>
-      <button type="button" className={styles.marketOpen} onClick={()=>setOpen(true)} aria-label={`View saved realistic market price for ${assetTitle}`}>
-        <span className={styles.marketHeading}><AssetDetailIcon kind="market"/><span className={styles.marketTitle}><strong>Realistic Market Price</strong></span></span>
+      <button type="button" className={styles.marketOpen} onClick={()=>setOpen(true)} aria-label={`View saved realistic market value for ${assetTitle}`}>
+        <span className={styles.marketHeading}><AssetDetailIcon kind="market"/><span className={styles.marketTitle}><strong>Realistic Market Value</strong></span></span>
         <span className={styles.marketAmount}><strong>{amount}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small>{assessment.needsReview&&<small className={styles.reviewNeeded}>Owner review needed</small>}</span>
       </button>
     </div>
-    {open&&createPortal(<LeadActionDialog title="Realistic Market Price" titleIcon={<AssetDetailIcon kind="market"/>} assetTitle={assetTitle} onClose={()=>setOpen(false)} closeLabel="Close market price">
+    {open&&createPortal(<LeadActionDialog title="Realistic Market Value" titleIcon={<AssetDetailIcon kind="market"/>} assetTitle={assetTitle} onClose={()=>setOpen(false)} closeLabel="Close market value">
       <div className={summaryStyles.summary}>
         <div className={summaryStyles.amount}><strong>{amount}</strong><span>{vatIncluded?'Incl. VAT':'Excl. VAT'}</span></div>
         <p>Saved by the owner on {date}.</p>

@@ -13844,7 +13844,7 @@ export default function AssetRegisterClient({
 
     const marketAssessment = savedSaleability[asset.id];
     if (marketAssessment) assetRows.push({
-      label: 'Realistic Market Price',
+      label: 'Realistic Market Value',
       value: `${money(marketAssessment.priceExVat)} excl. VAT${marketAssessment.basis !== saleabilityBasis(asset) ? ' · Update needed' : ''}`,
     });
 
@@ -13875,7 +13875,7 @@ export default function AssetRegisterClient({
       notes: [],
       methodCards,
       footerNote:
-        'Aim4price Value reflects asset details and depreciation assumptions. Realistic Market Price also considers demand and selling circumstances, so it may be higher or lower. Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
+        'Aim4price Value reflects asset details and depreciation assumptions. Realistic Market Value also considers demand and selling circumstances, so it may be higher or lower. Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
     };
     const reportHtml = buildAssetSheetReportHtml(reportPayload);
     const fileName = `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`;
@@ -20245,7 +20245,7 @@ export default function AssetRegisterClient({
                 >
                   <SaleabilityIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Realistic Market Price</strong>
+                    <strong>Realistic Market Value</strong>
                     <small>Estimate a selling price.</small>
                   </span>
                 </button>

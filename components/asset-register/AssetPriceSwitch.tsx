@@ -17,12 +17,12 @@ export default function AssetPriceSwitch({value,manual,view,onViewChange,replace
  const money=(amount:number)=>new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(amount,included));
  const descriptions={replacement:'Estimated cost of a comparable new asset.',fair:manual?'Your manually entered asset value.':'Estimated current Aim4price Value.',market:'Demand and selling circumstances can move this above or below Aim4price Value. Actual offers may differ.'};
  const explanations={replacement:'The saved replacement price used for this asset. Includes extras where recorded in the replacement total. Check against a current supplier quotation; the accuracy of this input affects the valuation.',fair:manual?'Your manually entered value. It is not an Aim4price calculation or a guaranteed selling price.':'Estimated Aim4price Value based on replacement cost, age, usage and condition. Accuracy depends on the details supplied. Not a guaranteed selling price.',market:'An indicative asking price based on your selling circumstances. Buyer demand, location, timing and negotiation may affect the final selling price.'};
- const labels={replacement:'Replacement',fair:manual?'Manual value':'Aim4price Value',market:'Realistic Market Price'};
+ const labels={replacement:'Replacement',fair:manual?'Manual value':'Aim4price Value',market:'Realistic Market Value'};
  return <section className={styles.panel} data-view={view} aria-label="Asset valuation">
   <select className={styles.basisSelect} aria-label="Value basis" value={view} title={explanations[view]} onChange={event=>{setShowInfo(false);onViewChange(event.target.value as AssetPriceView);}}>
    <option value="replacement">Replacement</option>
    <option value="fair">{manual?'Manual value':'Aim4price Value'}</option>
-   <option value="market">Realistic Market Price</option>
+   <option value="market">Realistic Market Value</option>
   </select>
   {amount!==undefined?<>
    <div className={styles.amountRow}><strong aria-live="polite">{money(amount)}</strong><PricingVatToggle included={included} onChange={onVatChange}/></div>

@@ -965,7 +965,7 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           <aside class="assetReportSide">
             ${payload.saleabilityRows.length ? `
               <section class="assetReportSideCard assetReportRecordRows assetReportSaleabilityRows">
-                <h2>Realistic Market Price</h2>
+                <h2>Realistic Market Value</h2>
                 ${renderReportRows(payload.saleabilityRows, 'No market price details available.')}
               </section>
             ` : ''}
