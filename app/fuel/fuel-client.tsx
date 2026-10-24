@@ -4398,7 +4398,7 @@ export default function FuelClient({
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Automatic upload</strong>
-                  <small>Upload a photo or PDF. Aim4price captures and allocates it within 24 hours.</small>
+                  <small>Aim4price captures and allocates within 24 hours.</small>
                 </span>
                 <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
                   <ChevronRightIcon />
