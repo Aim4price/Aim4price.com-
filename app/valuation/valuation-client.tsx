@@ -7908,20 +7908,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </button>
               </div>
 
-              <button type="button" className={styles.conditionRouteCard} onClick={() => {
-                clearDetailedAssessment(false);
-                setCondition('fair');
-                setConditionUnspecified(true);
-                setConditionStepComplete(true);
-                setMessage('');
-                resetResult();
-                setActiveDetailsModal(null);
-                scrollToDetailsCard('valuation-popularity-step');
-              }}>
-                <span className={styles.conditionChoiceIcon} data-condition="unspecified" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 12h14" /></svg></span>
-                <span className={styles.conditionRouteCopy}><strong>Not specified</strong><small>Uses Fair for valuation.</small></span>
-              </button>
-
               <div className={`${styles.detailsModalActions} ${modalStyles.actions} ${styles.conditionRouteActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
               </div>
