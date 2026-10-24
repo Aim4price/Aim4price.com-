@@ -22,8 +22,8 @@ export default function Page(){const [open,setOpen]=useState(true);return <><but
  assert.equal(writes.filter(r=>r.path==='/api/fixture-cost').length,1);assert(!writes.some(r=>r.path.startsWith('/api/my-invoices')));
  await open(1440,900);await click('Automatic upload');await page.waitForSelector('input[type=file]');await page.waitForFunction(()=>document.body.textContent.includes('0 of 10'));
  const pdf=await require('pdf-lib').PDFDocument.create();pdf.addPage();await fs.writeFile('/tmp/shared-owner-invoice.pdf',await pdf.save());await (await page.$('input[type=file]')).uploadFile('/tmp/shared-owner-invoice.pdf');await page.screenshot({path:'/tmp/shared-owner-capture.png'});
- await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('Send')&&!b.disabled));
- await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.includes('Send')&&!n.disabled).click());await page.waitForFunction(()=>document.body.textContent.includes('A4P-INV-TEST123456 received'));
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Upload automatically'&&!b.disabled));
+ await click('Upload automatically');await page.waitForFunction(()=>document.body.textContent.includes('A4P-INV-TEST123456 received'));
  assert.equal(writes.filter(r=>r.path==='/api/fixture-cost/capture').length,1);
  await open(1024,768);assert(await page.$eval('[data-cost-choice-modal]',e=>e.scrollHeight<=e.clientHeight+1));assert.deepEqual(errors,[]);console.log('PASS owner cost choice, complete manual wizard, assisted upload and scoped requests; desktop fit');
  }finally{if(browser)await browser.close();if(server){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/business/shared-cost-validation'),{recursive:true,force:true});}}
