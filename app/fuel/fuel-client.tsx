@@ -32,7 +32,7 @@ import DocumentFileLink from '../../components/DocumentFileLink';
 import QrCodePreview from '../../components/QrCodePreview';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
+import { useId, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
@@ -391,8 +391,7 @@ const FUEL_TYPE_OPTIONS: ReportSelectOption[] = [
 ];
 
 const FUEL_SLIP_TYPE_OPTIONS = [
-  'Diesel', 'Diesel 10ppm', 'Diesel 50ppm', 'Diesel 500ppm',
-  'Petrol', 'Unleaded 93', 'Unleaded 95', 'AdBlue', 'Paraffin',
+  'Diesel', 'Petrol', 'Paraffin', 'AdBlue',
 ];
 
 const emptyStorageDraft: StorageDraft = {
@@ -945,6 +944,51 @@ function FuelSlipFilterDropdown({
       </div>
     </div>
   );
+}
+
+function FuelSlipTypeSelect({ value, onChange, invalid }: { value: string; onChange: (value: string) => void; invalid?: true }) {
+  const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const options = useRef<(HTMLButtonElement | null)[]>([]);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    options.current[Math.max(0, FUEL_SLIP_TYPE_OPTIONS.indexOf(value))]?.focus();
+    const dismiss = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!trigger.current?.contains(target) && !document.getElementById(menuId)?.contains(target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', dismiss);
+    return () => document.removeEventListener('pointerdown', dismiss);
+  }, [open, menuId, value]);
+
+  return <div className={styles.fuelSlipTypeSelect}>
+    <button ref={trigger} type="button" className={styles.fuelSlipTypeTrigger}
+      aria-label="Fuel type" aria-haspopup="listbox" aria-expanded={open} aria-controls={open ? menuId : undefined}
+      aria-invalid={invalid} data-fuel-slip-field="fuelType" onClick={() => setOpen(!open)}
+      onKeyDown={(event) => { if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); } }}>
+      <StorageFieldIcon kind="fuel" /><span>{value || 'Choose fuel type'}</span><ChevronDownIcon />
+    </button>
+    {open ? <DropdownOverlay id={menuId} anchorRef={trigger} className={`${styles.storageFuelTypeMenu} ${styles.fuelSlipTypeMenu}`} role="listbox" aria-label="Fuel type"
+      onKeyDown={(event) => {
+        const index = options.current.indexOf(document.activeElement as HTMLButtonElement);
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); }
+        else if (event.key === 'Tab') { setOpen(false); trigger.current?.focus(); }
+        else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+          event.preventDefault();
+          const last = FUEL_SLIP_TYPE_OPTIONS.length - 1;
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? last : (index + (event.key === 'ArrowDown' ? 1 : last)) % (last + 1);
+          options.current[next]?.focus();
+        }
+      }}>
+      {FUEL_SLIP_TYPE_OPTIONS.map((fuelType, index) => <button key={fuelType} ref={(node) => { options.current[index] = node; }} type="button" role="option" aria-selected={value === fuelType}
+        className={`${styles.storageFuelTypeOption} ${value === fuelType ? styles.storageFuelTypeOptionActive : ''}`}
+        onClick={() => { onChange(fuelType); setOpen(false); trigger.current?.focus(); }}>
+        <span>{fuelType}</span>{value === fuelType ? <span aria-hidden="true">✓</span> : null}
+      </button>)}
+    </DropdownOverlay> : null}
+  </div>;
 }
 
 function StorageFuelTypeSelect({ value, isOpen, onToggle, onChange }: StorageFuelTypeSelectProps) {
@@ -3236,15 +3280,11 @@ export default function FuelClient({
             <DateInput value={fuelSlipDraft.documentDate} onValueChange={(value) => setFuelSlipField('documentDate', value)} aria-invalid={fuelSlipAriaInvalid('documentDate')} data-fuel-slip-field="documentDate" />
             {fuelSlipRequiredHint('documentDate')}
           </label>
-          <label className={fuelSlipFieldClassName('fuelType')}>
+          <div className={fuelSlipFieldClassName('fuelType')}>
             <span className={styles.fuelEntryLabel}>Fuel type</span>
-            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="fuel" /><select value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType">
-              <option value="" disabled>Choose fuel type</option>
-              {fuelSlipDraft.fuelType && !FUEL_SLIP_TYPE_OPTIONS.includes(fuelSlipDraft.fuelType) ? <option value={fuelSlipDraft.fuelType}>{fuelSlipDraft.fuelType}</option> : null}
-              {FUEL_SLIP_TYPE_OPTIONS.map((fuelType) => <option key={fuelType} value={fuelType}>{fuelType}</option>)}
-            </select></span>
+            <FuelSlipTypeSelect value={fuelSlipDraft.fuelType} onChange={(value) => setFuelSlipField('fuelType', value)} invalid={fuelSlipAriaInvalid('fuelType')} />
             {fuelSlipRequiredHint('fuelType')}
-          </label>
+          </div>
           <label className={fuelSlipFieldClassName('litres')}>
             <span className={styles.fuelEntryLabel}>Litres</span>
             <span className={styles.fuelEntryInput}><StorageFieldIcon kind="capacity" /><input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" aria-invalid={fuelSlipAriaInvalid('litres')} data-fuel-slip-field="litres" /></span>

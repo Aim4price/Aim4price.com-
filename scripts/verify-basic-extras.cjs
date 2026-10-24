@@ -74,7 +74,16 @@ assert(await page.$$eval('button',bs=>bs.find(b=>b.textContent.trim()==='Continu
 await click('Edit');await page.click('[aria-label="Choose fitted extras"]');await page.screenshot({path:'/tmp/multiple-extras.png'});
 for (const viewport of [{width:1366,height:768},{width:390,height:650}]) {
  await page.setViewport(viewport);
- assert(await page.$eval('[class*=extrasEditorModal]',el=>el.scrollHeight<=el.clientHeight+2),'Only the body may scroll');
+ assert(await page.$eval('[class*=extrasEditorBody]',el=>!['auto','scroll'].includes(getComputedStyle(el).overflowY)),'No inner scrollbar');
+ assert(await page.$eval('[class*=extrasEditorModal]',el=>getComputedStyle(el).maxHeight==='none'),'Modal grows with extras');
+ assert(await page.$eval('[class*=extrasEditorOverlay]',el=>getComputedStyle(el).overflowY==='auto'),'Outer overlay owns scrolling');
+ assert(!await page.$('[class*=extrasTotal]'),'No extras total strip');
+ assert(await page.$$eval('[class*=removeExtra]',buttons=>buttons.every(b=>{
+ const row=b.parentElement, inputs=row.querySelectorAll('input'), input=inputs[inputs.length-1];
+ const a=input.getBoundingClientRect(),r=b.getBoundingClientRect();
+ return Math.abs((a.top+a.bottom-r.top-r.bottom)/2)<2 && r.left-a.right>=10;
+ })),'Delete buttons align with price inputs with a clear gap');
+ await page.$$eval('button',buttons=>buttons.find(el=>el.textContent.trim()==='Continue').scrollIntoView({block:'end'}));
  assert(await page.$$eval('button',buttons=>{const b=buttons.find(el=>el.textContent.trim()==='Continue');const r=b.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}),'Continue remains visible');
 }
 await page.setViewport({width:1366,height:900});await page.click('[aria-label="Remove first extra"]');await click('Continue');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicExtras[0].name,'Loader');assert.equal(result.basicTotalReplacementPriceExVat,600000);await click('Edit');await page.click('[aria-label="No fitted extras"]');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicTotalReplacementPriceExVat,500000);assert.deepEqual(errors,[]);console.log('PASS add, validate, remove, reopen, promote and clear extras');}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
