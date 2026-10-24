@@ -7904,3 +7904,48 @@
 .accountFuelModal.manualFuelSlipModal .fuelEntryInput input[aria-invalid="true"] {
   border-color: #bf3b35 !important;
 }
+
+/* Keep the field surfaces behind their inset icons and calendar trigger. */
+.fuelSlipFlowBackdrop .manualFuelSlipModal .formGrid :is(input, select, textarea) {
+  z-index: auto;
+}
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput > select {
+  padding-inline-start: 3.1rem;
+  padding-inline-end: 2.6rem;
+  min-height: 3.4rem;
+  border: 1px solid var(--app-line, #d4e2da);
+  background-color: var(--app-surface-soft, #edf5f0);
+  color: var(--app-text, #234b3d);
+  border-radius: 1rem;
+  font-weight: 400;
+}
+.accountFuelModal.manualFuelSlipModal button[aria-label="Open calendar"] {
+  z-index: 2;
+}
+.accountFuelModal.manualFuelSlipModal .formModalScrollBody {
+  padding: .8rem var(--fuel-dialog-padding) .8rem !important;
+  scrollbar-width: none;
+}
+.accountFuelModal.manualFuelSlipModal .formModalScrollBody::-webkit-scrollbar {
+  display: none;
+}
+.accountFuelModal.manualFuelSlipModal .fuelSlipWizardPanel {
+  padding: 1rem 1.15rem !important;
+  gap: .8rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .formGrid {
+  gap: 1rem 1.65rem !important;
+}
+.accountFuelModal.manualFuelSlipModal .modalFooter {
+  padding-top: .75rem !important;
+  padding-bottom: 1rem !important;
+}
+
+.accountFuelModal.manualFuelSlipModal .fuelEntryInput > select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23274f40' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 1rem center !important;
+  background-size: 1rem !important;
+  cursor: pointer;
+}

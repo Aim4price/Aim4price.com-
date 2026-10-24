@@ -390,6 +390,11 @@ const FUEL_TYPE_OPTIONS: ReportSelectOption[] = [
   { value: 'paraffin', label: 'Paraffin' },
 ];
 
+const FUEL_SLIP_TYPE_OPTIONS = [
+  'Diesel', 'Diesel 10ppm', 'Diesel 50ppm', 'Diesel 500ppm',
+  'Petrol', 'Unleaded 93', 'Unleaded 95', 'AdBlue', 'Paraffin',
+];
+
 const emptyStorageDraft: StorageDraft = {
   name: '',
   fuelType: 'diesel',
@@ -3224,7 +3229,11 @@ export default function FuelClient({
           </label>
           <label className={fuelSlipFieldClassName('fuelType')}>
             <span className={styles.fuelEntryLabel}>Fuel type</span>
-            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="fuel" /><input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType" /></span>
+            <span className={styles.fuelEntryInput}><StorageFieldIcon kind="fuel" /><select value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType">
+              <option value="" disabled>Choose fuel type</option>
+              {fuelSlipDraft.fuelType && !FUEL_SLIP_TYPE_OPTIONS.includes(fuelSlipDraft.fuelType) ? <option value={fuelSlipDraft.fuelType}>{fuelSlipDraft.fuelType}</option> : null}
+              {FUEL_SLIP_TYPE_OPTIONS.map((fuelType) => <option key={fuelType} value={fuelType}>{fuelType}</option>)}
+            </select></span>
             {fuelSlipRequiredHint('fuelType')}
           </label>
           <label className={fuelSlipFieldClassName('litres')}>
