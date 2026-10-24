@@ -16,8 +16,8 @@ export function marketplaceShareCaption(listing: MarketplaceListing) {
   ].filter(Boolean).join('\n');
 }
 
-function Icon({ kind }: { kind: 'download' | 'copy' | 'marketplace' | 'groups' | 'link' | 'photo' | 'details' }) {
-  const paths = { link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2', photo: 'M3 3h18v18H3zM3 17l5-5 4 4 4-5 5 6M7 7h2', details: 'M4 3h16v18H4zM8 7h8M8 12h8M8 17h5', download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5', copy: 'M9 9h12v12H9zM15 5V3H3v12h2', marketplace: 'M4 10v10h16V10M3 10l2-6h14l2 6H3M9 20v-6h6v6', groups: 'M3 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 4 5v3M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M17 3a4 4 0 0 1 0 8' };
+function Icon({ kind }: { kind: 'download' | 'copy' | 'marketplace' | 'groups' | 'link' | 'photo' | 'details' | 'share' | 'chat' }) {
+  const paths = { share: 'M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm12 7a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM9 11l6-5M9 13l6 5', chat: 'M21 11.5a9 9 0 0 1-13 8L3 21l1.5-5A9 9 0 1 1 21 11.5ZM8 9h8M8 13h5', link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2', photo: 'M3 3h18v18H3zM3 17l5-5 4 4 4-5 5 6M7 7h2', details: 'M4 3h16v18H4zM8 7h8M8 12h8M8 17h5', download: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5', copy: 'M9 9h12v12H9zM15 5V3H3v12h2', marketplace: 'M4 10v10h16V10M3 10l2-6h14l2 6H3M9 20v-6h6v6', groups: 'M3 21v-3a6 6 0 0 1 12 0v3M17 13a5 5 0 0 1 4 5v3M9 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M17 3a4 4 0 0 1 0 8' };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind]} /></svg>;
 }
 
@@ -26,6 +26,7 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
   const [mode, setMode] = useState<'ad' | 'details' | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const isWhatsApp = whatsappUrl !== undefined;
+  const asset = marketplaceListingToAdContent(listing);
   const ref = useRef<HTMLDialogElement>(null);
   const [caption, setCaption] = useState(() => marketplaceShareCaption(listing));
   const [feedback, setFeedback] = useState('');
@@ -105,18 +106,18 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
   }
   const canShareFiles = files.length > 0 && typeof navigator.canShare === 'function' && navigator.canShare({ files });
   return createPortal(<dialog ref={ref} className={styles.dialog} aria-labelledby="facebook-share-title" onCancel={onClose} onKeyDown={event => event.stopPropagation()} onClick={event => event.stopPropagation()}>
-    <header className={styles.header}><div><h2 id="facebook-share-title">{isWhatsApp ? 'Share on WhatsApp' : 'Share on Facebook'}</h2><p>{isWhatsApp ? 'Choose what you want to send.' : step === 1 ? 'Step 1 of 2 · Asset details' : 'Step 2 of 2 · Choose destination'}</p></div><button type="button" className={styles.close} data-modal-close="true" aria-label="Close sharing" onClick={onClose}>×</button></header>
+    <header className={styles.header}><div><h2 id="facebook-share-title">{isWhatsApp ? 'Share on WhatsApp' : 'Share on Facebook'}</h2><div className={styles.assetHeading}><strong>{asset.title}</strong><p><span>Year Model: {asset.year === 'N/A' ? 'Not recorded' : asset.year || 'Not recorded'}</span><span>Usage: {asset.usage || 'Not recorded'}</span><span>Condition: {asset.condition || 'Not recorded'}</span></p></div></div><button type="button" className={styles.close} data-modal-close="true" aria-label="Close sharing" onClick={onClose}>×</button></header>
     <div className={styles.body}>
-      <div className={styles.summary}><span className={styles.summaryIcon}><Icon kind="marketplace" /></span><div><small>Selected listing</small><strong>{marketplaceListingToAdContent(listing).title}</strong></div></div>
+      <div className={styles.stageLabel}><Icon kind={isWhatsApp ? mode === 'ad' ? 'photo' : mode === 'details' ? 'details' : 'share' : step === 1 ? 'details' : 'groups'} /><span>{isWhatsApp ? mode === 'ad' ? 'Send Ad' : mode === 'details' ? 'Send Marketplace Ad Details' : 'Choose what to send' : step === 1 ? 'Step 1 of 2 · Asset details' : 'Step 2 of 2 · Choose destination'}</span></div>
       {isWhatsApp && !mode ? <div className={styles.options}>
         <a href={`https://wa.me/?text=${encodeURIComponent(`${marketplaceListingToAdContent(listing).title}\n${whatsappUrl}`)}`} target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="link" /></span><span className={styles.optionCopy}><strong>Send Aim4price Link</strong><small>Open the listing inside Aim4price.</small></span></a>
         <button type="button" onClick={() => void prepareFiles('ad')}><span className={styles.optionIcon}><Icon kind="photo" /></span><span className={styles.optionCopy}><strong>Send Ad</strong><small>Share the ad image created by Aim4price.</small></span></button>
         <button type="button" onClick={() => void prepareFiles('details')}><span className={styles.optionIcon}><Icon kind="details" /></span><span className={styles.optionCopy}><strong>Send Marketplace Ad Details</strong><small>Share the photos and Facebook caption.</small></span></button>
       </div> : null}
       {((!isWhatsApp && step === 1) || mode === 'details') && <div className={styles.detailsGrid}>
-      <section className={styles.photoPanel} aria-label="Advert photos"><div className={styles.sectionHeading}>Photos <small>{photos.length} available</small></div><div className={styles.photos}>{photos.map((src, index) => <a key={src} href={src} target="_blank" rel="noopener noreferrer" aria-label={`Open photo ${index + 1} to save`}><img src={src} alt={`Advert photo ${index + 1}`} /></a>)}</div>
+      <section className={styles.photoPanel} aria-label="Advert photos"><div className={styles.sectionHeading}><span><Icon kind="photo" />Photos</span> <small>{photos.length} available</small></div><div className={styles.photos}>{photos.map((src, index) => <a key={src} href={src} target="_blank" rel="noopener noreferrer" aria-label={`Open photo ${index + 1} to save`}><img src={src} alt={`Advert photo ${index + 1}`} /></a>)}</div>
       {!isWhatsApp && <button type="button" className={styles.download} disabled={busy || !photos.length} onClick={() => void downloadPhotos()}><Icon kind="download" />{busy ? 'Downloading…' : photos.length ? 'Download photos' : 'No photos available'}</button>}
-      </section><section className={styles.captionPanel}><div className={styles.captionHeader}><label htmlFor="facebook-advert-caption">Caption</label><button type="button" onClick={() => void copyCaption()}><Icon kind="copy" />Copy caption</button></div>
+      </section><section className={styles.captionPanel}><div className={styles.captionHeader}><label htmlFor="facebook-advert-caption"><Icon kind="details" />Caption</label><button type="button" onClick={() => void copyCaption()}><Icon kind="copy" />Copy caption</button></div>
       <textarea id="facebook-advert-caption" value={caption} onChange={event => setCaption(event.target.value)} rows={6} />
       </section></div>}
 
@@ -128,9 +129,10 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
       {isWhatsApp && mode && <>
         {busy ? <p role="status">Preparing {mode === 'ad' ? 'your ad' : 'photos'}…</p> : files.length > 0 ? <>
           {mode === 'ad' && <AdPreview file={files[0]} />}
-          {canShareFiles && <button type="button" onClick={() => void shareFiles()}>Share files</button>}
+          <div className={styles.fileActions}>
+          {canShareFiles && <button type="button" className={styles.primary} onClick={() => void shareFiles()}><Icon kind="share" />Share files</button>}
           <button type="button" onClick={() => files.forEach(file => downloadMarketplaceAd(file, file.name))}><Icon kind="download" />Download {mode === 'ad' ? 'ad' : 'photos'}</button>
-          <div className={styles.destinations}><a href={`https://wa.me/?text=${encodeURIComponent(mode === 'details' ? caption : '')}`} target="_blank" rel="noopener noreferrer">Open WhatsApp</a></div>
+          <a href={`https://wa.me/?text=${encodeURIComponent(mode === 'details' ? caption : '')}`} target="_blank" rel="noopener noreferrer"><Icon kind="chat" />Open WhatsApp</a></div>
           <small>{canShareFiles ? 'Choose WhatsApp in the share menu. If the caption is omitted, copy and paste it into your message.' : 'Download the files, open WhatsApp and attach them to your message. The caption is included for Marketplace Ad Details.'}</small>
         </> : <button type="button" onClick={() => void prepareFiles(mode)}>Try again</button>}
 
