@@ -26,5 +26,5 @@ export function useCaptureAllowance(active: boolean, endpoint: string) {
   const markBlocked = useCallback(() => setState({ endpoint, blocked: true, used: 10, bypass: false }), [endpoint]);
   return { blocked, ready: active && !!current && !blocked, error, markBlocked,
     retry: () => setRetry(value => value + 1),
-    label: current?.bypass ? 'Admin capture · no daily limit' : current ? `${current.used} of 10 captures used today · resets at midnight (South Africa)` : 'Checking daily allowance…' };
+    label: current?.bypass ? 'Automatic upload · no daily credit limit' : current ? `${current.used} of 10 credits used today · resets at midnight (South Africa)` : 'Checking daily credits…' };
 }

@@ -78,8 +78,8 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(uploadModal, /role="dialog"/);
   assert.match(uploadModal, /aria-modal="true"/);
   assert.match(uploadModal, /styles\.formModal[\s\S]*?styles\.costUploadModal/);
-  assert.match(uploadModal, /Upload fuel slip\/photo/);
-  assert.match(uploadModal, /Aim4price assisted capture/);
+  assert.match(uploadModal, /Automatic upload/);
+  assert.match(uploadModal, /Aim4price captures, verifies and allocates/);
   assert.match(uploadModal, /<section className=\{styles\.uploadPanel\}>[\s\S]*?Documents and photos/);
   assert.match(uploadModal, /<CaptureUploadDropzone[\s\S]*?onFiles=\{handleFuelSlipUploadFiles\}/);
   assert.match(uploadModal, /disabled=\{isSaving \|\| isExtractingFuelSlip\}/);

@@ -128,7 +128,7 @@ export default function CaptureRequestStatusList({
     <section className={styles.panel} aria-label={title}>
       <div className={styles.header}>
         <div>
-          <span className={styles.eyebrow}>Aim4price assisted capture</span>
+          <span className={styles.eyebrow}>Automatic upload</span>
           <h2>{title}</h2>
         </div>
         {requests.length ? <strong className={styles.count}>{requests.length}</strong> : null}
@@ -219,7 +219,7 @@ export default function CaptureRequestStatusList({
             aria-busy={isRetracting}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <span className={styles.modalEyebrow}>Aim4price assisted capture</span>
+            <span className={styles.modalEyebrow}>Automatic upload</span>
             <div data-modal-close-row>
               <h3 id="capture-retract-title">Retract this submission?</h3>
               <button type="button" data-modal-close="true" aria-label="Close dialog" onClick={closeRetractConfirmation} disabled={isRetracting} />

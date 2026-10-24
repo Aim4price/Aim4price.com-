@@ -43,7 +43,7 @@ test('Cost Ledger sends uploaded invoices for verified capture without calling t
   assert.doesNotMatch(assistedHandler, /\/extract/);
   assert.match(retiredInvoiceReader, /status: 410/);
   assert.doesNotMatch(retiredInvoiceReader, /extractInvoiceFromUpload/);
-  assert.match(costClient, /Aim4price will capture and verify it within 24 hours/);
+  assert.match(costClient, /Aim4price will capture, verify and allocate it within 24 hours/);
   assert.match(costClient, /<CaptureRequestStatusList[\s\S]{0,120}requests=\{captureRequests\}/);
   assert.match(costClient, /captureRequestId/);
   assert.match(costClient, /CaptureRequestDecisionModal/);
@@ -64,7 +64,7 @@ test('Fuel assisted capture only needs the selected target and uploaded slip at 
   assert.match(retiredFuelReader, /status: 410/);
   assert.doesNotMatch(retiredFuelReader, /extractFuelSlipFromUpload/);
   assert.match(fuelClient, /Documents and photos/);
-  assert.match(fuelClient, /Add fuel slip\/photo/);
+  assert.match(fuelClient, /Automatic upload/);
   assert.doesNotMatch(fuelClient, /accept="[^"]*text\/plain/);
 });
 

@@ -2725,7 +2725,7 @@ export default function FuelClient({
       closeFuelSlipFlow({ force: true });
       setNotice({
         tone: 'success',
-        message: `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
+        message: `${data.request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`,
       });
     } catch (error) {
       if (fuelSlipExtractionRequestRef.current !== extractionRequest) return;
@@ -4329,8 +4329,8 @@ export default function FuelClient({
                   <AutomaticFuelSlipIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Upload for Aim4price capture</strong>
-                  <small>Upload a photo or PDF for capture within 24 hours.</small>
+                  <strong>Automatic upload</strong>
+                  <small>Upload a photo or PDF. Aim4price captures and allocates it within 24 hours.</small>
                 </span>
                 <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
                   <ChevronRightIcon />
@@ -4422,8 +4422,8 @@ export default function FuelClient({
           <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2 id="fuel-slip-upload-title">Upload fuel slip/photo</h2>
-                <p>{selectedFuelSlipTargetName} · Aim4price assisted capture</p>
+                <h2 id="fuel-slip-upload-title">Automatic upload</h2>
+                <p>{selectedFuelSlipTargetName} · Fuel slip or photo</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
@@ -4431,6 +4431,7 @@ export default function FuelClient({
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
                 <h3>Documents and photos</h3>
+                <p>Aim4price captures, verifies and allocates your fuel slip within 24 hours.</p>
                 <CaptureUploadDropzone
                   title="Drop fuel slip here or browse"
                   description="One PDF or photo · PDF, JPG, PNG or WebP · 12 MB per file"
@@ -4447,7 +4448,7 @@ export default function FuelClient({
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!captureAllowance.ready || !fuelSlipUploadFile || isExtractingFuelSlip}>
-                {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
+                {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Upload automatically'}
               </button>
             </div>
           </div>
