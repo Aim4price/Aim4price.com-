@@ -51,6 +51,9 @@ const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.setViewport({width,height:width===320?640:width===1120?680:950});await page.goto('https://sharing.test/');await page.setContent('<style>body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app" role="dialog"></div>');
   if(width===320)await page.evaluate(()=>document.documentElement.dataset.background='dark');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});await page.waitForSelector('button');await click('Open sharing');await page.waitForSelector('dialog[open]');
   assert((await page.$eval('textarea',e=>e.value)).includes('**082 328 1614**'));
+  assert((await page.$eval('header',e=>e.textContent)).includes('Year Model: 2020'));
+  assert((await page.$eval('header',e=>e.textContent)).includes('Usage: 100 hours'));
+  assert((await page.$eval('header',e=>e.textContent)).includes('Condition: Used'));
   assert.equal(await page.$eval('#app',e=>e.style.visibility),'hidden');
   if(width>=1120)assert(await page.$eval('dialog > div',e=>e.scrollHeight<=e.clientHeight+1),'Desktop details fit without scrolling');
   assert.equal(await page.$('a[href="https://www.facebook.com/groups/"]'),null);
@@ -68,7 +71,7 @@ const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
   await click('Send Marketplace Ad Details');await page.waitForFunction(()=>document.querySelector('dialog')?.textContent.includes('Open WhatsApp'));
   assert((await page.$eval('textarea',e=>e.value)).includes('**082 328 1614**'));
   await page.evaluate(()=>{window.shared=null;Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared={files:data.files.map(f=>f.name),text:data.text};}})});
-  await click('Back');await click('Send Marketplace Ad Details');await page.waitForFunction(()=>document.querySelector('dialog')?.textContent.includes('Share files'));await click('Share files');
+  await click('Back');await click('Send Marketplace Ad Details');await page.waitForFunction(()=>document.querySelector('dialog')?.textContent.includes('Share files'));await page.screenshot({path:'/tmp/share-files-'+width+'.png'});await click('Share files');
   assert.deepEqual(await page.evaluate(()=>shared.files),['advert-photo-1.png','advert-photo-2.png','advert-photo-3.png']);assert((await page.evaluate(()=>shared.text)).includes('**082 328 1614**'));
   await click('Back');await click('Send Ad');await page.waitForSelector('img[alt="Aim4price ad preview"]');await click('Share files');
   assert.deepEqual(await page.evaluate(()=>shared.files),['ad.jpg']);assert.equal(await page.evaluate(()=>shared.text),undefined);

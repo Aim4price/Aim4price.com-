@@ -8,7 +8,7 @@
 .header p { margin: 10px 0 0; font-size: 16px; line-height: 1.5; color: var(--share-muted); }
 .dialog button, .destinations a { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 18px; border: 1px solid var(--share-line); border-radius: 14px; background: var(--share-surface); color: var(--share-ink); font: inherit; font-size: 16px; font-weight: 650; cursor: pointer; text-decoration: none; transition: border-color 160ms, box-shadow 160ms, background 160ms; }
 .dialog .close { width: 48px; height: 48px; padding: 0; flex-shrink: 0; font-size: 28px; background: var(--share-soft); }
-.body { display: grid; gap: 14px; padding: 16px 28px 18px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.body { display: grid; gap: 14px; padding: 16px 28px 18px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
 .summary { display: flex; align-items: center; gap: 16px; padding: 12px 16px; border: 1px solid var(--share-line); border-radius: 18px; background: linear-gradient(115deg, #edf3fc80, #edf7f280); }
 .summary > div { min-width: 0; display: grid; gap: 5px; }
 .summary strong { font-size: 21px; line-height: 1.35; overflow-wrap: anywhere; }
@@ -16,11 +16,11 @@
 .detailsGrid { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 24px; }
 .photoPanel, .captionPanel { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .sectionHeading, .captionHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; font-size: 18px; font-weight: 700; }
-.photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 190px; overflow-y: auto; scrollbar-width: none; }
+.photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; max-height: 190px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
 .photos a { border: 1px solid var(--share-line); border-radius: 12px; overflow: hidden; background: var(--share-soft); height: 88px; }
 .photos img { width: 100%; height: 100%; object-fit: contain; }
 .photos a:first-child { grid-column: auto; }
-.body textarea { width: 100%; min-height: 190px; flex: 1; padding: 18px; border: 1px solid var(--share-line); border-radius: 16px; background: var(--share-soft); color: inherit; font: inherit; font-size: 16px; font-weight: 500; line-height: 1.65; resize: none; scrollbar-width: none; }
+.body textarea { width: 100%; min-height: 190px; flex: 1; padding: 18px; border: 1px solid var(--share-line); border-radius: 16px; background: var(--share-soft); color: inherit; font: inherit; font-size: 16px; font-weight: 500; line-height: 1.65; resize: none; scrollbar-width: thin; scrollbar-color: #8baa9a transparent; }
 .destinations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .destinations a { justify-content: flex-start; padding: 24px; min-height: 112px; border-color: #c9dbea; }
 .options { display: grid; gap: 10px; }
@@ -50,7 +50,7 @@
  :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 20px; gap: 18px; }
  :global(:where(html:not(:has([data-website-canvas])))) .detailsGrid, :global(:where(html:not(:has([data-website-canvas])))) .destinations { grid-template-columns: 1fr; gap: 18px; }
  :global(:where(html:not(:has([data-website-canvas])))) .photos { grid-template-columns: repeat(3, minmax(0, 1fr)); }
- :global(:where(html:not(:has([data-website-canvas])))) .photos a:first-child { grid-column: auto; aspect-ratio: 1.2; }
+ :global(:where(html:not(:has([data-website-canvas])))) .photos a:first-child { grid-column: auto; aspect-ratio: auto; }
  :global(:where(html:not(:has([data-website-canvas])))) .summary { padding: 14px; gap: 10px; }
  :global(:where(html:not(:has([data-website-canvas])))) .summary strong { font-size: 18px; }
  :global(:where(html:not(:has([data-website-canvas])))) .options :is(a, button), :global(:where(html:not(:has([data-website-canvas])))) .destinations a { padding: 16px; gap: 12px; }
@@ -63,4 +63,15 @@
  :global(:where(html:not(:has([data-website-canvas])))) .captionHeader button { padding-inline: 12px; font-size: 14px; }
 }
 
-.body::-webkit-scrollbar, .photos::-webkit-scrollbar, .body textarea::-webkit-scrollbar { display: none; }
+/* Keep overflow discoverable on short screens and long captions. */
+.body::-webkit-scrollbar, .photos::-webkit-scrollbar, .body textarea::-webkit-scrollbar { width: 8px; height: 8px; }
+.body::-webkit-scrollbar-thumb, .photos::-webkit-scrollbar-thumb, .body textarea::-webkit-scrollbar-thumb { background: #8baa9a; border: 2px solid var(--share-surface); border-radius: 8px; }
+.assetHeading { display: grid; gap: 6px; margin-top: 14px; }
+.assetHeading > strong { font-size: 21px; line-height: 1.3; }
+.header .assetHeading p { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 0; font-size: 15px; font-weight: 650; }
+.assetHeading p span + span::before { content: '·'; padding: 0 8px; }
+.stageLabel { display: flex; align-items: center; gap: 10px; color: var(--share-muted); font-size: 14px; font-weight: 650; }
+.stageLabel svg, .sectionHeading svg, .captionHeader label svg { opacity: .65; width: 20px; height: 20px; }
+.sectionHeading > span, .captionHeader label { display: inline-flex; align-items: center; gap: 8px; }
+.fileActions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding-top: 14px; border-top: 1px solid var(--share-line); }
+.fileActions a { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 18px; border: 1px solid var(--share-line); border-radius: 14px; color: var(--share-ink); text-decoration: none; font-size: 16px; font-weight: 650; background: var(--share-soft); }
