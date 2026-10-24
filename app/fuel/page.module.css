@@ -4729,6 +4729,7 @@
 }
 
 .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock {
+  min-width: 0;
   grid-column: auto;
   grid-row: auto;
   width: auto;
@@ -4796,10 +4797,14 @@
 }
 
 .fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader p,
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock strong,
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock small {
+  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock strong {
     white-space: nowrap;
   }
+
+.fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock small {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
 
 
 /* Fuel Slip Manager final button styling overrides.
@@ -7954,7 +7959,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.2rem;
-  padding: 1.4rem 0 1.8rem;
+  padding: 1.4rem var(--fuel-dialog-padding, 1.75rem) 1.6rem;
 }
 .exclusionChoiceCard {
   position: relative;
@@ -7962,8 +7967,9 @@
   flex-direction: column;
   align-items: center;
   gap: .7rem;
-  min-height: 15rem;
-  padding: 1.8rem 1.2rem;
+  min-height: 12.5rem;
+  justify-content: center;
+  padding: 1.4rem 1.5rem;
   border: 1px solid var(--app-line, #cbded5);
   border-radius: 1.4rem;
   background: var(--app-surface-soft, #f1f8f4);
