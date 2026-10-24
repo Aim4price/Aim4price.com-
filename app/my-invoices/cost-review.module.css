@@ -1,0 +1,75 @@
+/* Keep the review compact without inheriting the entry-step card padding. */
+.panel.panel.panel {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  gap: 18px !important;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0 20px;
+  margin: 0;
+  color: var(--app-text, #123f32);
+}
+.grid > div {
+  min-width: 0;
+  grid-column: span 3;
+  padding: 16px 0;
+}
+.grid dt {
+  margin: 0 0 7px;
+  color: var(--app-muted, #62786e);
+  font-size: .85rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.grid dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.grid .asset {
+  grid-column: 1 / -1;
+  position: relative;
+  padding: 14px 18px 14px 72px;
+  border: 1px solid var(--app-line, #d8e6de);
+  border-radius: 16px;
+  background: var(--app-surface-soft, #f0f7f3);
+}
+.asset dt { margin-bottom: 3px; }
+.grid .asset dt > svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--app-accent, #28765a); background: var(--app-surface, #fff); }
+.asset dd { font-size: 1.15rem; font-weight: 800; }
+.grid .amount {
+  grid-column: span 4;
+  padding: 16px 18px;
+  margin: 4px 0 0;
+  border: 1px solid var(--app-line, #d8e6de);
+  border-radius: 14px;
+  background: var(--app-surface-soft, #f0f7f3);
+}
+.amount dd { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.grid .total {
+  border: 1px solid var(--app-accent, #28765a);
+  border-radius: 14px;
+}
+.total dt { color: var(--app-text, #123f32); }
+.total dd { color: var(--app-accent, #28765a); font-size: 1.45rem; font-weight: 850; }
+.grid .work {
+  grid-column: span 6;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--app-line, #d8e6de);
+}
+.work dd { font-weight: 500; white-space: pre-wrap; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .grid { gap: 0 14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid > div { grid-column: span 6; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid :is(.asset, .total, .work) { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .grid .amount { padding: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .total { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .total dt { margin: 0; }
+}
