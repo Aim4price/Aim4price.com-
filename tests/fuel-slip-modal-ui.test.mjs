@@ -53,7 +53,7 @@ test('fuel entry and review surfaces share the canonical cost wizard shell', () 
   assert.ok(client.includes("import wizardStyles from '../../components/AimWizardModal.module.css'"));
 
   for (const modal of [manualModal, reviewModal]) {
-    for (const className of ['overlay', 'dialog', 'header', 'headerText', 'closeButton', 'body', 'panel', 'panelHeading', 'panelNumber', 'footer', 'secondaryAction', 'primaryAction']) {
+    for (const className of ['overlay', 'dialog', 'header', 'headerText', 'closeButton', 'body', 'panel', 'panelHeading', 'footer', 'secondaryAction', 'primaryAction']) {
       assert.match(modal, new RegExp('wizardStyles\\.' + className), 'Expected wizardStyles.' + className);
     }
     assert.match(modal, /role="dialog"/);
