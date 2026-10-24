@@ -22,7 +22,14 @@ export default function Page(){const [step,setStep]=useState('timing'),[result,s
     const page=await browser.newPage(), errors=[]; page.on('pageerror',error=>errors.push(error.message));
     await page.setRequestInterception(true);
     page.on('request',r=> r.url().includes('/api/')?r.respond({status:200,contentType:'application/json',body:JSON.stringify(r.url().includes('parts-fixture')?{parts:[{id:'saved',name:'Oil filter',partNumber:'OF-42',brand:'Toyota'}]}:{items:[]})}):r.continue());
-    const click=async text=>assert.ok(await page.evaluate(text=>{const b=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===text||e.querySelector('strong')?.textContent===text);if(!b||b.disabled)return false;b.click();return true;},text),text);
+    const click=async text=>{
+      // Questions intentionally pause between steps; wait for an actionable option.
+      const button=await page.waitForFunction(text=>[...document.querySelectorAll('button')].find(e=>
+        (e.textContent.trim()===text||e.querySelector('strong')?.textContent===text)
+        && !e.disabled && e.getClientRects().length && getComputedStyle(e).visibility==='visible'
+      ),{timeout:10000},text);
+      try { await button.asElement().click(); } finally { await button.dispose(); }
+    };
     const fill=async (selector,value)=>{await page.$eval(selector,(e,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));},value);};
     for(const [width,type] of [[1280,'Service'],[390,'Checkup']]){
       await page.setViewport({width,height:900}); await page.goto('http://127.0.0.1:3038/owner-app/service-edit-validation',{waitUntil:'networkidle0',timeout:120000});
