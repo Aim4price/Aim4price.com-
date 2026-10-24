@@ -27,7 +27,7 @@
 .dateDialog.dateDialog { width: min(64rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-width: calc(var(--website-visible-width, 100vw) - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; overflow: hidden; scrollbar-gutter: auto; overscroll-behavior: contain; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #173f30); box-shadow: 0 28px 90px #00000045; font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
 .dateDialog::backdrop { background: rgb(24 27 29 / 74%); backdrop-filter: blur(12px) grayscale(1); -webkit-backdrop-filter: blur(12px) grayscale(1); }
 .dateDialog *, .dateDialog *::before, .dateDialog *::after { box-sizing: border-box; }
-.calendar { height: min(48rem, calc(var(--website-visible-height, 100dvh) - 2.25rem)); min-height: 0; padding: clamp(.65rem, calc(var(--website-visible-height, 100dvh) * .025), 1.5rem); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.calendar { height: min(42rem, calc(var(--website-visible-height, 100dvh) * .88)); min-height: 0; padding: clamp(.65rem, calc(var(--website-visible-height, 100dvh) * .025), 1.5rem); display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; }
 /* Lock only while this top-layer calendar is open; closing restores page scrolling. */
 :global(html):has(.dateDialog[open]), :global(body):has(.dateDialog[open]) { overflow: hidden !important; scrollbar-width: none !important; }
 :global(html):has(.dateDialog[open])::-webkit-scrollbar, :global(body):has(.dateDialog[open])::-webkit-scrollbar { display: none; }
