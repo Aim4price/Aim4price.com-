@@ -15485,3 +15485,18 @@
   color: #61736e;
   background: #edf1ef;
 }
+
+/* A lighter lifetime editor with distinct, comfortably spaced footer actions. */
+.detailsModal.lifetimeModal { gap: 1rem; padding: 1.4rem 1.6rem 1.5rem; }
+.lifetimeModal .yearSliderPanel { padding: .75rem; gap: .75rem; }
+.lifetimeModal .yearSliderReadout { min-height: 8rem; padding: 1rem; }
+.lifetimeModal .yearSliderControl { padding: .25rem .4rem; gap: .5rem; }
+.lifetimeModal .lifetimeSecondary { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 1rem; }
+.lifetimeModal .manualYearField { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.lifetimeModal .lifetimeReset { min-height: 2.8rem; padding: .65rem 1rem; color: #a23830; background: #fff0ee; border: 1px solid #ecc2bc; border-radius: .8rem; }
+.lifetimeModal .lifetimeReset:hover { color: #84271f; background: #ffe5e1; border-color: #c5675a; }
+.lifetimeModal .detailsModalActions { margin-top: .4rem; padding-top: 1.25rem; padding-bottom: .25rem; gap: .85rem; }
+.lifetimeModal [id="lifetime-guidance"] { font-size: .9rem; line-height: 1.5; margin: 0; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .lifetimeModal .lifetimeSecondary { grid-template-columns: 1fr; gap: .65rem; }
+}

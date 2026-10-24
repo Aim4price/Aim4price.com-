@@ -59,39 +59,47 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('app/valuation/ValuationFlowPolish').default));"});
  await page.click('#trigger');await page.waitForSelector('[role=dialog]');
- const click=async text=>{await page.$$eval('[role=dialog] button, [role=listbox] button',(els,text)=>{const el=els.find(e=>e.textContent===text);if(!el)throw Error(text);el.click()},text)};
+ const click=async text=>{await page.$$eval('[role=dialog] button, [role=listbox] button',(els,text)=>{const el=els.find(e=>e.textContent===text || e.getAttribute('aria-label')===text || (e.getAttribute('role')==='option' && e.querySelector('span')?.textContent===text));if(!el)throw Error(text);el.click()},text)};
  await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('Automatic Calf Feeder'));
  assert.deepEqual(await page.$$eval('[role=dialog] button strong',els=>els.map(e=>e.textContent)),['Automatic Calf Feeder','Baler','Feedout Wagon','Milk Cooling Tank','Tractor']);
- await page.click('[aria-label="Equipment category"]');await click('Feeding');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('2 results'));
+ await page.click('[aria-label="Filter by category"]');await click('Feeding');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('2 matching asset types'));
  assert.deepEqual(await page.$$eval('[role=dialog] button strong',els=>els.map(e=>e.textContent)),['Automatic Calf Feeder','Feedout Wagon']);
  await page.type('[role=dialog] input','zzzz');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('No matching'));
- await click('Clear search');await page.click('[aria-label="Equipment category"]');await click('All categories');assert(!await page.$('#family-picker-help'));
+ await click('Clear search');await page.click('[aria-label="Filter by category"]');await click('All categories');assert(!await page.$('#family-picker-help'));
 
  await page.evaluate(()=>{
    const groups=['Animal Feed Equipment','Dairy & Poultry','Farm Maintenance','Farm Trailers','Grain & Produce Handling','Harvester Headers','Harvesting','Hay & Baling','Irrigation','Livestock Equipment','Orchard & Grass Care','Planting','Soil Preparation','Spraying & Spreading','Tractors'];
    for(let i=0;i<135;i++){const b=document.createElement('button');b.dataset.familyLabel='Equipment '+String(i+1).padStart(3,'0');b.dataset.familyGroup=groups[i%groups.length];b.innerHTML='<span>'+b.dataset.familyLabel+'</span>';document.getElementById('choices').append(b)}
  });
- await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('140 results'));
+ await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('140 matching asset types'));
  await page.setViewport({width:1366,height:768});
  await page.evaluate(()=>document.body.style.setProperty('--website-visible-height','768px'));
- assert(await page.$eval('[aria-label="Equipment category"]',el=>el.getBoundingClientRect().height<65),'Category filter stays a single row with the full catalogue');
+ assert(await page.$eval('[aria-label="Filter by category"]',el=>el.getBoundingClientRect().height<65),'Category filter stays a single row with the full catalogue');
  assert(await page.$$eval('[role=dialog] button strong',els=>els.filter(el=>{const r=el.getBoundingClientRect();const dlg=el.closest('[role=dialog]');const bounds=dlg.getBoundingClientRect();return r.top>0&&r.bottom<bounds.bottom-28}).length>=8),'At least eight equipment options are visible');
  await page.screenshot({path:'/tmp/equipment-picker-desktop.png'});
- await page.click('[aria-label="Equipment category"]');
+ await page.click('[aria-label="Filter by category"]');
  await page.waitForSelector('[role="listbox"]');
  await page.screenshot({path:'/tmp/equipment-category-menu.png'});
  await page.keyboard.press('End');
- assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Tractors');
+ assert.equal(await page.evaluate(()=>document.activeElement.querySelector('span')?.textContent),'Tractors');
  await page.keyboard.press('Home');
  await page.keyboard.press('ArrowDown');
  await page.keyboard.press('Enter');
- assert.equal(await page.$eval('[aria-label="Equipment category"] span',el=>el.textContent),'Animal Feed Equipment');
- await page.click('[aria-label="Equipment category"]');await click('All categories');
- await page.click('[aria-label="Equipment category"]');await page.keyboard.press('Escape');
+ assert.equal(await page.$eval('[aria-label="Filter by category"] span',el=>el.textContent),'Animal Feed Equipment');
+ await page.click('[aria-label="Filter by category"]');await click('All categories');
+ await page.click('[aria-label="Filter by category"]');await page.keyboard.press('Escape');
  assert(await page.$('[role="dialog"]'),'Escape closes only the category menu first');
  assert(!await page.$('[role="listbox"]'));
 
- await page.type('[role=dialog] input','milk-cooling');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('1 result'));
+ await page.type('[role=dialog] input','Equipment');
+ await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('135 matching asset types'));
+ await page.click('[aria-label="Filter by category"]');
+ assert.equal(await page.$$eval('[role=option] > span:first-child',els=>els.some(e=>e.textContent==='Feeding')),false,'Categories without search matches are omitted');
+ await click('Animal Feed Equipment');
+ assert.equal(await page.$eval('[role=dialog] input',el=>el.value),'Equipment','Category selection preserves search');
+ await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('9 matching asset types'));
+ await page.click('[aria-label="Filter by category"]');await click('All categories');await click('Clear family search');
+ await page.type('[role=dialog] input','milk-cooling');await page.waitForFunction(()=>document.querySelector('[role=dialog]').textContent.includes('1 matching asset type'));
  await click('Milk Cooling Tank');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));assert.equal(await page.evaluate(()=>window.selectedFamily),'Milk Cooling Tank');
  await page.setViewport({width:390,height:844});await page.click('#trigger');await page.waitForSelector('[role=dialog]');
  await page.waitForFunction(()=>{const r=document.querySelector('[role=dialog]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth});
