@@ -75,3 +75,6 @@
 .sectionHeading > span, .captionHeader label { display: inline-flex; align-items: center; gap: 8px; }
 .fileActions { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; padding-top: 14px; border-top: 1px solid var(--share-line); }
 .fileActions a { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 18px; border: 1px solid var(--share-line); border-radius: 14px; color: var(--share-ink); text-decoration: none; font-size: 16px; font-weight: 650; background: var(--share-soft); }
+
+.dialog .download { background: #edf4ff; border-color: #c8dbf2; color: #2c6097; }
+:global(html[data-background='dark']) .dialog .download { background: #243b4d; border-color: #46637c; color: #c7e1ff; }
