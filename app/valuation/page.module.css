@@ -15541,3 +15541,15 @@
 .extrasEditorModal .extrasTotal { padding: 14px 16px; align-items: center; font-size: 1rem; }
 .extrasDetailModal.extrasEditorModal .detailsModalActions { position: static; flex-shrink: 0; margin-top: 0; padding: 18px 0 0; gap: 12px; }
 @media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry { grid-template-columns: minmax(0, 1fr) auto; } :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry > .field { grid-column: 1; } :global(:where(html:not(:has([data-website-canvas])))) .extrasEditorModal .extraEntry > .removeExtra { grid-column: 2; grid-row: 2; } }
+
+/* Client register selection follows the shared register picker proportions. */
+.finalSaveModal.dealerClientRegisterPicker {
+  width: min(var(--website-dialog-reference-width, 100%), 64rem);
+}
+.dealerClientRegisterPicker .finalSaveHeader p,
+.dealerClientRegisterPicker .dealerClientRegisterPickerRow small {
+  color: var(--app-muted, #64746a);
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}

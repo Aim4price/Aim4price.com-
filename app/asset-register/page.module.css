@@ -29654,7 +29654,7 @@ button.documentOpenLink {
 }
 
 .changeRegisterModal {
-  width: min(var(--website-dialog-reference-width, 100%), 720px) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
   max-height: min(calc(var(--website-visible-height, 100vh) * 0.88), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem)) !important;
   display: flex !important;
   flex-direction: column !important;
@@ -41806,4 +41806,15 @@ button.documentOpenLink {
   }
   :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction strong { font-size: .85rem !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .managementAccountModal:is(.pricingModal, .maintenanceMenuModal) .ownerCommandGrid .ownerCommandAction small { font-size: .75rem !important; }
+}
+
+/* Register selection keeps the same roomy width across entry and switch flows. */
+.modalCard.assetEntryModal.changeRegisterModal {
+  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
+}
+.changeRegisterModal .changeRegisterCard small {
+  color: var(--app-muted, #64746a) !important;
+  font-size: .88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
 }

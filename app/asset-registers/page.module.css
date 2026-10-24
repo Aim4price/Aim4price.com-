@@ -4521,3 +4521,17 @@
   :global(:where(html:not(:has([data-website-canvas])))) .qrLabelsModal.qrLabelsModal .qrSizeOptions .exportOption { grid-template-columns: minmax(0, 1fr) !important; gap: .4rem !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .qrLabelsModal.qrLabelsModal .qrSizeOptions .exportGraphic { display: none; }
 }
+
+/* Match register destination and export selection to the shared register chooser. */
+.accountRegisterModal.moveDestinationModal,
+.accountRegisterModal.exportPickerModal {
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 64rem) !important;
+}
+.accountRegisterModal .moveDestinationOption small,
+.accountRegisterModal .registerPickerInfo small,
+.accountRegisterModal .registerPickerValue small {
+  color: var(--app-muted, #64746a) !important;
+  font-size: .88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
