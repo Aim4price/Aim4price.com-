@@ -27,6 +27,6 @@ export async function saveValuationSaleability(
     if (!saved.rowCount) throw new Error('Asset changed while saving its market assessment.');
   } catch (error) {
     console.error('Saved valuation market assessment failed', error);
-    return 'Your asset was saved with its Ideal Price, but its Realistic Market Price could not be saved. Open the asset and calculate it there.';
+    return 'Your asset was saved with its Ideal Price, but its Realistic Market Value could not be saved. Open the asset and calculate it there.';
   }
 }

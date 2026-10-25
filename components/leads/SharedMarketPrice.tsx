@@ -16,18 +16,18 @@ export default function SharedMarketPrice({assessment, assetTitle, vatIncluded, 
   const date=assessment ? new Intl.DateTimeFormat('en-ZA',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(assessment.assessedAt)) : '';
   return <>
     <div data-needs-review={assessment?.needsReview} className={`${summaryStyles.market} ${styles.marketDetail} ${assessment?.needsReview?styles.marketNeedsUpdate:''}`}>
-      <button type="button" className={styles.marketOpen} onClick={()=>setOpen(true)} aria-label={`View saved realistic market price for ${assetTitle}`}>
-        <span className={styles.marketHeading}><span className={styles.marketTitle}><strong>Realistic Market Price</strong></span></span>
+      <button type="button" className={styles.marketOpen} onClick={()=>setOpen(true)} aria-label={`View saved realistic market value for ${assetTitle}`}>
+        <span className={styles.marketHeading}><span className={styles.marketTitle}><strong>Realistic Market Value</strong></span></span>
         <span className={styles.marketAmount}><strong>{amount}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small>{assessment?.needsReview&&<small className={styles.reviewNeeded}>Owner review needed</small>}</span>
       </button>
     </div>
-    {open&&createPortal(<LeadActionDialog title="Realistic Market Price" assetTitle={assetTitle} onClose={()=>setOpen(false)} closeLabel="Close market price">
+    {open&&createPortal(<LeadActionDialog title="Realistic Market Value" assetTitle={assetTitle} onClose={()=>setOpen(false)} closeLabel="Close market value">
       <div className={summaryStyles.summary}>
         <div className={summaryStyles.amount}><strong>{amount}</strong><span>{vatIncluded?'Incl. VAT':'Excl. VAT'}</span></div>
         {assessment && <p>Assessment saved on {date}.</p>}
         {assessment?.needsReview&&<p className={summaryStyles.review}>The asset details have changed since this assessment. Review the estimate before relying on it.</p>}
         <p>This saved estimate reflects the asset details and selling circumstances at the time of assessment. It is not a guaranteed selling price.</p>
-        {editEndpoint ? <button type="button" className={summaryStyles.editButton} onClick={()=>{setOpen(false);setEditing(true);}}>Update market price</button> : <p>The owner has not enabled market price updates for this link.</p>}
+        {editEndpoint ? <button type="button" className={summaryStyles.editButton} onClick={()=>{setOpen(false);setEditing(true);}}>Update market value</button> : <p>The owner has not enabled market value updates for this link.</p>}
       </div>
     </LeadActionDialog>,document.body)}
     {editing && editEndpoint && createPortal(<SharedMarketPriceEditor endpoint={editEndpoint} assetTitle={assetTitle} onClose={()=>setEditing(false)} onSaved={value=>{setSaved(value);onSaved?.();}}/>,document.body)}

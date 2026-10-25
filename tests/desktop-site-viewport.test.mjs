@@ -126,7 +126,7 @@ test('Estimate PDF Saleability price only follows a matching refined plan', asyn
 
   assert.match(polishSource, /actionPath !== '\/api\/valuation\/report'/);
   assert.match(polishSource, /saleabilityPdfPlanMatchesEstimate\(snapshot, payload\.machineTitle, payload\.selectedValueExVat\)/);
-  assert.match(polishSource, /label: 'Realistic Market Price'/);
+  assert.match(polishSource, /label: 'Realistic Market Value'/);
   assert.match(polishSource, /HTMLFormElement\.prototype\.submit = submitWithSaleabilityPrice/);
   assert.match(polishSource, /HTMLFormElement\.prototype\.submit === submitWithSaleabilityPrice/);
 });

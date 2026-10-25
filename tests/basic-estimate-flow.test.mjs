@@ -158,7 +158,7 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /function renderBasicBrandModelStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /function renderBasicLevelStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /function renderDetailsStep\(\)[\s\S]*?basicEstimateActive && selectedFamily[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
-  assert.match(client, /function renderBasicReplacementStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
+  assert.match(client, /function renderBasicReplacementStep\(editingResult = false\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /<section className=\{`\$\{styles\.wizardShell\} \$\{styles\.sectorWizardShell\}`\}>/);
   assert.match(client, /id="valuation-wizard-card"[^>]*className=\{`\$\{styles\.wizardCard\} \$\{styles\.sectorWizardCard\}`\}/);
   assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardShell/);
@@ -182,7 +182,7 @@ test('typed Brand and optional Model stay simple and user-facing', () => {
 
 test('Specification Level does not repeat Brand or Model above the heading', () => {
   const levelStart = client.indexOf('function renderBasicLevelStep()');
-  const levelEnd = client.indexOf('function renderBasicReplacementStep()', levelStart);
+  const levelEnd = client.indexOf('function renderBasicReplacementStep(editingResult = false)', levelStart);
   const levelBlock = client.slice(levelStart, levelEnd);
   assert.ok(levelStart >= 0 && levelEnd > levelStart);
   assert.doesNotMatch(levelBlock, /normalizeText\(unlistedBrandName\)/);
@@ -232,7 +232,7 @@ test('Condition modal explains both routes and shows Advanced questions one at a
   assert.match(chooserBlock, /Review wear and repairs/);
   assert.doesNotMatch(conditionBlock, /conditionModalBackButton/);
   assert.match(conditionBlock, /const advancedQuestionIndex = currentDetailedSectionIndex >= 0 \? currentDetailedSectionIndex : 0/);
-  assert.match(conditionBlock, /Question \{advancedQuestionIndex \+ 1\} of \{advancedQuestionTotal\}/);
+  assert.doesNotMatch(conditionBlock, /Question \{advancedQuestionIndex \+ 1\} of \{advancedQuestionTotal\}/);
   assert.match(conditionBlock, /showNextAdvancedQuestion\(0\)/);
   assert.match(conditionBlock, /showNextAdvancedQuestion\(3\)/);
   assert.match(valuationStyles, /\.conditionBasicModal \.basicConditionOptionGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
@@ -296,23 +296,23 @@ test('replacement styling reuses the year slider visual language and does not in
 });
 
 test('Basic catalogue sliders use researched bounds and retain the legacy fallback', () => {
-  const replacementBlock = client.slice(client.indexOf('function renderBasicReplacementStep()'), client.indexOf('function renderMotorSubtypeSelection'));
+  const replacementBlock = client.slice(client.indexOf('function renderBasicReplacementStep(editingResult = false)'), client.indexOf('function renderMotorSubtypeSelection'));
   assert.match(replacementBlock, /catalogueGuide.minExVat/);
   assert.match(replacementBlock, /catalogueGuide.maxExVat/);
   assert.match(replacementBlock, /catalogueGuide.sliderStep/);
   assert.match(replacementBlock, /: 5_000_000/);
   assert.match(replacementBlock, /step=\{catalogueGuide \? 'any' : replacementSliderStep\}/);
   assert.match(replacementBlock, /− \{money\(replacementSliderStep\)\}/);
-  assert.match(replacementBlock, /value=\{formatReplacementPriceInput\(basicReplacementPrice\)\}/);
+  assert.match(replacementBlock, /value=\{formatReplacementPriceInput\(editorPrice\)\}/);
 });
 
 test('Basic replacement slider keeps zero stable and preserves manual values above the temporary slider ceiling', () => {
   assert.match(client, /step !== 5 \|\| !basicReplacementGuide \|\| basicReplacementPrice !== null/);
-  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
+  const replacementStart = client.indexOf('function renderBasicReplacementStep(editingResult = false)');
   const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
   assert.match(replacementBlock, /parsedReplacementInput >= 0/);
   assert.match(replacementBlock, /const selectedReplacementPrice = hasReplacementSliderInput[\s\S]*?\? parsedReplacementInput[\s\S]*?: replacementSliderDefault/);
-  assert.match(replacementBlock, /<strong>\{basicReplacementPrice !== null && !hasReplacementSliderInput \? 'Not set' : money\(selectedReplacementPrice\)\}<\/strong>/);
+  assert.match(replacementBlock, /<strong>\{editorPrice !== null && !hasReplacementSliderInput \? 'Not set' : money\(selectedReplacementPrice\)\}<\/strong>/);
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
@@ -320,7 +320,7 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and sho
   assert.match(client, /const \[basicReplacementVatMode, setBasicReplacementVatMode\] = useState<VatDisplayMode>\('excl'\);/);
   assert.match(client, /const basicBaseReplacementPriceExVat = basicReplacementEnteredPrice === null[\s\S]*?basicReplacementVatMode === 'incl'[\s\S]*?basicReplacementEnteredPrice \/ \(1 \+ VAT_RATE\)/);
 
-  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
+  const replacementStart = client.indexOf('function renderBasicReplacementStep(editingResult = false)');
   const replacementEnd = client.indexOf('function renderMotorSubtypeSelection', replacementStart);
   const replacementBlock = client.slice(replacementStart, replacementEnd);
   assert.ok(replacementStart >= 0 && replacementEnd > replacementStart);
@@ -333,8 +333,8 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and sho
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(replacementBlock, />\s*Excluding VAT\s*<\/button>/);
   assert.match(replacementBlock, />\s*Including VAT\s*<\/button>/);
-  assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('excl'\)/);
-  assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('incl'\)/);
+  assert.match(replacementBlock, /setEditorVatModePreservingPrice\('excl'\)/);
+  assert.match(replacementBlock, /setEditorVatModePreservingPrice\('incl'\)/);
   assert.match(replacementBlock, /currentDisplayPrice \* \(1 \+ VAT_RATE\)/);
   assert.match(replacementBlock, /currentDisplayPrice \/ \(1 \+ VAT_RATE\)/);
   assert.match(replacementBlock, /replacementVatLabel/);
@@ -384,7 +384,7 @@ test('replacement initialization leaves deliberately cleared and edited prices a
 
 test('specification shortcut updates all three ranges and preserves the VAT basis', () => {
   const start = client.indexOf('function applyReplacementSpecification(level: BasicSpecificationLevel) {');
-  const end = client.indexOf('function renderBasicReplacementStep()', start);
+  const end = client.indexOf('function renderBasicReplacementStep(editingResult = false)', start);
   assert.ok(start > 0 && end > start);
   const source = client.slice(start, end);
   const body = source.slice(source.indexOf('{') + 1, source.lastIndexOf('}'));
@@ -462,4 +462,15 @@ test('unspecified condition uses Fair and an explicit condition clears the unspe
       assert.equal(state.complete, true);
     }
   }
+});
+
+test('result editing reuses flow lifetime and replacement controls', () => {
+  assert.match(client, /renderLifetimeModal\(true, true\)/);
+  assert.match(client, /renderBasicReplacementStep\(true\)/);
+  assert.doesNotMatch(client, /<EstimateUsage/);
+  assert.match(client, /Aim4price Ideal Value<\/h2>/);
+  assert.match(client, /if \(!editingResult\) resetResult\(\)/);
+  assert.match(client, /base \+ \(basicEstimateActive \? basicExtraReplacementPriceExVat : 0\)/);
+  const conditionHeading = client.slice(client.indexOf('<strong className={styles.advancedQuestionHeading}'), client.indexOf('<p className={styles.advancedQuestionHint}'));
+  assert.doesNotMatch(conditionHeading, /renderDetailIcon|Question \{/);
 });

@@ -51,6 +51,8 @@ jobs:
         run: node scripts/verify-equipment-picker.cjs
       - name: Multiple fitted extras
         run: node scripts/verify-basic-extras.cjs
+      - name: Shared lifetime and replacement editors
+        run: node scripts/verify-shared-valuation-editors.cjs
       - name: Usage and lifetime modal flow
         run: node scripts/verify-usage-lifetime.cjs
       - run: npm run typecheck
