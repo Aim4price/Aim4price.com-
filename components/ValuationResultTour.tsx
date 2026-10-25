@@ -5,15 +5,16 @@ import {websiteLogicalRect, websiteVisibleViewport} from '../lib/website-canvas'
 import styles from './valuation-result-tour.module.css';
 
 const steps = [
-  {target:'value', title:'Your Aim4price Ideal Value', text:'Aim4price uses your asset details to estimate an Aim4price Ideal Value. Our goal is to help you reach the most applicable value for your asset.', action:'Does the value feel too high or too low? Start by checking the inputs. This estimate is not a guaranteed selling price.'},
-  {target:'replacement', title:'Start with the right replacement price', text:'What would a comparable new asset cost today? This amount is the starting point for depreciation, so use the correct price and VAT basis.', action:'Choose Adjust price after the walkthrough to correct it. Your replacement price directly affects the result.'},
-  {target:'saleability', title:'Why the two prices can differ', text:'Demand, selling method and time available can move the likely selling price above or below Aim4price Ideal Value. Realistic Market Value considers these circumstances separately.', action:'Open Realistic Market Value to explore a selling estimate. Your Aim4price Ideal Value stays unchanged, and the actual sale price may differ.'},
-  {target:'details', title:'Make the details match your asset', text:'Check the year, usage, condition and popularity. Accurate details help the estimate reflect the asset you actually own.', action:'If something is incorrect, use the steps above to edit it and calculate again. Change inputs to reflect the asset, rather than a preferred price.'},
-  {target:'assumptions', title:'Review advanced assumptions', text:'Assets do not all have the same working life. Where available, review total expected lifetime in hours or kilometres and the other valuation assumptions.', action:'Adjust only what you can support, then recalculate. Together, accurate details, replacement price and realistic assumptions help you reach the most applicable value.'},
+  {target:'value', label:'Your value', title:'Your Aim4price Ideal Value', text:'An estimate based on your asset details, replacement price and depreciation.', action:'Too high or too low? Check the inputs first. This is a guide, not a guaranteed selling price.'},
+  {target:'replacement', label:'Replacement', title:'Check the replacement price', text:'What would a comparable new asset cost today? This is the starting point for your estimate.', action:'Choose Adjust to correct the price. Check the VAT basis and include your extras.'},
+  {target:'saleability', label:'Market value', title:'Understand the market value', text:'Demand, selling method and time available can move the likely selling value above or below your Ideal Value.', action:'Choose Calculate or Update to assess your selling circumstances. Your Ideal Value stays unchanged.'},
+  {target:'details', label:'Asset details', title:'Check your asset details', text:'Review the year, usage, condition and popularity shown here.', action:'Use the earlier steps to correct anything that does not match your asset, then calculate again.'},
+  {target:'assumptions', label:'Fine-tune', title:'Fine-tune your estimate', text:'These controls let you review the assumptions behind this value.', action:'Change only what reflects your asset. Apply your changes to recalculate this estimate.'},
 ];
+type Props = {assumptionItems?: string[]};
 type Box = {top:number; left:number; width:number; height:number};
 
-export default function ValuationResultTour() {
+export default function ValuationResultTour({assumptionItems = ['Expected lifetime — total hours or kilometres.', 'Condition adjustment — how condition affects value.']}: Props) {
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [available, setAvailable] = useState(steps);
@@ -57,12 +58,21 @@ export default function ValuationResultTour() {
     target.scrollIntoView({behavior:reduced ? 'instant' : 'smooth', block:'center'});
     let frame = 0;
     function measure() {
-      const r = websiteLogicalRect(target!.getBoundingClientRect());
+      let r = websiteLogicalRect(target!.getBoundingClientRect());
       const viewport = websiteVisibleViewport();
       const w = viewport.width, h = viewport.height;
       const ch = card.current?.offsetHeight ?? 300;
-      const cw = Math.min(360,w-32);
+      const cw = Math.min(380,w-32);
       const gap = 20;
+      // A full-width settings group can leave no room for the explanation.
+      // In that case spotlight its actual action, rather than collapsing to a line.
+      if (available[index].target === 'assumptions' && r.right+gap+cw > w-16 && r.left-gap-cw < 16
+          && r.top-gap-ch < 16 && r.bottom+gap+ch > h-16) {
+        const controls = target!.querySelectorAll<HTMLButtonElement>('button');
+        const control = Array.from(controls).reverse().find(button => button.getClientRects().length && !button.closest('dialog'));
+        if (control) r = websiteLogicalRect(control.getBoundingClientRect());
+      }
+
       const clampTop = (top:number) => Math.max(16, Math.min(h-ch-16, top));
       let left = Math.max(16, Math.min(w-cw-16, r.left));
       let top:number;
@@ -102,7 +112,7 @@ export default function ValuationResultTour() {
         <span>Explain my value</span>
       </button>
     </div>
-    <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>event.preventDefault()} onKeyDown={event=>{
+    <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>{event.preventDefault();close();}} onKeyDown={event=>{
       if(event.key !== 'Tab') return;
       const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
       const first=buttons[0],last=buttons[buttons.length-1];
@@ -112,9 +122,10 @@ export default function ValuationResultTour() {
       {active ? <>
         <div className={styles.spotlight} style={box ?? {inset:0}} aria-hidden="true"/>
         <div ref={card} className={styles.card} style={position}>
-          <div className={styles.top}><span>{index+1} of {available.length}</span><button type="button" data-modal-close="true" aria-label="Close dialog" onClick={close} /></div>
+          <div className={styles.top}><span className={styles.stepLabel}>Step {index+1} of {available.length}<strong>{available[index].label}</strong></span><button type="button" data-modal-close="true" aria-label="Close dialog" title="Close explanation" onClick={close} /></div>
+          <div className={styles.progress} aria-hidden="true">{available.map((step, stepIndex)=><span key={step.target} data-complete={stepIndex <= index || undefined}/>)}</div>
           <h2 id="value-tour-title">{available[index].title}</h2>
-          <div id="value-tour-description" aria-live="polite"><p>{available[index].text}</p><p className={styles.hint}>{available[index].action}</p></div>
+          <div id="value-tour-description" aria-live="polite"><p>{available[index].text}</p>{available[index].target === 'assumptions' ? <ul className={styles.options}>{assumptionItems.map(item=><li key={item}>{item}</li>)}</ul> : null}<p className={styles.hint}>{available[index].action}</p></div>
           <div className={styles.actions}>
             {index > 0 ? <button type="button" onClick={()=>setIndex(index-1)}>Back</button> : null}
             <button type="button" className={styles.next} onClick={()=>index===available.length-1 ? close() : setIndex(index+1)}>{index===available.length-1 ? 'Done' : 'Next'}</button>

@@ -9221,7 +9221,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div> : null}
-            <div className={styles.resultHeroHeader}><div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2 id="valuation-result-heading" tabIndex={-1}>Aim4price Ideal Value</h2></div><ValuationResultTour /></div>
+            <div className={styles.resultHeroHeader}><div className={styles.resultHeroHeading}>{renderDetailIcon('brand')}<h2 id="valuation-result-heading" tabIndex={-1}>Aim4price Ideal Value</h2></div><ValuationResultTour assumptionItems={breakdownAccess ? [
+                ...(advancedShowLifetimeInput ? ['Expected lifetime — total hours or kilometres.'] : []),
+                'Estimate settings — yearly depreciation, age / usage weighting and rating adjustments.',
+              ] : [
+                ...(advancedShowLifetimeInput ? ['Expected lifetime — total hours or kilometres.'] : []),
+                ...(!appliedDealerAssessment ? ['Condition adjustment — how condition affects value.'] : []),
+              ]} /></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>

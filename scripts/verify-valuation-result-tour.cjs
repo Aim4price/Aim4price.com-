@@ -51,7 +51,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try{
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setViewport({width:1366,height:768});
- await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#edf4ef;font-family:Arial}main{max-width:850px;margin:24px auto}section{background:white;border-radius:18px;margin:16px 0;padding:24px;min-height:140px}'+sheets.join('\n')+'</style><main><section data-value-tour="value"><div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><h2>Aim4price Ideal Value</h2><div id="app"></div></div><h1>R 459 000</h1></section><section data-value-tour="replacement"><h2>Replacement price</h2>R 1 080 000</section><section data-value-tour="saleability"><h2>How easily could it sell?</h2>Calculate Realistic Market Value</section><section data-value-tour="details"><h2>Asset details</h2>Review usage and condition</section><section data-value-tour="assumptions"><h2>Advanced assumptions</h2>Expected lifetime</section></main>');
+ await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#edf4ef;font-family:Arial}main{max-width:850px;margin:24px auto}section{background:white;border-radius:18px;margin:16px 0;padding:24px;min-height:140px}'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+sheets.join('\n')+'</style><main><section data-value-tour="value"><div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"><h2>Aim4price Ideal Value</h2><div id="app"></div></div><h1>R 459 000</h1></section><section data-value-tour="replacement"><h2>Replacement price</h2>R 1 080 000</section><section data-value-tour="saleability"><h2>How easily could it sell?</h2>Calculate Realistic Market Value</section><section data-value-tour="details"><h2>Asset details</h2>Review usage and condition</section><section data-value-tour="assumptions"><h2>Advanced assumptions</h2>Expected lifetime<button>Adjust</button><div style="margin-top:20px">Calculation breakdown <button style="float:right">Estimate settings</button></div></section></main>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+"window.root=ReactDOM.createRoot(document.getElementById('app'));window.root.render(React.createElement(require('components/ValuationResultTour').default));"});
  const click=async text=>{await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(n=>n.textContent.trim()===t).click(),text)};
@@ -62,21 +62,34 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.querySelector('#value-tour-title')?.textContent==='Your Aim4price Ideal Value');
  await page.waitForFunction(()=>!document.querySelector('dialog').getAnimations({subtree:true}).some(a=>a.playState==='running'));
  await page.screenshot({path:'/tmp/result-tour-desktop.png'});
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Start with the right replacement price');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check the replacement price');
  await click('Back');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Your Aim4price Ideal Value');
  await click('Next');await click('Next');await click('Next');
- await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Make the details match your asset');
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Review advanced assumptions');
+ await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check your asset details');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Fine-tune your estimate');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('5 of 5') && !document.querySelector('dialog').textContent.includes('Quick guide')));
+ await page.waitForFunction(()=>!document.querySelector('dialog').getAnimations({subtree:true}).some(a=>a.playState==='running'));
+ await page.screenshot({path:'/tmp/result-tour-assumptions.png'});
+ assert(await page.evaluate(()=>{
+   const spotlight=document.querySelector('dialog > div').getBoundingClientRect();
+   const panel=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();
+   return spotlight.height>20 && (panel.right<=spotlight.left || panel.left>=spotlight.right || panel.bottom<=spotlight.top || panel.top>=spotlight.bottom);
+ }), 'The final step must highlight a visible control without covering it');
+
+ assert(await page.evaluate(()=>document.querySelector('#value-tour-description').textContent.includes('total hours or kilometres')));
+ await page.click('[data-modal-close]');
+ assert.equal(await page.$('dialog[open]'),null);
+ await click('Explain my value');await click('Next');await click('Next');await click('Next');await click('Next');
  await click('Done');assert.equal(await page.$('dialog[open]'),null);
  assert(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')==='dialog'));
  await click('Explain my value');await page.waitForSelector('dialog[open]');
- await page.keyboard.press('Escape');assert(await page.$('dialog[open]'));
+ await page.keyboard.press('Escape');assert.equal(await page.$('dialog[open]'),null);
+ await click('Explain my value');await page.waitForSelector('dialog[open]');
  await finish();
  await page.setViewport({width:390,height:844});
  await page.emulateMediaFeatures([{name:'prefers-reduced-motion',value:'reduce'}]);
  await click('Explain my value');await page.waitForSelector('dialog[open]');
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Start with the right replacement price');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Check the replacement price');
  await page.screenshot({path:'/tmp/result-tour-mobile.png'});
  assert(await page.evaluate(()=>{const r=document.querySelector('#value-tour-title').parentElement.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight;}));
  await page.keyboard.press('Tab');
@@ -85,7 +98,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>document.querySelector('[data-value-tour="replacement"]').remove());
  await click('Explain my value');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('1 of 4')));
- await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Why the two prices can differ');
+ await click('Next');await page.waitForFunction(()=>document.querySelector('#value-tour-title').textContent==='Understand the market value');
 
  await finish();
  await page.setViewport({width:1366,height:768});
