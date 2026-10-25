@@ -42,16 +42,18 @@ function add(file){
 const client=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
 const replacement=client.slice(client.indexOf('  function renderBasicReplacementStep('),client.indexOf('  function renderMotorSubtypeSelection'));
 const lifetime=client.slice(client.indexOf('  function renderLifetimeModal('),client.indexOf('  function renderUsageModal('));
-add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
+add('lib/replacement-slider');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
 const replacementDialog=client.slice(client.indexOf('              <dialog ref={replacementPriceDialogRef}'),client.indexOf('              </dialog>',client.indexOf('              <dialog ref={replacementPriceDialogRef}'))+'              </dialog>'.length);
-const priceFormatter=client.slice(client.indexOf('function formatReplacementPriceInput('),client.indexOf('function handleReplacementPriceInput('));
+const priceFormatter=client.slice(client.indexOf('function formatReplacementPriceInput('),client.indexOf('function normalizeAccountType('));
 const fixture=`import React,{useState,useRef,useEffect} from 'react';
+import {replacementSliderRange} from 'lib/replacement-slider';
 import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function Fixture(){
 const [mode,setMode]=useState('lifetime'),[unit,setUnit]=useState('hours'),[usageLifetimeDraft,setUsageLifetimeDraft]=useState('16000');
 const [finalLifetimeOpen,setFinalLifetimeOpen]=useState(true),[finalReplacementDraft,setFinalReplacementDraft]=useState('100000');
 const [replacementModalVat,setReplacementModalVat]=useState('excl');
 const [basicReplacementPrice,setBasicReplacementPrice]=useState('100000'),[basicReplacementVatMode,setBasicReplacementVatMode]=useState('excl');
+const [replacementRangeAnchor,setReplacementRangeAnchor]=useState(null);
 const [applied,setApplied]=useState(null);
 const replacementPriceDialogRef=useRef(null),[replacementPanelOpen,setReplacementPanelOpen]=useState(false);
 useEffect(()=>{if(mode==='replacement'&&!replacementPriceDialogRef.current?.open)replacementPriceDialogRef.current?.showModal();},[mode]);
@@ -68,12 +70,12 @@ const activeBreakdown={report:{settings:{conditionPercent:80,popularityPercent:9
 const applyPrivateEstimateSettings=async settings=>{setApplied(settings);return true;},updateAdvancedAssumptionsAndRecalculate=async()=>false;
 const basicEstimateActive=true,basicExtraReplacementPriceExVat=25000,basicReplacementGuide={minExVat:50000,maxExVat:200000,sliderStep:5000,suggestedExVat:100000},selectedFamily={basicCatalogue:{}};
 const VAT_RATE=.15,getVatDisplayValue=(value,mode)=>mode==='incl'?value*1.15:value;
-const parseMoneyInput=value=>value===null||value===''?null:Number(String(value).replace(/\s/g,''));
+const parseMoneyInput=value=>value===null||value===''?null:Number(String(value).replace(/[^0-9.-]/g,''));
 const resetResult=()=>{throw Error('Editing the result must not reset it');},money=value=>'R '+Math.round(value).toLocaleString('en-ZA');
 const replacementHelpDialogRef=useRef(null),specificationDialogRef=useRef(null),specificationDraft='standard',setSpecificationDraft=()=>{},basicSpecLevel='standard';
 const renderSpecificationChoices=()=>null,applyReplacementSpecification=()=>{},renderDetailIcon=()=>null,requiredProps=bad=>({'aria-invalid':bad}),requiredHint=bad=>bad?<small>Required</small>:null;
 ${priceFormatter}
-const handleReplacementPriceInput=(e,set)=>set(e.target.value);
+
 const renderReplacementBreakdown=(base,extra,total,vat)=><output data-total={total}>{money(getVatDisplayValue(total,vat))}</output>;
 ${replacement}
 ${lifetime}
@@ -114,6 +116,19 @@ await click('Including VAT');assert.equal(await page.$eval('output',el=>el.datas
 await page.$eval('input[inputmode="decimal"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'230000');el.dispatchEvent(new Event('input',{bubbles:true}));});
 await page.waitForFunction(()=>Math.abs(Number(document.querySelector('output').dataset.total)-225000)<.01);
 await click('Excluding VAT');assert.equal(await page.$eval('input[inputmode="decimal"]',el=>Math.round(Number(el.value.replaceAll(' ','')))),200000);
+assert.equal(await page.$$eval('input[inputmode="decimal"]',els=>els.length),1,'Only one price input');
+await page.focus('input[inputmode="decimal"]');
+const oldBounds=await page.$eval('input[type="range"]',el=>[el.min,el.max]);
+await page.click('input[inputmode="decimal"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[inputmode="decimal"]','8000123.45');
+assert.equal(await page.$eval('input[inputmode="decimal"]',el=>el.value),'8 000 123.45');
+assert.deepEqual(await page.$eval('input[type="range"]',el=>[el.min,el.max]),oldBounds,'Scale stays stable while typing');
+await page.keyboard.press('Enter');
+await page.waitForFunction(()=>Number(document.querySelector('input[type="range"]').max)>8000123.45);
+assert.equal(await page.$eval('input[type="range"]',el=>Number(el.value)),8000123.45,'Exact typed price is not snapped');
+await click('Including VAT');await click('Excluding VAT');
+assert(Math.abs(await page.$eval('input[inputmode="decimal"]',el=>Number(el.value.replaceAll(' ','')))-8000123.45)<.01);
+await page.click('input[inputmode="decimal"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[inputmode="decimal"]','200000');await page.keyboard.press('Enter');
+await page.addStyleTag({content:fs.readFileSync(path.join(root,'public/app-theme.css'),'utf8')});
 await page.screenshot({path:'/tmp/shared-replacement.png'});
 await click('Recalculate estimate');await page.waitForFunction(()=>Math.abs(JSON.parse(document.querySelector('#applied').textContent).replacement-225000)<.01);
 await page.setViewport({width:390,height:844});

@@ -301,7 +301,7 @@ test('Basic catalogue sliders use researched bounds and retain the legacy fallba
   assert.match(replacementBlock, /catalogueGuide.maxExVat/);
   assert.match(replacementBlock, /catalogueGuide.sliderStep/);
   assert.match(replacementBlock, /: 5_000_000/);
-  assert.match(replacementBlock, /step=\{catalogueGuide \? 'any' : replacementSliderStep\}/);
+  assert.match(replacementBlock, /step="any"/);
   assert.match(replacementBlock, /− \{money\(replacementSliderStep\)\}/);
   assert.match(replacementBlock, /value=\{formatReplacementPriceInput\(editorPrice\)\}/);
 });
@@ -312,7 +312,7 @@ test('Basic replacement slider keeps zero stable and preserves manual values abo
   const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
   assert.match(replacementBlock, /parsedReplacementInput >= 0/);
   assert.match(replacementBlock, /const selectedReplacementPrice = hasReplacementSliderInput[\s\S]*?\? parsedReplacementInput[\s\S]*?: replacementSliderDefault/);
-  assert.match(replacementBlock, /<strong>\{editorPrice !== null && !hasReplacementSliderInput \? 'Not set' : money\(selectedReplacementPrice\)\}<\/strong>/);
+  assert.match(replacementBlock, /styles\.replacementEditableAmount/);
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
@@ -473,4 +473,13 @@ test('result editing reuses flow lifetime and replacement controls', () => {
   assert.match(client, /base \+ \(basicEstimateActive \? basicExtraReplacementPriceExVat : 0\)/);
   const conditionHeading = client.slice(client.indexOf('<strong className={styles.advancedQuestionHeading}'), client.indexOf('<p className={styles.advancedQuestionHint}'));
   assert.doesNotMatch(conditionHeading, /renderDetailIcon|Question \{/);
+});
+
+
+test('manual replacement scale expands without changing precise entered prices', async () => {
+  const {replacementSliderRange}=await import('../lib/replacement-slider.ts');
+  assert.deepEqual(replacementSliderRange(500000,50000,200000,5000),{min:250000,max:750000});
+  assert.deepEqual(replacementSliderRange(12345.67,50000,200000,5000),{min:5000,max:20000});
+  assert.deepEqual(replacementSliderRange(null,50000,200000,5000),{min:50000,max:200000});
+  assert.deepEqual(replacementSliderRange(100000,50000,200000,5000),{min:50000,max:200000});
 });
