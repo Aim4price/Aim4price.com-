@@ -69,7 +69,7 @@ export default function ShareHistory({ assetIds, umbrellaId, subject, onBack }: 
             setBusy(false);
         }
     }
-    return <div className={styles.panel}>
+    return <div className={styles.panel} data-share-history>
   <p className={styles.intro}>Open a shared link, update its settings or revoke access.</p>
   {notice && <p role="status">{notice}</p>}
   {error && <p role="alert" className={styles.error}>{error}</p>}

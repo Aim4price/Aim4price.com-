@@ -215,6 +215,7 @@ export default function SharedAssetCards({
                             permissions={enquiry && item.assetId && ['active','owner'].includes(enquiry.access) ? {
                               serial:enquiry.access==='owner'||enquiry.permissions.serialNumber,
                               replacement:enquiry.access==='owner'||enquiry.permissions.replacementPrice,
+                              market:enquiry.access==='owner'||enquiry.permissions.marketPrice,
                               year:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.yearModel,
                               usage:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.usage,
                               condition:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.condition,

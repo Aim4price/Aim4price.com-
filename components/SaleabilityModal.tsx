@@ -13,7 +13,7 @@ import accountStyles from '../app/account/page.module.css';
 type SaleabilityModalProps = {
   estimateStyle?: boolean; open: boolean; onClose: () => void;
   assetTitle: string; valuationExVat: number; input: GeneralSaleabilityInput;
-  context?: SaleabilityContext; assetId?: string; basis?: string;
+  context?: SaleabilityContext; assetId?: string; basis?: string; previewEndpoint?: string;
   storageKey?: string; initialAnswers?: SaleabilityRefinementAnswers;
   onComplete?: (answers: SaleabilityRefinementAnswers) => void;
   onSave?: (answers: SaleabilityRefinementAnswers) => Promise<void>;
@@ -115,7 +115,7 @@ function ChoiceQuestion<T extends string>({
 
 export default function SaleabilityModal({
   estimateStyle = false, open, onClose, assetTitle, valuationExVat,
-  context, assetId, basis, storageKey, initialAnswers, onSave, onComplete,
+  context, assetId, basis, previewEndpoint, storageKey, initialAnswers, onSave, onComplete,
 }: SaleabilityModalProps) {
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>(defaults);
   const [step, setStep] = useState<number | 'result'>(1);
@@ -176,7 +176,7 @@ export default function SaleabilityModal({
     const controller = new AbortController();
     setLoading(true); setError(''); setPlan(null);
     try { window.sessionStorage.removeItem(SALEABILITY_PDF_PLAN_SESSION_KEY); } catch { /* Optional storage. */ }
-    const url = assetId ? '/api/asset-register/saleability' : '/api/saleability/quote';
+    const url = previewEndpoint || (assetId ? '/api/asset-register/saleability' : '/api/saleability/quote');
     const payload = assetId ? { assetId, basis, answers, preview: true }
       : { valuationExVat, answers, context: JSON.parse(contextJson) };
     void (async () => {
@@ -191,7 +191,7 @@ export default function SaleabilityModal({
       } finally { if (!controller.signal.aborted) setLoading(false); }
     })();
     return () => controller.abort();
-  }, [open, step, answers, valuationExVat, assetId, basis, contextJson, retry]);
+  }, [open, step, answers, valuationExVat, assetId, basis, previewEndpoint, contextJson, retry]);
 
   useEffect(() => {
     if (!open || step !== 'result' || !plan) return;

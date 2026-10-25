@@ -69,9 +69,10 @@ function copyPermissions(value: DealerMaintenancePermissions): DealerMaintenance
 }
 
 type PermissionPickerProps = {
+  marketPrice?: { enabled: boolean; onChange: (enabled: boolean) => void };
   lockedPermissions?: Array<keyof DealerMaintenancePermissions>;
   value: DealerMaintenancePermissions;
-  onChange: (permissions: DealerMaintenancePermissions) => void;
+  onChange: (permissions: DealerMaintenancePermissions, marketPriceEnabled?: boolean) => void;
   disabled?: boolean;
 };
 
@@ -80,6 +81,7 @@ export function DealerMaintenancePermissionPicker({
   onChange,
   disabled = false,
   lockedPermissions = [],
+  marketPrice,
 }: PermissionPickerProps) {
   const editableOptions = dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key));
   const selectedCount = editableOptions.filter(({key}) => value[key] === true).length;
@@ -98,6 +100,10 @@ export function DealerMaintenancePermissionPicker({
                   <span><strong>{option.title}</strong><small>{lockedPermissions.includes(option.key) ? 'Always included with this asset link.' : option.description}</small></span>
                 </label>
               ))}
+              {group.title === 'Costs and values' && marketPrice && <label className={`${styles.permission} ${marketPrice.enabled ? styles.permissionEnabled : ''}`}>
+                <input type="checkbox" checked={marketPrice.enabled} disabled={disabled} onChange={event => marketPrice.onChange(event.target.checked)} />
+                <span><strong>Update market price</strong><small>Review the assessment.</small></span>
+              </label>}
             </div>
             {group.note && <p className={styles.permissionNote} data-permission-note>{group.note}</p>}
           </fieldset>
@@ -106,12 +112,12 @@ export function DealerMaintenancePermissionPicker({
       <div className={styles.permissionToolbar} data-permission-toolbar>
         <label className={styles.selectAll}>
           <input type="checkbox" disabled={disabled || !editableOptions.length}
-            checked={editableOptions.length > 0 && selectedCount === editableOptions.length}
-            ref={input => { if (input) input.indeterminate = selectedCount > 0 && selectedCount < editableOptions.length; }}
+            checked={editableOptions.length > 0 && selectedCount === editableOptions.length && (!marketPrice || marketPrice.enabled)}
+            ref={input => { if (input) input.indeterminate = (selectedCount + (marketPrice?.enabled ? 1 : 0)) > 0 && (selectedCount + (marketPrice?.enabled ? 1 : 0)) < editableOptions.length + (marketPrice ? 1 : 0); }}
             onChange={event => onChange({ ...value,
               ...(!lockedPermissions.includes('canUpdateDetails') ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key, event.target.checked])) : {}),
               ...Object.fromEntries(editableOptions.map(({key}) => [key, event.target.checked])),
-            })} />
+            }, marketPrice ? event.target.checked : undefined)} />
           <span>Select all permissions</span>
         </label>
       </div>

@@ -5336,3 +5336,8 @@
 @media (prefers-reduced-motion: reduce) {
   .maintenanceTransitionSpinner { animation: none; }
 }
+
+.repeatChoice { display: flex; align-items: flex-start; gap: .85rem; padding: 1rem; border: 1px solid var(--app-line, #c6ddd3); border-radius: .9rem; background: var(--app-success-soft, #edf7f1); cursor: pointer; }
+.repeatChoice input { flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin-top: .15rem; accent-color: var(--app-accent, #165540); }
+.repeatChoice span { display: grid; gap: .35rem; }
+.repeatChoice small { font-size: .9rem; line-height: 1.5; }

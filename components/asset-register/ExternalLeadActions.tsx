@@ -57,7 +57,7 @@ export default function ExternalLeadActions({ token, permissions: suppliedPermis
   return <>
     <div className={assetStyles.optionsContent}>
       <ManageActionGrid className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid}`}>
-        {EXTERNAL_SHARE_OPTIONS.filter(option => !['addMaintenance','maintenanceSchedules','updateDetails','yearModel','usage','condition','viewParts','addParts','suggestValue','serialNumber','replacementPrice'].includes(option.key) && permissions[option.key] && !(permissions.allReports && ['maintenanceReports','costOfOwnership'].includes(option.key)) && !(canCorrect && ['serialNumber','replacementPrice'].includes(option.key))).map(option => <button data-manage-action={option.key} key={option.key} type="button" className={actionClassName} onClick={() => setAction(option.key)}>
+        {EXTERNAL_SHARE_OPTIONS.filter(option => !['marketPrice','addMaintenance','maintenanceSchedules','updateDetails','yearModel','usage','condition','viewParts','addParts','suggestValue','serialNumber','replacementPrice'].includes(option.key) && permissions[option.key] && !(permissions.allReports && ['maintenanceReports','costOfOwnership'].includes(option.key)) && !(canCorrect && ['serialNumber','replacementPrice'].includes(option.key))).map(option => <button data-manage-action={option.key} key={option.key} type="button" className={actionClassName} onClick={() => setAction(option.key)}>
           <AssetActionIcon action={option.key} className={assetStyles.buttonIcon} />
           <span><strong>{option.label}</strong><small>{option.description}</small></span>
         </button>)}

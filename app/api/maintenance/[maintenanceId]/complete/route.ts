@@ -52,6 +52,7 @@ async function saveCompletedMaintenance(
       userId,
       maintenanceId,
       {
+        continueSchedule: body.continueSchedule,
         completedAt: body.completedAt,
         completedUsage: body.completedUsage,
         completedNotes: unknownMaintenanceCompletionNote(scheduled.maintenanceType),

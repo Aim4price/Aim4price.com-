@@ -226,9 +226,11 @@ export default function Validation(){
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
    assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
    await page.click('[data-asset-link-dialog] [data-permission-toolbar] input[type=checkbox]');
-   await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===15);
+   await page.waitForFunction(()=>{const inputs=Array.from(document.querySelectorAll('[data-permission-grid] input[type=checkbox]'));return inputs.length>0&&inputs.every(input=>input.checked);});
+   assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[data-permission-grid] label')).find(label=>label.textContent.includes('Update market price'))?.querySelector('input')?.checked),true,'Select all includes market price editing');
    if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
-   assert.ok(await page.$$eval('[data-permission-grid] small', nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Permission descriptions fit one line without clipping');
+   const overflowingDescriptions=await page.$$eval('[data-permission-grid] small',nodes=>nodes.filter(node=>node.offsetHeight>parseFloat(getComputedStyle(node).lineHeight)+1||node.scrollWidth>node.clientWidth+1).map(node=>node.textContent));
+   assert.deepEqual(overflowingDescriptions,[], 'Permission descriptions fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
@@ -238,7 +240,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{viewParts:true,addParts:true,history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
+   assert.deepEqual(selectedDetails.permissions,{marketPrice:true,viewParts:true,addParts:true,history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
@@ -250,6 +252,7 @@ export default function Validation(){
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const readonlyDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
    assert.equal(readonlyDetails.permissions.addParts,false);
+   assert.equal(readonlyDetails.permissions.marketPrice,false,'View-only invitations cannot update market price');
    assert.equal(readonlyDetails.permissions.addPhotos,false);assert.equal(readonlyDetails.permissions.addCosts,false);
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');

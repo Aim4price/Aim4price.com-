@@ -35,7 +35,7 @@ export type AssetMaintenanceReportOptions = {
 type KeyValueRow = { label: string; value: string };
 
 type MaintenanceGroup = {
-  key: 'attention' | 'scheduled' | 'completed';
+  key: 'attention' | 'scheduled' | 'completed' | 'cancelled';
   title: string;
   description: string;
   records: AssetMaintenanceRecord[];
@@ -181,6 +181,7 @@ function formatDue(record: AssetMaintenanceRecord): string {
 }
 
 function formatRemaining(record: AssetMaintenanceRecord): string {
+  if (record.status === 'cancelled') return 'Cancelled';
   if (record.status === 'done') return 'Completed';
   if (record.triggerType === 'date' && typeof record.daysUntilDue === 'number') {
     if (record.daysUntilDue < 0) return `${formatNumber(Math.abs(record.daysUntilDue))} days overdue`;
@@ -285,7 +286,7 @@ function groupRecords(records: AssetMaintenanceRecord[]): MaintenanceGroup[] {
     if (record.computedStatus === 'due_soon') return 2;
     return 3;
   };
-  const open = records.filter((record) => record.status !== 'done').sort((a, b) => priority(a) - priority(b));
+  const open = records.filter((record) => record.status === 'upcoming').sort((a, b) => priority(a) - priority(b));
   return [
     {
       key: 'attention',
@@ -298,6 +299,12 @@ function groupRecords(records: AssetMaintenanceRecord[]): MaintenanceGroup[] {
       title: 'Scheduled Maintenance',
       description: 'Open service and checkup work that is not yet within its alert threshold.',
       records: open.filter((record) => !['overdue', 'due', 'due_soon'].includes(record.computedStatus)),
+    },
+    {
+      key: 'cancelled',
+      title: 'Removed from Maintenance',
+      description: 'Cancelled records retained for reporting and history.',
+      records: records.filter((record) => record.status === 'cancelled'),
     },
     {
       key: 'completed',
@@ -313,7 +320,7 @@ function recordTitle(record: AssetMaintenanceRecord): string {
 }
 
 function renderRecord(record: AssetMaintenanceRecord): string {
-  const completed = record.status === 'done';
+  const completed = record.status === 'done' || Boolean(record.completedAtIso);
   const details: KeyValueRow[] = completed
     ? [
         { label: 'Completed (SAST)', value: formatDateTime(record.completedAtIso) },

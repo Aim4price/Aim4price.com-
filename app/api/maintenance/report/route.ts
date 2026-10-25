@@ -69,6 +69,7 @@ function parseFilters(request: NextRequest, scope: ReportScope): AssetMaintenanc
     // "All" deliberately includes scheduled/open work and every persisted
     // completion, including stand-alone services, check-ups and repairs.
     status: reportStatus,
+    includeCancelled: true,
     assignedTo: assignedTo && assignedTo !== 'all' ? assignedTo : null,
   };
 }
