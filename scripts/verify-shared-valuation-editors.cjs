@@ -41,6 +41,7 @@ function add(file){
 
 const client=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
 const replacement=client.slice(client.indexOf('  function renderBasicReplacementStep('),client.indexOf('  function renderMotorSubtypeSelection'));
+const yearModal=client.slice(client.indexOf('  function renderYearModal('),client.indexOf('  function getUsageLifetimeDefault('));
 const lifetime=client.slice(client.indexOf('  function renderLifetimeModal('),client.indexOf('  function renderUsageModal('));
 add('lib/replacement-slider');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
 const replacementDialog=client.slice(client.indexOf('              <dialog ref={replacementPriceDialogRef}'),client.indexOf('              </dialog>',client.indexOf('              <dialog ref={replacementPriceDialogRef}'))+'              </dialog>'.length);
@@ -55,6 +56,8 @@ const [replacementModalVat,setReplacementModalVat]=useState('excl');
 const [basicReplacementPrice,setBasicReplacementPrice]=useState('100000'),[basicReplacementVatMode,setBasicReplacementVatMode]=useState('excl');
 const [replacementRangeAnchor,setReplacementRangeAnchor]=useState(null);
 const [applied,setApplied]=useState(null);
+const [year,setYear]=useState('2019'),[yearModelUnknown,setYearModelUnknown]=useState(false);
+const CURRENT_YEAR=2026,selectedSector='equipment',getAssetNounLabel=()=> 'equipment',getAssetNounTitle=()=> 'Equipment',saveUnknownYear=()=>setYearModelUnknown(true),saveYearFromInput=()=>{},setRequiredFeedback=()=>{},message='';
 const replacementPriceDialogRef=useRef(null),[replacementPanelOpen,setReplacementPanelOpen]=useState(false);
 useEffect(()=>{if(mode==='replacement'&&!replacementPriceDialogRef.current?.open)replacementPriceDialogRef.current?.showModal();},[mode]);
 const replacementModalError='',setReplacementModalError=()=>{},setVatDisplayMode=()=>{},isGeneric=true;
@@ -79,8 +82,11 @@ ${priceFormatter}
 const renderReplacementBreakdown=(base,extra,total,vat)=><output data-total={total}>{money(getVatDisplayValue(total,vat))}</output>;
 ${replacement}
 ${lifetime}
+${yearModal}
 return <><button onClick={()=>{setUnit('km');setUsageLifetimeDraft('350000');setFinalLifetimeOpen(true);}}>Kilometres</button>
 <button onClick={()=>setMode('replacement')}>Replacement</button>
+<button onClick={()=>setMode('year')}>Year</button>
+{mode==='year'?renderYearModal():null}
 {mode==='lifetime'&&finalLifetimeOpen?renderLifetimeModal(true,true):null}
 {mode==='replacement'?<>${replacementDialog}</>:null}
 {applied?<pre id="applied">{JSON.stringify(applied)}</pre>:null}</>;
@@ -103,10 +109,22 @@ await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial}'+s
 await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('fixture').default));"});
 const click=async text=>{await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t),{},text);await page.$$eval('button',(buttons,t)=>buttons.find(b=>b.textContent.trim()===t).click(),text);};
 await page.waitForSelector('#usage-lifetime-title');
+await page.addStyleTag({content:fs.readFileSync(path.join(root,'public/app-theme.css'),'utf8')});
+assert.equal(await page.$$eval('input[type="text"]',els=>els.length),1);
+await page.click('input[type="text"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[type="text"]','40123');await page.keyboard.press('Enter');
+assert.equal(await page.$eval('input[type="text"]',el=>el.value),'40 123');
+assert.equal(await page.$eval('input[type="range"]',el=>el.value),'40123');
+await click('Reset to default');
 await click('+ 500 hours');await click('Recalculate estimate');
 await page.waitForSelector('#applied');
 let applied=JSON.parse(await page.$eval('#applied',el=>el.textContent));assert.equal(applied.lifetimeUsage,16500);assert.equal(applied.conditionPercent,80);assert.equal(applied.popularityPercent,90);
-await click('Kilometres');await click('+ 10 000 km');
+await click('Kilometres');
+await page.click('input[type="text"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[type="text"]','2000001');
+assert(await page.$$eval('button',els=>els.find(el=>el.textContent.trim()==='Recalculate estimate').disabled));
+assert(await page.$('#lifetime-validation'));
+await click('Reset to default');await click('+ 10 000 km');
+assert.equal(await page.$('#lifetime-validation'),null);
+
 await page.screenshot({path:'/tmp/shared-lifetime.png'});
 await click('Reset to default');await click('Recalculate estimate');
 applied=JSON.parse(await page.$eval('#applied',el=>el.textContent));assert.equal(applied.lifetimeUsage,350000);
@@ -134,5 +152,16 @@ await click('Recalculate estimate');await page.waitForFunction(()=>Math.abs(JSON
 await page.setViewport({width:390,height:844});
 assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal overflow on mobile');
 assert(await page.$eval('dialog[aria-label="Replacement price"]',el=>el.scrollHeight<=el.clientHeight+2),'Replacement scroll is contained in its body');
+await click('Year');
+await page.waitForSelector('input[aria-label="Manufacturing year"]');
+assert.equal(await page.$$eval('input[type="text"]',els=>els.length),1);
+await page.click('input[aria-label="Manufacturing year"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[aria-label="Manufacturing year"]','2004');await page.keyboard.press('Enter');
+assert.equal(await page.$eval('input[type="range"]',el=>el.value),'2004');
+await click('+ 1 year');assert.equal(await page.$eval('input[type="text"]',el=>el.value),'2005');
+await page.click('input[type="text"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[type="text"]','2030');
+assert(await page.$$eval('button',els=>els.find(el=>el.textContent.trim()==='Continue').disabled));
+await page.click('input[type="text"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[type="text"]','2019');
+assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+await page.setViewport({width:1366,height:900});await page.screenshot({path:'/tmp/shared-year.png'});
 assert.deepEqual(errors,[]);console.log('PASS shared lifetime hours/km, reset, settings retention, replacement VAT and extras');
 }finally{await browser.close();}})().catch(error=>{console.error(error);process.exitCode=1});

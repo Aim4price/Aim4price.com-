@@ -7566,11 +7566,27 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </div>
 
           <div className={styles.yearSliderPanel}>
-            <div className={styles.yearSliderReadout}>
+            <label className={`${styles.yearSliderReadout} ${styles.inlineSliderReadout}`}>
               <span>{compactAppMode ? 'Year' : 'Selected year'}</span>
-              <strong>{sliderYear}</strong>
-              <small>{machineAge === 0 ? 'Current model year' : `${machineAge} year${machineAge === 1 ? '' : 's'} old`}</small>
-            </div>
+              <span className={styles.inlineSliderAmount}>
+              <input
+                aria-label="Manufacturing year"
+                onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } }}
+                type="text"
+                inputMode="numeric"
+                {...requiredProps(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
+                value={yearModelUnknown ? '' : year}
+                onChange={(event) => {
+                  setYear(event.target.value);
+                  setYearModelUnknown(false);
+                  setMessage('');
+                }}
+                placeholder={`e.g. ${CURRENT_YEAR}`}
+              />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" /></svg>
+              </span>
+              <small>{!yearModelUnknown && year !== '' && Number.isInteger(parsedYear) && parsedYear >= 1950 && parsedYear <= CURRENT_YEAR ? (machineAge === 0 ? 'Current model year' : `${machineAge} year${machineAge === 1 ? '' : 's'} old`) : 'Enter a valid year'} · Click to edit</small>
+            </label>
 
             <label className={styles.yearSliderControl}>
               <span className={styles.fieldLabel}>Slide to year</span>
@@ -7620,29 +7636,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
           </div>
 
-          <div className={styles.yearSecondaryControls}>
-            <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
-              <span className={styles.fieldLabel}>{compactAppMode ? 'Enter year' : 'Or type the year'}</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                {...requiredProps(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
-                value={yearModelUnknown ? '' : year}
-                onChange={(event) => {
-                  setYear(event.target.value);
-                  setYearModelUnknown(false);
-                  setMessage('');
-                }}
-                placeholder={`e.g. ${CURRENT_YEAR}`}
-              />
-              {requiredHint(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
-            </label>
-
+          <div className={`${styles.yearSecondaryControls} ${styles.inlineSliderSecondary}`}>
             <button type="button" className={`${styles.unknownAnswerButton} ${styles.unknownDangerButton}`} onClick={saveUnknownYear}>
               I do not know the year
             </button>
           </div>
 
+          {requiredHint(!Number.isInteger(Number(year)) || Number(year) < 1950 || Number(year) > CURRENT_YEAR)}
           {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
           <div onPointerDownCapture={() => setRequiredFeedback(true)} onFocusCapture={() => setRequiredFeedback(true)} className={`${styles.detailsModalActions} ${modalStyles.actions}`}>
@@ -7710,9 +7710,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button type="button" disabled={busy} className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={close} aria-label="Close" data-modal-close="true">×</button>
           </div>
           <fieldset className={styles.sharedLifetimeFields} disabled={busy}><div className={styles.yearSliderPanel}>
-            <div className={`${styles.yearSliderReadout} ${styles.lifetimeReadout}`}>
-              <span>Expected lifetime</span><strong>{valid ? format(parsed) : '—'}</strong><small>{unit}</small>
-            </div>
+            <label className={`${styles.yearSliderReadout} ${styles.lifetimeReadout} ${styles.inlineSliderReadout}`}>
+              <span>Expected lifetime</span>
+              <span className={styles.inlineSliderAmount}>
+                <input type="text" inputMode="numeric" aria-label={`Expected lifetime in ${unit}`} value={usageLifetimeDraft.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} onChange={(event) => { setUsageLifetimeDraft(event.target.value.replace(/\s/g, '')); setMessage(''); }} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } }} aria-invalid={!valid} aria-describedby={valid ? 'lifetime-guidance' : 'lifetime-guidance lifetime-validation'} />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" /></svg>
+              </span>
+              <small>{unit} · Click to edit</small>
+            </label>
             <label className={styles.yearSliderControl}>
               <span className={styles.fieldLabel}>Adjust lifetime</span>
               <input className={styles.yearRangeInput} aria-label="Expected total lifetime" style={{ '--year-progress': `${(sliderValue - sliderMin) / Math.max(1, sliderMax - sliderMin) * 100}%` } as CSSProperties} type="range" min={sliderMin} max={sliderMax} step="1" value={sliderValue} onChange={(event) => update(Math.round(Number(event.target.value) / increment) * increment)} />
@@ -7723,15 +7728,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" className={styles.yearFineTuneButton} onClick={() => update(sliderValue + increment)} disabled={sliderValue >= maximum}>+ {format(increment)} {unit}</button>
             </div>
           </div>
-          <div className={`${styles.yearSecondaryControls} ${styles.lifetimeSecondary}`}>
-            <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
-              <span className={styles.fieldLabel}>Or enter total {unit}</span>
-              <input type="text" inputMode="numeric" value={usageLifetimeDraft.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} onChange={(event) => setUsageLifetimeDraft(event.target.value.replace(/\s/g, ''))} aria-invalid={!valid} aria-describedby="lifetime-guidance" />
-              {!valid ? <span className={styles.modalMessage}>Enter {format(minimum)} to {format(maximum)} {unit}.</span> : null}
-            </label>
+          <div className={`${styles.yearSecondaryControls} ${styles.lifetimeSecondary} ${styles.inlineSliderSecondary}`}>
             <button type="button" className={`${styles.unknownAnswerButton} ${styles.lifetimeReset}`} onClick={() => update(defaultLifetime)}>Reset to default</button>
           </div>
           </fieldset>
+          {!valid ? <span id="lifetime-validation" className={styles.modalMessage}>Enter {format(minimum)} to {format(maximum)} {unit}.</span> : null}
           <p id="lifetime-guidance" className={styles.detailsModalText}>Unsure? Keep the default. Lifetime is a valuation guide, not an expiry date.</p>
           {valid && usageNumber !== null && usageNumber > parsed ? <p className={styles.detailsModalText}>The entered reading exceeds this lifetime. Review it, or continue if it reflects your asset.</p> : null}
           {fromResult && advancedError ? <p className={styles.modalMessage} role="alert">{advancedError}</p> : null}

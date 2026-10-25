@@ -15625,3 +15625,26 @@
 }
 .extrasVatBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; color: var(--app-muted, #526b60); font-weight: 650; }
 .extrasVatBar .replacementVatToggle { margin: 0; width: min(100%, 300px); }
+
+/* Editable slider readouts share the replacement-price interaction. */
+.yearDetailsModal .inlineSliderReadout {
+  cursor: text;
+  --typing-field-surface: transparent;
+  --typing-field-focus: #ffffff0d;
+  --typing-field-text: #ffffff;
+  --typing-field-placeholder: #d2e7dd;
+}
+.inlineSliderReadout .inlineSliderAmount { display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; }
+.yearDetailsModal .inlineSliderAmount input {
+  width: 100%; min-width: 0; min-height: 52px; padding: 4px 2px;
+  border: 0; border-bottom: 1px solid #ffffff75; border-radius: 0;
+  background: transparent; color: #fff; font: inherit;
+  font-size: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2), 2rem) !important;
+  font-weight: 800; line-height: 1.25; font-variant-numeric: tabular-nums; box-shadow: none;
+}
+.yearDetailsModal .inlineSliderAmount input:focus { outline: 2px solid #b6e6cf; outline-offset: 3px; border-radius: 4px; }
+.yearDetailsModal .inlineSliderAmount input[aria-invalid="true"] { border-bottom-color: #ffaaa4; }
+.inlineSliderAmount svg { flex: 0 0 18px; width: 18px; height: 18px; color: #d2e7dd; }
+.yearDetailsModal .inlineSliderReadout > small { font-size: .85rem; }
+.yearDetailsModal .inlineSliderSecondary { display: flex; flex-wrap: wrap; justify-content: flex-end; }
+.yearDetailsModal .inlineSliderSecondary > button { width: auto; min-height: 48px; padding: 12px 20px; }
