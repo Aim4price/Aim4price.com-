@@ -1,4 +1,5 @@
 'use client';
+import dynamic from 'next/dynamic';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import InvoiceDropIcon from './InvoiceDropIcon';
 import dropFinalStyles from './invoice-drop-final.module.css';
@@ -55,6 +56,8 @@ import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 
 type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
+const CostLedgerFuelEditor = dynamic(() => import('../fuel/fuel-client'), { ssr: false });
+
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km' | 'percentage';
@@ -1079,6 +1082,7 @@ export default function MyInvoicesClient({
       : '';
   const visibleInvoiceDropCode = newInvoiceDropCode || revealedInvoiceDropCode;
   const [expandedInvoiceId, setExpandedInvoiceId] = useLedgerCardFocus('cost');
+  const [fuelCostInvoiceId, setFuelCostInvoiceId] = useState<string | null>(null);
   const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -1679,7 +1683,7 @@ export default function MyInvoicesClient({
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
 
-  const modalOpen = sourceChoiceOpen
+  const modalOpen = Boolean(fuelCostInvoiceId) || sourceChoiceOpen
     || assetPickerOpen
     || flow === 'upload'
     || formOpen
@@ -3268,10 +3272,21 @@ export default function MyInvoicesClient({
     const id=routeSearchParams.get('invoiceId');
     if(!id||historyInvoiceOpened.current===id)return;
     const invoice=invoices.find(item=>item.id===id);
-    if(invoice){historyInvoiceOpened.current=id;setManagedInvoice(invoice);}
+    if(invoice){historyInvoiceOpened.current=id;openInvoiceManager(invoice);}
   },[invoices,routeSearchParams]);
 
+  function openInvoiceManager(invoice: InvoiceRecord) {
+    if (invoice.source === 'fuel_slip') { setFuelCostInvoiceId(invoice.id); return; }
+    setManagedInvoice(invoice);
+  }
+
+  function closeFuelCostEditor() {
+    setFuelCostInvoiceId(null);
+    requestAnimationFrame(() => manageCostTriggerRef.current?.focus());
+  }
+
   function editInvoice(invoice: InvoiceRecord) {
+    if (invoice.source === 'fuel_slip') { setFuelCostInvoiceId(invoice.id); return; }
     setNotice(null);
     setSelectedAssetId(invoice.assetId);
     setEditingInvoiceId(invoice.id);
@@ -3601,10 +3616,10 @@ export default function MyInvoicesClient({
                         ) : (
                           <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} disabled title="No file attached to this cost"><OpenFileIcon className={styles.buttonIcon} /><span>No file</span></button>
                         )}
-                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} aria-expanded={expanded} aria-controls={detailsId} onClick={() => setExpandedInvoiceId(expanded ? null : invoice.id)}>
+                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} aria-expanded={expanded} aria-controls={detailsId} onClick={(event) => { if (invoice.source === 'fuel_slip') { manageCostTriggerRef.current = event.currentTarget; setFuelCostInvoiceId(invoice.id); } else setExpandedInvoiceId(expanded ? null : invoice.id); }}>
                           <ChevronDownIcon className={styles.invoiceDetailsChevron} /><span>{expanded ? 'Hide details' : 'View details'}</span>
                         </button>
-                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceManageButton}`} onClick={(event) => { manageCostTriggerRef.current = event.currentTarget; setManagedInvoice(invoice); }} disabled={deletingInvoiceId === invoice.id} aria-haspopup="dialog">
+                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceManageButton}`} onClick={(event) => { manageCostTriggerRef.current = event.currentTarget; openInvoiceManager(invoice); }} disabled={deletingInvoiceId === invoice.id} aria-haspopup="dialog">
                           <ManageCostIcon className={styles.buttonIcon} /><span>Manage</span>
                         </button>
                       </div>
@@ -5496,6 +5511,17 @@ export default function MyInvoicesClient({
           </form>
         </div>
       ) : null}
+
+      {fuelCostInvoiceId ? <CostLedgerFuelEditor key={fuelCostInvoiceId} addedByLabel="" costLedgerEntry={{
+        invoiceId: fuelCostInvoiceId,
+        onClose: closeFuelCostEditor,
+        onSaved: () => {
+          closeFuelCostEditor();
+          void Promise.all([reloadData(), reloadBudgets()]).catch(() => setNotice({ tone: 'error', message: 'Fuel slip saved. Refresh Cost Ledger to see the updated totals.' }));
+          dispatchCostLedgerUpdated();
+          setNotice({ tone: 'success', message: 'Fuel slip updated in Cost Ledger.' });
+        },
+      }} /> : null}
 
       {managedInvoice ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeManageCost}>
