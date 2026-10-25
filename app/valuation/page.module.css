@@ -15648,3 +15648,41 @@
 .yearDetailsModal .inlineSliderReadout > small { font-size: .85rem; }
 .yearDetailsModal .inlineSliderSecondary { display: flex; flex-wrap: wrap; justify-content: flex-end; }
 .yearDetailsModal .inlineSliderSecondary > button { width: auto; min-height: 48px; padding: 12px 20px; }
+
+/* Balanced final-value summary and supporting controls. */
+.finalEstimateLayout { gap: 18px; align-items: start; }
+.finalEstimateLayout .resultsMain, .finalEstimateLayout .resultsSide { min-width: 0; align-self: stretch; order: 0; }
+.finalEstimateLayout .resultHero { height: 100%; padding: 22px; }
+.finalEstimateLayout .resultHeroHeader { gap: 12px; margin-bottom: 10px; }
+.finalEstimateLayout .resultHeroHeader button { min-height: 38px; padding: 6px 10px; font-size: .8rem; box-shadow: none; }
+.finalEstimateLayout .resultMachineTitle { margin-bottom: 8px; }
+.finalEstimateLayout .resultValueLine { gap: 12px; }
+.finalEstimateLayout .resultConfidenceNote { margin-top: 8px; color: var(--app-muted, #52695f); }
+.finalEstimateLayout .resultFactsGrid { margin-top: 18px; padding: 16px 0 0; border: 0; border-top: 1px solid var(--app-line, #c9dfd2); border-radius: 0; background: transparent; }
+.finalEstimateLayout .resultFactCard { gap: 5px; padding: 0 12px; }
+.finalEstimateLayout .resultFactCard:first-child { padding-left: 0; }
+.finalEstimateLayout .resultFinalActions { padding: 20px; gap: 14px; height: auto; min-height: 100%; }
+.finalEstimateLayout .resultFinalActionsButtons { gap: 10px; }
+.finalEstimateLayout .resultFinalActionsButtons > button { min-height: 64px; padding: 12px 14px; }
+.finalEstimateLayout .resultFinalActionsButtons > .resultPrimaryActionButton { min-height: 72px; }
+.finalEstimateLayout .resultActionCopy { gap: 3px; }
+.resultSupportingGrid { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; min-width: 0; }
+.resultSupportingGrid .resultCalculationPanel { order: 0; }
+.resultSupportingGrid .saleabilitySummary { order: 0; margin: 0; display: flex; flex-direction: column; align-items: stretch; justify-content: space-between; padding: 20px; gap: 14px; }
+.resultSupportingGrid .saleabilitySummary > button { align-self: flex-end; }
+.resultSupportingGrid .resultReplacementSummary { padding: 20px; gap: 16px; }
+.resultSupportingGrid .saleabilitySummary .marketResultAmount { font-size: 1.6rem; line-height: 1.25; }
+.resultSupportingGrid .saleabilitySummary p { color: var(--app-muted, #52695f); margin: 8px 0 0; }
+.resultSupportingGrid .resultReplacementHeading p { font-size: .8rem; }
+.resultSupportingGrid .resultReplacementSummary .replacementCostSummary { padding-top: 16px; }
+.resultAssumptionsRow { grid-column: 1 / -1; min-width: 0; }
+.resultAssumptionsRow:empty { display: none; }
+.resultAssumptionsRow .advancedAccordion { margin: 0; }
+.resultAssumptionsRow .resultAccordionToggle { padding: 16px 20px; }
+.finalEstimateLayout .resultAccordionAction,
+.resultSupportingGrid .resultReplacementSummary > button,
+.resultSupportingGrid .saleabilitySummary > button { min-height: 42px; padding: 10px 16px; border-radius: 12px; font-size: .82rem; line-height: 1.3; }
+.finalEstimateLayout .resultDisclaimer { padding-top: 12px; }
+@media (max-width: 800px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid { grid-template-columns: 1fr; }
+}

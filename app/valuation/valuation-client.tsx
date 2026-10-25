@@ -1959,7 +1959,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [pdfError, setPdfError] = useState('');
   const [saleabilityOpen, setSaleabilityOpen] = useState(false);
   const [saveMarketChoice, setSaveMarketChoice] = useState<'prompt' | 'calculating' | null>(null);
-  const [completedMarketAssessment, setCompletedMarketAssessment] = useState<{ answers: SaleabilityRefinementAnswers; result: typeof resultState; value: number | null } | null>(null);
+  const [completedMarketAssessment, setCompletedMarketAssessment] = useState<{ answers: SaleabilityRefinementAnswers; result: typeof resultState; value: number | null; marketPriceExVat: number } | null>(null);
   const [savedMarketWarning, setSavedMarketWarning] = useState<{ message: string; href: string } | null>(null);
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
@@ -9206,6 +9206,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
+    const currentMarketPrice = completedMarketAssessment?.result === resultState && completedMarketAssessment?.value === headlineValue
+      ? completedMarketAssessment.marketPriceExVat : null;
     const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} out of 100%?`;
     return (
       <div className={`${styles.resultsLayout} ${styles.finalEstimateLayout}`}>
@@ -9275,125 +9277,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
           </section>
 
-          {!breakdownAccess ? <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
-            <button
-              type="button"
-              className={styles.resultAccordionToggle}
-              onClick={() => { setAdvancedError(''); setAdvancedPanelOpen(true); }}
-              aria-haspopup="dialog"
-            >
-              <span className={styles.resultAccordionTitleGroup}>
-                <strong className={styles.resultSectionLabel}>{renderDetailIcon('specs')}Advanced assumptions</strong>
-                <small>
-                  {canUseAdvancedAssumptions
-                    ? customAdvancedAssumptionsApplied
-                      ? 'Custom assumptions applied.'
-                      : 'Fine-tune this estimate only.'
-                    : 'For active Aim4price accounts only.'}
-                </small>
-              </span>
-              <span className={styles.resultAccordionAction}>{canUseAdvancedAssumptions ? 'Adjust' : 'View'}</span>
-            </button>
 
-            <AdvancedAssumptionsModal open={advancedPanelOpen} busy={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
-              locked={!canUseAdvancedAssumptions} error={advancedError}
-              onClose={() => setAdvancedPanelOpen(false)} onApply={() => { void updateAdvancedAssumptionsAndRecalculate(); }}>
-                    <div className={`${styles.advancedAssumptionsGrid} ${appliedDealerAssessment ? styles.advancedAssumptionsGridSingle : ''}`}>
-                    {advancedShowLifetimeInput ? (
-                      <div className={styles.field}>
-                        <span className={styles.fieldLabel}>Expected total lifetime</span>
-                        <button type="button" className={modalStyles.adjustButton} disabled={!canUseAdvancedAssumptions} onClick={openFinalLifetimeModal}>
-                          {formatPlainNumber(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault())} {advancedLifetimeShortUnit} · Adjust
-                        </button>
-                      </div>
-                    ) : null}
-
-                    {!appliedDealerAssessment ? (
-                      <label className={styles.field}>
-                        <span className={styles.fieldLabel}>{advancedConditionQuestionLabel}</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={advancedConditionFactorPercent}
-                          onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
-                          placeholder="e.g. 85"
-                          disabled={!canUseAdvancedAssumptions}
-                        />
-                        <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
-                      </label>
-                    ) : null}
-                  </div>
-            </AdvancedAssumptionsModal>
-          </section> : null}
-
-          <div className={styles.resultCalculationPanel}>
-          {(isGeneric && genericResult) || tractorResult ? (
-            <section data-value-tour="replacement" className={styles.resultReplacementSummary}>
-              <div className={styles.resultReplacementHeading}>
-                {renderDetailIcon('extras')}
-                <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
-              </div>
-              <button type="button" className={modalStyles.adjustButton}
-                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setReplacementRangeAnchor(null); setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
-                Adjust price
-              </button>
-              {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : (
-                <div className={styles.resultReplacementAmount}>
-                  <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
-                  <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
-                </div>
-              )}
-              <dialog ref={replacementPriceDialogRef} className={`${styles.replacementPriceDialog} ${modalStyles.surface}`}
-                aria-label="Replacement price"
-                onClose={() => setReplacementPanelOpen(false)}
-                onCancel={(event) => { if (replacementRecalculateLoading || advancedRecalculateLoading) event.preventDefault(); }}
-                onClick={(event) => {
-                  const box = replacementPriceDialogRef.current?.getBoundingClientRect();
-                  if (!replacementRecalculateLoading && !advancedRecalculateLoading && box &&
-                    (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) setReplacementPanelOpen(false);
-                }}>
-                <div className={styles.specificationModalHeader}><h3 data-estimate-modal-title className={styles.detailsModalTitle}>Replacement price</h3>
-                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} aria-label="Close replacement price"
-                  disabled={replacementRecalculateLoading} onClick={() => setReplacementPanelOpen(false)} data-modal-close="true">×</button></div>
-                <div className={styles.resultAccordionBody}><fieldset className={styles.sharedLifetimeFields} disabled={replacementRecalculateLoading || advancedRecalculateLoading}>
-                  {renderBasicReplacementStep(true)}
-                </fieldset></div>
-                {replacementModalError ? <p className={styles.resultActionError} role="alert">{replacementModalError}</p> : null}
-                <div className={`${styles.replacementInputActions} ${modalStyles.actions}`}>
-                  <button type="button" className={styles.secondaryButton} disabled={replacementRecalculateLoading} onClick={() => setReplacementPanelOpen(false)}>Cancel</button>
-                  <button type="button" className={styles.primaryButton} disabled={replacementRecalculateLoading || advancedRecalculateLoading || !(parseMoneyInput(finalReplacementDraft)! > 0)} onClick={() => {
-                    const display = parseMoneyInput(finalReplacementDraft);
-                    if (!display || display <= 0) return;
-                    const base = replacementModalVat === 'incl' ? display / (1 + VAT_RATE) : display;
-                    setReplacementModalError('');
-                    setVatDisplayMode(replacementModalVat);
-                    if (isGeneric) void calculateGenericWithReplacementPrice(base + (basicEstimateActive ? basicExtraReplacementPriceExVat : 0), setReplacementModalError);
-                    else void calculateTractorWithReplacementPrice(base, setReplacementModalError);
-                  }}>{replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate estimate'}</button>
-                </div>
-              </dialog>
-            </section>
-          ) : null}
-          {breakdownAccess && activeBreakdown ? <div data-value-tour="assumptions">
-          {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
-            <section className={styles.resultReplacementSummary}>
-              <div><strong>Expected total lifetime</strong><p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState)!)} {getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'}</p></div>
-              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" onClick={openFinalLifetimeModal}>Check / adjust</button>
-            </section> : null}
-          {breakdownAccess && activeBreakdown ? <div><EstimateTools report={activeBreakdown.report}
-            busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
-            error={advancedError} onApply={applyPrivateEstimateSettings} /></div> : null}
-          </div> : null}
-          </div>
-          <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
-            <div>
-              <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}How easily could it sell?</span>
-              <strong>Realistic Market Value</strong>
-              <p>Demand and selling circumstances can move this above or below your Aim4price Ideal Value.</p>
-              <small>Your Aim4price Ideal Value stays unchanged. Neither is a guaranteed selling price.</small>
-            </div>
-            <button type="button" aria-label="Calculate Realistic Market Value" onClick={() => setSaleabilityOpen(true)}>Refine</button>
-          </section>
         </div>
 
         <aside className={styles.resultsSide}>
@@ -9494,6 +9378,132 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </section>
         </aside>
 
+        <div className={styles.resultSupportingGrid}>
+          <div className={styles.resultCalculationPanel}>
+          {(isGeneric && genericResult) || tractorResult ? (
+            <section data-value-tour="replacement" className={styles.resultReplacementSummary}>
+              <div className={styles.resultReplacementHeading}>
+                {renderDetailIcon('extras')}
+                <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
+              </div>
+              <button type="button" className={modalStyles.adjustButton}
+                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setReplacementRangeAnchor(null); setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
+                Adjust price
+              </button>
+              {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : (
+                <div className={styles.resultReplacementAmount}>
+                  <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
+                  <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
+                </div>
+              )}
+              <dialog ref={replacementPriceDialogRef} className={`${styles.replacementPriceDialog} ${modalStyles.surface}`}
+                aria-label="Replacement price"
+                onClose={() => setReplacementPanelOpen(false)}
+                onCancel={(event) => { if (replacementRecalculateLoading || advancedRecalculateLoading) event.preventDefault(); }}
+                onClick={(event) => {
+                  const box = replacementPriceDialogRef.current?.getBoundingClientRect();
+                  if (!replacementRecalculateLoading && !advancedRecalculateLoading && box &&
+                    (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) setReplacementPanelOpen(false);
+                }}>
+                <div className={styles.specificationModalHeader}><h3 data-estimate-modal-title className={styles.detailsModalTitle}>Replacement price</h3>
+                <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} aria-label="Close replacement price"
+                  disabled={replacementRecalculateLoading} onClick={() => setReplacementPanelOpen(false)} data-modal-close="true">×</button></div>
+                <div className={styles.resultAccordionBody}><fieldset className={styles.sharedLifetimeFields} disabled={replacementRecalculateLoading || advancedRecalculateLoading}>
+                  {renderBasicReplacementStep(true)}
+                </fieldset></div>
+                {replacementModalError ? <p className={styles.resultActionError} role="alert">{replacementModalError}</p> : null}
+                <div className={`${styles.replacementInputActions} ${modalStyles.actions}`}>
+                  <button type="button" className={styles.secondaryButton} disabled={replacementRecalculateLoading} onClick={() => setReplacementPanelOpen(false)}>Cancel</button>
+                  <button type="button" className={styles.primaryButton} disabled={replacementRecalculateLoading || advancedRecalculateLoading || !(parseMoneyInput(finalReplacementDraft)! > 0)} onClick={() => {
+                    const display = parseMoneyInput(finalReplacementDraft);
+                    if (!display || display <= 0) return;
+                    const base = replacementModalVat === 'incl' ? display / (1 + VAT_RATE) : display;
+                    setReplacementModalError('');
+                    setVatDisplayMode(replacementModalVat);
+                    if (isGeneric) void calculateGenericWithReplacementPrice(base + (basicEstimateActive ? basicExtraReplacementPriceExVat : 0), setReplacementModalError);
+                    else void calculateTractorWithReplacementPrice(base, setReplacementModalError);
+                  }}>{replacementRecalculateLoading ? 'Recalculating...' : 'Recalculate estimate'}</button>
+                </div>
+              </dialog>
+            </section>
+          ) : null}
+
+          </div>
+          <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
+            <div>
+              <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}Realistic Market Value</span>
+              {currentMarketPrice !== null ? <strong className={styles.marketResultAmount}>{money(getVatDisplayValue(currentMarketPrice, vatDisplayMode))}</strong> : <strong>Not calculated yet</strong>}
+              {currentMarketPrice !== null ? <small>{headlineVatLabel}</small> : null}
+              <p>Your likely selling value, based on demand and selling circumstances.</p>
+              <small>May be above or below your Ideal Value. Neither guarantees a sale.</small>
+            </div>
+            <button type="button" aria-label="Calculate Realistic Market Value" onClick={() => setSaleabilityOpen(true)}>{currentMarketPrice !== null ? 'Update' : 'Calculate market value'}</button>
+          </section>
+        </div>
+        <div className={styles.resultAssumptionsRow}>
+          {!breakdownAccess ? <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
+            <button
+              type="button"
+              className={styles.resultAccordionToggle}
+              onClick={() => { setAdvancedError(''); setAdvancedPanelOpen(true); }}
+              aria-haspopup="dialog"
+            >
+              <span className={styles.resultAccordionTitleGroup}>
+                <strong className={styles.resultSectionLabel}>{renderDetailIcon('specs')}Advanced assumptions</strong>
+                <small>
+                  {canUseAdvancedAssumptions
+                    ? customAdvancedAssumptionsApplied
+                      ? 'Custom assumptions applied.'
+                      : 'Fine-tune this estimate only.'
+                    : 'For active Aim4price accounts only.'}
+                </small>
+              </span>
+              <span className={styles.resultAccordionAction}>{canUseAdvancedAssumptions ? 'Adjust' : 'View'}</span>
+            </button>
+
+            <AdvancedAssumptionsModal open={advancedPanelOpen} busy={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
+              locked={!canUseAdvancedAssumptions} error={advancedError}
+              onClose={() => setAdvancedPanelOpen(false)} onApply={() => { void updateAdvancedAssumptionsAndRecalculate(); }}>
+                    <div className={`${styles.advancedAssumptionsGrid} ${appliedDealerAssessment ? styles.advancedAssumptionsGridSingle : ''}`}>
+                    {advancedShowLifetimeInput ? (
+                      <div className={styles.field}>
+                        <span className={styles.fieldLabel}>Expected total lifetime</span>
+                        <button type="button" className={modalStyles.adjustButton} disabled={!canUseAdvancedAssumptions} onClick={openFinalLifetimeModal}>
+                          {formatPlainNumber(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault())} {advancedLifetimeShortUnit} · Adjust
+                        </button>
+                      </div>
+                    ) : null}
+
+                    {!appliedDealerAssessment ? (
+                      <label className={styles.field}>
+                        <span className={styles.fieldLabel}>{advancedConditionQuestionLabel}</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={advancedConditionFactorPercent}
+                          onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
+                          placeholder="e.g. 85"
+                          disabled={!canUseAdvancedAssumptions}
+                        />
+                        <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
+                      </label>
+                    ) : null}
+                  </div>
+            </AdvancedAssumptionsModal>
+          </section> : null}
+
+          {breakdownAccess && activeBreakdown ? <div data-value-tour="assumptions">
+          {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
+            <section className={styles.resultReplacementSummary}>
+              <div><strong>Expected total lifetime</strong><p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState)!)} {getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'}</p></div>
+              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" onClick={openFinalLifetimeModal}>Check / adjust</button>
+            </section> : null}
+          {breakdownAccess && activeBreakdown ? <div><EstimateTools report={activeBreakdown.report}
+            busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
+            error={advancedError} onApply={applyPrivateEstimateSettings} /></div> : null}
+          </div> : null}
+        </div>
+
         <p className={styles.resultDisclaimer}>Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.</p>
 
         {finalLifetimeOpen ? renderLifetimeModal(true, true) : null}
@@ -9505,8 +9515,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             if (saveMarketChoice === 'calculating') setSaveMarketChoice('prompt');
           }}
           initialAnswers={completedMarketAssessment?.result === resultState ? completedMarketAssessment.answers : undefined}
-          onComplete={(answers) => {
-            setCompletedMarketAssessment({ answers, result: resultState, value: headlineValue });
+          onComplete={(answers, quote) => {
+            setCompletedMarketAssessment({ answers, result: resultState, value: headlineValue, marketPriceExVat: quote.priceExVat });
             setSaleabilityOpen(false);
             setSaveMarketChoice(null);
           }}

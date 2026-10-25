@@ -15,7 +15,7 @@ type SaleabilityModalProps = {
   assetTitle: string; valuationExVat: number; input: GeneralSaleabilityInput;
   context?: SaleabilityContext; assetId?: string; basis?: string; previewEndpoint?: string;
   storageKey?: string; initialAnswers?: SaleabilityRefinementAnswers;
-  onComplete?: (answers: SaleabilityRefinementAnswers) => void;
+  onComplete?: (answers: SaleabilityRefinementAnswers, quote: SaleabilityQuote) => void;
   onSave?: (answers: SaleabilityRefinementAnswers) => Promise<void>;
 };
 type Choice<T extends string> = { value: T; label: string; help?: string };
@@ -259,7 +259,7 @@ export default function SaleabilityModal({
               }}>{saving ? 'Saving…' : recalculating ? 'Recalculate' : 'Save estimate'}</button>
               : <button type="button" className={styles.primary} disabled={loading || !plan} onClick={() => {
                 if (!plan || !validCurrentSaleabilityAnswers(answers)) return;
-                if (onComplete) onComplete(answers); else onClose();
+                if (onComplete) onComplete(answers, plan); else onClose();
               }}>Done</button>}
           </>}
         </footer>
