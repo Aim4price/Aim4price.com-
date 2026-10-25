@@ -4156,25 +4156,24 @@ export default function MyInvoicesClient({
                         </dd>
                       </div>
                     </dl>
-
-                    {editingBudgetId ? (
-                      <button
-                        ref={budgetDeleteButtonRef}
-                        type="button"
-                        className={styles.budgetDeleteButton}
-                        onClick={() => askToDeleteBudget()}
-                        disabled={budgetSaving}
-                      >
-                        Delete budget
-                      </button>
-                    ) : null}
                   </section>
                 ) : null}
 
                 {budgetFormError ? <div className={styles.budgetFormError} role="alert">{budgetFormError}</div> : null}
               </div>
 
-              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter, wizardStyles.footer].join(' ')}>
+              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter, wizardStyles.footer, reviewStyles.footer].join(' ')}>
+                {budgetWizardStep === 4 && editingBudgetId ? (
+                  <button
+                    ref={budgetDeleteButtonRef}
+                    type="button"
+                    className={`${styles.budgetDeleteButton} ${reviewStyles.deleteAction}`}
+                    onClick={() => askToDeleteBudget()}
+                    disabled={budgetSaving}
+                  >
+                    Delete budget
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}

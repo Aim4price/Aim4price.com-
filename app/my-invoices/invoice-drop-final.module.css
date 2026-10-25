@@ -2,6 +2,7 @@
   padding: 12px 30px !important;
   overflow-y: auto;
   scrollbar-gutter: auto;
+  scrollbar-width: none;
 }
 .panel.panel.panel.panel {
   padding: 0 !important;
@@ -23,3 +24,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body.body { padding: 12px 18px !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .panel .link { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Keep overflow reachable on short screens without the inner scrollbar. */
+.body.body.body.body.body::-webkit-scrollbar { display: none; width: 0; height: 0; }

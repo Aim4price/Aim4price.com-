@@ -7,10 +7,8 @@
 .grid dd { margin: 0; font-size: 1.15rem; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
 .grid .asset { grid-column: 1 / -1; padding-bottom: 18px; border-bottom: 1px solid var(--app-line, #d8e6de); }
 .asset dd { font-size: 1.25rem; }
-.period, .alert { padding: 14px 0; }
-.amount { padding: 14px 20px; border-radius: 16px; background: var(--app-surface-soft, #eff6f2); }
+.period, .amount, .alert { padding: 14px 20px; border-radius: 16px; background: var(--app-surface-soft, #eff6f2); }
 .amount dd { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.alert { padding-left: 24px; border-left: 1px solid var(--app-line, #d8e6de); }
 .alert small { display: block; margin-top: 6px; color: var(--app-muted, #62786e); font-size: .9rem; font-weight: 500; }
 .grid .fuel { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; padding-top: 18px; border-top: 1px solid var(--app-line, #d8e6de); }
 .fuel dt { margin: 0; }
@@ -20,6 +18,10 @@
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body { padding: 16px 18px !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns: 1fr; gap: 16px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .period { padding: 0; }
-  :global(:where(html:not(:has([data-website-canvas])))) .alert { padding: 0; border-left: 0; }
+}
+
+.footer.footer.footer { flex-wrap: wrap; }
+.deleteAction.deleteAction.deleteAction { margin-right: auto; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteAction.deleteAction.deleteAction { width: 100%; }
 }
