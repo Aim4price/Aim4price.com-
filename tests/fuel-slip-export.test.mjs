@@ -128,3 +128,22 @@ test('PDF and Excel preserve clickable document/GPS links and reject unsafe link
   assert.doesNotMatch(buildFuelSlipReportHtml([unsafe]), /href="javascript:|maps\?q=100/);
   assert.doesNotMatch(buildFuelSlipWorkbook([unsafe]).toString(), /Target="javascript:|maps\?q=100/);
 });
+
+test('Excel preserves explicit N/A separately from missing or zero usage', () => {
+  const xml = buildFuelSlipWorkbook([
+    { ...slip, usageNotApplicable: true, odometerReading: null, hourMeterReading: null },
+    { ...slip, usageNotApplicable: false, odometerReading: 0, hourMeterReading: null },
+  ]).toString();
+  assert.match(xml.match(/<c r="U2"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '', /N\/A/);
+  assert.match(xml.match(/<c r="V2"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '', /N\/A/);
+  assert.match(xml.match(/<c r="U3"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '', /<v>0<\/v>/);
+  assert.doesNotMatch(xml.match(/<c r="V3"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '', /N\/A/);
+});
+
+
+test('PDF distinguishes explicitly inapplicable usage from an unrecorded reading', () => {
+  const explicit = buildFuelSlipReportHtml([{ ...slip, usageNotApplicable: true, odometerReading: null, hourMeterReading: null }]);
+  const missing = buildFuelSlipReportHtml([{ ...slip, usageNotApplicable: false, odometerReading: null, hourMeterReading: null }]);
+  assert.match(explicit, /N\/A/);
+  assert.doesNotMatch(missing, /N\/A/);
+});

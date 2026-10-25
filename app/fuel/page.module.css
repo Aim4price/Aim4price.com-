@@ -8068,3 +8068,13 @@
 .fuelSlipReviewGrid > div { min-width: 0; }
 .fuelSlipReviewGrid dt { color: #52695f; font-size: .85rem; margin-bottom: .3rem; }
 .fuelSlipReviewGrid dd { margin: 0; color: #173c32; font-weight: 650; overflow-wrap: anywhere; }
+
+.fuelUsageLabel { display: flex; align-items: center; justify-content: space-between; gap: .75rem; min-height: 2rem; margin-bottom: .45rem; }
+.fuelUsageLabel > label { font: inherit; font-weight: 650; color: var(--app-text, #234b3d); }
+.accountFuelModal.manualFuelSlipModal .fuelUsageNa { min-height: 2rem; padding: .25rem .8rem; border: 1px solid var(--app-line, #b8d5c7); border-radius: .65rem; color: var(--app-text, #234b3d); background: var(--app-surface-soft, #edf5f0); font: inherit; font-size: .85rem; font-weight: 750; cursor: pointer; }
+.accountFuelModal.manualFuelSlipModal .fuelUsageNa[aria-pressed="true"] { color: #fff; background: #176345; border-color: #176345; }
+.accountFuelModal.manualFuelSlipModal .fuelUsageNa:focus-visible { outline: 2px solid var(--app-accent, #267659); outline-offset: 3px; }
+.fuelEntryInput input:disabled { opacity: .7; cursor: not-allowed; }
+.fuelSlipReviewGrid dt { font-weight: 600; }
+.accountFuelModal.manualFuelSlipModal .fuelUsageLabel > label { display: block; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; font-size: .95rem; font-weight: 700; }
+.accountFuelModal.manualFuelSlipModal .fuelUsageGrid > label > .fuelEntryLabel { min-height: 2rem; }

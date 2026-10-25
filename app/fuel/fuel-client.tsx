@@ -170,6 +170,7 @@ type FuelSlipRecord = {
   merchantNumber: string;
   terminalNumber: string;
   siteNumber: string;
+  usageNotApplicable?: boolean;
   odometerReading: number | null;
   hourMeterReading: number | null;
   operatorName: string;
@@ -266,6 +267,7 @@ type FuelSlipDraft = {
   merchantNumber: string;
   terminalNumber: string;
   siteNumber: string;
+  usageNotApplicable: boolean;
   odometerReading: string;
   hourMeterReading: string;
   operatorName: string;
@@ -449,6 +451,7 @@ const emptyFuelSlipDraft: FuelSlipDraft = {
   merchantNumber: '',
   terminalNumber: '',
   siteNumber: '',
+  usageNotApplicable: false,
   odometerReading: '',
   hourMeterReading: '',
   operatorName: '',
@@ -547,7 +550,7 @@ function getFuelSlipMissingFields(
   if (!hasFuelSlipNonNegativeNumber(draft.totalAmount, 2)) missing.push('totalAmount');
 
   if (targetType === 'asset') {
-    const effectiveUsageMetric: FuelSlipValidationUsageMetric = assetResolved ? usageMetric : 'both';
+    const effectiveUsageMetric: FuelSlipValidationUsageMetric = draft.usageNotApplicable ? 'none' : assetResolved ? usageMetric : 'both';
 
     if (effectiveUsageMetric === 'km') {
       if (!hasFuelSlipNonNegativeNumber(draft.odometerReading, 2)) missing.push('odometerReading');
@@ -1214,6 +1217,7 @@ function buildFuelSlipDraftFromRecord(slip: FuelSlipRecord): FuelSlipDraft {
     merchantNumber: slip.merchantNumber || '',
     terminalNumber: slip.terminalNumber || '',
     siteNumber: slip.siteNumber || '',
+    usageNotApplicable: slip.usageNotApplicable === true,
     odometerReading: numberToInput(slip.odometerReading, 2),
     hourMeterReading: numberToInput(slip.hourMeterReading, 2),
     operatorName: slip.operatorName || '',
@@ -2715,6 +2719,7 @@ export default function FuelClient({
     setFuelSlipDraft((current) => current.targetKey === value ? current : ({
       ...current,
       targetKey: value,
+      usageNotApplicable: false,
       odometerReading: '',
       hourMeterReading: '',
       operatorName: '',
@@ -2893,8 +2898,9 @@ export default function FuelClient({
         merchantNumber: fuelSlipDraft.merchantNumber,
         terminalNumber: fuelSlipDraft.terminalNumber,
         siteNumber: fuelSlipDraft.siteNumber,
-        odometerReading: numberInputToValue(fuelSlipDraft.odometerReading, 2),
-        hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
+        usageNotApplicable: fuelSlipDraft.usageNotApplicable,
+        odometerReading: fuelSlipDraft.usageNotApplicable ? null : numberInputToValue(fuelSlipDraft.odometerReading, 2),
+        hourMeterReading: fuelSlipDraft.usageNotApplicable ? null : numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
         operatorName: fuelSlipDraft.operatorName,
         activityText: fuelSlipDraft.activityText,
         workAreaText: fuelSlipDraft.workAreaText,
@@ -3385,12 +3391,14 @@ export default function FuelClient({
 
   function renderFuelSlipExtraFields() {
     const isAssetSlip = selectedFuelSlipTargetType === 'asset';
-    const usageHelp = isAssetSlip && !selectedFuelSlipAssetResolved
-      ? 'The linked asset usage metric could not be resolved. Enter current km / odometer or current hours before this slip can post.'
+    const usageHelp = fuelSlipDraft.usageNotApplicable
+      ? 'Usage marked N/A. The existing asset reading will stay unchanged.'
+      : isAssetSlip && !selectedFuelSlipAssetResolved
+      ? 'The linked asset usage metric could not be resolved. Enter a reading or select N/A.'
       : selectedFuelSlipUsageMetric === 'both'
-        ? 'This asset accepts km and hours. Enter at least one valid reading before the slip can post.'
+        ? 'This asset accepts km and hours. Enter either reading, or select N/A for usage.'
         : selectedFuelSlipUsageMetric === 'hours'
-          ? 'Current hours are required before this slip can post.'
+          ? 'Enter current hours, or select N/A.'
           : '';
 
     return (
@@ -3399,18 +3407,18 @@ export default function FuelClient({
 
         <div className={`${styles.formGrid} ${styles.fuelUsageGrid}`}>
           {isAssetSlip && showFuelSlipOdometer ? (
-            <label className={fuelSlipFieldClassName('odometerReading')}>
-              <span className={styles.fuelEntryLabel}>Current km / odometer</span>
-              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="gauge" /><input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" aria-invalid={fuelSlipAriaInvalid('odometerReading')} data-fuel-slip-field="odometerReading" /></span>
+            <div className={fuelSlipFieldClassName('odometerReading')}>
+              <div className={styles.fuelUsageLabel}><label htmlFor="fuel-slip-odometer">Current km / odometer</label><button type="button" className={styles.fuelUsageNa} aria-pressed={fuelSlipDraft.usageNotApplicable} aria-label="Mark usage as not applicable" onClick={() => setFuelSlipDraft(current => ({ ...current, usageNotApplicable: !current.usageNotApplicable }))}>N/A</button></div>
+              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="gauge" /><input type="text" inputMode="numeric" id="fuel-slip-odometer" disabled={fuelSlipDraft.usageNotApplicable} value={fuelSlipDraft.usageNotApplicable ? 'N/A' : fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" aria-invalid={fuelSlipAriaInvalid('odometerReading')} data-fuel-slip-field="odometerReading" /></span>
               {fuelSlipRequiredHint('odometerReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
-            </label>
+            </div>
           ) : null}
           {isAssetSlip && showFuelSlipHours ? (
-            <label className={fuelSlipFieldClassName('hourMeterReading')}>
-              <span className={styles.fuelEntryLabel}>Current hours</span>
-              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="updated" /><input type="text" inputMode="decimal" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" aria-invalid={fuelSlipAriaInvalid('hourMeterReading')} data-fuel-slip-field="hourMeterReading" /></span>
+            <div className={fuelSlipFieldClassName('hourMeterReading')}>
+              <div className={styles.fuelUsageLabel}><label htmlFor="fuel-slip-hours">Current hours</label>{!showFuelSlipOdometer ? <button type="button" className={styles.fuelUsageNa} aria-pressed={fuelSlipDraft.usageNotApplicable} aria-label="Mark usage as not applicable" onClick={() => setFuelSlipDraft(current => ({ ...current, usageNotApplicable: !current.usageNotApplicable }))}>N/A</button> : null}</div>
+              <span className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="updated" /><input type="text" inputMode="decimal" id="fuel-slip-hours" disabled={fuelSlipDraft.usageNotApplicable} value={fuelSlipDraft.usageNotApplicable ? 'N/A' : fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" aria-invalid={fuelSlipAriaInvalid('hourMeterReading')} data-fuel-slip-field="hourMeterReading" /></span>
               {fuelSlipRequiredHint('hourMeterReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
-            </label>
+            </div>
           ) : null}
           <label className={isAssetSlip ? fuelSlipFieldClassName('operatorName') : undefined}>
             <span className={styles.fuelEntryLabel}>Operator / manager name</span>
@@ -3432,15 +3440,15 @@ export default function FuelClient({
   function renderFuelSlipContextFields() {
     const isAssetSlip = selectedFuelSlipTargetType === 'asset';
     return <section className={styles.invoiceFormCard}>
-          <div className={styles.formGrid}>
+          <div className={`${styles.formGrid} ${styles.fuelUsageGrid}`}>
             {isAssetSlip ? (<>
               <label className={fuelSlipFieldClassName('workAreaText')}>
-                <span className={styles.fuelEntryLabel}>Where / direction / work area (optional)</span>
+                <span className={styles.fuelEntryLabel}>Location / route / work area</span>
                 <span className={styles.fuelEntryInput}><StorageFieldIcon kind="location" /><input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" /></span>
                 {fuelSlipRequiredHint('workAreaText')}
               </label>
               <label>
-                <span className={styles.fuelEntryLabel}>Asset fuel percentage after fill</span>
+                <span className={styles.fuelEntryLabel}>Fuel level after filling (%)</span>
                 <span className={styles.fuelEntryInput}><StorageFieldIcon kind="stock" /><input type="text" inputMode="numeric" value={fuelSlipDraft.assetFuelPercentAfter} onChange={(event) => setFuelSlipField('assetFuelPercentAfter', event.target.value.replace(/[^0-9]/g, '').slice(0, 3))} placeholder="0 - 100" /></span>
               </label>
             </>) : null}
@@ -3498,10 +3506,10 @@ export default function FuelClient({
   function renderFuelSlipConfirmation() {
     const items = [
       ['Asset / storage', selectedFuelSlipTargetName],
-      ['Purchase', `${fuelSlipDraft.documentDate} · ${fuelSlipDraft.supplierName || 'Supplier not provided'}`],
-      ['Fuel', `${fuelSlipDraft.fuelType} · ${fuelSlipDraft.litres} litres`],
-      ['Total', `R ${fuelSlipDraft.totalAmount}`],
-      ['Usage / operator', [fuelSlipDraft.odometerReading && `${fuelSlipDraft.odometerReading} km`, fuelSlipDraft.hourMeterReading && `${fuelSlipDraft.hourMeterReading} hours`, fuelSlipDraft.operatorName].filter(Boolean).join(' · ') || 'Not provided'],
+      ['Purchase', `${formatFuelSlipDate(fuelSlipDraft.documentDate)} · ${fuelSlipDraft.supplierName || 'Supplier not provided'}`],
+      ['Fuel', `${fuelSlipDraft.fuelType} · ${formatLitres(numberInputToValue(fuelSlipDraft.litres, 3))}`],
+      ['Total', formatCurrency(numberInputToValue(fuelSlipDraft.totalAmount, 2))],
+      ['Usage / operator', [fuelSlipDraft.usageNotApplicable ? 'Usage: N/A' : [fuelSlipDraft.odometerReading && `${numberInputToValue(fuelSlipDraft.odometerReading, 2)?.toLocaleString('en-ZA')} km`, fuelSlipDraft.hourMeterReading && `${numberInputToValue(fuelSlipDraft.hourMeterReading, 2)?.toLocaleString('en-ZA')} hours`].filter(Boolean).join(' · '), fuelSlipDraft.operatorName].filter(Boolean).join(' · ') || 'Not provided'],
       ...(selectedFuelSlipTargetType === 'asset' ? [['Activity', fuelSlipDraft.activityText]] : []),
       ['Supporting slip', fuelSlipDraft.originalFilename || (fuelSlipDraft.documentFileUrl ? 'Attached' : 'Not attached (optional)')],
     ];

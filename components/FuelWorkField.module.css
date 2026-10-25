@@ -62,3 +62,6 @@
 .guidedField .hint { font-weight: 600; }
 .guidedField .list[hidden] { display: none; }
 .guidedField .list { max-height: 10rem; overscroll-behavior: contain; }
+
+.entryModes[data-selected="true"] button { min-height: 3.5rem; padding: .65rem 1rem; }
+.entryModes[data-selected="true"] small { display: none; }

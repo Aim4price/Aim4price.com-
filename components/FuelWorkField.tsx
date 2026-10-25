@@ -44,7 +44,7 @@ export default function FuelWorkField({ value, onChange, choices: provided, asse
   const examples = fuelActivitySuggestions(asset).slice(0, 2).map(c => c.name.toLowerCase()).join(" or ");
   const editable = provided === undefined && revision !== null;
   return <div tabIndex={guided ? -1 : undefined} data-fuel-slip-field={guided ? "activityText" : undefined} aria-invalid={guided ? invalid : undefined} className={`${styles.field} ${dropdown ? styles.dropdownField : ''} ${guided ? styles.guidedField : ''}`}>
-    {guided ? <div className={styles.entryModes} role="group" aria-label="How to enter the activity">
+    {guided ? <div className={styles.entryModes} data-selected={entryMode !== null} role="group" aria-label="How to enter the activity">
       <button type="button" aria-pressed={entryMode === 'saved'} onClick={() => { setEntryMode('saved'); setManual(false); requestAnimationFrame(() => { if (chooserRef.current) chooserRef.current.open = true; summaryRef.current?.focus(); }); }}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M7 8h10M7 12h10M7 16h6" /></svg>
         <span>Choose activity<small>Use a saved activity</small></span>
