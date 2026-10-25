@@ -15839,3 +15839,65 @@
  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview .finalSaveActions { flex-direction:row; align-items:center; gap:12px; }
  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview .finalSaveActions button { flex:0 1 auto; width:auto; min-width:0; padding:10px 14px; }
 }
+
+/* Expanded price editing and photo previews scroll between fixed controls. */
+.finalSaveOverlay.finalSaveReviewOverlay {
+  overflow: hidden !important;
+  padding: 24px;
+}
+.finalSaveModal.finalSaveReview.finalSaveReview {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(880px, calc(var(--website-visible-height, 100dvh) - 48px));
+  padding: 0;
+  gap: 0;
+  overflow: hidden !important;
+}
+.finalSaveReview.finalSaveReview .finalSaveHeader {
+  flex-shrink: 0;
+  padding: 26px 80px 20px 28px;
+  border-bottom: 1px solid var(--app-line, #d8e6de);
+}
+.finalSaveScrollBody {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  gap: 20px;
+  min-height: 0;
+  padding: 20px 28px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+.finalSaveReview.finalSaveReview .finalSaveActions {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px 28px;
+  border-top: 1px solid var(--app-line, #d8e6de);
+  background: var(--app-surface, #fff);
+}
+.finalSaveReview .finalSaveClose { z-index: 1; }
+.finalSaveReview.finalSaveReview .finalSaveEdit {
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--app-success-soft, #f1f7f4);
+}
+.finalSaveReview.finalSaveReview .finalReplacementPanel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 16px;
+}
+.finalSaveReview .finalSaveDetailsGrid { gap: 24px; }
+.finalSaveReview .finalSavePhotoFields { padding: 4px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveOverlay.finalSaveReviewOverlay { padding: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview.finalSaveReview { padding: 0; max-height: calc(100dvh - 24px); }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveReview.finalSaveReview .finalSaveHeader { padding: 22px 70px 18px 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveScrollBody { padding: 18px; gap: 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveReview.finalSaveReview .finalSaveActions { padding: 14px 18px; }
+}

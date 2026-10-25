@@ -33,3 +33,5 @@
 .previews button:focus-visible { outline:2px solid var(--app-accent,#34775c); outline-offset:2px; }
 .actions { gap:8px; }
 .actions button { min-height:36px; padding:8px 12px; font-size:.78rem; }
+
+.previews button { padding:0; }
