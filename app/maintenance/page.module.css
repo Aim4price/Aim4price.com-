@@ -5341,3 +5341,21 @@
 .repeatChoice input { flex: 0 0 auto; width: 1.2rem; height: 1.2rem; margin-top: .15rem; accent-color: var(--app-accent, #165540); }
 .repeatChoice span { display: grid; gap: .35rem; }
 .repeatChoice small { font-size: .9rem; line-height: 1.5; }
+
+/* Match the asset register badge proportions for upcoming maintenance. */
+.ledgerCard[data-maintenance-status='upcoming'] .maintenanceStatusPill {
+  gap: .45rem;
+  min-height: 0;
+  padding: .4rem .7rem;
+  border-radius: 999px;
+  font-size: .82rem;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.ledgerCard[data-maintenance-status='upcoming'] .statusSymbol {
+  font-weight: 650;
+}
