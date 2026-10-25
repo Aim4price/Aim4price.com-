@@ -60,7 +60,7 @@ const FUEL_SLIP_PAGE_COPY: Record<FuelSlipFormPage, { title: string; help: strin
   activity: { title: 'What was the fuel used for?', help: 'Choose a saved activity or enter your own.' },
   payment: { title: 'Payment details · Optional', help: 'Add any payment references you have, or continue without them.' },
   context: { title: 'Location and notes · Optional', help: 'Add helpful context, or continue without it.' },
-  attachment: { title: 'Supporting slip · Optional', help: 'Attach a photo or PDF for later review. No credits are used.' },
+  attachment: { title: 'Supporting slip · Optional', help: 'Keep a photo or PDF with this entry. No credits used.' },
   confirm: { title: 'Check and save', help: 'Check the summary. You can go back to change any details.' },
 };
 type ReportFormat = 'pdf' | 'xlsx';
@@ -3424,7 +3424,7 @@ export default function FuelClient({
 
   function renderFuelSlipActivityFields() {
     return <section className={styles.invoiceFormCard}>
-      <FuelWorkField expanded asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
+      <FuelWorkField guided asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
       {fuelSlipRequiredHint('activityText')}
     </section>;
   }
@@ -3480,14 +3480,16 @@ export default function FuelClient({
 
   function renderFuelSlipAttachment() {
     return <section className={`${styles.invoiceFormCard} ${styles.fuelEvidenceCard}`}>
-      <FuelSlipDetailIcon kind="reference" />
-      <p>Keep the original slip with this entry so it can be checked later. Attaching a file does not request automatic capture or admin review.</p>
-      {fuelSlipDraft.documentFileUrl ? <DocumentFileLink className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink> : <p>No supporting file attached.</p>}
-      <label className={styles.fuelEvidenceUpload}>
-        <span>{fuelSlipDraft.documentFileUrl ? 'Replace supporting file' : 'Attach photo or PDF'}</span>
-        <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" disabled={isUploadingFuelEvidence || isSaving} onChange={event => { void handleFuelEvidenceUpload(event.target.files?.[0]); event.target.value = ''; }} />
-        <small>JPG, PNG, WEBP or PDF · Up to 25 MB</small>
-      </label>
+      <CaptureUploadDropzone
+        title="Drop fuel slip here or browse"
+        description="One PDF or photo · PDF, JPG, PNG or WebP · Up to 25 MB"
+        inputLabel="Choose supporting fuel slip or photo"
+        selectedCount={fuelSlipDraft.documentFileUrl ? 1 : 0}
+        maxFileSizeMb={25}
+        disabled={isUploadingFuelEvidence || isSaving}
+        onFiles={files => { void handleFuelEvidenceUpload(files[0]); }}
+      />
+      {fuelSlipDraft.documentFileUrl ? <DocumentFileLink className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink> : null}
       {isUploadingFuelEvidence ? <p role="status">Uploading supporting file…</p> : null}
       {fuelEvidenceError ? <p role="alert" className={styles.fuelSlipValidationNotice}>{fuelEvidenceError}</p> : null}
     </section>;
