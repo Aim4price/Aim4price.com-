@@ -52,7 +52,7 @@ test('review preserves manual cost details with an optional attachment', () => {
   ]) {
     assert.match(costFormModal, new RegExp(`<dt>${label}<\\/dt>`));
   }
-  assert.match(costFormModal, /<dt>Asset<\/dt>/);
+  assert.match(costFormModal, /costReviewStyles\.visuallyHidden}>Asset<\/span>/);
   assert.doesNotMatch(costFormModal.slice(costFormModal.indexOf('<dl className={costReviewStyles.grid}>')), /<CostReviewIcon|<BudgetDetailIcon/);
   assert.match(costFormModal, /ManualCostAttachment/);
   assert.match(costFormModal, /<dt>Attachment<\/dt>/);
