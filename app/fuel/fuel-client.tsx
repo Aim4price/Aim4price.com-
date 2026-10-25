@@ -3380,7 +3380,7 @@ export default function FuelClient({
             <>
               <div className={`${styles.fuelWorkFieldGroup} ${styles.fuelSlipFullField} ${fuelSlipFieldClassName('activityText')}`}>
                 <span className={styles.fuelEntryLabel}>Activity / reason for fuel</span>
-                <div className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="work" /><FuelWorkField asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} /></div>
+                <div className={styles.fuelEntryInput}><FuelSlipDetailIcon kind="work" /><FuelWorkField dropdown asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} /></div>
                 {fuelSlipRequiredHint('activityText')}
               </div>
             </>

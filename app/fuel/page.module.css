@@ -7930,10 +7930,13 @@
 }
 .accountFuelModal.manualFuelSlipModal .formModalScrollBody {
   padding: .8rem var(--fuel-dialog-padding) .8rem !important;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: #7ca494 #edf4f0;
+  scrollbar-gutter: stable;
 }
 .accountFuelModal.manualFuelSlipModal .formModalScrollBody::-webkit-scrollbar {
-  display: none;
+  display: block;
+  width: .9rem;
 }
 .accountFuelModal.manualFuelSlipModal .fuelSlipWizardPanel {
   padding: 1rem 1.15rem !important;
