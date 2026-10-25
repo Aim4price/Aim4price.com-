@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   try {
     const ledger = await filterFuelLedgerForWorkspace(
       resolved.context,
-      await listFuelLedger(resolved.context.ownerUserId),
+      await listFuelLedger(resolved.context.ownerUserId, { assetInvoiceId: request.nextUrl.searchParams.get('invoiceId')?.trim() || undefined }),
     );
     return NextResponse.json({ ok: true, ...ledger });
   } catch (error) {

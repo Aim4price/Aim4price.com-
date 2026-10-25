@@ -1666,8 +1666,10 @@ export default function FuelClient({
   initialAssetId = '',
   initialOpenAdd = false,
   initialReturnTo = '',
+  costLedgerEntry,
 }: {
   addedByLabel: string;
+  costLedgerEntry?: { invoiceId: string; onClose: () => void; onSaved: () => void };
 
   initialAssetId?: string;
   initialOpenAdd?: boolean;
@@ -1969,7 +1971,7 @@ export default function FuelClient({
     }
 
     try {
-      const ledgerUrl = '/api/fuel';
+      const ledgerUrl = costLedgerEntry ? `/api/fuel?invoiceId=${encodeURIComponent(costLedgerEntry.invoiceId)}` : '/api/fuel';
       const response = await fetch(ledgerUrl, { credentials: 'include', cache: 'no-store' });
       const payload = (await response.json()) as FuelLedgerResponse;
       const data = payload;
@@ -2026,8 +2028,17 @@ export default function FuelClient({
 
   useEffect(() => {
     void loadLedger();
-    void loadCaptureRequests();
+    if (!costLedgerEntry) void loadCaptureRequests();
   }, []);
+
+  const costEntryOpened = useRef(false);
+  useEffect(() => {
+    if (!costLedgerEntry || !hasLoadedLedger || costEntryOpened.current) return;
+    costEntryOpened.current = true;
+    const slip = recentFuelSlips.find((item) => item.assetInvoiceId === costLedgerEntry.invoiceId);
+    if (slip) openFuelSlipReview(slip);
+    else setNotice({ tone: 'error', message: 'The linked fuel slip is unavailable or you do not have access to it.' });
+  }, [costLedgerEntry, hasLoadedLedger, recentFuelSlips]);
 
   useEffect(() => {
     if (!initialOpenAdd || initialQuickLaunchHandledRef.current || isLoading || !hasLoadedLedger) return;
@@ -2604,6 +2615,7 @@ export default function FuelClient({
 
   function closeFuelSlipFlow(options: { force?: boolean } = {}) {
     if ((isSaving || isExtractingFuelSlip || isUploadingFuelEvidence) && !options.force) return;
+    if (costLedgerEntry) { costLedgerEntry.onClose(); return; }
     if (!options.force) {
       if (fuelSlipFlow === 'manual-form' || fuelSlipFlow === 'review') { handleFuelSlipFormBack(); return; }
       if (fuelSlipFlow === 'upload') { handleFuelSlipUploadBack(); return; }
@@ -2958,6 +2970,7 @@ export default function FuelClient({
       setFuelSlipAttemptedSubmit(false);
       setFuelSlipValidationNotice('');
       setNotice({ tone: 'success', message: data.message || 'Fuel Slip saved to Fuel Ledger.' });
+      if (costLedgerEntry) { costLedgerEntry.onSaved(); return; }
 
       if (returnFromQuickLaunch()) return;
 
@@ -3249,6 +3262,7 @@ export default function FuelClient({
     }
 
     if (fuelSlipDraft.id) {
+      if (costLedgerEntry) { costLedgerEntry.onClose(); return; }
       resetFuelSlipValidationState();
       setFuelSlipFlow(null);
       setFuelSlipReturnToManager(false);
@@ -3740,7 +3754,15 @@ export default function FuelClient({
 
   return (
     <>
-      <main className={styles.page} ref={fuelPageRef}>
+      {costLedgerEntry && !modalMode ? (
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div className={`${styles.formModal} ${wizardStyles.dialog} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-label="Open fuel slip">
+            <div className={wizardStyles.header}><h2>Fuel slip</h2><button type="button" className={accountStyles.modalCloseButton} onClick={costLedgerEntry.onClose} aria-label="Close" data-modal-close="true">×</button></div>
+            <div className={wizardStyles.body}><p role={notice?.tone === 'error' ? 'alert' : 'status'}>{notice?.message || 'Loading fuel slip…'}</p></div>
+          </div>
+        </div>
+      ) : null}
+      {!costLedgerEntry ? <main className={styles.page} ref={fuelPageRef}>
         <AppHeader active="none" />
 
         <section className={styles.shell}>
@@ -3972,7 +3994,7 @@ export default function FuelClient({
             <span>Reports</span>
           </button>
         </nav>
-      </main>
+      </main> : null}
 
       {modalMode === 'manage-storage-choice' && selectedStorage ? (
         <ManageFuelStorageChoiceModal
@@ -4645,6 +4667,7 @@ export default function FuelClient({
                   <h3>{FUEL_SLIP_PAGE_COPY[fuelSlipFormPage].title}</h3>
                   <p>{FUEL_SLIP_PAGE_COPY[fuelSlipFormPage].help}</p>
                 </div>
+                {costLedgerEntry && notice?.tone === 'error' ? <p className={styles.noticeError} role="alert">{notice.message}</p> : null}
                 {renderFuelSlipValidationNotice()}
                 {renderFuelSlipCurrentPage()}
               </section>
@@ -4678,6 +4701,7 @@ export default function FuelClient({
                   <h3>{FUEL_SLIP_PAGE_COPY[fuelSlipFormPage].title}</h3>
                   <p>{FUEL_SLIP_PAGE_COPY[fuelSlipFormPage].help}</p>
                 </div>
+                {costLedgerEntry && notice?.tone === 'error' ? <p className={styles.noticeError} role="alert">{notice.message}</p> : null}
                 {renderFuelSlipValidationNotice()}
 
                 {fuelSlipFormPage === 'confirm' && visibleFuelSlipExtractionWarnings.length ? (
