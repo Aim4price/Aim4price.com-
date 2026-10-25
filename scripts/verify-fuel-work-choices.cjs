@@ -46,6 +46,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH || await chromium.executablePath(),args:process.env.CANVAS_BROWSER_PATH?['--no-sandbox','--disable-dev-shm-usage']:chromium.args,headless:true,pipe:true});
  try {
   const page=await browser.newPage();await page.setViewport({width:430,height:900});
+  if (process.env.FUEL_TEST_CPU_THROTTLE) await page.emulateCPUThrottling(Number(process.env.FUEL_TEST_CPU_THROTTLE));
   await page.setContent('<style>body{font-family:Arial;padding:20px;margin:0}*{box-sizing:border-box}'+sheets.join('\n')+'</style><div id="app"></div>');
   await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
   await page.addScriptTag({content:runtime+`
@@ -60,8 +61,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   assert.equal(await page.$eval('[aria-label="Edit Planting"]', button=>button.dataset.tooltip), 'Edit');
   assert.equal(await page.$eval('[aria-label="Delete Spraying"]', button=>button.dataset.tooltip), 'Delete');
   assert.ok(await page.$('[data-tooltip="Add activity"]'), 'Add activity uses the shared asset-register hover labels');
-  async function fill(selector,value){await page.$eval(selector,(node,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));},value);}
-  async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text),{},text);await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===text);if(!button)throw Error('Missing '+text);button.click();},text);}
+  async function fill(selector,value){await page.waitForSelector(selector,{visible:true});await page.waitForFunction(selector=>!document.querySelector(selector)?.disabled,{},selector);await page.$eval(selector,(node,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));},value);}
+  async function click(text){
+    await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text && !b.disabled && b.getClientRects().length),{},text);
+    const button=await page.evaluateHandle(text=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===text && !b.disabled && b.getClientRects().length),text);
+    try {await button.asElement().click();} finally {await button.dispose();}
+  }
   await click('Planting');assert.equal(await page.$eval('input[aria-label="Work activity"]',n=>n.value),'Planting');
   await page.click('[aria-label="Edit Planting"]');await fill('[aria-label="Work choice name"]','Plant maize');await click('Save activity');await page.waitForSelector('[aria-label="Edit Plant maize"]');
   assert.equal(await page.$eval('input[aria-label="Work activity"]',n=>n.value),'Planting','Renaming a saved choice does not rewrite the current entry');
