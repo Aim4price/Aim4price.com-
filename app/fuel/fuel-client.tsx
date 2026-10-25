@@ -3901,14 +3901,12 @@ export default function FuelClient({
                   <strong>Included</strong>
                   <small>Assets counting towards work use.</small>
                   <span className={styles.exclusionChoiceCount}>{assets.filter((asset) => !asset.workUseExcluded).length} assets</span>
-                  <ChevronRightIcon />
                 </button>
                 <button type="button" className={styles.exclusionChoiceCard} onClick={() => chooseExclusionGroup('excluded')}>
                   <span className={styles.exclusionChoiceIcon} aria-hidden="true"><ExclusionIcon /></span>
                   <strong>Excluded</strong>
                   <small>Assets outside work-use totals.</small>
                   <span className={styles.exclusionChoiceCount}>{assets.filter((asset) => asset.workUseExcluded).length} assets</span>
-                  <ChevronRightIcon />
                 </button>
               </div>
             ) : isExclusionEditorOpen ? (
