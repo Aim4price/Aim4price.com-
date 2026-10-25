@@ -5131,7 +5131,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {formOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''} ${manualCostReviewOpen ? costReviewStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
             className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${styles.polishedCostEntry} ${wizardStyles.dialog} ${manualCostReviewOpen ? costReviewStyles.dialog : ''}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
@@ -5342,25 +5342,23 @@ export default function MyInvoicesClient({
                     </dl>
                     <section className={costReviewStyles.group} aria-labelledby="cost-review-invoice-title">
                       <h3 id="cost-review-invoice-title">Invoice details</h3>
-                      <dl className={costReviewStyles.grid}>
-                    <div>
+                      <dl className={`${costReviewStyles.grid} ${costReviewStyles.rows}`}>
+                    {draft.supplierName.trim() ? <div>
                       <dt>Supplier</dt>
-                      <dd>{draft.supplierName.trim() || 'Not entered'}</dd>
-                    </div>
-                    <div>
+                      <dd>{draft.supplierName.trim()}</dd>
+                    </div> : null}
+                    {draft.invoiceNumber.trim() ? <div>
                       <dt>Invoice number</dt>
-                      <dd>{draft.invoiceNumber.trim() || 'Not entered'}</dd>
-                    </div>
+                      <dd>{draft.invoiceNumber.trim()}</dd>
+                    </div> : null}
                     <div>
                       <dt>Invoice date</dt>
                       <dd>{formatDate(draft.invoiceDate)}</dd>
                     </div>
-                    <div>
+                    {draft.usageMetric !== 'none' && draft.usageReading.trim() ? <div>
                       <dt>Usage</dt>
-                      <dd>{draft.usageMetric === 'none'
-                        ? 'Not recorded'
-                        : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
-                    </div>
+                      <dd>{selectedUsageMetricOption.label} · {draft.usageReading}</dd>
+                    </div> : null}
                       </dl>
                     </section>
                     {[draft.maintenanceWorkDone, draft.partsSupplied, draft.repairWorkDone, draft.notes].some((value) => value.trim()) ? (
@@ -5388,7 +5386,7 @@ export default function MyInvoicesClient({
                     ) : null}
                     <section className={costReviewStyles.group} aria-labelledby="cost-review-amounts-title">
                       <h3 id="cost-review-amounts-title">Amounts</h3>
-                      <dl className={costReviewStyles.grid}>
+                      <dl className={`${costReviewStyles.grid} ${costReviewStyles.rows}`}>
                     <div className={costReviewStyles.amount}>
                       <dt>Subtotal excl. VAT</dt>
                       <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
@@ -5413,6 +5411,12 @@ export default function MyInvoicesClient({
             </div>
 
             <div className={`${styles.modalFooter} ${manualCostWizardOpen ? `${styles.manualCostWizardFooter} ${wizardStyles.footer}` : ''} ${manualCostReviewOpen ? costReviewStyles.footer : ''}`}>
+              {manualCostReviewOpen ? (
+                <div className={costReviewStyles.footerTotal}>
+                  <span>Total incl. VAT</span>
+                  <strong>{formatReviewMoney(manualCostTotalValue)}</strong>
+                </div>
+              ) : null}
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${manualCostWizardOpen ? wizardStyles.secondaryAction : ''}`}

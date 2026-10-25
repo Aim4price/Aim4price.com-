@@ -1,6 +1,8 @@
 /* A readable, single-column review with only the content area scrolling. */
 .dialog.dialog.dialog.dialog.dialog {
-  width: min(1060px, var(--website-dialog-reference-width, 100%)) !important;
+  width: min(940px, var(--website-dialog-reference-width, 100%)) !important;
+  max-height: min(880px, calc(var(--website-visible-height, 100dvh) - 48px), 100%) !important;
+  min-height: 0;
 }
 .panel.panel.panel.panel.panel {
   margin: 0 !important;
@@ -39,4 +41,19 @@
   :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body.body { padding: 20px 18px !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .header.header.header.header { padding: 20px 18px 16px !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .footer.footer.footer.footer { padding: 12px 18px !important; }
+}
+
+/* The review body owns scrolling; the overlay and fixed footer stay still. */
+.overlay.overlay.overlay.overlay.overlay { overflow: hidden !important; }
+.rows { gap: 14px; }
+.rows > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); align-items: baseline; gap: 12px 24px; }
+.rows dt { margin: 0; }
+.rows dd { text-align: right; }
+.footer.footer.footer.footer { flex-wrap: wrap; }
+.footerTotal { display: grid; gap: 3px; min-width: 0; margin-right: auto; color: var(--app-text, #123f32); }
+.footerTotal span { color: var(--app-muted, #62786e); font-size: .8rem; font-weight: 600; }
+.footerTotal strong { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .footerTotal { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .rows > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; }
 }
