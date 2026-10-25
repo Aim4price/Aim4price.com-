@@ -1,10 +1,11 @@
 .body.body.body.body.body {
-  padding: 12px 30px !important;
+  padding: 12px 30px 18px !important;
   overflow-y: auto;
   scrollbar-gutter: auto;
   scrollbar-width: none;
 }
 .panel.panel.panel.panel {
+  margin: 0 !important;
   padding: 0 !important;
   gap: 12px !important;
   border: 0 !important;
@@ -27,3 +28,12 @@
 
 /* Keep overflow reachable on short screens without the inner scrollbar. */
 .body.body.body.body.body::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+.footer.footer.footer.footer {
+  padding: 14px 30px !important;
+  min-height: 0;
+  flex-shrink: 0;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .footer.footer.footer.footer { padding: 12px 18px !important; }
+}

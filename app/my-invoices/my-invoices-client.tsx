@@ -4419,7 +4419,7 @@ export default function MyInvoicesClient({
               ) : null}
             </div>
 
-            <div className={`${styles.modalFooter} ${styles.invoiceDropWizardFooter} ${wizardStyles.footer}`}>
+            <div className={`${styles.modalFooter} ${styles.invoiceDropWizardFooter} ${wizardStyles.footer} ${invoiceDropWizardStep === 3 ? dropFinalStyles.footer : ''}`}>
               {invoiceDropWizardStep === 1 ? (
                 <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={closeInvoiceDropCodeManager}>Cancel</button>
               ) : !newInvoiceDropCode ? (
