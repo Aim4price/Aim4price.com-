@@ -211,9 +211,9 @@ export default function SaleabilityModal({
   if (!open) return null;
   return (
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !saving) onClose(); }}>
-      <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
+      <section ref={dialogRef} tabIndex={-1} className={`${styles.modal} ${step === 'result' ? styles.resultModal : ''} ${accountStyles.modalTheme} ${estimateStyle && step !== 'result' ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
-          <div><h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title">Realistic Market Value</h2><p>{assetTitle}</p></div>
+          <div><h2 data-estimate-modal-title={(estimateStyle && step !== 'result') || undefined} id="saleability-title">Realistic Market Value</h2><p>{assetTitle}</p></div>
           <button type="button" disabled={saving} className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Realistic Market Value" data-modal-close="true"><span aria-hidden="true">×</span></button>
         </header>
         <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling estimate' : `Question ${step} of 5`}>

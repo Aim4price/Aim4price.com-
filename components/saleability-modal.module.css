@@ -1026,3 +1026,6 @@
 .modal.resultModal .result { gap: 10px; }
 .modal.resultModal .easeCard { padding-block: 10px; }
 .modal.resultModal .resultHero { padding-block: 14px; }
+
+/* The price panel remains pale in either theme; keep its amount readable. */
+.modal.resultModal .resultHero > strong { color: #163e30; }
