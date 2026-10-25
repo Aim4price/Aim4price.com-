@@ -4,6 +4,7 @@ import { replacementSliderRange } from '../../lib/replacement-slider';
 import VatPriceInput from '../../components/VatPriceInput';
 import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
+import ValuationPdfOptions from '../../components/ValuationPdfOptions';
 import EstimateSavePhotos from '../../components/EstimateSavePhotos';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import EstimatePriceInput from './EstimatePriceInput';
@@ -528,6 +529,7 @@ type ValuationPdfPayload = {
   clientRows: ValuationPdfKeyValue[];
   recordRows: ValuationPdfKeyValue[];
   saleabilityRows: ValuationPdfKeyValue[];
+  includeMarketValue: boolean;
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -1957,6 +1959,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [detailedAssessmentError, setDetailedAssessmentError] = useState('');
   const [replacementNoticeOpen, setReplacementNoticeOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [pdfOptionsOpen, setPdfOptionsOpen] = useState(false);
+  const [pdfMarketReturn, setPdfMarketReturn] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
   const [saleabilityOpen, setSaleabilityOpen] = useState(false);
@@ -4379,7 +4383,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       .join(' • ');
   }
 
-  function buildValuationPdfPayload(): ValuationPdfPayload | null {
+  function buildValuationPdfPayload(includeMarketValue = false): ValuationPdfPayload | null {
     if (!resultState || headlineValue === null) return null;
 
     const isGeneric = resultState.kind === 'generic';
@@ -4596,10 +4600,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       assetDetailRows,
       clientRows: safeClientRows,
       recordRows,
-      saleabilityRows: compactPdfRows([
-        { label: 'Realistic Market Value', value: 'Calculate separately for your selling circumstances.' },
-        { label: 'Why prices differ', value: 'Ideal Price reflects the asset details and depreciation assumptions. Realistic Market Value also considers demand, competing assets, selling method and time available. It may be higher or lower; neither price guarantees a sale.' },
-      ]),
+      includeMarketValue,
+      saleabilityRows: includeMarketValue && completedMarketAssessment?.result === resultState && completedMarketAssessment.value === headlineValue ? [
+        { label: 'Realistic Market Value', value: money(completedMarketAssessment.marketPriceExVat) },
+      ] : [],
     };
   }
 
@@ -4634,13 +4638,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     } finally { setAdvancedRecalculateLoading(false); }
   }
 
-  async function downloadValuationPdf() {
+  async function downloadValuationPdf(includeMarketValue = false) {
+    if (includeMarketValue && !(completedMarketAssessment?.result === resultState && completedMarketAssessment.value === headlineValue)) {
+      setPdfError('Update the market value before including it in your report.');
+      return;
+    }
     if (!resultState) {
       setPdfError('Run an estimate before downloading the PDF report.');
       return;
     }
 
-    const payload = buildValuationPdfPayload();
+    const payload = buildValuationPdfPayload(includeMarketValue);
     if (!payload) {
       setPdfError('The estimate report could not be prepared.');
       return;
@@ -4674,6 +4682,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       document.body.appendChild(form);
       form.submit();
+      setPdfOptionsOpen(false);
       window.setTimeout(() => form.remove(), 0);
     } catch (error) {
       console.error(error);
@@ -9419,7 +9428,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     type="button"
                     className={styles.resultPdfActionButton}
                     data-result-action="download-pdf"
-                    onClick={downloadValuationPdf}
+                    onClick={() => { setPdfError(''); setPdfOptionsOpen(true); }}
                     disabled={pdfLoading || advancedRecalculateLoading || replacementRecalculateLoading || !resultState || headlineValue === null}
                   >
                     {renderResultActionIcon('pdf')}<span className={styles.resultActionCopy}><strong>{pdfLoading ? 'Preparing PDF...' : 'Download PDF'}</strong><small>Keep a copy of your estimate</small></span>
@@ -9543,15 +9552,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <p className={styles.resultDisclaimer}>Based on the details and replacement price you choose. A guide, not a confirmed selling price, certified valuation or inspection.</p>
 
         {finalLifetimeOpen ? renderLifetimeModal(true, true) : null}
+        {pdfOptionsOpen ? <ValuationPdfOptions
+          idealValue={money(headlineValue)} replacementValue={money(getCurrentResultReplacementPriceExVat())}
+          marketValue={currentMarketPrice !== null ? money(currentMarketPrice) : null}
+          stale={Boolean(completedMarketAssessment) && currentMarketPrice === null}
+          busy={pdfLoading} error={pdfError}
+          onClose={() => setPdfOptionsOpen(false)}
+          onCalculate={() => { setPdfOptionsOpen(false); setPdfMarketReturn(true); setSaleabilityOpen(true); }}
+          onDownload={downloadValuationPdf}
+        /> : null}
         <SaleabilityModal
           estimateStyle
           open={saleabilityOpen}
           onClose={() => {
             setSaleabilityOpen(false);
+            if (pdfMarketReturn) { setPdfMarketReturn(false); setPdfOptionsOpen(true); }
             if (saveMarketChoice === 'calculating') setSaveMarketChoice('prompt');
           }}
           initialAnswers={completedMarketAssessment?.result === resultState ? completedMarketAssessment.answers : undefined}
           onComplete={(answers, quote) => {
+            if (pdfMarketReturn) { setPdfMarketReturn(false); setPdfOptionsOpen(true); }
             setCompletedMarketAssessment({ answers, result: resultState, value: headlineValue, marketPriceExVat: quote.priceExVat });
             setSaleabilityOpen(false);
             setSaveMarketChoice(null);
@@ -9959,7 +9979,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <p id="final-save-description">{finalSaveDescription}</p>
             </div>
 
-            <div className={styles.finalSaveScrollBody} data-final-save-scroll-body="true">
+            <div className={styles.finalSaveScrollBody} data-save-review-body data-final-save-scroll-body="true">
             <div className={styles.finalSaveValueToolbar}>
               <strong>Values</strong>
               <div className={styles.finalSaveToolbarActions}>

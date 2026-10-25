@@ -1,0 +1,26 @@
+.dialog.dialog { width:min(720px,calc(var(--website-visible-width,100vw) - 32px)); max-height:calc(var(--website-visible-height,100dvh) - 40px); margin:auto; overflow:auto; }
+.dialog::backdrop { background:var(--modal-backdrop-color,#061b16ad); backdrop-filter:blur(8px); }
+.header { padding-right:52px; }
+.body { padding-top:22px; }
+.values { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.values > div { display:grid; gap:8px; padding:18px; border:1px solid var(--app-line,#c6dcd0); border-radius:14px; background:var(--app-surface-soft,#edf5f0); }
+.values span { font-size:.84rem; font-weight:700; }
+.values strong { font-size:1.35rem; }
+.basis { display:block; margin:10px 0 22px; color:var(--app-muted,#61756e); font-size:.78rem; }
+.market { padding:18px; border:1px solid var(--app-line,#c6dcd0); border-radius:14px; }
+.marketHeading { display:flex; align-items:center; justify-content:space-between; gap:18px; }
+.marketHeading p { margin:6px 0 0; color:var(--app-muted,#61756e); font-size:.9rem; }
+.note { margin:12px 0 0; color:var(--app-muted,#61756e); font-size:.82rem; line-height:1.5; }
+.market > button { margin-top:14px; }
+.toggle { flex-shrink:0; width:54px; height:32px; padding:4px; border:1px solid var(--app-line,#a9c1b4); border-radius:999px; background:var(--app-surface-soft,#dce7e1); cursor:pointer; }
+.toggle span { display:block; width:22px; height:22px; border-radius:50%; background:#fff; box-shadow:0 1px 4px #0003; transition:transform .15s; }
+.toggle[aria-checked=true] { background:#17664e; border-color:#17664e; }
+.toggle[aria-checked=true] span { transform:translateX(22px); }
+.toggle:focus-visible { outline:3px solid #71ab8e; outline-offset:3px; }
+.dialog .actions.actions { display:flex; justify-content:space-between; margin-top:22px; gap:12px; }
+.actions button { border:1px solid var(--app-line,#c6dcd0); background:var(--app-surface,#fff); color:var(--app-text,#174f3e); cursor:pointer; }
+.dialog .actions .download { background:#14543f; color:#fff; border-color:#14543f; }
+.error { color:var(--app-danger,#a13232); }
+@media(max-width:640px) { :global(:where(html:not(:has([data-website-canvas])))) .values { grid-template-columns:1fr; } }
+.dialog > button[data-modal-close] { position:absolute; top:20px; right:20px; }
+.dialog.dialog [data-estimate-modal-title] { color:var(--app-text,#174f3e); }

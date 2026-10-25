@@ -2903,7 +2903,7 @@ async function listFuelSlipEventsForReport(
   return result.rows.map(mapFuelSlipRow).map(mapFuelSlipToReportEvent);
 }
 
-async function listFuelSlips(userId: string, options: { limit?: number | null } = {}): Promise<FuelSlipTransaction[]> {
+async function listFuelSlips(userId: string, options: { limit?: number | null; assetInvoiceId?: string } = {}): Promise<FuelSlipTransaction[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
   const limit = options.limit === null ? null : Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
@@ -2915,10 +2915,11 @@ async function listFuelSlips(userId: string, options: { limit?: number | null } 
       left join public.asset_register_items a on a.id = fs.asset_register_item_id
       left join public.fuel_storage_units s on s.id = fs.storage_id
       where fs.user_id = $1 and fs.record_status = 'active'
+      ${options.assetInvoiceId ? 'and fs.asset_invoice_id::text = $2' : ''}
       order by fs.created_at desc, fs.id desc
       ${limit === null ? '' : `limit ${limit}`}
     `,
-    [userId],
+    options.assetInvoiceId ? [userId, options.assetInvoiceId] : [userId],
   );
 
   return result.rows.map(mapFuelSlipRow);
@@ -2945,7 +2946,7 @@ export async function getFuelSlipTransactionById(userId: string, fuelSlipId: str
   return result.rows[0] ? mapFuelSlipRow(result.rows[0]) : null;
 }
 
-export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
+export async function listFuelLedger(userId: string, options: { assetInvoiceId?: string } = {}): Promise<FuelLedgerData> {
   await ensureFuelLedgerTables();
   const db = getDb();
 
@@ -2961,7 +2962,7 @@ export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
       [userId],
     ),
     listFuelEvents(userId, { limit: 80 }),
-    listFuelSlips(userId, { limit: 2000 }),
+    listFuelSlips(userId, { limit: 2000, assetInvoiceId: options.assetInvoiceId }),
     listFuelAssetsForUser(userId),
     db.query<{ issued_30: string | number | null; filled_30: string | number | null }>(
       `

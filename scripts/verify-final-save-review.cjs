@@ -98,6 +98,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.lastElementChild.getBoundingClientRect().bottom<=innerHeight && el.scrollWidth<=el.clientWidth+1));
  await page.screenshot({path:'/tmp/save-expanded-mobile.png'});
  await page.setViewport({width:1366,height:900});await page.click('[aria-controls="final-save-edit-values"]');
+ for(let count=4;count>0;count--){await page.$eval('[aria-label="Remove photo 1"]',el=>el.click());await page.waitForFunction(n=>document.querySelectorAll('[aria-label^="Remove photo "]').length===n,{},count-1);}
  // Use the real shared picker and creation form; mock only the HTTP boundary.
  await page.evaluate(()=>{window.registerRequests=[];window.failRegister=false;window.fetch=async(url,options)=>{window.registerRequests.push(JSON.parse(options.body));return {ok:!window.failRegister,json:async()=>window.failRegister?{ok:false,error:'Please try again.'}:{ok:true,register:{id:'new',businessName:'New farm'},registers:[{id:'new',businessName:'New farm'}]}};};});
  await page.click('[aria-labelledby="final-save-register-label final-save-register-name"]');
@@ -138,6 +139,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2));
  await page.click('[aria-label="Remove photo 1"]');
 
+ await page.$eval('input[type=file]',el=>{
+   const transfer=new DataTransfer();for(let i=0;i<4;i++)transfer.items.add(new File([Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='),c=>c.charCodeAt(0))],'asset'+i+'.png',{type:'image/png'}));el.files=transfer.files;el.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.waitForSelector('[aria-label="Remove photo 4"]');
  await page.click('[aria-controls="final-save-edit-values"]');
  await page.waitForSelector('[data-estimate-price-entry] input');
  assert.deepEqual(errors,[]);
@@ -145,6 +150,25 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)');
  await page.click('[data-estimate-price-entry] input',{clickCount:3});await page.keyboard.press('Backspace');await page.type('[data-estimate-price-entry] input','25000');
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>el.value),'25 000');
+ // Expanded editor and four photos: content scrolls, header/footer never leave the modal.
+ await page.setViewport({width:1366,height:700});
+ await page.evaluate(()=>{document.getElementById('app').style.zoom='1.25';document.getElementById('app').style.setProperty('--website-visible-height',innerHeight/1.25+'px');});
+ const checkPinned=async()=>assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>{
+   const r=el.getBoundingClientRect(),close=el.querySelector('[data-modal-close]').getBoundingClientRect(),footer=el.lastElementChild.getBoundingClientRect(),body=el.querySelector('[data-save-review-body]');
+   return el.scrollHeight<=el.clientHeight+2&&r.top>=0&&r.bottom<=innerHeight+1&&close.top>=r.top&&footer.bottom<=r.bottom&&body.scrollHeight>body.clientHeight;
+ }),'Only the body overflows; header, close and footer stay visible');
+ await checkPinned();
+ await page.screenshot({path:'/tmp/save-expanded-top.png'});
+ await page.$eval('[data-save-review-body]',el=>el.scrollTop=el.scrollHeight);
+ await checkPinned();
+ await page.screenshot({path:'/tmp/save-expanded-bottom.png'});
+ await page.setViewport({width:390,height:844});
+ await page.evaluate(()=>{document.getElementById('app').style.zoom='1';document.getElementById('app').style.removeProperty('--website-visible-height');});
+ await checkPinned();
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.screenshot({path:'/tmp/save-expanded-mobile.png'});
+ await page.setViewport({width:1366,height:900});
+ await page.$eval('[data-save-review-body]',el=>el.scrollTop=0);
  await page.click('[aria-controls="final-save-edit-values"]');
  await page.screenshot({path:'/tmp/save-review.png'});
  await page.$$eval('button',els=>els.find(e=>e.textContent==='Advert fixture').click());

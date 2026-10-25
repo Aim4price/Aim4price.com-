@@ -21,6 +21,11 @@ on:
       - 'app/asset-register/asset-register-client.tsx'
       - 'tests/asset-saleability.test.cjs'
       - 'scripts/verify-market-estimates.cjs'
+      - 'scripts/verify-valuation-pdf-options.cjs'
+      - 'tests/valuation-pdf-market-option.test.cjs'
+      - 'components/ValuationPdfOptions.tsx'
+      - 'components/valuation-pdf-options.module.css'
+      - 'app/api/valuation/report/route.ts'
       - '.github/workflows/market-estimates-validation.yml'
 jobs:
   validate:
@@ -36,3 +41,5 @@ jobs:
       - run: node --test tests/asset-saleability.test.cjs tests/saleability-v2.test.cjs
       - run: node --experimental-strip-types --test tests/saleability.test.mjs tests/saleability-ui.test.mjs tests/pricing-vat.test.mjs tests/asset-register-card-ui.test.mjs tests/pricing-modal-return.test.mjs
       - run: node scripts/verify-market-estimates.cjs
+      - run: node --test tests/valuation-pdf-market-option.test.cjs
+      - run: node scripts/verify-valuation-pdf-options.cjs
