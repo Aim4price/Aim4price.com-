@@ -2,7 +2,7 @@
 .field input { width: 100%; box-sizing: border-box; min-height: 44px; border: 1px solid #cbded6; border-radius: 12px; padding: .7rem .85rem; font: inherit; color: #173c32; background: #f4f9f6; }
 .field input[aria-invalid="true"] { border-color: #c23c46; }
 .hint { margin: 0; font-size: .8rem; line-height: 1.4; color: #52695f; }
-.choices { border: 1px solid #cbded6; border-radius: 12px; background: #f6faf8; color: #173c32; overflow: hidden; }
+.choices { border: 1px solid #cbded6; border-radius: 12px; background: #f6faf8; color: #173c32; overflow: visible; }
 .choices summary { padding: .7rem .9rem; cursor: pointer; font-size: .875rem; font-weight: 650; }
 .list { max-height: 240px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #83ab98 #f6faf8; padding: 0 .65rem; }
 .row { display: flex; align-items: center; gap: .4rem; border-top: 1px solid #dce8e2; }
@@ -61,7 +61,26 @@
 .guidedField .row .select[aria-pressed="true"] { background: var(--app-surface-soft, #dceee2); }
 .guidedField .hint { font-weight: 600; }
 .guidedField .list[hidden] { display: none; }
-.guidedField .list { max-height: 10rem; overscroll-behavior: contain; }
+.guidedField .list { max-height: 13rem; overscroll-behavior: contain; }
 
 .entryModes[data-selected="true"] button { min-height: 3.5rem; padding: .65rem 1rem; }
 .entryModes[data-selected="true"] small { display: none; }
+
+
+/* Use the shared HoverLabels behaviour also used by the asset register. */
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .9rem; border-top: 1px solid var(--app-line, #dce8e2); }
+.toolbar[hidden], .list[hidden] { display: none; }
+.toolbar > strong { color: var(--app-muted, #52695f); font-size: .85rem; font-weight: 650; }
+.toolbar .add { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-height: 42px; padding: .55rem .85rem; border: 1px solid var(--app-line, #b8d9c7); border-radius: 12px; background: var(--app-surface-soft, #e2f1e7); color: var(--app-text, #176345); font-weight: 750; white-space: nowrap; }
+.add svg { width: 20px; height: 20px; flex-shrink: 0; }
+.choices .list { padding: .5rem .9rem; scrollbar-gutter: auto; }
+.row { gap: .6rem; padding: .2rem .15rem; }
+.row .edit, .row .delete { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; width: 40px; height: 40px; min-height: 40px; padding: 9px; border: 1px solid var(--app-info-line, #c1dbf8); border-radius: 11px; background: var(--app-info-soft, #edf5ff); }
+.row .delete { border-color: var(--app-danger-line, #f0c7c9); background: var(--app-danger-soft, #fff1f2); }
+.row .select { min-width: 0; overflow-wrap: anywhere; }
+.row .select:hover { background: var(--app-surface-soft, #e7f1ec); }
+.editor { padding: 1rem; }
+.editorLabel { display: grid; gap: .65rem; font-size: .95rem; font-weight: 700; }
+.editor .actions { gap: .75rem; margin-top: 1rem; }
+.editor .actions button { min-height: 44px; padding: .6rem 1rem; border: 1px solid var(--app-line, #cbded6); border-radius: 12px; font-weight: 700; }
+.editor .actions .save { background: var(--app-accent, #176345); border-color: transparent; color: #fff; }
