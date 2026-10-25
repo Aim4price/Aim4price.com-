@@ -1,13 +1,16 @@
 'use client';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { appRealmForPath } from '../lib/app-realm';
 import { DEFAULT_FUEL_WORK_CHOICES, fuelActivityChoices, fuelActivityProfile, fuelActivitySuggestions, type FuelActivityAsset, type FuelWorkChoice } from '../lib/fuel-work-choice-options';
 import styles from './FuelWorkField.module.css';
 
-export default function FuelWorkField({ value, onChange, choices: provided, asset, invalid, autoFocus = false }: {
-  asset?: FuelActivityAsset | null; value: string; onChange: (value: string) => void; choices?: FuelWorkChoice[]; invalid?: boolean; autoFocus?: boolean;
+export default function FuelWorkField({ value, onChange, choices: provided, asset, invalid, autoFocus = false, dropdown = false }: {
+  asset?: FuelActivityAsset | null; value: string; onChange: (value: string) => void; choices?: FuelWorkChoice[]; invalid?: boolean; autoFocus?: boolean; dropdown?: boolean;
 }) {
   const hintId = useId();
+  const chooserRef = useRef<HTMLDetailsElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const [manual, setManual] = useState(false);
   const [choices, setChoices] = useState(provided ?? DEFAULT_FUEL_WORK_CHOICES);
   const [revision, setRevision] = useState<number | null>(null);
   const [editing, setEditing] = useState<FuelWorkChoice | null>(null);
@@ -39,22 +42,27 @@ export default function FuelWorkField({ value, onChange, choices: provided, asse
   const visibleChoices = fuelActivityChoices(choices, asset);
   const examples = fuelActivitySuggestions(asset).slice(0, 2).map(c => c.name.toLowerCase()).join(" or ");
   const editable = provided === undefined && revision !== null;
-  return <div className={styles.field}>
-    <input aria-label="Work activity" aria-describedby={hintId} aria-invalid={invalid} data-fuel-slip-field="activityText" value={value} maxLength={120} onChange={event => onChange(event.target.value)} placeholder="Choose saved work or describe the job" autoFocus={autoFocus} />
+  return <div className={`${styles.field} ${dropdown ? styles.dropdownField : ''}`}>
+    {!dropdown || manual ? <>
+    <input aria-label="Work activity" aria-describedby={hintId} aria-invalid={invalid} data-fuel-slip-field="activityText" value={value} maxLength={120} onChange={event => onChange(event.target.value)} placeholder="Choose saved work or describe the job" autoFocus={autoFocus || (dropdown && manual)} />
     <p id={hintId} className={styles.hint}>Describe the work, for example: {examples}. Add the job or destination if useful.</p>
-    <details className={styles.choices}>
-      <summary>Saved Activities</summary>
+    </> : null}
+    <details ref={chooserRef} className={styles.choices} onKeyDown={event => { if (event.key === 'Escape' && chooserRef.current?.open) { event.stopPropagation(); chooserRef.current.open = false; summaryRef.current?.focus(); } }}>
+      <summary ref={summaryRef} aria-label={dropdown ? 'Choose saved activity' : undefined} aria-invalid={dropdown && !manual ? invalid : undefined} data-fuel-slip-field={dropdown && !manual ? 'activityText' : undefined}>
+        {dropdown ? <><span>{value || 'Choose an activity'}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></> : 'Saved Activities'}
+      </summary>
       <div className={styles.list}>
         {visibleChoices.map(choice => <div className={styles.row} key={choice.id}>
-          <button type="button" className={styles.select} onClick={() => onChange(choice.name)}>{choice.name}</button>
+          <button type="button" className={styles.select} onClick={() => { onChange(choice.name); if (dropdown) { setManual(false); if (chooserRef.current) chooserRef.current.open = false; summaryRef.current?.focus(); } }}>{choice.name}</button>
           {editable && choices.some(c => c.id === choice.id) ? <><button type="button" className={styles.edit} disabled={busy} aria-label={`Edit ${choice.name}`} onClick={() => { setEditing(choice); setDeleting(null); setName(choice.name); }}><svg viewBox="0 0 24 24"><path d="m15 4 5 5M4 20l5-1L20 8a2 2 0 0 0-5-5L4 14z" /></svg></button><button type="button" className={styles.delete} disabled={busy} aria-label={`Delete ${choice.name}`} onClick={() => { setDeleting(choice); setEditing(null); }}><svg viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" /></svg></button></> : null}
         </div>)}
-        {!visibleChoices.length ? <p>No saved work yet. Type the activity above.</p> : null}
+        {!visibleChoices.length ? <p>No saved work yet. Use manual entry to describe the activity.</p> : null}
       </div>
       {editable && !editing && !deleting ? <button type="button" className={styles.add} onClick={() => { setName(''); setEditing({ id: crypto.randomUUID(), name: '', profile: fuelActivityProfile(asset) }); }}>+ Add work</button> : null}
       {editing ? <div className={styles.editor}><input aria-label="Work choice name" maxLength={120} value={name} onChange={e => setName(e.target.value)} disabled={busy} /><div className={styles.actions}><button type="button" disabled={busy} onClick={() => setEditing(null)}>Cancel</button><button type="button" disabled={busy || name.trim().length < 2} onClick={() => void save(choices.some(c => c.id === editing.id) ? choices.map(c => c.id === editing.id ? { ...c, name } : c) : [...choices, { ...editing, name }])}>{busy ? 'Saving…' : 'Save'}</button></div></div> : null}
       {deleting ? <div className={styles.editor}><p>Delete “{deleting.name}” from saved work? Existing fuel records stay unchanged.</p><div className={styles.actions}><button type="button" disabled={busy} onClick={() => setDeleting(null)}>Cancel</button><button type="button" className={styles.delete} disabled={busy} onClick={() => void save(choices.filter(c => c.id !== deleting.id))}>Delete</button></div></div> : null}
     </details>
+    {dropdown ? <button type="button" className={styles.manualToggle} onClick={() => { setManual(!manual); if (chooserRef.current) chooserRef.current.open = false; }}>{manual ? 'Use saved activity' : 'Enter activity manually'}</button> : null}
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
   </div>;
 }
