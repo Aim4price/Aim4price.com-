@@ -10,15 +10,15 @@ const modalStart = client.indexOf('{formOpen ? (');
 const modalEnd = client.indexOf('{deleteCandidateInvoice ?', modalStart);
 const costFormModal = client.slice(modalStart, modalEnd);
 
-test('manual costs use a guided three-step wizard', () => {
+test('manual costs use a guided four-step wizard', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'cost form modal should be present');
-  assert.match(client, /type ManualCostWizardStep = 1 \| 2 \| 3/);
+  assert.match(client, /type ManualCostWizardStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /const \[manualCostWizardStep, setManualCostWizardStep\]/);
   assert.doesNotMatch(costFormModal, /styles\.invoiceDropWizardProgress/);
   assert.match(costFormModal, /styles\.invoiceDropWizardPanel/);
   assert.match(costFormModal, /Add the invoice details/);
   assert.match(costFormModal, /Describe the work/);
-  assert.match(costFormModal, /Review your cost/);
+  assert.match(costFormModal, /Invoice or receipt · Optional/);
   assert.match(costFormModal, /onClick=\{continueManualCostWizard\}/);
   assert.match(costFormModal, /goBackManualCostWizard/);
 });
@@ -27,12 +27,12 @@ test('manual wizard validates the total and saves only from review', () => {
   assert.match(client, /function manualCostInvoiceError\(\)/);
   assert.match(client, /manualCostTotalValue <= 0/);
   assert.match(client, /Enter the total amount including VAT before continuing/);
-  assert.match(client, /function handleInvoiceFormSubmit\(event: FormEvent<HTMLFormElement>\)[\s\S]*?if \(manualCostWizardOpen\)[\s\S]*?if \(manualCostWizardStep < 3\) continueManualCostWizard\(\);[\s\S]*?return;[\s\S]*?void saveInvoiceDraft\(\);/);
-  assert.match(client, /async function saveInvoiceDraft\(\)[\s\S]*?if \(flow === 'manual-form' && manualCostWizardStep !== 3\)[\s\S]*?Review the cost record before saving/);
+  assert.match(client, /function handleInvoiceFormSubmit\(event: FormEvent<HTMLFormElement>\)[\s\S]*?if \(manualCostWizardOpen\)[\s\S]*?if \(manualCostWizardStep < 4\) continueManualCostWizard\(\);[\s\S]*?return;[\s\S]*?void saveInvoiceDraft\(\);/);
+  assert.match(client, /async function saveInvoiceDraft\(\)[\s\S]*?if \(flow === 'manual-form' && manualCostWizardStep !== 4\)[\s\S]*?Review the cost record before saving/);
   assert.match(client, /setManualCostWizardStep\(2\)/);
   assert.match(client, /setManualCostWizardStep\(3\)/);
   assert.match(costFormModal, /onSubmit=\{handleInvoiceFormSubmit\}/);
-  assert.match(costFormModal, /manualCostWizardStep < 3[\s\S]*?>\s*Next\s*</);
+  assert.match(costFormModal, /Skip for now/);
   assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost/);
 });
 

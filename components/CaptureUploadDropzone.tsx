@@ -22,7 +22,7 @@ export default function CaptureUploadDropzone({ title, description, inputLabel, 
 
   function choose(files: File[]) {
     if (disabled || !files.length) return;
-    if (!multiple && files.length > 1) { setError('Choose one fuel slip photo or PDF at a time.'); return; }
+    if (!multiple && files.length > 1) { setError('Choose one photo or PDF at a time.'); return; }
     if (files.some(file => !['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type))) {
       setError('Choose a PDF, JPG, PNG or WebP file.'); return;
     }

@@ -1,6 +1,6 @@
-/* A readable, single-column review with only the content area scrolling. */
+/* The body scrolls long details while the desktop summary remains visible. */
 .dialog.dialog.dialog.dialog.dialog {
-  width: min(940px, var(--website-dialog-reference-width, 100%)) !important;
+  width: min(1120px, var(--website-dialog-reference-width, 100%)) !important;
   max-height: min(880px, calc(var(--website-visible-height, 100dvh) - 48px), 100%) !important;
   min-height: 0;
 }
@@ -50,10 +50,22 @@
 .rows dt { margin: 0; }
 .rows dd { text-align: right; }
 .footer.footer.footer.footer { flex-wrap: wrap; }
-.footerTotal { display: grid; gap: 3px; min-width: 0; margin-right: auto; color: var(--app-text, #123f32); }
-.footerTotal span { color: var(--app-muted, #62786e); font-size: .8rem; font-weight: 600; }
-.footerTotal strong { font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 @media (max-width: 600px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .footerTotal { flex-basis: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .rows > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 12px; }
+}
+
+.columns { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr); align-items: start; gap: 28px; }
+.details { display: grid; min-width: 0; gap: 22px; }
+.details > .group:first-child { border-top: 0; padding-top: 0; }
+.asset { padding: 16px 20px; border-radius: 14px; background: var(--app-surface-soft, #f0f7f3); }
+.summary { position: sticky; top: 0; min-width: 0; padding: 20px; border: 1px solid var(--app-line, #d8e6de); border-radius: 18px; background: var(--app-surface-soft, #f0f7f3); }
+.summary h3 { margin: 0 0 20px; font-size: 1.1rem; color: var(--app-text, #123f32); }
+.summary .rows > div { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+.summary .amount dd { white-space: nowrap; font-size: 1.05rem; }
+.summary .total { margin-top: 4px; padding: 18px 0 0; border-top: 1px solid var(--app-line, #d8e6de); border-radius: 0; background: transparent; }
+.summary .total dd { font-size: 1.4rem; }
+.body.body.body.body.body { scrollbar-width: auto; scrollbar-color: #648f7e var(--app-surface-soft, #f0f7f3); }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .columns { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .summary { position: static; }
 }
