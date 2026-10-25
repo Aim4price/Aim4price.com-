@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'lib/basic-*.ts'
+      - 'lib/public-valuation-throttle.ts'
+      - 'tests/free-valuation-access.test.cjs'
       - 'lib/estimate-replacement.ts'
       - 'tests/estimate-replacement-consistency.test.mjs'
       - 'app/api/valuation-runs/route.ts'
@@ -48,6 +50,8 @@ jobs:
       - run: npm ci
       - name: Basic and shared valuation regressions
         run: node --experimental-strip-types --test tests/estimate-replacement-consistency.test.mjs tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/basic-multiple-extras.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
+      - name: Free valuation access and burst protection
+        run: node --test tests/free-valuation-access.test.cjs
       - name: Private estimate breakdown regressions
         run: node --test tests/estimate-breakdown.test.cjs
       - name: Equipment picker browsing and selection

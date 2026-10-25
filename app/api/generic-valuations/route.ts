@@ -1,3 +1,4 @@
+import { publicValuationThrottle } from '../../../lib/public-valuation-throttle';
 import { normalizeEstimateReplacementPrice } from '../../../lib/estimate-replacement';
 import { hasPrivateEstimateSettingsRequest } from '../../../lib/private-estimate-settings';
 import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
@@ -103,6 +104,8 @@ async function getUsageUserId(): Promise<string | null> {
 }
 
 export async function POST(request: NextRequest) {
+  const throttled = publicValuationThrottle(request, 'calculation');
+  if (throttled) return throttled;
   try {
     const body = (await request.json()) as Body;
     if (hasPrivateEstimateSettingsRequest(body.advancedAssumptions)) {

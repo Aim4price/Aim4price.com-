@@ -1,3 +1,4 @@
+import { publicValuationThrottle } from '../../../../lib/public-valuation-throttle';
 import type { NextRequest } from 'next/server';
 import { businessBody, businessJson, requireBusinessOrigin } from '../../../../lib/business-network-api';
 import { validCurrentSaleabilityAnswers } from '../../../../lib/asset-saleability';
@@ -9,6 +10,8 @@ export const dynamic = 'force-dynamic';
 // Public, unsaved estimates remain available to guests. Saved assets use the
 // authenticated asset-register endpoint, which loads the authoritative value.
 export async function POST(request: NextRequest) {
+  const throttled = publicValuationThrottle(request, 'calculation');
+  if (throttled) return throttled;
   try { requireBusinessOrigin(request); } catch {
     return businessJson({ error: 'This request must be sent from Aim4price.' }, 403);
   }

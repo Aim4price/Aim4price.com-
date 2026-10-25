@@ -57,8 +57,9 @@ test('rejects invalid values, legacy answers and fabricated routes',()=>{
  assert.throws(()=>quote(100000,{...answers,sellingRoute:'invented'}));
 });
 test('public quote endpoint returns only result, validates inputs and rejects foreign origin',async()=>{
- let origin=true;
+ let origin=true, throttled=null;
  const api=load('app/api/saleability/quote/route.ts',{
+  '../../../../lib/public-valuation-throttle':{publicValuationThrottle:(_request,kind)=>{assert.equal(kind,'calculation');return throttled;}},
   '../../../../lib/business-network-api':{requireBusinessOrigin:()=>{if(!origin)throw Error();},businessBody:async r=>r.body,businessJson:(data,status=200)=>({data,status})},
   '../../../../lib/asset-saleability':shared,'../../../../lib/server/saleability':{quoteSaleability:quote},
  });
@@ -68,4 +69,6 @@ test('public quote endpoint returns only result, validates inputs and rejects fo
  origin=false;assert.equal((await api.POST(req)).status,403);origin=true;
  assert.equal((await api.POST({body:{...req.body,valuationExVat:'180000'}})).status,400);
  assert.equal((await api.POST({body:{...req.body,context:{kind:{}}}})).status,400);
+ throttled=new Response(null,{status:429,headers:{'Retry-After':'60'}});
+ assert.equal(await api.POST(req),throttled);
 });

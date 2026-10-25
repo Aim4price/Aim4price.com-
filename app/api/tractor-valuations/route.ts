@@ -1,3 +1,4 @@
+import { publicValuationThrottle } from '../../../lib/public-valuation-throttle';
 import { hasPrivateEstimateSettingsRequest } from '../../../lib/private-estimate-settings';
 import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
 import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
@@ -274,10 +275,14 @@ async function handleValuation(input: RunValuationInput | null) {
 }
 
 export async function GET(request: NextRequest) {
+  const throttled = publicValuationThrottle(request, 'calculation');
+  if (throttled) return throttled;
   return handleValuation(buildInputFromSearchParams(request));
 }
 
 export async function POST(request: NextRequest) {
+  const throttled = publicValuationThrottle(request, 'calculation');
+  if (throttled) return throttled;
   try {
     const body = (await request.json()) as Partial<RunValuationInput>;
     return handleValuation(buildInputFromBody(body));
