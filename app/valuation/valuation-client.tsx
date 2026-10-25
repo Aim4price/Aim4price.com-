@@ -4,7 +4,6 @@ import { replacementSliderRange } from '../../lib/replacement-slider';
 import VatPriceInput from '../../components/VatPriceInput';
 import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
-import AdvancedAssumptionsModal from '../../components/AdvancedAssumptionsModal';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import EstimatePriceInput from './EstimatePriceInput';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -1938,7 +1937,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [valuationLoading, setValuationLoading] = useState(false);
   const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
   const [vatDisplayMode, setVatDisplayMode] = useState<VatDisplayMode>('excl');
-  const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
   const [includeBreakdown, setIncludeBreakdown] = useState(false);
   const [advancedLifetimeUsage, setAdvancedLifetimeUsage] = useState('');
   const [advancedConditionFactorPercent, setAdvancedConditionFactorPercent] = useState('');
@@ -3547,7 +3545,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
     setVatDisplayMode(basicEstimateActive ? basicReplacementVatMode : getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
-    setAdvancedPanelOpen(false);
     setAdvancedLifetimeUsage('');
     setAdvancedConditionFactorPercent('');
     setAdvancedRecalculateLoading(false);
@@ -3982,7 +3979,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
       }
 
-      setAdvancedPanelOpen(false);
       setSelectedMethod('aim4price');
       setSavedMarketplaceAssetId(null);
       return true;
@@ -4130,7 +4126,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     setMessage('');
     setVatDisplayMode(basicEstimateActive ? basicReplacementVatMode : getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
-    setAdvancedPanelOpen(false);
     setAdvancedError('');
     setValuationLoading(true);
     setFinalSaveIntent(null);
@@ -7676,7 +7671,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function openFinalLifetimeModal() {
     setUsageLifetimeDraft(String(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault()));
     setAdvancedError('');
-    setAdvancedPanelOpen(false);
     setFinalLifetimeOpen(true);
   }
 
@@ -9226,7 +9220,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 'Estimate settings — yearly depreciation, age / usage weighting and rating adjustments.',
               ] : [
                 ...(advancedShowLifetimeInput ? ['Expected lifetime — total hours or kilometres.'] : []),
-                ...(!appliedDealerAssessment ? ['Condition adjustment — how condition affects value.'] : []),
               ]} /></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
@@ -9455,56 +9448,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </section>
         </div>
         <div className={styles.resultAssumptionsRow}>
-          {!breakdownAccess ? <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
-            <button
-              type="button"
-              className={styles.resultAccordionToggle}
-              onClick={() => { setAdvancedError(''); setAdvancedPanelOpen(true); }}
-              aria-haspopup="dialog"
-            >
-              <span className={styles.resultAccordionTitleGroup}>
-                <strong className={styles.resultSectionLabel}>{renderDetailIcon('specs')}Advanced assumptions</strong>
-                <small>
-                  {canUseAdvancedAssumptions
-                    ? customAdvancedAssumptionsApplied
-                      ? 'Custom assumptions applied.'
-                      : 'Fine-tune this estimate only.'
-                    : 'For active Aim4price accounts only.'}
-                </small>
-              </span>
-              <span className={styles.resultAccordionAction}>{canUseAdvancedAssumptions ? 'Adjust' : 'View'}</span>
-            </button>
-
-            <AdvancedAssumptionsModal open={advancedPanelOpen} busy={advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
-              locked={!canUseAdvancedAssumptions} error={advancedError}
-              onClose={() => setAdvancedPanelOpen(false)} onApply={() => { void updateAdvancedAssumptionsAndRecalculate(); }}>
-                    <div className={`${styles.advancedAssumptionsGrid} ${appliedDealerAssessment ? styles.advancedAssumptionsGridSingle : ''}`}>
-                    {advancedShowLifetimeInput ? (
-                      <div className={styles.field}>
-                        <span className={styles.fieldLabel}>Expected total lifetime</span>
-                        <button type="button" className={modalStyles.adjustButton} disabled={!canUseAdvancedAssumptions} onClick={openFinalLifetimeModal}>
-                          {formatPlainNumber(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault())} {advancedLifetimeShortUnit} · Adjust
-                        </button>
-                      </div>
-                    ) : null}
-
-                    {!appliedDealerAssessment ? (
-                      <label className={styles.field}>
-                        <span className={styles.fieldLabel}>{advancedConditionQuestionLabel}</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={advancedConditionFactorPercent}
-                          onChange={(event) => setAdvancedConditionFactorPercent(event.target.value)}
-                          placeholder="e.g. 85"
-                          disabled={!canUseAdvancedAssumptions}
-                        />
-                        <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
-                      </label>
-                    ) : null}
-                  </div>
-            </AdvancedAssumptionsModal>
-          </section> : null}
+          {!breakdownAccess && advancedShowLifetimeInput ? (
+            <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultReplacementSummary} ${styles.resultLifetimeRow}`}>
+              <div className={styles.resultLifetimeLabel}>{renderDetailIcon('usage')}<div>
+                <strong>Expected lifetime</strong>
+                <p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault())} {advancedLifetimeShortUnit}</p>
+                {!canUseAdvancedAssumptions ? <small>For active Aim4price accounts only.</small> : null}
+              </div></div>
+              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" disabled={!canUseAdvancedAssumptions} onClick={openFinalLifetimeModal}>Adjust</button>
+            </section>
+          ) : null}
 
           {breakdownAccess && activeBreakdown ? <div data-value-tour="assumptions">
           {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
