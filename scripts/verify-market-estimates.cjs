@@ -219,6 +219,15 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.mouse.move(0,0);
  await page.waitForFunction(()=>{const button=document.querySelector('[aria-labelledby="market-save-title"] button:nth-child(1)');return [...document.querySelectorAll('[aria-labelledby="market-save-title"] button')].filter(b=>b.querySelector('strong')).every(b=>getComputedStyle(b).backgroundColor.match(/rgb\((\d+)/)?.[1]<60);});
  await page.screenshot({path:'/tmp/market-save-prompt-dark.png'});
+ // The valuation summary receives the server quote when Done is clicked.
+ await page.evaluate(()=>{
+   window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0'}})});
+   window.root.render(React.createElement(require('components/SaleabilityModal').default,{key:'completion-quote',open:true,onClose:()=>{},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:window.sent,onComplete:(answers,quote)=>{window.completedQuote=quote;window.completedAnswers=answers;}}));
+ });
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Done'&&!b.disabled));
+ await click('Done');
+ assert.equal(await page.evaluate(()=>window.completedQuote.priceExVat),390000);
+ assert.equal(await page.evaluate(()=>window.completedAnswers.modelVersion),2);
  assert.deepEqual(errors,[]);console.log('PASS all three price views, replacement actions, independent VAT, empty states, mobile fit and save retry');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

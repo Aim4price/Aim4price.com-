@@ -127,7 +127,7 @@ test('saving offers a deliberate market-price choice and carries only a current 
   assert.match(valuationClient, /completedMarketAssessment\?\.result === resultState && completedMarketAssessment.value === headlineValue/);
   assert.match(valuationClient, /savePayload.saleabilityAnswers = completedMarketAssessment.answers/);
   assert.match(modal, /if \(!plan \|\| !validCurrentSaleabilityAnswers\(answers\)\) return/);
-  assert.match(modal, /if \(onComplete\) onComplete\(answers\); else onClose\(\)/);
+  assert.match(modal, /if \(onComplete\) onComplete\(answers, plan\); else onClose\(\)/);
   const route=read('app/api/valuation-runs/route.ts');
   assert.equal((route.match(/await saveValuationSaleability\(/g)||[]).length,2);
   assert.match(route,/validCurrentSaleabilityAnswers\(body.saleabilityAnswers\)/);
