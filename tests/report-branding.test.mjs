@@ -102,8 +102,10 @@ test('authenticated estimate reports load branding from the account, not the sub
   class NextResponse extends Response { static json(body, init) { return new Response(JSON.stringify(body), init); } }
   const seen = [];
   let signedIn = true;
+  let throttled = null;
   const mocks = {
     'next/server': { NextResponse },
+    '../../../../lib/public-valuation-throttle': { publicValuationThrottle: (_request, kind) => { assert.equal(kind, 'report'); return throttled; } },
     '../../../../lib/estimate-breakdown-access': { canUseEstimateBreakdown: () => assert.fail('Ordinary reports must not request private access') },
     '../../../../lib/estimate-breakdown-token': { verifyEstimateBreakdown: () => assert.fail('Ordinary reports have no breakdown token') },
     '../../../../lib/estimate-breakdown-report': { appendEstimateBreakdownHtml: () => assert.fail('Ordinary reports must retain the original template') },
@@ -125,6 +127,9 @@ test('authenticated estimate reports load branding from the account, not the sub
   const guest = await exports.POST(request());
   assert.equal(guest.status, 200);
   assert.ok((await guest.text()).includes('src="data:image/png;base64,RkFMTEJBQ0s="'));
+  assert.deepEqual(seen, ['owner']);
+  throttled = new Response(null, { status: 429, headers: { 'Retry-After': '60' } });
+  assert.equal(await exports.POST(request()), throttled);
   assert.deepEqual(seen, ['owner']);
 });
 
