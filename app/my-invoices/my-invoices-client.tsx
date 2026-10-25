@@ -2,6 +2,8 @@
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import InvoiceDropIcon from './InvoiceDropIcon';
 import dropFinalStyles from './invoice-drop-final.module.css';
+import captureAttachmentStyles from '../../components/CaptureAttachment.module.css';
+import attachmentStyles from '../my-invoices/manual-cost-attachment.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -1116,6 +1118,7 @@ export default function MyInvoicesClient({
   const [automaticUploadFile, setAutomaticUploadFile] = useState<File | null>(null);
   const [automaticUploadPages, setAutomaticUploadPages] = useState<File[]>([]);
   const [captureNote, setCaptureNote] = useState('');
+  const [captureUploadPage, setCaptureUploadPage] = useState<'files' | 'notes'>('files');
   const [captureUploadError, setCaptureUploadError] = useState('');
   const [manualAttachment, setManualAttachment] = useState<File | null>(null);
   const [uploadedDocument, setUploadedDocument] = useState<InvoiceDocument | null>(null);
@@ -2511,6 +2514,7 @@ export default function MyInvoicesClient({
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
+    setCaptureUploadPage('files');
     setCaptureUploadError('');
     setUploadedDocument(null);
     setRawTextPreview('');
@@ -2781,6 +2785,7 @@ export default function MyInvoicesClient({
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
+    setCaptureUploadPage('files');
     setCaptureUploadError('');
     setUploadedDocument(null);
     setRawTextPreview('');
@@ -3274,6 +3279,7 @@ export default function MyInvoicesClient({
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
+    setCaptureUploadPage('files');
     setCaptureUploadError('');
     setUploadedDocument(invoice.document);
     setRawTextPreview((invoice.document?.rawExtractedText ?? '').slice(0, 3000));
@@ -5098,18 +5104,20 @@ export default function MyInvoicesClient({
 
       {captureAllowance.blocked ? <CaptureAllowanceModal endpoint={allowanceEndpoint} ledger="Cost" onClose={closeModal} /> : null}
       {flow === 'upload' && !captureAllowance.blocked ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${styles.captureUploadBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
-          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.captureUploadDialog} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
-            <div className={styles.modalHeader}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${styles.captureUploadBackdrop} ${wizardStyles.overlay}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.captureUploadDialog} ${styles.accountCostModal} ${accountStyles.modalTheme} ${wizardStyles.dialog} ${captureAttachmentStyles.dialog}`}>
+            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div>
                 <h2>Automatic upload</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'}</p>
+                <p>{selectedAsset?.title ?? 'Selected asset'} · {captureUploadPage === 'files' ? 'Invoice or photos' : 'Notes · Optional'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
-              <section className={styles.uploadPanel}>
+            <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
+              <section className={captureAttachmentStyles.panel}>
+                {captureUploadPage === 'files' ? <>
+                <h3>Invoice or photos</h3>
+                <p>Upload the document for Aim4price to capture and allocate.</p>
                 <CaptureUploadDropzone
                   title="Drop invoice or photos here or browse"
                   description="One PDF or up to 12 photos of the same invoice · PDF, JPG, PNG or WebP · 12 MB per file"
@@ -5119,26 +5127,33 @@ export default function MyInvoicesClient({
                   disabled={isExtracting}
                   onFiles={handleAutomaticFiles}
                 />
-                {automaticUploadPages.length ? <div className={styles.captureFileSelection}>
-                  <span className={styles.captureFileCount} role="status">{automaticUploadPages.length} {automaticUploadPages.length === 1 ? 'file' : 'files'} selected</span>
-                  <ul className={styles.captureFileList} aria-label="Selected files">
-                    {automaticUploadPages.map((file, index) => <li key={`${file.name}-${index}`}><span aria-hidden="true"><ManualInvoiceIcon /></span><span>{file.name}</span></li>)}
-                  </ul>
+                {automaticUploadPages.length ? <div className={captureAttachmentStyles.files} aria-label="Selected files">
+                  {automaticUploadPages.map((file, index) => <div className={attachmentStyles.fileRow} key={`${file.name}-${index}`}>
+                    <span className={attachmentStyles.fileName}>{file.name}</span>
+                    <button type="button" disabled={isExtracting} aria-label={`Remove ${file.name}`} onClick={() => {
+                      const remaining = automaticUploadPages.filter((_, fileIndex) => fileIndex !== index);
+                      setAutomaticUploadPages(remaining);
+                      setAutomaticUploadFile(remaining[0] ?? null);
+                      setCaptureUploadError('');
+                    }}>Remove</button>
+                  </div>)}
                 </div> : null}
-                <label className={styles.captureNoteField}>
+                </> : (
+                <label className={captureAttachmentStyles.notes}>
                   <span>Notes <small>Optional</small></span>
                   <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={2} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
                 </label>
-                <div className={styles.captureServiceInfo}><p>{dealerMode ? 'Aim4price captures and allocates the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture, verify and allocate it within 24 hours.'}</p>
+                )}
+                <div className={captureAttachmentStyles.info}><p>{dealerMode ? 'Aim4price captures and allocates the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture, verify and allocate it within 24 hours.'}</p>
                 <p role="status">{captureAllowance.label}</p></div>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}
               </section>
             </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
-              <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
-                {isExtracting ? 'Sending invoice/photo...' : 'Upload automatically'}
+            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+              <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => captureUploadPage === 'notes' ? setCaptureUploadPage('files') : setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
+              <button type="button" className={styles.primaryButton} onClick={() => { if (captureUploadPage === 'files') setCaptureUploadPage('notes'); else void handleAutomaticExtract(); }} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
+                {isExtracting ? 'Sending invoice/photo...' : captureUploadPage === 'files' ? 'Continue' : 'Upload automatically'}
               </button>
             </div>
           </div>
