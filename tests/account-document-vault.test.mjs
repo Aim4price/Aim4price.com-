@@ -102,9 +102,9 @@ test('specific document types use one shared searchable taxonomy and canonical b
 
   assert.match(documentTaxonomy, /value: 'service-record'[\s\S]*?category: 'other'/);
   assert.match(client, /ACCOUNT_DOCUMENT_TYPES/);
-  assert.match(client, /type="search"[\s\S]*?placeholder="Search document types"/);
-  assert.match(client, /role="combobox"/);
-  assert.match(client, /event\.composedPath\(\)\.includes\(documentTypeComboboxRef\.current\)/);
+  assert.match(client, /type="search"[\s\S]*?placeholder="Search document types..."/);
+  assert.match(client, /aria-haspopup="dialog"/);
+  assert.match(client, /ref=\{documentTypeModalRef\}[\s\S]*?aria-labelledby="document-type-title"/);
   assert.doesNotMatch(client, /onBlur=\{\(\) => window\.setTimeout\(\(\) => setShowDocumentTypeOptions/);
   assert.match(client, /getAccountDocumentTypeLabel\(document\.documentType\)/);
 });
@@ -283,8 +283,9 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
   assert.match(client, /const previousOverflow = document\.body\.style\.overflow/);
   assert.match(client, /document\.body\.style\.overflow = previousOverflow/);
-  assert.match(client, /event\.key === 'Escape' && showDocumentTypeOptions/);
-  assert.match(client, /event\.stopPropagation\(\)/);
+  assert.match(client, /modalMode && showDocumentTypeOptionsRef\.current/);
+  assert.match(client, /closeDocumentTypePicker\(\)/);
+  assert.match(client, /window\.requestAnimationFrame\(\(\) => documentTypeInputRef\.current\?\.focus\(\)\)/);
   assert.match(client, /<div className=\{modalMode === 'upload' \? `\$\{styles\.uploadWizardPanel\} \$\{wizardStyles\.panel\}` : undefined\}>/);
   assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{modalMode === 'upload' \? styles\.uploadWizardFields : ''\}`\} disabled=\{busy\}>/);
   assert.match(client, /role="status" aria-live="polite"/);
