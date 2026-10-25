@@ -13,3 +13,13 @@
 .previews img { width:76px; height:60px; object-fit:cover; border-radius:10px; }
 .previews button { position:absolute; top:-6px; right:-6px; width:26px; height:26px; border:1px solid #bcd4c6; border-radius:50%; background:var(--app-surface,#fff); color:var(--app-danger,#9a3535); font-size:19px; font-weight:750; cursor:pointer; }
 .photos p { margin:0; color:var(--app-danger,#a13232); font-size:.85rem; }
+
+.actions:empty { display:none; }
+.upload { display:flex; min-height:78px; padding:14px; gap:14px; background:var(--app-success-soft,#f1f7f4); border-style:dashed; }
+.upload > svg { width:28px; height:28px; flex-shrink:0; }
+.uploadCopy { display:grid; gap:3px; min-width:0; }
+.uploadCopy strong { font-size:.9rem; }
+.uploadCopy small,.help { color:var(--app-muted,#61756e); font-size:.78rem; font-weight:500; }
+.browse { margin-left:auto; padding:8px 14px; background:var(--app-surface,#fff); border:1px solid var(--app-line,#b9d1c4); border-radius:10px; font-size:.82rem; }
+.photos { gap:10px; }
+.previews img { width:60px; height:45px; }

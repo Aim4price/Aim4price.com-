@@ -54,6 +54,7 @@ import {getEstimatePhotoFiles} from 'lib/estimate-photo-handoff';
 import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function SaveFixture(){
 const [resultState,setResultState]=useState({id:1}),headlineValue=459000;
+const [finalSaveEditing,setFinalSaveEditing]=useState(false);
 const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip');
 const [finalSaveIntent,setFinalSaveIntent]=useState(null),[saveMarketChoice,setSaveMarketChoice]=useState(null);
 const [saleabilityOpen,setSaleabilityOpen]=useState(false),[completedMarketAssessment,setCompletedMarketAssessment]=useState(null);
