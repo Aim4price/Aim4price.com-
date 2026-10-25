@@ -147,3 +147,10 @@ test('PDF distinguishes explicitly inapplicable usage from an unrecorded reading
   assert.match(explicit, /N\/A/);
   assert.doesNotMatch(missing, /N\/A/);
 });
+
+test('Excel shows explicit operator N/A rather than a blank or stale operator', () => {
+  const xml = buildFuelSlipWorkbook([{ ...slip, operatorNotApplicable: true, operatorName: 'Old name' }]).toString();
+  const operatorCell = xml.match(/<c r="W2"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '';
+  assert.match(operatorCell, /N\/A/);
+  assert.doesNotMatch(operatorCell, /Old name/);
+});
