@@ -41,22 +41,25 @@ function add(file){
 
 const client=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
 const start=client.indexOf("      {finalSaveIntent && !conversionAssetId && !saveMarketChoice");
-const markup=client.slice(start,client.indexOf('\n      ) : null}',start)+'\n      ) : null}'.length);
-add('components/EstimateSavePhotos');add('app/valuation/EstimatePriceInput');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
+const markup=client.slice(start,client.indexOf('      /> : null}',start)+'      /> : null}'.length);
+add('components/asset-register/AddAssetRegisterPicker');add('components/EstimateSavePhotos');add('app/valuation/EstimatePriceInput');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
 const breakdown=client.slice(client.indexOf('  function renderResultReplacementBreakdown()'),client.indexOf('  function getCurrentResultReplacementPriceExVat()'));
-const fixture=`import React,{useState} from 'react';import EstimateSavePhotos from 'components/EstimateSavePhotos'; import EstimatePriceInput from 'app/valuation/EstimatePriceInput';import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
+const fixture=`import React,{useState} from 'react';import AddAssetRegisterPicker from 'components/asset-register/AddAssetRegisterPicker';import EstimateSavePhotos from 'components/EstimateSavePhotos'; import EstimatePriceInput from 'app/valuation/EstimatePriceInput';import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function Fixture(){
 const [finalSaveEditing,setFinalSaveEditing]=useState(false);
 const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip'),[requestedRegisterId,setRequestedRegisterId]=useState('farm'),[vatDisplayMode,setVatDisplayMode]=useState('excl');
-const publishedEstimatePhotos=null,registerLoadError='',ownerAppMode=false,dealerAssetRegisters=[{id:'farm',businessName:'My farm'}];
+const publishedEstimatePhotos=null,ownerAppMode=false,registersLoading=false;
+const [registerLoadError,setRegisterLoadError]=useState(''),[finalSaveRegisterOpen,setFinalSaveRegisterOpen]=useState(false),[finalSaveRegisterBusy,setFinalSaveRegisterBusy]=useState(false);
+const [dealerAssetRegisters,setDealerAssetRegisters]=useState([{id:'farm',businessName:'My farm'},{id:'business',businessName:'My business'}]);
 const [userReplacementPrice,setUserReplacementPrice]=useState('9330000');
 const [finalSaveIntent,setFinalSaveIntent]=useState('asset-register');
 const finalSaveTitle=finalSaveIntent==='marketplace'?'Create advert':'Save to Asset Register',finalSaveDescription=finalSaveIntent==='marketplace'?'Check your values before creating the advert.':'Review your values and choose where to save.',finalSaveCta=finalSaveIntent==='marketplace'?'Save and continue':'Save asset';
 const conversionAssetId=null,saveMarketChoice=null,isDealerAccount=false,saveLoading=false,replacementRecalculateLoading=false,advancedRecalculateLoading=false,basicEstimateActive=true,finalSaveInputPrice=Number(userReplacementPrice),finalSaveCanConfirm=true,finalSaveHasPendingReplacementPrice=false,finalSaveError='',headlineValue=4625068,finalSaveReplacementPrice=9330000;
 const closeFinalSaveModal=()=>{},recalculateFinalReplacementPrice=()=>{},confirmFinalSaveAction=()=>{},getVatDisplayLabel=mode=>mode==='incl'?'VAT included':'VAT excluded',getVatDisplayValue=(v,mode)=>mode==='incl'?v*1.15:v,money=v=>'R '+String(Math.round(v)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
 const resultState={kind:'generic',result:{specsJson:{basic_extra_replacement_price_ex_vat:0}}},getCurrentResultReplacementPriceExVat=()=>9330000;
+${client.slice(client.indexOf('  async function createFinalSaveRegister('),client.indexOf('  function openFinalSaveModal('))}
 ${breakdown}
-return <><button onClick={()=>setFinalSaveIntent('marketplace')}>Advert fixture</button>${markup}</>;
+return <><button onClick={()=>{setDealerAssetRegisters([]);setRequestedRegisterId('');}}>New user fixture</button><button onClick={()=>setFinalSaveIntent('marketplace')}>Advert fixture</button>${markup}</>;
 }`;
 modules.fixture=ts.transpileModule(fixture,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
@@ -81,6 +84,36 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2),'Compact review fits at enlarged website zoom');
  await page.screenshot({path:'/tmp/save-polish-zoom.png'});
  await page.evaluate(()=>{document.getElementById('app').style.zoom='1';document.getElementById('app').style.removeProperty('--website-visible-height');document.getElementById('app').style.removeProperty('--website-visible-width');});
+ // Use the real shared picker and creation form; mock only the HTTP boundary.
+ await page.evaluate(()=>{window.registerRequests=[];window.failRegister=false;window.fetch=async(url,options)=>{window.registerRequests.push(JSON.parse(options.body));return {ok:!window.failRegister,json:async()=>window.failRegister?{ok:false,error:'Please try again.'}:{ok:true,register:{id:'new',businessName:'New farm'},registers:[{id:'new',businessName:'New farm'}]}};};});
+ await page.click('[aria-labelledby="final-save-register-label final-save-register-name"]');
+ await page.waitForSelector('[aria-label="Search asset registers"]');
+ await page.screenshot({path:'/tmp/save-register-picker.png'});
+ await page.type('[aria-label="Search asset registers"]','business');
+ assert.equal(await page.$$eval('[aria-label="Available asset registers"] button',els=>els.length),1);
+ await page.click('[aria-label="Available asset registers"] button');
+ await page.$$eval('button',els=>els.find(el=>el.textContent==='Continue').click());
+ assert.equal(await page.$eval('#final-save-register-name',el=>el.textContent),'My business');
+ await page.$$eval('button',els=>els.find(el=>el.textContent==='New user fixture').click());
+ await page.click('[aria-labelledby="final-save-register-label final-save-register-name"]');
+ await page.waitForSelector('input[placeholder="Example: Bashan Boerdery Pty Ltd"]');
+ await page.screenshot({path:'/tmp/save-register-create.png'});
+ assert.equal(await page.$('[aria-label="Search asset registers"]'),null,'New users open the standard create form directly');
+ await page.keyboard.press('Escape');
+ await page.waitForSelector('#final-save-title');
+ await page.click('[aria-labelledby="final-save-register-label final-save-register-name"]');
+ await page.type('input[placeholder="Example: Bashan Boerdery Pty Ltd"]','New farm');
+ await page.evaluate(()=>window.failRegister=true);
+ await page.click('button[type="submit"]');
+ await page.waitForSelector('[role="alert"]');
+ assert.equal(await page.$eval('input[placeholder="Example: Bashan Boerdery Pty Ltd"]',el=>el.value),'New farm');
+ await page.evaluate(()=>window.failRegister=false);
+ await page.click('button[type="submit"]');
+ await page.waitForSelector('#final-save-register-name');
+ assert.equal(await page.$eval('#final-save-register-name',el=>el.textContent),'New farm');
+ assert.equal(await page.evaluate(()=>window.registerRequests.length),2);
+ assert.equal(await page.evaluate(()=>window.registerRequests[1].businessName),'New farm');
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.textContent.includes('R 4 625 068')),'Valuation survives register creation');
  await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[1].click());
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.textContent.includes('R 10 729 500')));
  await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[0].click());

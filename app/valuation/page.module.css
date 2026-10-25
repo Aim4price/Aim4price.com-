@@ -15802,3 +15802,10 @@
   :global(:where(html:not(:has([data-website-canvas])))) .finalSaveDetailsGrid { grid-template-columns:1fr; gap:16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview { padding:18px; }
 }
+
+/* A single styled destination control opens the standard searchable register flow. */
+.finalSaveReview .finalSaveRegisterButton { width:100%; text-align:left; font:inherit; font-weight:750; color:var(--app-text,#174f3e); cursor:pointer; transition:border-color .16s,box-shadow .16s; }
+.finalSaveReview .finalSaveRegisterButton:hover:not(:disabled),.finalSaveReview .finalSaveRegisterButton:focus-visible { border-color:var(--app-accent,#34775c); box-shadow:0 0 0 3px color-mix(in srgb,var(--app-accent,#34775c) 14%,transparent); outline:none; }
+.finalSaveRegisterButton > span { flex:1; min-width:0; overflow-wrap:anywhere; line-height:1.4; }
+.finalSaveReview .finalSaveRegisterControl .finalSaveRegisterChevron { width:18px; height:18px; }
+.finalSaveRegisterButton:disabled { opacity:.6; cursor:wait; }
