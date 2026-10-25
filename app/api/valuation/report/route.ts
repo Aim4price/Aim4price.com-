@@ -41,6 +41,7 @@ type ValuationReportPayload = {
   clientRows: ValuationReportKeyValue[];
   recordRows: ValuationReportKeyValue[];
   saleabilityRows: ValuationReportKeyValue[];
+  includeMarketValue: boolean;
 };
 
 type NormalizedValuationReport = {
@@ -57,6 +58,7 @@ type NormalizedValuationReport = {
   clientRows: ValuationReportKeyValue[];
   recordRows: ValuationReportKeyValue[];
   saleabilityRows: ValuationReportKeyValue[];
+  includeMarketValue: boolean;
 };
 
 const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
@@ -308,6 +310,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
     clientRows: clientRows.length ? clientRows : fallbackClientRows,
     recordRows: recordRows.length ? recordRows : fallbackRecordRows,
     saleabilityRows,
+    includeMarketValue: value.includeMarketValue !== false,
   };
 }
 
@@ -991,12 +994,12 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           </div>
 
           <aside class="assetReportSide">
-            ${`
+            ${payload.includeMarketValue ? `
               <section class="assetReportSideCard assetReportRecordRows assetReportSaleabilityRows">
                 <h2>Realistic Market Value</h2>
                 ${renderMarketValueSummary(payload.saleabilityRows)}
               </section>
-            `}
+            ` : ''}
             <section class="assetReportSideCard assetReportRecordRows assetReportAssessmentSummary">
               <h2>Record Summary</h2>
               ${renderReportRows(payload.recordRows, 'No record details available.')}
