@@ -184,7 +184,7 @@ test('empty-vault onboarding removes zero-value controls and foregrounds core ca
   assert.match(client, /Finance/);
   assert.match(client, /Accounting &amp; tax/);
   assert.match(client, /Licences &amp; permits/);
-  assert.match(client, /account-level by default/i);
+  assert.doesNotMatch(client, /account-level by default|Saved under/i);
   assert.match(client, /showAssetPicker && assets\.length/);
 });
 
