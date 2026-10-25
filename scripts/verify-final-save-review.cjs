@@ -74,7 +74,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox'],headless:true});try{
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewport({width:1366,height:900});
- await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
+ await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial}'+sheets.join('\n')+fs.readFileSync(path.join(root,'app/modal-scrollbars.css'),'utf8')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('fixture').default));"});
  await page.addStyleTag({content:fs.readFileSync(path.join(root,'public/app-theme.css'),'utf8')});
  await page.waitForSelector('#final-save-title');
@@ -84,6 +84,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2),'Compact review fits at enlarged website zoom');
  await page.screenshot({path:'/tmp/save-polish-zoom.png'});
  await page.evaluate(()=>{document.getElementById('app').style.zoom='1';document.getElementById('app').style.removeProperty('--website-visible-height');document.getElementById('app').style.removeProperty('--website-visible-width');});
+ // Expanded content must never move the header or primary actions out of view.
+ await page.evaluate(()=>{document.getElementById('app').style.zoom='1.25';document.getElementById('app').style.setProperty('--website-visible-height',innerHeight/1.25+'px');document.getElementById('app').style.setProperty('--website-visible-width',innerWidth/1.25+'px');});
+ await page.click('[aria-controls="final-save-edit-values"]');
+ await page.$eval('input[aria-label="Upload asset photos"]',input=>{const transfer=new DataTransfer();for(let i=0;i<4;i++)transfer.items.add(new File(['photo fixture'],'photo-'+i+'.png',{type:'image/png'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));});
+ await page.waitForSelector('[aria-label="Remove photo 4"]');
+ const expanded=await page.$eval('[aria-labelledby="final-save-title"]',el=>{const body=el.querySelector('[data-final-save-scroll-body]');return {modalOverflow:el.scrollHeight-el.clientHeight,bodyOverflow:body.scrollHeight-body.clientHeight,footer:el.lastElementChild.getBoundingClientRect().bottom,header:el.querySelector('#final-save-title').getBoundingClientRect().top,height:innerHeight};});
+ assert(expanded.modalOverflow<=2);assert(expanded.bodyOverflow>0);assert(expanded.footer<=expanded.height);assert(expanded.header>=0);
+ await page.$eval('[data-final-save-scroll-body]',el=>el.scrollTo(0,el.scrollHeight));
+ const footerAfter=await page.$eval('[aria-labelledby="final-save-title"]',el=>el.lastElementChild.getBoundingClientRect().bottom);assert(Math.abs(footerAfter-expanded.footer)<1);
+ await page.screenshot({path:'/tmp/save-expanded-spacing.png'});
+ await page.setViewport({width:390,height:720});await page.evaluate(()=>{document.getElementById('app').style.zoom='1';document.getElementById('app').style.removeProperty('--website-visible-height');document.getElementById('app').style.removeProperty('--website-visible-width');});
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.lastElementChild.getBoundingClientRect().bottom<=innerHeight && el.scrollWidth<=el.clientWidth+1));
+ await page.screenshot({path:'/tmp/save-expanded-mobile.png'});
+ await page.setViewport({width:1366,height:900});await page.click('[aria-controls="final-save-edit-values"]');
  // Use the real shared picker and creation form; mock only the HTTP boundary.
  await page.evaluate(()=>{window.registerRequests=[];window.failRegister=false;window.fetch=async(url,options)=>{window.registerRequests.push(JSON.parse(options.body));return {ok:!window.failRegister,json:async()=>window.failRegister?{ok:false,error:'Please try again.'}:{ok:true,register:{id:'new',businessName:'New farm'},registers:[{id:'new',businessName:'New farm'}]}};};});
  await page.click('[aria-labelledby="final-save-register-label final-save-register-name"]');

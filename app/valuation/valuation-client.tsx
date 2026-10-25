@@ -9934,7 +9934,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
       ) : null}
       {finalSaveIntent && !conversionAssetId && !saveMarketChoice && !finalSaveRegisterOpen ? (
-        <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
+        <div className={`${styles.finalSaveOverlay} ${styles.finalSaveReviewOverlay}`} data-website-overlay onClick={closeFinalSaveModal}>
           <section
             className={`${styles.finalSaveModal} ${styles.finalSaveReview} ${modalStyles.surface}`}
             role="dialog"
@@ -9959,6 +9959,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <p id="final-save-description">{finalSaveDescription}</p>
             </div>
 
+            <div className={styles.finalSaveScrollBody} data-final-save-scroll-body="true">
             <div className={styles.finalSaveValueToolbar}>
               <strong>Values</strong>
               <div className={styles.finalSaveToolbarActions}>
@@ -10026,6 +10027,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             </div> : null}
             {finalSaveError ? <p className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
+
+            </div>
 
             <div className={`${styles.finalSaveActions} ${modalStyles.actions}`}>
               <button
