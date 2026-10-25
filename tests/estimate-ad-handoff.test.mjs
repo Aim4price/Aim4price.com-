@@ -62,7 +62,7 @@ test('advert upload prepares every selected photo in order and rejects incomplet
 test('publishing stores server URLs but exports and retries with the exact local photos', async () => {
   const posted = [], downloads = [], receipts = [], errors = [];
   const publish = actualFunction('publishEstimateToMarketplace', {
-    resultState: {}, marketplaceDraft: { askingPriceExVat: '1000', sellerName: 'Seller', sellerPhone: '0123', brandKitId: '' },
+    setPublishedEstimatePhotos() {}, resultState: {}, marketplaceDraft: { askingPriceExVat: '1000', sellerName: 'Seller', sellerPhone: '0123', brandKitId: '' },
     getHeadlineValue: () => 900, selectedMethod: 'aim4price', replacementPriceBasis: 'new',
     parseMoneyInput: Number, isSignedIn: true, normalizedSignedInAccountType: 'owner',
     hasPendingReplacementPriceInput: () => false, ensureReplacementPriceBeforeFinalSave: () => true,
@@ -94,4 +94,50 @@ test('incomplete answers reveal feedback and cannot begin the next-step transiti
   });
   next();
   assert.deepEqual(feedback, [true]);
+});
+
+test('ordinary register save carries selected photo URLs without changing replacement value', () => {
+  const build = actualFunction('buildValuationSavePayload', {
+    resultState: {kind:'generic', result:{sector:{key:'agricultural'},family:{key:'tractor'},brand:{slug:'test'},specsJson:{},year:2020,userReplacementPriceExVat:430000}},
+    conversionAssetId:null,CURRENT_YEAR:2026,yearModelUnknown:false,toNumberOrNull:()=>null,
+  });
+  const payload=build({photos:['/api/asset-register/uploads/photo-a']});
+  assert.deepEqual(payload.photos,['/api/asset-register/uploads/photo-a']);
+  assert.equal(payload.userReplacementPriceExVat,430000);
+  assert.equal(payload.saveForMarketplace,undefined);
+});
+
+test('save waits for selected photos and stops on upload failure', async () => {
+  const saves=[], errors=[],busy=[];
+  let fails=false;
+  const confirm=actualFunction('confirmFinalSaveAction',{
+    finalSaveIntent:'asset-register',savePhotoMode:'files',savePhotoFiles:['file'],
+    setSaveLoading:v=>busy.push(v),setFinalSaveError:v=>errors.push(v),
+    uploadMarketplacePhotos:async files=>{assert.deepEqual(files,['file']);if(fails)throw Error('Upload failed');return {urls:['/photo']}},
+    saveCurrentValuationToRegister:async options=>{saves.push(options);return {assetId:'asset'}},
+  });
+  await confirm();
+  assert.deepEqual(saves[0].photos,['/photo']);
+  assert.equal(saves[0].redirectToAssetRegister,true);
+  fails=true;await confirm();
+  assert.equal(saves.length,1);
+  assert.equal(errors.at(-1),'Upload failed');
+  assert.equal(busy.at(-1),false);
+});
+
+test('skip excludes photos and Marketplace reuse is tied to the same estimate', async () => {
+  for(const mode of ['skip','marketplace']){
+    for(const same of [true,false]){
+      const result={},saves=[];
+      const confirm=actualFunction('confirmFinalSaveAction',{
+        finalSaveIntent:'asset-register',savePhotoMode:mode,resultState:result,
+        publishedEstimatePhotos:{result:same?result:{},urls:['/own-ad-photo']},
+        setSaveLoading(){},setFinalSaveError(){},
+        uploadMarketplacePhotos:()=>assert.fail('Existing URLs do not need uploading'),
+        saveCurrentValuationToRegister:async options=>{saves.push(options);return {assetId:'asset'}},
+      });
+      await confirm();
+      assert.deepEqual(saves[0].photos,mode==='marketplace'&&same?['/own-ad-photo']:[]);
+    }
+  }
 });

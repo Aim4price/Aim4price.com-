@@ -32,3 +32,6 @@
 .actions { border-top:1px solid #e3ece7; padding-top:16px; }
 .actions button { min-width:72px; }
 .card { scrollbar-width:thin; scrollbar-color:#9dbdab transparent; }
+
+.launch button { min-height:42px; padding:10px 16px; border-radius:12px; border:1px solid var(--app-line,#b9d1c4); background:var(--app-surface,#fff); color:var(--app-text,#174f3e); font-size:.82rem; font-weight:850; line-height:1.3; box-shadow:none; }
+.launchIcon { width:20px; height:20px; border-radius:0; background:transparent; color:inherit; }

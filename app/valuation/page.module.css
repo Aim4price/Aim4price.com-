@@ -15748,6 +15748,7 @@
 
 
 /* Price-card actions share the Calculate button's typography and treatment. */
+.finalEstimateLayout .resultLifetimeRow > button,
 .finalEstimateLayout .resultSupportingGrid .priceComparisonCard > button {
   font-size: .82rem;
   font-weight: 850;
@@ -15761,3 +15762,14 @@
   color: var(--app-text, #174f3e);
   box-shadow: none;
 }
+
+.finalSaveValueToolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.finalSaveValueToolbar .resultVatToggle { margin:0; }
+.finalSaveEdit { border-top:1px solid var(--app-line,#c6dcd0); padding-top:12px; }
+.finalSaveEdit summary { cursor:pointer; font-size:.85rem; font-weight:750; color:var(--app-text,#174f3e); }
+.finalSaveEdit[open] summary { margin-bottom:12px; }
+.finalSavePhotoFields { border:0; padding:0; margin:0; min-width:0; }
+.finalSavePhotoFields > p { margin:10px 0 0; font-size:.85rem; }
+.finalSaveRegister { display:flex; align-items:center; gap:16px; padding-top:12px; border-top:1px solid var(--app-line,#c6dcd0); }
+.finalSaveRegister > span { font-weight:750; white-space:nowrap; }
+.finalSaveRegister select { flex:1; min-width:0; padding:12px 14px; border:1px solid var(--app-line,#c6dcd0); border-radius:12px; background:var(--typing-field-surface,#edf5f0); color:var(--app-text,#174f3e); font:inherit; }
