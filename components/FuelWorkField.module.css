@@ -43,3 +43,13 @@
 .dropdownField .row .select { font-weight: 650; }
 .manualToggle { justify-self: start; border: 0; border-radius: .5rem; padding: .4rem .2rem; background: transparent; color: #176345; font: inherit; font-size: .88rem; font-weight: 650; cursor: pointer; }
 .manualToggle:hover { text-decoration: underline; }
+
+/* Dedicated wizard page: four choices at a time, with no expanding list. */
+.expandedField .choices { padding: .6rem; }
+.expandedField .choices > summary { display: none; }
+.expandedField .choices:not([open]) { display: none; }
+.expandedField .list { max-height: none; overflow: visible; }
+.expandedField .list[hidden] { display: none; }
+.expandedField .row { min-height: 48px; }
+.expandedField .select[aria-pressed="true"] { background: #dceee2; font-weight: 700; }
+.expandedField .actions { align-items: center; flex-wrap: wrap; }

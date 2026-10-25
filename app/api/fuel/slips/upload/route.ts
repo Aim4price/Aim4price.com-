@@ -33,16 +33,16 @@ export async function POST(request: Request) {
 
   const file = formData.get('file');
   if (!isUploadFile(file)) {
-    return NextResponse.json({ ok: false, error: 'Take or choose a fuel slip photo.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Choose a fuel slip photo or PDF.' }, { status: 400 });
   }
 
   const contentType = String(file.type ?? '').trim().toLowerCase();
-  if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
-    return NextResponse.json({ ok: false, error: 'Upload a JPG, PNG or WEBP fuel slip photo.' }, { status: 400 });
+  if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType) && contentType !== 'application/pdf') {
+    return NextResponse.json({ ok: false, error: 'Upload a JPG, PNG, WEBP or PDF fuel slip.' }, { status: 400 });
   }
 
   if (!file.size || file.size > MAX_MOBILE_PHOTO_UPLOAD_BYTES) {
-    return NextResponse.json({ ok: false, error: 'The fuel slip photo is empty or too large.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'The fuel slip file is empty or exceeds 25 MB.' }, { status: 400 });
   }
 
   try {
