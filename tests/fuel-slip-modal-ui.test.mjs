@@ -323,3 +323,35 @@ test('supporting dropzone accepts 25 MB while automatic upload retains its 12 MB
   assert.match(error, /25 MB/);
   assert.equal(accepted.length, 1);
 });
+
+test('explicit N/A bypasses only usage validation, while missing and zero readings stay distinct', () => {
+  const source = sliceBetween(client, 'function hasFuelSlipPositiveNumber(', 'function getFuelSlipMissingFieldPage(');
+  const context = { parseFuelSlipDecimal: numberExports.parseFuelSlipDecimal };
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
+  const draft = { documentDate: '2026-10-25', fuelType: 'Diesel', litres: '25', totalAmount: '500', odometerReading: '', hourMeterReading: '', operatorName: 'Driver', activityText: 'Delivery', usageNotApplicable: false };
+  for (const metric of ['km', 'hours', 'both']) {
+    assert.ok(context.getFuelSlipMissingFields(draft, 'asset', metric, true).length > 0);
+    assert.equal(context.getFuelSlipMissingFields({ ...draft, usageNotApplicable: true }, 'asset', metric, true).length, 0);
+  }
+  assert.equal(context.getFuelSlipMissingFields({ ...draft, odometerReading: '0' }, 'asset', 'km', true).length, 0);
+  assert.equal(context.getFuelSlipMissingFields({ ...draft, usageNotApplicable: true, operatorName: '', activityText: '' }, 'asset', 'km', true).join(','), 'operatorName,activityText');
+  assert.equal(context.getFuelSlipMissingFields({ ...draft, usageNotApplicable: true }, 'asset', null, false).length, 0);
+  assert.match(client, /usageNotApplicable: slip\.usageNotApplicable === true/);
+  assert.match(client, /usageNotApplicable: fuelSlipDraft\.usageNotApplicable/);
+  assert.match(client, /odometerReading: fuelSlipDraft\.usageNotApplicable \? null/);
+  assert.match(client, /hourMeterReading: fuelSlipDraft\.usageNotApplicable \? null/);
+});
+
+test('reopening a fuel slip restores explicit N/A without inferring it from an empty reading', () => {
+  const context = {
+    emptyFuelSlipDraft: {}, fuelSlipNeedsReview: () => false, fuelSlipTargetKey: () => 'asset:test',
+    numberToInput: value => value == null ? '' : String(value), cardLast4FromValue: () => '', getVisibleFuelSlipExtractionWarnings: () => [],
+  };
+  const source = sliceBetween(client, 'function buildFuelSlipDraftFromRecord(', 'function fuelSlipSearchText(');
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
+  const record = { id: 'test', odometerReading: null, hourMeterReading: null };
+  assert.equal(context.buildFuelSlipDraftFromRecord(record).usageNotApplicable, false);
+  const reopened = context.buildFuelSlipDraftFromRecord({ ...record, usageNotApplicable: true });
+  assert.equal(reopened.usageNotApplicable, true);
+  assert.equal(reopened.odometerReading, '');
+});

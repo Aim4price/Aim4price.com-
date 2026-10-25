@@ -4,7 +4,7 @@ import type { AccountProfile } from './account-profile';
 import type { FuelLedgerEvent, FuelSlipTransaction } from './fuel-ledger';
 import { reportExcelDate, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from './simple-xlsx.ts';
 
-type FuelReportEvent = FuelLedgerEvent & { slipNote?: string; slipNumber?: string; transactionNumber?: string; pricePerLitre?: number | null; vatAmount?: number | null };
+type FuelReportEvent = FuelLedgerEvent & { usageNotApplicable?: boolean; slipNote?: string; slipNumber?: string; transactionNumber?: string; pricePerLitre?: number | null; vatAmount?: number | null };
 
 type ReportFormat = 'pdf' | 'xlsx';
 
@@ -347,7 +347,8 @@ function eventBalanceTreatment(event: FuelLedgerEvent): string {
   return '-';
 }
 
-function eventUsageLabel(event: FuelLedgerEvent): string {
+function eventUsageLabel(event: FuelReportEvent): string {
+  if (event.usageNotApplicable) return 'N/A';
   if (typeof event.assetUsageReading !== 'number') return 'Not recorded';
   if (event.assetUsageMetric === 'km') return `${formatNumber(event.assetUsageReading)} km`;
   if (event.assetUsageMetric === 'percentage') return `${formatNumber(event.assetUsageReading)}%`;
@@ -1589,6 +1590,7 @@ export function fuelSlipReportEvent(slip: FuelSlipTransaction): FuelReportEvent 
 
   return {
     id: `fuel-slip-${slip.id}`,
+    usageNotApplicable: slip.usageNotApplicable,
     slipNote: slip.note, slipNumber: slip.slipNumber, transactionNumber: slip.transactionNumber, pricePerLitre: slip.pricePerLitre, vatAmount: slip.vatAmount,
     storageId: isStorageTarget ? slip.storageId : '',
     storageName: isStorageTarget ? slip.storageName || 'Fuel storage' : 'External fuel purchase',
