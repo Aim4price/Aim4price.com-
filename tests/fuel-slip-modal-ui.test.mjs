@@ -355,3 +355,14 @@ test('reopening a fuel slip restores explicit N/A without inferring it from an e
   assert.equal(reopened.usageNotApplicable, true);
   assert.equal(reopened.odometerReading, '');
 });
+
+test('operator N/A is explicit, restored on edit and does not bypass activity validation', () => {
+  const context = { parseFuelSlipDecimal: numberExports.parseFuelSlipDecimal };
+  vm.runInNewContext(ts.transpileModule(sliceBetween(client, 'function hasFuelSlipPositiveNumber(', 'function getFuelSlipMissingFieldPage('), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
+  const draft = { documentDate: '2026-10-25', fuelType: 'Diesel', litres: '25', totalAmount: '500', usageNotApplicable: true, operatorName: '', activityText: '' };
+  assert.equal(context.getFuelSlipMissingFields(draft, 'asset', 'km', true).join(','), 'operatorName,activityText');
+  assert.equal(context.getFuelSlipMissingFields({ ...draft, operatorNotApplicable: true }, 'asset', 'km', true).join(','), 'activityText');
+  assert.equal(context.getFuelSlipMissingFields({ ...draft, operatorNotApplicable: true, activityText: 'Delivery' }, 'asset', 'km', true).length, 0);
+  assert.match(client, /operatorNotApplicable: slip\.operatorNotApplicable === true/);
+  assert.match(client, /operatorName: fuelSlipDraft\.operatorNotApplicable \? null : fuelSlipDraft\.operatorName/);
+});
