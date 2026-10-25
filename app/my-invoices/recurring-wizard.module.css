@@ -45,3 +45,16 @@
 .selectionMark { position: absolute; right: 20px; top: 20px; width: 26px; height: 26px; display: grid; place-items: center; color: var(--app-muted, #62786e); }
 .frequencyCard[aria-pressed="true"] .selectionMark { border-radius: 50%; color: var(--app-surface, #fff); background: var(--app-accent, #28765a); }
 .dateHint { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--app-muted, #62786e); }
+
+/* Compact schedule pages retain overflow only when the viewport needs it. */
+.frequencyCard { padding:18px 20px; gap:8px; min-height:144px; }
+.iconTile { width:52px; height:52px; border:1px solid var(--app-line,#d8e6de); border-radius:15px; }
+.iconTile .frequencyIcon { width:30px; height:30px; }
+.frequencyCard[aria-pressed="true"] .iconTile { background:var(--app-surface,#fff); border-color:var(--app-accent,#28765a); }
+.selectionMark svg { width:20px; height:20px; }
+.datesPanel { gap:14px; }
+.datesPanel .fields { gap:14px; }
+.datesPanel .fieldLabel { gap:8px; }
+.datesPanel .fieldIcon { width:20px; height:20px; flex-basis:20px; }
+.datesPanel .scheduleSummary { padding:12px 16px; }
+.datesPanel .dateHint { font-size:.85rem; line-height:1.4; }

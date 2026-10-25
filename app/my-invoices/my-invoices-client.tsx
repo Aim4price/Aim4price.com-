@@ -4869,7 +4869,7 @@ export default function MyInvoicesClient({
                           disabled={isSaving}
                         >
                           <span className={recurringStyles.iconTile}><RecurringFieldIcon kind={option.value} className={recurringStyles.frequencyIcon} /></span>
-                          <span className={recurringStyles.selectionMark} aria-hidden="true">{recurringDraft.frequency === option.value ? '✓' : '→'}</span>
+                          <span className={recurringStyles.selectionMark} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{recurringDraft.frequency === option.value ? <path d="m6 12 4 4 8-8" /> : <path d="M5 12h14m-5-5 5 5-5 5" />}</svg></span>
                           <strong>{option.label}</strong>
                           <small>{['Every month', 'Every three months', 'Twice a year', 'Once a year'][index]}</small>
                         </button>
@@ -4879,7 +4879,7 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 5 ? (
-                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
+                  <section className={`${recurringStyles.panel} ${recurringStyles.datesPanel}`} aria-labelledby="recurring-modal-title">
                     <div className={recurringStyles.fields}>
                       <label className={styles.budgetField}>
                         <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="start" className={recurringStyles.fieldIcon} />Start date</span>
@@ -4890,7 +4890,7 @@ export default function MyInvoicesClient({
                         <DateInput aria-label="End date" value={recurringDraft.endDate} onValueChange={(value) => setRecurringField('endDate', value)} disabled={isSaving} />
                       </label>
                       <label className={styles.budgetField}>
-                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="subscription" className={recurringStyles.fieldIcon} />Renewal date <small>(optional)</small></span>
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="renewal" className={recurringStyles.fieldIcon} />Renewal date <small>(optional)</small></span>
                         <DateInput aria-label="Renewal date" value={recurringDraft.renewalDate} onValueChange={(value) => setRecurringField('renewalDate', value)} disabled={isSaving} />
                       </label>
                     </div>
