@@ -15809,3 +15809,33 @@
 .finalSaveRegisterButton > span { flex:1; min-width:0; overflow-wrap:anywhere; line-height:1.4; }
 .finalSaveReview .finalSaveRegisterControl .finalSaveRegisterChevron { width:18px; height:18px; }
 .finalSaveRegisterButton:disabled { opacity:.6; cursor:wait; }
+
+/* Expanded save review: only the content scrolls; the title and actions stay visible. */
+.finalSaveModal.finalSaveReview { display:flex; flex-direction:column; overflow:hidden; max-height:calc(var(--website-visible-height, 100dvh) - 40px); }
+.finalSaveModal.finalSaveReview > .finalSaveHeader,
+.finalSaveModal.finalSaveReview > .finalSaveActions { flex-shrink:0; }
+.finalSaveScrollBody { display:flex; flex-direction:column; gap:20px; min-height:0; overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scrollbar-gutter:stable; padding:4px 16px 8px 4px; margin:0 -8px 0 -4px; scrollbar-width:thin; scrollbar-color:var(--app-muted,#7b9c8e) transparent; }
+.finalSaveScrollBody > * { flex-shrink:0; }
+.finalSaveScrollBody::-webkit-scrollbar { width:10px; }
+.finalSaveScrollBody::-webkit-scrollbar-track { background:var(--app-surface-soft,#edf4f0); border-radius:999px; margin-block:6px; }
+.finalSaveScrollBody::-webkit-scrollbar-thumb { background:#7b9c8e; border:2px solid var(--app-surface-soft,#edf4f0); border-radius:999px; }
+.finalSaveScrollBody::-webkit-scrollbar-thumb:hover { background:#477461; }
+.finalSaveScrollBody::-webkit-scrollbar-button { display:none; }
+.finalSaveModal.finalSaveReview .finalSaveEdit { padding:18px; border-radius:16px; background:var(--app-surface-soft,#f3f8f5); display:grid; gap:16px; }
+.finalSaveModal.finalSaveReview .finalReplacementPanel { padding:0; border:0; border-radius:0; background:transparent; box-shadow:none; gap:16px; }
+.finalSaveReview .finalSaveEdit .resultPriceParts { margin:0; padding:14px 0 0; background:transparent; border-top:1px solid var(--app-line,#c6dcd0); border-radius:0; }
+.finalSaveReview .finalSaveEdit .resultPriceParts > div { padding:0 14px; }
+.finalSaveReview .finalSaveEdit .resultPriceParts > div:first-child { padding-left:0; }
+.finalSaveReview .finalSaveEdit .resultPriceParts dd { font-size:1rem; margin-top:6px; }
+.finalSaveReview .finalSaveEditButton[aria-expanded=true] { background:var(--app-success-soft,#e9f4ed); border-color:#6fa78b; }
+.finalSaveModal.finalSaveReview .finalSaveActions { background:var(--app-surface,#fff); padding-top:16px; }
+@media(max-width:640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .finalSaveScrollBody { gap:16px; padding-right:12px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview .finalReplacementPanel { grid-template-columns:minmax(0,1fr); }
+ :global(:where(html:not(:has([data-website-canvas])))) .finalSaveReview .finalSaveEdit .resultPriceParts > div { padding:0; }
+}
+
+@media(max-width:640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview .finalSaveActions { flex-direction:row; align-items:center; gap:12px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview .finalSaveActions button { flex:0 1 auto; width:auto; min-width:0; padding:10px 14px; }
+}
