@@ -1468,11 +1468,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       <span>{getAccountDocumentTypeLabel(draft.documentType) || 'Choose document type'}</span>
                       <AssetChooseIcon />
                     </button>
-                    {draft.documentType ? (
-                      <small className={styles.documentTypeCategory}>
-                        Saved under {ACCOUNT_DOCUMENT_CATEGORY_LABELS[draft.category as DocumentCategory]}
-                      </small>
-                    ) : null}
                   </div>
                   <div className={styles.expiryFields}>
                     <label className={styles.expiryToggle}>
@@ -1527,7 +1522,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <section className={styles.assetLinkSummary} aria-labelledby="linked-assets-heading">
                     <span className={styles.assetLinkSummaryIcon} aria-hidden="true"><Icon name="link" /></span>
                     <div>
-                      <span>Optional · account-level by default</span>
                       <h3 id="linked-assets-heading">
                         {draft.assetIds.length
                           ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset' : 'assets'} selected`
