@@ -1422,7 +1422,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <div className={modalMode === 'upload' ? `${styles.uploadWizardPanel} ${wizardStyles.panel}` : undefined}>
                 {modalMode === 'upload' ? (
                   <div className={wizardStyles.panelHeading}>
-                    <span className={wizardStyles.panelNumber} aria-hidden="true">{uploadStep}</span>
                     <h3>{activeUploadStep.label}</h3>
                     <p>{activeUploadStep.description}</p>
                   </div>

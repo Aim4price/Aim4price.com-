@@ -73,12 +73,11 @@ test("all five wizards retain shared structure with their approved close control
     assert.match(wizard, /accountStyles\.passwordModalCloseButton/);
     assert.match(wizard, /onClick=\{close[^}]*\}[^>]*aria-label="Close/);
     assert.match(wizard, /wizardStyles\.body/);
+    assert.doesNotMatch(wizard, /wizardStyles\.panelNumber/);
     if (wizard !== uploadWizard) {
       assert.doesNotMatch(wizard, /wizardStyles\.progress/);
-      assert.doesNotMatch(wizard, /wizardStyles\.panelNumber/);
       assert.doesNotMatch(wizard, /Your cost record is saved on the final step/);
     } else {
-      assert.match(wizard, /wizardStyles\.panelNumber[\s\S]*?\{uploadStep\}/);
       assert.match(wizard, /uploadStep === 1/);
     }
     assert.match(wizard, /wizardStyles\.panel/);
