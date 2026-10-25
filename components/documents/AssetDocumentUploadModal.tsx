@@ -412,102 +412,105 @@ export default function AssetDocumentUploadModal({
             <div className={styles.assetBadge}>
               <span>Linked asset</span>
               <strong title={assetTitle}>{assetTitle}</strong>
-              <small>This link cannot be removed during quick add.</small>
+              <small>Documents will be saved to this asset.</small>
             </div>
 
-            <div className={styles.field}>
-              <label htmlFor="asset-document-type">Document type <b>*</b></label>
-              <div ref={typeComboboxRef} className={styles.combobox}>
-                <span aria-hidden="true">⌕</span>
+            <div className={styles.uploadFields}>
+              <div className={styles.field}>
+                <label htmlFor="asset-document-type">Document type <b>*</b></label>
+                <div ref={typeComboboxRef} className={styles.combobox}>
+                  <span aria-hidden="true">⌕</span>
+                  <input
+                    ref={typeInputRef}
+                    id="asset-document-type"
+                    type="search"
+                    value={documentTypeSearch}
+                    onChange={(event) => changeTypeSearch(event.target.value)}
+                    onFocus={() => {
+                      showDocumentTypesRef.current = true;
+                      setShowDocumentTypes(true);
+                      setActiveDocumentTypeIndex(0);
+                    }}
+                    onKeyDown={handleTypeKeyDown}
+                    placeholder={excludeInvoices?"Search licence, insurance, service…":"Search licence, insurance, invoice, service…"}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={showDocumentTypes}
+                    aria-controls="asset-document-type-options"
+                    aria-activedescendant={showDocumentTypes && filteredTypes[activeDocumentTypeIndex]
+                      ? `asset-document-type-option-${filteredTypes[activeDocumentTypeIndex].value}`
+                      : undefined}
+                    aria-required="true"
+                    aria-invalid={!selectedType && Boolean(error)}
+                    required
+                    autoComplete="off"
+                  />
+                  {documentType ? (
+                    <button type="button" onClick={() => changeTypeSearch('')} aria-label="Clear document type">×</button>
+                  ) : null}
+                  {showDocumentTypes ? (
+                    <DropdownOverlay id="asset-document-type-options" className={styles.options} role="listbox">
+                      {filteredTypes.length ? filteredTypes.map((option, index) => (
+                        <button
+                          key={option.value}
+                          id={`asset-document-type-option-${option.value}`}
+                          type="button"
+                          role="option"
+                          aria-selected={documentType === option.value}
+                          data-active={activeDocumentTypeIndex === index ? 'true' : undefined}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onMouseEnter={() => setActiveDocumentTypeIndex(index)}
+                          onClick={() => selectType(option.value)}
+                        >
+                          <span>{option.label}</span>
+                          <small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small>
+                        </button>
+                      )) : <p>No document types match that search.</p>}
+                    </DropdownOverlay>
+                  ) : null}
+                </div>
+                {selectedType ? <small>Saved under {ACCOUNT_DOCUMENT_CATEGORY_LABELS[selectedType.category]}</small> : null}
+              </div>
+
+              <div
+                className={`${styles.filePicker} ${files.length ? styles.filePickerSelected : ''} ${dragging ? styles.filePickerDragging : ''}`}
+                onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
+                onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+                onDragLeave={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
+                }}
+                onDrop={handleDrop}
+              >
                 <input
-                  ref={typeInputRef}
-                  id="asset-document-type"
-                  type="search"
-                  value={documentTypeSearch}
-                  onChange={(event) => changeTypeSearch(event.target.value)}
-                  onFocus={() => {
-                    showDocumentTypesRef.current = true;
-                    setShowDocumentTypes(true);
-                    setActiveDocumentTypeIndex(0);
-                  }}
-                  onKeyDown={handleTypeKeyDown}
-                  placeholder={excludeInvoices?"Search licence, insurance, service…":"Search licence, insurance, invoice, service…"}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded={showDocumentTypes}
-                  aria-controls="asset-document-type-options"
-                  aria-activedescendant={showDocumentTypes && filteredTypes[activeDocumentTypeIndex]
-                    ? `asset-document-type-option-${filteredTypes[activeDocumentTypeIndex].value}`
-                    : undefined}
-                  aria-required="true"
-                  aria-invalid={!selectedType && Boolean(error)}
-                  required
-                  autoComplete="off"
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                  multiple
+                  onChange={handleFileChange}
+                  aria-label="Choose documents"
                 />
-                {documentType ? (
-                  <button type="button" onClick={() => changeTypeSearch('')} aria-label="Clear document type">×</button>
-                ) : null}
-                {showDocumentTypes ? (
-                  <DropdownOverlay id="asset-document-type-options" className={styles.options} role="listbox">
-                    {filteredTypes.length ? filteredTypes.map((option, index) => (
-                      <button
-                        key={option.value}
-                        id={`asset-document-type-option-${option.value}`}
-                        type="button"
-                        role="option"
-                        aria-selected={documentType === option.value}
-                        data-active={activeDocumentTypeIndex === index ? 'true' : undefined}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onMouseEnter={() => setActiveDocumentTypeIndex(index)}
-                        onClick={() => selectType(option.value)}
-                      >
-                        <span>{option.label}</span>
-                        <small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small>
-                      </button>
-                    )) : <p>No document types match that search.</p>}
-                  </DropdownOverlay>
-                ) : null}
+                <div>
+                  <strong>{files.length ? `${files.length} ${files.length === 1 ? 'document' : 'documents'} ready` : 'Drop documents here or browse'}</strong>
+                  <span>Up to 20 files · 25 MB each · 250 MB per batch</span>
+                </div>
+                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+                  {files.length ? 'Add more' : 'Browse files'}
+                </button>
               </div>
-              {selectedType ? <small>Saved under {ACCOUNT_DOCUMENT_CATEGORY_LABELS[selectedType.category]}</small> : null}
-            </div>
 
-            <div
-              className={`${styles.filePicker} ${files.length ? styles.filePickerSelected : ''} ${dragging ? styles.filePickerDragging : ''}`}
-              onDragEnter={(event) => { event.preventDefault(); setDragging(true); }}
-              onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
-              onDragLeave={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false);
-              }}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
-                multiple
-                onChange={handleFileChange}
-                aria-label="Choose documents"
-              />
-              <div>
-                <strong>{files.length ? `${files.length} ${files.length === 1 ? 'document' : 'documents'} ready` : 'Drop documents here or browse'}</strong>
-                <span>Up to 20 files · 25 MB each · 250 MB per batch</span>
-              </div>
-              <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
-                {files.length ? 'Add more' : 'Browse files'}
-              </button>
-            </div>
+              {files.length ? (
+                <div className={styles.fileList} aria-label="Documents ready to upload">
+                  <header><strong>Ready to upload</strong><span>{formatBytes(totalBytes)}</span></header>
+                  {files.map((file) => (
+                    <div key={fileKey(file)}>
+                      <span><strong title={file.name}>{file.name}</strong><small>{formatBytes(file.size)}</small></span>
+                      <button type="button" onClick={() => removeFile(file)} disabled={busy} aria-label={`Remove ${file.name}`}>×</button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
-            {files.length ? (
-              <div className={styles.fileList} aria-label="Documents ready to upload">
-                <header><strong>Ready to upload</strong><span>{formatBytes(totalBytes)}</span></header>
-                {files.map((file) => (
-                  <div key={fileKey(file)}>
-                    <span><strong title={file.name}>{file.name}</strong><small>{formatBytes(file.size)}</small></span>
-                    <button type="button" onClick={() => removeFile(file)} disabled={busy} aria-label={`Remove ${file.name}`}>×</button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            </div>
 
             <div className={styles.detailsGrid}>
               {files.length <= 1 ? (

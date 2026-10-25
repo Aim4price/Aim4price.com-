@@ -43,7 +43,7 @@ test('quick add uses the searchable typed Documents Vault flow', () => {
   assert.match(uploadModal, /form\.set\('documentType', selectedType\.value\)/);
   assert.match(uploadModal, /form\.set\('assetIds', JSON\.stringify\(\[assetId\]\)\)/);
   assert.match(uploadModal, /Describe the document in Notes when choosing Other document/);
-  assert.match(uploadModal, /This link cannot be removed during quick add/);
+  assert.match(uploadModal, /Documents will be saved to this asset/);
   assert.match(uploadModal, /await onUploaded\(uploaded, \{ complete: false, totalUploaded:/);
   assert.match(uploadModal, /busyRef\.current = true;[\s\S]*?setBusy\(true\)/);
   assert.match(client, /setVaultDocumentsByAssetId\(\(current\) =>/);

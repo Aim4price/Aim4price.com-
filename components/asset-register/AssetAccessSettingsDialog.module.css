@@ -233,3 +233,17 @@
 
 /* Avoid stacking the history panel inset with the shared dialog inset. */
 .dialog.dialog .body.body.body:has(> [data-share-history]) { padding-top: .55rem !important; }
+
+/* Document records use a focused width and keep actions outside the scroll area. */
+.dialog.documentsDialog {
+  width: min(58rem, var(--website-dialog-reference-width, 100%)) !important;
+  padding: 1.5rem !important;
+}
+.dialog.documentsDialog .header { margin: 0 !important; padding-bottom: 1rem !important; }
+.dialog.documentsDialog .header p { color: var(--app-muted, #64746a); font-size: .88rem !important; font-weight: 650; }
+.dialog.documentsDialog .body.body.body {
+  padding: 1rem .25rem !important;
+  margin: 0;
+  scroll-padding: 1rem;
+}
+.dialog.documentsDialog .footer { margin: 0; padding: 1rem 0 0; background: transparent; border-color: var(--app-line, #dce5e0); }
