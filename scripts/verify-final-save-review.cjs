@@ -46,11 +46,12 @@ add('components/EstimateSavePhotos');add('app/valuation/EstimatePriceInput');add
 const breakdown=client.slice(client.indexOf('  function renderResultReplacementBreakdown()'),client.indexOf('  function getCurrentResultReplacementPriceExVat()'));
 const fixture=`import React,{useState} from 'react';import EstimateSavePhotos from 'components/EstimateSavePhotos'; import EstimatePriceInput from 'app/valuation/EstimatePriceInput';import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function Fixture(){
+const [finalSaveEditing,setFinalSaveEditing]=useState(false);
 const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip'),[requestedRegisterId,setRequestedRegisterId]=useState('farm'),[vatDisplayMode,setVatDisplayMode]=useState('excl');
 const publishedEstimatePhotos=null,registerLoadError='',ownerAppMode=false,dealerAssetRegisters=[{id:'farm',businessName:'My farm'}];
 const [userReplacementPrice,setUserReplacementPrice]=useState('9330000');
 const [finalSaveIntent,setFinalSaveIntent]=useState('asset-register');
-const finalSaveTitle=finalSaveIntent==='marketplace'?'Create advert':'Save to Asset Register',finalSaveDescription=finalSaveIntent==='marketplace'?'Check your values before creating the advert.':'Check your values before saving this asset.',finalSaveCta=finalSaveIntent==='marketplace'?'Save and continue':'Save asset';
+const finalSaveTitle=finalSaveIntent==='marketplace'?'Create advert':'Save to Asset Register',finalSaveDescription=finalSaveIntent==='marketplace'?'Check your values before creating the advert.':'Review your values and choose where to save.',finalSaveCta=finalSaveIntent==='marketplace'?'Save and continue':'Save asset';
 const conversionAssetId=null,saveMarketChoice=null,isDealerAccount=false,saveLoading=false,replacementRecalculateLoading=false,advancedRecalculateLoading=false,basicEstimateActive=true,finalSaveInputPrice=Number(userReplacementPrice),finalSaveCanConfirm=true,finalSaveHasPendingReplacementPrice=false,finalSaveError='',headlineValue=4625068,finalSaveReplacementPrice=9330000;
 const closeFinalSaveModal=()=>{},recalculateFinalReplacementPrice=()=>{},confirmFinalSaveAction=()=>{},getVatDisplayLabel=mode=>mode==='incl'?'VAT included':'VAT excluded',getVatDisplayValue=(v,mode)=>mode==='incl'?v*1.15:v,money=v=>'R '+String(Math.round(v)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
 const resultState={kind:'generic',result:{specsJson:{basic_extra_replacement_price_ex_vat:0}}},getCurrentResultReplacementPriceExVat=()=>9330000;
@@ -76,6 +77,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForSelector('#final-save-title');
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2));
  await page.screenshot({path:'/tmp/save-simple.png'});
+ await page.evaluate(()=>{document.getElementById('app').style.zoom='1.25';document.getElementById('app').style.setProperty('--website-visible-height',innerHeight/1.25+'px');document.getElementById('app').style.setProperty('--website-visible-width',innerWidth/1.25+'px');});
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2),'Compact review fits at enlarged website zoom');
+ await page.screenshot({path:'/tmp/save-polish-zoom.png'});
+ await page.evaluate(()=>{document.getElementById('app').style.zoom='1';document.getElementById('app').style.removeProperty('--website-visible-height');document.getElementById('app').style.removeProperty('--website-visible-width');});
  await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[1].click());
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.textContent.includes('R 10 729 500')));
  await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[0].click());
@@ -86,14 +91,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2));
  await page.click('[aria-label="Remove photo 1"]');
 
- await page.click('summary');
+ await page.click('[aria-controls="final-save-edit-values"]');
  await page.waitForSelector('[data-estimate-price-entry] input');
  assert.deepEqual(errors,[]);
  assert.equal(await page.$eval('[data-estimate-price-entry]',el=>getComputedStyle(el).backgroundColor),'rgb(237, 245, 240)');
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)');
  await page.click('[data-estimate-price-entry] input',{clickCount:3});await page.keyboard.press('Backspace');await page.type('[data-estimate-price-entry] input','25000');
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>el.value),'25 000');
- await page.click('summary');
+ await page.click('[aria-controls="final-save-edit-values"]');
  await page.screenshot({path:'/tmp/save-review.png'});
  await page.$$eval('button',els=>els.find(e=>e.textContent==='Advert fixture').click());
  await page.waitForFunction(()=>document.querySelector('#final-save-title').textContent==='Create advert');

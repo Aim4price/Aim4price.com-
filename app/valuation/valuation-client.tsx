@@ -1963,6 +1963,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [savedMarketWarning, setSavedMarketWarning] = useState<{ message: string; href: string } | null>(null);
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
+  const [finalSaveEditing, setFinalSaveEditing] = useState(false);
   const [savePhotoFiles, setSavePhotoFiles] = useState<File[]>([]);
   const [savePhotoMode, setSavePhotoMode] = useState<'files' | 'marketplace' | 'skip'>('skip');
   const [publishedEstimatePhotos, setPublishedEstimatePhotos] = useState<{result: typeof resultState; urls: string[]} | null>(null);
@@ -4828,6 +4829,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setFinalSaveError('');
     setSavePhotoFiles(getEstimatePhotoFiles().slice(0, 4));
     setSavePhotoMode(getEstimatePhotoFiles().length ? 'files' : 'skip');
+    setFinalSaveEditing(false);
     setFinalSaveIntent(intent);
     setSaveMarketChoice(intent === 'asset-register' && !conversionAssetId &&
       !(completedMarketAssessment?.result === resultState && completedMarketAssessment?.value === headlineValue)
@@ -9570,7 +9572,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         : 'Save to Asset Register';
   const finalSaveDescription = finalSaveIntent === 'marketplace'
     ? 'Check your values before creating the advert.'
-    : 'Check your values before saving this asset.';
+    : 'Review your values and choose where to save.';
   const finalSaveCta = finalSaveIntent === 'marketplace'
     ? 'Save and continue'
     : 'Save asset';
@@ -9918,20 +9920,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <p id="final-save-description">{finalSaveDescription}</p>
             </div>
 
-            {finalSaveIntent === 'asset-register' && isDealerAccount ? (
-              <div className={styles.finalSaveDestination}>
-                <span>Destination</span>
-                <strong>
-                  {dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}
-                </strong>
-              </div>
-            ) : null}
-
             <div className={styles.finalSaveValueToolbar}>
               <strong>Values</strong>
+              <div className={styles.finalSaveToolbarActions}>
+              <button type="button" className={styles.finalSaveEditButton} aria-expanded={finalSaveEditing || finalSaveHasPendingReplacementPrice} aria-controls="final-save-edit-values" onClick={() => setFinalSaveEditing(value => !value)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" /></svg>Edit values
+              </button>
               <div className={styles.resultVatToggle} role="group" aria-label="Save values VAT basis">
                 {(['excl', 'incl'] as const).map(mode => <button key={mode} type="button" className={`${styles.resultVatToggleButton} ${vatDisplayMode === mode ? styles.resultVatToggleButtonActive : ''}`} aria-pressed={vatDisplayMode === mode} onClick={() => setVatDisplayMode(mode)}>{getVatDisplayLabel(mode)}</button>)}
               </div>
+            </div>
             </div>
             <div className={styles.finalSaveSummaryGrid}>
               <div className={styles.finalSaveSummaryCard}>
@@ -9944,8 +9942,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             </div>
 
-            <details className={styles.finalSaveEdit} open={finalSaveHasPendingReplacementPrice || undefined}>
-              <summary>Edit values</summary>
+            {(finalSaveEditing || finalSaveHasPendingReplacementPrice) ? <div id="final-save-edit-values" className={styles.finalSaveEdit}>
             <div className={styles.finalReplacementPanel}>
               <label className={styles.finalReplacementField}>
                 <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} ({getVatDisplayLabel(vatDisplayMode)})</span>
@@ -9969,8 +9966,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             ) : null}
 
             {renderResultReplacementBreakdown()}
-            </details>
-            {finalSaveIntent === 'asset-register' ? <>
+            </div> : null}
+            {finalSaveIntent === 'asset-register' ? <div className={styles.finalSaveDetailsGrid}>
               <fieldset className={styles.finalSavePhotoFields} disabled={saveLoading}>
                 <EstimateSavePhotos files={savePhotoFiles} onChange={setSavePhotoFiles} usePhotos={savePhotoMode === 'files'}
                   onUsePhotos={use => setSavePhotoMode(use ? 'files' : 'skip')}
@@ -9978,15 +9975,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   marketplaceSelected={savePhotoMode === 'marketplace'} onMarketplace={() => setSavePhotoMode('marketplace')} />
                 {savePhotoMode === 'marketplace' ? <p>Photos from this asset’s Marketplace advert will be included.</p> : null}
               </fieldset>
+              <div className={styles.finalSaveDestinationColumn}>
               {!isDealerAccount && !ownerAppMode ? <label className={styles.finalSaveRegister}><span>Save to</span>
+                <span className={styles.finalSaveRegisterControl}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
                 <select value={requestedRegisterId} onChange={event => setRequestedRegisterId(event.target.value)} disabled={saveLoading}>
                   <option value="">Choose an asset register</option>
                   {dealerAssetRegisters.map(register => <option key={register.id} value={register.id}>{register.businessName}</option>)}
-                </select>
-              </label> : null}
+                </select></span>
+              </label> : <div className={styles.finalSaveRegister}><span>Save to</span><strong className={styles.finalSaveRegisterControl}>{ownerAppMode ? 'My Assets' : dealerSaveTargetRegisterName || 'Asset Register'}</strong></div>}
               {!isDealerAccount && !ownerAppMode && !dealerAssetRegisters.length && !registerLoadError ? <a href="/asset-registers">Create an asset register</a> : null}
               {!isDealerAccount && !ownerAppMode && registerLoadError ? <p className={styles.finalSaveError} role="alert">{registerLoadError}</p> : null}
-            </> : null}
+              </div>
+            </div> : null}
             {finalSaveError ? <p className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
 
             <div className={`${styles.finalSaveActions} ${modalStyles.actions}`}>
@@ -9996,7 +9997,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 onClick={closeFinalSaveModal}
                 disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading}
               >
-                Close
+                Cancel
               </button>
               <button
                 type="button"
@@ -10004,6 +10005,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 onClick={confirmFinalSaveAction}
                 disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading || !finalSaveCanConfirm}
               >
+                {!saveLoading ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg> : null}
                 {saveLoading ? 'Saving...' : finalSaveCta}
               </button>
             </div>

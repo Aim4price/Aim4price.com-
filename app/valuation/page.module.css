@@ -15773,3 +15773,32 @@
 .finalSaveRegister { display:flex; align-items:center; gap:16px; padding-top:12px; border-top:1px solid var(--app-line,#c6dcd0); }
 .finalSaveRegister > span { font-weight:750; white-space:nowrap; }
 .finalSaveRegister select { flex:1; min-width:0; padding:12px 14px; border:1px solid var(--app-line,#c6dcd0); border-radius:12px; background:var(--typing-field-surface,#edf5f0); color:var(--app-text,#174f3e); font:inherit; }
+
+
+/* Compact save review: keep the primary action in view at website zoom. */
+.finalSaveModal.finalSaveReview {
+  width:min(960px, calc(var(--website-visible-width, 100vw) - 32px));
+  padding:24px; gap:16px; border-radius:22px;
+}
+.finalSaveReview .finalSaveHeader { gap:0; padding-right:56px; }
+.finalSaveReview .finalSaveHeader [data-estimate-modal-title] { font-size:1.75rem; line-height:1.2; color:var(--app-text,#174f3e); }
+.finalSaveReview .finalSaveHeader p { margin:8px 0 0; font-size:.95rem; line-height:1.4; }
+.finalSaveReview .finalSaveToolbarActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.finalSaveReview .finalSaveEditButton { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:8px 14px; border:1px solid var(--app-line,#b9d1c4); border-radius:12px; background:var(--app-surface,#fff); color:var(--app-text,#174f3e); font:inherit; font-size:.82rem; font-weight:800; cursor:pointer; }
+.finalSaveEditButton svg,.finalSaveActions svg { width:20px; height:20px; flex-shrink:0; }
+.finalSaveReview .finalSaveSummaryCard { padding:16px 18px; gap:6px; border-color:var(--app-line,#c6dcd0); background:var(--app-success-soft,#f1f7f4); }
+.finalSaveReview .finalSaveSummaryCard strong { font-size:1.65rem; line-height:1.2; }
+.finalSaveDetailsGrid { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+.finalSaveDestinationColumn { display:grid; gap:10px; min-width:0; }
+.finalSaveReview .finalSaveRegister { display:grid; gap:10px; border:0; padding:0; }
+.finalSaveReview .finalSaveRegisterControl { display:flex; align-items:center; gap:12px; min-height:78px; padding:14px; border:1px solid var(--app-line,#c6dcd0); border-radius:12px; background:var(--typing-field-surface,#edf5f0); }
+.finalSaveRegisterControl > svg { width:26px; height:26px; flex-shrink:0; }
+.finalSaveReview .finalSaveRegisterControl select { --typing-field-surface:transparent; --typing-field-focus:transparent; border:0; border-radius:0; padding:8px 0; background:transparent; font-size:.9rem; }
+.finalSaveModal.finalSaveReview .finalSaveActions { justify-content:space-between; margin-top:0; padding-top:16px; }
+.finalSaveReview .finalSaveActions .primaryButton { display:inline-flex; align-items:center; justify-content:center; gap:10px; background:#14543f; color:#fff; border-color:#14543f; }
+.finalSaveReview .finalSaveActions button { min-height:44px; padding:10px 18px; }
+.finalSaveReview .finalSaveEdit { padding:12px; border:1px solid var(--app-line,#c6dcd0); border-radius:12px; }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveDetailsGrid { grid-template-columns:1fr; gap:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal.finalSaveReview { padding:18px; }
+}
