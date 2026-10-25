@@ -318,7 +318,7 @@ type Notice = {
 };
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
-type ManualCostWizardStep = 1 | 2 | 3;
+type ManualCostWizardStep = 1 | 2 | 3 | 4;
 type RecurringWizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 type RecurringCommitmentDraft = {
@@ -1671,7 +1671,7 @@ export default function MyInvoicesClient({
   const flowTitle = businessPickerOpen
     ? 'Choose client business'
     : flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
-  const manualCostReviewOpen = manualCostWizardOpen && manualCostWizardStep === 3;
+  const manualCostReviewOpen = manualCostWizardOpen && manualCostWizardStep === 4;
   const formTitle = manualCostReviewOpen ? 'Review cost' : flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
@@ -2997,13 +2997,15 @@ export default function MyInvoicesClient({
     if (manualCostWizardStep === 2) {
       setUsageMetricDropdownOpen(false);
       setManualCostWizardStep(3);
+      return;
     }
+    if (manualCostWizardStep === 3) setManualCostWizardStep(4);
   }
 
   function goBackManualCostWizard() {
     setManualCostWizardError('');
     setUsageMetricDropdownOpen(false);
-    setManualCostWizardStep((current) => (current === 3 ? 2 : 1));
+    setManualCostWizardStep((current) => (current === 4 ? 3 : current === 3 ? 2 : 1));
   }
 
   function leaveManualCostWizard() {
@@ -3161,7 +3163,7 @@ export default function MyInvoicesClient({
     event.preventDefault();
 
     if (manualCostWizardOpen) {
-      if (manualCostWizardStep < 3) continueManualCostWizard();
+      if (manualCostWizardStep < 4) continueManualCostWizard();
       return;
     }
 
@@ -3169,7 +3171,7 @@ export default function MyInvoicesClient({
   }
 
   async function saveInvoiceDraft() {
-    if (flow === 'manual-form' && manualCostWizardStep !== 3) {
+    if (flow === 'manual-form' && manualCostWizardStep !== 4) {
       setManualCostWizardError('Review the cost record before saving.');
       return;
     }
@@ -5158,7 +5160,7 @@ export default function MyInvoicesClient({
                       ? 'Invoice details'
                       : manualCostWizardStep === 2
                         ? 'Work details'
-                        : 'Review and save'
+                        : manualCostWizardStep === 3 ? 'Supporting document' : 'Check the details before saving'
                     : captureMethodLabel(draft.source)}
                 </p>
               </div>
@@ -5166,14 +5168,14 @@ export default function MyInvoicesClient({
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
-            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''} ${manualCostWizardOpen && manualCostWizardStep === 3 ? costReviewStyles.body : ''}`}>
+            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''} ${manualCostWizardOpen && manualCostWizardStep === 4 ? costReviewStyles.body : ''}`}>
               {extractionWarnings.length ? (
                 <div className={styles.warningBox}>
                   {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
                 </div>
               ) : null}
 
-              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 3 ? costReviewStyles.panel : ''}` : ''}`}>
+              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel} ${manualCostWizardStep === 4 ? costReviewStyles.panel : ''}` : ''}`}>
                 {manualCostWizardOpen && !manualCostReviewOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                     <h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>
@@ -5181,13 +5183,13 @@ export default function MyInvoicesClient({
                         ? 'Add the invoice details'
                         : manualCostWizardStep === 2
                           ? 'Describe the work'
-                          : 'Review your cost'}
+                          : 'Invoice or receipt · Optional'}
                     </h3>
-                    {manualCostWizardStep < 3 ? <p>{manualCostWizardStep === 1
+                    {manualCostWizardStep < 4 ? <p>{manualCostWizardStep === 1
                       ? 'Capture the supplier, date, usage and totals.'
                       : manualCostWizardStep === 2
                         ? 'Add maintenance, repairs, parts and notes.'
-                        : 'Check the complete record before saving.'}</p> : null}
+                        : 'Keep a photo or PDF with this cost.'}</p> : null}
                   </div>
                 ) : null}
 
@@ -5332,15 +5334,6 @@ export default function MyInvoicesClient({
                 </div>
 
 
-                {draft.source === 'manual' ? (
-                  <ManualCostAttachment
-                    fileName={manualAttachment?.name ?? (uploadedDocument?.id === draft.invoiceDocumentId ? uploadedDocument?.fileName : null)}
-                    disabled={isSaving}
-                    onFile={(file) => { setManualAttachment(file); setManualCostWizardError(''); }}
-                    onRemove={() => { setManualAttachment(null); setUploadedDocument(null); setDraftField('invoiceDocumentId', null); }}
-                  />
-                ) : null}
-
                 {draft.source !== 'manual' && uploadedDocument?.uploadUrl ? (
                   <DocumentFileLink className={styles.fileLink} href={accountScopedUrl(uploadedDocument.uploadUrl)} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</DocumentFileLink>
                 ) : null}
@@ -5354,7 +5347,16 @@ export default function MyInvoicesClient({
                   </>
                 ) : null}
 
-                {manualCostWizardOpen && manualCostWizardStep === 3 ? (
+                {draft.source === 'manual' && (!manualCostWizardOpen || manualCostWizardStep === 3) ? (
+                  <ManualCostAttachment
+                    fileName={manualAttachment?.name ?? (uploadedDocument?.id === draft.invoiceDocumentId ? uploadedDocument?.fileName : null)}
+                    disabled={isSaving}
+                    onFile={(file) => { setManualAttachment(file); setManualCostWizardError(''); }}
+                    onRemove={() => { setManualAttachment(null); setUploadedDocument(null); setDraftField('invoiceDocumentId', null); }}
+                  />
+                ) : null}
+
+                {manualCostWizardOpen && manualCostWizardStep === 4 ? (
                   <div className={costReviewStyles.stack}>
                     <dl className={costReviewStyles.grid}>
                     <div className={costReviewStyles.asset}>
@@ -5362,6 +5364,8 @@ export default function MyInvoicesClient({
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
                     </dl>
+                    <div className={costReviewStyles.columns}>
+                    <div className={costReviewStyles.details}>
                     <section className={costReviewStyles.group} aria-labelledby="cost-review-invoice-title">
                       <h3 id="cost-review-invoice-title">Invoice details</h3>
                       <dl className={`${costReviewStyles.grid} ${costReviewStyles.rows}`}>
@@ -5413,8 +5417,9 @@ export default function MyInvoicesClient({
                         </dl>
                       </section>
                     ) : null}
-                    <section className={costReviewStyles.group} aria-labelledby="cost-review-amounts-title">
-                      <h3 id="cost-review-amounts-title">Amounts</h3>
+                    </div>
+                    <section className={costReviewStyles.summary} aria-labelledby="cost-review-amounts-title">
+                      <h3 id="cost-review-amounts-title">Cost summary</h3>
                       <dl className={`${costReviewStyles.grid} ${costReviewStyles.rows}`}>
                     <div className={costReviewStyles.amount}>
                       <dt>Subtotal excl. VAT</dt>
@@ -5430,6 +5435,7 @@ export default function MyInvoicesClient({
                     </div>
                       </dl>
                     </section>
+                    </div>
                   </div>
                 ) : null}
 
@@ -5440,12 +5446,6 @@ export default function MyInvoicesClient({
             </div>
 
             <div className={`${styles.modalFooter} ${manualCostWizardOpen ? `${styles.manualCostWizardFooter} ${wizardStyles.footer}` : ''} ${manualCostReviewOpen ? costReviewStyles.footer : ''}`}>
-              {manualCostReviewOpen ? (
-                <div className={costReviewStyles.footerTotal}>
-                  <span>Total incl. VAT</span>
-                  <strong>{formatReviewMoney(manualCostTotalValue)}</strong>
-                </div>
-              ) : null}
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${manualCostWizardOpen ? wizardStyles.secondaryAction : ''}`}
@@ -5461,9 +5461,9 @@ export default function MyInvoicesClient({
               >
                 Back
               </button>
-              {manualCostWizardOpen && manualCostWizardStep < 3 ? (
+              {manualCostWizardOpen && manualCostWizardStep < 4 ? (
                 <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueManualCostWizard} disabled={isSaving}>
-                  Next
+                  {manualCostWizardStep === 3 ? (manualAttachment || draft.invoiceDocumentId ? 'Continue' : 'Skip for now') : 'Next'}
                 </button>
               ) : manualCostWizardOpen ? (
                 <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={() => void saveInvoiceDraft()} disabled={isSaving}>
