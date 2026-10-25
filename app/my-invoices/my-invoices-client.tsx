@@ -3276,7 +3276,6 @@ export default function MyInvoicesClient({
   },[invoices,routeSearchParams]);
 
   function openInvoiceManager(invoice: InvoiceRecord) {
-    if (invoice.source === 'fuel_slip') { setFuelCostInvoiceId(invoice.id); return; }
     setManagedInvoice(invoice);
   }
 
