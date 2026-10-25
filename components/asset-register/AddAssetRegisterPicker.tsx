@@ -7,16 +7,16 @@ import registerStyles from '../../app/asset-register/page.module.css';
 import accountStyles from '../../app/account/page.module.css';
 
 type Option = RegisterPickerOption;
-export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreate,busy}:{options:Option[];onSelect:(id:string)=>void;onClose:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
+export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreate,busy,initialSelectedId='',startCreating=false}:{initialSelectedId?:string;startCreating?:boolean;options:Option[];onSelect:(id:string)=>void;onClose:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
  const id=useId(),dialog=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null);
- const [search,setSearch]=useState(''),[creating,setCreating]=useState(false),[draft,setDraft]=useState<RegisterDetailsDraft>({businessName:'',email:'',phone:'',addressLine1:''}),[error,setError]=useState('');
- const [selectedId,setSelectedId]=useState('');
+ const [search,setSearch]=useState(''),[creating,setCreating]=useState(startCreating),[draft,setDraft]=useState<RegisterDetailsDraft>({businessName:'',email:'',phone:'',addressLine1:''}),[error,setError]=useState('');
+ const [selectedId,setSelectedId]=useState(initialSelectedId);
  const selected=options.find(option=>option.value===selectedId);
  const visible=options.filter(option=>`${option.label} ${option.description||''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
  useEffect(()=>{const previous=document.activeElement as HTMLElement|null;return()=>{if(previous?.isConnected)previous.focus();};},[]);
  useEffect(()=>{input.current?.focus();},[creating]);
  async function create(){if(busy||!draft.businessName.trim())return;setError('');try{await onCreate({...draft,businessName:draft.businessName.trim()});setCreating(false);setDraft({businessName:'',email:'',phone:'',addressLine1:''});setSearch('');}catch(e){setError(e instanceof Error?e.message:'Could not create the register.');}}
- if(creating) return <CreateAssetRegisterModal draft={draft} onChange={setDraft} onSubmit={event=>{event.preventDefault();void create();}} onClose={()=>{if(!busy){setCreating(false);setError('');}}} busy={busy} error={error}/>;
+ if(creating) return <CreateAssetRegisterModal draft={draft} onChange={setDraft} onSubmit={event=>{event.preventDefault();void create();}} onClose={()=>{if(!busy){if(startCreating)onClose();else setCreating(false);setError('');}}} busy={busy} error={error}/>;
  return <div className={styles.overlay} data-website-overlay data-account-asset-modal>
   <div className={styles.backdrop} onClick={()=>{if(!busy)onClose();}}/>
   <div ref={dialog} className={`${registerStyles.modalCard} ${registerStyles.changeRegisterModal} ${registerStyles.assetEntryModal} ${accountStyles.modalTheme} ${styles.addRegisterBody}`} role="dialog" aria-modal="true" aria-labelledby={id} aria-busy={busy} onKeyDown={event=>{

@@ -7,6 +7,8 @@ import EstimateTools from './EstimateTools';
 import EstimateSavePhotos from '../../components/EstimateSavePhotos';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import EstimatePriceInput from './EstimatePriceInput';
+import AddAssetRegisterPicker from '../../components/asset-register/AddAssetRegisterPicker';
+import type { RegisterDetailsDraft } from '../../components/asset-register/CreateAssetRegisterModal';
 import modalStyles from '../../components/estimate-modal.module.css';
 import type { PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
@@ -1967,6 +1969,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [savePhotoFiles, setSavePhotoFiles] = useState<File[]>([]);
   const [savePhotoMode, setSavePhotoMode] = useState<'files' | 'marketplace' | 'skip'>('skip');
   const [publishedEstimatePhotos, setPublishedEstimatePhotos] = useState<{result: typeof resultState; urls: string[]} | null>(null);
+  const [finalSaveRegisterOpen, setFinalSaveRegisterOpen] = useState(false);
+  const [finalSaveRegisterBusy, setFinalSaveRegisterBusy] = useState(false);
+  const [registersLoading, setRegistersLoading] = useState(true);
   const [registerLoadError, setRegisterLoadError] = useState('');
   const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
   useEffect(() => {
@@ -2580,6 +2585,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     void (async () => {
       try {
+        setRegistersLoading(true);
         const response = await fetch('/api/asset-registers', {
           credentials: 'include',
           cache: 'no-store',
@@ -2593,6 +2599,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         }
       } catch {
         if (!cancelled) { setDealerAssetRegisters([]); setRegisterLoadError('Could not load your registers. Close and reload before saving.'); }
+      } finally {
+        if (!cancelled) setRegistersLoading(false);
       }
     })();
 
@@ -4787,6 +4795,37 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (saveLoading) return;
     setIsDealerClientRegisterPickerOpen(false);
     setDealerClientRegisterSearch('');
+  }
+
+  const finalSaveRegisterWasOpen = useRef(false);
+  useEffect(() => {
+    if (finalSaveRegisterOpen) { finalSaveRegisterWasOpen.current = true; return; }
+    if (!finalSaveRegisterWasOpen.current) return;
+    finalSaveRegisterWasOpen.current = false;
+    const frame = requestAnimationFrame(() => document.getElementById('final-save-register-trigger')?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [finalSaveRegisterOpen]);
+
+  async function createFinalSaveRegister(details: RegisterDetailsDraft) {
+    if (finalSaveRegisterBusy) return;
+    setFinalSaveRegisterBusy(true);
+    try {
+      const response = await fetch('/api/asset-registers', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...details, logoUrls: [], showLogosOnRegister: true }),
+      });
+      const data = await response.json().catch(() => null) as (DealerAssetRegistersApiResponse & { register?: DealerAssetRegisterSummary }) | null;
+      if (!response.ok || !data?.ok || !data.register?.id || !Array.isArray(data.registers)) {
+        throw new Error(data?.error || 'Could not create the asset register. Please try again.');
+      }
+      setDealerAssetRegisters(data.registers);
+      setRequestedRegisterId(data.register.id);
+      setRegisterLoadError('');
+      setFinalSaveRegisterOpen(false);
+    } finally {
+      setFinalSaveRegisterBusy(false);
+    }
   }
 
   function openFinalSaveModal(
@@ -9894,7 +9933,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </section>
         </div>
       ) : null}
-      {finalSaveIntent && !conversionAssetId && !saveMarketChoice ? (
+      {finalSaveIntent && !conversionAssetId && !saveMarketChoice && !finalSaveRegisterOpen ? (
         <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
           <section
             className={`${styles.finalSaveModal} ${styles.finalSaveReview} ${modalStyles.surface}`}
@@ -9976,15 +10015,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {savePhotoMode === 'marketplace' ? <p>Photos from this asset’s Marketplace advert will be included.</p> : null}
               </fieldset>
               <div className={styles.finalSaveDestinationColumn}>
-              {!isDealerAccount && !ownerAppMode ? <label className={styles.finalSaveRegister}><span>Save to</span>
-                <span className={styles.finalSaveRegisterControl}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
-                <select value={requestedRegisterId} onChange={event => setRequestedRegisterId(event.target.value)} disabled={saveLoading}>
-                  <option value="">Choose an asset register</option>
-                  {dealerAssetRegisters.map(register => <option key={register.id} value={register.id}>{register.businessName}</option>)}
-                </select></span>
-              </label> : <div className={styles.finalSaveRegister}><span>Save to</span><strong className={styles.finalSaveRegisterControl}>{ownerAppMode ? 'My Assets' : dealerSaveTargetRegisterName || 'Asset Register'}</strong></div>}
-              {!isDealerAccount && !ownerAppMode && !dealerAssetRegisters.length && !registerLoadError ? <a href="/asset-registers">Create an asset register</a> : null}
+              {!isDealerAccount && !ownerAppMode ? <div className={styles.finalSaveRegister}><span id="final-save-register-label">Save to</span>
+                <button id="final-save-register-trigger" type="button" className={`${styles.finalSaveRegisterControl} ${styles.finalSaveRegisterButton}`} aria-labelledby="final-save-register-label final-save-register-name" aria-haspopup="dialog" disabled={saveLoading || registersLoading || Boolean(registerLoadError)} onClick={() => setFinalSaveRegisterOpen(true)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
+                  <span id="final-save-register-name">{registersLoading ? 'Loading registers…' : dealerAssetRegisters.find(register => register.id === requestedRegisterId)?.businessName || (dealerAssetRegisters.length ? 'Choose an asset register' : 'Create an asset register')}</span>
+                  <svg className={styles.finalSaveRegisterChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={dealerAssetRegisters.length ? 'm9 5 7 7-7 7' : 'M12 5v14M5 12h14'} /></svg>
+                </button>
+              </div> : <div className={styles.finalSaveRegister}><span>Save to</span><strong className={styles.finalSaveRegisterControl}>{ownerAppMode ? 'My Assets' : dealerSaveTargetRegisterName || 'Asset Register'}</strong></div>}
               {!isDealerAccount && !ownerAppMode && registerLoadError ? <p className={styles.finalSaveError} role="alert">{registerLoadError}</p> : null}
               </div>
             </div> : null}
@@ -10012,6 +10049,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </section>
         </div>
       ) : null}
+      {finalSaveIntent && finalSaveRegisterOpen ? <AddAssetRegisterPicker
+        options={dealerAssetRegisters.map(register => ({ value: register.id, label: register.businessName, description: register.addressLine1 }))}
+        initialSelectedId={requestedRegisterId}
+        startCreating={!dealerAssetRegisters.length}
+        busy={finalSaveRegisterBusy}
+        onClose={() => setFinalSaveRegisterOpen(false)}
+        onSelect={id => { setRequestedRegisterId(id); setFinalSaveRegisterOpen(false); }}
+        onCreate={createFinalSaveRegister}
+      /> : null}
+
 
       {marketplaceMode && marketplaceIntroOpen ? (
         <div className={styles.marketplaceIntroOverlay} data-website-overlay onClick={closeMarketplaceIntroModal}>
