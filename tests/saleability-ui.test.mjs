@@ -24,7 +24,7 @@ const assetDb = read('lib/asset-register-db.ts');
 const revaluation = read('lib/asset-register-revaluation.ts');
 
 test('the estimate result and standard PDF include General Saleability', () => {
-  assert.match(valuationClient, /aria-label="How easily could it sell\?"/);
+  assert.match(valuationClient, /aria-label="Realistic Market Value"/);
   assert.match(valuationClient, /Calculate Realistic Market Value/);
   assert.match(valuationClient, /saleabilityRows:/);
   assert.match(reportRoute, /<h2>Realistic Market Value<\/h2>/);

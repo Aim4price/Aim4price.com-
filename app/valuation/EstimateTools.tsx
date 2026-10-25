@@ -48,7 +48,7 @@ export default function EstimateTools({ report, busy, error, onApply }: {
       <button type="button" onClick={openSettings} disabled={busy}>Estimate settings</button>
     </div>
     <details className={styles.breakdown}>
-      <summary>Breakdown</summary>
+      <summary>Calculation breakdown</summary>
       {report.settings ? <p className={styles.customNote}>Manually adjusted estimate. Your settings apply to this estimate only.</p> : null}
       <div className={styles.tableScroll}>
         <table><caption>All amounts exclude VAT. Each percentage applies to the preceding balance.</caption>

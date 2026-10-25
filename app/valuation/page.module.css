@@ -15686,3 +15686,42 @@
 @media (max-width: 800px) {
   :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid { grid-template-columns: 1fr; }
 }
+
+/* Matching price cards: heading/action, amount, then supporting detail. */
+.resultSupportingGrid .priceComparisonCard {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto 1fr; align-content: start; align-items: start;
+  gap: 20px 12px; padding: 22px; height: 100%;
+}
+.resultSupportingGrid .priceComparisonCard .resultReplacementHeading { display: flex; align-items: center; gap: 12px; }
+.resultSupportingGrid .priceComparisonCard h3 { margin: 0; font-size: .95rem; line-height: 1.35; }
+.resultSupportingGrid .priceComparisonCard .resultReplacementHeading p { margin: 5px 0 0; font-size: .78rem; line-height: 1.4; }
+.resultSupportingGrid .priceComparisonCard > button { grid-column: 2; grid-row: 1; align-self: center; min-width: 92px; min-height: 42px; margin: 0; white-space: nowrap; }
+.resultSupportingGrid .priceComparisonCard .resultReplacementAmount { display: flex; flex-direction: column; gap: 8px; grid-column: 1 / -1; margin: 0; padding: 0; border: 0; }
+.resultSupportingGrid .priceComparisonCard .resultReplacementAmount strong { margin: 0; font-size: 2.15rem; line-height: 1.15; font-weight: 800; letter-spacing: -.025em; color: var(--app-text, #174f3e); overflow-wrap: anywhere; }
+.resultSupportingGrid .priceComparisonCard .resultReplacementAmount .marketNotCalculated { font-size: 1.45rem; }
+.resultSupportingGrid .priceComparisonCard .resultReplacementAmount small { margin: 0; font-size: .78rem; color: var(--app-muted, #52695f); }
+.resultPriceParts, .marketPriceExplanation { grid-column: 1 / -1; margin: 0; border-top: 1px solid var(--app-line, #c9dfd2); padding-top: 18px; }
+.resultPriceParts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.resultPriceParts > div { min-width: 0; border-left: 1px solid var(--app-line, #c9dfd2); padding-left: 14px; }
+.resultPriceParts > div:first-child { border: 0; padding-left: 0; }
+.resultPriceParts dt { font-size: .8rem; font-weight: 650; color: var(--app-muted, #52695f); }
+.resultPriceParts dd { margin: 8px 0 0; font-size: 1.05rem; font-weight: 750; color: var(--app-text, #173e33); overflow-wrap: anywhere; }
+.resultSupportingGrid .priceComparisonCard .marketPriceExplanation { display: grid; align-content: start; gap: 10px; }
+.resultSupportingGrid .priceComparisonCard .marketPriceExplanation p { margin: 0; font-size: .82rem; line-height: 1.5; }
+.finalEstimateLayout .resultLifetimeRow { display: flex; align-items: center; padding: 18px 22px; margin-bottom: 16px; border: 1px solid var(--app-line, #c9dfd2); border-radius: 18px; background: var(--app-surface, #fff); }
+.finalEstimateLayout .resultLifetimeLabel { display: flex; align-items: center; gap: 16px; }
+.resultLifetimeLabel p { margin: 6px 0 0; color: var(--app-muted, #52695f); font-size: .9rem; }
+.resultLifetimeRow > button { min-width: 92px; min-height: 42px; border-radius: 12px; white-space: nowrap; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid .priceComparisonCard { padding: 18px; gap: 18px 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid .priceComparisonCard .detailIcon { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid .priceComparisonCard h3 { font-size: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSupportingGrid .priceComparisonCard > button { min-width: 76px; padding-inline: 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPriceParts { grid-template-columns: 1fr; gap: 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPriceParts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border: 0; padding: 0; }
+}
+
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPriceParts dd { margin: 0; text-align: right; }
+}

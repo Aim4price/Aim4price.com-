@@ -44,7 +44,8 @@ const start=client.indexOf('      <div className={`${styles.resultsLayout} ${sty
 const end=client.indexOf('\n    );\n  }',start);
 const jsx=client.slice(start,end);
 add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
-const code=ts.transpileModule('function Fixture(){return ('+jsx+');}',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
+const breakdown=client.slice(client.indexOf('  function renderResultReplacementBreakdown()'),client.indexOf('  function getCurrentResultReplacementPriceExVat()'));
+const code=ts.transpileModule(breakdown+'\nfunction Fixture(){return ('+jsx+');}',{compilerOptions:{target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.React}}).outputText;
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const styleMap=JSON.parse(modules['app/valuation/page.module.css'].slice('module.exports='.length));
@@ -56,11 +57,11 @@ const modalMap=JSON.parse(modules['components/estimate-modal.module.css'].slice(
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.evaluate(({code,styleMap,modalMap})=>{
  const h=React.createElement;
- const env={styles:styleMap,modalStyles:modalMap,basicEstimateActive:true,isGeneric:true,genericResult:{sector:{key:'agricultural'},family:{key:'tractor'},usageAmount:4000},resultState:{kind:'generic'},resultHeroTone:'',headlineDisplayValue:431903,headlineValue:431903,headlineVatLabel:'VAT excluded',vatDisplayMode:'excl',machineTitle:'Tractor • Example model',yearSummary:'2021',usageSummary:'4 000 hours',resultCondition:'fair',appliedAdvancedAssumptions:{popularityStars:4},canUseAdvancedAssumptions:true,isSignedIn:true,canSaveToAssetRegister:true,canUseMarketplacePublishFlow:true,currentMarketPrice:null,
- money:v=>'R '+Math.round(v).toLocaleString('en-ZA'),getVatDisplayValue:v=>v,conditionLabel:()=> 'Fair',getSaleabilityInputFromResult:()=>({}),
+ const env={Number,styles:styleMap,modalStyles:modalMap,basicEstimateActive:true,isGeneric:true,genericResult:{sector:{key:'agricultural'},family:{key:'tractor'},usageAmount:4000},resultState:{kind:'generic',result:{specsJson:{basic_extra_replacement_price_ex_vat:15000}}},resultHeroTone:'',headlineDisplayValue:431903,headlineValue:431903,headlineVatLabel:'VAT excluded',vatDisplayMode:'excl',machineTitle:'Tractor • Example model',yearSummary:'2021',usageSummary:'4 000 hours',resultCondition:'fair',appliedAdvancedAssumptions:{popularityStars:4},canUseAdvancedAssumptions:true,isSignedIn:true,canSaveToAssetRegister:true,canUseMarketplacePublishFlow:true,currentMarketPrice:null,
+ money:v=>'R '+Math.round(v).toLocaleString('en-ZA'),getVatDisplayValue:v=>v,getCurrentResultReplacementPriceExVat:()=>985000,conditionLabel:()=> 'Fair',getSaleabilityInputFromResult:()=>({}),
  renderDetailIcon:()=>h('span',{className:styleMap.detailIcon},h('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'currentColor'},h('circle',{cx:12,cy:12,r:8}))),renderResultActionIcon:()=>h('span',{className:styleMap.resultActionIcon},'↗'),ValuationResultTour:()=>h('button',null,'Explain my value'),SaleabilityModal:()=>null,AdvancedAssumptionsModal:()=>null,
  renderResultReplacementBreakdown:()=>h('div',{className:styleMap.replacementCostSummary},h('dl',{className:styleMap.replacementCostParts},h('div',null,h('dt',null,'Asset price'),h('dd',null,'R 970 000')),h('div',null,h('dt',null,'Selected extras'),h('dd',null,'R 15 000'))),h('div',{className:styleMap.replacementCostTotal},h('span',null,'Total replacement price'),h('strong',null,'R 985 000'),h('small',null,'VAT excluded')))};
- const proxy=new Proxy(env,{has:(_,key)=>!['React','Fixture'].includes(key),get:(target,key)=>key===Symbol.unscopables?undefined:key in target?target[key]:key==='Array'?Array:key==='undefined'?undefined:/^(render|get|set|open|save|download|create|parse|apply|update)/.test(String(key))?()=>null:null});
+ const proxy=new Proxy(env,{has:(_,key)=>!['React','Fixture','renderResultReplacementBreakdown'].includes(key),get:(target,key)=>key===Symbol.unscopables?undefined:key in target?target[key]:key==='Array'?Array:key==='undefined'?undefined:/^(render|get|set|open|save|download|create|parse|apply|update)/.test(String(key))?()=>null:null});
  window.env=env;window.root=ReactDOM.createRoot(document.getElementById('app'));window.Fixture=new Function('env','React','with(env){'+code+';return Fixture;}')(proxy,React);window.root.render(h(window.Fixture));
  },{code,styleMap,modalMap});
  await page.waitForSelector('[data-value-tour="saleability"]');assert.deepEqual(errors,[]);
@@ -70,10 +71,26 @@ const modalMap=JSON.parse(modules['components/estimate-modal.module.css'].slice(
  const replacement=await rect('[data-value-tour="replacement"]'),market=await rect('[data-value-tour="saleability"]');
  assert(Math.abs(replacement.y-market.y)<2,'Supporting cards align');assert(market.x>replacement.x+replacement.w,'Cards use both columns');
  await page.screenshot({path:'/tmp/final-layout.png',fullPage:true});
+ const buttons=await page.$$eval('[data-value-tour="replacement"] > button, [data-value-tour="saleability"] > button',els=>els.map(e=>({y:e.getBoundingClientRect().y,h:e.getBoundingClientRect().height})));
+ assert(Math.abs(buttons[0].y-buttons[1].y)<2,'Actions align at the top');
+
  await page.evaluate(()=>{window.env.currentMarketPrice=390000;window.root.render(React.createElement(window.Fixture));});
  await page.waitForFunction(()=>document.querySelector('[data-value-tour="saleability"]').textContent.includes('390'));
  assert.equal(await page.$eval('[data-value-tour="saleability"] button',el=>el.textContent),'Update');
+ const amounts=await page.$$eval('[data-value-tour="replacement"] strong, [data-value-tour="saleability"] strong',els=>els.map(e=>({y:e.getBoundingClientRect().y,font:getComputedStyle(e).fontSize})));
+ assert.equal(amounts[0].font,amounts[1].font,'Matching main price sizes');
+ assert(Math.abs(amounts[0].y-amounts[1].y)<2,'Matching main price baselines');
+ await page.screenshot({path:'/tmp/price-cards.png',fullPage:true});
+
  await page.setViewport({width:390,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No mobile horizontal overflow');
  await page.screenshot({path:'/tmp/final-layout-mobile.png',fullPage:true});
+ await page.evaluate(()=>{
+   Object.assign(window.env,{breakdownAccess:true,activeBreakdown:{report:{}},getResultUsageMetricType:()=> 'hours',getResultMaxLifetimeUsage:()=>14000,formatPlainNumber:v=>String(v).replace(/\B(?=(\d{3})+(?!\d))/g,' '),EstimateTools:()=>null});
+   window.root.render(React.createElement(window.Fixture));
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Expected lifetime'));
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.setViewport({width:1366,height:1000});
+ await page.screenshot({path:'/tmp/price-cards-lifetime.png',fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS desktop supporting-card alignment, completed market result and mobile layout');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
