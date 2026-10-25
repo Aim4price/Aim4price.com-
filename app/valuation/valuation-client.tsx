@@ -82,10 +82,6 @@ import type {
   DealerAssessmentInput,
   NormalizedDealerAssessment,
 } from '../../lib/valuation/dealer-assessment';
-import {
-  getGuestValuationCount,
-  incrementGuestValuationCount,
-} from '../../lib/guest-valuation-limit';
 import { compressReportPhoto, getEstimatePhotoFiles } from '../../lib/estimate-photo-handoff';
 import type { AdBrandKit } from '../../lib/ad-studio';
 import type { MarketplaceListing } from '../../lib/marketplace';
@@ -2011,7 +2007,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, [saveMarketChoice, savedMarketWarning]);
 
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [guestValuationCount, setGuestValuationCount] = useState(0);
   const [marketplaceMode, setMarketplaceMode] = useState(false);
   const [conversionAssetId, setConversionAssetId] = useState<string | null>(null);
   const [conversionSourceAsset, setConversionSourceAsset] = useState<ConversionSourceAsset | null>(null);
@@ -2538,7 +2533,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
-  const canUseAdvancedAssumptions = breakdownAccess || (isSignedIn && accountProfile?.accountStatus === 'active');
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const dealerOwnedRegister = useMemo(
@@ -2972,10 +2966,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setAccountType('public');
         setAccountProfile(null);
         setAdBrandKits([]);
-      } finally {
-        if (mounted) {
-          setGuestValuationCount(getGuestValuationCount());
-        }
       }
     }
 
@@ -3935,11 +3925,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
-    if (!canUseAdvancedAssumptions) {
-      setAdvancedError('Advanced assumptions are for active Aim4price accounts only.');
-      return;
-    }
-
     const advancedAssumptions = overrides ?? buildAdvancedAssumptionsRequestFromFields();
     if (!advancedAssumptions) return;
 
@@ -4141,12 +4126,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
-    if (!isSignedIn && !breakdownAccess && guestValuationCount >= 3) {
-      setMessage('You have used your 3 free estimates. Please create an account or log in to continue.');
-      router.push('/auth#signup');
-      return;
-    }
-
     setMessage('');
     setVatDisplayMode(basicEstimateActive ? basicReplacementVatMode : getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
     setAdvancedError('');
@@ -4211,9 +4190,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setReplacementPanelOpen(false);
       }
 
-      if (!isSignedIn && !breakdownAccess) {
-        setGuestValuationCount(incrementGuestValuationCount());
-      }
       setStep(6);
     } catch (error) {
       console.error(error);
@@ -9421,7 +9397,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
-                      <p>{breakdownAccess ? 'Download your estimate, with an optional calculation breakdown.' : 'Sign in to save this estimate or create a Marketplace advert.'}</p>
+                      <p>{breakdownAccess ? 'Download your estimate, with an optional calculation breakdown.' : 'Value your assets for free. Sign in to save this asset and track its value.'}</p>
                     </div>
                   )}
                   <button
@@ -9527,13 +9503,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
         <div className={styles.resultAssumptionsRow}>
           {!breakdownAccess && advancedShowLifetimeInput ? (
-            <section data-value-tour="assumptions" data-value-tour-readonly={!canUseAdvancedAssumptions || undefined} className={`${styles.resultReplacementSummary} ${styles.resultLifetimeRow}`}>
+            <section data-value-tour="assumptions" className={`${styles.resultReplacementSummary} ${styles.resultLifetimeRow}`}>
               <div className={styles.resultLifetimeLabel}>{renderDetailIcon('usage')}<div>
                 <strong>Expected lifetime</strong>
                 <p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState) ?? getUsageLifetimeDefault())} {advancedLifetimeShortUnit}</p>
-                {!canUseAdvancedAssumptions ? <small>For active Aim4price accounts only.</small> : null}
               </div></div>
-              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" disabled={!canUseAdvancedAssumptions} onClick={openFinalLifetimeModal}>Adjust</button>
+              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" onClick={openFinalLifetimeModal}>Adjust</button>
             </section>
           ) : null}
 
@@ -10112,7 +10087,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <>
                   <strong>Account required before publishing.</strong>
                   <span>
-                    Guests can run {Math.max(0, 3 - Math.min(guestValuationCount, 3))} more estimate{3 - Math.min(guestValuationCount, 3) === 1 ? '' : 's'}, but marketplace listings can only be published from an account.
+                    Value assets for free, as often as you need. Sign in to save assets or publish Marketplace listings.
                   </span>
                 </>
               ) : isDealerAccount ? (
@@ -10357,8 +10332,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div className={styles.marketplaceGuestWarning}>
                 <strong>Account required before publishing.</strong>
                 <p>
-                  Guests can run 3 estimates and make 3 marketplace upload attempts. This attempt will take you to account
-                  creation so the listing can be tied to your seller profile.
+                  Valuations are free. Sign in or create an account to publish this listing under your seller profile.
                 </p>
               </div>
             ) : null}

@@ -1,3 +1,4 @@
+import { publicValuationThrottle } from '../../../../lib/public-valuation-throttle';
 import { getAnyServerSession } from '../../../../lib/auth-session';
 import { canUseEstimateBreakdown } from '../../../../lib/estimate-breakdown-access';
 import { verifyEstimateBreakdown } from '../../../../lib/estimate-breakdown-token';
@@ -1069,6 +1070,8 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
 }
 
 export async function POST(request: NextRequest) {
+  const throttled = publicValuationThrottle(request, 'report');
+  if (throttled) return throttled;
   try {
     const rawPayload = await readRequestPayload(request);
     let breakdown: EstimateBreakdown | null = null;
