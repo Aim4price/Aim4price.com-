@@ -1,0 +1,19 @@
+/* Shared attachment surface for the two automatic ledgers. */
+.dialog.dialog.dialog.dialog {
+  width: min(1280px, var(--website-dialog-reference-width, 100%)) !important;
+}
+.panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--app-line, #d2e3dc);
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--app-surface-soft, #f7fbfa));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(20, 50, 40, .04));
+}
+.panel h3 { margin: 0 0 6px; font: inherit; font-weight: 750; color: var(--app-text, #123f32); }
+.panel > p { margin: 0 0 18px; color: var(--app-muted, #687c73); }
+.files { max-height: 240px; overflow-y: auto; scrollbar-gutter: stable; padding-right: 6px; }
+.info { margin-top: 18px; color: var(--app-muted, #687c73); font-size: .9rem; }
+.info p { margin: 6px 0 0; }
+.notes { display: grid; gap: 12px; color: var(--app-text, #123f32); font-weight: 700; }
+.notes textarea { box-sizing: border-box; width: 100%; min-height: 120px; padding: 16px; border: 1px solid var(--app-line, #d2e3dc); border-radius: 16px; background: var(--app-surface-soft, #f0f7f3); color: var(--app-text, #123f32); font: inherit; font-weight: 500; resize: vertical; }

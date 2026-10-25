@@ -79,12 +79,12 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(uploadModal, /styles\.formModal[\s\S]*?styles\.costUploadModal/);
   assert.match(uploadModal, /Automatic upload/);
   assert.match(uploadModal, /Aim4price captures, verifies and allocates/);
-  assert.match(uploadModal, /<section className=\{styles\.uploadPanel\}>[\s\S]*?Documents and photos/);
+  assert.match(uploadModal, /<section className=\{captureAttachmentStyles\.panel\}>[\s\S]*?Fuel slip or photo/);
   assert.match(uploadModal, /<CaptureUploadDropzone[\s\S]*?onFiles=\{handleFuelSlipUploadFiles\}/);
   assert.match(uploadModal, /disabled=\{isSaving \|\| isExtractingFuelSlip\}/);
   assert.match(uploadModal, /inputLabel="Choose fuel slip or photo"/);
   assert.match(uploadModal, /styles\.modalFooter/);
-  assert.doesNotMatch(uploadModal, /wizardStyles\.|fuelSlipUploadWizardModal|fuelSlipWizardPanel|fuelSlipWizardHeading/);
+  assert.doesNotMatch(uploadModal, /fuelSlipUploadWizardModal|fuelSlipWizardPanel|fuelSlipWizardHeading/);
   assert.doesNotMatch(uploadModal, /renderFuelSlipExtraFields\(\)|renderFuelSlipValidationNotice\(\)|operational details/);
   assert.match(styles, /\.fuelSlipFlowBackdrop \.costUploadModal\s*\{[\s\S]*?width:\s*min\(100%, 860px\)/);
 });

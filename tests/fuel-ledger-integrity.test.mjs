@@ -215,3 +215,16 @@ test('fuel-slip usage updates are explicit, monotonic and stale valuation only a
   assert.match(saveFuelSlip, /const nextSpecs = usageAdvanced && assetHasSavedValuation\s+\? markFuelAssetValuationNeedsUpdate/);
 });
 
+
+test('only existing owned fuel slips may detach automatic capture evidence', () => {
+  const guard = ledger.match(/if \(captureMode === 'automatic' && !existingFuelSlipId && !uploadId && !documentFileUrl\) \{[\s\S]*?\n  \}/)?.[0];
+  assert.ok(guard);
+  const validate = new Function('captureMode', 'existingFuelSlipId', 'uploadId', 'documentFileUrl', guard);
+  assert.throws(() => validate('automatic', '', '', ''), /Upload the fuel slip/);
+  assert.doesNotThrow(() => validate('automatic', 'existing-slip', '', ''));
+  assert.doesNotThrow(() => validate('automatic', '', 'uploaded-file', ''));
+  assert.match(ledger, /existingFuelSlipId \? await loadFuelSlipRowForUpdate\(client, userId, existingFuelSlipId\)/);
+  const loader = ledger.slice(ledger.indexOf('async function loadFuelSlipRowForUpdate'), ledger.indexOf('function normalizedFuelSlipIdFromInput'));
+  assert.match(loader, /where fs.user_id = \$1 and fs.id::text = \$2/);
+  assert.match(loader, /if \(!row\) throw new Error\('Fuel slip not found.'\)/);
+});

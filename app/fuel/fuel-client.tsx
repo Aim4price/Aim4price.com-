@@ -1,5 +1,7 @@
 'use client';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
+import captureAttachmentStyles from '../../components/CaptureAttachment.module.css';
+import attachmentStyles from '../my-invoices/manual-cost-attachment.module.css';
 import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -3503,7 +3505,13 @@ export default function FuelClient({
         disabled={isUploadingFuelEvidence || isSaving}
         onFiles={files => { void handleFuelEvidenceUpload(files[0]); }}
       />
-      {fuelSlipDraft.documentFileUrl ? <DocumentFileLink className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink> : null}
+      {fuelSlipDraft.documentFileUrl ? <div className={attachmentStyles.fileRow}>
+        <DocumentFileLink className={attachmentStyles.fileName} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
+        <button type="button" disabled={isUploadingFuelEvidence || isSaving} onClick={() => {
+          setFuelEvidenceError('');
+          setFuelSlipDraft(current => ({ ...current, uploadId: '', documentFileUrl: '', originalFilename: '', contentType: '', byteSize: null }));
+        }}>Remove</button>
+      </div> : null}
       {isUploadingFuelEvidence ? <p role="status">Uploading supporting file…</p> : null}
       {fuelEvidenceError ? <p role="alert" className={styles.fuelSlipValidationNotice}>{fuelEvidenceError}</p> : null}
     </section>;
@@ -4576,19 +4584,18 @@ export default function FuelClient({
 
       {captureAllowance.blocked ? <CaptureAllowanceModal endpoint={allowanceEndpoint} ledger="Fuel" onClose={() => closeFuelSlipFlow()} /> : null}
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' && !captureAllowance.blocked ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
-          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
-            <div className={styles.modalHeader}>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop} ${wizardStyles.overlay}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${wizardStyles.dialog} ${captureAttachmentStyles.dialog}`}>
+            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div>
                 <h2 id="fuel-slip-upload-title">Automatic upload</h2>
                 <p>{selectedFuelSlipTargetName} · Fuel slip or photo</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
-              <section className={styles.uploadPanel}>
-                <h3>Documents and photos</h3>
+            <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
+              <section className={captureAttachmentStyles.panel}>
+                <h3>Fuel slip or photo</h3>
                 <p>Aim4price captures, verifies and allocates your fuel slip within 24 hours.</p>
                 <CaptureUploadDropzone
                   title="Drop fuel slip here or browse"
@@ -4598,12 +4605,15 @@ export default function FuelClient({
                   disabled={isSaving || isExtractingFuelSlip}
                   onFiles={handleFuelSlipUploadFiles}
                 />
-                {fuelSlipUploadFileName ? <p role="status">Selected: {fuelSlipUploadFileName}</p> : null}
+                {fuelSlipUploadFileName ? <div className={attachmentStyles.fileRow}>
+                  <span className={attachmentStyles.fileName} role="status">{fuelSlipUploadFileName}</span>
+                  <button type="button" disabled={isExtractingFuelSlip} onClick={() => handleFuelSlipUploadFiles([])}>Remove</button>
+                </div> : null}
                 <p role="status">{captureAllowance.label}</p>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
               </section>
             </div>
-            <div className={styles.modalFooter}>
+            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
               <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!captureAllowance.ready || !fuelSlipUploadFile || isExtractingFuelSlip}>
                 {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Upload automatically'}

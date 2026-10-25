@@ -5263,7 +5263,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   if (totalAmount === null) coreMissingReasons.push('Total amount');
   const coreComplete = coreMissingReasons.length === 0;
 
-  if (captureMode === 'automatic' && !uploadId && !documentFileUrl) {
+  if (captureMode === 'automatic' && !existingFuelSlipId && !uploadId && !documentFileUrl) {
     throw new Error('Upload the fuel slip photo or PDF before saving an automatic fuel slip.');
   }
 
