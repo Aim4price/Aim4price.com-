@@ -80,7 +80,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;padding:24px;background:#edf4ef;font-family:Arial}#app{background:white;padding:24px;border-radius:20px;max-width:650px;margin:auto}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+`window.root=ReactDOM.createRoot(document.getElementById('app'));window.renderCard=(saved,replacementPrice=1000000)=>{function App(){const [view,setView]=React.useState('fair'),[vat,setVat]=React.useState(false);return React.createElement(require('components/asset-register/AssetPriceSwitch').default,{value:459000,manual:false,view,onViewChange:setView,replacementPrice,replacementParts:{asset:900000,extras:100000},onEditReplacement:()=>{window.editReplacement=true},onRecalculate:()=>{window.recalculate=true},included:vat,onVatChange:setVat,saved,stale:!!saved,canCalculate:true,loading:false,error:false,onCalculate:()=>{window.calculateClicked=true}})}window.root.render(React.createElement(App,{key:String(Math.random())}));};window.renderCard();`});
- const click=async text=>{const basis={'Replacement':'replacement','Fair value':'fair','Market estimate':'market'}[text];if(basis){await page.waitForSelector('select[aria-label="Value basis"]');await page.select('select[aria-label="Value basis"]',basis);return;}await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(n=>n.textContent===t).click(),text)};
+ const click=async text=>{const basis={'Replacement':'replacement','Fair value':'fair','Market estimate':'market'}[text];if(basis){await page.waitForSelector('select[aria-label="Value basis"]');await page.select('select[aria-label="Value basis"]',basis);return;}await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>(b.textContent===t||b.querySelector("strong")?.textContent===t)),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(n=>(n.textContent===t||n.querySelector("strong")?.textContent===t)).click(),text)};
  await page.setViewport({width:1366,height:768});await click('Market estimate');await click('Calculate market estimate');assert(await page.evaluate(()=>window.calculateClicked));
  await page.evaluate(()=>window.renderCard({priceExVat:425000,assessedAt:'2026-10-19T10:00:00Z'}));await click('Market estimate');await click('Incl. VAT');
  assert(await page.evaluate(()=>document.querySelector('section strong').textContent.replace(/\D/g,'')==='488750'));
@@ -191,7 +191,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 // Save review: skip, cancel, finish assessment, and invalidate after editing.
  await page.evaluate(()=>window.root.render(React.createElement(require('save-fixture').default)));
  await click('Save asset');await page.waitForSelector('#market-save-title');
- await click('Save with Ideal Price only');await page.waitForSelector('output');
+ await click('Save with Ideal Value only');await page.waitForSelector('output');
  await click('Save asset');await page.waitForSelector('#market-save-title');
  await click('Calculate market value');await page.waitForSelector('[aria-label="Question 1 of 5"]');
  await page.click('[aria-label="Close Realistic Market Value"]');await page.waitForSelector('#market-save-title');
@@ -211,6 +211,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[aria-labelledby="market-save-title"]',el=>el.scrollHeight<=el.clientHeight+1));
  await page.setViewport({width:390,height:844});
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ assert(await page.$eval('[aria-labelledby="market-save-title"]',el=>el.scrollHeight<=el.clientHeight+1),'Prompt fits a phone without scrolling');
+ await page.screenshot({path:'/tmp/market-save-prompt-mobile.png'});
+ await page.addStyleTag({content:fs.readFileSync(path.join(root,'public/app-theme.css'),'utf8')});
+ await page.evaluate(()=>document.documentElement.dataset.appTheme='dark');
+ await page.setViewport({width:1366,height:768});
+ await page.mouse.move(0,0);
+ await page.waitForFunction(()=>{const button=document.querySelector('[aria-labelledby="market-save-title"] button:nth-child(1)');return [...document.querySelectorAll('[aria-labelledby="market-save-title"] button')].filter(b=>b.querySelector('strong')).every(b=>getComputedStyle(b).backgroundColor.match(/rgb\((\d+)/)?.[1]<60);});
+ await page.screenshot({path:'/tmp/market-save-prompt-dark.png'});
  assert.deepEqual(errors,[]);console.log('PASS all three price views, replacement actions, independent VAT, empty states, mobile fit and save retry');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
