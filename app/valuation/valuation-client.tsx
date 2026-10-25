@@ -9959,6 +9959,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <p id="final-save-description">{finalSaveDescription}</p>
             </div>
 
+            <div className={styles.finalSaveScrollBody} data-save-review-body>
             <div className={styles.finalSaveValueToolbar}>
               <strong>Values</strong>
               <div className={styles.finalSaveToolbarActions}>
@@ -10026,6 +10027,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             </div> : null}
             {finalSaveError ? <p className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
+
+            </div>
 
             <div className={`${styles.finalSaveActions} ${modalStyles.actions}`}>
               <button
