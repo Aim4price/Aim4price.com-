@@ -1,18 +1,29 @@
 .title:focus { outline: none; }
 .body.body.body.body.body { padding: 20px 30px !important; overflow-y: auto; scrollbar-gutter: auto; }
-.panel { display: grid; min-width: 0; gap: 18px; margin: 0; padding: 0; border: 0; background: transparent; }
+.panel { display: grid; min-width: 0; gap: 24px; margin: 0; padding: 0; border: 0; background: transparent; }
+.fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .scheduleSummary { margin: 0; padding: 14px 18px; border-radius: 14px; color: var(--app-text, #123f32); background: var(--app-surface-soft, #eff6f2); font-size: 1rem; line-height: 1.5; }
-.review { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0 24px; margin: 0; }
-.review > div { grid-column: span 2; min-width: 0; padding: 10px 0; border-bottom: 1px solid var(--app-line, #d8e6de); }
-.review dt { margin: 0 0 5px; color: var(--app-muted, #62786e); font-size: .88rem; font-weight: 600; }
-.review dd { margin: 0; color: var(--app-text, #123f32); font-size: 1rem; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; white-space: pre-wrap; }
+.frequencyGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.frequencyCard { display: grid; justify-items: start; align-content: center; gap: 8px; min-width: 0; min-height: 152px; padding: 22px; border: 1px solid var(--app-line, #d8e6de); border-radius: 20px; background: var(--app-surface, #fff); color: var(--app-text, #123f32); text-align: left; font: inherit; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; }
+.frequencyCard strong { font-size: 1.12rem; }
+.frequencyCard small { color: var(--app-muted, #62786e); font-size: .9rem; }
+.frequencyCard[aria-pressed="true"], .frequencyCard:hover { border-color: var(--app-accent, #28765a); background: var(--app-surface-soft, #eff6f2); box-shadow: inset 0 0 0 1px var(--app-accent, #28765a); }
+.frequencyCard:focus-visible { outline: 3px solid var(--app-accent, #28765a); outline-offset: 3px; }
+.frequencyCard:disabled { opacity: .65; cursor: wait; }
+.frequencyIcon { width: 34px; height: 34px; margin-bottom: 4px; color: var(--app-accent, #28765a); }
+.review { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.review > div { grid-column: span 2; min-width: 0; padding: 14px 16px; border: 1px solid var(--app-line, #d8e6de); border-radius: 16px; }
+.review dt { margin: 0 0 6px; color: var(--app-muted, #62786e); font-size: .88rem; font-weight: 600; }
+.review dd { margin: 0; color: var(--app-text, #123f32); font-size: 1rem; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
 .review .wide, .review > div:nth-last-child(2) { grid-column: span 3; }
+.review .wide:first-child, .review .wide:nth-child(2) { grid-column: 1 / -1; padding: 0 0 16px; border: 0; border-bottom: 1px solid var(--app-line, #d8e6de); border-radius: 0; }
 .review .wide:first-child dd { font-size: 1.2rem; }
-.review .amount { margin: 6px 0; padding: 10px 16px; border: 0; border-radius: 14px; background: var(--app-surface-soft, #eff6f2); }
+.review > div:nth-child(3), .review .amount, .review > div:nth-child(5) { background: var(--app-surface-soft, #eff6f2); border-color: transparent; }
 .amount dd { font-size: 1.3rem; font-weight: 800; }
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .body.body.body.body.body { padding: 16px 18px !important; }
-  :global(:where(html:not(:has([data-website-canvas])))) .review > div { grid-column: span 1; }
-  :global(:where(html:not(:has([data-website-canvas])))) .review .wide { grid-column: 1 / -1; }
-  :global(:where(html:not(:has([data-website-canvas])))) .review { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .frequencyGrid { gap: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .frequencyCard { padding: 16px; min-height: 148px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .review { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .review > div { grid-column: 1 / -1; }
 }

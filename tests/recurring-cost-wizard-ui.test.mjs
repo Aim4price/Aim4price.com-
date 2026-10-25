@@ -10,9 +10,9 @@ const modalStart = client.indexOf('{recurringOpen ?');
 const modalEnd = client.indexOf('{filterOpen ?', modalStart);
 const recurringModal = client.slice(modalStart, modalEnd);
 
-test('recurring costs use the coverage, details, schedule and review flow', () => {
+test('recurring costs use the coverage, category, details, frequency, dates and review flow', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'recurring cost modal should be present');
-  assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3 \| 4/);
+  assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3 \| 4 \| 5 \| 6/);
   assert.match(client, /const \[recurringWizardStep, setRecurringWizardStep\]/);
   assert.doesNotMatch(recurringModal, /\[\['Coverage', 1\], \['Details', 2\], \['Review', 3\]\]/);
   assert.match(recurringModal, /styles\.invoiceDropCodeModal/);
@@ -45,7 +45,7 @@ test('each step validates before advancing and save only runs from review', () =
   assert.match(client, /if \(!recurringDraft\.description\.trim\(\)\)/);
   assert.match(client, /recurringAmountValue <= 0/);
   assert.match(client, /recurringDraft\.endDate < recurringDraft\.startDate/);
-  assert.match(client, /if \(recurringWizardStep !== 4\)[\s\S]*?continueRecurringWizard\(\)/);
+  assert.match(client, /if \(recurringWizardStep !== 6\)[\s\S]*?continueRecurringWizard\(\)/);
   assert.match(client, /setRecurringWizardStep\(3\)/);
 });
 
@@ -81,3 +81,18 @@ test('recurring wizard has responsive, purpose-built field and review styling', 
   assert.match(styles, /\.recurringReviewNotice\s*\{/);
 });
 
+
+
+test('category and frequency choices advance without submitting the commitment', () => {
+  const category = recurringModal.slice(recurringModal.indexOf('{recurringWizardStep === 2 ? ('), recurringModal.indexOf('{recurringWizardStep === 3 ? ('));
+  const frequency = recurringModal.slice(recurringModal.indexOf('{recurringWizardStep === 4 ? ('), recurringModal.indexOf('{recurringWizardStep === 5 ? ('));
+  assert.match(category, /setRecurringField\('category', option.value\)/);
+  assert.match(category, /setRecurringWizardStep\(3\)/);
+  assert.match(frequency, /setRecurringWizardStep\(5\)/);
+  assert.match(frequency, /type="button"/);
+  assert.match(frequency, /aria-pressed=/);
+  assert.doesNotMatch(frequency, /<DateInput/);
+  for (const value of ['finance', 'rental', 'tracking', 'storage', 'extended_warranty']) {
+    assert.ok(client.includes(`value: '${value}'`));
+  }
+});

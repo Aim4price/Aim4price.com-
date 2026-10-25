@@ -317,7 +317,7 @@ type Notice = {
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
 type ManualCostWizardStep = 1 | 2 | 3;
-type RecurringWizardStep = 1 | 2 | 3 | 4;
+type RecurringWizardStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 type RecurringCommitmentDraft = {
   description: string;
@@ -338,6 +338,11 @@ type RecurringCommitmentResponse = {
 
 const RECURRING_CATEGORY_OPTIONS = [
   { value: 'insurance', label: 'Insurance' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'rental', label: 'Rental' },
+  { value: 'tracking', label: 'Tracking' },
+  { value: 'storage', label: 'Storage' },
+  { value: 'extended_warranty', label: 'Extended warranty' },
   { value: 'service_plan', label: 'Service plan' },
   { value: 'licence', label: 'Licence' },
   { value: 'subscription', label: 'Subscription' },
@@ -2895,36 +2900,34 @@ export default function MyInvoicesClient({
       setRecurringWizardStep(2);
       return;
     }
-    if (recurringWizardStep === 2) {
+    if (recurringWizardStep === 3) {
       const validationError = recurringDetailsError();
       if (validationError) {
         setRecurringError(validationError);
         return;
       }
-      setRecurringCategoryDropdownOpen(false);
-      setRecurringWizardStep(3);
-      return;
     }
-    if (recurringWizardStep === 3) {
+    if (recurringWizardStep === 5) {
       const validationError = recurringScheduleError();
       if (validationError) {
         setRecurringError(validationError);
         return;
       }
-      setRecurringWizardStep(4);
     }
+    setRecurringCategoryDropdownOpen(false);
+    setRecurringWizardStep((current) => Math.min(6, current + 1) as RecurringWizardStep);
   }
 
   function goBackRecurringWizard() {
     setRecurringError('');
     setRecurringCategoryDropdownOpen(false);
-    setRecurringWizardStep((current) => (current === 4 ? 3 : current === 3 ? 2 : 1));
+    setRecurringWizardStep((current) => Math.max(1, current - 1) as RecurringWizardStep);
   }
 
   async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRecurringError('');
-    if (recurringWizardStep !== 4) {
+    if (recurringWizardStep !== 6) {
       continueRecurringWizard();
       return;
     }
@@ -2935,13 +2938,13 @@ export default function MyInvoicesClient({
     }
     const validationError = recurringDetailsError();
     if (validationError) {
-      setRecurringWizardStep(2);
+      setRecurringWizardStep(3);
       setRecurringError(validationError);
       return;
     }
     const scheduleError = recurringScheduleError();
     if (scheduleError) {
-      setRecurringWizardStep(3);
+      setRecurringWizardStep(5);
       setRecurringError(scheduleError);
       return;
     }
@@ -4652,14 +4655,13 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 2 ? 'Commitment details' : recurringWizardStep === 3 ? 'Payment schedule' : 'Review commitment'}</h2>
-                  <p>{recurringWizardStep === 1
-                    ? 'Choose which assets this cost covers.'
-                    : recurringWizardStep === 2
-                      ? 'Describe the cost and add the amount.'
-                      : recurringWizardStep === 3
-                        ? 'Choose when this cost repeats.'
-                        : 'Check the details before saving.'}</p>
+                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 2 ? 'Commitment category' : recurringWizardStep === 3 ? 'Commitment details' : recurringWizardStep === 4 ? 'How often?' : recurringWizardStep === 5 ? 'Commitment dates' : 'Review commitment'}</h2>
+                  <p>{recurringWizardStep === 1 ? 'Choose which assets this cost covers.'
+                    : recurringWizardStep === 2 ? 'Choose the type of recurring cost.'
+                    : recurringWizardStep === 3 ? 'Describe the cost and add the amount per payment.'
+                    : recurringWizardStep === 4 ? 'Choose how often you pay this cost.'
+                    : recurringWizardStep === 5 ? 'Set the start date and any end or renewal dates.'
+                    : 'Check the details before saving.'}</p>
                 </div>
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost" data-modal-close="true">
                   <span aria-hidden="true">×</span>
@@ -4701,83 +4703,86 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 2 ? (
+                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
+                    <div className={`${styles.budgetField} ${styles.recurringCategoryField}`}>
+                      <span id="recurring-category-label">Category</span>
+                      <div
+                        className={`${styles.customFilterSelect} ${styles.recurringCategorySelect} ${recurringCategoryDropdownOpen ? styles.customFilterSelectOpen : ''}`}
+                        data-recurring-category-dropdown="true"
+                      >
+                        <button
+                          ref={recurringCategoryTriggerRef}
+                          type="button"
+                          className={`${styles.customFilterSelectButton} ${styles.recurringCategoryButton} ${recurringCategoryDropdownOpen ? styles.customFilterSelectButtonOpen : ''}`}
+                          onClick={() => setRecurringCategoryDropdownOpen((current) => !current)}
+                          disabled={isSaving}
+                          aria-haspopup="listbox"
+                          aria-expanded={recurringCategoryDropdownOpen}
+                          aria-labelledby="recurring-category-label recurring-category-value"
+                          aria-controls="recurring-category-options"
+                        >
+                          <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText}`}>
+                            {recurringCategoryLabel}
+                          </span>
+                          <span className={styles.recurringCategoryChevron} aria-hidden="true">
+                            <ChevronDownIcon className={styles.customFilterSelectChevron} />
+                          </span>
+                        </button>
+
+                        {recurringCategoryDropdownOpen ? (
+                          <DropdownOverlay
+                            id="recurring-category-options"
+                            className={`${styles.customFilterSelectMenu} ${styles.recurringCategoryMenu}`}
+                            role="listbox"
+                            aria-label="Category"
+                            gap={8}
+                            maxHeight={320}
+                          >
+                            {RECURRING_CATEGORY_OPTIONS.map((option) => {
+                              const isSelected = recurringDraft.category === option.value;
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={`recurring-category-${option.value}`}
+                                  className={`${styles.customFilterSelectOption} ${styles.recurringCategoryOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                                  onClick={() => {
+                                    setRecurringField('category', option.value);
+                                    setRecurringCategoryDropdownOpen(false);
+                                    setRecurringWizardStep(3);
+                                  }}
+                                  role="option"
+                                  aria-selected={isSelected}
+                                >
+                                  <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel}`}>{option.label}</span>
+                                  <span className={`${styles.recurringCategoryOptionMark} ${isSelected ? styles.recurringCategoryOptionMarkSelected : ''}`} aria-hidden="true">
+                                    {isSelected ? '✓' : ''}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </DropdownOverlay>
+                        ) : null}
+                      </div>
+                    </div>
+                  </section>
+                ) : null}
+
+                {recurringWizardStep === 3 ? (
                   <section className={`${styles.recurringDetailsPanel} ${recurringStyles.panel}`} aria-labelledby="recurring-modal-title">
-
-
-                    <div className={styles.recurringDetailsGrid}>
+                    <div className={recurringStyles.fields}>
                       <label className={`${styles.budgetField} ${styles.recurringDescriptionField}`}>
                         <span>Description</span>
                         <input
                           type="text"
                           value={recurringDraft.description}
                           onChange={(event) => setRecurringField('description', event.target.value)}
-                          placeholder="Insurance policy or service plan"
+                          placeholder="Describe this commitment"
                           autoComplete="off"
                           required
                           disabled={isSaving}
                         />
                       </label>
-                      <div className={`${styles.budgetField} ${styles.recurringCategoryField}`}>
-                        <span id="recurring-category-label">Category</span>
-                        <div
-                          className={`${styles.customFilterSelect} ${styles.recurringCategorySelect} ${recurringCategoryDropdownOpen ? styles.customFilterSelectOpen : ''}`}
-                          data-recurring-category-dropdown="true"
-                        >
-                          <button
-                            ref={recurringCategoryTriggerRef}
-                            type="button"
-                            className={`${styles.customFilterSelectButton} ${styles.recurringCategoryButton} ${recurringCategoryDropdownOpen ? styles.customFilterSelectButtonOpen : ''}`}
-                            onClick={() => setRecurringCategoryDropdownOpen((current) => !current)}
-                            disabled={isSaving}
-                            aria-haspopup="listbox"
-                            aria-expanded={recurringCategoryDropdownOpen}
-                            aria-labelledby="recurring-category-label recurring-category-value"
-                            aria-controls="recurring-category-options"
-                          >
-                            <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText}`}>
-                              {recurringCategoryLabel}
-                            </span>
-                            <span className={styles.recurringCategoryChevron} aria-hidden="true">
-                              <ChevronDownIcon className={styles.customFilterSelectChevron} />
-                            </span>
-                          </button>
-
-                          {recurringCategoryDropdownOpen ? (
-                            <DropdownOverlay
-                              id="recurring-category-options"
-                              className={`${styles.customFilterSelectMenu} ${styles.recurringCategoryMenu}`}
-                              role="listbox"
-                              aria-label="Category"
-                              gap={8}
-                              maxHeight={320}
-                            >
-                              {RECURRING_CATEGORY_OPTIONS.map((option) => {
-                                const isSelected = recurringDraft.category === option.value;
-
-                                return (
-                                  <button
-                                    type="button"
-                                    key={`recurring-category-${option.value}`}
-                                    className={`${styles.customFilterSelectOption} ${styles.recurringCategoryOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
-                                    onClick={() => {
-                                      setRecurringField('category', option.value);
-                                      setRecurringCategoryDropdownOpen(false);
-                                      window.requestAnimationFrame(() => recurringCategoryTriggerRef.current?.focus());
-                                    }}
-                                    role="option"
-                                    aria-selected={isSelected}
-                                  >
-                                    <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel}`}>{option.label}</span>
-                                    <span className={`${styles.recurringCategoryOptionMark} ${isSelected ? styles.recurringCategoryOptionMarkSelected : ''}`} aria-hidden="true">
-                                      {isSelected ? '✓' : ''}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </DropdownOverlay>
-                          ) : null}
-                        </div>
-                      </div>
                       <label className={styles.budgetField}>
                         <span>Amount</span>
                         <div className={styles.budgetMoneyInput}>
@@ -4796,7 +4801,7 @@ export default function MyInvoicesClient({
                       </label>
                     </div>
 
-                    <div className={styles.recurringOptionalGrid}>
+                    <div className={recurringStyles.fields}>
                       <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
                         <span>Source / reference <small>(optional)</small></span>
                         <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
@@ -4809,27 +4814,37 @@ export default function MyInvoicesClient({
                   </section>
                 ) : null}
 
-                {recurringWizardStep === 3 ? (
-                  <section className={`${styles.recurringDetailsPanel} ${recurringStyles.panel}`} aria-labelledby="recurring-modal-title">
-                    <div className={`${styles.budgetPeriodField} ${styles.budgetWizardPeriodField}`}>
-                      <span className={styles.budgetPeriodLabel}>How often?</span>
-                      <div className={`${styles.budgetPeriodControl} ${styles.recurringFrequencyControl}`} role="group" aria-label="Recurring cost frequency">
-                        {RECURRING_FREQUENCY_OPTIONS.map((option) => (
-                          <button
-                            type="button"
-                            key={option.value}
-                            className={recurringDraft.frequency === option.value ? styles.budgetPeriodOptionActive : ''}
-                            onClick={() => setRecurringField('frequency', option.value)}
-                            aria-pressed={recurringDraft.frequency === option.value}
-                            disabled={isSaving}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
+                {recurringWizardStep === 4 ? (
+                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
+                    <div className={recurringStyles.frequencyGrid} role="group" aria-label="Recurring cost frequency">
+                      {RECURRING_FREQUENCY_OPTIONS.map((option, index) => (
+                        <button
+                          type="button"
+                          key={option.value}
+                          className={recurringStyles.frequencyCard}
+                          onClick={() => {
+                            setRecurringField('frequency', option.value);
+                            setRecurringWizardStep(5);
+                          }}
+                          aria-pressed={recurringDraft.frequency === option.value}
+                          disabled={isSaving}
+                        >
+                          <svg className={recurringStyles.frequencyIcon} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                            <rect x="4" y="6" width="24" height="23" rx="5" />
+                            <path d="M10 3v6M22 3v6M4 13h24" strokeLinecap="round" />
+                            <text x="16" y="24" textAnchor="middle" fill="currentColor" stroke="none" fontSize="10" fontWeight="700">{[1, 3, 6, 12][index]}</text>
+                          </svg>
+                          <strong>{option.label}</strong>
+                          <small>{['Every month', 'Every three months', 'Twice a year', 'Once a year'][index]}</small>
+                        </button>
+                      ))}
                     </div>
+                  </section>
+                ) : null}
 
-                    <div className={styles.recurringDateGrid}>
+                {recurringWizardStep === 5 ? (
+                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
+                    <div className={recurringStyles.fields}>
                       <label className={styles.budgetField}>
                         <span>Start date</span>
                         <DateInput value={recurringDraft.startDate} onValueChange={(value) => setRecurringField('startDate', value)} required disabled={isSaving} />
@@ -4851,10 +4866,8 @@ export default function MyInvoicesClient({
                   </section>
                 ) : null}
 
-                {recurringWizardStep === 4 ? (
+                {recurringWizardStep === 6 ? (
                   <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
-
-
                     <dl className={recurringStyles.review}>
                       <div className={recurringStyles.wide}>
                         <dt>Assets</dt>
@@ -4913,7 +4926,7 @@ export default function MyInvoicesClient({
                 >
                   Back
                 </button>
-                {recurringWizardStep < 4 ? (
+                {recurringWizardStep < 6 ? (
                   <button key="recurring-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueRecurringWizard} disabled={isSaving}>
                     Next
                   </button>
