@@ -45,7 +45,7 @@ const manualCostWizard = slice(
 );
 const uploadWizard = slice(
   documents,
-  "{modalMode && !showAssetPicker ?",
+  "{modalMode && !showAssetPicker && !showDocumentTypeOptions ?",
   "{showAssetPicker ?",
 );
 

@@ -305,7 +305,6 @@ test('floating report, modal, fuel, invoice, and document dropdowns are migrated
     'app/fuel/fuel-client.tsx',
     'app/fuel/missing-fuel-entry-modal.tsx',
     'app/my-invoices/my-invoices-client.tsx',
-    'app/documents/documents-client.tsx',
     'components/documents/AssetDocumentUploadModal.tsx',
   ];
 
@@ -315,6 +314,16 @@ test('floating report, modal, fuel, invoice, and document dropdowns are migrated
   }
 });
 
+
+test('Document Vault chooses document types in a dedicated modal instead of a floating dropdown', async () => {
+  const source = await read('app/documents/documents-client.tsx');
+  assert.doesNotMatch(source, /<DropdownOverlay/);
+  assert.match(source, /aria-haspopup="dialog"/);
+  assert.match(source, /modalMode && !showAssetPicker && !showDocumentTypeOptions/);
+  assert.match(source, /ref=\{documentTypeModalRef\}[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="document-type-title"/);
+  assert.match(source, /aria-label="Search document types"/);
+  assert.match(source, /onClick=\{\(\) => selectDocumentType\(option.value\)\}/);
+});
 
 test('rendered anchor coordinates convert once into the website logical coordinate system', async () => {
   const { websiteLogicalRect, websiteVisibleViewport } = (await import('./helpers/site-layout-audit.mjs')).websiteCanvas;

@@ -8,7 +8,6 @@ import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
 import DocumentFileLink from '../../components/DocumentFileLink';
 
-import DropdownOverlay from '../../components/DropdownOverlay';
 import {
   useCallback,
   useEffect,
@@ -18,7 +17,6 @@ import {
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
   type SVGProps,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
@@ -360,7 +358,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [assetSearch, setAssetSearch] = useState('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
   const [showDocumentTypeOptions, setShowDocumentTypeOptions] = useState(false);
-  const [activeDocumentTypeIndex, setActiveDocumentTypeIndex] = useState(0);
   const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
     hasOverflow: false,
     atStart: true,
@@ -373,13 +370,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const assetPickerModalRef = useRef<HTMLElement | null>(null);
   const filterModalRef = useRef<HTMLDivElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
-  const documentTypeComboboxRef = useRef<HTMLDivElement | null>(null);
+  const documentTypeModalRef = useRef<HTMLElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const assetPickerReturnFocusRef = useRef<HTMLElement | null>(null);
   const assetSelectionSnapshotRef = useRef<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const documentTypeInputRef = useRef<HTMLInputElement | null>(null);
+  const documentTypeInputRef = useRef<HTMLButtonElement | null>(null);
   const busyRef = useRef(false);
   const showDocumentTypeOptionsRef = useRef(false);
 
@@ -449,22 +446,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [showDocumentTypeOptions]);
 
   useEffect(() => {
-    if (!showDocumentTypeOptions) return undefined;
-
-    const handleOutsideDocumentTypePointerDown = (event: PointerEvent) => {
-      if (documentTypeComboboxRef.current && event.composedPath().includes(documentTypeComboboxRef.current)) return;
-      showDocumentTypeOptionsRef.current = false;
-      setShowDocumentTypeOptions(false);
-    };
-
-    document.addEventListener('pointerdown', handleOutsideDocumentTypePointerDown);
-    return () => document.removeEventListener('pointerdown', handleOutsideDocumentTypePointerDown);
-  }, [showDocumentTypeOptions]);
-
-  useEffect(() => {
     if (!modalMode && !showFilters && !documentPendingDelete && !showAssetPicker) return;
 
-    const dialog = showAssetPicker
+    const dialog = showDocumentTypeOptions
+      ? documentTypeModalRef.current
+      : showAssetPicker
       ? assetPickerModalRef.current
       : modalMode
         ? modalRef.current
@@ -486,8 +472,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         }
         if (modalMode && showDocumentTypeOptionsRef.current) {
           event.preventDefault();
-          showDocumentTypeOptionsRef.current = false;
-          setShowDocumentTypeOptions(false);
+          closeDocumentTypePicker();
           return;
         }
         setModalNotice(null);
@@ -522,7 +507,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       pageContent?.removeAttribute('aria-hidden');
       returnFocusRef.current?.focus();
     };
-  }, [documentPendingDelete, modalMode, showAssetPicker, showFilters]);
+  }, [documentPendingDelete, modalMode, showAssetPicker, showFilters, showDocumentTypeOptions]);
 
   useEffect(() => {
     if (modalMode !== 'upload' || showAssetPicker) return undefined;
@@ -582,14 +567,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   const filteredDocumentTypes = useMemo(() => {
     const needle = documentTypeSearch.trim().toLowerCase();
-    if (!needle || draft.documentType) return ACCOUNT_DOCUMENT_TYPES;
+    if (!needle) return ACCOUNT_DOCUMENT_TYPES;
     return ACCOUNT_DOCUMENT_TYPES.filter((option) => [
       option.label,
       option.value,
       ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category],
       ...option.keywords,
     ].some((value) => value.toLowerCase().includes(needle)));
-  }, [documentTypeSearch, draft.documentType]);
+  }, [documentTypeSearch]);
 
   const selectedFilesBytes = useMemo(
     () => selectedFiles.reduce((total, file) => total + file.size, 0),
@@ -684,42 +669,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       documentType: option.value,
       category: option.category,
     }));
-    setDocumentTypeSearch(option.label);
+    closeDocumentTypePicker();
+  }
+
+  function closeDocumentTypePicker() {
+    showDocumentTypeOptionsRef.current = false;
     setShowDocumentTypeOptions(false);
-    setActiveDocumentTypeIndex(0);
-  }
-
-  function changeDocumentTypeSearch(value: string) {
-    setDocumentTypeSearch(value);
-    setDraft((current) => ({ ...current, documentType: '' }));
-    setShowDocumentTypeOptions(true);
-    setActiveDocumentTypeIndex(0);
-  }
-
-  function handleDocumentTypeKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Escape' && showDocumentTypeOptions) {
-      event.preventDefault();
-      event.stopPropagation();
-      showDocumentTypeOptionsRef.current = false;
-      setShowDocumentTypeOptions(false);
-      return;
-    }
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setShowDocumentTypeOptions(true);
-      setActiveDocumentTypeIndex((current) => Math.min(current + 1, Math.max(0, filteredDocumentTypes.length - 1)));
-      return;
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setShowDocumentTypeOptions(true);
-      setActiveDocumentTypeIndex((current) => Math.max(0, current - 1));
-      return;
-    }
-    if (event.key === 'Enter' && showDocumentTypeOptions && filteredDocumentTypes[activeDocumentTypeIndex]) {
-      event.preventDefault();
-      selectDocumentType(filteredDocumentTypes[activeDocumentTypeIndex].value);
-    }
+    window.requestAnimationFrame(() => documentTypeInputRef.current?.focus());
   }
 
   function setOperationBusy(nextBusy: boolean) {
@@ -1395,7 +1351,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         </main>
       </div>
 
-      {modalMode && !showAssetPicker ? (
+      {modalMode && !showAssetPicker && !showDocumentTypeOptions ? (
         <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${modalMode === 'upload' ? wizardStyles.dialog : styles.editDocumentModal}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
@@ -1496,70 +1452,22 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} maxLength={180} placeholder="e.g. Company registration certificate" required={modalMode === 'edit'} />
                   </label> : null}
                   <div className={`${styles.field} ${styles.documentTypeField}`}>
-                    <label htmlFor="document-type-search">
+                    <label htmlFor="document-type-trigger">
                       {selectedFiles.length > 1 ? 'Document type for all files' : 'Document type'}
                       {modalMode === 'upload' ? <b>*</b> : <em>Optional for older records</em>}
                     </label>
-                    <div ref={documentTypeComboboxRef} className={styles.documentTypeCombobox}>
-                      <Icon name="search" />
-                      <input
-                        ref={documentTypeInputRef}
-                        id="document-type-search"
-                        type="search"
-                        value={documentTypeSearch}
-                        onChange={(event) => changeDocumentTypeSearch(event.target.value)}
-                        onFocus={() => { setShowDocumentTypeOptions(true); setActiveDocumentTypeIndex(0); }}
-                        onKeyDown={handleDocumentTypeKeyDown}
-                        placeholder="Search document types"
-                        role="combobox"
-                        aria-autocomplete="list"
-                        aria-expanded={showDocumentTypeOptions}
-                        aria-controls="document-type-options"
-                        aria-invalid={!draft.documentType && modalNotice?.tone === 'error'}
-                        aria-activedescendant={showDocumentTypeOptions && filteredDocumentTypes[activeDocumentTypeIndex]
-                          ? `document-type-option-${filteredDocumentTypes[activeDocumentTypeIndex].value}`
-                          : undefined}
-                        required={modalMode === 'upload'}
-                        autoComplete="off"
-                      />
-                      {draft.documentType ? (
-                        <button
-                          type="button"
-                          onClick={() => changeDocumentTypeSearch('')}
-                          aria-label="Clear document type"
-                        >
-                          <Icon name="close" />
-                        </button>
-                      ) : null}
-                      {showDocumentTypeOptions ? (
-                        <DropdownOverlay
-                          id="document-type-options"
-                          anchorRef={documentTypeComboboxRef}
-                          minimumWidth={560}
-                          className={styles.documentTypeOptions}
-                          role="listbox"
-                        >
-                          {filteredDocumentTypes.length ? filteredDocumentTypes.map((option, index) => (
-                            <button
-                              key={option.value}
-                              id={`document-type-option-${option.value}`}
-                              type="button"
-                              role="option"
-                              aria-selected={draft.documentType === option.value}
-                              data-active={activeDocumentTypeIndex === index ? 'true' : undefined}
-                              onMouseDown={(event) => event.preventDefault()}
-                              onMouseEnter={() => setActiveDocumentTypeIndex(index)}
-                              onClick={() => selectDocumentType(option.value)}
-                            >
-                              <span>{option.label}</span>
-                              <small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small>
-                            </button>
-                          )) : (
-                            <p>No document types match that search.</p>
-                          )}
-                        </DropdownOverlay>
-                      ) : null}
-                    </div>
+                    <button
+                      ref={documentTypeInputRef}
+                      id="document-type-trigger"
+                      className={styles.documentTypeTrigger}
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-invalid={!draft.documentType && modalNotice?.tone === 'error'}
+                      onClick={() => { setDocumentTypeSearch(''); setShowDocumentTypeOptions(true); }}
+                    >
+                      <span>{getAccountDocumentTypeLabel(draft.documentType) || 'Choose document type'}</span>
+                      <AssetChooseIcon />
+                    </button>
                     {draft.documentType ? (
                       <small className={styles.documentTypeCategory}>
                         Saved under {ACCOUNT_DOCUMENT_CATEGORY_LABELS[draft.category as DocumentCategory]}
@@ -1671,6 +1579,30 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </button>
               </footer>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode && showDocumentTypeOptions ? (
+        <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
+          <section ref={documentTypeModalRef} className={styles.documentTypeModal} role="dialog" aria-modal="true" aria-labelledby="document-type-title">
+            <header className={styles.modalHeader}>
+              <div><h2 id="document-type-title">Choose document type</h2><p>Select the type that best describes your document.</p></div>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
+            </header>
+            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => setDocumentTypeSearch(event.target.value)} placeholder="Search document types..." aria-label="Search document types" data-modal-initial-focus="true" />
+            <div className={styles.documentTypeList}>
+              {Object.entries(ACCOUNT_DOCUMENT_CATEGORY_LABELS).map(([category, label]) => {
+                const options = filteredDocumentTypes.filter((option) => option.category === category);
+                return options.length ? <section key={category} aria-label={label}>
+                  <h3>{label}</h3>
+                  {options.map((option) => <button key={option.value} type="button" className={styles.documentTypeRow} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
+                    <span>{option.label}</span><AssetChooseIcon selected={draft.documentType === option.value} />
+                  </button>)}
+                </section> : null;
+              })}
+              {!filteredDocumentTypes.length ? <p role="status">No document types match that search.</p> : null}
+            </div>
           </section>
         </div>
       ) : null}
