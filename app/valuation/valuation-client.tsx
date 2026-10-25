@@ -1,6 +1,7 @@
 'use client';
 
 import { replacementSliderRange } from '../../lib/replacement-slider';
+import VatPriceInput from '../../components/VatPriceInput';
 import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
 import AdvancedAssumptionsModal from '../../components/AdvancedAssumptionsModal';
@@ -1819,6 +1820,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [basicReplacementBandsLoading, setBasicReplacementBandsLoading] = useState(false);
   const [basicReplacementBandsError, setBasicReplacementBandsError] = useState('');
   const [basicExtraChoice, setBasicExtraChoice] = useState<BasicExtraChoice>('');
+  const [extrasVatIncluded, setExtrasVatIncluded] = useState(false);
   const [additionalBasicExtras, setAdditionalBasicExtras] = useState<Array<{id: string; name: string; price: string}>>([]);
   const [basicFamilyExtraReplacementPrice, setBasicFamilyExtraReplacementPrice] = useState('');
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
@@ -8405,6 +8407,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
 
             <div className={styles.extrasEditorBody}>
+            <div className={styles.extrasVatBar}>
+              <span>Prices entered</span>
+              <div className={styles.replacementVatToggle} role="group" aria-label="Extras price VAT basis">
+                <button type="button" aria-pressed={!extrasVatIncluded} className={!extrasVatIncluded ? styles.replacementVatToggleActive : ''} onClick={() => setExtrasVatIncluded(false)}>Excl. VAT</button>
+                <button type="button" aria-pressed={extrasVatIncluded} className={extrasVatIncluded ? styles.replacementVatToggleActive : ''} onClick={() => setExtrasVatIncluded(true)}>Incl. VAT</button>
+              </div>
+            </div>
             <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
               {basicFamilyExtra ? (
                 <button
@@ -8445,14 +8454,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             {basicExtraChoice === 'family' || basicExtraChoice === 'other' ? <div className={styles.primaryExtraEntry}>
             {basicExtraChoice === 'family' && basicFamilyExtra ? (
               <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
-                <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
-                <input
-                  type="text"
+                <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price ({extrasVatIncluded ? 'incl.' : 'excl.'} VAT)</span>
+                <VatPriceInput
+                  included={extrasVatIncluded} vatRate={VAT_RATE}
                   inputMode="decimal"
                   {...requiredProps(!primaryExtraReplacementPriceExVat)}
-                  value={basicFamilyExtraReplacementPrice}
-                  onChange={(event) => {
-                    setBasicFamilyExtraReplacementPrice(event.target.value);
+                  valueExVat={basicFamilyExtraReplacementPrice}
+                  onValueChange={(value) => {
+                    setBasicFamilyExtraReplacementPrice(value);
                     setMessage('');
                     resetResult();
                   }}
@@ -8480,14 +8489,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   {requiredHint(!normalizeText(otherExtraName))}
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
-                  <input
-                    type="text"
+                  <span className={styles.fieldLabel}>Replacement price ({extrasVatIncluded ? 'incl.' : 'excl.'} VAT)</span>
+                  <VatPriceInput
+                    included={extrasVatIncluded} vatRate={VAT_RATE}
                     inputMode="decimal"
                     {...requiredProps(!parseMoneyInput(otherExtraReplacementPrice))}
-                    value={otherExtraReplacementPrice}
-                    onChange={(event) => {
-                      setOtherExtraReplacementPrice(event.target.value);
+                    valueExVat={otherExtraReplacementPrice}
+                    onValueChange={(value) => {
+                      setOtherExtraReplacementPrice(value);
                       setMessage('');
                       resetResult();
                     }}
@@ -8517,8 +8526,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <input aria-label={`Extra ${index + 2} name`} value={extra.name} maxLength={100} {...requiredProps(!normalizeText(extra.name))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, name: event.target.value} : row)); resetResult(); }} />
                   {requiredHint(!normalizeText(extra.name))}
                 </label>
-                <label className={styles.field}><span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
-                  <input aria-label={`Extra ${index + 2} replacement price`} inputMode="decimal" value={extra.price} placeholder="e.g. 25 000" {...requiredProps(!(parseMoneyInput(extra.price)! > 0))} onChange={event => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, price: event.target.value} : row)); resetResult(); }} />
+                <label className={styles.field}><span className={styles.fieldLabel}>Replacement price ({extrasVatIncluded ? 'incl.' : 'excl.'} VAT)</span>
+                  <VatPriceInput included={extrasVatIncluded} vatRate={VAT_RATE} aria-label={`Extra ${index + 2} replacement price`} inputMode="decimal" valueExVat={extra.price} placeholder="e.g. 25 000" {...requiredProps(!(parseMoneyInput(extra.price)! > 0))} onValueChange={value => { setAdditionalBasicExtras(rows => rows.map(row => row.id === extra.id ? {...row, price: value} : row)); resetResult(); }} />
                   {requiredHint(!(parseMoneyInput(extra.price)! > 0))}
                 </label>
                 <button type="button" className={styles.removeExtra} aria-label={`Remove extra ${index + 2}`} onClick={() => { setAdditionalBasicExtras(rows => rows.filter(row => row.id !== extra.id)); resetResult(); }} title="Remove extra"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7M14 10v7" /></svg></button>
