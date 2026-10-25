@@ -9,11 +9,12 @@ type Props = {
   inputLabel: string;
   selectedCount: number;
   multiple?: boolean;
+  maxFileSizeMb?: number;
   disabled?: boolean;
   onFiles: (files: File[]) => void;
 };
 
-export default function CaptureUploadDropzone({ title, description, inputLabel, selectedCount, multiple = false, disabled = false, onFiles }: Props) {
+export default function CaptureUploadDropzone({ title, description, inputLabel, selectedCount, multiple = false, maxFileSizeMb = 12, disabled = false, onFiles }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const descriptionId = useId();
   const [dragging, setDragging] = useState(false);
@@ -25,8 +26,8 @@ export default function CaptureUploadDropzone({ title, description, inputLabel, 
     if (files.some(file => !['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type))) {
       setError('Choose a PDF, JPG, PNG or WebP file.'); return;
     }
-    if (files.some(file => !file.size || file.size > 12 * 1024 * 1024)) {
-      setError('Each file must contain data and be 12 MB or smaller.'); return;
+    if (files.some(file => !file.size || file.size > maxFileSizeMb * 1024 * 1024)) {
+      setError(`Each file must contain data and be ${maxFileSizeMb} MB or smaller.`); return;
     }
     setError('');
     onFiles(files);

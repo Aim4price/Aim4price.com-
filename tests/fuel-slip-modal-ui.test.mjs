@@ -302,3 +302,24 @@ test('evidence upload preserves entry values and handles failure, invalid files 
   await context.handleFuelEvidenceUpload({ type: 'image/jpeg', size: 123 });
   assert.equal(draft.documentFileUrl, '/new');
 });
+
+test('supporting dropzone accepts 25 MB while automatic upload retains its 12 MB limit', () => {
+  const source = read('components/CaptureUploadDropzone.tsx');
+  assert.match(source, /maxFileSizeMb = 12/);
+  const choose = sliceBetween(source, 'function choose(files:', '  return <div');
+  const accepted = [];
+  let error = '';
+  const context = { disabled: false, multiple: false, maxFileSizeMb: 12, setError: value => { error = value; }, onFiles: files => accepted.push(files) };
+  vm.runInNewContext(ts.transpileModule(choose, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
+  const file = { type: 'application/pdf', size: 20 * 1024 * 1024 };
+  context.choose([file]);
+  assert.match(error, /12 MB/);
+  assert.equal(accepted.length, 0);
+  context.maxFileSizeMb = 25;
+  context.choose([file]);
+  assert.equal(error, '');
+  assert.equal(accepted.length, 1);
+  context.choose([{ ...file, size: 26 * 1024 * 1024 }]);
+  assert.match(error, /25 MB/);
+  assert.equal(accepted.length, 1);
+});
