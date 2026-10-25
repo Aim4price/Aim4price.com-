@@ -1,5 +1,6 @@
 'use client';
 
+import { replacementSliderRange } from '../../lib/replacement-slider';
 import VatPriceInput from '../../components/VatPriceInput';
 import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
@@ -2024,6 +2025,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [replacementModalVat, setReplacementModalVat] = useState<VatDisplayMode>('excl');
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const [finalLifetimeOpen, setFinalLifetimeOpen] = useState(false);
+  const [replacementRangeAnchor, setReplacementRangeAnchor] = useState<{key: string; amount: number | null} | null>(null);
   const [finalReplacementDraft, setFinalReplacementDraft] = useState('');
   useEffect(() => {
     if (!finalLifetimeOpen) return;
@@ -6358,10 +6360,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const editorTotalExVat = editorBaseExVat === null ? null : editorBaseExVat + (editorExtrasExVat ?? 0);
     const guide = basicReplacementGuide;
     const catalogueGuide = selectedFamily?.basicCatalogue ? guide : null;
-    const replacementSliderMin = catalogueGuide ? getVatDisplayValue(catalogueGuide.minExVat, editorVatMode)! : 0;
-    const replacementSliderMax = catalogueGuide ? getVatDisplayValue(catalogueGuide.maxExVat, editorVatMode)! : 5_000_000;
+    const guideSliderMin = catalogueGuide ? getVatDisplayValue(catalogueGuide.minExVat, editorVatMode)! : 0;
+    const guideSliderMax = catalogueGuide ? getVatDisplayValue(catalogueGuide.maxExVat, editorVatMode)! : 5_000_000;
     const replacementSliderStep = catalogueGuide ? getVatDisplayValue(catalogueGuide.sliderStep, editorVatMode)! : 50_000;
     const replacementSliderDefault = getVatDisplayValue(guide?.suggestedExVat ?? 0, editorVatMode) ?? 0;
+    const rangeKey = `${editingResult}:${selectedFamily?.familyKey}:${catalogueGuide?.minExVat}:${catalogueGuide?.maxExVat}:${basicSpecLevel}`;
+    const anchorExVat = replacementRangeAnchor?.key === rangeKey ? replacementRangeAnchor.amount : editorBaseExVat;
+    const { min: replacementSliderMin, max: replacementSliderMax } = replacementSliderRange(
+      anchorExVat === null ? null : getVatDisplayValue(anchorExVat, editorVatMode), guideSliderMin, guideSliderMax, replacementSliderStep,
+    );
+    const holdSliderRange = () => setReplacementRangeAnchor({key: rangeKey, amount: anchorExVat});
+    const commitManualPrice = () => {
+      if (editorBaseExVat !== null && editorBaseExVat > 0) setReplacementRangeAnchor({key: rangeKey, amount: editorBaseExVat});
+    };
     const normalizedReplacementInput = String(editorPrice).replace(/[^0-9.-]/g, '');
     const parsedReplacementInput = normalizedReplacementInput === '' ? null : Number(normalizedReplacementInput);
     const hasReplacementSliderInput = parsedReplacementInput !== null
@@ -6480,11 +6491,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
           <div className={styles.replacementPriceStack}>
-            <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
-              {!compactAppMode ? <span>Asset replacement price</span> : null}
-              <strong>{editorPrice !== null && !hasReplacementSliderInput ? 'Not set' : money(selectedReplacementPrice)}</strong>
-              <small>{replacementVatLabel}</small>
-            </div>
+            <label className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout} ${styles.replacementEditableReadout}`}>
+              <span>Asset replacement price</span>
+              <span className={styles.replacementEditableAmount}>
+                <span aria-hidden="true">R</span>
+                <input type="text" inputMode="decimal" aria-label={`Enter the asset replacement price (${editorVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})`}
+                  {...requiredProps(!(editorBaseExVat && editorBaseExVat > 0))}
+                  value={formatReplacementPriceInput(editorPrice)}
+                  onFocus={() => setReplacementRangeAnchor({key: rangeKey, amount: anchorExVat})}
+                  onBlur={commitManualPrice}
+                  onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); } }}
+                  onChange={event => { handleReplacementPriceInput(event, setEditorPrice); setMessage(''); if (!editingResult) resetResult(); }}
+                  placeholder="Enter price" />
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6L16 3Z M13 6l5 5" /></svg>
+              </span>
+              <small>{replacementVatLabel} · Click to edit</small>
+              {requiredHint(!(editorBaseExVat && editorBaseExVat > 0))}
+            </label>
 
             <div className={styles.replacementVatToggle} role="group" aria-label="Replacement price VAT basis">
               <button
@@ -6514,7 +6537,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="range"
               min={replacementSliderMin}
               max={replacementSliderMax}
-              step={catalogueGuide ? 'any' : replacementSliderStep}
+              step="any"
+              onFocus={holdSliderRange}
               value={sliderValue}
               onChange={(event) => {
                 setEditorPrice(catalogueGuide ? String(Math.round(Number(event.target.value))) : event.target.value);
@@ -6533,6 +6557,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="button"
               className={styles.yearFineTuneButton}
               onClick={() => {
+                holdSliderRange();
                 setEditorPrice(String(Math.max(replacementSliderMin, sliderValue - replacementSliderStep)));
                 setMessage('');
                 if (!editingResult) resetResult();
@@ -6544,6 +6569,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="button"
               className={styles.yearFineTuneButton}
               onClick={() => {
+                holdSliderRange();
                 setEditorPrice(String(Math.min(replacementSliderMax, sliderValue + replacementSliderStep)));
                 setMessage('');
                 if (!editingResult) resetResult();
@@ -6554,24 +6580,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </div>
         </div>
 
-        <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>Enter the asset replacement price ({editorVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              {...requiredProps(!(editorBaseExVat && editorBaseExVat > 0))}
-              value={formatReplacementPriceInput(editorPrice)}
-              onChange={(event) => {
-                handleReplacementPriceInput(event, setEditorPrice);
-                setMessage('');
-                if (!editingResult) resetResult();
-              }}
-              placeholder="e.g. 1 850 000"
-            />
-            {requiredHint(!(editorBaseExVat && editorBaseExVat > 0))}
-          </label>
-        </div>
         {renderReplacementBreakdown(editorBaseExVat, editorExtrasExVat ?? 0, editorTotalExVat, editorVatMode)}
       </div>
     );
@@ -9325,7 +9333,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
               </div>
               <button type="button" className={modalStyles.adjustButton}
-                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
+                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setReplacementRangeAnchor(null); setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
                 Adjust price
               </button>
               {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : (
