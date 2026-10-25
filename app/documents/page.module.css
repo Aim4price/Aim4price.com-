@@ -4149,3 +4149,70 @@
   :global(:where(html:not(:has([data-website-canvas])))) .editDocumentModal .assetLinkSummary { grid-template-columns: auto minmax(0, 1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .editDocumentModal .assetLinkSummary > button { grid-column: 1 / -1; width: 100%; }
 }
+
+/* Taller document cards: a clear header, stacked details and a separate action footer. */
+.documentCard.documentCard {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.1rem;
+  padding: 1.4rem;
+}
+.documentCard .documentBody { gap: 1rem; }
+.documentCard .documentTitleRow { align-items: center; flex-wrap: nowrap; gap: 1.1rem; }
+.documentHeadingCopy { flex: 1; min-width: 0; }
+.documentHeadingCopy h3 { margin: 0; }
+.documentHeadingCopy p { margin: .4rem 0 0; color: var(--app-text-muted, #6b7d88); font-size: .88rem; font-weight: 650; }
+.documentCard .fileMark { flex: 0 0 3.5rem; }
+.documentCard .documentFacts {
+  grid-template-columns: minmax(0, 1fr);
+  gap: .6rem;
+  padding: 1rem 0;
+  margin-left: 4.6rem;
+  border-bottom: 0;
+}
+.documentCard .documentFacts > div {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 1rem;
+  align-items: baseline;
+}
+.documentCard .documentFacts span { margin: 0; font-size: .85rem; }
+.documentCard .documentFacts strong { font-size: .9rem; }
+.documentNoteSection, .documentCard .assetLinkRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .3rem;
+  padding: .95rem 1.1rem;
+  margin: 0;
+  border-radius: .85rem;
+  background: var(--app-surface-soft, #f6f8f9);
+}
+.documentCard .documentNotes {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 0 1.25rem;
+}
+.documentCard .assetLinkLabel { font-size: .85rem; }
+.documentCard .linkedAssetNames { padding-left: 1.25rem; font-size: .9rem; }
+.documentCard .documentActions {
+  grid-column: 1 / -1;
+  grid-template-columns: 10rem 11rem minmax(0, 1fr) 8rem 8rem;
+  align-self: stretch;
+  gap: .7rem;
+  padding: 1rem 0 0;
+  border-left: 0;
+  border-top: 1px solid var(--app-border, #e4ece9);
+}
+.documentCard .documentActions > :nth-child(3) { grid-column: 4; }
+.documentCard .documentActions > :nth-child(4) { grid-column: 5; }
+.documentCard .documentActions :is(.actionButton, .restoreButton, .trashButton) { min-height: 3.1rem; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentTitleRow { flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentStatus { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentFacts { margin-left: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentFacts > div { grid-template-columns: 6rem minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentActions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .documentCard .documentActions > :nth-child(n) { grid-column: auto; }
+}

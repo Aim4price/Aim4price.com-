@@ -1101,14 +1101,16 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
     return (
       <article key={document.id} className={styles.documentCard}>
-        <div className={styles.fileMark} aria-hidden="true">
-          <Icon name="document" />
-          <span>{document.fileName.split('.').pop()?.slice(0, 4).toUpperCase() || 'FILE'}</span>
-        </div>
-
         <div className={styles.documentBody}>
           <div className={styles.documentTitleRow}>
-            <h3>{document.title}</h3>
+            <div className={styles.fileMark} aria-hidden="true">
+              <Icon name="document" />
+              <span>{document.fileName.split('.').pop()?.slice(0, 4).toUpperCase() || 'FILE'}</span>
+            </div>
+            <div className={styles.documentHeadingCopy}>
+              <h3>{document.title}</h3>
+              <p>{getAccountDocumentTypeLabel(document.documentType) ?? categoryLabel(document.category)}</p>
+            </div>
             <div className={styles.documentStatus} data-tone={isDeleted ? 'warning' : expiry.tone}>
               <Icon name={isDeleted ? 'trash' : 'calendar'} />
               <span>{isDeleted ? `${recycleDaysLeft(document.deletedAtIso)} days left in Recycle Bin` : expiry.label}</span>
@@ -1117,24 +1119,23 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
           <div className={styles.documentFacts}>
             <div>
-              <span>Type</span>
-              <strong>{getAccountDocumentTypeLabel(document.documentType) ?? categoryLabel(document.category)}</strong>
-            </div>
-            <div>
-              <span>File</span>
+              <span>File name</span>
               <strong className={styles.fileName} title={document.fileName}>{document.fileName}</strong>
             </div>
             <div>
-              <span>Size</span>
+              <span>File size</span>
               <strong>{formatBytes(document.byteSize)}</strong>
             </div>
             <div>
-              <span>Added</span>
+              <span>Date added</span>
               <strong>{formatDate(document.createdAtIso)}</strong>
             </div>
           </div>
 
-          {document.notes ? <p className={styles.documentNotes}>{document.notes}</p> : null}
+          {document.notes ? <div className={styles.documentNoteSection}>
+            <span className={styles.assetLinkLabel}><Icon name="document" /> Notes</span>
+            <p className={styles.documentNotes}>{document.notes}</p>
+          </div> : null}
 
           <div className={styles.assetLinkRow}>
             <span className={styles.assetLinkLabel}><Icon name="link" /> Linked assets</span>
