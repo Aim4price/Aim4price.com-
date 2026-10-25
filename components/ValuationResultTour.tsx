@@ -14,7 +14,7 @@ const steps = [
 type Props = {assumptionItems?: string[]};
 type Box = {top:number; left:number; width:number; height:number};
 
-export default function ValuationResultTour({assumptionItems = ['Expected lifetime — total hours or kilometres.', 'Condition adjustment — how condition affects value.']}: Props) {
+export default function ValuationResultTour({assumptionItems = ['Expected lifetime — total hours or kilometres.']}: Props) {
   const [active, setActive] = useState(false);
   const [index, setIndex] = useState(0);
   const [available, setAvailable] = useState(steps);
@@ -37,7 +37,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
     const visible = steps.filter(step => document.querySelector<HTMLElement>(`[data-value-tour="${step.target}"]`)?.getClientRects().length);
     if (!visible.length) return;
     const tailored=visible.map(step => step.target==='assumptions' && document.querySelector('[data-value-tour="assumptions"][data-value-tour-readonly="true"]')
-      ? {...step, action:'Editing advanced assumptions requires an active Aim4price account. You can still correct your asset details and replacement price to improve this estimate.'}
+      ? {...step, action:'Editing expected lifetime requires an active Aim4price account. You can still correct your asset details and replacement price to improve this estimate.'}
       : step);
     setAvailable(tailored); setIndex(0); setBox(null); setActive(true);
   }

@@ -21,9 +21,9 @@ const generic = (overrides = {}) => ({
     ageDepPct: 20, usageDepPct: 60, averageDepPct: 40, marketabilityFactor: 1, isSalvageEstimate: false, ...overrides },
 });
 
-test('access is an exact two-email exception, not an admin or domain exception', () => {
-  for (const email of ['kallageldenhuys@gmail.com', 'aim4price@gmail.com', ' AIM4PRICE@gmail.com ']) assert.equal(canUseEstimateBreakdown(email), true);
-  for (const email of [null, undefined, '', 'admin@gmail.com', 'kallageldenhuys+staff@gmail.com', 'aim4price@gmail.com.evil', 'staff@aim4price.com']) assert.equal(canUseEstimateBreakdown(email), false);
+test('access is an exact single-email exception, not an admin or domain exception', () => {
+  for (const email of ['kallageldenhuys@gmail.com', ' KALLAGELDENHUYS@gmail.com ']) assert.equal(canUseEstimateBreakdown(email), true);
+  for (const email of [null, undefined, '', 'aim4price@gmail.com', 'admin@gmail.com', 'kallageldenhuys+staff@gmail.com', 'aim4price@gmail.com.evil', 'staff@aim4price.com']) assert.equal(canUseEstimateBreakdown(email), false);
 });
 
 test('breakdown averages depreciation and reconciles every rand change', () => {
@@ -145,11 +145,11 @@ test('report route checks identity, signature, selected value and opt-in', async
   const report = genericEstimateBreakdown(generic());
   const estimateBreakdownToken = signEstimateBreakdown(report, 'allowed');
   const payload = { selectedValueExVat: report.total, machineTitle: report.title, estimateBreakdownToken, includeBreakdown: true };
-  for (const email of [null, 'someone@gmail.com', 'staff@aim4price.com']) {
+  for (const email of [null, 'aim4price@gmail.com', 'someone@gmail.com', 'staff@aim4price.com']) {
     session = email ? { user: { id: 'allowed', email } } : null;
     assert.equal((await reportRoute.POST(reportRequest(payload))).status, 403);
   }
-  session = { user: { id: 'allowed', email: 'aim4price@gmail.com' } };
+  session = { user: { id: 'allowed', email: 'kallageldenhuys@gmail.com' } };
   const response = await reportRoute.POST(reportRequest(payload));
   assert.equal(response.status, 200);
   const html = await response.text();
@@ -175,7 +175,7 @@ test('both valuation endpoints reject unauthorized settings before running calcu
       '../../../lib/server-valuation': { runServerValuation: async () => { calculations++; } },
       '../../../lib/generic-valuation': { runGenericValuation: async () => { calculations++; } },
     });
-    for (const email of [null, 'someone@gmail.com', 'staff@aim4price.com']) {
+    for (const email of [null, 'aim4price@gmail.com', 'someone@gmail.com', 'staff@aim4price.com']) {
       session = email ? { user: { id: 'other', email } } : null;
       const body = { modelId: 'tractor', sectorKey: 'agricultural', familyKey: 'tractor', brandSlug: 'test', year: 2020, hours: 1000, condition: 'good', advancedAssumptions: { privateSettings: { popularity_4: 125, mechanical_good: 95, lifetimeUsage: 20000 } } };
       const response = await route.POST(new NextRequest(`https://aim4price.test/api/${kind}-valuations`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
@@ -254,8 +254,8 @@ test('yearly rates and age weighting reach basic and advanced valuation paths', 
   assert.equal(report.rows.at(-1).value, engine.finalValueExVat);
 });
 
-test('both approved accounts can download signed custom reports with form payloads', async () => {
-  for (const email of ['aim4price@gmail.com', 'kallageldenhuys@gmail.com']) {
+test('the approved account can download signed custom reports with form payloads', async () => {
+  for (const email of ['kallageldenhuys@gmail.com']) {
     session = { user: { id: email, email } };
     const report = genericEstimateBreakdown(generic());
     const form = new FormData();
@@ -267,7 +267,7 @@ test('both approved accounts can download signed custom reports with form payloa
 });
 
 if (process.env.BREAKDOWN_HTML_SAMPLE) test('render full yearly settings sample', async () => {
-  session = { user: { id: 'allowed', email: 'aim4price@gmail.com' } };
+  session = { user: { id: 'allowed', email: 'kallageldenhuys@gmail.com' } };
   const settings = normalizePrivateEstimateSettings({ year1Percent: 10, year2Percent: 8, year3Percent: 6, year4Percent: 4, year5Percent: 2, onwardPercent: 1, ageWeightPercent: 75, conditionPercent: 80, popularityPercent: 110 });
   const report = genericEstimateBreakdown({ ...generic({ ageDepPct: 31, usageDepPct: 40, averageDepPct: 33, aim4priceValueExVat: 58960 }), advancedAssumptions: { privateSettings: settings } });
   const response = await reportRoute.POST(reportRequest({ selectedValueExVat: report.total, machineTitle: 'Sample tractor', recordRows: [{label: 'Year model', value: '2020'}, {label: 'Usage',value:'4000 hours'}, {label:'Condition',value:'Good'}, {label:'Replacement price',value:'R 100 000'}], estimateBreakdownToken: signEstimateBreakdown(report, 'allowed'), includeBreakdown: true }));

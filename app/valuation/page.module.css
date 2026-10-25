@@ -15745,3 +15745,19 @@
 .finalSaveReview .finalSaveActions button { white-space: nowrap; }
 
 .finalSaveReview [data-estimate-price-entry] input:focus { outline: none; box-shadow: none; }
+
+
+/* Price-card actions share the Calculate button's typography and treatment. */
+.finalEstimateLayout .resultSupportingGrid .priceComparisonCard > button {
+  font-size: .82rem;
+  font-weight: 850;
+  line-height: 1.3;
+  min-height: 42px;
+  min-width: 92px;
+  padding: 10px 16px;
+  border: 1px solid var(--app-line, #b9d1c4);
+  border-radius: 12px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #174f3e);
+  box-shadow: none;
+}

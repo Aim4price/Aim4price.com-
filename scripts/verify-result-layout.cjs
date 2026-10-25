@@ -73,6 +73,8 @@ const modalMap=JSON.parse(modules['components/estimate-modal.module.css'].slice(
  await page.screenshot({path:'/tmp/final-layout.png',fullPage:true});
  const buttons=await page.$$eval('[data-value-tour="replacement"] > button, [data-value-tour="saleability"] > button',els=>els.map(e=>({y:e.getBoundingClientRect().y,h:e.getBoundingClientRect().height})));
  assert(Math.abs(buttons[0].y-buttons[1].y)<2,'Actions align at the top');
+ const actionStyles=await page.$$eval('[data-value-tour="replacement"] > button, [data-value-tour="saleability"] > button',els=>els.map(el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontWeight,s.fontSize,s.padding,s.borderRadius,s.backgroundColor,s.color]}));
+ assert.deepEqual(actionStyles[0],actionStyles[1], 'Adjust and Calculate use the same design');
 
  await page.evaluate(()=>{window.env.currentMarketPrice=390000;window.root.render(React.createElement(window.Fixture));});
  await page.waitForFunction(()=>document.querySelector('[data-value-tour="saleability"]').textContent.includes('390'));
@@ -92,5 +94,13 @@ const modalMap=JSON.parse(modules['components/estimate-modal.module.css'].slice(
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.setViewport({width:1366,height:1000});
  await page.screenshot({path:'/tmp/price-cards-lifetime.png',fullPage:true});
+ await page.evaluate(()=>{
+   Object.assign(window.env,{breakdownAccess:false,advancedShowLifetimeInput:true,advancedLifetimeShortUnit:'hours',openFinalLifetimeModal:()=>{window.lifetimeOpened=true}});
+   window.root.render(React.createElement(window.Fixture));
+ });
+ await page.waitForFunction(()=>document.querySelector('[data-value-tour="assumptions"]')?.textContent.includes('14 000'));
+ await page.click('[data-value-tour="assumptions"] button');
+ assert(await page.evaluate(()=>window.lifetimeOpened), 'Normal account opens the standard lifetime editor directly');
+ assert(!(await page.evaluate(()=>document.body.textContent.includes('Advanced assumptions'))));
  assert.deepEqual(errors,[]);console.log('PASS desktop supporting-card alignment, completed market result and mobile layout');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
