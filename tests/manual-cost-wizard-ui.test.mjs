@@ -36,7 +36,7 @@ test('manual wizard validates the total and saves only from review', () => {
   assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost/);
 });
 
-test('review preserves manual cost details without an attachment upload', () => {
+test('review preserves manual cost details with an optional attachment', () => {
   for (const label of [
     'Supplier',
     'Invoice number',
@@ -54,7 +54,8 @@ test('review preserves manual cost details without an attachment upload', () => 
   }
   assert.match(costFormModal, /<dt>Asset<\/dt>/);
   assert.doesNotMatch(costFormModal.slice(costFormModal.indexOf('<dl className={costReviewStyles.grid}>')), /<CostReviewIcon|<BudgetDetailIcon/);
-  assert.doesNotMatch(costFormModal, /ManualCostAttachment|<dt>Attachment<\/dt>/);
+  assert.match(costFormModal, /ManualCostAttachment/);
+  assert.match(costFormModal, /<dt>Attachment<\/dt>/);
   assert.match(client, /maintenanceWorkDone: draft\.maintenanceWorkDone/);
   assert.match(client, /partsSupplied: draft\.partsSupplied/);
   assert.match(client, /repairWorkDone: draft\.repairWorkDone/);
