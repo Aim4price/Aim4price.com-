@@ -855,9 +855,6 @@ export default function MaintenanceClient({
   const selectedDraftRecord = editingRecordId ? records.find((record) => record.id === editingRecordId) : undefined;
   const quickLaunchReturnTo = (initialOpenAdd || initialOpenChecklists) && initialAssetId ? initialReturnTo : '';
   const assetEntryLocked = quickLaunchActive && Boolean(initialAssetId && assetById.has(initialAssetId));
-  const filteredAssetReturnTo = !initialOpenAdd && initialAssetId && assetById.has(initialAssetId)
-    ? initialReturnTo
-    : '';
 
   const refreshVersion = useRef(0);
   useEffect(() => () => { refreshVersion.current += 1; }, []);
@@ -1331,11 +1328,6 @@ export default function MaintenanceClient({
         <section className={styles.pageTitleBlock}>
           <div>
             <h1>ASSET MAINTENANCE</h1>
-            {filteredAssetReturnTo ? (
-              <p className={styles.assetReturn}>
-                <a className={styles.secondaryButton} href={filteredAssetReturnTo}><span aria-hidden="true">←</span> Back to asset</a>
-              </p>
-            ) : null}
           </div>
         </section>
 

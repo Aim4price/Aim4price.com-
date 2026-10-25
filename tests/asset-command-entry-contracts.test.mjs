@@ -58,5 +58,5 @@ test('maintenance supports filtered asset entry and locked quick-add return', ()
   assert.match(maintenanceClient, /onBack=\{!assetEntryLocked \? returnToAssetPicker : undefined\}/);
   assert.match(maintenanceClient, /const shouldReturn = quickLaunchActive && quickLaunchReturnTo;/);
   assert.match(maintenanceClient, /window\.location\.assign\(shouldReturn\)/);
-  assert.match(maintenanceClient, /href=\{filteredAssetReturnTo\}><span aria-hidden="true">←<\/span> Back to asset<\/a>/);
+  assert.doesNotMatch(maintenanceClient, /Back to asset|filteredAssetReturnTo/);
 });
