@@ -104,6 +104,8 @@ export type AssetMaintenanceSummary = {
 };
 
 export type AssetMaintenanceListFilters = {
+  /** Internal report option; normal maintenance lists exclude cancelled records. */
+  includeCancelled?: boolean;
   assetId?: string | null;
   type?: AssetMaintenanceType | 'repair' | 'all' | null;
   status?: 'all' | 'upcoming' | 'done' | null;
@@ -1012,7 +1014,8 @@ export async function listAssetMaintenanceFieldManagers(userId: string): Promise
 }
 
 function buildMaintenanceFilterClause(filters: AssetMaintenanceListFilters, values: unknown[]): string {
-  const clauses = [`m.user_id = $1`, `coalesce(m.status, 'upcoming') <> 'cancelled'`];
+  const clauses = [`m.user_id = $1`];
+  if (!filters.includeCancelled) clauses.push(`coalesce(m.status, 'upcoming') <> 'cancelled'`);
 
   if (filters.assetId) {
     values.push(filters.assetId);
