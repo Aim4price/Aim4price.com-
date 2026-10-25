@@ -27,3 +27,21 @@
   :global(:where(html:not(:has([data-website-canvas])))) .review { grid-template-columns: minmax(0, 1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .review > div { grid-column: 1 / -1; }
 }
+
+.categoryLabel.categoryLabel { display: flex; align-items: center; gap: 14px; }
+.fieldLabel.fieldLabel { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.fieldIcon { width: 22px; height: 22px; flex: 0 0 22px; color: var(--app-accent, #28765a); }
+.optionalFields { border: 1px solid var(--app-line, #d8e6de); border-radius: 16px; background: var(--app-surface-soft, #eff6f2); }
+.optionalFields summary { display: flex; align-items: center; gap: 12px; padding: 16px 18px; list-style: none; cursor: pointer; font-weight: 700; color: var(--app-text, #123f32); }
+.optionalFields summary::-webkit-details-marker { display: none; }
+.optionalFields summary small { font-weight: 500; color: var(--app-muted, #62786e); }
+.optionalFields summary:focus-visible { outline: 2px solid var(--app-accent, #28765a); outline-offset: 3px; border-radius: 16px; }
+.optionalFields > .fields { padding: 4px 18px 18px; }
+.optionalChevron { margin-left: auto; width: 20px; height: 20px; flex: 0 0 20px; }
+.optionalFields[open] .optionalChevron { transform: rotate(180deg); }
+.frequencyCard { position: relative; gap: 10px; }
+.iconTile { display: grid; place-items: center; width: 58px; height: 58px; margin-bottom: 4px; border-radius: 16px; background: var(--app-surface-soft, #eff6f2); color: var(--app-accent, #28765a); }
+.iconTile .frequencyIcon { width: 32px; height: 32px; margin: 0; }
+.selectionMark { position: absolute; right: 20px; top: 20px; width: 26px; height: 26px; display: grid; place-items: center; color: var(--app-muted, #62786e); }
+.frequencyCard[aria-pressed="true"] .selectionMark { border-radius: 50%; color: var(--app-surface, #fff); background: var(--app-accent, #28765a); }
+.dateHint { margin: 0; font-size: .9rem; line-height: 1.5; color: var(--app-muted, #62786e); }

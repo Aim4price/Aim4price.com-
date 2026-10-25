@@ -6,6 +6,7 @@ import CaptureUploadDropzone from '../../components/CaptureUploadDropzone';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import recurringStyles from './recurring-wizard.module.css';
+import RecurringFieldIcon from './RecurringFieldIcon';
 import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
@@ -4721,8 +4722,8 @@ export default function MyInvoicesClient({
                           aria-labelledby="recurring-category-label recurring-category-value"
                           aria-controls="recurring-category-options"
                         >
-                          <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText}`}>
-                            {recurringCategoryLabel}
+                          <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText} ${recurringStyles.categoryLabel}`}>
+                            <RecurringFieldIcon kind={recurringDraft.category} className={recurringStyles.fieldIcon} />{recurringCategoryLabel}
                           </span>
                           <span className={styles.recurringCategoryChevron} aria-hidden="true">
                             <ChevronDownIcon className={styles.customFilterSelectChevron} />
@@ -4736,7 +4737,7 @@ export default function MyInvoicesClient({
                             role="listbox"
                             aria-label="Category"
                             gap={8}
-                            maxHeight={320}
+                            maxHeight={260}
                           >
                             {RECURRING_CATEGORY_OPTIONS.map((option) => {
                               const isSelected = recurringDraft.category === option.value;
@@ -4754,7 +4755,7 @@ export default function MyInvoicesClient({
                                   role="option"
                                   aria-selected={isSelected}
                                 >
-                                  <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel}`}>{option.label}</span>
+                                  <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel} ${recurringStyles.categoryLabel}`}><RecurringFieldIcon kind={option.value} className={recurringStyles.fieldIcon} />{option.label}</span>
                                   <span className={`${styles.recurringCategoryOptionMark} ${isSelected ? styles.recurringCategoryOptionMarkSelected : ''}`} aria-hidden="true">
                                     {isSelected ? '✓' : ''}
                                   </span>
@@ -4772,7 +4773,7 @@ export default function MyInvoicesClient({
                   <section className={`${styles.recurringDetailsPanel} ${recurringStyles.panel}`} aria-labelledby="recurring-modal-title">
                     <div className={recurringStyles.fields}>
                       <label className={`${styles.budgetField} ${styles.recurringDescriptionField}`}>
-                        <span>Description</span>
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="description" className={recurringStyles.fieldIcon} />Description</span>
                         <input
                           type="text"
                           value={recurringDraft.description}
@@ -4784,7 +4785,7 @@ export default function MyInvoicesClient({
                         />
                       </label>
                       <label className={styles.budgetField}>
-                        <span>Amount</span>
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="amount" className={recurringStyles.fieldIcon} />Amount</span>
                         <div className={styles.budgetMoneyInput}>
                           <span>R</span>
                           <input
@@ -4801,16 +4802,19 @@ export default function MyInvoicesClient({
                       </label>
                     </div>
 
-                    <div className={recurringStyles.fields}>
-                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
-                        <span>Source / reference <small>(optional)</small></span>
-                        <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
-                      </label>
-                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
-                        <span>Note <small>(optional)</small></span>
-                        <textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={2} placeholder="Anything useful to remember" disabled={isSaving} />
-                      </label>
-                    </div>
+                    <details className={recurringStyles.optionalFields}>
+                      <summary><RecurringFieldIcon kind="note" className={recurringStyles.fieldIcon} /><span>Reference &amp; note <small>(optional)</small></span><ChevronDownIcon className={recurringStyles.optionalChevron} /></summary>
+                      <div className={recurringStyles.fields}>
+                        <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                          <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="reference" className={recurringStyles.fieldIcon} />Source / reference <small>(optional)</small></span>
+                          <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
+                        </label>
+                        <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                          <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="note" className={recurringStyles.fieldIcon} />Note <small>(optional)</small></span>
+                          <textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={2} placeholder="Anything useful to remember" disabled={isSaving} />
+                        </label>
+                      </div>
+                    </details>
                   </section>
                 ) : null}
 
@@ -4829,11 +4833,8 @@ export default function MyInvoicesClient({
                           aria-pressed={recurringDraft.frequency === option.value}
                           disabled={isSaving}
                         >
-                          <svg className={recurringStyles.frequencyIcon} viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                            <rect x="4" y="6" width="24" height="23" rx="5" />
-                            <path d="M10 3v6M22 3v6M4 13h24" strokeLinecap="round" />
-                            <text x="16" y="24" textAnchor="middle" fill="currentColor" stroke="none" fontSize="10" fontWeight="700">{[1, 3, 6, 12][index]}</text>
-                          </svg>
+                          <span className={recurringStyles.iconTile}><RecurringFieldIcon kind={option.value} className={recurringStyles.frequencyIcon} /></span>
+                          <span className={recurringStyles.selectionMark} aria-hidden="true">{recurringDraft.frequency === option.value ? '✓' : '→'}</span>
                           <strong>{option.label}</strong>
                           <small>{['Every month', 'Every three months', 'Twice a year', 'Once a year'][index]}</small>
                         </button>
@@ -4846,19 +4847,20 @@ export default function MyInvoicesClient({
                   <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
                     <div className={recurringStyles.fields}>
                       <label className={styles.budgetField}>
-                        <span>Start date</span>
-                        <DateInput value={recurringDraft.startDate} onValueChange={(value) => setRecurringField('startDate', value)} required disabled={isSaving} />
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="start" className={recurringStyles.fieldIcon} />Start date</span>
+                        <DateInput aria-label="Start date" value={recurringDraft.startDate} onValueChange={(value) => setRecurringField('startDate', value)} required disabled={isSaving} />
                       </label>
                       <label className={styles.budgetField}>
-                        <span>End date <small>(optional)</small></span>
-                        <DateInput min={recurringDraft.startDate || undefined} value={recurringDraft.endDate} onValueChange={(value) => setRecurringField('endDate', value)} disabled={isSaving} />
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="end" className={recurringStyles.fieldIcon} />End date <small>(optional)</small></span>
+                        <DateInput aria-label="End date" value={recurringDraft.endDate} onValueChange={(value) => setRecurringField('endDate', value)} disabled={isSaving} />
                       </label>
                       <label className={styles.budgetField}>
-                        <span>Renewal date <small>(optional)</small></span>
-                        <DateInput value={recurringDraft.renewalDate} onValueChange={(value) => setRecurringField('renewalDate', value)} disabled={isSaving} />
+                        <span className={recurringStyles.fieldLabel}><RecurringFieldIcon kind="subscription" className={recurringStyles.fieldIcon} />Renewal date <small>(optional)</small></span>
+                        <DateInput aria-label="Renewal date" value={recurringDraft.renewalDate} onValueChange={(value) => setRecurringField('renewalDate', value)} disabled={isSaving} />
                       </label>
                     </div>
 
+                    <p className={recurringStyles.dateHint}>Past dates are welcome. For an existing commitment, enter its original start date.</p>
                     <p className={recurringStyles.scheduleSummary}>
                       {formatMoney(recurringAmountValue)} {recurringDraft.frequency === 'monthly' ? 'every month' : recurringDraft.frequency === 'quarterly' ? 'every three months' : recurringDraft.frequency === 'six_monthly' ? 'every six months' : 'every year'}
                       {recurringDraft.startDate ? `, starting ${new Date(`${recurringDraft.startDate}T12:00:00`).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })}.` : '. Choose a start date.'}
