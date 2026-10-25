@@ -1122,8 +1122,8 @@ function fuelSlipTargetLabel(slip: FuelSlipRecord): string {
 
 function fuelSlipStatusLabel(slip: FuelSlipRecord): string {
   if (slip.reviewRequired || slip.extractionStatus === 'needs_review') return 'Not completed';
-  if (slip.extractionStatus === 'extracted') return 'Aim4price captured';
-  return 'Manual';
+  if (slip.extractionStatus === 'extracted') return 'Automatically captured';
+  return 'Manual entry';
 }
 
 function formatFuelSlipDateTime(value: string | null | undefined): string {
@@ -3645,7 +3645,8 @@ export default function FuelClient({
                             </button>
                           ) : (
                             <span className={`${styles.fuelSlipManagerStatusBadge} ${needsReview ? styles.fuelSlipManagerStatusReview : ''}`} aria-label={`Status: ${fuelSlipStatusLabel(slip)}`}>
-                              {fuelSlipStatusLabel(slip)}
+                              {slip.extractionStatus === 'extracted' ? <AutomaticFuelSlipIcon /> : <OpenFileIcon />}
+                              <span>{fuelSlipStatusLabel(slip)}</span>
                             </span>
                           )}
                             </div>
@@ -3658,7 +3659,11 @@ export default function FuelClient({
                                   <OpenFileIcon className={styles.buttonIcon} />
                                   <span>Open file</span>
                                 </DocumentFileLink>
-                              ) : null}
+                              ) : (
+                                <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} disabled title="No file attached to this fuel slip">
+                                  <OpenFileIcon className={styles.buttonIcon} /><span>No file</span>
+                                </button>
+                              )}
                               <button type="button" className={styles.fuelSlipManagerExpandButton} onClick={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)} aria-expanded={isExpanded} aria-controls={detailsId} aria-label={`${isExpanded ? 'Hide' : 'View'} details for ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}>
                                 <ChevronDownIcon aria-hidden="true" /><span>{isExpanded ? 'Hide details' : 'View details'}</span>
                               </button>

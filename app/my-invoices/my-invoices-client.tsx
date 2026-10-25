@@ -876,7 +876,7 @@ function buildInvoiceAssetMeta(invoice: InvoiceRecord): string[] {
 
 function sourceLabel(source: InvoiceSource): string {
   if (source === 'fuel_slip') return 'Fuel Slip';
-  return source === 'automatic' ? 'Aim4price captured' : 'Manual';
+  return source === 'automatic' ? 'Automatically captured' : 'Manual entry';
 }
 
 function ownerStorageLabel(status: OwnerStorageStatus): string {
