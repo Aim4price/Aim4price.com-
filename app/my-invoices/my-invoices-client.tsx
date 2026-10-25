@@ -5360,7 +5360,10 @@ export default function MyInvoicesClient({
                   <div className={costReviewStyles.stack}>
                     <dl className={costReviewStyles.grid}>
                     <div className={costReviewStyles.asset}>
-                      <dt>Asset</dt>
+                      <dt className={costReviewStyles.assetIcon}>
+                        <span className={costReviewStyles.visuallyHidden}>Asset</span>
+                        <LinkedAssetIcon aria-hidden="true" />
+                      </dt>
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>
                     </dl>
