@@ -154,7 +154,7 @@ const MAX_DOCUMENT_BATCH_BYTES = 250 * 1024 * 1024;
 const UPLOAD_STEPS: Array<{ step: UploadStep; label: string; description: string }> = [
   { step: 1, label: 'Upload document', description: 'Choose the files you want to keep in your vault.' },
   { step: 2, label: 'Document details', description: 'Add the type, title and any useful dates or notes.' },
-  { step: 3, label: 'Linked to?', description: 'Choose related assets, or keep the documents at account level.' },
+  { step: 3, label: 'Link to assets', description: 'Linking is optional. You can upload without choosing an asset.' },
 ];
 const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp',
@@ -1524,15 +1524,15 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <div>
                       <h3 id="linked-assets-heading">
                         {draft.assetIds.length
-                          ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset' : 'assets'} selected`
-                          : 'Keep at account level'}
+                          ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset' : 'assets'} linked`
+                          : 'No assets linked'}
                       </h3>
                       <p>
                         {draft.assetIds.length
-                          ? selectedDraftAssets.map((asset) => asset.title).join(' · ') || 'Selected assets'
+                          ? selectedDraftAssets.map((asset) => asset.title).join(' · ') || 'Linked assets'
                           : selectedFiles.length > 1
-                            ? 'You can link every document in this batch to the same assets.'
-                            : 'Choose related assets only when this document belongs with them.'}
+                            ? 'These documents will be saved in Documents. You can link them to assets now or later.'
+                            : 'This document will be saved in Documents. You can link it to assets now or later.'}
                       </p>
                     </div>
                     <button type="button" onClick={openAssetPickerModal} disabled={busy}>
@@ -1673,7 +1673,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   }) : <div className={styles.assetSelectionEmpty}>No assets match your search.</div>}
                 </div>
               ) : (
-                <div className={styles.assetSelectionEmpty}>No assets are available yet. These documents will stay at account level.</div>
+                <div className={styles.assetSelectionEmpty}>No assets are available yet. You can still save these documents and link assets later.</div>
               )}
             </div>
 

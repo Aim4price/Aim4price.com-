@@ -304,7 +304,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /type UploadStep = 1 \| 2 \| 3/);
   assert.match(client, /label: 'Upload document'/);
   assert.match(client, /label: 'Document details'/);
-  assert.match(client, /label: 'Linked to\?'/);
+  assert.match(client, /label: 'Link to assets'/);
   assert.doesNotMatch(client, /aria-label="Upload progress"/);
   assert.match(client, /modalMode === 'upload' && uploadStep < 3/);
   assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
