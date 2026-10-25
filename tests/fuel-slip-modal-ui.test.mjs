@@ -62,9 +62,8 @@ test('fuel entry and review surfaces share the canonical cost wizard shell', () 
 
   assert.doesNotMatch(manualModal, /wizardStyles\.intro|renderFuelSlipWizardProgress/);
   assert.match(manualModal, /styles\.manualFuelSlipModal/);
-  assert.match(manualModal, /Add the slip details/);
-  assert.match(manualModal, /Add usage and work details/);
-  assert.match(reviewModal, /Extracted slip text/);
+  assert.match(manualModal, /FUEL_SLIP_PAGE_COPY\[fuelSlipFormPage\]/);
+  assert.match(reviewModal, /FUEL_SLIP_PAGE_COPY\[fuelSlipFormPage\]/);
   assert.doesNotMatch(reviewModal, /Raw OCR and parser debug/);
 });
 
@@ -90,13 +89,13 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(styles, /\.fuelSlipFlowBackdrop \.costUploadModal\s*\{[\s\S]*?width:\s*min\(100%, 860px\)/);
 });
 
-test('manual and review forms share the compact layout and retain two-step saving', () => {
+test('manual and review forms share the compact layout and save only after the final summary', () => {
   for (const modal of [manualModal, reviewModal]) {
     assert.match(modal, /styles\.manualFuelSlipModal/);
     assert.doesNotMatch(modal, /wizardStyles\.intro|renderFuelSlipWizardProgress/);
-    assert.match(modal, /fuelSlipFormPage === 'details' \? renderFuelSlipDetailsFields\(\) : renderFuelSlipExtraFields\(\)/);
+    assert.match(modal, /renderFuelSlipCurrentPage\(\)/);
     assert.match(modal, /onClick=\{handleFuelSlipFormBack\}/);
-    assert.match(modal, /fuelSlipFormPage === 'details'[\s\S]*?onClick=\{handleFuelSlipNextPage\}[\s\S]*?>Next<\/button>[\s\S]*?onClick=\{handleFuelSlipSaveClick\}/);
+    assert.match(modal, /fuelSlipFormPage !== 'confirm'[\s\S]*?onClick=\{handleFuelSlipNextPage\}[\s\S]*?onClick=\{handleFuelSlipSaveClick\}/);
   }
   assert.match(manualModal, /Save fuel slip/);
   assert.match(reviewModal, /fuelSlipDraft\.id \? 'Save changes' : 'Save fuel slip'/);
@@ -191,7 +190,7 @@ test('manager child dialogs provide names, Escape handling, focus containment an
   assert.match(client, /aria-label=\{`\$\{isExpanded \? 'Hide' : 'View'\} details for/);
 });
 
-test('manager and two-step wizard stay usable on desktop and mobile viewports', () => {
+test('manager and guided wizard stay usable on desktop and mobile viewports', () => {
   const redesignStyles = styles.slice(styles.indexOf('/* Fuel-slip wizard parity and high-volume manager */'));
   assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal \.fuelSlipManagerBody\s*\{[\s\S]*?grid-template-rows:\s*auto auto minmax\(0, 1fr\)/);
   assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal\s*\{[\s\S]*?width:\s*min\(1320px, var\(--website-dialog-reference-width, 100%\)\)[\s\S]*?height:\s*auto !important[\s\S]*?min-height:\s*0 !important/);
@@ -234,10 +233,72 @@ test('typed and pasted fuel rates insert a decimal after two digits', () => {
   assert.equal(numberExports.parseFuelSlipDecimal(format('3660'), 4), 36.6);
 });
 
-test('manual capture exposes six main purchase fields and no file input', () => {
-  const fields = sliceBetween(client, 'function renderFuelSlipDetailsFields()', 'function renderFuelSlipExtraFields()');
-  assert.equal((fields.split('<details')[0].match(/className=\{styles\.fuelEntryLabel\}/g) ?? []).length, 6);
-  const allFields = fields + sliceBetween(client, 'function renderFuelSlipExtraFields()', 'const fuelSlipResults');
-  assert.doesNotMatch(allFields + manualModal, /type="file"|CaptureUploadDropzone|documentFileUrl/);
-  assert.match(allFields, /Payment details \(optional\)/);
+test('purchase, payment and context are short pages without expanding accordions', () => {
+  const fields = sliceBetween(client, 'function renderFuelSlipDetailsFields()', 'function renderFuelSlipPaymentFields()');
+  assert.equal((fields.match(/className=\{styles\.fuelEntryLabel\}/g) ?? []).length, 6);
+  const allFields = sliceBetween(client, 'function renderFuelSlipDetailsFields()', 'async function handleFuelEvidenceUpload');
+  assert.doesNotMatch(allFields, /<details|type="file"/);
+  for (const field of ['cardLast4', 'slipNumber', 'transactionNumber', 'documentTime', 'paymentMethod', 'cardType', 'operatorName', 'odometerReading', 'hourMeterReading', 'activityText', 'workAreaText', 'assetFuelPercentAfter', 'note']) {
+    assert.ok(allFields.includes('fuelSlipDraft.' + field), field + ' must remain available');
+  }
+});
+
+const stepExports = {};
+const stepSource = sliceBetween(client, 'function getFuelSlipFormPages(', 'const FUEL_SLIP_PAGE_COPY') +
+  sliceBetween(client, 'function getFuelSlipMissingFieldPage(', 'const FUEL_SLIP_CAPTURE_FILTER_OPTIONS');
+vm.runInNewContext(ts.transpileModule(stepSource + '\nexports.pages = getFuelSlipFormPages; exports.pageForField = getFuelSlipMissingFieldPage;', {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText, { exports: stepExports });
+
+test('asset and storage flows include all stages and return validation to the relevant page', () => {
+  assert.equal(stepExports.pages(true).join(','), 'details,extra,activity,payment,context,attachment,confirm');
+  assert.equal(stepExports.pages(false).join(','), 'details,extra,payment,context,attachment,confirm');
+  for (const field of ['documentDate', 'fuelType', 'litres', 'totalAmount']) assert.equal(stepExports.pageForField(field), 'details');
+  for (const field of ['odometerReading', 'hourMeterReading', 'operatorName']) assert.equal(stepExports.pageForField(field), 'extra');
+  assert.equal(stepExports.pageForField('activityText'), 'activity');
+  assert.equal(stepExports.pageForField('workAreaText'), 'context');
+});
+
+test('supporting attachment upload is owner scoped and separate from credit-based capture', () => {
+  const upload = sliceBetween(client, 'async function handleFuelEvidenceUpload(', 'function renderFuelSlipAttachment()');
+  assert.match(upload, /scopedApiUrl\('\/api\/fuel\/slips\/upload'\)/);
+  assert.doesNotMatch(upload, /capture-requests|extract|allowance/i);
+  assert.match(upload, /requestId !== fuelEvidenceRequestRef.current/);
+  const route = read('app/api/fuel/slips/upload/route.ts');
+  assert.match(route, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'fuel' \}\)/);
+  assert.match(route, /userId: resolved.context.ownerUserId/);
+  assert.match(route, /contentType !== 'application\/pdf'/);
+  for (const modal of [manualModal, reviewModal]) assert.match(modal, /disabled=\{isSaving \|\| isUploadingFuelEvidence\}/);
+});
+
+test('evidence upload preserves entry values and handles failure, invalid files and stale responses', async () => {
+  const source = sliceBetween(client, 'async function handleFuelEvidenceUpload(', 'function renderFuelSlipAttachment()');
+  let draft = { litres: '25', documentFileUrl: '/old', originalFilename: 'old.jpg' };
+  let error = '', busy = false, calls = 0;
+  const ref = { current: 0 };
+  let response = { ok: true, json: async () => ({ uploads: [{ uploadId: 'new-id', url: '/new', fileName: 'slip.pdf', contentType: 'application/pdf', byteSize: 123 }] }) };
+  const context = {
+    isUploadingFuelEvidence: false, fuelEvidenceRequestRef: ref,
+    setFuelEvidenceError: value => { error = value; }, setIsUploadingFuelEvidence: value => { busy = value; },
+    setFuelSlipDraft: update => { draft = update(draft); },
+    scopedApiUrl: value => value, appRealmForPath: () => 'website', window: { location: { pathname: '/fuel' } },
+    FormData: class { append() {} },
+    fetch: async () => { calls++; return response; },
+  };
+  vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
+  await context.handleFuelEvidenceUpload({ type: 'text/plain', size: 123 });
+  assert.equal(calls, 0);
+  assert.match(error, /JPG/);
+  await context.handleFuelEvidenceUpload({ type: 'application/pdf', size: 123 });
+  assert.equal(draft.litres, '25');
+  assert.equal(draft.documentFileUrl, '/new');
+  assert.equal(draft.originalFilename, 'slip.pdf');
+  assert.equal(busy, false);
+  response = { ok: false, json: async () => ({ error: 'Upload failed' }) };
+  await context.handleFuelEvidenceUpload({ type: 'image/jpeg', size: 123 });
+  assert.equal(error, 'Upload failed');
+  assert.equal(draft.documentFileUrl, '/new');
+  context.fetch = async () => { ref.current++; return { ok: true, json: async () => ({ uploads: [{ uploadId: 'stale', url: '/stale' }] }) }; };
+  await context.handleFuelEvidenceUpload({ type: 'image/jpeg', size: 123 });
+  assert.equal(draft.documentFileUrl, '/new');
 });
