@@ -15604,3 +15604,6 @@
 
 
 .sharedLifetimeFields { display: grid; gap: 16px; min-width: 0; border: 0; margin: 0; padding: 0; }
+
+.extrasVatBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; color: var(--app-muted, #526b60); font-weight: 650; }
+.extrasVatBar .replacementVatToggle { margin: 0; width: min(100%, 300px); }

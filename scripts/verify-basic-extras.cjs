@@ -41,10 +41,12 @@ function add(file){
 const client=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
 const render=client.slice(client.indexOf('    function renderBasicExtrasModal()'),client.indexOf('\n    return (\n      <div className={basicEstimateActive',client.indexOf('    function renderBasicExtrasModal()')));
 const sums=client.slice(client.indexOf('  const basicExtras = useMemo('),client.indexOf('  const basicUsageNotRequired'));
-add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
+add('components/VatPriceInput');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
 const fixture=`import React,{useState,useMemo} from 'react';
+import VatPriceInput from 'components/VatPriceInput';
 import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function Fixture(){
+const VAT_RATE=.15;const [extrasVatIncluded,setExtrasVatIncluded]=useState(false);
 const [basicExtraChoice,setBasicExtraChoice]=useState('');const [basicFamilyExtraReplacementPrice,setBasicFamilyExtraReplacementPrice]=useState('');
 const [otherExtraName,setOtherExtraName]=useState('');const [otherExtraReplacementPrice,setOtherExtraReplacementPrice]=useState('');
 const [additionalBasicExtras,setAdditionalBasicExtras]=useState([]);const [extrasModalView,setExtrasModalView]=useState('choose');
@@ -69,8 +71,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 (async()=>{const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox'],headless:true});try{const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setViewport({width:1366,height:900});await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"if(!crypto.randomUUID)crypto.randomUUID=()=>String(Math.random());ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('fixture').default));"});
 const click=async text=>{for(const b of await page.$$('button'))if(await b.evaluate(e=>e.textContent.trim())===text){await b.click();return;}throw Error('Missing '+text)};
-await page.waitForSelector('[aria-label="Choose fitted extras"]');await page.click('[aria-label="Choose fitted extras"]');await click('Other extraEnter a name and price');await page.type('input[maxlength="100"]','Weights');await page.type('input[inputmode="decimal"]','10000');await click('+ Add another extra');
-assert(await page.$$eval('button',bs=>bs.find(b=>b.textContent.trim()==='Continue').disabled));await page.type('[aria-label="Extra 2 name"]','GPS');await page.type('[aria-label="Extra 2 replacement price"]','25000');await click('+ Add another extra');await page.type('[aria-label="Extra 3 name"]','Loader');await page.type('[aria-label="Extra 3 replacement price"]','100000');await page.click('[aria-label="Remove extra 2"]');await click('Continue');await page.waitForSelector('output');let result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicExtraReplacementPriceExVat,110000);assert.equal(result.basicExtras.length,2);
+await page.waitForSelector('[aria-label="Choose fitted extras"]');await page.click('[aria-label="Choose fitted extras"]');await click('Other extraEnter a name and price');await page.type('input[maxlength="100"]','Weights');await page.type('input[inputmode="decimal"]','10000');assert.equal(await page.$eval('input[inputmode="decimal"]',e=>e.value),'10 000');await click('Incl. VAT');await page.waitForFunction(()=>document.querySelector('input[inputmode="decimal"]').value==='11 500');await click('Excl. VAT');await page.waitForFunction(()=>document.querySelector('input[inputmode="decimal"]').value==='10 000');await click('+ Add another extra');
+assert(await page.$$eval('button',bs=>bs.find(b=>b.textContent.trim()==='Continue').disabled));await page.type('[aria-label="Extra 2 name"]','GPS');await page.type('[aria-label="Extra 2 replacement price"]','25000');assert.equal(await page.$eval('[aria-label="Extra 2 replacement price"]',e=>e.value),'25 000');await click('+ Add another extra');await page.type('[aria-label="Extra 3 name"]','Loader');await page.type('[aria-label="Extra 3 replacement price"]','100000');await page.click('[aria-label="Remove extra 2"]');await click('Continue');await page.waitForSelector('output');let result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicExtraReplacementPriceExVat,110000);assert.equal(result.basicExtras.length,2);
 await click('Edit');await page.click('[aria-label="Choose fitted extras"]');await page.screenshot({path:'/tmp/multiple-extras.png'});
 for (const viewport of [{width:1366,height:768},{width:390,height:650}]) {
  await page.setViewport(viewport);
@@ -86,4 +88,16 @@ for (const viewport of [{width:1366,height:768},{width:390,height:650}]) {
  await page.$$eval('button',buttons=>buttons.find(el=>el.textContent.trim()==='Continue').scrollIntoView({block:'end'}));
  assert(await page.$$eval('button',buttons=>{const b=buttons.find(el=>el.textContent.trim()==='Continue');const r=b.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}),'Continue remains visible');
 }
-await page.setViewport({width:1366,height:900});await page.click('[aria-label="Remove first extra"]');await click('Continue');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicExtras[0].name,'Loader');assert.equal(result.basicTotalReplacementPriceExVat,600000);await click('Edit');await page.click('[aria-label="No fitted extras"]');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicTotalReplacementPriceExVat,500000);assert.deepEqual(errors,[]);console.log('PASS add, validate, remove, reopen, promote and clear extras');}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
+await page.setViewport({width:1366,height:900});await page.click('[aria-label="Remove first extra"]');await click('Continue');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicExtras[0].name,'Loader');assert.equal(result.basicTotalReplacementPriceExVat,600000);await click('Edit');await page.click('[aria-label="No fitted extras"]');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));assert.equal(result.basicTotalReplacementPriceExVat,500000);await click('Edit');await page.click('[aria-label="Choose fitted extras"]');await click('LoaderSuggested extra');await click('Incl. VAT');
+await page.type('input[inputmode="decimal"]','4000');
+assert.equal(await page.$eval('input[inputmode="decimal"]',e=>e.value),'4 000');
+await page.click('input[inputmode="decimal"]',{clickCount:3});await page.keyboard.press('Backspace');await page.type('input[inputmode="decimal"]','28750.50');
+assert.equal(await page.$eval('input[inputmode="decimal"]',e=>e.value),'28 750.50');
+await click('+ Add another extra');await page.type('[aria-label="Extra 2 name"]','GPS');await page.type('[aria-label="Extra 2 replacement price"]','11500');
+for(let i=0;i<5;i++){await click('Excl. VAT');await page.waitForFunction(()=>document.querySelector('input[inputmode="decimal"]').value==='25 000.43');await click('Incl. VAT');await page.waitForFunction(()=>document.querySelector('input[inputmode="decimal"]').value==='28 750.5');}
+assert.equal(await page.$eval('input[inputmode="decimal"]',e=>e.value),'28 750.5');
+assert.equal(await page.$eval('[aria-label="Extra 2 replacement price"]',e=>e.value),'11 500');
+await click('Continue');await page.waitForSelector('output');result=JSON.parse(await page.$eval('output',e=>e.textContent));
+assert(Math.abs(result.basicExtras[0].replacementPriceExVat-28750.5/1.15)<0.000001);
+assert(Math.abs(result.basicTotalReplacementPriceExVat-(500000+28750.5/1.15+10000))<0.000001);
+assert.deepEqual(errors,[]);console.log('PASS grouped rand inputs, VAT conversion without drift, decimals, add, remove, reopen and totals');}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
