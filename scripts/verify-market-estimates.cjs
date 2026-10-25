@@ -47,11 +47,14 @@ const saveEntry=valuationSource.slice(valuationSource.indexOf('  function openFi
 const savePrompt=valuationSource.slice(valuationSource.indexOf("      {finalSaveIntent && saveMarketChoice === 'prompt'"),valuationSource.indexOf("      {finalSaveIntent && !conversionAssetId && !saveMarketChoice"));
 const completionProps=valuationSource.slice(valuationSource.indexOf('          onClose={() => {\n            setSaleabilityOpen(false);'),valuationSource.indexOf('          assetTitle={machineTitle}',valuationSource.indexOf('        <SaleabilityModal')));
 add('app/valuation/page.module.css');
+add('lib/estimate-photo-handoff');
 const saveFixture=`import React,{useState} from 'react';
 import SaleabilityModal from 'components/SaleabilityModal';
+import {getEstimatePhotoFiles} from 'lib/estimate-photo-handoff';
 import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function SaveFixture(){
 const [resultState,setResultState]=useState({id:1}),headlineValue=459000;
+const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip');
 const [finalSaveIntent,setFinalSaveIntent]=useState(null),[saveMarketChoice,setSaveMarketChoice]=useState(null);
 const [saleabilityOpen,setSaleabilityOpen]=useState(false),[completedMarketAssessment,setCompletedMarketAssessment]=useState(null);
 const dealerSaveTargetRegisterId='',isSignedIn=true,canSaveToAssetRegister=true,isDealerAccount=false,canUseMarketplacePublishFlow=true,conversionAssetId=null,userReplacementPrice='500000';
@@ -61,7 +64,7 @@ ${saveEntry}
 return <><button onClick={()=>openFinalSaveModal('asset-register')}>Save asset</button>
 <button onClick={()=>setResultState({id:2})}>Change estimate</button>
 ${savePrompt}
-{finalSaveIntent&&!saveMarketChoice?<output>Save review</output>:null}
+{finalSaveIntent&&!saveMarketChoice?<output data-photo-count={savePhotoFiles.length} data-photo-mode={savePhotoMode}>Save review</output>:null}
 <SaleabilityModal open={saleabilityOpen} ${completionProps}
  assetTitle="Fixture" valuationExVat={headlineValue} input={{}} />
 </>;
@@ -190,9 +193,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 // Save review: skip, cancel, finish assessment, and invalidate after editing.
  await page.evaluate(()=>window.root.render(React.createElement(require('save-fixture').default)));
- await click('Save asset');await page.waitForSelector('#market-save-title');
+ await click('Save asset');assert.deepEqual(errors,[], 'Save entry must not throw before opening the prompt');await page.waitForSelector('#market-save-title');
  await click('Save with Ideal Value only');await page.waitForSelector('output');
- await click('Save asset');await page.waitForSelector('#market-save-title');
+ assert.equal(await page.$eval('output',el=>el.dataset.photoMode),'skip');
+ await page.evaluate(()=>require('lib/estimate-photo-handoff').setEstimatePhotoFiles([new File(['fixture'],'asset.png',{type:'image/png'})]));
+
+ await click('Save asset');assert.deepEqual(errors,[], 'Save entry must not throw before opening the prompt');await page.waitForSelector('#market-save-title');
  await click('Calculate market value');await page.waitForSelector('[aria-label="Question 1 of 5"]');
  await page.click('[aria-label="Close Realistic Market Value"]');await page.waitForSelector('#market-save-title');
  await click('Calculate market value');await page.waitForSelector('[aria-label="Question 1 of 5"]');
@@ -204,6 +210,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForSelector('[aria-label="Question 5 of 5"]');await click('Several');
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Done'&&!b.disabled));
  await click('Done');await page.waitForSelector('output');
+ assert.equal(await page.$eval('output',el=>el.dataset.photoCount),'1');
+ assert.equal(await page.$eval('output',el=>el.dataset.photoMode),'files');
  await click('Save asset');assert.equal(await page.$('#market-save-title'),null,'Current assessment skips prompt');
  await click('Change estimate');await click('Save asset');await page.waitForSelector('#market-save-title');
  await page.setViewport({width:1366,height:768});
