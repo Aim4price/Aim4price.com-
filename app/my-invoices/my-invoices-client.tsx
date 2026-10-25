@@ -34,6 +34,7 @@ import costReviewStyles from './cost-review.module.css';
 import ManualCostAssetDetails from './manual-cost-asset-details';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
+import ManualCostAttachment from './ManualCostAttachment';
 import DocumentFileLink from '../../components/DocumentFileLink';
 
 import { prepareInvoiceUpload, validateInvoicePages } from '../../lib/invoice-upload';
@@ -1116,6 +1117,7 @@ export default function MyInvoicesClient({
   const [automaticUploadPages, setAutomaticUploadPages] = useState<File[]>([]);
   const [captureNote, setCaptureNote] = useState('');
   const [captureUploadError, setCaptureUploadError] = useState('');
+  const [manualAttachment, setManualAttachment] = useState<File | null>(null);
   const [uploadedDocument, setUploadedDocument] = useState<InvoiceDocument | null>(null);
   const [rawTextPreview, setRawTextPreview] = useState('');
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
@@ -2505,6 +2507,7 @@ export default function MyInvoicesClient({
     setSelectedAssetId('');
     setPickerSearch('');
     setEditingInvoiceId(null);
+    setManualAttachment(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -2774,6 +2777,7 @@ export default function MyInvoicesClient({
     setPickerOwnerId(assets.find((asset) => asset.id === normalizedAssetId)?.ownerUserId ?? '');
     setPickerSearch('');
     setEditingInvoiceId(null);
+    setManualAttachment(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -3189,7 +3193,15 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
-      const invoiceDocumentId = draft.invoiceDocumentId;
+      let invoiceDocumentId = draft.invoiceDocumentId;
+      if (draft.source === 'manual' && manualAttachment && !sharedFlow) {
+        const document = await uploadInvoiceFile(selectedAssetId, 'manual', manualAttachment);
+        invoiceDocumentId = document.id;
+        setUploadedDocument(document);
+        setDraft((current) => ({ ...current, invoiceDocumentId: document.id }));
+        // Reuse the uploaded document if saving the cost needs to be retried.
+        setManualAttachment(null);
+      }
 
       const payload = {
         assetId: selectedAssetId,
@@ -3210,7 +3222,7 @@ export default function MyInvoicesClient({
       };
 
       if (sharedFlow) {
-        await sharedFlow.save(payload,null);
+        await sharedFlow.save(payload, draft.source === 'manual' ? manualAttachment : null);
         sharedFlow.onSaved('Cost record saved to the asset.');
         return;
       }
@@ -3256,6 +3268,7 @@ export default function MyInvoicesClient({
     setNotice(null);
     setSelectedAssetId(invoice.assetId);
     setEditingInvoiceId(invoice.id);
+    setManualAttachment(null);
     setAutomaticUploadFile(null);
     setAutomaticUploadPages([]);
     setCaptureNote('');
@@ -5319,7 +5332,16 @@ export default function MyInvoicesClient({
                 </div>
 
 
-                {uploadedDocument?.uploadUrl ? (
+                {draft.source === 'manual' ? (
+                  <ManualCostAttachment
+                    fileName={manualAttachment?.name ?? (uploadedDocument?.id === draft.invoiceDocumentId ? uploadedDocument?.fileName : null)}
+                    disabled={isSaving}
+                    onFile={(file) => { setManualAttachment(file); setManualCostWizardError(''); }}
+                    onRemove={() => { setManualAttachment(null); setUploadedDocument(null); setDraftField('invoiceDocumentId', null); }}
+                  />
+                ) : null}
+
+                {draft.source !== 'manual' && uploadedDocument?.uploadUrl ? (
                   <DocumentFileLink className={styles.fileLink} href={accountScopedUrl(uploadedDocument.uploadUrl)} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</DocumentFileLink>
                 ) : null}
 
@@ -5381,6 +5403,13 @@ export default function MyInvoicesClient({
                       <dt>Notes</dt>
                       <dd>{draft.notes}</dd>
                     </div> : null}
+                        </dl>
+                      </section>
+                    ) : null}
+                    {manualAttachment || (uploadedDocument && uploadedDocument.id === draft.invoiceDocumentId) ? (
+                      <section className={costReviewStyles.group} aria-label="Attachment">
+                        <dl className={`${costReviewStyles.grid} ${costReviewStyles.rows}`}>
+                          <div><dt>Attachment</dt><dd>{manualAttachment?.name ?? uploadedDocument?.fileName}</dd></div>
                         </dl>
                       </section>
                     ) : null}
