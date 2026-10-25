@@ -4,6 +4,7 @@ import { replacementSliderRange } from '../../lib/replacement-slider';
 import VatPriceInput from '../../components/VatPriceInput';
 import FacebookAdvertActions from '../../components/FacebookAdvertActions';
 import EstimateTools from './EstimateTools';
+import EstimateSavePhotos from '../../components/EstimateSavePhotos';
 import { splitReplacementTotal } from '../../lib/estimate-replacement';
 import EstimatePriceInput from './EstimatePriceInput';
 import modalStyles from '../../components/estimate-modal.module.css';
@@ -443,6 +444,7 @@ type DealerAssetRegisterSummary = {
   assetCount: number;
   totalValue: number;
   isPrimary: boolean;
+  isSelected?: boolean;
 };
 
 type DealerAssetRegistersApiResponse = {
@@ -1961,6 +1963,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [savedMarketWarning, setSavedMarketWarning] = useState<{ message: string; href: string } | null>(null);
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
+  const [savePhotoFiles, setSavePhotoFiles] = useState<File[]>([]);
+  const [savePhotoMode, setSavePhotoMode] = useState<'files' | 'marketplace' | 'skip'>('skip');
+  const [publishedEstimatePhotos, setPublishedEstimatePhotos] = useState<{result: typeof resultState; urls: string[]} | null>(null);
+  const [registerLoadError, setRegisterLoadError] = useState('');
   const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
   useEffect(() => {
     if (saveMarketChoice !== 'prompt' && !savedMarketWarning) return;
@@ -2564,7 +2570,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   );
 
   useEffect(() => {
-    if (!isDealerAccount || !isSignedIn) {
+    if (!isSignedIn) {
       setDealerAssetRegisters([]);
       return undefined;
     }
@@ -2579,9 +2585,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         });
         const data = (await response.json()) as DealerAssetRegistersApiResponse;
         if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to load dealer Asset Registers.');
-        if (!cancelled) setDealerAssetRegisters(data.registers ?? []);
+        if (!cancelled) {
+          setDealerAssetRegisters(data.registers ?? []);
+          setRegisterLoadError('');
+          if (!isDealerAccount) setRequestedRegisterId(current => current || data.registers?.find(register => register.isSelected)?.id || (data.registers?.length === 1 ? data.registers[0].id : ''));
+        }
       } catch {
-        if (!cancelled) setDealerAssetRegisters([]);
+        if (!cancelled) { setDealerAssetRegisters([]); setRegisterLoadError('Could not load your registers. Close and reload before saving.'); }
       }
     })();
 
@@ -4210,7 +4220,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           saveForMarketplace: true,
           photos: options.photos ?? [],
         }
-      : {};
+      : { photos: options.photos ?? [] };
     const conversionFields = conversionAssetId
       ? {
           conversionAssetId,
@@ -4816,6 +4826,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     setMessage('');
     setFinalSaveError('');
+    setSavePhotoFiles(getEstimatePhotoFiles().slice(0, 4));
+    setSavePhotoMode(getEstimatePhotoFiles().length ? 'files' : 'skip');
     setFinalSaveIntent(intent);
     setSaveMarketChoice(intent === 'asset-register' && !conversionAssetId &&
       !(completedMarketAssessment?.result === resultState && completedMarketAssessment?.value === headlineValue)
@@ -4975,12 +4987,27 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!finalSaveIntent) return;
 
     const isMarketplaceSave = finalSaveIntent === 'marketplace';
+    let photos: string[] = [];
+    if (!isMarketplaceSave) {
+      setSaveLoading(true);
+      setFinalSaveError('');
+      try {
+        photos = savePhotoMode === 'files' ? (await uploadMarketplacePhotos(savePhotoFiles)).urls
+          : savePhotoMode === 'marketplace' && publishedEstimatePhotos?.result === resultState ? publishedEstimatePhotos.urls : [];
+      } catch (error) {
+        setFinalSaveError(error instanceof Error ? error.message : 'Could not upload photos.');
+        setSaveLoading(false);
+        return;
+      }
+    }
     const saved = await saveCurrentValuationToRegister({
+      photos,
       saveForMarketplace: isMarketplaceSave,
       redirectToAssetRegister: !isMarketplaceSave,
       setError: setFinalSaveError,
     });
 
+    setSaveLoading(false);
     if (!saved) return;
 
     if (isMarketplaceSave) {
@@ -5171,16 +5198,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     } : current);
   }
 
-  async function uploadMarketplacePhotos(): Promise<{ urls: string[]; jpegPhotos: string[] }> {
-    if (!marketplacePhotoFiles.length) return { urls: [], jpegPhotos: [] };
+  async function uploadMarketplacePhotos(files = marketplacePhotoFiles.map(photo => photo.file)): Promise<{ urls: string[]; jpegPhotos: string[] }> {
+    if (!files.length) return { urls: [], jpegPhotos: [] };
 
     const formData = new FormData();
     formData.append('uploadType', 'photo');
     const jpegPhotos: string[] = [];
-    for (const photo of marketplacePhotoFiles) {
-      const prepared = await compressReportPhoto(photo.file);
+    for (const file of files) {
+      const prepared = await compressReportPhoto(file);
       const blob = await fetch(prepared).then((response) => response.blob());
-      formData.append('files', blob, `${photo.file.name.replace(/\.[^.]+$/, '')}.jpg`);
+      formData.append('files', blob, `${file.name.replace(/\.[^.]+$/, '')}.jpg`);
       jpegPhotos.push(prepared);
     }
 
@@ -5193,13 +5220,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const data = (await response.json()) as MarketplaceUploadApiResponse;
 
     if (!response.ok || !data.ok) {
-      throw new Error(data.error ?? 'Failed to upload marketplace photos.');
+      throw new Error(data.error ?? 'Failed to upload photos.');
     }
 
     const urls = (data.uploads ?? [])
       .map((upload) => String(upload.url ?? upload.href ?? upload.path ?? '').trim())
       .filter(Boolean);
-    if (urls.length !== marketplacePhotoFiles.length) {
+    if (urls.length !== files.length) {
       throw new Error('Some photos were not uploaded. Please retry before publishing.');
     }
     return { urls, jpegPhotos };
@@ -5301,6 +5328,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         throw new Error('The advert was published, but the listing details were not returned for the JPEG download.');
       }
 
+      setPublishedEstimatePhotos({ result: resultState, urls: photoUrls });
       const listingReference = published.listing.id ?? published.listing.sourceAssetId ?? published.assetId ?? assetId;
       const jpegListing = jpegPhotos.length ? {
         ...published.listing,
@@ -9531,7 +9559,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     finalSaveReplacementPrice !== null &&
     Number.isFinite(finalSaveReplacementPrice) &&
     finalSaveReplacementPrice > 0 &&
-    !finalSaveHasPendingReplacementPrice;
+    !finalSaveHasPendingReplacementPrice &&
+    (finalSaveIntent === 'marketplace' || isDealerAccount || ownerAppMode || Boolean(requestedRegisterId));
   const finalSaveTitle = finalSaveIntent === 'marketplace'
     ? 'Create advert'
     : ownerAppMode
@@ -9544,7 +9573,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : 'Check your values before saving this asset.';
   const finalSaveCta = finalSaveIntent === 'marketplace'
     ? 'Save and continue'
-    : 'Confirm and save';
+    : 'Save asset';
   const isSectorIntroStep = step === 1 && (!selectedSector || !estimateExperience);
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
@@ -9898,18 +9927,25 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
 
+            <div className={styles.finalSaveValueToolbar}>
+              <strong>Values</strong>
+              <div className={styles.resultVatToggle} role="group" aria-label="Save values VAT basis">
+                {(['excl', 'incl'] as const).map(mode => <button key={mode} type="button" className={`${styles.resultVatToggleButton} ${vatDisplayMode === mode ? styles.resultVatToggleButtonActive : ''}`} aria-pressed={vatDisplayMode === mode} onClick={() => setVatDisplayMode(mode)}>{getVatDisplayLabel(mode)}</button>)}
+              </div>
+            </div>
             <div className={styles.finalSaveSummaryGrid}>
               <div className={styles.finalSaveSummaryCard}>
-                <span>Current value · {getVatDisplayLabel(vatDisplayMode)}</span>
+                <span>Current value</span>
                 <strong>{money(getVatDisplayValue(headlineValue, vatDisplayMode))}</strong>
               </div>
               <div className={styles.finalSaveSummaryCard}>
-                <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} · {getVatDisplayLabel(vatDisplayMode)}</span>
+                <span>Replacement value</span>
                 <strong>{money(getVatDisplayValue(finalSaveReplacementPrice, vatDisplayMode))}</strong>
               </div>
             </div>
 
-            {renderResultReplacementBreakdown()}
+            <details className={styles.finalSaveEdit} open={finalSaveHasPendingReplacementPrice || undefined}>
+              <summary>Edit values</summary>
             <div className={styles.finalReplacementPanel}>
               <label className={styles.finalReplacementField}>
                 <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} ({getVatDisplayLabel(vatDisplayMode)})</span>
@@ -9932,7 +9968,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </p>
             ) : null}
 
-            {finalSaveError ? <p className={styles.finalSaveError}>{finalSaveError}</p> : null}
+            {renderResultReplacementBreakdown()}
+            </details>
+            {finalSaveIntent === 'asset-register' ? <>
+              <fieldset className={styles.finalSavePhotoFields} disabled={saveLoading}>
+                <EstimateSavePhotos files={savePhotoFiles} onChange={setSavePhotoFiles} usePhotos={savePhotoMode === 'files'}
+                  onUsePhotos={use => setSavePhotoMode(use ? 'files' : 'skip')}
+                  marketplacePhotos={publishedEstimatePhotos?.result === resultState ? publishedEstimatePhotos.urls : []}
+                  marketplaceSelected={savePhotoMode === 'marketplace'} onMarketplace={() => setSavePhotoMode('marketplace')} />
+                {savePhotoMode === 'marketplace' ? <p>Photos from this asset’s Marketplace advert will be included.</p> : null}
+              </fieldset>
+              {!isDealerAccount && !ownerAppMode ? <label className={styles.finalSaveRegister}><span>Save to</span>
+                <select value={requestedRegisterId} onChange={event => setRequestedRegisterId(event.target.value)} disabled={saveLoading}>
+                  <option value="">Choose an asset register</option>
+                  {dealerAssetRegisters.map(register => <option key={register.id} value={register.id}>{register.businessName}</option>)}
+                </select>
+              </label> : null}
+              {!isDealerAccount && !ownerAppMode && !dealerAssetRegisters.length && !registerLoadError ? <a href="/asset-registers">Create an asset register</a> : null}
+              {!isDealerAccount && !ownerAppMode && registerLoadError ? <p className={styles.finalSaveError} role="alert">{registerLoadError}</p> : null}
+            </> : null}
+            {finalSaveError ? <p className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
 
             <div className={`${styles.finalSaveActions} ${modalStyles.actions}`}>
               <button

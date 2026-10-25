@@ -42,15 +42,17 @@ function add(file){
 const client=fs.readFileSync(path.join(root,'app/valuation/valuation-client.tsx'),'utf8');
 const start=client.indexOf("      {finalSaveIntent && !conversionAssetId && !saveMarketChoice");
 const markup=client.slice(start,client.indexOf('\n      ) : null}',start)+'\n      ) : null}'.length);
-add('app/valuation/EstimatePriceInput');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
+add('components/EstimateSavePhotos');add('app/valuation/EstimatePriceInput');add('app/valuation/page.module.css');add('components/estimate-modal.module.css');
 const breakdown=client.slice(client.indexOf('  function renderResultReplacementBreakdown()'),client.indexOf('  function getCurrentResultReplacementPriceExVat()'));
-const fixture=`import React,{useState} from 'react'; import EstimatePriceInput from 'app/valuation/EstimatePriceInput';import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
+const fixture=`import React,{useState} from 'react';import EstimateSavePhotos from 'components/EstimateSavePhotos'; import EstimatePriceInput from 'app/valuation/EstimatePriceInput';import styles from 'app/valuation/page.module.css';import modalStyles from 'components/estimate-modal.module.css';
 export default function Fixture(){
+const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip'),[requestedRegisterId,setRequestedRegisterId]=useState('farm'),[vatDisplayMode,setVatDisplayMode]=useState('excl');
+const publishedEstimatePhotos=null,registerLoadError='',ownerAppMode=false,dealerAssetRegisters=[{id:'farm',businessName:'My farm'}];
 const [userReplacementPrice,setUserReplacementPrice]=useState('9330000');
 const [finalSaveIntent,setFinalSaveIntent]=useState('asset-register');
-const finalSaveTitle=finalSaveIntent==='marketplace'?'Create advert':'Save to Asset Register',finalSaveDescription=finalSaveIntent==='marketplace'?'Check your values before creating the advert.':'Check your values before saving this asset.',finalSaveCta=finalSaveIntent==='marketplace'?'Save and continue':'Confirm and save';
-const conversionAssetId=null,saveMarketChoice=null,isDealerAccount=false,saveLoading=false,replacementRecalculateLoading=false,advancedRecalculateLoading=false,basicEstimateActive=true,finalSaveInputPrice=Number(userReplacementPrice),finalSaveCanConfirm=true,finalSaveHasPendingReplacementPrice=false,finalSaveError='',vatDisplayMode='excl',headlineValue=4625068,finalSaveReplacementPrice=9330000;
-const closeFinalSaveModal=()=>{},recalculateFinalReplacementPrice=()=>{},confirmFinalSaveAction=()=>{},getVatDisplayLabel=()=> 'VAT excluded',getVatDisplayValue=v=>v,money=v=>'R '+String(Math.round(v)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
+const finalSaveTitle=finalSaveIntent==='marketplace'?'Create advert':'Save to Asset Register',finalSaveDescription=finalSaveIntent==='marketplace'?'Check your values before creating the advert.':'Check your values before saving this asset.',finalSaveCta=finalSaveIntent==='marketplace'?'Save and continue':'Save asset';
+const conversionAssetId=null,saveMarketChoice=null,isDealerAccount=false,saveLoading=false,replacementRecalculateLoading=false,advancedRecalculateLoading=false,basicEstimateActive=true,finalSaveInputPrice=Number(userReplacementPrice),finalSaveCanConfirm=true,finalSaveHasPendingReplacementPrice=false,finalSaveError='',headlineValue=4625068,finalSaveReplacementPrice=9330000;
+const closeFinalSaveModal=()=>{},recalculateFinalReplacementPrice=()=>{},confirmFinalSaveAction=()=>{},getVatDisplayLabel=mode=>mode==='incl'?'VAT included':'VAT excluded',getVatDisplayValue=(v,mode)=>mode==='incl'?v*1.15:v,money=v=>'R '+String(Math.round(v)).replace(/\\B(?=(\\d{3})+(?!\\d))/g,' ');
 const resultState={kind:'generic',result:{specsJson:{basic_extra_replacement_price_ex_vat:0}}},getCurrentResultReplacementPriceExVat=()=>9330000;
 ${breakdown}
 return <><button onClick={()=>setFinalSaveIntent('marketplace')}>Advert fixture</button>${markup}</>;
@@ -71,12 +73,27 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+"ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('fixture').default));"});
  await page.addStyleTag({content:fs.readFileSync(path.join(root,'public/app-theme.css'),'utf8')});
+ await page.waitForSelector('#final-save-title');
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2));
+ await page.screenshot({path:'/tmp/save-simple.png'});
+ await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[1].click());
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.textContent.includes('R 10 729 500')));
+ await page.$$eval('[aria-label="Save values VAT basis"] button',els=>els[0].click());
+ await page.$eval('input[type=file]',el=>{
+   const transfer=new DataTransfer();transfer.items.add(new File(['fixture'],'asset.png',{type:'image/png'}));el.files=transfer.files;el.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ await page.waitForSelector('[aria-label="Remove photo 1"]');
+ assert(await page.$eval('[aria-labelledby="final-save-title"]',el=>el.scrollHeight<=el.clientHeight+2));
+ await page.click('[aria-label="Remove photo 1"]');
+
+ await page.click('summary');
  await page.waitForSelector('[data-estimate-price-entry] input');
  assert.deepEqual(errors,[]);
  assert.equal(await page.$eval('[data-estimate-price-entry]',el=>getComputedStyle(el).backgroundColor),'rgb(237, 245, 240)');
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>getComputedStyle(el).backgroundColor),'rgba(0, 0, 0, 0)');
  await page.click('[data-estimate-price-entry] input',{clickCount:3});await page.keyboard.press('Backspace');await page.type('[data-estimate-price-entry] input','25000');
  assert.equal(await page.$eval('[data-estimate-price-entry] input',el=>el.value),'25 000');
+ await page.click('summary');
  await page.screenshot({path:'/tmp/save-review.png'});
  await page.$$eval('button',els=>els.find(e=>e.textContent==='Advert fixture').click());
  await page.waitForFunction(()=>document.querySelector('#final-save-title').textContent==='Create advert');

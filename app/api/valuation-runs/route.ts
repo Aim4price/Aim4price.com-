@@ -438,7 +438,7 @@ export async function POST(request: NextRequest) {
     const assessmentActorId = isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id;
 
     const saveForMarketplace = parseBoolean(body.saveForMarketplace);
-    const photoUrls = saveForMarketplace ? normalizePhotos(body.photos) : [];
+    const photoUrls = normalizePhotos(body.photos);
     const requestedConversionAssetId = normalizeConversionAssetId(body.conversionAssetId);
     const accountantShareId = String(body.accountantShareId ?? '').trim();
     const requestedRegisterId = String(body.registerId ?? '').trim();
@@ -486,7 +486,7 @@ export async function POST(request: NextRequest) {
       ? await getManualConversionAsset(effectiveOwnerUserId, conversionAssetId)
       : null;
     const effectiveSaveForMarketplace = conversionAsset ? false : saveForMarketplace;
-    const effectivePhotoUrls = effectiveSaveForMarketplace ? photoUrls : [];
+    const effectivePhotoUrls = conversionAsset ? [] : photoUrls;
 
     const catalogModeUsed = String(body.catalogModeUsed ?? '').trim();
 
