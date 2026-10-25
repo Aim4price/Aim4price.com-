@@ -57,3 +57,12 @@
 .usageSummary { padding: 20px 24px; border-top: 1px solid #d7e0da; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .usageSummary p { margin: 6px 0 0; }
 .usageSummary dialog button { font: inherit; font-weight: 700; color: #174c3c; border: 1px solid #bacbc1; border-radius: 12px; padding: 12px 18px; background: #fff; cursor: pointer; }
+
+/* Compact calculation controls, matching the final-value cards. */
+.tools { border: 1px solid var(--app-line, #c9dfd2); border-radius: 18px; background: var(--app-surface, #fff); color: var(--app-text, #19352b); }
+.tools .heading button { min-height: 42px; border-radius: 12px; white-space: nowrap; }
+.breakdown summary { padding: 22px; padding-right: 205px; min-height: 72px; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .heading { position: static; padding: 14px 18px 0; justify-content: flex-end; }
+  :global(:where(html:not(:has([data-website-canvas])))) .breakdown summary { padding: 18px; }
+}

@@ -4285,7 +4285,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!basicEstimateActive || resultState?.kind !== 'generic') return null;
     const total = getCurrentResultReplacementPriceExVat();
     const extra = Number(resultState.result.specsJson.basic_extra_replacement_price_ex_vat) || 0;
-    return renderReplacementBreakdown(total === null ? null : total - extra, extra, total, vatDisplayMode);
+    return <dl className={styles.resultPriceParts} aria-label="Replacement price breakdown">
+      <div><dt>Asset</dt><dd>{money(getVatDisplayValue(total === null ? null : total - extra, vatDisplayMode))}</dd></div>
+      <div><dt>Extras</dt><dd>{money(getVatDisplayValue(extra, vatDisplayMode))}</dd></div>
+      <div><dt>Total</dt><dd>{money(getVatDisplayValue(total, vatDisplayMode))}</dd></div>
+    </dl>;
   }
 
   function getCurrentResultReplacementPriceExVat(): number | null {
@@ -9381,21 +9385,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.resultSupportingGrid}>
           <div className={styles.resultCalculationPanel}>
           {(isGeneric && genericResult) || tractorResult ? (
-            <section data-value-tour="replacement" className={styles.resultReplacementSummary}>
+            <section data-value-tour="replacement" className={`${styles.resultReplacementSummary} ${styles.priceComparisonCard}`}>
               <div className={styles.resultReplacementHeading}>
                 {renderDetailIcon('extras')}
-                <div><h3>Replacement price</h3><p>The new-asset price used for this estimate.</p></div>
+                <div><h3>Replacement price</h3><p>Cost to replace this asset today</p></div>
               </div>
               <button type="button" className={modalStyles.adjustButton}
                 aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setReplacementRangeAnchor(null); setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
-                Adjust price
+                Adjust
               </button>
-              {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : (
-                <div className={styles.resultReplacementAmount}>
+              <div className={styles.resultReplacementAmount}>
                   <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
                   <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
                 </div>
-              )}
+              {basicEstimateActive && resultState?.kind === 'generic' ? renderResultReplacementBreakdown() : null}
               <dialog ref={replacementPriceDialogRef} className={`${styles.replacementPriceDialog} ${modalStyles.surface}`}
                 aria-label="Replacement price"
                 onClose={() => setReplacementPanelOpen(false)}
@@ -9429,15 +9432,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           </div>
-          <section data-value-tour="saleability" className={styles.saleabilitySummary} aria-label="How easily could it sell?">
-            <div>
-              <span className={styles.resultSectionLabel}>{renderDetailIcon('usage')}Realistic Market Value</span>
-              {currentMarketPrice !== null ? <strong className={styles.marketResultAmount}>{money(getVatDisplayValue(currentMarketPrice, vatDisplayMode))}</strong> : <strong>Not calculated yet</strong>}
-              {currentMarketPrice !== null ? <small>{headlineVatLabel}</small> : null}
-              <p>Your likely selling value, based on demand and selling circumstances.</p>
-              <small>May be above or below your Ideal Value. Neither guarantees a sale.</small>
+          <section data-value-tour="saleability" className={`${styles.saleabilitySummary} ${styles.priceComparisonCard}`} aria-label="Realistic Market Value">
+            <div className={styles.resultReplacementHeading}>
+              {renderDetailIcon('usage')}
+              <div><h3>Realistic Market Value</h3><p>Likely selling value</p></div>
             </div>
-            <button type="button" aria-label="Calculate Realistic Market Value" onClick={() => setSaleabilityOpen(true)}>{currentMarketPrice !== null ? 'Update' : 'Calculate market value'}</button>
+            <button type="button" aria-label={currentMarketPrice !== null ? 'Update Realistic Market Value' : 'Calculate Realistic Market Value'} onClick={() => setSaleabilityOpen(true)}>{currentMarketPrice !== null ? 'Update' : 'Calculate'}</button>
+            <div className={styles.resultReplacementAmount}>
+              {currentMarketPrice !== null ? <strong className={styles.marketResultAmount}>{money(getVatDisplayValue(currentMarketPrice, vatDisplayMode))}</strong> : <strong className={styles.marketNotCalculated}>Not calculated yet</strong>}
+              <small>{currentMarketPrice !== null ? headlineVatLabel : 'Calculate for your selling circumstances'}</small>
+            </div>
+            <div className={styles.marketPriceExplanation}>
+              <p>Based on demand and selling circumstances.</p>
+              <p>May differ from your Ideal Value.</p>
+            </div>
           </section>
         </div>
         <div className={styles.resultAssumptionsRow}>
@@ -9494,9 +9502,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {breakdownAccess && activeBreakdown ? <div data-value-tour="assumptions">
           {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
-            <section className={styles.resultReplacementSummary}>
-              <div><strong>Expected total lifetime</strong><p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState)!)} {getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'}</p></div>
-              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" onClick={openFinalLifetimeModal}>Check / adjust</button>
+            <section className={`${styles.resultReplacementSummary} ${styles.resultLifetimeRow}`}>
+              <div className={styles.resultLifetimeLabel}>{renderDetailIcon('usage')}<div><strong>Expected lifetime</strong><p>{formatPlainNumber(getResultMaxLifetimeUsage(resultState)!)} {getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'}</p></div></div>
+              <button type="button" className={modalStyles.adjustButton} aria-haspopup="dialog" onClick={openFinalLifetimeModal}>Adjust</button>
             </section> : null}
           {breakdownAccess && activeBreakdown ? <div><EstimateTools report={activeBreakdown.report}
             busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
