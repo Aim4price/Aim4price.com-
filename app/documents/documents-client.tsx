@@ -1531,8 +1531,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         {draft.assetIds.length
                           ? selectedDraftAssets.map((asset) => asset.title).join(' · ') || 'Linked assets'
                           : selectedFiles.length > 1
-                            ? 'These documents will be saved in Documents. You can link them to assets now or later.'
-                            : 'This document will be saved in Documents. You can link it to assets now or later.'}
+                            ? <>These documents will be saved in Documents.<br />You can link them to assets now or later.</>
+                            : <>This document will be saved in Documents.<br />You can link it to assets now or later.</>}
                       </p>
                     </div>
                     <button type="button" onClick={openAssetPickerModal} disabled={busy}>

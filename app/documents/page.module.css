@@ -3459,13 +3459,13 @@
 
 .assetLinkSummary p {
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   color: #667889;
   font-size: 0.76rem;
   font-weight: 640;
   line-height: 1.45;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .assetLinkSummary > button {
