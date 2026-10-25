@@ -96,3 +96,15 @@ test('category and frequency choices advance without submitting the commitment',
     assert.ok(client.includes(`value: '${value}'`));
   }
 });
+
+
+test('all commitment calendars allow backdating while review validates date order', () => {
+  const dates = recurringModal.slice(recurringModal.indexOf('{recurringWizardStep === 5 ? ('), recurringModal.indexOf('{recurringWizardStep === 6 ? ('));
+  assert.equal((dates.match(/<DateInput/g) || []).length, 3);
+  assert.doesNotMatch(dates, /<DateInput[^>]*\bmin=/);
+  const body = client.match(/function recurringScheduleError\(\): string \{([\s\S]*?)\n  \}/)[1];
+  const validate = new Function('recurringDraft', body);
+  assert.equal(validate({ startDate: '2020-01-01', endDate: '2021-01-01', renewalDate: '2020-12-01' }), '');
+  assert.match(validate({ startDate: '2021-01-01', endDate: '2020-01-01' }), /before the start/);
+  assert.match(validate({ startDate: '', endDate: '2020-01-01' }), /start date/);
+});
