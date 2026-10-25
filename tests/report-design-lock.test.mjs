@@ -7,7 +7,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../app/api/valuation/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['8302:6545dae0e0b1820d'],
+    fingerprints: ['8828:b50c606e262b9aa2'],
   },
   {
     path: '../lib/report-print.ts',

@@ -168,7 +168,7 @@ function normalizeReportRows(value: unknown): ValuationReportKeyValue[] {
       const label = normalizeSpaces(row.label)
         .replace(/Marketplace\s+Value/gi, 'Aim4price Value')
         .replace(/^Year(?:\s+Model)?$/i, 'Model year')
-        .replace(/^Replacement\s+Price$/i, 'Replacement price (excl. VAT)');
+        .replace(/^Replacement\s+Price(?:\s*\(excl\. VAT\))?$/i, 'Replacement price');
       const value = normalizeSpaces(row.value).replace(/Marketplace\s+Value/gi, 'Aim4price Value');
 
       return {
@@ -272,7 +272,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   pushRow(fallbackAssetRows, 'Usage', usageSummary);
   pushRow(fallbackAssetRows, 'Condition', conditionSummary);
   if (replacementPriceExVat !== null) {
-    pushRow(fallbackAssetRows, 'Replacement price (excl. VAT)', formatReportMoney(replacementPriceExVat));
+    pushRow(fallbackAssetRows, 'Replacement price', `${formatReportMoney(replacementPriceExVat)} excl. VAT`);
   }
   pushRow(fallbackAssetRows, 'Estimate Path', valuationPath);
 
@@ -332,6 +332,24 @@ function renderReportRows(rows: ValuationReportKeyValue[], emptyLabel: string): 
         .join('')}
     </div>
   `;
+}
+
+function renderMarketValueSummary(rows: ValuationReportKeyValue[]): string {
+  const price = rows.find(row => /^(Saleability price|Realistic Market Price|Realistic Market Value)$/i.test(row.label)
+    && /^-?R\s*[\d]/.test(row.value));
+  if (!price) {
+    return `<div class="assetReportMarketSummary">
+      <strong>Market value not calculated</strong>
+      <p>This report shows the Aim4price Ideal Value only.</p>
+      <p>Calculate Realistic Market Value in Value Asset to estimate a selling value for your circumstances.</p>
+    </div>`;
+  }
+  const details = rows.filter(row => row !== price && !/^Why prices differ$/i.test(row.label));
+  return `<div class="assetReportMarketSummary">
+    <strong class="assetReportMarketAmount">${escapeHtml(price.value)}</strong>
+    <p>Ideal Value reflects the asset details and depreciation. Market Value also considers demand and selling circumstances, so it may be higher or lower.</p>
+    <p>Neither value guarantees a sale.</p>
+  </div>${details.length ? renderReportRows(details, '') : ''}`;
 }
 
 function renderValuationReportHtml(payload: NormalizedValuationReport): string {
@@ -757,6 +775,16 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
         font-size: 8.2px;
       }
 
+      .assetReportAssessmentSummary .assetReportRow {
+        grid-template-columns: 39mm minmax(0, 1fr);
+        column-gap: 6px;
+      }
+      .assetReportAssessmentSummary .assetReportRow > span { white-space: nowrap; }
+      .assetReportMarketSummary { border-top: 1px solid var(--line); padding-top: 9px; }
+      .assetReportMarketSummary > strong { display: block; color: var(--strong); font-size: 9px; line-height: 1.4; }
+      .assetReportMarketSummary > .assetReportMarketAmount { font-size: 14px; }
+      .assetReportMarketSummary p { margin: 7px 0 0; color: var(--muted); font-size: 8.5px; line-height: 1.5; font-weight: 500; }
+
       .assetReportRecordRows .assetReportRows {
         display: grid;
         gap: 0;
@@ -963,13 +991,13 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           </div>
 
           <aside class="assetReportSide">
-            ${payload.saleabilityRows.length ? `
+            ${`
               <section class="assetReportSideCard assetReportRecordRows assetReportSaleabilityRows">
                 <h2>Realistic Market Value</h2>
-                ${renderReportRows(payload.saleabilityRows, 'No market price details available.')}
+                ${renderMarketValueSummary(payload.saleabilityRows)}
               </section>
-            ` : ''}
-            <section class="assetReportSideCard assetReportRecordRows">
+            `}
+            <section class="assetReportSideCard assetReportRecordRows assetReportAssessmentSummary">
               <h2>Record Summary</h2>
               ${renderReportRows(payload.recordRows, 'No record details available.')}
             </section>

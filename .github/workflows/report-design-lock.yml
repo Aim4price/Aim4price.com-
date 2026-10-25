@@ -88,6 +88,9 @@ jobs:
       - name: Verify report templates and print layouts
         run: node scripts/verify-report-suite.cjs
 
+      - name: Verify valuation PDF clarity
+        run: node scripts/verify-valuation-report-clarity.cjs
+
       - name: Upload synthetic report evidence
         if: always()
         uses: actions/upload-artifact@v4
