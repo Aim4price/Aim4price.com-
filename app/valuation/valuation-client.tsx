@@ -9581,14 +9581,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         ? `Save to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
         : 'Save to Asset Register';
   const finalSaveDescription = finalSaveIntent === 'marketplace'
-    ? 'Review the estimate and replacement price before continuing to the advert details.'
-    : isDealerAccount && dealerSaveTargetMode === 'client'
-      ? `Review the estimate and replacement price before saving it to ${dealerSaveTargetRegisterName || 'the selected client register'}.`
-      : isDealerAccount && dealerSaveTargetMode === 'dealer'
-        ? `Review the estimate and replacement price before saving it to ${dealerSaveTargetRegisterName || 'the Dealer Asset Register'}.`
-        : 'Review the estimate and replacement price before saving this asset.';
+    ? 'Check your values before creating the advert.'
+    : 'Check your values before saving this asset.';
   const finalSaveCta = finalSaveIntent === 'marketplace'
-    ? 'Save and continue to advert details'
+    ? 'Save and continue'
     : 'Confirm and save';
   const isSectorIntroStep = step === 1 && (!selectedSector || !estimateExperience);
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
@@ -9911,7 +9907,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       {finalSaveIntent && !conversionAssetId && !saveMarketChoice ? (
         <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
           <section
-            className={`${styles.finalSaveModal} ${modalStyles.surface}`}
+            className={`${styles.finalSaveModal} ${styles.finalSaveReview} ${modalStyles.surface}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="final-save-title"
@@ -9957,7 +9953,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             {renderResultReplacementBreakdown()}
             <div className={styles.finalReplacementPanel}>
               <label className={styles.finalReplacementField}>
-                <span>Confirm or update {basicEstimateActive ? 'total replacement price' : 'replacement price'} ({getVatDisplayLabel(vatDisplayMode)})</span>
+                <span>{basicEstimateActive ? 'Total replacement price' : 'Replacement price'} ({getVatDisplayLabel(vatDisplayMode)})</span>
                 <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice}
                   vatMode={vatDisplayMode} label="Replacement price" />
               </label>

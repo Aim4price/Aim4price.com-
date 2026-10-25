@@ -15725,3 +15725,23 @@
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .resultPriceParts dd { margin: 0; text-align: right; }
 }
+
+/* Save/ad review: one continuous green amount field and compact copy. */
+.finalSaveModal.finalSaveReview { gap: 18px; max-height: calc(var(--website-visible-height, 100dvh) - 32px); }
+.finalSaveReview .finalSaveHeader p { max-width: none; margin-top: 6px; }
+.finalSaveReview .finalReplacementPanel { padding: 16px; gap: 14px; }
+.finalSaveReview [data-estimate-price-entry] {
+  background: var(--typing-field-surface, #edf5f0); border: 1px solid var(--app-line, #b6cfc1);
+  border-radius: 12px; gap: 10px; padding-inline: 16px; min-height: 54px;
+}
+.finalSaveReview [data-estimate-price-entry] input {
+  --typing-field-surface: transparent;
+  --typing-field-focus: transparent;
+  border: 0; border-radius: 0; min-width: 0;
+}
+.finalSaveReview [data-estimate-price-entry] > span { color: var(--app-text, #174f3e); }
+.finalSaveReview .finalReplacementRecalculateButton { border-radius: 12px; min-height: 54px; white-space: nowrap; }
+.finalSaveReview .finalSaveActions { margin-top: 4px; padding-top: 18px; gap: 12px; }
+.finalSaveReview .finalSaveActions button { white-space: nowrap; }
+
+.finalSaveReview [data-estimate-price-entry] input:focus { outline: none; box-shadow: none; }

@@ -221,10 +221,15 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/market-save-prompt-dark.png'});
  // The valuation summary receives the server quote when Done is clicked.
  await page.evaluate(()=>{
-   window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0'}})});
-   window.root.render(React.createElement(require('components/SaleabilityModal').default,{key:'completion-quote',open:true,onClose:()=>{},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:window.sent,onComplete:(answers,quote)=>{window.completedQuote=quote;window.completedAnswers=answers;}}));
+   window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0',ease:{score:72,version:'fixture-ease',provisional:false}}})});
+   window.root.render(React.createElement(require('components/SaleabilityModal').default,{key:'completion-quote',estimateStyle:true,open:true,onClose:()=>{},assetTitle:'Test asset',valuationExVat:459000,input:{condition:'good',lifeWorkedPercent:50},initialAnswers:window.sent,onComplete:(answers,quote)=>{window.completedQuote=quote;window.completedAnswers=answers;}}));
  });
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Done'&&!b.disabled));
+ await page.evaluate(()=>document.documentElement.dataset.appTheme='light');
+ await page.setViewport({width:1366,height:900});
+ await page.waitForSelector('[aria-label="Your selling estimate"]');
+ assert(await page.$eval('[aria-label="Your selling estimate"]',el=>el.scrollHeight<=el.clientHeight+2),'Value Asset result fits without an internal scrollbar');
+ await page.screenshot({path:'/tmp/value-market-result.png'});
  await click('Done');
  assert.equal(await page.evaluate(()=>window.completedQuote.priceExVat),390000);
  assert.equal(await page.evaluate(()=>window.completedAnswers.modelVersion),2);

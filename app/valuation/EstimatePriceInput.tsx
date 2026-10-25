@@ -19,7 +19,7 @@ export default function EstimatePriceInput({ value, onChange, vatMode, label, sl
   return <div className={`${modal.valueControl} ${expanded ? modal.expandedPriceControl : ''}`}>
     {expanded && <div className={modal.priceReadout}><span>{label}</span><strong>{new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(amount * multiplier)}</strong><small>{vatMode === 'incl' ? 'Including VAT' : 'Excluding VAT'}</small></div>}
     {expanded && <span className={modal.priceEntryLabel}>Enter the replacement price ({vatMode === 'incl' ? 'incl.' : 'excl.'} VAT)</span>}
-    <div className={modal.amountEntry}><span aria-hidden="true">R</span>
+    <div className={modal.amountEntry} data-estimate-price-entry><span aria-hidden="true">R</span>
     <input aria-label={`${label} (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`} type="text" inputMode="decimal"
       value={display} placeholder="Enter amount"
       onChange={event => {
