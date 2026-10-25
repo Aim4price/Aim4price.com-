@@ -55,6 +55,7 @@ import styles from 'app/valuation/page.module.css';import modalStyles from 'comp
 export default function SaveFixture(){
 const [resultState,setResultState]=useState({id:1}),headlineValue=459000;
 const [finalSaveEditing,setFinalSaveEditing]=useState(false);
+const [pdfMarketReturn,setPdfMarketReturn]=useState(false),[pdfOptionsOpen,setPdfOptionsOpen]=useState(false);
 const [savePhotoFiles,setSavePhotoFiles]=useState([]),[savePhotoMode,setSavePhotoMode]=useState('skip');
 const [finalSaveIntent,setFinalSaveIntent]=useState(null),[saveMarketChoice,setSaveMarketChoice]=useState(null);
 const [saleabilityOpen,setSaleabilityOpen]=useState(false),[completedMarketAssessment,setCompletedMarketAssessment]=useState(null);
@@ -64,6 +65,8 @@ function closeFinalSaveModal(){setFinalSaveIntent(null);setSaveMarketChoice(null
 ${saveEntry}
 return <><button onClick={()=>openFinalSaveModal('asset-register')}>Save asset</button>
 <button onClick={()=>setResultState({id:2})}>Change estimate</button>
+<button onClick={()=>{setFinalSaveIntent(null);setSaveMarketChoice(null);setPdfOptionsOpen(false);setPdfMarketReturn(true);setSaleabilityOpen(true);}}>Calculate for PDF</button>
+{pdfOptionsOpen?<output data-pdf-options>PDF options</output>:null}
 ${savePrompt}
 {finalSaveIntent&&!saveMarketChoice?<output data-photo-count={savePhotoFiles.length} data-photo-mode={savePhotoMode}>Save review</output>:null}
 <SaleabilityModal open={saleabilityOpen} ${completionProps}
@@ -201,7 +204,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
  await click('Save asset');assert.deepEqual(errors,[], 'Save entry must not throw before opening the prompt');await page.waitForSelector('#market-save-title');
  await click('Calculate market value');await page.waitForSelector('[aria-label="Question 1 of 5"]');
- await page.click('[aria-label="Close Realistic Market Value"]');await page.waitForSelector('#market-save-title');
+ await page.click('[aria-label="Close Realistic Market Value"]');assert.deepEqual(errors,[], 'Closing the market modal must return without errors');await page.waitForSelector('#market-save-title');
  await click('Calculate market value');await page.waitForSelector('[aria-label="Question 1 of 5"]');
  await page.$$eval('button',nodes=>nodes.find(n=>n.textContent.includes('Dealer / trade-in')).click());
  await page.waitForSelector('[aria-label="Question 2 of 5"]');
@@ -228,6 +231,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.mouse.move(0,0);
  await page.waitForFunction(()=>{const button=document.querySelector('[aria-labelledby="market-save-title"] button:nth-child(1)');return [...document.querySelectorAll('[aria-labelledby="market-save-title"] button')].filter(b=>b.querySelector('strong')).every(b=>getComputedStyle(b).backgroundColor.match(/rgb\((\d+)/)?.[1]<60);});
  await page.screenshot({path:'/tmp/market-save-prompt-dark.png'});
+ // PDF callers return to the options after cancelling an assessment.
+ await click('Calculate for PDF');
+ await page.waitForSelector('[aria-label="Close Realistic Market Value"]');
+ await page.click('[aria-label="Close Realistic Market Value"]');
+ assert.deepEqual(errors,[], 'PDF return handlers must have their real state available');
+ await page.waitForSelector('[data-pdf-options]');
  // The valuation summary receives the server quote when Done is clicked.
  await page.evaluate(()=>{
    window.fetch=async()=>({ok:true,json:async()=>({quote:{priceExVat:390000,resultLabel:'Estimated selling price',modelVersion:'saleability-2.0',ease:{score:72,version:'fixture-ease',provisional:false}}})});
