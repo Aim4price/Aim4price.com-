@@ -5106,14 +5106,14 @@ export default function MyInvoicesClient({
       {flow === 'upload' && !captureAllowance.blocked ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${styles.captureUploadBackdrop} ${wizardStyles.overlay}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
           <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.captureUploadDialog} ${styles.accountCostModal} ${accountStyles.modalTheme} ${wizardStyles.dialog} ${captureAttachmentStyles.dialog}`}>
-            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
+            <div className={`${styles.modalHeader} ${wizardStyles.header} ${captureAttachmentStyles.header}`}>
               <div>
                 <h2>Automatic upload</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'} · {captureUploadPage === 'files' ? 'Invoice or photos' : 'Notes · Optional'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting} data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
+            <div className={`${styles.formModalScrollBody} ${wizardStyles.body} ${captureAttachmentStyles.body}`}>
               <section className={captureAttachmentStyles.panel}>
                 {captureUploadPage === 'files' ? <>
                 <h3>Invoice or photos</h3>
@@ -5150,7 +5150,7 @@ export default function MyInvoicesClient({
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}
               </section>
             </div>
-            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+            <div className={`${styles.modalFooter} ${wizardStyles.footer} ${captureAttachmentStyles.footer}`}>
               <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => captureUploadPage === 'notes' ? setCaptureUploadPage('files') : setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={() => { if (captureUploadPage === 'files') setCaptureUploadPage('notes'); else void handleAutomaticExtract(); }} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
                 {isExtracting ? 'Sending invoice/photo...' : captureUploadPage === 'files' ? 'Continue' : 'Upload automatically'}
