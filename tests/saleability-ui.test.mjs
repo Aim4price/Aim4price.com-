@@ -121,7 +121,7 @@ test('valuation inputs needed by saved assets are retained without a database mi
 
 test('saving offers a deliberate market-price choice and carries only a current completed assessment', () => {
   assert.match(valuationClient, /Add a realistic market value\?/);
-  assert.match(valuationClient, /Save with Ideal Price only/);
+  assert.match(valuationClient, /Save with Ideal Value only/);
   assert.match(valuationClient, /setSaveMarketChoice\('calculating'\); setSaleabilityOpen\(true\)/);
   assert.match(valuationClient, /saveMarketChoice === 'calculating'\) setSaveMarketChoice\('prompt'\)/);
   assert.match(valuationClient, /completedMarketAssessment\?\.result === resultState && completedMarketAssessment.value === headlineValue/);

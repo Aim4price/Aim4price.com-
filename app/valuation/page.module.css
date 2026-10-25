@@ -15569,7 +15569,38 @@
 }
 
 /* A deliberate market-price choice before the existing save review. */
-.marketSaveChoices { display: grid; gap: 14px; margin-top: 24px; }
-.marketSaveChoices button { width: 100%; min-height: 52px; padding: 14px 20px; }
+.finalSaveModal.marketSaveModal {
+  width: min(850px, 100%);
+  gap: 24px;
+  padding: clamp(22px, calc(var(--website-design-vw, 1vw) * 3), 36px);
+}
+.marketSaveModal .finalSaveHeader { gap: 14px; }
+.marketSaveModal .finalSaveHeader h2 { font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem); line-height: 1.18; letter-spacing: -.035em; }
+.marketSaveModal .finalSaveHeader p { font-size: 1rem; line-height: 1.55; }
+.marketSaveChoices { display: grid; gap: 16px; min-width: 0; }
+.marketSaveOption {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr) 20px; align-items: center; gap: 20px;
+  width: 100%; padding: 20px; border-radius: 18px;
+  border: 1px solid var(--app-line, #d9e2e1); background: var(--app-surface, #fff);
+  color: var(--app-text, #183d35); text-align: left; font: inherit; cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.marketSaveRecommended { border-color: var(--app-line, #a5d4c1); background: var(--app-surface-soft, #f0f8f4); }
+.marketSaveOption:hover, .marketSaveOption:focus-visible { border-color: var(--app-accent, #23815b); box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent, #23815b) 15%, transparent); outline: none; }
+.marketSaveIcon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 14px; background: var(--app-surface-soft, #f0f3f5); color: var(--app-muted, #516770); }
+.marketSaveRecommended .marketSaveIcon { background: color-mix(in srgb, var(--app-accent, #23815b) 13%, var(--app-surface, #fff)); color: var(--app-accent, #18684e); }
+.marketSaveIcon svg { width: 28px; height: 28px; }
+.marketSaveCopy { display: grid; gap: 6px; min-width: 0; }
+.marketSaveCopy strong { font-size: 1.1rem; font-weight: 750; line-height: 1.3; }
+.marketSaveCopy > span { color: var(--app-muted, #617483); font-size: .95rem; line-height: 1.45; }
+.marketSaveArrow { width: 20px; height: 20px; color: var(--app-muted, #617483); }
+.marketSaveRecommended .marketSaveArrow { color: var(--app-accent, #18684e); }
+.marketSaveNote { margin: 0; color: var(--app-muted, #617483); font-size: .85rem; line-height: 1.5; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketSaveOption { grid-template-columns: 40px minmax(0, 1fr) 16px; padding: 16px 12px; gap: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .marketSaveIcon { width: 40px; height: 40px; border-radius: 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .marketSaveIcon svg { width: 24px; height: 24px; }
+}
+
 
 .sharedLifetimeFields { display: grid; gap: 16px; min-width: 0; border: 0; margin: 0; padding: 0; }

@@ -9858,16 +9858,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
       {finalSaveIntent && saveMarketChoice === 'prompt' ? (
         <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
-          <section className={`${styles.finalSaveModal} ${modalStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="market-save-title" onClick={event => event.stopPropagation()}>
+          <section className={`${styles.finalSaveModal} ${styles.marketSaveModal} ${modalStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="market-save-title" aria-describedby="market-save-description" onClick={event => event.stopPropagation()}>
             <button type="button" className={`${styles.finalSaveClose} ${modalStyles.close}`} data-modal-close="true" aria-label="Close" onClick={closeFinalSaveModal}>×</button>
             <div className={styles.finalSaveHeader}>
               <h2 id="market-save-title">Add a realistic market value?</h2>
-              <p>Your Ideal Price is ready. Answer a few questions to estimate what your asset could sell for.</p>
+              <p id="market-save-description">Your Aim4price Ideal Value is ready.<br />See what your asset could sell for in your selling circumstances.</p>
             </div>
             <div className={styles.marketSaveChoices}>
-              <button type="button" className={styles.primaryButton} onClick={() => { setSaveMarketChoice('calculating'); setSaleabilityOpen(true); }}>Calculate market value</button>
-              <button type="button" className={styles.secondaryButton} onClick={() => { setCompletedMarketAssessment(null); setSaveMarketChoice(null); }}>Save with Ideal Price only</button>
+              <button type="button" className={`${styles.marketSaveOption} ${styles.marketSaveRecommended}`} onClick={() => { setSaveMarketChoice('calculating'); setSaleabilityOpen(true); }}><span className={styles.marketSaveIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13 11 22 2 13 13 2h7v11Z" transform="translate(0 -1)" /><circle cx="16" cy="6" r="1.5" /></svg></span><span className={styles.marketSaveCopy}><strong>Calculate market value</strong><span>Answer a few questions before saving.</span></span><svg className={styles.marketSaveArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+              <button type="button" className={styles.marketSaveOption} onClick={() => { setCompletedMarketAssessment(null); setSaveMarketChoice(null); }}><span className={styles.marketSaveIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2Z" /><path d="M7 3v6h10V3M7 21v-8h10v8" /></svg></span><span className={styles.marketSaveCopy}><strong>Save with Ideal Value only</strong><span>You can calculate the market value later.</span></span><svg className={styles.marketSaveArrow} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
             </div>
+            <p className={styles.marketSaveNote}>Your Aim4price Ideal Value stays unchanged.</p>
           </section>
         </div>
       ) : null}
