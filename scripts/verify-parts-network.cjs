@@ -256,14 +256,17 @@ const appCode =
     });
     await page.keyboard.press("Backspace");
     await page.waitForFunction(
-      () => document.querySelectorAll("article").length === 3,
+      () => document.querySelectorAll("article").length === 4,
     );
 
     const click = async (text) => {
       assert.ok(
         await page.evaluate((t) => {
           const b = [...document.querySelectorAll("button")].find(
-            (b) => b.textContent.trim() === t && !b.disabled,
+            (b) =>
+              (b.textContent.trim() === t ||
+                b.querySelector("strong")?.textContent.trim() === t) &&
+              !b.disabled,
           );
           if (!b || b.disabled) return false;
           b.click();
@@ -292,9 +295,12 @@ const appCode =
       await page.evaluate(
         () =>
           document.body.innerText.includes("Inside Aim4price") &&
-          document.body.innerText.includes("Share a link"),
+          document.body.innerText.includes("Send link"),
       ),
     );
+    await page.screenshot({
+      path: path.join(output, "share-destinations.png"),
+    });
     await page.keyboard.press("Escape");
     await click("Open");
     await page.waitForSelector("tbody tr");
@@ -339,6 +345,15 @@ const appCode =
       ),
     );
     await page.screenshot({ path: path.join(output, "manage-parts.png") });
+    await page.setViewport({ width: 390, height: 844 });
+    assert.ok(
+      await page.$eval(
+        "[role=dialog]",
+        (e) => e.getBoundingClientRect().width <= 390,
+      ),
+    );
+    await page.screenshot({ path: path.join(output, "manage-mobile.png") });
+    await page.setViewport({ width: 1440, height: 1000 });
     await click("Rename list");
     await page.waitForFunction(
       () =>
@@ -389,8 +404,12 @@ const appCode =
     await click("All parts lists");
     await page.waitForSelector("article");
     await page.screenshot({ path: path.join(output, "lists-dark.png") });
-    await click("Shared with me");
-    await click("Open");
+    await page.evaluate(() =>
+      [...document.querySelectorAll("article")]
+        .find((a) => a.textContent.includes("Shared parts list"))
+        .querySelector("button")
+        .click(),
+    );
     await page.waitForSelector("tbody tr");
     assert.ok(
       !(await page.evaluate(() =>
@@ -414,8 +433,8 @@ const appCode =
       "44444444-4444-4444-8444-444444444444",
     );
     await click("All parts lists");
-    await click("My parts");
     await click("Share");
+    await click("Inside Aim4price");
     await page.waitForSelector('input[type="email"]');
     await page.type('input[type="email"]', "buyer@example.test");
     await click("Share inside Aim4price");
@@ -425,8 +444,12 @@ const appCode =
     assert.equal(actions.find((a) => a.action === "invite").channel, "direct");
     assert.equal(actions.find((a) => a.action === "invite").role, "viewer");
     await click("Share");
+    await page.screenshot({ path: path.join(output, "share-dark.png") });
+    await page.setViewport({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(output, "share-mobile-dark.png") });
+    await page.setViewport({ width: 1440, height: 1000 });
+    await click("Send link");
     await page.waitForSelector('input[type="email"]');
-    await click("Share a link");
     await page.type('input[type="email"]', "other@example.test");
     await click("Create sharing link");
     await page.waitForFunction(() =>

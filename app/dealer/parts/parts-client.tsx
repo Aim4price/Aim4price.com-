@@ -92,6 +92,8 @@ function Icon({
   kind,
 }: {
   kind:
+    | "link"
+    | "building"
     | "search"
     | "upload"
     | "users"
@@ -106,6 +108,8 @@ function Icon({
     | "eye";
 }) {
   const paths = {
+    link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+    building: "M3 21V7l9-4 9 4v14 M1 21h22 M7 21V11h10v10 M8 7h8",
     share:
       "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M9 10l6-4 M9 14l6 4",
     manage:
@@ -142,9 +146,11 @@ function Modal({
   title,
   onClose,
   busy,
+  subtitle,
   children,
 }: {
   title: string;
+  subtitle?: string;
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -169,7 +175,10 @@ function Modal({
         <div className={styles.closeWrap}>
           <ShareModalCloseButton onClick={onClose} disabled={busy} />
         </div>
-        <h2>{title}</h2>
+        <header className={styles.dialogHeader}>
+          <h2>{title}</h2>
+          {subtitle && <p>{subtitle}</p>}
+        </header>
         {children}
       </section>
     </div>,
@@ -198,7 +207,14 @@ export default function PartsClient({
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
   const [modal, setModal] = useState<
-      "upload" | "invite" | "create" | "manage" | "delete" | "rename" | null
+      | "upload"
+      | "invite"
+      | "create"
+      | "manage"
+      | "delete"
+      | "rename"
+      | "share"
+      | null
     >(null),
     [contact, setContact] = useState<Row | null>(null),
     [confirm, setConfirm] = useState<{
@@ -224,7 +240,6 @@ export default function PartsClient({
     [inviteEmail, setInviteEmail] = useState(""),
     [inviteRole, setInviteRole] = useState("viewer"),
     [channel, setChannel] = useState("direct"),
-    [folder, setFolder] = useState("mine"),
     [listSearch, setListSearch] = useState(""),
     [opened, setOpened] = useState(false),
     [enquiry, setEnquiry] = useState(""),
@@ -399,38 +414,19 @@ export default function PartsClient({
           )}
         </div>
         {!opened && (
-          <div className={styles.tabs}>
-            <button
-              aria-pressed={folder === "mine"}
-              onClick={() => setFolder("mine")}
-            >
-              My parts
-            </button>
-            <button
-              aria-pressed={folder === "shared"}
-              onClick={() => setFolder("shared")}
-            >
-              Shared with me
-            </button>
-          </div>
-        )}
-        {!opened && (
           <>
             <PartsInbox
               showShared={false}
               onAccepted={() => {
                 void loadNetworks();
-                setFolder("shared");
               }}
             />
             <div className={styles.cards}>
               {networks
-                .filter(
-                  (n) =>
-                    (folder === "mine" ? n.owned : !n.owned) &&
-                    n.name
-                      .toLowerCase()
-                      .includes(listSearch.trim().toLowerCase()),
+                .filter((n) =>
+                  n.name
+                    .toLowerCase()
+                    .includes(listSearch.trim().toLowerCase()),
                 )
                 .map((n) => (
                   <article
@@ -477,7 +473,7 @@ export default function PartsClient({
                             setInviteEmail("");
                             setInviteUrl("");
                             setInviteRole("viewer");
-                            setModal("invite");
+                            setModal("share");
                           }}
                         >
                           <Icon kind="share" />
@@ -516,25 +512,13 @@ export default function PartsClient({
                 ))}
             </div>
             {!loading &&
-              !networks.some(
-                (n) =>
-                  (folder === "mine" ? n.owned : !n.owned) &&
-                  n.name
-                    .toLowerCase()
-                    .includes(listSearch.trim().toLowerCase()),
+              !networks.some((n) =>
+                n.name.toLowerCase().includes(listSearch.trim().toLowerCase()),
               ) && (
                 <div className={styles.empty}>
-                  <h2>
-                    {listSearch
-                      ? "No matching lists"
-                      : folder === "mine"
-                        ? "Your parts lists"
-                        : "Shared with me"}
-                  </h2>
+                  <h2>{listSearch ? "No matching lists" : "Parts lists"}</h2>
                   <p>
-                    {folder === "mine"
-                      ? "Add a list, upload your CSV and share it with other dealers."
-                      : "Parts lists shared with your account will appear here."}
+                    Add a list or accept a dealer’s invitation to get started.
                   </p>
                 </div>
               )}
@@ -591,7 +575,7 @@ export default function PartsClient({
                       onClick={() => {
                         setInviteEmail("");
                         setInviteUrl("");
-                        setModal("invite");
+                        setModal("share");
                       }}
                     >
                       <Icon kind="share" />
@@ -866,22 +850,33 @@ export default function PartsClient({
             </>
           ))}
         {modal === "manage" && (
-          <Modal title="Manage parts list" onClose={close} busy={busy}>
-            <p className={styles.modalSubtitle}>{current?.name}</p>
+          <Modal
+            title={current?.name || "Parts list"}
+            subtitle={`${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · ${date(current?.last_updated || "")}`}
+            onClose={close}
+            busy={busy}
+          >
             <div className={styles.manageGrid}>
               <button onClick={() => setModal("rename")}>
                 <Icon kind="edit" />
-                <span>Rename list</span>
+                <span>
+                  <strong>Rename list</strong>
+                  <small>Change the name of this parts list.</small>
+                </span>
               </button>
               {canUpload && (
                 <button
+                  data-tone="blue"
                   onClick={() => {
                     setOpened(true);
                     openUpload();
                   }}
                 >
                   <Icon kind="upload" />
-                  <span>Update CSV</span>
+                  <span>
+                    <strong>Update CSV</strong>
+                    <small>Replace parts with your latest stocklist.</small>
+                  </span>
                 </button>
               )}
               <button
@@ -892,7 +887,10 @@ export default function PartsClient({
                 }}
               >
                 <Icon kind="users" />
-                <span>Sharing &amp; access</span>
+                <span>
+                  <strong>Sharing &amp; access</strong>
+                  <small>Review invitations and dealer access.</small>
+                </span>
               </button>
               {canUpload && (
                 <button
@@ -908,7 +906,14 @@ export default function PartsClient({
                 >
                   <Icon kind="eye" />
                   <span>
-                    {current?.visible ? "Hide my list" : "Show my list"}
+                    <strong>
+                      {current?.visible ? "Hide my list" : "Show my list"}
+                    </strong>
+                    <small>
+                      {current?.visible
+                        ? "Pause visibility for other dealers."
+                        : "Make your parts visible to approved dealers."}
+                    </small>
                   </span>
                 </button>
               )}
@@ -917,7 +922,10 @@ export default function PartsClient({
                 onClick={() => setModal("delete")}
               >
                 <Icon kind="delete" />
-                <span>Delete list</span>
+                <span>
+                  <strong>Delete list</strong>
+                  <small>Remove this list and stop shared access.</small>
+                </span>
               </button>
             </div>
             {feedback}
@@ -1014,8 +1022,63 @@ export default function PartsClient({
             </div>
           </Modal>
         )}
+        {modal === "share" && (
+          <Modal
+            title={current?.name || "Parts list"}
+            subtitle={`${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · Private dealer sharing`}
+            onClose={close}
+            busy={busy}
+          >
+            <div className={styles.shareChoices}>
+              <button
+                data-tone="amber"
+                onClick={() => {
+                  setChannel("link");
+                  setModal("invite");
+                }}
+              >
+                <Icon kind="link" />
+                <span>
+                  <strong>Send link</strong>
+                  <small>Create a private invitation link</small>
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  setChannel("direct");
+                  setModal("invite");
+                }}
+              >
+                <Icon kind="building" />
+                <span>
+                  <strong>Inside Aim4price</strong>
+                  <small>Share with an Aim4price dealer</small>
+                </span>
+              </button>
+            </div>
+            <div className={styles.shareHistory}>
+              <button
+                onClick={() => {
+                  setOpened(true);
+                  switchView("members");
+                  setModal(null);
+                }}
+              >
+                <Icon kind="users" />
+                <strong>Sharing &amp; access</strong>
+                <span>Manage invitations and dealers</span>
+                <Icon kind="open" />
+              </button>
+            </div>
+          </Modal>
+        )}
         {modal === "invite" && (
-          <Modal title="Share parts list" onClose={close} busy={busy}>
+          <Modal
+            title={channel === "link" ? "Send link" : "Inside Aim4price"}
+            subtitle={current?.name}
+            onClose={close}
+            busy={busy}
+          >
             {inviteUrl ? (
               <>
                 <p>
@@ -1043,20 +1106,6 @@ export default function PartsClient({
               </>
             ) : (
               <>
-                <div className={styles.tabs}>
-                  <button
-                    aria-pressed={channel === "direct"}
-                    onClick={() => setChannel("direct")}
-                  >
-                    Inside Aim4price
-                  </button>
-                  <button
-                    aria-pressed={channel === "link"}
-                    onClick={() => setChannel("link")}
-                  >
-                    Share a link
-                  </button>
-                </div>
                 <div className={styles.grid}>
                   <label>
                     Recipient email
@@ -1117,6 +1166,19 @@ export default function PartsClient({
                 </button>
               </>
             )}
+            <div className={styles.modalFooter}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setInviteUrl("");
+                  setError("");
+                  setNotice("");
+                  setModal("share");
+                }}
+              >
+                Back
+              </button>
+            </div>
             {feedback}
           </Modal>
         )}
