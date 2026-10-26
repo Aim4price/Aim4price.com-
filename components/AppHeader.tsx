@@ -230,7 +230,6 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/team', label: 'Team workspaces' },
   { href: '/valuation', label: 'Value Asset' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
@@ -248,7 +247,6 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 ];
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/team', label: 'Team workspaces' },
   { href: '/valuation', label: 'Value Asset' },
   { href: '/ad-studio', label: 'Ad Studio' },
   { href: '/my-showroom', label: 'My Showroom' },
@@ -2523,7 +2521,6 @@ export default function AppHeader({
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
                                       { href: '/pricing', label: 'Explore plans' },
-                                      { href: '/team', label: 'Team workspaces' },
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {

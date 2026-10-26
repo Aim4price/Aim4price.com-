@@ -2176,7 +2176,6 @@ export default function AccountClient({
                 </section>
               ) : null}
 
-              {isOwnerAccount || isDealerAccount ? (
                 <section
                   className={styles.quickActionGroup}
                   aria-labelledby="apps-connections-actions-title"
@@ -2185,7 +2184,8 @@ export default function AccountClient({
                     <h3 id="apps-connections-actions-title">Apps &amp; connections</h3>
                   </div>
                   <div className={styles.quickActionList}>
-                    {!sharedAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>Team access</strong></Link>}
+                    <Link className={styles.quickActionButton} href="/team"><QuickActionIcon name="connections" /><strong>Team workspaces</strong></Link>
+                    {(isOwnerAccount || isDealerAccount) && !sharedAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>Team access</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button
@@ -2225,7 +2225,6 @@ export default function AccountClient({
                     {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
                   </div>
                 </section>
-              ) : null}
 
               {isOwnerAccount || showMarketplaceContact || sharedAccount || showPartnerDirectory ? (
                 <section
