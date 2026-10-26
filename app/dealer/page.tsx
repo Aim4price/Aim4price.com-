@@ -1,5 +1,3 @@
-import { getPartsActor } from '../../lib/parts-network-access';
-import { listPartsNetworks } from '../../lib/parts-network';
 import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import AppHomeIcon from '../../components/AppHomeIcon';
 import AppNotificationsLink from '../../components/AppNotificationsLink';
@@ -107,11 +105,8 @@ export default async function DealerHome() {
   const role = dealerAppSession?.role ?? 'owner';
   const middlemanMode = false;
 
-  const partsActor = await getPartsActor();
-  const partsNetworks = partsActor ? await listPartsNetworks(partsActor).catch(() => []) : [];
-  const showParts = partsActor?.platformAdmin || partsNetworks.some(n => n.status === 'active');
   const allTools: DealerHomeTool[] = [
-    ...(showParts ? [{ label: 'Parts', href: '/dealer/parts', capability: 'parts_network' as const }] : []),
+    { label: 'Parts', href: '/dealer/parts', capability: 'parts_network' },
     {
       label: 'Notifications',
       href: '/dealer/notifications',

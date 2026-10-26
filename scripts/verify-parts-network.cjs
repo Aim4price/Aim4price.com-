@@ -166,7 +166,6 @@ const appCode =
           data = {
             networks: [network],
             staff: false,
-            platformAdmin: false,
             canContribute: true,
           };
         else if (url.searchParams.get("view") === "members")
@@ -209,6 +208,10 @@ const appCode =
     const output = path.join(root, ".next/parts-network-validation");
     fs.mkdirSync(output, { recursive: true });
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
+    await click("Create network");
+    await page.waitForSelector('[role="dialog"]');
+    assert.ok(await page.evaluate(() => document.body.innerText.includes("You will manage this private network")));
+    await page.keyboard.press("Escape");
     await click("Contact");
     await page.waitForSelector("[role=dialog]");
     assert.equal(

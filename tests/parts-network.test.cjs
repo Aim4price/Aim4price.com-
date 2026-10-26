@@ -93,35 +93,45 @@ test("private network membership, import replacement and invitation lifecycle us
       sendAim4priceEmail: async (m) => messages.push(m),
     },
   });
-  const admin = {
-    id: "platform",
-    email: "admin@example.test",
-    platformAdmin: true,
+  const otherFounder = {
+    id: "dealer-founder-b",
+    email: "founder-b@example.test",
     staff: false,
     canContribute: true,
   };
   const dealer = {
     id: "dealer-a",
     email: "a@example.test",
-    platformAdmin: false,
     staff: false,
     canContribute: true,
   };
   const other = { ...dealer, id: "dealer-b", email: "b@example.test" };
   const outsider = { ...dealer, id: "outsider", email: "x@example.test" };
-  const { id } = await network.createPartsNetwork(admin, "Private pilot");
-  const { id: second } = await network.createPartsNetwork(admin, "Other group");
+  const { id } = await network.createPartsNetwork(dealer, "Private pilot");
+  const { id: second } = await network.createPartsNetwork(
+    otherFounder,
+    "Other group",
+  );
   assert.deepEqual(await network.listPartsNetworks(outsider), []);
+  const ownNetworks = await network.listPartsNetworks(dealer);
+  assert.equal(ownNetworks.length, 1);
+  assert.equal(ownNetworks[0].id, id);
+  assert.equal(ownNetworks[0].role, "admin");
+  assert.equal(ownNetworks[0].status, "active");
+  await assert.rejects(
+    () => network.partsData(otherFounder, id, "members", "", 0),
+    /approval/,
+  );
   await assert.rejects(
     () => network.partsData(outsider, id, "search", "", 0),
     /approval/,
   );
   await assert.rejects(
-    () => network.createPartsNetwork(dealer, "bad"),
-    /administrator/,
+    () => network.createPartsNetwork({ ...dealer, staff: true }, "bad"),
+    /account owner/,
   );
   await db.query(
-    "INSERT INTO parts_network_members(network_id,dealer_id,role,status,business_name,email) VALUES($1,$2,'admin','active','Dealer A',$3),($1,$4,'contributor','active','Dealer B',$5)",
+    "INSERT INTO parts_network_members(network_id,dealer_id,role,status,business_name,email) VALUES($1,$2,'admin','active','Dealer A',$3),($1,$4,'contributor','active','Dealer B',$5) ON CONFLICT(network_id,dealer_id) DO UPDATE SET business_name=excluded.business_name",
     [id, dealer.id, dealer.email, other.id, other.email],
   );
   const input = {
@@ -358,7 +368,7 @@ test("account and staff gates reject inactive dealers, other account types and t
   assert.equal((await access.getPartsActor()).canContribute, true);
   staff = false;
   session.user.email = "admin@example.test";
-  assert.equal((await access.getPartsActor()).platformAdmin, true);
+  assert.equal(await access.getPartsActor(), null);
   session = null;
   assert.equal(await access.getPartsActor(), null);
 });

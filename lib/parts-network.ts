@@ -90,7 +90,6 @@ async function access(
     [networkId(id)],
   );
   if (!n.rows.length) throw new PartsError("Network not available.", 403);
-  if (actor.platformAdmin) return null;
   const m = (
     await db.query(
       "SELECT * FROM parts_network_members WHERE network_id=$1 AND dealer_id=$2",
@@ -111,8 +110,8 @@ export async function listPartsNetworks(actor: PartsActor) {
     await getDb().query(
       `SELECT n.id,n.name,m.status,m.role, m.revision,m.visible,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at
  FROM parts_networks n LEFT JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=$1
- WHERE $2::boolean OR m.dealer_id=$1 ORDER BY n.name`,
-      [actor.id, actor.platformAdmin],
+ WHERE m.dealer_id=$1 ORDER BY n.name`,
+      [actor.id],
     )
   ).rows;
 }
@@ -163,8 +162,11 @@ export async function partsData(
   });
 }
 export async function createPartsNetwork(actor: PartsActor, name: unknown) {
-  if (!actor.platformAdmin)
-    throw new PartsError("Aim4price administrator access required.", 403);
+  if (actor.staff)
+    throw new PartsError(
+      "Only the dealership account owner can create a network.",
+      403,
+    );
   const title = str(name, 80);
   if (!title) throw new PartsError("Enter a network name.");
   return transaction(async (db) => {
@@ -172,6 +174,23 @@ export async function createPartsNetwork(actor: PartsActor, name: unknown) {
     await db.query(
       "INSERT INTO parts_networks(id,name,created_by) VALUES($1,$2,$3)",
       [id, title, actor.id],
+    );
+    const profile = (
+      await db.query(
+        "SELECT business_name,town_city FROM account_profiles WHERE user_id=$1",
+        [actor.id],
+      )
+    ).rows[0];
+    await db.query(
+      `INSERT INTO parts_network_members(network_id,dealer_id,role,status,email,business_name,town,approved_by)
+       VALUES($1,$2,'admin','active',$3,$4,$5,$2)`,
+      [
+        id,
+        actor.id,
+        actor.email,
+        profile?.business_name || "",
+        profile?.town_city || "",
+      ],
     );
     await audit(db, id, actor, "create", title);
     return { id };

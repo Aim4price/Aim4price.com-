@@ -153,7 +153,6 @@ export default function PartsClient({
 }) {
   const [networks, setNetworks] = useState<Network[]>([]),
     [network, setNetwork] = useState(""),
-    [platformAdmin, setPlatformAdmin] = useState(false),
     [staff, setStaff] = useState(true),
     [contribute, setContribute] = useState(false);
   const [view, setView] = useState("search"),
@@ -197,15 +196,13 @@ export default function PartsClient({
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
   const current = networks.find((n) => n.id === network);
-  const active = platformAdmin || current?.status === "active";
-  const admin = platformAdmin || (!staff && current?.role === "admin");
-  const canUpload =
-    contribute && !platformAdmin && current?.role !== "viewer" && active;
+  const active = current?.status === "active";
+  const admin = !staff && current?.role === "admin";
+  const canUpload = contribute && current?.role !== "viewer" && active;
   const latest = useRef(0);
   const loadNetworks = useCallback(async () => {
     const d = await api();
     setNetworks(d.networks);
-    setPlatformAdmin(d.platformAdmin);
     setStaff(d.staff);
     setContribute(d.canContribute);
     setNetwork((old) =>
@@ -319,7 +316,7 @@ export default function PartsClient({
         <WorkspaceTitlePanel title="Parts" className={styles.title} />
         <div className={styles.topline}>
           <span className={styles.eyebrow}>Private dealer network</span>
-          {website && !staff && !platformAdmin && (
+          {website && !staff && (
             <a className={styles.button} href="/account/dealer-app">
               Staff &amp; Permissions
             </a>
@@ -343,7 +340,7 @@ export default function PartsClient({
               </select>
             </label>
           )}
-          {platformAdmin && (
+          {!staff && (
             <button onClick={() => setModal("create")}>Create network</button>
           )}
         </div>
@@ -352,7 +349,9 @@ export default function PartsClient({
           <div className={styles.empty}>
             {loading
               ? "Loading…"
-              : "Access is by invitation. Ask your network administrator to invite your dealership."}
+              : staff
+                ? "Your dealership has not joined a network yet. Contact your account owner."
+                : "No network joined yet. Accept a dealer invitation or create your own private network."}
           </div>
         ) : !active ? (
           <div className={styles.empty}>
@@ -668,7 +667,8 @@ export default function PartsClient({
               />
             </label>
             <p>
-              Invite the first network administrator after creating the group.
+              You will manage this private network and invite participating
+              dealers.
             </p>
             {feedback}
             <button

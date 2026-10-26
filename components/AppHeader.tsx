@@ -700,17 +700,6 @@ export default function AppHeader({
   const notificationDialogRef = useRef<HTMLElement | null>(null);
 
   const [session, setSession] = useState<SessionUser | null>(null);
-  const [partsAccess, setPartsAccess] = useState(false);
-  useEffect(() => {
-    setPartsAccess(false);
-    if (session?.accountType !== 'dealer' || isMiddlemanAccountSubtype(session.accountSubtype)) return;
-    let cancelled = false;
-    fetch('/api/parts-network', { cache: 'no-store', headers: { 'x-aim4price-client-realm': 'website' } })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => { if (!cancelled) setPartsAccess(Boolean(data?.networks?.some((n: {status: string}) => n.status === 'active'))); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [session?.id, session?.accountType, session?.accountSubtype]);
   const [accountProfileLogoState, setAccountProfileLogoState] = useState<AccountProfileLogoState>({
     loaded: false,
     logoUrl: null,
@@ -1025,6 +1014,7 @@ export default function AppHeader({
   const isDealerAccount = session?.accountType === 'dealer' && session.sharingPlan !== 'free';
   const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
 
+  const partsAccess = isDealerAccount && !isMiddlemanAccount;
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
     () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
