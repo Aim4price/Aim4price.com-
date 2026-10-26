@@ -27,6 +27,14 @@
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.35rem) 0 3.5rem;
 }
 
+/* Website cards align with the owner register's 1320px shell minus its
+   1.7rem panel inset on each side, staying inside the header's 1280px span.
+   Native dealer app layouts retain their own responsive shell rules. */
+:global(:where([data-website-canvas])) .shell {
+  width: min(calc(100% - 3rem), calc(1320px - 3.4rem)) !important;
+  max-width: calc(1320px - 3.4rem);
+}
+
 .titlePanel {
   width: 100%;
   min-width: 0;
