@@ -16,8 +16,13 @@ import {
   MAX_PARTS_CSV_BYTES,
   type PartColumns,
 } from "../../../lib/parts-network-csv";
+import PartsInbox from "../../../components/PartsInbox";
 import styles from "./parts.module.css";
 type Network = {
+  owned: boolean;
+  list_mode: boolean;
+  part_count: number;
+  last_updated: string;
   id: string;
   name: string;
   status: string;
@@ -31,6 +36,7 @@ type Network = {
   vat_included: boolean;
 };
 type Row = {
+  dealer_id: string;
   part_number: string;
   quantity: number;
   price: string;
@@ -82,9 +88,21 @@ async function api(body?: Record<string, unknown>, query = "") {
 function Icon({
   kind,
 }: {
-  kind: "search" | "upload" | "users" | "phone" | "list";
+  kind:
+    | "search"
+    | "upload"
+    | "users"
+    | "phone"
+    | "list"
+    | "share"
+    | "manage"
+    | "plus";
 }) {
   const paths = {
+    share:
+      "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M9 10l6-4 M9 14l6 4",
+    manage: "M5 4v16 M12 4v16 M19 4v16 M2 8h6 M9 16h6 M16 10h6",
+    plus: "M12 4v16 M4 12h16",
     search: "M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
     upload: "M12 16V3 M7 8l5-5 5 5 M3 15v6h18v-6",
     users:
@@ -167,9 +185,9 @@ export default function PartsClient({
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
-  const [modal, setModal] = useState<"upload" | "invite" | "create" | null>(
-      null,
-    ),
+  const [modal, setModal] = useState<
+      "upload" | "invite" | "create" | "manage" | "delete" | null
+    >(null),
     [contact, setContact] = useState<Row | null>(null),
     [confirm, setConfirm] = useState<{
       dealerId: string;
@@ -192,13 +210,24 @@ export default function PartsClient({
       vatIncluded: false,
     }),
     [inviteEmail, setInviteEmail] = useState(""),
-    [inviteRole, setInviteRole] = useState("contributor"),
+    [inviteRole, setInviteRole] = useState("viewer"),
+    [channel, setChannel] = useState("direct"),
+    [folder, setFolder] = useState("mine"),
+    [opened, setOpened] = useState(false),
+    [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
   const current = networks.find((n) => n.id === network);
   const active = current?.status === "active";
-  const admin = !staff && current?.role === "admin";
-  const canUpload = contribute && current?.role !== "viewer" && active;
+  const admin =
+    !staff &&
+    current?.role === "admin" &&
+    (!current.list_mode || current.owned);
+  const canUpload =
+    contribute &&
+    current?.role !== "viewer" &&
+    active &&
+    (!current?.list_mode || current.owned);
   const latest = useRef(0);
   const loadNetworks = useCallback(async () => {
     const d = await api();
@@ -206,13 +235,16 @@ export default function PartsClient({
     setStaff(d.staff);
     setContribute(d.canContribute);
     setNetwork((old) =>
-      d.networks.some((n: Network) => n.id === old)
-        ? old
-        : d.networks[0]?.id || "",
+      d.networks.some((n: Network) => n.id === old) ? old : "",
     );
     return d;
   }, []);
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("list");
+    if (requested) {
+      setNetwork(requested);
+      setOpened(true);
+    }
     void loadNetworks()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -223,7 +255,7 @@ export default function PartsClient({
     setMembers([]);
     setInvites([]);
     setTotal(0);
-    if (!network || !active) {
+    if (!network || !active || !opened) {
       setLoading(false);
       return;
     }
@@ -249,7 +281,7 @@ export default function PartsClient({
         });
     }, 250);
     return () => clearTimeout(timer);
-  }, [network, active, view, search, page, refresh]);
+  }, [network, active, view, search, page, refresh, opened]);
   async function run(work: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -315,351 +347,550 @@ export default function PartsClient({
       <div className={styles.shell}>
         <WorkspaceTitlePanel title="Parts" className={styles.title} />
         <div className={styles.topline}>
-          <span className={styles.eyebrow}>Private dealer network</span>
-          {website && !staff && (
-            <a className={styles.button} href="/account/dealer-app">
-              Staff &amp; Permissions
-            </a>
-          )}
-          {networks.length > 1 && (
-            <label>
-              Network
-              <select
-                aria-label="Network"
-                value={network}
-                onChange={(e) => {
-                  setNetwork(e.target.value);
-                  switchView("search");
-                }}
+          {opened ? (
+            <button
+              onClick={() => {
+                setOpened(false);
+                setNetwork("");
+                switchView("search");
+              }}
+            >
+              <Icon kind="list" />
+              All parts lists
+            </button>
+          ) : (
+            <div className={styles.tabs}>
+              <button
+                aria-pressed={folder === "mine"}
+                onClick={() => setFolder("mine")}
               >
-                {networks.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                My parts
+              </button>
+              <button
+                aria-pressed={folder === "shared"}
+                onClick={() => setFolder("shared")}
+              >
+                Shared with me
+              </button>
+            </div>
           )}
           {!staff && (
-            <button onClick={() => setModal("create")}>Create network</button>
+            <button
+              className={styles.primary}
+              onClick={() => {
+                setName("");
+                setModal("create");
+              }}
+            >
+              <Icon kind="plus" />
+              Add parts list
+            </button>
           )}
         </div>
-        {!modal && !contact && !confirm && feedback}
-        {!network ? (
-          <div className={styles.empty}>
-            {loading
-              ? "Loading…"
-              : staff
-                ? "Your dealership has not joined a network yet. Contact your account owner."
-                : "No network joined yet. Accept a dealer invitation or create your own private network."}
-          </div>
-        ) : !active ? (
-          <div className={styles.empty}>
-            <h2>
-              {current?.status === "pending"
-                ? "Awaiting approval"
-                : "Access suspended"}
-            </h2>
-            <p>
-              Your network administrator controls access to this private group.
-            </p>
-            <button
-              onClick={() =>
-                void run(async () => {
-                  await loadNetworks();
-                })
-              }
-            >
-              Check status
-            </button>
-          </div>
-        ) : (
+        {!opened && (
           <>
-            <div className={styles.toolbar}>
-              <div className={styles.tabs}>
-                {[
-                  ["search", "Find parts", "search"],
-                  ["mine", "My parts list", "list"],
-                  ...(admin ? [["members", "Members", "users"]] : []),
-                ].map(([id, label, icon]) => (
-                  <button
-                    key={id}
-                    aria-pressed={view === id}
-                    onClick={() => switchView(id)}
-                  >
-                    <Icon kind={icon as "search"} />
-                    {label}
-                  </button>
+            <PartsInbox
+              showShared={false}
+              onAccepted={() => {
+                void loadNetworks();
+                setFolder("shared");
+              }}
+            />
+            <div className={styles.cards}>
+              {networks
+                .filter((n) => (folder === "mine" ? n.owned : !n.owned))
+                .map((n) => (
+                  <article key={n.id} className={styles.card}>
+                    <div className={styles.cardIcon}>
+                      <Icon kind="list" />
+                    </div>
+                    <h2>{n.name}</h2>
+                    <p>
+                      {n.part_count || 0}{" "}
+                      {n.part_count === 1 ? "part" : "parts"} ·{" "}
+                      {date(n.last_updated)}
+                    </p>
+                    {n.status !== "active" && (
+                      <p>
+                        {n.status === "pending"
+                          ? "Awaiting approval"
+                          : "Access suspended"}
+                      </p>
+                    )}
+                    <div className={styles.cardActions}>
+                      {n.owned && !staff && (
+                        <button
+                          onClick={() => {
+                            setNetwork(n.id);
+                            setInviteEmail("");
+                            setInviteUrl("");
+                            setInviteRole("viewer");
+                            setModal("invite");
+                          }}
+                        >
+                          <Icon kind="share" />
+                          Share
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setNetwork(n.id);
+                          setOpened(true);
+                          switchView(n.owned ? "mine" : "search");
+                        }}
+                      >
+                        <Icon kind="list" />
+                        View parts
+                      </button>
+                      {n.owned && !staff && (
+                        <button
+                          onClick={() => {
+                            setNetwork(n.id);
+                            setName(n.name);
+                            setModal("manage");
+                          }}
+                        >
+                          <Icon kind="manage" />
+                          Manage
+                        </button>
+                      )}
+                    </div>
+                  </article>
                 ))}
-              </div>
-              <div className={styles.actions}>
-                {canUpload && (
-                  <button className={styles.primary} onClick={openUpload}>
-                    <Icon kind="upload" />
-                    Upload CSV
-                  </button>
-                )}
-                {admin && (
-                  <button
-                    onClick={() => {
-                      setInviteEmail("");
-                      setInviteUrl("");
-                      setModal("invite");
-                    }}
-                  >
-                    <Icon kind="users" />
-                    Invite dealer
-                  </button>
-                )}
-              </div>
             </div>
-            {view !== "members" && (
-              <>
-                <div className={styles.search}>
-                  <Icon kind="search" />
-                  <input
-                    aria-label="Search part number"
-                    placeholder="Search part number"
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(0);
-                    }}
-                  />
-                </div>
-                <div className={styles.topline}>
+            {!loading &&
+              !networks.some((n) =>
+                folder === "mine" ? n.owned : !n.owned,
+              ) && (
+                <div className={styles.empty}>
+                  <h2>
+                    {folder === "mine" ? "Your parts lists" : "Shared with me"}
+                  </h2>
                   <p>
-                    {current?.name} · {total.toLocaleString()} matching{" "}
-                    {total === 1 ? "part" : "parts"}
+                    {folder === "mine"
+                      ? "Add a list, upload your CSV and share it with other dealers."
+                      : "Parts lists shared with your account will appear here."}
                   </p>
-                  {view === "mine" && canUpload && (
+                </div>
+              )}
+          </>
+        )}
+        {!modal && !contact && !confirm && feedback}
+        {opened &&
+          (!network ? (
+            <div className={styles.empty}>
+              {loading
+                ? "Loading…"
+                : staff
+                  ? "Your dealership has not joined a network yet. Contact your account owner."
+                  : "No network joined yet. Accept a dealer invitation or create your own private network."}
+            </div>
+          ) : !active ? (
+            <div className={styles.empty}>
+              <h2>
+                {current?.status === "pending"
+                  ? "Awaiting approval"
+                  : "Access suspended"}
+              </h2>
+              <p>The list owner controls access to these parts.</p>
+              <button
+                onClick={() =>
+                  void run(async () => {
+                    await loadNetworks();
+                  })
+                }
+              >
+                Check status
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={styles.toolbar}>
+                <div>
+                  <h2 className={styles.listTitle}>{current?.name}</h2>
+                  <p className={styles.eyebrow}>
+                    {view === "members"
+                      ? "Sharing history and access"
+                      : "Parts from the latest CSV"}
+                  </p>
+                </div>
+                <div className={styles.actions}>
+                  {canUpload && (
+                    <button className={styles.primary} onClick={openUpload}>
+                      <Icon kind="upload" />
+                      Upload CSV
+                    </button>
+                  )}
+                  {admin && (
                     <button
-                      disabled={busy}
+                      onClick={() => {
+                        setInviteEmail("");
+                        setInviteUrl("");
+                        setModal("invite");
+                      }}
+                    >
+                      <Icon kind="share" />
+                      Share
+                    </button>
+                  )}
+                  {admin && (
+                    <button
+                      onClick={() => {
+                        setName(current?.name || "");
+                        setModal("manage");
+                      }}
+                    >
+                      <Icon kind="manage" />
+                      Manage
+                    </button>
+                  )}
+                  {view === "members" && (
+                    <button
                       onClick={() =>
-                        void run(async () => {
-                          await mutate({
-                            action: "visibility",
-                            visible: !current?.visible,
-                          });
-                        })
+                        switchView(current?.owned ? "mine" : "search")
                       }
                     >
-                      {current?.visible ? "Hide my list" : "Show my list"}
+                      View parts
                     </button>
                   )}
                 </div>
-                <div
-                  className={styles.tableWrap}
-                  tabIndex={0}
-                  role="region"
-                  aria-label="Parts results"
-                >
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Part number</th>
-                        <th className={styles.numeric}>Quantity</th>
-                        <th className={styles.numeric}>Unit price</th>
-                        <th>Dealer</th>
-                        <th>Last updated</th>
-                        <th>
-                          <span className={styles.srOnly}>Contact</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r, i) => (
-                        <tr key={`${r.part_number}-${i}`}>
-                          <td>
-                            <strong>{r.part_number}</strong>
-                          </td>
-                          <td className={styles.numeric}>{r.quantity}</td>
-                          <td className={styles.numeric}>
-                            <strong>
-                              {Number(r.price).toLocaleString("en-ZA", {
-                                style: "currency",
-                                currency: "ZAR",
-                              })}
-                            </strong>
-                            <small>
-                              {r.vat_included ? "Incl. VAT" : "Excl. VAT"}
-                            </small>
-                          </td>
-                          <td>
-                            {r.business_name}
-                            <small>{r.town}</small>
-                          </td>
-                          <td>
-                            {date(r.uploaded_at)}
-                            {Date.now() - new Date(r.uploaded_at).getTime() >
-                              45 * 86400000 && <small>Update overdue</small>}
-                          </td>
-                          <td>
-                            <button
-                              aria-label={`Contact ${r.business_name} about ${r.part_number}`}
-                              onClick={() => setContact(r)}
-                            >
-                              <Icon kind="phone" />
-                              Contact
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {!rows.length && (
-                    <p className={styles.empty}>
-                      {loading ? "Loading parts…" : "No parts found."}
-                    </p>
-                  )}
-                </div>
-                <div className={styles.topline}>
-                  <small>
-                    Availability is from the latest CSV. Confirm price and stock
-                    with the dealer.
-                  </small>
-                  <div className={styles.actions}>
-                    <button
-                      disabled={loading || page === 0}
-                      onClick={() => setPage((p) => p - 1)}
-                    >
-                      Previous
-                    </button>
-                    <span>Page {page + 1}</span>
-                    <button
-                      disabled={loading || (page + 1) * 50 >= total}
-                      onClick={() => setPage((p) => p + 1)}
-                    >
-                      Next
-                    </button>
+              </div>
+              {view !== "members" && (
+                <>
+                  <div className={styles.search}>
+                    <Icon kind="search" />
+                    <input
+                      aria-label="Search part number"
+                      placeholder="Search part number"
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(0);
+                      }}
+                    />
                   </div>
-                </div>
-              </>
-            )}
-            {view === "members" && (
-              <>
-                <p>
-                  Verify the dealership independently before approving access.
-                  Staff permissions remain controlled by each dealership owner.
-                </p>
-                <div className={styles.tableWrap}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Dealership</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Access</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {members.map((m) => (
-                        <tr key={m.dealer_id}>
-                          <td>
-                            {m.business_name || "Details pending"}
-                            <small>{m.town}</small>
-                          </td>
-                          <td>{m.email}</td>
-                          <td>
-                            <select
-                              aria-label={`Role for ${m.email}`}
-                              value={m.role}
-                              disabled={busy || m.status === "pending"}
-                              onChange={(e) =>
-                                setConfirm({
-                                  dealerId: m.dealer_id,
-                                  role: e.target.value,
-                                  status: m.status,
-                                })
-                              }
-                            >
-                              {["admin", "contributor", "viewer"].map((r) => (
-                                <option key={r}>{r}</option>
-                              ))}
-                            </select>
-                          </td>
-                          <td>{m.status}</td>
-                          <td>
-                            <button
-                              disabled={busy}
-                              onClick={() =>
-                                setConfirm({
-                                  dealerId: m.dealer_id,
-                                  role: m.role,
-                                  status:
-                                    m.status === "active"
-                                      ? "suspended"
-                                      : "active",
-                                })
-                              }
-                            >
-                              {m.status === "pending"
-                                ? "Approve"
-                                : m.status === "active"
-                                  ? "Suspend"
-                                  : "Restore"}
-                            </button>
-                          </td>
+                  <div className={styles.topline}>
+                    <p>
+                      {current?.name} · {total.toLocaleString()} matching{" "}
+                      {total === 1 ? "part" : "parts"}
+                    </p>
+                  </div>
+                  <div
+                    className={styles.tableWrap}
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Parts results"
+                  >
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Part number</th>
+                          <th className={styles.numeric}>Quantity</th>
+                          <th className={styles.numeric}>Unit price</th>
+                          <th>Dealer</th>
+                          <th>Last updated</th>
+                          <th>
+                            <span className={styles.srOnly}>Contact</span>
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <h2>Invitations</h2>
-                <div className={styles.tableWrap}>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Expires</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {invites.map((i) => (
-                        <tr key={i.id}>
-                          <td>{i.email}</td>
-                          <td>{i.role}</td>
-                          <td>{date(i.expires_at)}</td>
-                          <td>
-                            {i.consumed_at ? (
-                              "Accepted"
-                            ) : i.revoked_at ? (
-                              "Revoked"
-                            ) : new Date(i.expires_at).getTime() <
-                              Date.now() ? (
-                              "Expired"
-                            ) : (
+                      </thead>
+                      <tbody>
+                        {rows.map((r, i) => (
+                          <tr key={`${r.part_number}-${i}`}>
+                            <td>
+                              <strong>{r.part_number}</strong>
+                            </td>
+                            <td className={styles.numeric}>{r.quantity}</td>
+                            <td className={styles.numeric}>
+                              <strong>
+                                {Number(r.price).toLocaleString("en-ZA", {
+                                  style: "currency",
+                                  currency: "ZAR",
+                                })}
+                              </strong>
+                              <small>
+                                {r.vat_included ? "Incl. VAT" : "Excl. VAT"}
+                              </small>
+                            </td>
+                            <td>
+                              {r.business_name}
+                              <small>{r.town}</small>
+                            </td>
+                            <td>
+                              {date(r.uploaded_at)}
+                              {Date.now() - new Date(r.uploaded_at).getTime() >
+                                45 * 86400000 && <small>Update overdue</small>}
+                            </td>
+                            <td>
                               <button
-                                disabled={busy}
-                                onClick={() =>
-                                  void run(async () => {
-                                    await mutate({
-                                      action: "revoke",
-                                      id: i.id,
-                                    });
+                                aria-label={`Contact ${r.business_name} about ${r.part_number}`}
+                                onClick={() => {
+                                  setContact(r);
+                                  setEnquiry(
+                                    `Please confirm price and availability for part ${r.part_number}.`,
+                                  );
+                                }}
+                              >
+                                <Icon kind="phone" />
+                                {current?.owned ? "Contact" : "Enquire"}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {!rows.length && (
+                      <p className={styles.empty}>
+                        {loading ? "Loading parts…" : "No parts found."}
+                      </p>
+                    )}
+                  </div>
+                  <div className={styles.topline}>
+                    <small>
+                      Availability is from the latest CSV. Confirm price and
+                      stock with the dealer.
+                    </small>
+                    <div className={styles.actions}>
+                      <button
+                        disabled={loading || page === 0}
+                        onClick={() => setPage((p) => p - 1)}
+                      >
+                        Previous
+                      </button>
+                      <span>Page {page + 1}</span>
+                      <button
+                        disabled={loading || (page + 1) * 50 >= total}
+                        onClick={() => setPage((p) => p + 1)}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+              {view === "members" && (
+                <>
+                  <p>
+                    Verify the dealership independently before approving access.
+                    Staff permissions remain controlled by each dealership
+                    owner.
+                  </p>
+                  <div className={styles.tableWrap}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Dealership</th>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Status</th>
+                          <th>Access</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {members.map((m) => (
+                          <tr key={m.dealer_id}>
+                            <td>
+                              {m.business_name || "Details pending"}
+                              <small>{m.town}</small>
+                            </td>
+                            <td>{m.email}</td>
+                            <td>
+                              <select
+                                aria-label={`Role for ${m.email}`}
+                                value={m.role}
+                                disabled={
+                                  busy ||
+                                  m.status === "pending" ||
+                                  current?.list_mode
+                                }
+                                onChange={(e) =>
+                                  setConfirm({
+                                    dealerId: m.dealer_id,
+                                    role: e.target.value,
+                                    status: m.status,
                                   })
                                 }
                               >
-                                Revoke
+                                {(current?.list_mode
+                                  ? [m.role]
+                                  : ["admin", "contributor", "viewer"]
+                                ).map((r) => (
+                                  <option key={r}>{r}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td>{m.status}</td>
+                            <td>
+                              <button
+                                disabled={
+                                  busy ||
+                                  (current?.list_mode && m.role === "admin")
+                                }
+                                onClick={() =>
+                                  setConfirm({
+                                    dealerId: m.dealer_id,
+                                    role: m.role,
+                                    status:
+                                      m.status === "active"
+                                        ? "suspended"
+                                        : "active",
+                                  })
+                                }
+                              >
+                                {m.status === "pending"
+                                  ? "Approve"
+                                  : m.status === "active"
+                                    ? "Suspend"
+                                    : "Restore"}
                               </button>
-                            )}
-                          </td>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <h2>Invitations</h2>
+                  <div className={styles.tableWrap}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Email</th>
+                          <th>Role</th>
+                          <th>Expires</th>
+                          <th>Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                      </thead>
+                      <tbody>
+                        {invites.map((i) => (
+                          <tr key={i.id}>
+                            <td>{i.email}</td>
+                            <td>{i.role}</td>
+                            <td>{date(i.expires_at)}</td>
+                            <td>
+                              {i.consumed_at ? (
+                                "Accepted"
+                              ) : i.revoked_at ? (
+                                "Revoked"
+                              ) : new Date(i.expires_at).getTime() <
+                                Date.now() ? (
+                                "Expired"
+                              ) : (
+                                <button
+                                  disabled={busy}
+                                  onClick={() =>
+                                    void run(async () => {
+                                      await mutate({
+                                        action: "revoke",
+                                        id: i.id,
+                                      });
+                                    })
+                                  }
+                                >
+                                  Revoke
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          ))}
+        {modal === "manage" && (
+          <Modal title="Manage parts list" onClose={close} busy={busy}>
+            <label>
+              List name
+              <input
+                value={name}
+                maxLength={80}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <div className={styles.actions}>
+              <button
+                disabled={busy || !name.trim()}
+                onClick={() =>
+                  void run(async () => {
+                    await mutate({ action: "rename", name });
+                    setModal(null);
+                  })
+                }
+              >
+                Save name
+              </button>
+              {canUpload && (
+                <button
+                  onClick={() => {
+                    setOpened(true);
+                    openUpload();
+                  }}
+                >
+                  <Icon kind="upload" />
+                  Update CSV
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setOpened(true);
+                  switchView("members");
+                  setModal(null);
+                }}
+              >
+                <Icon kind="users" />
+                Sharing &amp; access
+              </button>
+              <button onClick={() => setModal("delete")}>Delete list</button>
+            </div>
+            {canUpload && (
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await mutate({
+                      action: "visibility",
+                      visible: !current?.visible,
+                    });
+                  })
+                }
+              >
+                {current?.visible ? "Hide my list" : "Show my list"}
+              </button>
             )}
-          </>
+            {feedback}
+          </Modal>
+        )}
+        {modal === "delete" && (
+          <Modal title="Delete parts list?" onClose={close} busy={busy}>
+            <p>
+              This removes {current?.name} from Parts and stops shared access.
+              Your master stock records and cost ledger stay unchanged.
+            </p>
+            <div className={styles.actions}>
+              <button onClick={() => setModal("manage")}>Cancel</button>
+              <button
+                disabled={busy}
+                onClick={() =>
+                  void run(async () => {
+                    await mutate({ action: "archive" });
+                    setOpened(false);
+                    setNetwork("");
+                    setModal(null);
+                  })
+                }
+              >
+                Delete list
+              </button>
+            </div>
+            {feedback}
+          </Modal>
         )}
         {modal === "create" && (
-          <Modal title="Create private network" onClose={close} busy={busy}>
+          <Modal title="Add parts list" onClose={close} busy={busy}>
             <label>
-              Network name
+              List name
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -667,8 +898,7 @@ export default function PartsClient({
               />
             </label>
             <p>
-              You will manage this private network and invite participating
-              dealers.
+              For example: Landini parts, John Deere parts or Second-hand parts.
             </p>
             {feedback}
             <button
@@ -679,16 +909,18 @@ export default function PartsClient({
                   const d = await api({ action: "create", name });
                   await loadNetworks();
                   setNetwork(d.id);
+                  setOpened(true);
+                  switchView("mine");
                   setModal(null);
                 })
               }
             >
-              Create network
+              Create list
             </button>
           </Modal>
         )}
         {modal === "invite" && (
-          <Modal title="Invite a dealer" onClose={close} busy={busy}>
+          <Modal title="Share parts list" onClose={close} busy={busy}>
             {inviteUrl ? (
               <>
                 <p>
@@ -716,9 +948,23 @@ export default function PartsClient({
               </>
             ) : (
               <>
+                <div className={styles.tabs}>
+                  <button
+                    aria-pressed={channel === "direct"}
+                    onClick={() => setChannel("direct")}
+                  >
+                    Inside Aim4price
+                  </button>
+                  <button
+                    aria-pressed={channel === "link"}
+                    onClick={() => setChannel("link")}
+                  >
+                    Share a link
+                  </button>
+                </div>
                 <div className={styles.grid}>
                   <label>
-                    Email
+                    Recipient email
                     <input
                       type="email"
                       autoComplete="email"
@@ -727,24 +973,25 @@ export default function PartsClient({
                     />
                   </label>
                   <label>
-                    Network role
+                    Access
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value)}
                     >
-                      <option value="contributor">
-                        Contributor · search and upload
-                      </option>
-                      <option value="viewer">Viewer · search only</option>
-                      <option value="admin">
-                        Administrator · manage network
-                      </option>
+                      {!current?.list_mode && (
+                        <option value="contributor">Contribute parts</option>
+                      )}
+                      <option value="viewer">View parts and enquire</option>
+                      {!current?.list_mode && (
+                        <option value="admin">Manage sharing</option>
+                      )}
                     </select>
                   </label>
                 </div>
                 <p>
-                  The dealer signs in, verifies an email PIN and waits for your
-                  approval.
+                  {channel === "direct"
+                    ? "Only this account can accept the share inside Aim4price."
+                    : "Only this email can accept the link. They sign in, verify their email and wait for your approval."}
                 </p>
                 <button
                   className={styles.primary}
@@ -756,13 +1003,22 @@ export default function PartsClient({
                         network,
                         email: inviteEmail,
                         role: inviteRole,
+                        channel,
                       });
-                      setInviteUrl(d.url);
+                      if (channel === "link") setInviteUrl(d.url);
+                      else {
+                        setModal(null);
+                        setNotice(
+                          "Shared inside Aim4price. The recipient can accept it in Parts or Leads.",
+                        );
+                      }
                       setRefresh((n) => n + 1);
                     })
                   }
                 >
-                  Create invitation link
+                  {channel === "link"
+                    ? "Create sharing link"
+                    : "Share inside Aim4price"}
                 </button>
               </>
             )}
@@ -778,8 +1034,8 @@ export default function PartsClient({
             {!preview ? (
               <>
                 <p>
-                  Upload your complete CSV. It replaces your previous list for
-                  this network.
+                  Upload your complete CSV. It replaces only your parts in this
+                  list.
                 </p>
                 <label className={styles.drop}>
                   <Icon kind="upload" />
@@ -948,6 +1204,42 @@ export default function PartsClient({
               {contact.town} · Updated {date(contact.uploaded_at)}
             </p>
             <p>Confirm availability and price directly with the dealer.</p>
+            {!current?.owned && (
+              <>
+                <label>
+                  Enquiry
+                  <textarea
+                    value={enquiry}
+                    maxLength={2000}
+                    onChange={(e) => setEnquiry(e.target.value)}
+                  />
+                </label>
+                <div className={styles.actions}>
+                  <button
+                    className={styles.primary}
+                    disabled={busy || !enquiry.trim()}
+                    onClick={() =>
+                      void run(async () => {
+                        await api({
+                          action: "enquire",
+                          network,
+                          dealerId: contact.dealer_id,
+                          partNumber: contact.part_number,
+                          message: enquiry,
+                        });
+                        setContact(null);
+                        setNotice(
+                          "Enquiry sent. The dealer can find it in Leads.",
+                        );
+                      })
+                    }
+                  >
+                    Send enquiry
+                  </button>
+                </div>
+                {feedback}
+              </>
+            )}
             <div className={styles.actions}>
               <a
                 className={styles.button}
@@ -995,7 +1287,7 @@ export default function PartsClient({
             <p>
               {confirm.status === "active"
                 ? "Confirm that you have verified this dealership and approve its access."
-                : "This stops the dealership and its staff accessing this network and hides its parts."}
+                : "This stops the dealership and its staff accessing this parts list and hides its contributions."}
             </p>
             <p>Role: {confirm.role}</p>
             {feedback}

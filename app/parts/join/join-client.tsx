@@ -6,10 +6,33 @@ export default function JoinParts() {
     [pin, setPin] = useState(""),
     [sent, setSent] = useState(false),
     [done, setDone] = useState(false),
+    [signedIn, setSignedIn] = useState(false),
+    [list, setList] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   useEffect(() => {
-    setToken(new URLSearchParams(window.location.search).get("token") || "");
+    const value =
+      new URLSearchParams(window.location.search).get("token") || "";
+    setToken(value);
+    if (value)
+      void fetch("/api/parts-network?token=" + encodeURIComponent(value), {
+        cache: "no-store",
+        headers: { "x-aim4price-client-realm": "website" },
+      })
+        .then(async (r) => {
+          if (!r.ok) return;
+          const d = await r.json();
+          setSignedIn(true);
+          if (d.accepted) {
+            setDone(true);
+            setList(d.network);
+            if (d.status === "active")
+              window.location.replace(
+                "/parts?list=" + encodeURIComponent(d.network),
+              );
+          }
+        })
+        .catch(() => {});
   }, []);
   async function submit(action: string) {
     setBusy(true);
@@ -25,8 +48,10 @@ export default function JoinParts() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
-      if (action === "accept") setDone(true);
-      else setSent(true);
+      if (action === "accept") {
+        setDone(true);
+        setList(d.network || "");
+      } else setSent(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Please try again.");
     } finally {
@@ -37,32 +62,39 @@ export default function JoinParts() {
   return (
     <main className={styles.page}>
       <section className={styles.join}>
-        <span className={styles.eyebrow}>
-          Aim4price · Private dealer network
-        </span>
-        <h1>Join Parts</h1>
+        <span className={styles.eyebrow}>Aim4price · Shared parts</span>
+        <h1>Open shared parts</h1>
         {done ? (
           <>
             <p>
-              Your email is verified. A network administrator will confirm your
+              Your email is verified. The list owner will confirm your
               dealership before opening access.
             </p>
-            <a className={styles.button} href="/parts">
-              View membership
+            <a
+              className={styles.button}
+              href={
+                "/parts" + (list ? "?list=" + encodeURIComponent(list) : "")
+              }
+            >
+              View shared parts
             </a>
           </>
         ) : (
           <>
-            <p>
-              Sign up or sign in with the email address on your invitation. New
-              dealers create their password during signup.
-            </p>
-            <a
-              className={styles.button}
-              href={"/auth?returnTo=" + encodeURIComponent(returnTo)}
-            >
-              Sign up / Sign in
-            </a>
+            {!signedIn && (
+              <>
+                <p>
+                  Sign up or sign in with the email address on your invitation.
+                  New dealers create their password during signup.
+                </p>
+                <a
+                  className={styles.button}
+                  href={"/auth?returnTo=" + encodeURIComponent(returnTo)}
+                >
+                  Sign up / Sign in
+                </a>
+              </>
+            )}
             <p>Once signed in, verify your invitation with an email PIN.</p>
             {sent && (
               <label>

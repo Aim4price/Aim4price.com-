@@ -9,6 +9,8 @@ on:
       - 'app/api/parts-network/**'
       - 'app/dealer/page.tsx'
       - 'components/AppHeader.tsx'
+      - 'components/PartsInbox.tsx'
+      - 'app/leads/leads-client.tsx'
       - 'app/auth/auth-client.tsx'
       - 'tests/parts-network.test.cjs'
       - 'scripts/verify-parts-network.cjs'

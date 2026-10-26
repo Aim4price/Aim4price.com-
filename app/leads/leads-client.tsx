@@ -1,4 +1,5 @@
 'use client';
+import PartsInbox from "../../components/PartsInbox";
 import ListPagination from '../../components/ListPagination';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
@@ -3447,6 +3448,7 @@ export default function LeadsClient({
           </div>
         ) : null}
 
+        <PartsInbox />
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
