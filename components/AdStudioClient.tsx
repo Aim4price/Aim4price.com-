@@ -26,6 +26,8 @@ import {
   type MarketplaceAdContent,
 } from '../lib/marketplace-ad-renderer';
 import styles from './AdStudioClient.module.css';
+import SettingsDetailIcon from './SettingsDetailIcon';
+import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
 type AdStudioClientProps = {
   dealerAppMode?: boolean;
@@ -186,11 +188,11 @@ function StudioIcon({ name }: { name: StudioIconName }) {
   );
 }
 
-const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
-  { id: 1, label: 'Details' },
-  { id: 2, label: 'Layout' },
-  { id: 3, label: 'Style' },
-  { id: 4, label: 'Review' },
+const STUDIO_STEPS: Array<{ id: StudioStep; label: string; icon: StudioIconName }> = [
+  { id: 1, label: 'Details', icon: 'details' },
+  { id: 2, label: 'Layout', icon: 'layout' },
+  { id: 3, label: 'Style', icon: 'palette' },
+  { id: 4, label: 'Review', icon: 'review' },
 ];
 
 const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
@@ -423,6 +425,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     }
 
     setActiveStep(step);
+    revealEditor();
     setError('');
     setFeedback('');
   }
@@ -606,17 +609,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
 
   return (
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
-      <header className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <h1>Your adverts, your style</h1>
-          <p>Add your logo, colours and details once.</p>
-        </div>
-        {canManage && !loading ? (
-          <button className={styles.primaryButton} type="button" onClick={startNewKit}>
-            {kits.length ? 'Create another advert style' : 'Create my advert style'}
-          </button>
-        ) : null}
-      </header>
+      <div className={styles.titlePanel}>
+        <WorkspaceTitlePanel title="AD STUDIO" />
+      </div>
 
       {loading ? <div className={styles.notice}>Loading your brand kits…</div> : null}
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
@@ -695,13 +690,13 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <button
                   key={step.id}
                   type="button"
-                  className={`${styles.stepButton} ${activeStep === step.id ? styles.stepButtonActive : ''} ${activeStep > step.id ? styles.stepButtonComplete : ''}`}
+                  className={`${styles.stepButton} ${activeStep === step.id ? styles.stepButtonActive : ''}`}
                   onClick={() => moveToStep(step.id)}
                   aria-current={activeStep === step.id ? 'step' : undefined}
                 >
-                  <span aria-hidden="true">{activeStep > step.id ? <StudioIcon name="check" /> : step.id}</span>
+                  <span aria-hidden="true"><StudioIcon name={step.icon} /></span>
                   <strong>{step.label}</strong>
-                  <span className={styles.srOnly}>{activeStep > step.id ? 'Complete' : `Step ${step.id} of 4`}</span>
+                  <span className={styles.srOnly}>Step {step.id} of 4</span>
                 </button>
               ))}
             </nav>
@@ -718,27 +713,45 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <div className={styles.fieldGrid}>
                       <label>
                         Brand kit name
-                        <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required placeholder="e.g. Main dealer style" />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="listings" />
+                          <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required placeholder="e.g. Main dealer style" />
+                        </span>
                       </label>
                       <label>
                         Business name
-                        <input value={draft.businessName} onChange={(event) => update('businessName', event.target.value)} maxLength={160} placeholder="Shown at the top of the advert" />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="business" />
+                          <input value={draft.businessName} onChange={(event) => update('businessName', event.target.value)} maxLength={160} placeholder="Shown at the top of the advert" />
+                        </span>
                       </label>
                       <label>
                         Contact person
-                        <input value={draft.contactName} onChange={(event) => update('contactName', event.target.value)} maxLength={120} />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="person" />
+                          <input value={draft.contactName} onChange={(event) => update('contactName', event.target.value)} maxLength={120} />
+                        </span>
                       </label>
                       <label>
                         Phone / WhatsApp
-                        <input value={draft.phone} onChange={(event) => update('phone', event.target.value)} maxLength={80} />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="phone" />
+                          <input type="tel" value={draft.phone} onChange={(event) => update('phone', event.target.value)} maxLength={80} />
+                        </span>
                       </label>
                       <label>
                         Email
-                        <input type="email" value={draft.email} onChange={(event) => update('email', event.target.value)} maxLength={220} />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="email" />
+                          <input type="email" value={draft.email} onChange={(event) => update('email', event.target.value)} maxLength={220} />
+                        </span>
                       </label>
                       <label>
                         Website
-                        <input value={draft.website} onChange={(event) => update('website', event.target.value)} maxLength={300} placeholder="www.example.co.za" />
+                        <span className={styles.settingsInput}>
+                          <SettingsDetailIcon name="globe" />
+                          <input value={draft.website} onChange={(event) => update('website', event.target.value)} maxLength={300} placeholder="www.example.co.za" />
+                        </span>
                       </label>
                     </div>
                     <div className={styles.logoField}>

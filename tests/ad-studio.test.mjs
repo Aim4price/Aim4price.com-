@@ -244,7 +244,7 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
   assert.match(client, /(?:Brand kits|advert styles)/i);
-  assert.match(client, /Create (?:professional )?adverts(?: that look like your business)?/i);
+  assert.match(client, /<WorkspaceTitlePanel title="AD STUDIO"/);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
@@ -265,7 +265,7 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
 });
 
-test('Ad Studio follows the white, minimal Showroom visual system', async () => {
+test('Ad Studio follows the shared workspace header and accessible icon navigation', async () => {
   const [client, css] = await Promise.all([
     read('components/AdStudioClient.tsx'),
     read('components/AdStudioClient.module.css'),
@@ -277,7 +277,6 @@ test('Ad Studio follows the white, minimal Showroom visual system', async () => 
   };
   const minimumHeight = (declarations) => Number(declarations.match(/min-height:\s*([\d.]+)px/)?.[1] ?? 0);
 
-  const heroRule = block('.hero');
   const cardRule = css.match(/\.libraryPanel\s*,\s*\.formPanel\s*,\s*\.previewPanel\s*\{([^}]*)\}/)?.[1] ?? '';
   const sharedControlRule = css.match(/\.primaryButton\s*,[\s\S]*?\.logoRemove\s*\{([^}]*)\}/)?.[1] ?? '';
   const primaryButtonRule = block('.primaryButton');
@@ -285,11 +284,7 @@ test('Ad Studio follows the white, minimal Showroom visual system', async () => 
   const stepButtonRule = block('.stepButton');
   const activeStepRule = block('.stepButtonActive');
   const workspaceRule = block('.workspace');
-  const heroMarkup = client.match(/<header className=\{styles\.hero\}>[\s\S]*?<\/header>/)?.[0] ?? '';
 
-  assert.match(heroRule, /background:\s*#fff(?:fff)?\b/i);
-  assert.match(heroRule, /border:\s*1px solid var\(--studio-line\)/);
-  assert.doesNotMatch(heroRule, /(?:linear|radial)-gradient|#102a23|#15392f|#17385d/i);
   assert.match(cardRule, /background:\s*#fff(?:fff)?\b/i);
   assert.match(cardRule, /border:\s*1px solid var\(--studio-line\)/);
 
@@ -299,7 +294,6 @@ test('Ad Studio follows the white, minimal Showroom visual system', async () => 
 
   assert.doesNotMatch(client, /styles\.(?:heroMetric|heroMetricIcon|previewIcon|previewPills|previewPill)\b/);
   assert.doesNotMatch(client, /(?:Details|Layout|Style|Review)\s*·\s*Step [1-4] of 4/);
-  assert.doesNotMatch(heroMarkup, /(?:Ready|Brand kits? saved|Create your first brand kit)/i);
 
   assert.ok(minimumHeight(sharedControlRule) >= 44, 'Primary and secondary actions must remain at least 44px high');
   assert.ok(minimumHeight(stepButtonRule) >= 44, 'Each setup step must remain at least 44px high');
@@ -307,8 +301,8 @@ test('Ad Studio follows the white, minimal Showroom visual system', async () => 
   assert.doesNotMatch(primaryButtonRule, /gradient/i);
 
   assert.match(stepperRule, /background:\s*#fff(?:fff)?\b/i);
-  assert.match(stepButtonRule, /border-bottom:\s*[\d.]+px solid transparent/);
-  assert.match(activeStepRule, /border-bottom-color:\s*var\(--studio-green\)/);
+  assert.match(stepButtonRule, /border-radius:\s*12px/);
+  assert.match(activeStepRule, /border-color:\s*var\(--studio-green\)/);
   assert.doesNotMatch(activeStepRule, /gradient/i);
   assert.match(client, /aria-current=\{activeStep === step\.id \? 'step' : undefined\}/);
 
