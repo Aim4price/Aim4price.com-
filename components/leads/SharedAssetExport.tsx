@@ -19,7 +19,7 @@ type Props = { title: string; photos: string[]; details?: string; asset?: Partia
 export default function SharedAssetExport(props: Props) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" className={`${styles.optionsButton} ${styles.cardOptionsButton} ${triggerStyles.trigger}`} onClick={() => setOpen(true)}>
+    <button type="button" className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.controlTooltip} ${triggerStyles.trigger}`} data-tooltip="Share asset" onClick={() => setOpen(true)}>
       <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2m-6.8 7 6.8 4.2"/></svg>
       <span>Share</span>
     </button>

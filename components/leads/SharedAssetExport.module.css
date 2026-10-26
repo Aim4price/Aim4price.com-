@@ -1,4 +1,5 @@
 .trigger.trigger {
+  position: relative;
   color:var(--app-danger,#723b0d)!important;
   background:linear-gradient(180deg,var(--app-danger-soft,#fffaf5),var(--app-danger-soft,#fff0e3))!important;
   border-color:var(--app-danger-line,#c87534)!important;
