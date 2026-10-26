@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import accessStyles from '../app-access-management.module.css';
+import baseStyles from '../dealer-app/page.module.css';
 import TeamModal from '../../../components/team/TeamModal';
 import styles from '../../../components/team/team.module.css';
 import { TEAM_PERMISSIONS, TEAM_TEMPLATES, EMPTY_TEAM_PERMISSIONS, teamCanAccessAsset, type TeamGrant, type TeamPermissions } from '../../../lib/team-access-policy';
@@ -46,6 +48,7 @@ type Draft = {
 const fresh = (): Draft => ({ email: '', displayName: '', scope: 'selected', registerIds: [], assetIds: [], documentIds: [], permissions: { ...EMPTY_TEAM_PERMISSIONS }, expiresAt: '' });
 export default function TeamAccessClient() {
     const [data, setData] = useState<Data | null>(null), [draft, setDraft] = useState<Draft | null>(null), [tab, setTab] = useState('Person'), [query, setQuery] = useState('');
+    const [managing, setManaging] = useState(false);
     const [busy, setBusy] = useState(false), [error, setError] = useState(''), [notice, setNotice] = useState(''), [confirm, setConfirm] = useState<TeamGrant | null>(null);
     async function refresh() { const response = await fetch('/api/team-access', { cache: 'no-store' }); const next = await response.json(); if (!response.ok)
         throw Error(next.error); setData(next); }
@@ -70,18 +73,28 @@ export default function TeamAccessClient() {
     function toggle(key: 'registerIds' | 'assetIds' | 'documentIds', id: string) { if (!draft)
         return; setDraft({ ...draft, [key]: draft[key].includes(id) ? draft[key].filter(v => v !== id) : [...draft[key], id] }); }
     const allowedDocs = data?.documents.filter(d => d.assetIds.every(id => data.assets.some(a => a.id === id && draft && teamCanAccessAsset(draft, a)))) || [];
-    return <main className={styles.page}>
-    <header className={styles.header}><div><h1>Team access</h1><p>Give each person their own access to your business’s assets.</p></div><div className={styles.actions}><Link className={styles.button} href="/account">Account</Link><button className={styles.button} disabled={busy} onClick={() => void refresh().catch(e => setError(e.message))}>Refresh</button><button className={styles.primary} onClick={() => open()}>+ Add person</button></div></header>
-    <div className={styles.notice}>Each person signs in with their own verified email. Billing, finance balances, selling, deleting, transfers and access management stay owner-only. Approved documents, photos and maintenance notes may contain sensitive information—share them deliberately.</div>
+    return <main className={baseStyles.shell}>
+    <Link className={baseStyles.backButton} href="/account">← Back to account</Link>
+    <section className={accessStyles.launcher} aria-labelledby="desktop-users-title">
+      <div className={accessStyles.launcherIntro}><h1 id="desktop-users-title">Desktop users</h1><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p></div>
+      <div className={accessStyles.actionGrid}>
+        <button type="button" aria-label="Add user" className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew}`} disabled={!data || busy} onClick={() => open()}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 4v16M4 12h16"/></svg></span><span className={accessStyles.actionCopy}><strong>Add user</strong><small>Invite a person and choose their access.</small></span></button>
+        <button type="button" aria-label="Manage users" className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage}`} disabled={!data || busy} onClick={() => setManaging(true)}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></svg></span><span className={accessStyles.actionCopy}><strong>Manage users</strong><small>Review permissions or deactivate access.</small></span><span className={accessStyles.actionMeta}><span className={accessStyles.countPill}>{data ? data.members.length : '…'}</span></span></button>
+      </div>
+      <div className={styles.notice}>Users sign in with their own verified email. Values stay hidden unless you allow them.</div>
+      <div className={styles.actions}><button className={styles.button} onClick={() => { void navigator.clipboard.writeText(location.origin + '/team').then(() => setNotice('Desktop sign-in link copied. Only invited users can access your assets.')).catch(() => setError('Copy this link: ' + location.origin + '/team')); }}>Copy user sign-in link</button></div>
+    </section>
     {notice && <p className={styles.notice} role="status">{notice}</p>}{error && !draft && !confirm && <p className={styles.error} role="alert">{error}</p>}
-    <div className={styles.actions}><Link className={styles.button} href="/team">Open team workspaces</Link><button className={styles.button} onClick={() => { void navigator.clipboard.writeText(location.origin + '/team').then(() => setNotice('Team workspace link copied. Only invited emails can accept access.')).catch(() => setError('Copy this link: ' + location.origin + '/team')); }}>Copy invitation link</button></div>
-    {!data ? <p role="status">Loading team access…</p> : <><div className={styles.grid} style={{ marginTop: '1.5rem' }}>{data.members.map(member => <article className={styles.card} key={member.id}>
+    {!data && !error && <p role="status">Loading desktop users…</p>}
+    {managing && !draft && !confirm && <TeamModal title="Desktop users" subtitle="Choose a person to manage." onClose={() => setManaging(false)} busy={busy}><div className={styles.body}><div className={styles.actions}><strong>{data?.members.length || 0} users</strong><button className={styles.button} disabled={busy} onClick={() => void refresh().catch(e => setError(e.message))}>Refresh</button><button className={styles.primary} onClick={() => open()}>Add user</button></div>
+{!data ? <p role="status">Loading team access…</p> : <><div className={styles.list} style={{ marginTop: '1.5rem' }}>{data.members.map(member => <article className={styles.card} key={member.id}>
       <h2>{member.displayName}</h2><p>{member.email}</p><span className={styles.pill}>{member.expiresAt && new Date(member.expiresAt) < new Date() ? 'Expired' : member.status}</span><span className={styles.pill}>{member.permissions.viewValues ? 'Values visible' : 'Values hidden'}</span>
       <p className={styles.muted}>{member.scope === 'all' ? 'All current and future assets' : `${member.registerIds.length} registers · ${member.assetIds.length} individual assets`} · {member.documentIds.length} approved documents{member.expiresAt ? ` · Expires ${new Date(member.expiresAt).toLocaleDateString('en-ZA')}` : ''}</p>
-      <div className={styles.actions}><button className={styles.button} disabled={busy} onClick={() => open(member)}>Edit access</button>{member.status === 'revoked' ? <button className={styles.button} disabled={busy} onClick={() => void submit({ action: 'reinvite', id: member.id, version: member.version, sendInvitation: true })}>Invite again</button> : <><button className={styles.danger} disabled={busy} onClick={() => setConfirm(member)}>Revoke access</button>{member.status === 'pending' && <button className={styles.button} disabled={busy} onClick={() => void submit({ action: 'reinvite', id: member.id, version: member.version, sendInvitation: true })}>Resend invite</button>}</>}</div>
+      <div className={styles.actions}><button className={styles.button} disabled={busy} onClick={() => open(member)}>Manage</button>{member.status === 'revoked' ? <button className={styles.button} disabled={busy} onClick={() => void submit({ action: 'reinvite', id: member.id, version: member.version, sendInvitation: true })}>Invite again</button> : <><button className={styles.danger} disabled={busy} onClick={() => setConfirm(member)}>Revoke access</button>{member.status === 'pending' && <button className={styles.button} disabled={busy} onClick={() => void submit({ action: 'reinvite', id: member.id, version: member.version, sendInvitation: true })}>Resend invite</button>}</>}</div>
     </article>)}</div>{!data.members.length && <p className={styles.notice}>No team members yet. Add a person, choose their permissions, then send their invitation.</p>}
     <section className={styles.activity}><h2>Recent team activity</h2><p className={styles.muted}>Invitations, permission changes and actions are recorded against the person’s own login.</p>{data.activity.map(a => <article key={a.id}><div><strong>{a.action}{a.asset_id ? ` · ${data.assets.find(asset => asset.id === a.asset_id)?.title || 'Asset record'}` : ''}</strong><p className={styles.muted}>{a.actor_email}{a.details?.fields?.length ? ` · Changed: ${a.details.fields.join(', ')}` : ''}</p></div><time>{new Date(a.created_at).toLocaleString('en-ZA')}</time></article>)}{!data.activity.length && <p>No team activity yet.</p>}</section></>}
-    {draft && data && <TeamModal title={draft.id ? 'Edit team access' : 'Add a person'} subtitle="Choose exactly what this person can see and do." onClose={() => setDraft(null)} busy={busy}>
+    </div></TeamModal>}
+    {draft && data && <TeamModal title={draft.id ? 'Manage desktop user' : 'Add user'} subtitle="Choose exactly what this person can see and do." onClose={() => setDraft(null)} busy={busy}>
       <form className={styles.form} onSubmit={e => { e.preventDefault(); void submit({ ...draft, action: 'save', expiresAt: draft.expiresAt ? draft.expiresAt + 'T21:59:59.000Z' : null, sendInvitation: !draft.id, documentIds: draft.documentIds.filter(id => allowedDocs.some(d => d.id === id)) }); }}>
       <div className={styles.body}><nav className={styles.tabs} aria-label="Access settings">{['Person', 'Permissions', 'Assets', 'Documents'].map(t => <button type="button" className={tab === t ? styles.primary : styles.button} aria-pressed={tab === t} onClick={() => setTab(t)} key={t}>{t}</button>)}</nav>
       {error && <p className={styles.error} role="alert">{error}</p>}
