@@ -99,12 +99,21 @@ function Icon({
     | "list"
     | "share"
     | "manage"
-    | "plus";
+    | "plus"
+    | "open"
+    | "edit"
+    | "delete"
+    | "eye";
 }) {
   const paths = {
     share:
       "M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6 M9 10l6-4 M9 14l6 4",
-    manage: "M5 4v16 M12 4v16 M19 4v16 M2 8h6 M9 16h6 M16 10h6",
+    manage:
+      "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
+    open: "M8 10l4 4 4-4",
+    edit: "M4 20l1-5L16 4l4 4L9 19Z M14 6l4 4",
+    delete: "M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7",
+    eye: "M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
     plus: "M12 4v16 M4 12h16",
     search: "M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
     upload: "M12 16V3 M7 8l5-5 5 5 M3 15v6h18v-6",
@@ -189,7 +198,7 @@ export default function PartsClient({
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
   const [modal, setModal] = useState<
-      "upload" | "invite" | "create" | "manage" | "delete" | null
+      "upload" | "invite" | "create" | "manage" | "delete" | "rename" | null
     >(null),
     [contact, setContact] = useState<Row | null>(null),
     [confirm, setConfirm] = useState<{
@@ -349,7 +358,10 @@ export default function PartsClient({
   return (
     <main className={styles.page}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        <WorkspaceTitlePanel title="Parts Management System" className={styles.title} />
+        <WorkspaceTitlePanel
+          title="Parts Management System"
+          className={styles.title}
+        />
         <div className={styles.listToolbar}>
           {opened ? (
             <button
@@ -421,7 +433,21 @@ export default function PartsClient({
                       .includes(listSearch.trim().toLowerCase()),
                 )
                 .map((n) => (
-                  <article key={n.id} className={styles.card}>
+                  <article
+                    key={n.id}
+                    className={styles.card}
+                    onClick={(e) => {
+                      if (
+                        (e.target as HTMLElement).closest(
+                          "button,a,input,select,textarea",
+                        )
+                      )
+                        return;
+                      setNetwork(n.id);
+                      setOpened(true);
+                      switchView(n.owned ? "mine" : "search");
+                    }}
+                  >
                     <div className={styles.cardContent}>
                       <h2>{n.name}</h2>
                       <p>
@@ -444,6 +470,8 @@ export default function PartsClient({
                     <div className={styles.cardActions}>
                       {n.owned && !staff && (
                         <button
+                          className={styles.shareAction}
+                          data-tooltip="Share parts list"
                           onClick={() => {
                             setNetwork(n.id);
                             setInviteEmail("");
@@ -457,21 +485,25 @@ export default function PartsClient({
                         </button>
                       )}
                       <button
-                        className={styles.primary}
+                        className={styles.openAction}
+                        data-tooltip="Open parts list"
                         onClick={() => {
                           setNetwork(n.id);
                           setOpened(true);
                           switchView(n.owned ? "mine" : "search");
                         }}
                       >
-                        <Icon kind="list" />
-                        View parts
+                        <Icon kind="open" />
+                        Open
                       </button>
                       {n.owned && !staff && (
                         <button
+                          className={styles.manageAction}
+                          data-tooltip="Manage parts list"
                           onClick={() => {
                             setNetwork(n.id);
                             setName(n.name);
+                            setNotice("");
                             setModal("manage");
                           }}
                         >
@@ -570,6 +602,7 @@ export default function PartsClient({
                     <button
                       onClick={() => {
                         setName(current?.name || "");
+                        setNotice("");
                         setModal("manage");
                       }}
                     >
@@ -834,25 +867,11 @@ export default function PartsClient({
           ))}
         {modal === "manage" && (
           <Modal title="Manage parts list" onClose={close} busy={busy}>
-            <label>
-              List name
-              <input
-                value={name}
-                maxLength={80}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <div className={styles.actions}>
-              <button
-                disabled={busy || !name.trim()}
-                onClick={() =>
-                  void run(async () => {
-                    await mutate({ action: "rename", name });
-                    setModal(null);
-                  })
-                }
-              >
-                Save name
+            <p className={styles.modalSubtitle}>{current?.name}</p>
+            <div className={styles.manageGrid}>
+              <button onClick={() => setModal("rename")}>
+                <Icon kind="edit" />
+                <span>Rename list</span>
               </button>
               {canUpload && (
                 <button
@@ -862,7 +881,7 @@ export default function PartsClient({
                   }}
                 >
                   <Icon kind="upload" />
-                  Update CSV
+                  <span>Update CSV</span>
                 </button>
               )}
               <button
@@ -873,25 +892,62 @@ export default function PartsClient({
                 }}
               >
                 <Icon kind="users" />
-                Sharing &amp; access
+                <span>Sharing &amp; access</span>
               </button>
-              <button onClick={() => setModal("delete")}>Delete list</button>
-            </div>
-            {canUpload && (
+              {canUpload && (
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    void run(async () => {
+                      await mutate({
+                        action: "visibility",
+                        visible: !current?.visible,
+                      });
+                    })
+                  }
+                >
+                  <Icon kind="eye" />
+                  <span>
+                    {current?.visible ? "Hide my list" : "Show my list"}
+                  </span>
+                </button>
+              )}
               <button
-                disabled={busy}
+                className={styles.deleteAction}
+                onClick={() => setModal("delete")}
+              >
+                <Icon kind="delete" />
+                <span>Delete list</span>
+              </button>
+            </div>
+            {feedback}
+          </Modal>
+        )}
+        {modal === "rename" && (
+          <Modal title="Rename parts list" onClose={close} busy={busy}>
+            <label>
+              List name
+              <input
+                value={name}
+                maxLength={80}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </label>
+            <div className={styles.modalFooter}>
+              <button onClick={() => setModal("manage")}>Back</button>
+              <button
+                className={styles.primary}
+                disabled={busy || !name.trim()}
                 onClick={() =>
                   void run(async () => {
-                    await mutate({
-                      action: "visibility",
-                      visible: !current?.visible,
-                    });
+                    await mutate({ action: "rename", name });
+                    setModal(null);
                   })
                 }
               >
-                {current?.visible ? "Hide my list" : "Show my list"}
+                Save name
               </button>
-            )}
+            </div>
             {feedback}
           </Modal>
         )}

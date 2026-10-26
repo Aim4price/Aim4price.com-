@@ -296,7 +296,7 @@ const appCode =
       ),
     );
     await page.keyboard.press("Escape");
-    await click("View parts");
+    await click("Open");
     await page.waitForSelector("tbody tr");
     assert.equal(await page.$$eval("table", (e) => e.length), 1);
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
@@ -331,6 +331,22 @@ const appCode =
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
     await click("Manage");
     await page.waitForSelector("[role=dialog]");
+    assert.ok(
+      await page.evaluate(
+        () =>
+          document.body.innerText.includes("Rename list") &&
+          document.body.innerText.includes("Delete list"),
+      ),
+    );
+    await page.screenshot({ path: path.join(output, "manage-parts.png") });
+    await click("Rename list");
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[role="dialog"]')
+          ?.getAttribute("aria-label") === "Rename parts list",
+    );
+    await click("Back");
     await click("Sharing & access");
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
@@ -374,7 +390,7 @@ const appCode =
     await page.waitForSelector("article");
     await page.screenshot({ path: path.join(output, "lists-dark.png") });
     await click("Shared with me");
-    await click("View parts");
+    await click("Open");
     await page.waitForSelector("tbody tr");
     assert.ok(
       !(await page.evaluate(() =>
