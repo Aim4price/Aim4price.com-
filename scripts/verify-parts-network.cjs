@@ -169,7 +169,26 @@ const appCode =
                 : { ok: true };
         } else if (!url.search)
           data = {
-            networks: [network, {...network,id:"22222222-2222-4222-8222-222222222222",name:"John Deere parts"}, {...network,id:"33333333-3333-4333-8333-333333333333",name:"Second-hand parts"}, {...network,id:"44444444-4444-4444-8444-444444444444",name:"Shared dealer parts",owned:false,role:"viewer"}],
+            networks: [
+              network,
+              {
+                ...network,
+                id: "22222222-2222-4222-8222-222222222222",
+                name: "John Deere parts",
+              },
+              {
+                ...network,
+                id: "33333333-3333-4333-8333-333333333333",
+                name: "Second-hand parts",
+              },
+              {
+                ...network,
+                id: "44444444-4444-4444-8444-444444444444",
+                name: "Shared dealer parts",
+                owned: false,
+                role: "viewer",
+              },
+            ],
             staff: false,
             canContribute: true,
           };
@@ -209,6 +228,37 @@ const appCode =
     await page.addScriptTag({ content: reactDOM });
     await page.addScriptTag({ content: appCode });
     await page.waitForSelector("article");
+    assert.ok(
+      await page.$eval("h1", (e) =>
+        e.textContent.includes("Parts Management System"),
+      ),
+    );
+    const cards = await page.$$eval("article", (nodes) =>
+      nodes.map((n) => ({
+        x: n.getBoundingClientRect().x,
+        width: n.getBoundingClientRect().width,
+      })),
+    );
+    assert.ok(
+      cards.length >= 3 &&
+        cards.every((c) => c.width > 1000 && c.x === cards[0].x),
+      "Parts lists use full-width Leads-style cards",
+    );
+    await page.type('input[aria-label="Search parts lists"]', "John Deere");
+    await page.waitForFunction(
+      () => document.querySelectorAll("article").length === 1,
+    );
+    assert.ok(
+      await page.$eval("article", (e) => e.textContent.includes("John Deere")),
+    );
+    await page.click('input[aria-label="Search parts lists"]', {
+      clickCount: 3,
+    });
+    await page.keyboard.press("Backspace");
+    await page.waitForFunction(
+      () => document.querySelectorAll("article").length === 3,
+    );
+
     const click = async (text) => {
       assert.ok(
         await page.evaluate((t) => {
@@ -322,33 +372,54 @@ const appCode =
     await page.screenshot({ path: path.join(output, "table-dark.png") });
     await click("All parts lists");
     await page.waitForSelector("article");
-    await page.screenshot({path:path.join(output,"lists-dark.png")});
+    await page.screenshot({ path: path.join(output, "lists-dark.png") });
     await click("Shared with me");
     await click("View parts");
     await page.waitForSelector("tbody tr");
-    assert.ok(!await page.evaluate(() => [...document.querySelectorAll("button")].some(b=>b.textContent.trim()==="Upload CSV")));
+    assert.ok(
+      !(await page.evaluate(() =>
+        [...document.querySelectorAll("button")].some(
+          (b) => b.textContent.trim() === "Upload CSV",
+        ),
+      )),
+    );
     await click("Enquire");
     await page.waitForSelector("textarea");
     await click("Send enquiry");
-    await page.waitForFunction(() => document.body.innerText.includes("Enquiry sent."));
-    assert.equal(actions.find(a=>a.action==="enquire").partNumber,"001-ABC");
-    assert.equal(actions.find(a=>a.action==="enquire").network,"44444444-4444-4444-8444-444444444444");
+    await page.waitForFunction(() =>
+      document.body.innerText.includes("Enquiry sent."),
+    );
+    assert.equal(
+      actions.find((a) => a.action === "enquire").partNumber,
+      "001-ABC",
+    );
+    assert.equal(
+      actions.find((a) => a.action === "enquire").network,
+      "44444444-4444-4444-8444-444444444444",
+    );
     await click("All parts lists");
     await click("My parts");
     await click("Share");
     await page.waitForSelector('input[type="email"]');
-    await page.type('input[type="email"]',"buyer@example.test");
+    await page.type('input[type="email"]', "buyer@example.test");
     await click("Share inside Aim4price");
-    await page.waitForFunction(() => document.body.innerText.includes("Shared inside Aim4price."));
-    assert.equal(actions.find(a=>a.action==="invite").channel,"direct");
-    assert.equal(actions.find(a=>a.action==="invite").role,"viewer");
+    await page.waitForFunction(() =>
+      document.body.innerText.includes("Shared inside Aim4price."),
+    );
+    assert.equal(actions.find((a) => a.action === "invite").channel, "direct");
+    assert.equal(actions.find((a) => a.action === "invite").role, "viewer");
     await click("Share");
     await page.waitForSelector('input[type="email"]');
     await click("Share a link");
-    await page.type('input[type="email"]',"other@example.test");
+    await page.type('input[type="email"]', "other@example.test");
     await click("Create sharing link");
-    await page.waitForFunction(() => document.body.innerText.includes("Copy link"));
-    assert.equal(actions.filter(a=>a.action==="invite").at(-1).channel,"link");
+    await page.waitForFunction(() =>
+      document.body.innerText.includes("Copy link"),
+    );
+    assert.equal(
+      actions.filter((a) => a.action === "invite").at(-1).channel,
+      "link",
+    );
     assert.deepEqual(errors, []);
     console.log(
       "Parts network UI: table, contact, CSV review/import, membership cancellation, phone and dark mode passed.",

@@ -5,9 +5,7 @@
   background: var(--app-background, transparent);
 }
 .shell {
-  width: min(1380px, calc(100% - 40px));
-  margin: 0 auto;
-  padding: 24px 0 60px;
+  min-width: 0;
 }
 .page button,
 .modal button,
@@ -297,10 +295,6 @@
   clip-path: inset(50%);
 }
 @media (max-width: 600px) {
-  .shell {
-    width: calc(100% - 24px);
-    padding-top: 16px;
-  }
   .toolbar {
     align-items: stretch;
   }
@@ -340,63 +334,140 @@
 .tableWrap table {
   color: var(--app-text, #153c31);
 }
-.title > div {
-  background: var(--app-surface, #fff);
-  border-color: var(--app-border, #cbded4);
-  box-shadow: 0 8px 30px #00000009;
-}
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr));
-  gap: 24px;
-  margin: 24px 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  margin: 22px 0;
 }
 .card {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: 30px 20px 22px;
-  border: 1px solid var(--app-border, #cbded4);
-  border-radius: 22px;
-  background: var(--app-surface, #fff);
-  box-shadow: 0 8px 30px #00000009;
+  justify-content: space-between;
+  gap: 24px;
+  text-align: left;
+  padding: 24px;
+  border: 1px solid var(--app-line, #9fcfba);
+  border-radius: 20px;
+  background: linear-gradient(
+    115deg,
+    var(--app-surface-soft, #e3f3eb),
+    var(--app-surface, #f9fdfb)
+  );
+  box-shadow: 0 12px 28px var(--app-shadow-colour, #12352d12);
+  min-width: 0;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 20px;
+  width: 4px;
+  border-radius: 4px;
+  background: #268e65;
+}
+.cardContent {
+  min-width: 0;
+  flex: 1;
 }
 .card h2 {
   font-family: var(--font-heading, "Montserrat"), sans-serif;
-  font-size: 25px;
-  margin: 18px 0 8px;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  margin: 0 0 10px;
   overflow-wrap: anywhere;
 }
 .card p {
   color: var(--app-text-muted, #61766c);
-  font-size: 14px;
-  margin: 0 0 24px;
+  font-size: 15px;
+  font-weight: 650;
+  margin: 0 0 16px;
 }
-.cardIcon {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  background: #39976718;
-  color: #49ab79;
+.cardKind {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid var(--app-info-line, #cedeea);
+  border-radius: 14px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #214c66);
+  font-weight: 750;
 }
-.cardIcon svg {
-  width: 30px;
-  height: 30px;
+.cardKind svg {
+  color: var(--app-accent, #278463);
 }
 .cardActions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 .cardActions button {
-  padding: 10px 12px;
-  font-size: 14px;
+  min-height: 52px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 15px;
+}
+.listToolbar {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin: 22px 0;
+}
+.listToolbar .search {
+  flex: 1;
+  min-width: 0;
+}
+.listToolbar > button {
+  min-height: 60px;
+  min-width: 180px;
+  border-radius: 18px;
+  font-size: 18px;
+  font-weight: 850;
+}
+.page .addButton {
+  color: var(--app-text, #723b0d);
+  border-color: var(--app-warning-line, #dfac82);
+  background: linear-gradient(
+    180deg,
+    var(--app-surface, #fffdf9),
+    var(--app-warning-soft, var(--app-surface-soft, #fff3e7))
+  );
+}
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid var(--app-border, #dbe6df);
+}
+@media (max-width: 800px) {
+  .card {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .cardActions {
+    justify-content: flex-start;
+  }
+  .listToolbar {
+    flex-wrap: wrap;
+  }
+  .listToolbar .search {
+    flex-basis: 100%;
+  }
+  .listToolbar > button {
+    min-height: 50px;
+  }
 }
 .listTitle {
   margin: 0 0 8px;
@@ -434,4 +505,10 @@
 }
 .inboxItem p {
   white-space: pre-wrap;
+}
+
+/* Keep the shared workspace header geometry with theme-safe surface fallbacks. */
+.title > div {
+ background: linear-gradient(115deg,var(--app-surface-soft,#edf6f3),var(--app-surface,#ffffff));
+ border-color:var(--app-border,#c1d3da);
 }
