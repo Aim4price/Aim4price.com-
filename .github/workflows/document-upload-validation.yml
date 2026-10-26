@@ -1,0 +1,31 @@
+name: Document upload validation
+on:
+  pull_request:
+    paths:
+      - 'app/documents/**'
+      - 'app/asset-register/asset-register-client.tsx'
+      - 'components/documents/**'
+      - 'components/WebsitePortal.tsx'
+      - 'scripts/verify-document-type-picker.cjs'
+      - 'tests/account-document-vault.test.mjs'
+      - '.github/workflows/document-upload-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: document-upload-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/account-document-vault.test.mjs tests/asset-register-card-ui.test.mjs
+      - run: node scripts/verify-document-type-picker.cjs

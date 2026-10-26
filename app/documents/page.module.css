@@ -1,4 +1,5 @@
-.page {
+.page,
+.uploadHost {
   --ink: #083f34;
   --ink-soft: #183c34;
   --muted: #657689;
@@ -20,6 +21,9 @@
   --line: #cadde6;
   --line-soft: #e2ebf0;
   --surface: rgba(255, 255, 255, 0.97);
+}
+
+.page {
   min-height: calc(var(--website-design-vh) * 100);
   position: relative;
   isolation: isolate;
