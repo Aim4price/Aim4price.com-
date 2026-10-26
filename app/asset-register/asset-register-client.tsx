@@ -6259,6 +6259,7 @@ export default function AssetRegisterClient({
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
   const [isAssetGroupModalOpen, setIsAssetGroupModalOpen] = useState(false);
+  const [isCreatingUmbrellaFromMove, setIsCreatingUmbrellaFromMove] = useState(false);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
   const [assetGroupModalInitialView, setAssetGroupModalInitialView] = useState<'menu' | 'reports' | 'members'>('menu');
@@ -6961,9 +6962,20 @@ export default function AssetRegisterClient({
     setAssetGroupError('');
   }
 
+  function openCreateUmbrellaFromMove() {
+    if (!canManageAssetGroups || !assetRegisterMoveAsset || isMovingAssetRegister) return;
+    setIsCreatingUmbrellaFromMove(true);
+    setAssetGroupModalInitialView('menu');
+    setAssetGroupModalAsset(assetRegisterMoveAsset);
+    setAssetGroupModalGroup(null);
+    setAssetGroupError('');
+    setIsAssetGroupModalOpen(true);
+  }
+
   function closeAssetGroupManager() {
     if (isSavingAssetGroup) return;
     setIsAssetGroupModalOpen(false);
+    setIsCreatingUmbrellaFromMove(false);
     setAssetGroupModalAsset(null);
     setAssetGroupModalGroup(null);
     setAssetGroupModalInitialView('menu');
@@ -7023,6 +7035,11 @@ export default function AssetRegisterClient({
         if (data.group?.id) next.delete(data.group.id);
         return next;
       });
+      // Creation already saves the anchored asset as a member; no second move is needed.
+      if (isCreatingUmbrellaFromMove) {
+        setIsCreatingUmbrellaFromMove(false);
+        resetAssetRegisterMoveManager();
+      }
       setIsAssetGroupModalOpen(false);
       setAssetGroupModalAsset(null);
       setAssetGroupModalGroup(null);
@@ -8574,7 +8591,7 @@ export default function AssetRegisterClient({
         return;
       }
 
-      if (assetRegisterMoveAsset) {
+      if (assetRegisterMoveAsset && !isCreatingUmbrellaFromMove) {
         closeAssetRegisterMoveManager();
         return;
       }
@@ -8690,7 +8707,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, isCreatingUmbrellaFromMove, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -16023,6 +16040,8 @@ export default function AssetRegisterClient({
               onRetry={() => void loadAssetRegisterMoveGroups(assetRegisterMoveGroupsRequestRef.current)}
               onClose={closeAssetRegisterMoveManager}
               onMove={() => void handleMoveAssetRegister()}
+              onCreateUmbrella={openCreateUmbrellaFromMove}
+              suspended={isCreatingUmbrellaFromMove}
             />
           ) : null}
 
