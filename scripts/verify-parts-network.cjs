@@ -1,4 +1,4 @@
-/* Real Discovery client, synthetic read-only APIs; no deployment credentials needed. */
+/* Real Parts client, synthetic read-only APIs; no deployment credentials needed. */
 const fs = require("node:fs"),
   path = require("node:path"),
   assert = require("node:assert/strict");
@@ -123,7 +123,11 @@ const appCode =
     await page.setViewport({ width: 1440, height: 1000 });
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
-      name: "Dealer pilot",
+      name: "Landini parts",
+      owned: true,
+      list_mode: true,
+      part_count: 1,
+      last_updated: new Date().toISOString(),
       status: "active",
       role: "admin",
       visible: true,
@@ -135,6 +139,7 @@ const appCode =
       vat_included: false,
     };
     const row = {
+      dealer_id: "a",
       part_number: "001-ABC",
       quantity: 3,
       price: "850.00",
@@ -164,12 +169,25 @@ const appCode =
                 : { ok: true };
         } else if (!url.search)
           data = {
-            networks: [network],
+            networks: [network, {...network,id:"22222222-2222-4222-8222-222222222222",name:"John Deere parts"}, {...network,id:"33333333-3333-4333-8333-333333333333",name:"Second-hand parts"}, {...network,id:"44444444-4444-4444-8444-444444444444",name:"Shared dealer parts",owned:false,role:"viewer"}],
             staff: false,
             canContribute: true,
           };
+        else if (url.searchParams.get("view") === "inbox")
+          data = { invitations: [], enquiries: [], shared: [] };
         else if (url.searchParams.get("view") === "members")
-          data = { members: [{ ...network, dealer_id: "a" }], invites: [] };
+          data = {
+            members: [
+              { ...network, dealer_id: "a" },
+              {
+                ...network,
+                dealer_id: "b",
+                role: "viewer",
+                email: "buyer@example.test",
+              },
+            ],
+            invites: [],
+          };
         else data = { rows: [row], total: 1 };
         return r.respond({
           contentType: "application/json",
@@ -190,13 +208,12 @@ const appCode =
     await page.addScriptTag({ content: react });
     await page.addScriptTag({ content: reactDOM });
     await page.addScriptTag({ content: appCode });
-    await page.waitForSelector("tbody tr");
-    assert.equal(await page.$$eval("table", (e) => e.length), 1);
+    await page.waitForSelector("article");
     const click = async (text) => {
       assert.ok(
         await page.evaluate((t) => {
           const b = [...document.querySelectorAll("button")].find(
-            (b) => b.textContent.trim() === t,
+            (b) => b.textContent.trim() === t && !b.disabled,
           );
           if (!b || b.disabled) return false;
           b.click();
@@ -207,11 +224,32 @@ const appCode =
     };
     const output = path.join(root, ".next/parts-network-validation");
     fs.mkdirSync(output, { recursive: true });
-    await page.screenshot({ path: path.join(output, "table-desktop.png") });
-    await click("Create network");
+    await page.screenshot({ path: path.join(output, "lists-desktop.png") });
+    assert.ok(
+      !(await page.evaluate(() => document.body.innerText.includes("network"))),
+    );
+    await click("Add parts list");
     await page.waitForSelector('[role="dialog"]');
-    assert.ok(await page.evaluate(() => document.body.innerText.includes("You will manage this private network")));
+    assert.ok(
+      await page.evaluate(() =>
+        document.body.innerText.includes("Second-hand parts"),
+      ),
+    );
     await page.keyboard.press("Escape");
+    await click("Share");
+    await page.waitForSelector('[role="dialog"]');
+    assert.ok(
+      await page.evaluate(
+        () =>
+          document.body.innerText.includes("Inside Aim4price") &&
+          document.body.innerText.includes("Share a link"),
+      ),
+    );
+    await page.keyboard.press("Escape");
+    await click("View parts");
+    await page.waitForSelector("tbody tr");
+    assert.equal(await page.$$eval("table", (e) => e.length), 1);
+    await page.screenshot({ path: path.join(output, "table-desktop.png") });
     await click("Contact");
     await page.waitForSelector("[role=dialog]");
     assert.equal(
@@ -241,7 +279,9 @@ const appCode =
       document.body.innerText.includes("Parts list replaced successfully."),
     );
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
-    await click("Members");
+    await click("Manage");
+    await page.waitForSelector("[role=dialog]");
+    await click("Sharing & access");
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
         (b) => b.textContent === "Suspend",
@@ -254,7 +294,7 @@ const appCode =
       !actions.some((a) => a.action === "member"),
       "cancel does not change membership",
     );
-    await click("Find parts");
+    await click("View parts");
     await page.setViewport({ width: 390, height: 844 });
     await page.waitForSelector("tbody tr");
     assert.ok(
@@ -280,6 +320,35 @@ const appCode =
     });
     await page.setViewport({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(output, "table-dark.png") });
+    await click("All parts lists");
+    await page.waitForSelector("article");
+    await page.screenshot({path:path.join(output,"lists-dark.png")});
+    await click("Shared with me");
+    await click("View parts");
+    await page.waitForSelector("tbody tr");
+    assert.ok(!await page.evaluate(() => [...document.querySelectorAll("button")].some(b=>b.textContent.trim()==="Upload CSV")));
+    await click("Enquire");
+    await page.waitForSelector("textarea");
+    await click("Send enquiry");
+    await page.waitForFunction(() => document.body.innerText.includes("Enquiry sent."));
+    assert.equal(actions.find(a=>a.action==="enquire").partNumber,"001-ABC");
+    assert.equal(actions.find(a=>a.action==="enquire").network,"44444444-4444-4444-8444-444444444444");
+    await click("All parts lists");
+    await click("My parts");
+    await click("Share");
+    await page.waitForSelector('input[type="email"]');
+    await page.type('input[type="email"]',"buyer@example.test");
+    await click("Share inside Aim4price");
+    await page.waitForFunction(() => document.body.innerText.includes("Shared inside Aim4price."));
+    assert.equal(actions.find(a=>a.action==="invite").channel,"direct");
+    assert.equal(actions.find(a=>a.action==="invite").role,"viewer");
+    await click("Share");
+    await page.waitForSelector('input[type="email"]');
+    await click("Share a link");
+    await page.type('input[type="email"]',"other@example.test");
+    await click("Create sharing link");
+    await page.waitForFunction(() => document.body.innerText.includes("Copy link"));
+    assert.equal(actions.filter(a=>a.action==="invite").at(-1).channel,"link");
     assert.deepEqual(errors, []);
     console.log(
       "Parts network UI: table, contact, CSV review/import, membership cancellation, phone and dark mode passed.",

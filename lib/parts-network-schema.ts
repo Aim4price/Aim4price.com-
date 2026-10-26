@@ -2,6 +2,8 @@ export const PARTS_NETWORK_SCHEMA = `
 CREATE TABLE IF NOT EXISTS parts_networks (
  id uuid PRIMARY KEY, name text NOT NULL, created_by text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE parts_networks ADD COLUMN IF NOT EXISTS list_mode boolean NOT NULL DEFAULT false;
+ALTER TABLE parts_networks ADD COLUMN IF NOT EXISTS archived boolean NOT NULL DEFAULT false;
 CREATE TABLE IF NOT EXISTS parts_network_members (
  network_id uuid NOT NULL REFERENCES parts_networks(id), dealer_id text NOT NULL,
  role text NOT NULL CHECK(role IN ('admin','contributor','viewer')),
@@ -25,6 +27,14 @@ CREATE TABLE IF NOT EXISTS parts_network_invites (
  pin_hash text, pin_expires_at timestamptz, pin_sent_at timestamptz, pin_sends integer NOT NULL DEFAULT 0,
  attempts integer NOT NULL DEFAULT 0
 );
+ALTER TABLE parts_network_invites ADD COLUMN IF NOT EXISTS channel text NOT NULL DEFAULT 'link';
+CREATE TABLE IF NOT EXISTS parts_enquiries (
+ id uuid PRIMARY KEY, network_id uuid NOT NULL REFERENCES parts_networks(id),
+ sender_id text NOT NULL, recipient_id text NOT NULL, part_number text NOT NULL,
+ message text NOT NULL, reply_email text NOT NULL, status text NOT NULL DEFAULT 'new',
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS parts_enquiries_recipient ON parts_enquiries(recipient_id,created_at);
 CREATE TABLE IF NOT EXISTS parts_network_audit (
  id uuid PRIMARY KEY, network_id uuid NOT NULL REFERENCES parts_networks(id), actor_id text NOT NULL,
  action text NOT NULL, target text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()

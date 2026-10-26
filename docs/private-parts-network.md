@@ -1,34 +1,26 @@
-# Private dealer parts network
+# Dealer parts lists
 
-Parts is available on the website at `/parts` and in the Dealer App at `/dealer/parts`. The Parts page is visible in dealer navigation, subject to staff role permissions. Stocklists remain private until network approval. The same server membership checks protect searches, contacts, uploads and member management. These tables are separate from assets, Discovery, Marketplace and AI query sources.
+Parts lives in dealer accounts at `/parts` and `/dealer/parts`. Named cards use Share / View parts / Manage. Owners can create separate Landini, John Deere or second-hand lists; these are names, not compatibility claims. Each list opens a searchable table. CSV replacement changes only the selected list. Aim4price never reserves, deducts or manages master stock.
 
-## First network
+## Sharing and receiving
 
-1. Sign in as the dealership account owner and open Parts (`/parts`) from the dealer navigation. Aim4price administrator accounts have no Parts access.
-2. Create a named private network. Its creator becomes that network’s first administrator. Invite other dealerships by their exact email addresses and share their links privately. Creating a network grants no access to other networks.
-3. The dealer signs up through the existing Dealer signup/password flow, or signs in using their existing website account. Invitation signup defaults directory participation to off. Existing account activation and billing rules still apply.
-4. On `/parts/join`, request the email PIN and verify it. `RESEND_API_KEY` and the existing verified email sender must be configured; this feature fails closed when email is unavailable. No PIN is returned by the API or logged.
-5. In Parts → Members, the dealer network administrator verifies the dealership independently and approves its membership.
+- **Inside Aim4price:** the owner enters the recipient email. A private invitation appears in that account’s Parts and Leads inbox. The signed-in account owner accepts it; the sender’s explicit share grants view/enquiry access. No email is sent automatically.
+- **Share a link:** email-bound, seven-day invitation. Existing sign-in/signup flow is reused. The recipient verifies the emailed PIN and the owner approves them through Manage → Sharing & access. Reopening an accepted link checks account access and opens the list without demanding another login from an already signed-in user.
+- Accepted shares remain under Shared with me and in the Parts section of Leads. Pending/suspended accounts see access status, not the parts table. Revocation is checked on every API request.
+- New lists are owned by one dealership. Recipients cannot replace its CSV, reshare it, change permissions or rename/delete it. They can create and share their own independent lists.
+- Existing legacy groups and their contributions are retained, including legacy role permissions. The UI no longer asks users to create a network. No live data migration or deletion is performed.
 
-No real network, member, email or stock data is seeded by this change. No invitation is sent by deployment. Network tables are created idempotently on first use, using the same database role as existing runtime schema setup. The schema is in `lib/parts-network-schema.ts`.
+## Management and enquiries
 
-## Access
+Manage allows rename, CSV replacement, visibility, sharing history, access suspension/restoration and confirmed deletion. Deletion archives the list, blocks reads and invitations, and retains audit/enquiry records. Existing dealership staff roles still govern access: Owner/Parts can upload their dealership’s lists, Sales can view/enquire, Technician cannot enter Parts. Staff cannot create lists or manage dealership shares. Individual staff logins remain under Account.
 
-- Network administrator: manage memberships and invitation links, search and upload their own dealership's list.
-- Contributor: search and upload their own dealership's list.
-- Viewer: search and contact only.
-- Existing dealer staff permissions also apply: Owner/Manager and Parts staff can contribute; Sales staff can search; Technician staff cannot enter Parts. Staff never administer network membership or accept dealership invitations.
-- The actual dealership account owner manages individual staff logins in Account → Manage Dealer App staff (`/account/dealer-app`). Existing roles, password resets and session invalidation are reused.
-- Suspending membership immediately blocks new network requests and hides that dealership's listings. It does not remove their account or client records. At least one active network administrator must remain.
-- Invitations expire in seven days, can be revoked and are bound to one email. PINs expire after ten minutes, have five total verification attempts and at most five sends per invitation with a one-minute cooldown. Fresh invitations cannot reactivate existing suspended memberships.
+Enquire beside another dealer’s part opens a prefilled message. Sending creates a Parts enquiry in the recipient’s Leads and Parts inbox, with part number, list name, message, sender email and date. The recipient can reply by email and mark it handled. Repeated sends within one minute are rejected. Enquiries are separate from asset leads and do not manufacture an asset or alter stock. Direct call/email/WhatsApp and the website client cost ledger link remain available.
 
-## CSV snapshots
+## CSV and privacy
 
-The upload accepts comma, semicolon or tab-delimited CSV, headings and a maximum of 20,000 rows / 2 MB. Map part number, quantity and unit price. Descriptions are not required. Confirm the dealership contact details and whether prices include VAT. Leading zeros are preserved when present in the CSV; scientific notation already produced by spreadsheet exports cannot be reconstructed.
+CSV supports comma, semicolon or tab separators, column mapping, 20,000 rows / 2 MB, VAT basis and dealership contact details. Leading zeros are preserved when present in the source. Preview shows added, updated and removed counts; a revision guard prevents stale replacement. Invalid, empty and duplicate snapshots fail before any replacement. Zero quantities are hidden from shared searches. Tables scroll horizontally on small screens.
 
-Preview lists added, updated and removed counts. Confirmation replaces only that dealer's list in the selected network, in one transaction. A revision guard rejects stale previews. Empty/malformed files and duplicate part numbers are rejected before replacement. Zero quantities are allowed but hidden from network searches. Dealers can hide their own list without deleting it. Search is literal, case-insensitive, exact matches first, with 50 rows per page. Search results always remain a table, including on phones (horizontal table scrolling).
-
-Aim4price does not reserve or deduct stock. Existing stock software remains the master. Website users can open the existing Client Costs flow from a contact dialog; it continues to enforce client-asset permissions. No transaction is inferred from opening a contact or a cost ledger. Cross-brand compatibility and used-parts listings are outside this version.
+Private responses are no-store and excluded from indexing. Parts data is not added to Marketplace, Discovery or AI sources. Aim4price platform administrators cannot enter dealer Parts. Runtime schema changes are additive and idempotent in `lib/parts-network-schema.ts`. Email PINs require existing `RESEND_API_KEY` and verified sender configuration. PINs expire in ten minutes, allow five attempts and five sends, with a one-minute resend cooldown. Invitation replay cannot restore suspended membership.
 
 ## Validation
 
@@ -36,4 +28,4 @@ Aim4price does not reserve or deduct stock. Existing stock software remains the 
 - `node --test tests/parts-network.test.cjs tests/signup-wizard-flow.test.mjs tests/separate-app-sessions.test.mjs`
 - `node scripts/verify-parts-network.cjs`
 
-The integration tests exercise PostgreSQL semantics through PGlite. Browser tests use actual React/CSS components and intercepted synthetic network responses; they cover table results, contact, CSV confirmation, membership cancellation, phone overflow and dark styling. Actual email delivery and production database permissions require a deployment smoke check with consenting pilot accounts. Live data is never used by these tests.
+PGlite tests exercise actual SQL for isolated replacement, permissions, direct/link invitations, suspension, enquiry ownership and archive behavior. Browser checks use real React/CSS with synthetic APIs for cards, tables, both sharing methods, enquiry creation, CSV review/import, access cancellation, dark mode and phone overflow. Live email delivery and production database behavior still need a pilot smoke check after manual merge/deployment. No real invitations or enquiries are sent by the tests.

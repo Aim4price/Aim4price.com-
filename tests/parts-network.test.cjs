@@ -255,6 +255,7 @@ test("private network membership, import replacement and invitation lifecycle us
     "failed attempts must commit",
   );
   await network.partsInvitePin(outsider, token, pin);
+  assert.equal((await network.resolvePartsShare(outsider, token)).status, "pending");
   await assert.rejects(
     () => network.partsData(outsider, id, "search", "", 0),
     /approval/,
@@ -274,6 +275,8 @@ test("private network membership, import replacement and invitation lifecycle us
     (await network.partsData(outsider, id, "search", "", 0)).total,
     2,
   );
+  assert.equal((await network.resolvePartsShare(outsider, token)).status, "active");
+  await assert.rejects(() => network.resolvePartsShare(other, token));
   await network.changePartsMember(dealer, id, other.id, "viewer", "suspended");
   await assert.rejects(
     () => network.partsData(other, id, "search", "", 0),
@@ -371,4 +374,127 @@ test("account and staff gates reject inactive dealers, other account types and t
   assert.equal(await access.getPartsActor(), null);
   session = null;
   assert.equal(await access.getPartsActor(), null);
+});
+test("named lists isolate CSVs, direct shares, enquiries and archived access", async () => {
+  const db = new PGlite();
+  await db.exec(
+    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text)",
+  );
+  const schema = load("lib/parts-network-schema.ts");
+  const client = {
+    query: (sql, args) =>
+      sql === schema.PARTS_NETWORK_SCHEMA ? db.exec(sql) : db.query(sql, args),
+    release() {},
+  };
+  const parts = load("lib/parts-network.ts", {
+    "./db": { getDb: () => ({ ...client, connect: async () => client }) },
+    "./parts-network-schema": schema,
+    "./parts-network-csv": csv,
+    "./email": { getSiteOrigin: () => "https://example.test" },
+  });
+  const owner = {
+    id: "owner",
+    email: "owner@example.test",
+    staff: false,
+    canContribute: true,
+  };
+  const buyer = { ...owner, id: "buyer", email: "buyer@example.test" };
+  const stranger = { ...owner, id: "stranger", email: "stranger@example.test" };
+  const a = (await parts.createPartsNetwork(owner, "Landini", true)).id;
+  const b = (await parts.createPartsNetwork(owner, "John Deere", true)).id;
+  const input = {
+    csv: "Part,Qty,Price\n001,3,12",
+    columns,
+    businessName: "Dealer",
+    town: "George",
+    phone: "0821234567",
+    email: owner.email,
+    vatIncluded: false,
+    revision: 0,
+  };
+  await parts.importParts(owner, a, input, true);
+  await parts.importParts(owner, b, input, true);
+  await parts.importParts(
+    owner,
+    a,
+    { ...input, csv: "Part,Qty,Price\n002,1,20", revision: 1 },
+    true,
+  );
+  assert.equal(
+    (await parts.partsData(owner, b, "mine", "", 0)).rows[0].part_number,
+    "001",
+  );
+  await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
+  const invitation = (await parts.partsInbox(buyer)).invitations[0];
+  assert.equal(invitation.name, "Landini");
+  assert.equal((await parts.partsInbox(stranger)).invitations.length, 0);
+  await assert.rejects(() =>
+    parts.acceptDirectPartsShare(stranger, invitation.id),
+  );
+  await parts.acceptDirectPartsShare(buyer, invitation.id);
+  assert.equal((await parts.partsData(buyer, a, "search", "", 0)).total, 1);
+  assert.equal((await parts.partsInbox(buyer)).shared.length, 1);
+  await assert.rejects(() => parts.partsData(buyer, b, "search", "", 0));
+  await assert.rejects(() => parts.importParts(buyer, a, input, false));
+  await assert.rejects(() => parts.managePartsList(buyer, a, "bad"));
+  await assert.rejects(() =>
+    parts.invitePartsMember(owner, a, stranger.email, "contributor"),
+  );
+  await assert.rejects(() =>
+    parts.changePartsMember(owner, a, buyer.id, "admin", "active"),
+  );
+  await parts.createPartsEnquiry(buyer, a, {
+    dealerId: owner.id,
+    partNumber: "002",
+    message: "Is it available?",
+  });
+  const enquiry = (await parts.partsInbox(owner)).enquiries[0];
+  assert.equal(enquiry.part_number, "002");
+  assert.equal(enquiry.reply_email, buyer.email);
+  assert.equal((await parts.partsInbox(stranger)).enquiries.length, 0);
+  await parts.handlePartsEnquiry(stranger, enquiry.id);
+  assert.equal((await parts.partsInbox(owner)).enquiries[0].status, "new");
+  await parts.handlePartsEnquiry(owner, enquiry.id);
+  assert.equal((await parts.partsInbox(owner)).enquiries[0].status, "handled");
+  await assert.rejects(
+    () =>
+      parts.createPartsEnquiry(buyer, a, {
+        dealerId: owner.id,
+        partNumber: "002",
+        message: "Again",
+      }),
+    /already sent/,
+  );
+  await parts.changePartsMember(owner, a, buyer.id, "viewer", "suspended");
+  await assert.rejects(() => parts.partsData(buyer, a, "search", "", 0));
+  await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
+  await parts.acceptDirectPartsShare(
+    buyer,
+    (await parts.partsInbox(buyer)).invitations[0].id,
+  );
+  await assert.rejects(() => parts.partsData(buyer, a, "search", "", 0));
+  const link = await parts.invitePartsMember(
+    owner,
+    a,
+    stranger.email,
+    "viewer",
+    "link",
+  );
+  await parts.managePartsList(owner, a, "Landini spares");
+  assert.equal(
+    (await parts.listPartsNetworks(owner)).find((n) => n.id === a).name,
+    "Landini spares",
+  );
+  await parts.managePartsList(owner, a, "", true);
+  assert.equal((await parts.listPartsNetworks(owner)).length, 1);
+  await assert.rejects(() => parts.partsData(owner, a, "mine", "", 0));
+  await assert.rejects(() =>
+    parts.partsInvitePin(stranger, new URL(link.url).searchParams.get("token")),
+  );
+  assert.equal(
+    (await parts.partsInbox(owner)).enquiries.length,
+    1,
+    "enquiries retained after archive",
+  );
+  await db.close();
 });

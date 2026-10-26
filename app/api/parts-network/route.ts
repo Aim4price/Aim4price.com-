@@ -3,6 +3,12 @@ import { getPartsActor } from "../../../lib/parts-network-access";
 import { isTrustedRequestOrigin } from "../../../lib/trusted-request-origin";
 import {
   PartsError,
+  resolvePartsShare,
+  managePartsList,
+  partsInbox,
+  acceptDirectPartsShare,
+  createPartsEnquiry,
+  handlePartsEnquiry,
   listPartsNetworks,
   partsData,
   createPartsNetwork,
@@ -39,13 +45,16 @@ function failure(error: unknown) {
 }
 export async function GET(request: NextRequest) {
   try {
-    const actor = await getPartsActor();
+    const token = request.nextUrl.searchParams.get("token");
+    const actor = await getPartsActor(Boolean(token));
     if (!actor)
       return reply(
         { error: "Sign in with an active dealer account with Parts access." },
         403,
       );
+    if (token) return reply(await resolvePartsShare(actor, token));
     const q = request.nextUrl.searchParams;
+    if (q.get("view") === "inbox") return reply(await partsInbox(actor));
     if (!q.has("network"))
       return reply({
         networks: await listPartsNetworks(actor),
@@ -109,14 +118,30 @@ export async function POST(request: NextRequest) {
         403,
       );
     if (body.action === "create")
-      return reply(await createPartsNetwork(actor, body.name));
+      return reply(await createPartsNetwork(actor, body.name, true));
     if (body.action === "send-pin")
       return reply(await partsInvitePin(actor, body.token));
     if (body.action === "accept")
       return reply(await partsInvitePin(actor, body.token, body.pin ?? ""));
+    if (body.action === "accept-direct")
+      return reply(await acceptDirectPartsShare(actor, body.id));
+    if (body.action === "handle-enquiry") {
+      await handlePartsEnquiry(actor, body.id);
+      return reply({ ok: true });
+    }
     const id = networkId(body.network);
+    if (body.action === "rename" || body.action === "archive") {
+      await managePartsList(actor, id, body.name, body.action === "archive");
+      return reply({ ok: true });
+    }
+    if (body.action === "enquire") {
+      await createPartsEnquiry(actor, id, body);
+      return reply({ ok: true });
+    }
     if (body.action === "invite")
-      return reply(await invitePartsMember(actor, id, body.email, body.role));
+      return reply(
+        await invitePartsMember(actor, id, body.email, body.role, body.channel),
+      );
     if (body.action === "revoke") {
       await revokePartsInvite(actor, id, body.id);
       return reply({ ok: true });

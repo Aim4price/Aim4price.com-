@@ -43,7 +43,7 @@ export function networkId(v: unknown) {
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
   )
-    throw new PartsError("Choose a network.");
+    throw new PartsError("Choose a parts list.");
   return id;
 }
 function role(v: unknown) {
@@ -86,10 +86,10 @@ async function access(
 ) {
   // A network row lock serialises membership revocations, imports and invitations.
   const n = await db.query(
-    "SELECT id FROM parts_networks WHERE id=$1 FOR UPDATE",
+    "SELECT * FROM parts_networks WHERE id=$1 AND archived=false FOR UPDATE",
     [networkId(id)],
   );
-  if (!n.rows.length) throw new PartsError("Network not available.", 403);
+  if (!n.rows.length) throw new PartsError("Parts list not available.", 403);
   const m = (
     await db.query(
       "SELECT * FROM parts_network_members WHERE network_id=$1 AND dealer_id=$2",
@@ -102,15 +102,29 @@ async function access(
     throw new PartsError("Network administrator access required.", 403);
   if (level === "write" && (!actor.canContribute || m.role === "viewer"))
     throw new PartsError("Contribution access required.", 403);
+  if (
+    n.rows[0].list_mode &&
+    level === "write" &&
+    n.rows[0].created_by !== actor.id
+  )
+    throw new PartsError("Only the list owner can replace this CSV.", 403);
+  if (
+    n.rows[0].list_mode &&
+    level === "admin" &&
+    n.rows[0].created_by !== actor.id
+  )
+    throw new PartsError("Only the list owner can manage sharing.", 403);
   return m;
 }
 export async function listPartsNetworks(actor: PartsActor) {
   await ensurePartsNetwork();
   return (
     await getDb().query(
-      `SELECT n.id,n.name,m.status,m.role, m.revision,m.visible,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at
+      `SELECT n.id,n.name,n.list_mode,(n.created_by=$1) AS owned,
+ (SELECT count(*)::int FROM parts_network_rows r WHERE r.network_id=n.id AND (NOT n.list_mode OR r.dealer_id=n.created_by)) AS part_count,
+ (SELECT max(uploaded_at) FROM parts_network_members u WHERE u.network_id=n.id) AS last_updated,m.status,m.role, m.revision,m.visible,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at
  FROM parts_networks n LEFT JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=$1
- WHERE m.dealer_id=$1 ORDER BY n.name`,
+ WHERE m.dealer_id=$1 AND n.archived=false ORDER BY n.name`,
       [actor.id],
     )
   ).rows;
@@ -148,10 +162,10 @@ export async function partsData(
     const query = str(search, 100).toUpperCase();
     const offset = Math.max(0, Math.min(10000, Math.floor(page) || 0)) * 50;
     // strpos is literal, preserving punctuation and leading zeros in part numbers.
-    const where = `r.network_id=$1 AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0)`;
+    const where = `r.network_id=$1 AND EXISTS (SELECT 1 FROM parts_networks n WHERE n.id=r.network_id AND (NOT n.list_mode OR n.created_by=r.dealer_id)) AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0)`;
     const args = [id, mine, actor.id, query];
     const rows = await db.query(
-      `SELECT r.part_number,r.quantity,r.price,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT 50 OFFSET $5`,
+      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT 50 OFFSET $5`,
       [...args, offset],
     );
     const count = await db.query(
@@ -161,19 +175,23 @@ export async function partsData(
     return { rows: rows.rows, total: count.rows[0].total, member };
   });
 }
-export async function createPartsNetwork(actor: PartsActor, name: unknown) {
+export async function createPartsNetwork(
+  actor: PartsActor,
+  name: unknown,
+  listMode = false,
+) {
   if (actor.staff)
     throw new PartsError(
-      "Only the dealership account owner can create a network.",
+      "Only the dealership account owner can create a parts list.",
       403,
     );
   const title = str(name, 80);
-  if (!title) throw new PartsError("Enter a network name.");
+  if (!title) throw new PartsError("Enter a list name.");
   return transaction(async (db) => {
     const id = randomUUID();
     await db.query(
-      "INSERT INTO parts_networks(id,name,created_by) VALUES($1,$2,$3)",
-      [id, title, actor.id],
+      "INSERT INTO parts_networks(id,name,created_by,list_mode) VALUES($1,$2,$3,$4)",
+      [id, title, actor.id, listMode],
     );
     const profile = (
       await db.query(
@@ -201,6 +219,7 @@ export async function invitePartsMember(
   id: string,
   emailInput: unknown,
   roleInput: unknown,
+  channel: unknown = "link",
 ) {
   const email = str(emailInput, 254).toLowerCase(),
     memberRole = role(roleInput);
@@ -208,14 +227,21 @@ export async function invitePartsMember(
     throw new PartsError("Enter a valid email address.");
   return transaction(async (db) => {
     await access(db, actor, id, "admin");
+    const list = (
+      await db.query("SELECT list_mode FROM parts_networks WHERE id=$1", [id])
+    ).rows[0];
+    if (list.list_mode && memberRole !== "viewer")
+      throw new PartsError("Shared lists are view-only.");
+    if (channel !== "link" && channel !== "direct")
+      throw new PartsError("Choose a sharing method.");
     await db.query(
       "UPDATE parts_network_invites SET revoked_at=now() WHERE network_id=$1 AND email=$2 AND consumed_at IS NULL AND revoked_at IS NULL",
       [id, email],
     );
     const token = randomBytes(32).toString("hex");
     await db.query(
-      `INSERT INTO parts_network_invites(id,network_id,email,role,token_hash,created_by,expires_at) VALUES($1,$2,$3,$4,$5,$6,now()+interval '7 days')`,
-      [randomUUID(), id, email, memberRole, hash(token), actor.id],
+      `INSERT INTO parts_network_invites(id,network_id,email,role,token_hash,created_by,expires_at,channel) VALUES($1,$2,$3,$4,$5,$6,now()+interval '7 days',$7)`,
+      [randomUUID(), id, email, memberRole, hash(token), actor.id, channel],
     );
     await audit(db, id, actor, "invite", email);
     return { url: `${getSiteOrigin()}/parts/join?token=${token}` };
@@ -255,6 +281,19 @@ export async function changePartsMember(
       )
     ).rows[0];
     if (!current) throw new PartsError("Member not found.", 404);
+    const list = (
+      await db.query(
+        "SELECT list_mode,created_by FROM parts_networks WHERE id=$1",
+        [id],
+      )
+    ).rows[0];
+    if (
+      list.list_mode &&
+      (dealer === list.created_by || memberRole !== "viewer")
+    )
+      throw new PartsError(
+        "The owner retains control; shared access is view-only.",
+      );
     if (
       current.role === "admin" &&
       current.status === "active" &&
@@ -290,6 +329,20 @@ export async function partsInvitePin(
   if (!/^[a-f0-9]{64}$/.test(raw))
     throw new PartsError("Invitation not available.", 403);
   const outcome = await transaction(async (db) => {
+    const found = (
+      await db.query(
+        "SELECT network_id FROM parts_network_invites WHERE token_hash=$1",
+        [hash(raw)],
+      )
+    ).rows[0];
+    if (!found) throw new PartsError("Invitation unavailable.", 403);
+    const list = (
+      await db.query(
+        "SELECT id FROM parts_networks WHERE id=$1 AND archived=false FOR UPDATE",
+        [found.network_id],
+      )
+    ).rows[0];
+    if (!list) throw new PartsError("Invitation unavailable.", 403);
     const inv = (
       await db.query(
         "SELECT * FROM parts_network_invites WHERE token_hash=$1 FOR UPDATE",
@@ -325,7 +378,7 @@ export async function partsInvitePin(
         );
       await sendAim4priceEmail({
         to: actor.email,
-        subject: "Your private Parts Network PIN",
+        subject: "Your shared parts PIN",
         text: `Your verification PIN is ${code}. It expires in 10 minutes. Do not share it.`,
         html: `<p>Your verification PIN is <strong>${code}</strong>.</p><p>It expires in 10 minutes. Do not share it.</p>`,
       });
@@ -381,7 +434,7 @@ export async function partsInvitePin(
       [inv.id],
     );
     await audit(db, inv.network_id, actor, "accept-invite", actor.email);
-    return { accepted: true };
+    return { accepted: true, network: inv.network_id };
   });
   if ("invalid" in outcome)
     throw new PartsError("Incorrect or expired PIN. Please try again.", 400);
@@ -467,4 +520,174 @@ export async function setPartsVisibility(
     );
     await audit(db, id, actor, "visibility", String(visible));
   });
+}
+
+// List lifecycle keeps rows and audit history intact when a list is removed.
+export async function managePartsList(
+  actor: PartsActor,
+  id: string,
+  name: unknown,
+  archive = false,
+) {
+  return transaction(async (db) => {
+    await access(db, actor, id, "admin");
+    const list = (
+      await db.query("SELECT created_by FROM parts_networks WHERE id=$1", [id])
+    ).rows[0];
+    if (list.created_by !== actor.id)
+      throw new PartsError("Only the list owner can manage this list.", 403);
+    const title = str(name, 80);
+    if (!archive && !title) throw new PartsError("Enter a list name.");
+    await db.query(
+      "UPDATE parts_networks SET name=CASE WHEN $3 THEN name ELSE $2 END,archived=$3 WHERE id=$1",
+      [id, title, archive],
+    );
+    await audit(db, id, actor, archive ? "archive-list" : "rename-list", title);
+  });
+}
+export async function partsInbox(actor: PartsActor) {
+  await ensurePartsNetwork();
+  const invitations = actor.staff
+    ? []
+    : (
+        await getDb().query(
+          `SELECT i.id,n.name FROM parts_network_invites i JOIN parts_networks n ON n.id=i.network_id WHERE lower(i.email)=lower($1) AND i.channel='direct' AND i.consumed_at IS NULL AND i.revoked_at IS NULL AND i.expires_at>now() AND NOT n.archived`,
+          [actor.email],
+        )
+      ).rows;
+  const enquiries = (
+    await getDb().query(
+      `SELECT e.*,n.name FROM parts_enquiries e JOIN parts_networks n ON n.id=e.network_id WHERE e.recipient_id=$1 ORDER BY e.created_at DESC LIMIT 100`,
+      [actor.id],
+    )
+  ).rows;
+  const shared = (await listPartsNetworks(actor)).filter((n) => !n.owned);
+  return { invitations, enquiries, shared };
+}
+export async function acceptDirectPartsShare(
+  actor: PartsActor,
+  inviteId: unknown,
+) {
+  if (actor.staff) throw new PartsError("Use the account owner's login.", 403);
+  return transaction(async (db) => {
+    // Lock the list before its invitation, matching share/revoke lock order.
+    const found = (
+      await db.query(
+        "SELECT network_id FROM parts_network_invites WHERE id=$1",
+        [networkId(inviteId)],
+      )
+    ).rows[0];
+    if (!found) throw new PartsError("Invitation unavailable.", 404);
+    const list = (
+      await db.query(
+        "SELECT * FROM parts_networks WHERE id=$1 AND archived=false FOR UPDATE",
+        [found.network_id],
+      )
+    ).rows[0];
+    const inv = (
+      await db.query(
+        "SELECT * FROM parts_network_invites WHERE id=$1 FOR UPDATE",
+        [inviteId],
+      )
+    ).rows[0];
+    if (
+      !list ||
+      inv.channel !== "direct" ||
+      inv.email.toLowerCase() !== actor.email.toLowerCase() ||
+      inv.revoked_at ||
+      inv.consumed_at ||
+      new Date(inv.expires_at).getTime() < Date.now()
+    )
+      throw new PartsError("Invitation unavailable.", 403);
+    await db.query(
+      `INSERT INTO parts_network_members(network_id,dealer_id,role,status,email) VALUES($1,$2,$3,'active',$4) ON CONFLICT(network_id,dealer_id) DO NOTHING`,
+      [inv.network_id, actor.id, inv.role, actor.email],
+    );
+    await db.query(
+      "UPDATE parts_network_invites SET consumed_at=now() WHERE id=$1",
+      [inviteId],
+    );
+    await audit(db, inv.network_id, actor, "accept-direct", actor.email);
+    return { network: inv.network_id };
+  });
+}
+export async function createPartsEnquiry(
+  actor: PartsActor,
+  id: string,
+  input: Record<string, unknown>,
+) {
+  return transaction(async (db) => {
+    await access(db, actor, id);
+    const part = str(input.partNumber, 100),
+      recipient = str(input.dealerId, 200),
+      message = str(input.message, 2000);
+    if (!message) throw new PartsError("Enter your enquiry.");
+    const row = (
+      await db.query(
+        `SELECT r.part_number FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE r.network_id=$1 AND r.dealer_id=$2 AND r.part_key=upper($3) AND r.quantity>0 AND m.visible AND m.status='active'`,
+        [id, recipient, part],
+      )
+    ).rows[0];
+    if (!row || recipient === actor.id)
+      throw new PartsError("Choose an available part from another dealer.");
+    const recent = (
+      await db.query(
+        "SELECT id FROM parts_enquiries WHERE sender_id=$1 AND network_id=$2 AND recipient_id=$3 AND part_number=$4 AND created_at>now()-interval '1 minute'",
+        [actor.id, id, recipient, row.part_number],
+      )
+    ).rows;
+    if (recent.length)
+      throw new PartsError(
+        "Your enquiry was already sent. Please wait before sending another.",
+        429,
+      );
+    await db.query(
+      "INSERT INTO parts_enquiries(id,network_id,sender_id,recipient_id,part_number,message,reply_email) VALUES($1,$2,$3,$4,$5,$6,$7)",
+      [
+        randomUUID(),
+        id,
+        actor.id,
+        recipient,
+        row.part_number,
+        message,
+        actor.email,
+      ],
+    );
+    await audit(db, id, actor, "enquiry", row.part_number);
+  });
+}
+export async function handlePartsEnquiry(actor: PartsActor, id: unknown) {
+  await ensurePartsNetwork();
+  await getDb().query(
+    "UPDATE parts_enquiries SET status='handled' WHERE id=$1 AND recipient_id=$2",
+    [networkId(id), actor.id],
+  );
+}
+
+export async function resolvePartsShare(actor: PartsActor, token: unknown) {
+  await ensurePartsNetwork();
+  const raw = str(token, 128);
+  if (!/^[a-f0-9]{64}$/.test(raw))
+    throw new PartsError("Invitation unavailable.", 403);
+  const row = (
+    await getDb().query(
+      `SELECT i.network_id,i.consumed_at,i.revoked_at,i.expires_at,m.status FROM parts_network_invites i JOIN parts_networks n ON n.id=i.network_id LEFT JOIN parts_network_members m ON m.network_id=i.network_id AND m.dealer_id=$2 WHERE i.token_hash=$1 AND lower(i.email)=lower($3) AND NOT n.archived`,
+      [hash(raw), actor.id, actor.email],
+    )
+  ).rows[0];
+  if (!row)
+    throw new PartsError(
+      "Invitation unavailable or belongs to another email.",
+      403,
+    );
+  if (row.consumed_at)
+    return {
+      signedIn: true,
+      accepted: true,
+      network: row.network_id,
+      status: row.status,
+    };
+  if (row.revoked_at || new Date(row.expires_at).getTime() < Date.now())
+    throw new PartsError("Invitation expired or revoked.", 403);
+  return { signedIn: true, accepted: false };
 }
