@@ -3881,7 +3881,7 @@ export default function LeadsClient({
 
                       {(
                         <button data-manage-action="reports" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openLeadReportModal(managedLead)}>
-                          <DownloadIcon className={assetStyles.buttonIcon} />
+                          <AssetActionIcon action="reports" className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Reports</strong>
                             <small>Choose a report.</small>
@@ -3891,7 +3891,7 @@ export default function LeadsClient({
 
                       {isDealerLeadsMode ? (
                         <button data-manage-action="qr" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadQrModal(managedLead)}>
-                          <QrCodeIcon className={assetStyles.buttonIcon} />
+                          <AssetActionIcon action="qr" className={assetStyles.buttonIcon} />
                           <span>
                             <strong>QR code</strong>
                             <small>Copy, print or download.</small>
@@ -3901,7 +3901,7 @@ export default function LeadsClient({
 
                       {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddPhotos ? (
                         <button data-manage-action="addPhotos" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => setContribution({lead:managedLead,kind:'photos'})}>
-                          <PhotosIcon className={assetStyles.buttonIcon} />
+                          <AssetActionIcon action="addPhotos" className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Photos</strong>
                             <small>Add asset photos.</small>
@@ -3918,11 +3918,11 @@ export default function LeadsClient({
                           managedLead.maintenanceAccess.permissions.canSuggestCurrentValue || managedLead.maintenanceAccess.permissions.canUpdateSerial ||
                           managedLead.maintenanceAccess.permissions.canUpdateReplacementPrice
                         )) || (canAddDealerCosts && !isTrackingLead(managedLead))
-                      ) ? <button data-manage-action="details" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Details, values, serial number and paperwork.</small></span></button> : null}
+                      ) ? <button data-manage-action="details" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset</strong><small>Edit details, values and documents.</small></span></button> : null}
 
                       {managedLead.maintenanceAccess?.isActive && !isFullRegisterLead(managedLead) && <>
-                        {managedLead.maintenanceAccess.permissions.canViewLoggedProblems&&<button data-manage-action="loggedProblems" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setProblemLead(managedLead)}><AssetActionIcon action="loggedProblems" className={assetStyles.buttonIcon}/><span><strong>Log problems</strong><small>Log a problem or view logged problems.</small></span></button>}
-                        {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button data-manage-action="location" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update where the asset is kept.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canViewLoggedProblems&&<button data-manage-action="loggedProblems" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setProblemLead(managedLead)}><AssetActionIcon action="loggedProblems" className={assetStyles.buttonIcon}/><span><strong>Log problems</strong><small>Log or review asset problems.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button data-manage-action="location" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update asset location.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canViewHistory&&<button data-manage-action="history" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
                       </>}
                       {null}
@@ -3933,7 +3933,7 @@ export default function LeadsClient({
                           className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => setContribution({lead:managedLead,kind:'costs'})}
                         >
-                          <CostIcon className={assetStyles.buttonIcon} />
+                          <AssetActionIcon action="addCosts" className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Add cost</strong>
                             <small>Record an expense for this asset.</small>

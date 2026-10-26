@@ -1,0 +1,6 @@
+/* Owner Manage geometry; concise desktop descriptions remain a single line. */
+:global(:where([data-website-canvas])) .ownerManage.ownerManage.ownerManage header p,
+:global(:where([data-website-canvas])) .ownerManage.ownerManage.ownerManage [data-manage-actions] small {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+}

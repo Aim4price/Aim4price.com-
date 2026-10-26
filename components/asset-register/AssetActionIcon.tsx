@@ -2,8 +2,9 @@ import type { ExternalSharePermission } from '../../lib/external-share-permissio
 type IconProps = { className?: string };
 
 /** Owner-style icons shared by the owner, Leads and external asset actions. */
-export default function AssetActionIcon({ action, className }: IconProps & { action: ExternalSharePermission | 'details' | 'history' | 'access' }) {
+export default function AssetActionIcon({ action, className }: IconProps & { action: ExternalSharePermission | 'details' | 'history' | 'access' | 'qr' }) {
   switch (action) {
+    case 'qr': return <QrIcon className={className} />;
     case 'details': case 'yearModel': case 'usage': case 'condition': return <UpdateAssetIcon className={className} />;
     case 'viewParts': case 'addParts': case 'addMaintenance': return <ManageIcon className={className} />;
     case 'addPhotos': return <PhotosIcon className={className} />;
@@ -103,6 +104,23 @@ function MaintenanceTrackingIcon({ className }: IconProps) {
       <path d="M6.5 3v3M17.5 3v3M4 8.5h16" strokeLinecap="round" />
       <rect x="4" y="5" width="16" height="15" rx="3" />
       <path d="m8.5 14 2.1 2.1 4.9-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function QrIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="15" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="15" width="6" height="6" rx="1" />
+      <path d="M15 15h3v3" />
+      <path d="M21 15v6h-3" />
+      <path d="M15 21v-3" />
+      <path d="M12 7h1" />
+      <path d="M12 12h1" />
+      <path d="M7 12h1" />
+      <path d="M12 17h1" />
     </svg>
   );
 }
