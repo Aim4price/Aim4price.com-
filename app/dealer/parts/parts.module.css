@@ -509,6 +509,191 @@
 
 /* Keep the shared workspace header geometry with theme-safe surface fallbacks. */
 .title > div {
- background: linear-gradient(115deg,var(--app-surface-soft,#edf6f3),var(--app-surface,#ffffff));
- border-color:var(--app-border,#c1d3da);
+  background: linear-gradient(
+    115deg,
+    var(--app-surface-soft, #edf6f3),
+    var(--app-surface, #ffffff)
+  );
+  border-color: var(--app-border, #c1d3da);
 }
+
+/* Register action palette and geometry, shared by the Parts card and table toolbar. */
+.cardActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 510px);
+  flex-shrink: 0;
+  gap: 12px;
+}
+.cardActions button {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border-radius: 16px;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  padding: 12px 16px;
+  position: relative;
+}
+.page .shareAction {
+  color: var(--app-warning, #723b0d);
+  border-color: var(--app-warning-line, #c87534);
+  background: linear-gradient(
+    180deg,
+    var(--app-surface, #fffaf5),
+    var(--app-warning-soft, var(--app-surface-soft, #fff1e4))
+  );
+  box-shadow: 0 10px 22px var(--app-shadow-colour, #723b0d19);
+}
+.page .openAction {
+  color: var(--app-info, #0f3b64);
+  border-color: var(--app-info-line, #7eb4df);
+  background: linear-gradient(
+    180deg,
+    var(--app-surface, #fff),
+    var(--app-info-soft, var(--app-surface-soft, #edf6ff))
+  );
+  box-shadow: 0 10px 22px var(--app-shadow-colour, #0f3b6415);
+}
+.page .manageAction {
+  color: var(--app-text, #0a543d);
+  border-color: var(--app-line, #6fc596);
+  background: linear-gradient(
+    180deg,
+    var(--app-surface, #fff),
+    var(--app-surface-soft, #e6f8ef)
+  );
+  box-shadow: 0 10px 22px var(--app-shadow-colour, #0a543d15);
+}
+.openAction svg {
+  box-sizing: border-box;
+  padding: 4px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 1px solid var(--app-info-line, #abd5fa);
+  background: var(--app-info-soft, var(--app-surface-soft, #e2f2ff));
+}
+.cardActions button:is(:hover, :focus-visible) {
+  border-color: #31996b;
+  box-shadow:
+    0 0 0 2px #40a87640,
+    0 12px 24px var(--app-shadow-colour, #12352d18);
+}
+.cardActions [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #fff;
+  background: #104b3a;
+  box-shadow: 0 8px 20px #0002;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+  z-index: 5;
+  font-size: 14px;
+}
+.cardActions [data-tooltip]:is(:hover, :focus-visible)::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.card {
+  padding: 26px 24px;
+  min-height: 180px;
+  overflow: visible;
+}
+.cardKind {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 999px;
+  background: var(--app-surface-soft, #e2f6ed);
+  border-color: transparent;
+  color: var(--app-text, #176449);
+}
+.modalSubtitle {
+  margin: -8px 0 24px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.manageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.manageGrid button {
+  justify-content: flex-start;
+  min-height: 90px;
+  border-radius: 18px;
+  padding: 20px;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+}
+.manageGrid button svg {
+  flex-shrink: 0;
+  box-sizing: content-box;
+  padding: 14px;
+  width: 26px;
+  height: 26px;
+  border-radius: 15px;
+  color: var(--app-text, #197454);
+  background: var(--app-surface-soft, #e7f5ee);
+}
+.manageGrid .deleteAction {
+  color: var(--app-danger, #a53a32);
+}
+.manageGrid .deleteAction svg {
+  color: inherit;
+}
+@media (max-width: 1000px) {
+  .card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cardActions {
+    align-self: flex-end;
+  }
+}
+@media (max-width: 600px) {
+  .cardActions {
+    width: 100%;
+    gap: 8px;
+  }
+  .cardActions button {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 6px;
+    font-size: 13px;
+  }
+  .manageGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .manageGrid button {
+    min-height: 76px;
+    font-size: 17px;
+  }
+  .cardActions [data-tooltip]::after {
+    display: none;
+  }
+}
+
+.card {
+  cursor: pointer;
+}
+.card:hover {
+  border-color: #31996b;
+  box-shadow:
+    0 0 0 2px #40a87628,
+    0 12px 28px var(--app-shadow-colour, #12352d12);
+}
+
+.search:focus-within {border-color:#31996b; box-shadow:0 0 0 3px #4cbd8320;}
+.search input:focus-visible {outline:none;}
