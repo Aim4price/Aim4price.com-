@@ -624,6 +624,11 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   }, []);
 
   const [mode, setMode] = useState<Mode>("signup");
+  useEffect(() => {
+    if (getSafeReturnTo()?.startsWith("/parts/join?")) {
+      setSignupForm(current => ({...current, accountType: "dealer", accountSubtype: getDefaultSubtype("dealer"), directoryParticipation: false}));
+    }
+  }, []);
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showDealerRegisterInfo, setShowDealerRegisterInfo] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -1204,7 +1209,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                   accountType,
                                   accountSubtype: getDefaultSubtype(accountType),
                                   directoryParticipation:
-                                    accountType !== "owner" && accountType !== "middleman",
+                                    accountType !== "owner" && accountType !== "middleman" && !getSafeReturnTo()?.startsWith("/parts/join?"),
                                 }));
                               }}
                             />
