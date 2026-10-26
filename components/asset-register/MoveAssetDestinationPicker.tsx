@@ -26,6 +26,8 @@ type Props = {
   onRetry: () => void;
   onClose: () => void;
   onMove: () => void;
+  onCreateUmbrella?: () => void;
+  suspended?: boolean;
 };
 
 export default function MoveAssetDestinationPicker(props: Props) {
@@ -45,9 +47,10 @@ export default function MoveAssetDestinationPicker(props: Props) {
   }, []);
 
   useEffect(() => {
+    if (props.suspended) return;
     if (step === 'destination') searchRef.current?.focus();
     else choiceRef.current?.focus();
-  }, [step]);
+  }, [step, props.suspended]);
 
   function chooseDestination(destination: Destination) {
     props.onDestinationChange(destination);
@@ -61,6 +64,8 @@ export default function MoveAssetDestinationPicker(props: Props) {
     setSearch('');
     setStep('choice');
   }
+
+  if (props.suspended) return null;
 
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
@@ -96,9 +101,16 @@ export default function MoveAssetDestinationPicker(props: Props) {
               </button> : null}
             </div>
           ) : <>
+          <div className={styles.searchToolbar}>
           <div className={styles.searchWrap}>
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
+          </div>
+          {isUmbrella && props.canUseUmbrellas && props.onCreateUmbrella ? (
+            <button type="button" className={styles.addUmbrella} onClick={props.onCreateUmbrella} disabled={props.busy}>
+              <span aria-hidden="true">+</span> Add umbrella
+            </button>
+          ) : null}
           </div>
           {props.loading ? <p className={styles.empty} role="status">Loading umbrellas...</p>
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
@@ -107,7 +119,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
             </div>
             : <div className={styles.empty}>
               {query ? <><p>No destinations match “{search}”.</p><button type="button" onClick={() => setSearch('')}>Clear search</button></>
-                : isUmbrella ? <p>No other umbrellas are available. Create one using the umbrella button beside an asset.</p>
+                : isUmbrella ? <p>No other umbrellas are available. Add an umbrella to group this asset.</p>
                 : <><p>No other asset registers are available.</p><a href={props.managementHref}>Create an asset register</a></>}
             </div>}
           </>}

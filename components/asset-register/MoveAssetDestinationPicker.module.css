@@ -100,3 +100,8 @@
 .addRegisterBody > .footer { margin-top: 1rem; border-radius: 0 0 1rem 1rem; }
 
 .addRegisterBody .registerRows { display: flex; flex-direction: column; align-items: stretch; }
+
+.searchToolbar { display: flex; flex-wrap: wrap; align-items: stretch; gap: .75rem; margin-bottom: .75rem; }
+.searchToolbar .searchWrap { flex: 1 1 16rem; min-width: 0; margin-bottom: 0; }
+.addUmbrella { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 3.3rem; padding: .78rem 1.15rem; border: 1px solid var(--app-info-line, #cadae6); border-radius: 1rem; background: var(--app-info-soft, #f2f6fa); color: var(--app-text, #17362c); font-weight: 750 !important; }
+.addUmbrella:hover:not(:disabled) { border-color: var(--app-accent, #147052); background: var(--app-surface-soft, #f0faf5); }
