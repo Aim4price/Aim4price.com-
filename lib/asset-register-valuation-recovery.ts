@@ -21,12 +21,15 @@ export async function recoverLegacyValuationInput(userId: string, asset: AssetRe
     sectorKey = family.rows[0]?.sector_key;
   }
   if (!sectorKey) throw new LegacyValuationRecoveryError('Add the equipment sector to calculate a Basic estimate.');
+  const brandName = String(asset.brandName || saved.unlisted_brand_name || saved.typed_brand_name || saved.brandName || saved.brand_name || '').trim();
   let brandSlug = saved.brandSlug || saved.brand_slug;
   if (!brandSlug) {
     const brands = await getDb().query(`select slug from public.brands
-      where lower(trim(name)) = lower(trim($1)) and is_active = true limit 2`, [asset.brandName]);
-    if (brands.rows.length !== 1) throw new LegacyValuationRecoveryError('Confirm the asset brand to calculate a Basic estimate.');
-    brandSlug = brands.rows[0].slug;
+      where lower(trim(name)) = lower(trim($1)) and is_active = true limit 2`, [brandName]);
+    // Basic estimates accept typed brands, just like the Value Asset flow.
+    // Never guess between ambiguous catalogue matches or create a catalogue entry.
+    if (!brandName) throw new LegacyValuationRecoveryError('Add the brand name in asset details to calculate a Basic estimate.');
+    brandSlug = brands.rows.length === 1 ? brands.rows[0].slug : 'unknown';
   }
   let lifetime = asset.maxLifetimeHours;
   let metric = saved.usageMetricType || saved.usage_metric_type || (tractor ? 'hours' : asset.kind === 'vehicle' ? 'km' : '');
@@ -37,6 +40,7 @@ export async function recoverLegacyValuationInput(userId: string, asset: AssetRe
   } catch { /* Older families use the existing saved lifetime or tractor guide. */ }
   if (!lifetime && tractor) lifetime = tractorLifetimeHours(asset.tractorType === 'orchard' ? 'orchard' : 'field', asset.powerKw ?? 75);
   const specs = { ...saved, yearModelUnknown: !asset.yearModel, year_model_unknown: !asset.yearModel, usageMetricType: metric, basic_recovery: true, sectorKey, familyKey, brandSlug,
+    ...(brandSlug === 'unknown' && brandName ? { unlisted_brand_name: brandName, typed_brand_name: brandName } : {}),
     power_kw: asset.powerKw, tractor_type: asset.tractorType,
     basic_specification_level: saved.basic_specification_level || 'standard',
     ...(lifetime ? { max_lifetime_hours: lifetime } : {}),

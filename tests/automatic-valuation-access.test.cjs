@@ -48,6 +48,8 @@ test('status distinguishes queued, retrying and failed values',()=>{
   assert.equal(status.automaticValuationLabel({automaticValuationStatus:'retrying'}),'Value update retrying');
   assert.equal(status.automaticValuationLabel({automaticValuationStatus:'failed'}),'Value needs updating');
   assert.equal(status.automaticValuationPending({automaticValuationStatus:'failed'}),false);
+  assert.equal(status.automaticValuationLabel({automaticValuationStatus:'needs_details'}),'Check asset details');
+  assert.equal(status.automaticValuationPending({automaticValuationStatus:'needs_details'}),false);
 });
 
 test('delayed offline readings are historical; fresh readings remain current',()=>{

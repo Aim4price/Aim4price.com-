@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'lib/automatic-valuation-*.ts'
+      - 'lib/asset-register-valuation-recovery.ts'
+      - 'tests/asset-register-brand-recovery.test.mjs'
       - 'instrumentation.ts'
       - 'database/migrations/140-automatic-asset-valuations.sql'
       - 'lib/scan-assets.ts'
@@ -37,3 +39,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/automatic-valuation.test.cjs tests/automatic-valuation-access.test.cjs tests/asset-revaluation-save.test.cjs tests/approved-value-baseline.test.cjs tests/asset-history.test.cjs tests/asset-saleability.test.cjs
+
+      - run: node --experimental-strip-types --test tests/asset-register-brand-recovery.test.mjs

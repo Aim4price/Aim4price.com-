@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const { PGlite } = require('@electric-sql/pglite');
+class LegacyValuationRecoveryError extends Error {}
 const { randomUUID } = require('node:crypto');
 function load(file, mocks = {}) {
   const exports = {};
@@ -43,6 +44,7 @@ async function setup() {
     });
   };
   const worker = fn => load('lib/automatic-valuation-worker.ts', {
+    './asset-register-valuation-recovery': { LegacyValuationRecoveryError },
     './db': { getDb: () => pool }, './automatic-valuation-schema': { ensureAutomaticValuationSchema: async () => {} },
     './asset-register-revaluation': { revalueAssetRegisterItem: fn || (() => calculate()) },
   });
@@ -174,5 +176,23 @@ test('stale drafts cannot reapply pending status; ownership transfer re-scopes q
     await f.db.query("UPDATE asset_register_items SET user_id='new-owner' WHERE id=$1", [f.id]);
     assert.equal((await f.jobs())[0].owner_id, 'new-owner');
     assert.equal((await f.jobs())[0].claim_id, null);
+  } finally { await f.db.close(); }
+});
+
+test('missing details stop automatic retries and correcting a brand queues a fresh attempt', async () => {
+  const f = await setup();
+  try {
+    await f.change();
+    await f.worker(async () => { throw new LegacyValuationRecoveryError('Add the brand name'); }).processAutomaticValuations();
+    assert.equal((await f.asset()).specs_json.automaticValuationStatus, 'needs_details');
+    assert.equal(Number((await f.asset()).value), 800000);
+    assert.equal((await f.jobs())[0].attempts, 5);
+    await f.db.exec("UPDATE asset_valuation_jobs SET next_attempt_at=now()-interval '1 minute'");
+    assert.equal((await f.worker().processAutomaticValuations()).processed, 0);
+    await f.db.query("UPDATE asset_register_items SET specs_json=specs_json || '{\"brandName\":\"Malcomess\"}' WHERE id=$1", [f.id]);
+    assert.equal((await f.jobs())[0].attempts, 0);
+    assert.equal((await f.asset()).specs_json.automaticValuationStatus, 'pending');
+    await f.worker().processAutomaticValuations();
+    assert.equal((await f.asset()).specs_json.automaticValuationStatus, 'current');
   } finally { await f.db.close(); }
 });

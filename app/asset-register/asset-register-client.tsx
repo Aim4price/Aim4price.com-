@@ -16742,11 +16742,18 @@ export default function AssetRegisterClient({
                                   type="button"
                                   className={`${styles.expandButton} ${styles.updateEstimateInlineButton}`}
                                   disabled={busyRevalueAssetId === asset.id}
-                                  onClick={() => void handleUpdateEstimate(asset)}
-                                      data-tooltip="Update estimate"
+                                  onClick={() => {
+                                    if (asset.specsJson.automaticValuationStatus === 'needs_details') {
+                                      openUpdater(asset);
+                                      setShowAssetUpdateMenu(false);
+                                    } else {
+                                      void handleUpdateEstimate(asset);
+                                    }
+                                  }}
+                                      data-tooltip={asset.specsJson.automaticValuationStatus === 'needs_details' ? 'Review asset details' : 'Update estimate'}
                                 >
                                   <TrendIcon className={styles.buttonIcon} />
-                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : asset.specsJson.automaticValuationStatus === 'failed' ? 'Retry update' : 'Update now'}</span>
+                                  <span>{busyRevalueAssetId === asset.id ? 'Updating...' : asset.specsJson.automaticValuationStatus === 'needs_details' ? 'Review details' : asset.specsJson.automaticValuationStatus === 'failed' ? 'Retry update' : 'Update now'}</span>
                                 </button>
                               ) : null}
 
