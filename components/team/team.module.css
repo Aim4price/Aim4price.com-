@@ -1,6 +1,6 @@
 .page { max-width: 82rem; margin: 0 auto; padding: 2rem 1.5rem 5rem; color: var(--app-text,#14392f); font-family: var(--font-heading,"Montserrat"),sans-serif; }
 .header { display:flex; justify-content:space-between; align-items:center; gap:1.5rem; margin-bottom:1.6rem; flex-wrap:wrap; }
-.page h1 { font-size:clamp(2rem,3vw,2.7rem); line-height:1.12; letter-spacing:-.04em; margin:0 0 .65rem; }
+.page h1 { font-size:clamp(2rem,calc(var(--website-design-vw, 1vw) * 3),2.7rem); line-height:1.12; letter-spacing:-.04em; margin:0 0 .65rem; }
 .page h2 { margin:0; font-size:1.25rem; }
 .page p { color:var(--app-muted,#65796f); line-height:1.55; }
 .actions { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
@@ -22,7 +22,7 @@
 .backdrop { position:absolute; inset:0; background:rgba(9,29,25,.65); backdrop-filter:blur(8px); }
 .modal { position:relative; width:min(var(--website-dialog-reference-width,100%),65rem); max-height:calc(var(--website-visible-height,100dvh) - 2rem); display:flex; flex-direction:column; border:1px solid var(--app-line,#c9dcd3); border-radius:1.6rem; background:var(--app-surface,#fff); overflow:hidden; box-shadow:0 25px 85px rgba(0,0,0,.3); }
 .modalHeader { display:flex; justify-content:space-between; align-items:flex-start; gap:1.5rem; padding:1.7rem 2rem; border-bottom:1px solid var(--app-line,#c9dcd3); }
-.modalHeader h2 { font-size:clamp(1.7rem,2.5vw,2.3rem); line-height:1.15; letter-spacing:-.035em; margin:0; }
+.modalHeader h2 { font-size:clamp(1.7rem,calc(var(--website-design-vw, 1vw) * 2.5),2.3rem); line-height:1.15; letter-spacing:-.035em; margin:0; }
 .modalHeader p { margin:.6rem 0 0; color:var(--app-muted,#65796f); font-weight:650; }
 .close { width:2.8rem; height:2.8rem; flex:none; border:1px solid var(--app-line,#c9dcd3); border-radius:1rem; background:var(--app-surface-soft,#edf7f2); color:inherit; font-size:1.8rem; cursor:pointer; }
 .body { padding:1.5rem 2rem 2rem; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--app-muted,#719584) transparent; }
@@ -55,4 +55,13 @@
 .photos img { width:9rem; height:7rem; object-fit:cover; border-radius:.8rem; }
 .activity { margin-top:2rem; }
 .activity article { border-bottom:1px solid var(--app-line,#c9dcd3); padding:.9rem 0; display:flex; gap:1rem; justify-content:space-between; flex-wrap:wrap; }
-@media(max-width:650px) { .page { padding:1.4rem 1rem 4rem; } .modalHeader,.body,.footer { padding:1.2rem; } .asset { grid-template-columns:1fr; } .values { text-align:left; } .footer>* { flex:1; } }
+/* Website pages keep the canonical canvas layout at every zoom level. */
+@media (max-width: 650px) {
+  :global(body:not(:has([data-website-canvas]))) .page { padding:1.4rem 1rem 4rem; }
+  :global(body:not(:has([data-website-canvas]))) .modalHeader,
+  :global(body:not(:has([data-website-canvas]))) .body,
+  :global(body:not(:has([data-website-canvas]))) .footer { padding:1.2rem; }
+  :global(body:not(:has([data-website-canvas]))) .asset { grid-template-columns:1fr; }
+  :global(body:not(:has([data-website-canvas]))) .values { text-align:left; }
+  :global(body:not(:has([data-website-canvas]))) .footer > * { flex:1; }
+}
