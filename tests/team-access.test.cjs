@@ -14,7 +14,7 @@ const owner={id:'owner',email:'owner@example.com',emailVerified:true,name:'Owner
 const aId=randomUUID(), bId=randomUUID(),otherId=randomUUID(),reg1=randomUUID(),reg2=randomUUID(),docId=randomUUID();
 const asset=(id,registerId)=>({id,registerId,title:'Tractor',brandName:'Brand',modelName:'Model',yearModel:2024,serialNumber:'SERIAL',licenseRegistrationNumber:'ABC',condition:'good',photos:['/api/asset-register/uploads/private-photo'],value:987654,replacementPriceExVat:1234567,insuredValueExVat:999999,specsJson:{marketPrice:888888,financeBalance:777777},financeNote:'FINANCIAL SECRET',note:'PRIVATE NOTE',documents:['PRIVATE INVOICE'],hours:500,userId:'owner'});
 async function setup() {
- const db=new PGlite();await db.exec('CREATE TABLE "user"(id text primary key); INSERT INTO "user" VALUES (\'owner\'),(\'member\'),(\'other\'); CREATE TABLE asset_register_items(id uuid primary key,user_id text,register_id uuid);');await db.exec(TEAM_ACCESS_SCHEMA);
+ const db=new PGlite();await db.exec('CREATE TABLE "user"(id text primary key,email text); INSERT INTO "user" VALUES (\'owner\',\'owner@example.com\'),(\'member\',\'staff@example.com\'),(\'other\',\'other@example.com\'); CREATE TABLE asset_register_items(id uuid primary key,user_id text,register_id uuid);');await db.exec(TEAM_ACCESS_SCHEMA);
  await db.exec("CREATE TABLE asset_maintenance_records(id text,user_id text,asset_id uuid,status text)");
  await db.query("INSERT INTO asset_maintenance_records VALUES('maintenance','owner',$1,'upcoming')",[aId]);
  await db.query('INSERT INTO asset_register_items VALUES($1,$2,$3),($4,$2,$5),($6,$7,$3)',[aId,'owner',reg1,bId,reg2,otherId,'other']);
@@ -23,7 +23,10 @@ async function setup() {
  const assets=[asset(aId,reg1),asset(bId,reg2)];
  const docs=[{id:docId,title:'Approved manual',fileName:'manual.pdf',notes:'PRIVATE NOTES',assetLinks:[{id:aId,title:'Tractor'}],deletedAtIso:null}];
  const registers=[{id:reg1,businessName:'Farm A',totalValue:987654},{id:reg2,businessName:'Farm B',totalValue:987654}];
+ let cookieToken='';
+ const login=load('lib/team-login.ts',{'node:crypto':require('node:crypto'),'node:util':require('node:util'),'next/headers':{cookies:()=>({get:()=>cookieToken?{value:cookieToken}:undefined})},'./db':{getDb:()=>pool},'./team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy});
  const service=load('lib/team-access.ts',{
+  './team-login':login,
   './asset-history-schema':{setAssetHistoryActor:async()=>{}},
   './db':{getDb:()=>pool},'./auth-session':{getAnyServerSession:async()=>session},
   './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business'})},
@@ -37,7 +40,7 @@ async function setup() {
  const input={email:member.email,displayName:'Workshop staff',scope:'selected',registerIds:[reg1],assetIds:[],documentIds:[],permissions:{},expiresAt:null};
  async function invite(extra={}){return service.saveTeamGrant(owner,{...input,...extra});}
  async function active(extra={}){const grant=await invite(extra);return service.acceptTeamGrant(member,grant.id);}
- return {db,pool,client,assets,docs,service,input,invite,active,setSession:s=>session=s,setOwnerActive:s=>ownerActive=s};
+ return {db,pool,client,assets,docs,service,login,getSession:()=>session,setCookie:t=>cookieToken=t,input,invite,active,setSession:s=>session=s,setOwnerActive:s=>ownerActive=s};
 }
 test('permissions fail closed, dependencies are enforced, templates hide values',()=>{
  const permissions=policy.normalizeTeamPermissions({viewValues:'true',editDetails:1,manage_access:true,completeMaintenance:true});
@@ -60,12 +63,12 @@ test('asset edit allowlist rejects values, owner IDs, nested specifications and 
  assert.deepEqual(policy.validateTeamPatch({usage:900},grant),{usage:900});
  assert.throws(()=>policy.validateTeamPatch({usage:900,title:'changed'},grant));
 });
-test('only verified invited identity can accept; acceptance binds an individual account and is audited',async()=>{
+test('existing invited account can accept without verification; binding prevents another identity accepting',async()=>{
  const f=await setup();try{
  const invite=await f.invite();await assert.rejects(f.service.loadTeamScope(invite.id));
- await assert.rejects(f.service.acceptTeamGrant({...member,emailVerified:false},invite.id));
+ assert.equal(invite.memberUserId,'member');
  await assert.rejects(f.service.acceptTeamGrant({...member,id:'other',email:'other@example.com'},invite.id));
- const accepted=await f.service.acceptTeamGrant(member,invite.id);assert.equal(accepted.memberUserId,'member');
+ const accepted=await f.service.acceptTeamGrant({...member,emailVerified:false},invite.id);assert.equal(accepted.memberUserId,'member');
  const scope=await f.service.loadTeamScope(invite.id);assert.equal(scope.grant.ownerId,'owner');assert.equal(scope.actor.id,'member');
  f.setSession({user:{...member,id:'other'}});await assert.rejects(f.service.loadTeamScope(invite.id));
  assert.equal((await f.db.query("SELECT count(*)::int AS n FROM team_access_activity WHERE actor_id='member' AND action='Invitation accepted'")).rows[0].n,1);
@@ -122,7 +125,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n'),TEAM_ACCESS_SCHEMA);
+ assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8'),TEAM_ACCESS_SCHEMA);
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -198,5 +201,93 @@ test('deleting an employee login removes its access without deleting the busines
  assert.equal(stored.member_user_id,null);
  assert.ok((await f.db.query('SELECT id FROM team_access_activity WHERE membership_id=$1',[grant.id])).rows.length>=2);
  await assert.rejects(f.service.loadTeamScope(grant.id));
+ }finally{await f.db.close();}
+});
+
+test('owner-created desktop password signs in without verification and cannot impersonate a personal account',async()=>{
+ const f=await setup();try{
+ const grant=await f.invite({email:'new@example.com',password:'Initial-password-123'});
+ assert.equal(grant.managedLogin,true);assert.equal(grant.status,'active');assert.equal(grant.memberUserId,null);
+ const token=await f.login.authenticateTeamLogin('owner','new@example.com','Initial-password-123');
+ f.setSession(null);f.setCookie(token);
+ const scope=await f.service.loadTeamScope(grant.id);assert.equal(scope.actor.managedGrantId,grant.id);assert.equal(scope.actor.emailVerified,false);
+ await assert.rejects(f.service.requireTeamOwner());
+ await assert.rejects(f.service.acceptTeamGrant(scope.actor,grant.id));
+ const other=await f.active();await assert.rejects(f.service.loadTeamScope(other.id));
+ await assert.rejects(f.login.authenticateTeamLogin('other','new@example.com','Initial-password-123'));
+ await assert.rejects(f.login.authenticateTeamLogin('owner','new@example.com','wrong'));
+ const stored=(await f.db.query('SELECT password_hash FROM team_access_logins WHERE grant_id=$1',[grant.id])).rows[0].password_hash;
+ assert.ok(!stored.includes('Initial-password'));assert.ok(!JSON.stringify(grant).includes('password'));
+ assert.equal((await f.db.query('SELECT count(*)::int AS n FROM "user" WHERE email=$1',['new@example.com'])).rows[0].n,0);
+ }finally{await f.db.close();}
+});
+test('password reset and revoke invalidate managed sessions; permission edits preserve credential isolation',async()=>{
+ const f=await setup();try{
+ const grant=await f.invite({email:'new@example.com',password:'Initial-password-123'});
+ const token=await f.login.authenticateTeamLogin('owner','new@example.com','Initial-password-123');f.setSession(null);f.setCookie(token);
+ const stale=await f.service.loadTeamScope(grant.id);
+ const updated=await f.invite({...grant,password:'Replacement-password-123'});
+ await assert.rejects(f.service.loadTeamScope(grant.id));await assert.rejects(f.service.lockTeamScope(f.client,stale,aId,'editDetails'));
+ await assert.rejects(f.login.authenticateTeamLogin('owner','new@example.com','Initial-password-123'));
+ f.setCookie(await f.login.authenticateTeamLogin('owner','new@example.com','Replacement-password-123'));
+ assert.equal((await f.service.loadTeamScope(grant.id)).grant.version,updated.version);
+ const revoked=await f.service.setTeamGrantStatus(owner,grant.id,updated.version,'revoked');await assert.rejects(f.service.loadTeamScope(grant.id));
+ const restored=await f.service.setTeamGrantStatus(owner,grant.id,revoked.version,'pending');assert.equal(restored.status,'active');await assert.rejects(f.service.loadTeamScope(grant.id));
+ await f.login.authenticateTeamLogin('owner','new@example.com','Replacement-password-123');
+ }finally{await f.db.close();}
+});
+test('existing personal account is invited by user ID; owner password never creates or replaces its credentials',async()=>{
+ const f=await setup();try{
+ const grant=await f.invite({password:'Must-never-be-used'});
+ assert.equal(grant.managedLogin,false);assert.equal(grant.memberUserId,member.id);assert.equal(grant.status,'pending');
+ assert.equal((await f.db.query('SELECT count(*)::int AS n FROM team_access_logins')).rows[0].n,0);
+ await assert.rejects(f.login.authenticateTeamLogin('owner',member.email,'Must-never-be-used'));
+ f.setSession({user:{...owner,emailVerified:false}});await f.service.requireTeamOwner();
+ await f.service.acceptTeamGrant({...member,emailVerified:false},grant.id);
+ f.setSession({user:{...member,emailVerified:false}});await f.service.loadTeamScope(grant.id);
+ }finally{await f.db.close();}
+});
+
+test('desktop login route enforces origin, rate limits and isolated cookies; logout deletes the server session',async()=>{
+ const f=await setup();try{
+ await f.invite({email:'new@example.com',password:'Initial-password-123'});
+ const limits=[];let blocked=false,token='';
+ const json=(body,status=200)=>({body,status,cookies:{set:(...args)=>{json.lastCookie=args;}}});
+ const route=load('app/api/team-login/route.ts',{
+  'next/server':{},'next/headers':{cookies:()=>({get:()=>({value:token})})},
+  '../../../lib/auth-session':{getAnyServerSession:async()=>f.getSession()},
+  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:'owner',accountStatus:'active'})},
+  '../../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},'../../../lib/db':{getDb:()=>f.pool},
+  '../../../lib/team-access-schema':{ensureTeamAccessSchema:async()=>{}},'../../../lib/team-login':f.login,
+  '../../../lib/team-access-policy':policy,'../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},
+  '../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.badOrigin)throw new policy.TeamAccessError('Invalid origin',403);},businessBody:async r=>r.body},
+  '../../../lib/business-network':{limitBusinessAction:async(key,count)=>{limits.push({key,count});if(blocked)throw new Error('Too many requests. Please try again later.');}},
+ });
+ const req={body:{business:'owner',email:'new@example.com',password:'Initial-password-123'},headers:new Headers({'x-forwarded-for':'192.0.2.1'})};
+ assert.equal((await route.POST({...req,badOrigin:true})).status,403);
+ assert.equal((await route.POST(req)).status,409);
+ f.setSession(null);blocked=true;assert.equal((await route.POST(req)).status,429);blocked=false;
+ assert.equal((await route.POST(req)).status,200);assert.equal(json.lastCookie[0],'aim4price_desktop_user');assert.equal(json.lastCookie[2].httpOnly,true);assert.equal(json.lastCookie[2].sameSite,'lax');
+ token=json.lastCookie[1];f.setCookie(token);assert.ok(await f.login.getManagedTeamActor());assert.ok(limits.some(l=>l.count===5));
+ assert.equal((await route.DELETE(req)).status,200);assert.equal(json.lastCookie[2].maxAge,0);assert.equal(await f.login.getManagedTeamActor(),null);
+ }finally{await f.db.close();}
+});
+
+test('owner creation emails existing accounts only and never includes the supplied password',async()=>{
+ const f=await setup();try{
+ f.setSession({user:{...owner,emailVerified:false}});const emails=[];
+ const json=(body,status=200)=>({body,status});
+ const route=load('app/api/team-access/route.ts',{
+  'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
+  '../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},'../../../lib/team-access-policy':policy,
+  '../../../lib/asset-registers':{},'../../../lib/account-documents':{},
+  '../../../lib/business-network-api':{requireBusinessOrigin:()=>{},businessBody:async r=>r.body},
+  '../../../lib/business-network':{limitBusinessAction:async()=>{}},
+  '../../../lib/email':{getSiteOrigin:()=> 'https://aim4price.example',sendAim4priceEmail:async e=>emails.push(e)},
+ });
+ const existing=await route.POST({body:{...f.input,action:'save',password:'Do-not-email-this-password',sendInvitation:true}});
+ assert.equal(existing.status,200);assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
+ const managed=await route.POST({body:{...f.input,email:'new@example.com',action:'save',password:'Initial-password-123',sendInvitation:true}});
+ assert.equal(managed.status,200);assert.equal(managed.body.member.managedLogin,true);assert.equal(emails.length,1);assert.ok(!JSON.stringify(managed).includes('Initial-password-123'));
  }finally{await f.db.close();}
 });

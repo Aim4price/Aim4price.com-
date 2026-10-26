@@ -19,6 +19,7 @@ export const TEAM_TEMPLATES = {
     office: { label: 'Office administrator', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
 } as const;
 export type TeamGrant = {
+    managedLogin?: boolean;
     id: string;
     ownerId: string;
     email: string;
@@ -34,6 +35,7 @@ export type TeamGrant = {
     version: number;
 };
 export type TeamActor = {
+    managedGrantId?: string;
     id: string;
     email: string;
     emailVerified: boolean;
@@ -52,7 +54,7 @@ export function normalizeTeamPermissions(value: unknown): TeamPermissions {
     return result;
 }
 export function teamGrantIsLive(grant: TeamGrant, actor: TeamActor, now = Date.now()): boolean {
-    return actor.emailVerified === true && grant.status === 'active' && grant.memberUserId === actor.id
+    return grant.status === 'active' && (actor.managedGrantId ? grant.managedLogin === true && grant.id === actor.managedGrantId : !grant.managedLogin && grant.memberUserId === actor.id)
         && grant.email === actor.email.trim().toLowerCase()
         && (!grant.expiresAt || new Date(grant.expiresAt).getTime() > now);
 }
