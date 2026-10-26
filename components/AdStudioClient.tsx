@@ -281,6 +281,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
   const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
   const editorRef = useRef<HTMLFormElement | null>(null);
+  const previewDialogRef = useRef<HTMLDialogElement | null>(null);
+  const enlargedCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const previewPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -366,7 +368,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     try {
       const response = await fetch(brandKitsEndpoint, { cache: 'no-store' });
       const payload = (await response.json().catch(() => null)) as BrandKitResponse | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Brand kits could not be loaded.');
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert styles could not be loaded.');
 
       const nextKits = payload.kits ?? [];
       const nextDefaults = payload.profileDefaults ?? {};
@@ -378,7 +380,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       setCanManage(payload.canManage !== false);
       setDraft(selected ? editableKit(selected) : kitFromDefaults(nextDefaults));
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Brand kits could not be loaded.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert styles could not be loaded.');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -392,6 +394,14 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setDraft((current) => ({ ...current, [key]: value }));
     setFeedback('');
     setError('');
+  }
+
+  function openPreview() {
+    const source = previewCanvasRef.current;
+    const target = enlargedCanvasRef.current;
+    if (!source || !target) return;
+    target.getContext('2d')?.drawImage(source, 0, 0);
+    previewDialogRef.current?.showModal();
   }
 
   function revealEditor() {
@@ -412,7 +422,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   function startNewKit() {
     setDraft({ ...kitFromDefaults(profileDefaults), name: `Advert style ${kits.length + 1}`, isDefault: kits.length === 0 });
     setActiveStep(1);
-    setFeedback('New brand kit ready to customise.');
+    setFeedback('New advert style ready to customise.');
     setError('');
     revealEditor();
   }
@@ -420,11 +430,12 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   function moveToStep(step: StudioStep) {
     if (step > 1 && !draft.name.trim()) {
       setActiveStep(1);
-      setError('Give this brand kit a name before continuing.');
+      setError('Give this advert style a name before continuing.');
       return;
     }
 
     setActiveStep(step);
+    editorRef.current?.querySelector(`.${styles.stepContent}`)?.scrollTo({ top: 0 });
     revealEditor();
     setError('');
     setFeedback('');
@@ -444,7 +455,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     const reader = new FileReader();
     reader.onload = () => {
       update('logoUrl', typeof reader.result === 'string' ? reader.result : '');
-      setFeedback('Logo ready. It will be saved with this brand kit.');
+      setFeedback('Logo ready. It will be saved with this advert style.');
     };
     reader.onerror = () => setError('The logo could not be read.');
     reader.readAsDataURL(file);
@@ -537,7 +548,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     event.preventDefault();
     if (!canManage || saving) return;
     if (!draft.name.trim()) {
-      setError('Give this brand kit a name.');
+      setError('Give this advert style a name.');
       return;
     }
 
@@ -552,11 +563,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         body: JSON.stringify(draft),
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
-      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'Brand kit could not be saved.');
-      setFeedback('Brand kit saved. It is now available when you create an advert from a valuation.');
+      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'Advert style could not be saved.');
+      setFeedback('Advert style saved. It is now available when you create an advert from a valuation.');
       await loadBrandKits(payload.kit.id, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Brand kit could not be saved.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert style could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -574,11 +585,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         method: 'DELETE',
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Brand kit could not be removed.');
-      setFeedback('Brand kit removed.');
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert style could not be removed.');
+      setFeedback('Advert style removed.');
       await loadBrandKits(undefined, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Brand kit could not be removed.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert style could not be removed.');
     } finally {
       setSaving(false);
     }
@@ -597,11 +608,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         body: JSON.stringify({ ...editableKit(kit), isDefault: true }),
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
-      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'The default brand kit could not be changed.');
-      setFeedback(`“${kit.name}” is now the default brand kit.`);
+      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'The default advert style could not be changed.');
+      setFeedback(`“${kit.name}” is now the default advert style.`);
       await loadBrandKits(payload.kit.id, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'The default brand kit could not be changed.');
+      setError(nextError instanceof Error ? nextError.message : 'The default advert style could not be changed.');
     } finally {
       setSaving(false);
     }
@@ -613,7 +624,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         <WorkspaceTitlePanel title="AD STUDIO" />
       </div>
 
-      {loading ? <div className={styles.notice}>Loading your brand kits…</div> : null}
+      {loading ? <div className={styles.notice}>Loading your advert styles…</div> : null}
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
       {feedback ? <div className={`${styles.notice} ${styles.success}`} role="status">{feedback}</div> : null}
       {!canManage && !loading ? (
@@ -626,7 +637,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
               <div className={styles.sectionHeader}>
                 <div>
-                  <h2 id="brand-kit-library-title">Saved brand kits</h2>
+                  <h2 id="brand-kit-library-title">Saved advert styles</h2>
                   <p>Choose a style to edit or make your default.</p>
                 </div>
                 {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>New advert style</button> : null}
@@ -677,15 +688,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
 
           <div className={styles.workspace} id="ad-studio-workspace">
           <form className={styles.formPanel} onSubmit={saveKit} ref={editorRef}>
-            <div className={styles.editorHeader}>
-              <div>
-                <h2>{draft.id ? draft.name : 'Set up your advert style'}</h2>
-                <p>{draft.id ? 'Update the details, layout or colours below.' : 'Add your details, choose a layout and save.'}</p>
-              </div>
-              {draft.id && canManage ? <button className={styles.ghostButton} type="button" onClick={startNewKit}>New advert style</button> : null}
-            </div>
-
-            <nav className={styles.stepper} aria-label="Brand kit setup steps">
+            <nav className={styles.stepper} aria-label="Advert style setup steps">
               {STUDIO_STEPS.map((step) => (
                 <button
                   key={step.id}
@@ -712,7 +715,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <legend className={styles.srOnly}>Business and contact details</legend>
                     <div className={styles.fieldGrid}>
                       <label>
-                        Brand kit name
+                        Advert style name
                         <span className={styles.settingsInput}>
                           <SettingsDetailIcon name="listings" />
                           <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required placeholder="e.g. Main dealer style" />
@@ -789,8 +792,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 2 ? (
                 <section aria-labelledby="studio-layout-title">
                   <div className={styles.stepIntro}>
-                    <h2 id="studio-layout-title">Choose your advert layout</h2>
-                    <p>Pick the design you prefer. If a listing has fewer photos, Aim4price adapts the layout automatically.</p>
+                    <h2 id="studio-layout-title">Choose a layout</h2>
+                    <p>Layouts adapt to the number of listing photos.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
@@ -827,50 +830,56 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 3 ? (
                 <section aria-labelledby="studio-style-title">
                   <div className={styles.stepIntro}>
-                    <h2 id="studio-style-title">Choose your colours and wording</h2>
+                    <h2 id="studio-style-title">Colours and wording</h2>
                     <p>Make each advert feel like your business.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert colours and wording</legend>
                     <div className={styles.styleGrid}>
-                      <label className={styles.colorField}>
-                        Primary colour
-                        <span><input type="color" value={draft.primaryColor} onChange={(event) => update('primaryColor', event.target.value)} /><code>{draft.primaryColor}</code></span>
-                      </label>
-                      <label className={styles.colorField}>
-                        Secondary colour
-                        <span><input type="color" value={draft.secondaryColor} onChange={(event) => update('secondaryColor', event.target.value)} /><code>{draft.secondaryColor}</code></span>
-                      </label>
-                      <label className={styles.colorField}>
-                        Accent colour
-                        <span><input type="color" value={draft.accentColor} onChange={(event) => update('accentColor', event.target.value)} /><code>{draft.accentColor}</code></span>
-                      </label>
-                      <label className={styles.selectField}>
-                        <span className={styles.fieldLabel}>Advert language</span>
-                        <span className={styles.selectControl}>
-                          <span className={styles.selectLeadingIcon} aria-hidden="true"><StudioIcon name="language" /></span>
-                          <select value={draft.language} onChange={(event) => update('language', event.target.value as AdLanguage)}>
-                            <option value="en">English</option>
-                            <option value="af">Afrikaans</option>
-                          </select>
-                          <span className={styles.selectChevron} aria-hidden="true"><StudioIcon name="chevron" /></span>
-                        </span>
-                      </label>
-                      <label className={styles.selectField}>
-                        <span className={styles.fieldLabel}>Price wording</span>
-                        <span className={styles.selectControl}>
-                          <span className={styles.selectLeadingIcon} aria-hidden="true"><StudioIcon name="price" /></span>
-                          <select value={draft.vatLabel} onChange={(event) => update('vatLabel', event.target.value as AdVatLabel)}>
-                            <option value="plus-vat">Plus VAT / + BTW</option>
-                            <option value="vat-included">VAT included / BTW ingesluit</option>
-                            <option value="no-vat">No VAT / Geen BTW</option>
-                          </select>
-                          <span className={styles.selectChevron} aria-hidden="true"><StudioIcon name="chevron" /></span>
-                        </span>
-                      </label>
+                      <div className={styles.colourRow}>
+                        {([
+                          ['primaryColor', 'Primary', 'Main advert panel'],
+                          ['secondaryColor', 'Secondary', 'Supporting areas and text'],
+                          ['accentColor', 'Accent', 'Price highlight'],
+                        ] as const).map(([key, label, helper]) => (
+                          <div className={styles.colourControl} key={key}>
+                            <label htmlFor={`studio-${key}`}>{label}</label>
+                            <div>
+                              <input id={`studio-${key}`} type="color" value={draft[key]} onChange={(event) => update(key, event.target.value)} />
+                              <input key={draft[key]} aria-label={`${label} colour code`} defaultValue={draft[key]} maxLength={7}
+                                onBlur={(event) => {
+                                  const value = event.target.value.trim();
+                                  if (/^#[0-9a-f]{6}$/i.test(value)) update(key, value);
+                                  else event.target.value = draft[key];
+                                }} />
+                            </div>
+                            <small>{helper}</small>
+                          </div>
+                        ))}
+                      </div>
+                      <fieldset className={styles.choiceField}>
+                        <legend><StudioIcon name="language" />Advert language</legend>
+                        <div className={styles.choices}>
+                          {(['en', 'af'] as const).map((language) => (
+                            <button type="button" key={language} aria-pressed={draft.language === language} onClick={() => update('language', language)}>
+                              {language === 'en' ? 'English' : 'Afrikaans'}
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
+                      <fieldset className={styles.choiceField}>
+                        <legend><StudioIcon name="price" />Price wording</legend>
+                        <div className={styles.choices}>
+                          {(['plus-vat', 'vat-included', 'no-vat'] as const).map((label) => (
+                            <button type="button" key={label} aria-pressed={draft.vatLabel === label} onClick={() => update('vatLabel', label)}>
+                              {vatPreview(draft.language, label)}
+                            </button>
+                          ))}
+                        </div>
+                      </fieldset>
                       <label className={styles.checkField}>
                         <input type="checkbox" checked={draft.isDefault} onChange={(event) => update('isDefault', event.target.checked)} />
-                        <span><strong>Use as the default</strong><small>Preselect this kit whenever you create an advert.</small></span>
+                        <span><strong>Use as the default</strong><small>Use this style for new adverts.</small></span>
                       </label>
                     </div>
                   </fieldset>
@@ -885,7 +894,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   </div>
                   <div className={styles.reviewGrid}>
                     <article className={styles.reviewBrand}>
-                      <span>Brand</span>
+                      <span>Details</span>
+                      <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(1)} aria-label="Edit brand"><StudioIcon name="edit" /></button>
                       <div className={styles.reviewBrandSummary}>
                         {draft.logoUrl ? (
                           <span className={styles.reviewLogo}>
@@ -898,20 +908,23 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                           <small>{draft.contactName || 'No contact person'} · {draft.phone || 'No phone number'}</small>
                         </div>
                       </div>
-                      <small>{draft.logoUrl ? 'Logo contained in its dedicated white space without cropping.' : 'No logo added. Your business name will appear on its own.'}</small>
+                      <small>{draft.logoUrl ? 'Logo added' : 'No logo added'}</small>
                     </article>
                     <article>
                       <span>Layout</span>
+                      <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(2)} aria-label="Edit layout"><StudioIcon name="edit" /></button>
                       <strong>{selectedTemplate.name}</strong>
-                      <small>{selectedTemplate.description} Uses up to {selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}.</small>
+                      <small>Up to {selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}.</small>
                     </article>
                     <article>
                       <span>Wording</span>
+                      <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(3)} aria-label="Edit wording"><StudioIcon name="edit" /></button>
                       <strong>{draft.language === 'af' ? 'Afrikaans' : 'English'} · {vatPreview(draft.language, draft.vatLabel)}</strong>
-                      <small>{draft.isDefault ? 'Default brand kit' : 'Optional brand kit'}</small>
+                      <small>{draft.isDefault ? 'Default advert style' : 'Optional advert style'}</small>
                     </article>
                     <article className={styles.reviewColours}>
                       <span>Colours</span>
+                      <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(3)} aria-label="Edit colours"><StudioIcon name="edit" /></button>
                       <div>
                         {[draft.primaryColor, draft.secondaryColor, draft.accentColor].map((color, index) => (
                           <i key={`${color}-${index}`} style={{ backgroundColor: color }} title={color} />
@@ -920,10 +933,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <small>Primary, secondary and accent</small>
                     </article>
                   </div>
-                  <div className={styles.reviewCallout}>
-                    <strong>Ready to create adverts</strong>
-                    <p>Save this style, then choose it after any valuation. Aim4price will create and download the matching advert.</p>
-                  </div>
                 </section>
               ) : null}
             </div>
@@ -931,7 +940,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <div className={styles.actions}>
               <div>
                 {activeStep > 1 ? <button className={styles.backButton} type="button" onClick={() => moveToStep((activeStep - 1) as StudioStep)}><StudioIcon name="back" />Back</button> : null}
-                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={() => void deleteKit()} disabled={saving}><StudioIcon name="delete" />Delete kit</button> : null}
+                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={() => void deleteKit()} disabled={saving}><StudioIcon name="delete" />Delete style</button> : null}
               </div>
               <div>
                 {activeStep < 4 ? (
@@ -939,7 +948,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 ) : (
                   <>
                     {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'}>Start a valuation<StudioIcon name="next" /></Link> : null}
-                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save brand kit'}</button> : null}
+                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save advert style'}</button> : null}
                   </>
                 )}
               </div>
@@ -951,6 +960,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               <div className={styles.previewTitle}>
                 <strong>Advert preview</strong>
               </div>
+              <div className={styles.previewTools}>
+                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={() => previewPhotoInputRef.current?.click()}><StudioIcon name="image" />Upload photos</button>
+                {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}>Clear</button> : null}
+              </div>
             </div>
             <div className={styles.previewPhotoLab}>
               <input
@@ -961,19 +974,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 hidden
                 onChange={handlePreviewPhotoChange}
               />
-              <div className={styles.previewPhotoHeader}>
-                <div>
-                  <strong>Preview with your photos</strong>
-                  <span>Up to four photos · Preview only</span>
-                </div>
-                <div>
-                  <button type="button" onClick={() => previewPhotoInputRef.current?.click()}>
-                    <StudioIcon name="image" />Upload photos
-                  </button>
-                  {previewPhotos.length ? <button type="button" onClick={clearPreviewPhotos}>Clear</button> : null}
-                </div>
-              </div>
-
               {previewPhotos.length ? (
                 <div className={styles.previewPhotoTray} aria-label="Sample advert photo order">
                   {previewPhotos.map((photo, index) => (
@@ -1013,6 +1013,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 </div>
               ) : null}
             </div>
+            <button type="button" className={styles.expandPreview} onClick={openPreview} aria-label="Enlarge advert preview">
             <canvas
               ref={previewCanvasRef}
               className={styles.adCanvasPreview}
@@ -1020,9 +1021,17 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               height="900"
               aria-label={`${selectedTemplate.name} advert preview with ${previewRating.label.toLowerCase()} rating`}
             />
+            </button>
             <div className={styles.previewNote}>
-              <p><strong>This is how your downloaded advert will look.</strong>{previewPhotos.length ? ' Preview photos are not saved.' : ' Listing photos and valuation details will be added automatically.'}</p>
+              <p>Your downloaded advert will look like this. Click to enlarge.</p>
             </div>
+            <dialog ref={previewDialogRef} className={styles.previewDialog} aria-labelledby="studio-large-preview-title" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+              <div className={styles.dialogHeading}>
+                <h2 id="studio-large-preview-title">Advert preview</h2>
+                <button type="button" data-modal-close="true" aria-label="Close advert preview" onClick={() => previewDialogRef.current?.close()}>×</button>
+              </div>
+              <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged advert preview" />
+            </dialog>
           </aside>
           </div>
         </>
