@@ -1,4 +1,5 @@
 'use client';
+import { createPortal } from '../../components/WebsitePortal';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -48,7 +49,7 @@ type AssetLink = {
   serialNumber?: string | null;
 };
 
-type VaultDocument = {
+export type VaultDocument = {
   id: string;
   title: string;
   category: DocumentCategory;
@@ -324,16 +325,40 @@ async function readVaultResponse(response: Response, fallback: string): Promise<
   }
 }
 
+type AssetUploadContext = {
+  asset: AssetLink;
+  onClose: () => void;
+  onUploaded: (documents: VaultDocument[], outcome: { complete: boolean; totalUploaded: number }) => void | Promise<void>;
+};
+
+/** The vault wizard, opened in place from an asset card with its link fixed. */
+export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUploaded }: {
+  assetId: string;
+  assetTitle: string;
+  onClose: AssetUploadContext['onClose'];
+  onUploaded: AssetUploadContext['onUploaded'];
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setMounted(true);
+    return () => trigger?.focus({ preventScroll: true });
+  }, []);
+  if (!mounted) return null;
+  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '' }, onClose, onUploaded }} />;
+}
+
 type DocumentsClientProps = {
   initialAssetId?: string;
   initialReturnTo?: string;
+  uploadContext?: AssetUploadContext;
 };
 
-export default function DocumentsClient({ initialAssetId = '', initialReturnTo = '' }: DocumentsClientProps) {
+export default function DocumentsClient({ initialAssetId = '', initialReturnTo = '', uploadContext }: DocumentsClientProps) {
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
   const [assets, setAssets] = useState<AssetLink[]>([]);
-  const [selectedAsset, setSelectedAsset] = useState<AssetLink | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<AssetLink | null>(uploadContext?.asset ?? null);
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<'all' | DocumentCategory>('all');
@@ -345,11 +370,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalNotice, setModalNotice] = useState<Notice | null>(null);
-  const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [modalMode, setModalMode] = useState<ModalMode | null>(uploadContext ? 'upload' : null);
   const [uploadStep, setUploadStep] = useState<UploadStep>(1);
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
   const [documentPendingDelete, setDocumentPendingDelete] = useState<VaultDocument | null>(null);
-  const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
+  const [draft, setDraft] = useState<DocumentDraft>(() => ({ ...createEmptyDraft(), assetIds: uploadContext ? [uploadContext.asset.id] : [] }));
   const [documentExpires, setDocumentExpires] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
@@ -364,6 +389,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     atEnd: true,
   });
   const requestSequence = useRef(0);
+  const uploadKeys = useRef(new Map<File, string>());
+  const totalUploadedRef = useRef(0);
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
   const uploadWizardBodyRef = useRef<HTMLDivElement | null>(null);
@@ -414,8 +441,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [initialAssetId]);
 
   useEffect(() => {
-    void loadDocuments(view);
-  }, [loadDocuments, view]);
+    if (!uploadContext) void loadDocuments(view);
+  }, [loadDocuments, view, uploadContext]);
 
   useEffect(() => {
     if (!showSummary || loadFailed) return;
@@ -476,7 +503,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           return;
         }
         setModalNotice(null);
-        if (modalMode) setModalMode(null);
+        if (modalMode) closeModal();
         else if (showFilters) setShowFilters(false);
         else setDocumentPendingDelete(null);
         return;
@@ -586,7 +613,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   );
   const accountLevelDocuments = Math.max(0, summary.totalDocuments - summary.linkedDocuments);
   const hasDocumentsInView = documents.length > 0;
-  const activeUploadStep = UPLOAD_STEPS[uploadStep - 1];
+  const activeUploadStep = uploadStep === 3 && initialAssetId
+    ? { label: 'Confirm and upload', description: 'Your documents will be saved to this asset.' }
+    : UPLOAD_STEPS[uploadStep - 1];
 
   function switchView(nextView: VaultView) {
     if (busyRef.current || loading) return;
@@ -600,6 +629,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function openUploadModal() {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
+    uploadKeys.current.clear();
+    totalUploadedRef.current = 0;
     setDocumentExpires(false);
     setDraft({
       ...createEmptyDraft(),
@@ -853,7 +884,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!modalMode || busy) return;
+    if (!modalMode || busyRef.current) return;
 
     if (modalMode === 'upload' && uploadStep < 3) {
       continueUploadFlow();
@@ -887,6 +918,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         const filesToUpload = [...selectedFiles];
         const failures: Array<{ file: File; message: string }> = [];
         let uploadedCount = 0;
+        const uploadedDocuments: VaultDocument[] = [];
 
         for (let index = 0; index < filesToUpload.length; index += 1) {
           const file = filesToUpload[index];
@@ -895,21 +927,24 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           try {
             const formData = new FormData();
             formData.set('file', file);
+            if (!uploadKeys.current.has(file)) uploadKeys.current.set(file, crypto.randomUUID());
+            formData.set('requestId', uploadKeys.current.get(file)!);
             formData.set(
               'title',
               filesToUpload.length === 1
-                ? draft.title.trim()
+                ? draft.title.trim() || titleFromFileName(file.name) || file.name
                 : titleFromFileName(file.name) || file.name,
             );
             formData.set('category', draft.category);
             formData.set('documentType', draft.documentType);
             formData.set('notes', draft.notes.trim());
             formData.set('expiryDate', draft.expiryDate);
-            formData.set('assetIds', JSON.stringify(draft.assetIds));
+            formData.set('assetIds', JSON.stringify(uploadContext ? [uploadContext.asset.id] : draft.assetIds));
             const response = await fetch('/api/documents', { method: 'POST', body: formData });
             const data = await readVaultResponse(response, `${file.name} could not be saved.`);
             if (!response.ok || !data.ok) throw new Error(data.error || `${file.name} could not be saved.`);
             uploadedCount += 1;
+            if (data.document) uploadedDocuments.push(data.document);
           } catch (error) {
             failures.push({
               file,
@@ -918,9 +953,23 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           }
         }
 
-        const refreshSucceeded = uploadedCount
+        totalUploadedRef.current += uploadedCount;
+        // Remove successful files before refreshing, so a refresh failure cannot upload them again.
+        if (uploadContext) setSelectedFiles(failures.map((failure) => failure.file));
+        const refreshSucceeded = uploadedCount && !uploadContext
           ? await loadDocuments('documents', { quiet: true })
           : true;
+        if (uploadContext && uploadedCount) {
+          try {
+            await uploadContext.onUploaded(uploadedDocuments, {
+              complete: failures.length === 0,
+              totalUploaded: totalUploadedRef.current,
+            });
+          } catch {
+            setModalNotice({ tone: 'error', message: 'Documents were saved, but the asset could not refresh. Close and reopen its documents to see them.' });
+            return;
+          }
+        }
 
         if (failures.length) {
           const failedFiles = failures.map((failure) => failure.file);
@@ -980,6 +1029,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setModalNotice(null);
     setShowDocumentTypeOptions(false);
     setModalMode(null);
+    uploadContext?.onClose();
   }
 
   async function moveToRecycleBin() {
@@ -1134,9 +1184,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     );
   }
 
-  return (
-    <div className={styles.page}>
-      <div ref={pageContentRef} className={styles.pageContent}>
+  const content = (
+    <>
+      {!uploadContext && <div ref={pageContentRef} className={styles.pageContent}>
         <AppHeader active="documents" />
 
         <main className={styles.shell}>
@@ -1349,7 +1399,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         )}
           </div>
         </main>
-      </div>
+      </div>}
 
       {modalMode && !showAssetPicker && !showDocumentTypeOptions ? (
         <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
@@ -1357,7 +1407,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : 'Update document details and linked assets.'}</p>
+                <p>{modalMode === 'upload' ? uploadContext?.asset.title || 'Add files, details and links in three short steps.' : 'Update document details and linked assets.'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1758,7 +1808,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           </section>
         </div>
       ) : null}
-    </div>
+    </>
   );
+  return uploadContext ? createPortal(<div className={styles.uploadHost}>{content}</div>, document.body) : <div className={styles.page}>{content}</div>;
 }
-

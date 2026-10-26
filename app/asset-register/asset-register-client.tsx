@@ -91,9 +91,9 @@ import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
 } from '../../components/asset-register/AssetExternalShare';
-import AssetDocumentUploadModal, {
-  type UploadedVaultDocument,
-} from '../../components/documents/AssetDocumentUploadModal';
+import dynamic from 'next/dynamic';
+import type { VaultDocument as UploadedVaultDocument } from '../documents/documents-client';
+const AssetDocumentUploadModal = dynamic(() => import('../documents/documents-client').then((module) => module.AssetDocumentUploadFlow), { ssr: false });
 import DealerAssetShareSelection from '../../components/DealerAssetShareSelection';
 import DealerMaintenanceAccessSettings, {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
@@ -12186,6 +12186,7 @@ export default function AssetRegisterClient({
     if (!outcome.complete) return;
 
     closeAssetDocumentUpload(asset.id);
+    setAssetDocumentListId(asset.id);
     setNotice({
       tone: 'success',
       message: `${outcome.totalUploaded} document${outcome.totalUploaded === 1 ? '' : 's'} saved to Documents and linked to ${asset.title}.`,
@@ -21679,10 +21680,8 @@ export default function AssetRegisterClient({
 
       {documentUploadAsset ? (
         <AssetDocumentUploadModal
-          accountDesign
           assetId={documentUploadAsset.id}
           assetTitle={documentUploadAsset.title}
-          uploadEndpoint={'/api/documents'}
           onClose={() => closeAssetDocumentUpload(documentUploadAsset.id)}
           onUploaded={(documents, outcome) => handleVaultDocumentsUploaded(documentUploadAsset, documents, outcome)}
         />
