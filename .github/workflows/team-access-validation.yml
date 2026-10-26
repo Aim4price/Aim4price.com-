@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'lib/team-access*.ts'
+      - 'lib/team-login.ts'
       - 'app/api/team-*/**'
       - 'app/account/team-access/**'
       - 'app/team/**'
@@ -11,6 +12,7 @@ on:
       - 'lib/auth-session.ts'
       - 'lib/external-share-permissions.ts'
       - 'database/migrations/143-desktop-team-access.sql'
+      - 'database/migrations/144-owner-managed-desktop-logins.sql'
       - 'tests/team-access.test.cjs'
       - 'scripts/verify-team-access.cjs'
       - '.github/workflows/team-access-validation.yml'

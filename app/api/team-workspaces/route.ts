@@ -11,7 +11,7 @@ export async function GET() {
     try {
         const actor = await requireTeamActor();
         await ensureTeamAccessSchema();
-        const rows = (await getDb().query(`SELECT * FROM team_access WHERE email=$1 AND (member_user_id IS NULL OR member_user_id=$2) AND status IN ('pending','active') AND (expires_at IS NULL OR expires_at>now()) ORDER BY created_at DESC`, [actor.email, actor.id])).rows;
+        const rows = (await getDb().query(`SELECT * FROM team_access WHERE email=$1 AND ((managed_login=true AND id::text=$3) OR (managed_login=false AND $3='' AND (member_user_id=$2 OR (member_user_id IS NULL AND $4=true)))) AND status IN ('pending','active') AND (expires_at IS NULL OR expires_at>now()) ORDER BY created_at DESC`, [actor.email, actor.id, actor.managedGrantId || '', actor.emailVerified])).rows;
         const workspaces = await Promise.all(rows.map(async (row) => {
             const grant = mapTeamGrant(row);
             const profile = await getAccountProfile({ id: grant.ownerId });

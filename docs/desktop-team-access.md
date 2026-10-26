@@ -1,8 +1,14 @@
-# Desktop team access
+# Desktop users and access
 
-Account → Desktop users is available to active Owner and Dealer desktop accounts with a verified email. The owner creates a pending invitation for an exact email address, selects permissions and asset scope, and may set an expiry (the UI uses end-of-day South Africa time). Invitations use the existing email delivery service; delivery failure leaves a reviewable saved invitation and a copyable `/team` link. No bearer token grants access.
+New emails receive a separate owner-managed desktop login, active immediately. Passwords use salted scrypt hashes; session cookies contain random tokens whose SHA-256 hashes are stored server-side. Passwords are never emailed or returned to the client. Owners share the business-specific `/team?business=…` sign-in link and initial credentials. They can reset these desktop passwords; resets and revocation invalidate existing sessions.
 
-Staff use their own existing login or the existing free-account signup. A verified email matching the invitation must accept it. Acceptance binds the grant to that user ID. Both user ID and current verified email must continue to match. Staff do not need a paid desktop plan. The business granting access must retain an active desktop account. The team workspace never replaces the authenticated user with the business owner's identity.
+If the email already belongs to a personal Aim4price account, its account ID is bound to a pending invitation and the supplied password is discarded. The person receives an invitation and signs in with their existing password. No personal account credential is created or replaced. Separate desktop sessions work only in the team APIs and never become owner/personal sessions. Multiple businesses can issue isolated logins for the same email using their own sign-in links.
+
+Legacy pending invitations without a bound personal account should be edited by the owner to assign a password or bind an existing account. The old verified-account acceptance fallback remains for legacy invitations only; newly bound existing accounts need no email verification.
+
+Account → Desktop users is available to active Owner and Dealer desktop accounts without a separate email-verification step. The owner enters a name, exact email address and initial password, selects permissions and asset scope, and may set an expiry (the UI uses end-of-day South Africa time). Invitations use the existing email delivery service; delivery failure leaves a reviewable saved invitation and a copyable `/team` link. The shared business sign-in link alone never grants access.
+
+Staff use their owner-created desktop login or their existing personal account. Existing-account invitations are bound to that account ID at creation, and both the ID and email must continue to match. Owner-created logins are bound only to their business grant. Staff do not need a paid desktop plan. The business granting access must retain an active desktop account. The team workspace never replaces the authenticated user with the business owner's identity.
 
 ## Permissions and scope
 
@@ -10,7 +16,7 @@ Asset details are readable within scope. All additional permissions default off,
 
 Scopes are all current/future business assets, selected registers (including future assets in those registers), or individual assets. Selected registers and individual assets form a union. Asset ownership and current register membership are rechecked by the server. Grant scope does not confer access to another account if an asset is transferred.
 
-Owners use the app-style Add user / Manage users launcher; there is no separate owner-facing workspace button. Invited users on other accounts can reopen My desktop access from Account. Signed-in owners verify their email directly on the Desktop users page.
+Owners use the app-style Add user / Manage users launcher; there is no separate owner-facing workspace button. Invited users on other accounts can reopen My desktop access from Account. Signed-in owners use their existing session; there is no extra verification gate.
 
 The dedicated desktop workspace is `/team`. Other desktop pages/APIs continue to operate on the employee's own account. They cannot acquire the business owner's Account, billing, finance, sharing, sale, deletion, transfer, cost ledger or access-management powers through this grant. These features intentionally have no team permission switch in this implementation.
 
@@ -24,7 +30,7 @@ Photos use the existing internal upload store through authenticated team endpoin
 
 ## Revocation, concurrency and audit
 
-Grant status, identity, expiry and owner account eligibility are checked on every team API request. Updates re-lock the grant and asset inside the operation's transaction. The lock rejects changed grant versions, revocation and assets moved out of scope. Owner edits require a version, preventing silent overwrite of another permission edit. Re-invitation requires acceptance again.
+Grant status, identity, expiry and owner account eligibility are checked on every team API request. Updates re-lock the grant and asset inside the operation's transaction. The lock rejects changed grant versions, revocation and assets moved out of scope. Owner edits require a version, preventing silent overwrite of another permission edit. Existing-account re-invitations require acceptance again. Reactivated managed logins require a fresh password sign-in.
 
 The browser refreshes permissions on focus and every 30 seconds; it clears sensitive workspace data when hidden and when access fails. Responses use private/no-store headers. Data already viewed, photographed or downloaded cannot be recalled.
 
@@ -32,7 +38,7 @@ A separate owner-only activity log attributes invitations, acceptance, permissio
 
 ## Storage and verification
 
-`lib/team-access-schema.ts` installs the two additive tables lazily, matching migration `143-desktop-team-access.sql`. No existing role/session tables are changed. Rollback can disable the two entry links and team routes; existing account sessions are unaffected.
+`lib/team-access-schema.ts` installs the grant, audit, login and session tables lazily, matching migrations `143-desktop-team-access.sql` and `144-owner-managed-desktop-logins.sql`. No existing role/session tables are changed. Rollback can disable the two entry links and team routes; existing account sessions are unaffected.
 
 Run:
 

@@ -18,7 +18,7 @@ export async function GET() {
             listAssetRegisters(actor.id), listTeamOwnerAssets(actor.id), listAccountDocuments(actor.id),
             getDb().query('SELECT id,actor_email,action,asset_id,details,created_at FROM team_access_activity WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100', [actor.id]),
         ]);
-        return teamJson({ members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
+        return teamJson({ businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
     }
     catch (error) {
         return teamError(error);
@@ -38,12 +38,13 @@ export async function POST(request: NextRequest) {
             grant = await saveTeamGrant(actor, body);
         else
             throw new TeamAccessError('Unsupported team action.', 400);
-        let warning = '';
+        let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link and password with this person.' : 'Desktop access saved.') : '';
         if (body.sendInvitation === true && grant.status === 'pending') {
             const link = getSiteOrigin() + '/team';
             const name = (profile.businessName || profile.displayName || 'An Aim4price business').replace(/[<>"&]/g, '');
             try {
-                await sendAim4priceEmail({ to: grant.email, subject: `${name} invited you to Aim4price`, text: `${name} invited you to their team workspace. Sign in or create a free account using this email address, verify it, and accept the invitation at ${link}. Your access is controlled by the business owner.`, html: `<p>${name} invited you to their Aim4price team workspace.</p><p>Sign in or create a free account using this email address, verify it, and accept the invitation.</p><p><a href="${link}">Open team workspace</a></p><p>Your access is controlled by the business owner.</p>` });
+                await sendAim4priceEmail({ to: grant.email, subject: `${name} invited you to Aim4price`, text: `${name} invited you to their team workspace. Sign in with your existing Aim4price account and accept the invitation at ${link}. Your access is controlled by the business owner.`, html: `<p>${name} invited you to their Aim4price team workspace.</p><p>Sign in with your existing Aim4price account and accept the invitation.</p><p><a href="${link}">Open team workspace</a></p><p>Your access is controlled by the business owner.</p>` });
+                warning = 'Invitation sent. This person uses their existing Aim4price password.';
             }
             catch {
                 warning = 'Access saved, but the invitation email could not be sent. Copy the team workspace link and share it with this person.';
