@@ -322,3 +322,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .accountModal .footer > span { grid-column: 1 / -1; }
   :global(:where(html:not(:has([data-website-canvas])))) .accountModal .footer button { min-width: 0; padding: 0.65rem; }
 }
+
+/* Balance the quick-add form beside its file picker instead of stacking a tall form. */
+.uploadFields { display: grid; align-content: start; gap: 1rem; min-width: 0; }
+.accountModal { width: min(var(--website-dialog-reference-width, 100%), 58rem); --document-padding: 1.5rem; }
+.accountModal .content { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-content: start; align-items: start; gap: 1.25rem; padding-block: 1rem; }
+.accountModal .content > .assetBadge,
+.accountModal .content > .error,
+.accountModal .content > p { grid-column: 1 / -1; }
+.accountModal .assetBadge { padding: .7rem 1rem; }
+.accountModal .assetBadge span { font-size: .75rem; font-weight: 650; text-transform: none; }
+.accountModal .assetBadge small { font-size: .78rem; font-weight: 500; }
+.accountModal .detailsGrid { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.accountModal .field > label,
+.accountModal .field > span { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; letter-spacing: normal; text-transform: none; }
+.accountModal .field em { margin-left: .25rem; font-size: .75rem; font-weight: 500; }
+.accountModal .field input,
+.accountModal .field textarea { min-height: 2.8rem; font-size: .9rem; }
+.accountModal .filePicker { grid-template-columns: minmax(0, 1fr); gap: .85rem; padding: 1.1rem; }
+.accountModal .filePicker strong { font-size: .88rem; font-weight: 650; }
+.accountModal .filePicker span { font-size: .75rem; line-height: 1.5; font-weight: 500; }
+.accountModal .filePicker > button { justify-self: start; min-height: 2.8rem; font-size: .9rem; }
+.accountModal .footer { padding-block: 1rem; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal .content { grid-template-columns: minmax(0, 1fr); }
+}
