@@ -1,0 +1,57 @@
+import { NextRequest } from 'next/server';
+import { getDb } from '../../../lib/db';
+import { requireTeamOwner, mapTeamGrant, saveTeamGrant, setTeamGrantStatus, listTeamOwnerAssets } from '../../../lib/team-access';
+import { teamJson, teamError } from '../../../lib/team-access-http';
+import { TeamAccessError } from '../../../lib/team-access-policy';
+import { listAssetRegisters } from '../../../lib/asset-registers';
+import { listAccountDocuments } from '../../../lib/account-documents';
+import { requireBusinessOrigin, businessBody } from '../../../lib/business-network-api';
+import { limitBusinessAction } from '../../../lib/business-network';
+import { sendAim4priceEmail, getSiteOrigin } from '../../../lib/email';
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export async function GET() {
+    try {
+        const { actor } = await requireTeamOwner();
+        const [rows, registers, assets, documents, activity] = await Promise.all([
+            getDb().query('SELECT * FROM team_access WHERE owner_id=$1 ORDER BY created_at DESC', [actor.id]),
+            listAssetRegisters(actor.id), listTeamOwnerAssets(actor.id), listAccountDocuments(actor.id),
+            getDb().query('SELECT id,actor_email,action,asset_id,details,created_at FROM team_access_activity WHERE owner_id=$1 ORDER BY created_at DESC LIMIT 100', [actor.id]),
+        ]);
+        return teamJson({ members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
+    }
+    catch (error) {
+        return teamError(error);
+    }
+}
+export async function POST(request: NextRequest) {
+    try {
+        requireBusinessOrigin(request);
+        const { actor, profile } = await requireTeamOwner();
+        await limitBusinessAction('team-invite:' + actor.id, 30);
+        const body = await businessBody(request);
+        let grant;
+        if (body.action === 'revoke' || body.action === 'reinvite') {
+            grant = await setTeamGrantStatus(actor, String(body.id || ''), Number(body.version), body.action === 'revoke' ? 'revoked' : 'pending');
+        }
+        else if (body.action === 'save')
+            grant = await saveTeamGrant(actor, body);
+        else
+            throw new TeamAccessError('Unsupported team action.', 400);
+        let warning = '';
+        if (body.sendInvitation === true && grant.status === 'pending') {
+            const link = getSiteOrigin() + '/team';
+            const name = (profile.businessName || profile.displayName || 'An Aim4price business').replace(/[<>"&]/g, '');
+            try {
+                await sendAim4priceEmail({ to: grant.email, subject: `${name} invited you to Aim4price`, text: `${name} invited you to their team workspace. Sign in or create a free account using this email address, verify it, and accept the invitation at ${link}. Your access is controlled by the business owner.`, html: `<p>${name} invited you to their Aim4price team workspace.</p><p>Sign in or create a free account using this email address, verify it, and accept the invitation.</p><p><a href="${link}">Open team workspace</a></p><p>Your access is controlled by the business owner.</p>` });
+            }
+            catch {
+                warning = 'Access saved, but the invitation email could not be sent. Copy the team workspace link and share it with this person.';
+            }
+        }
+        return teamJson({ ok: true, member: grant, warning });
+    }
+    catch (error) {
+        return teamError(error);
+    }
+}

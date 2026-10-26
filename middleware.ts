@@ -45,6 +45,13 @@ export function middleware(request: NextRequest) {
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
 
+  if (request.nextUrl.pathname === '/team' || request.nextUrl.pathname === '/account/team-access' || request.nextUrl.pathname.startsWith('/api/team-')) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    response.headers.set('Referrer-Policy', 'same-origin');
+    response.headers.set('X-Frame-Options', 'DENY');
+  }
+
   if (request.nextUrl.pathname === '/parts' || request.nextUrl.pathname.startsWith('/parts/') || request.nextUrl.pathname.startsWith('/dealer/parts') || request.nextUrl.pathname.startsWith('/api/parts-network')) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
