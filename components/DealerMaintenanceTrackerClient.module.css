@@ -2914,3 +2914,24 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Match the Leads Share / Send / Manage row, including its unused first slot. */
+:global(:where([data-website-canvas])) .trackerPage:not(.dealerApp) .trackerExpandedHeader.trackerExpandedHeader {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 35rem) !important;
+}
+:global(:where([data-website-canvas])) .trackerPage .trackerExpandedAside .trackerHeaderActions.trackerHeaderActions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: .6rem !important;
+}
+:global(:where([data-website-canvas])) .trackerPage .trackerExpandedAside .trackerHeaderActions > button {
+  width: 100% !important;
+  max-width: none;
+  padding-inline: .7rem !important;
+}
+:global(:where([data-website-canvas])) .trackerHeaderActions > :first-child:nth-last-child(2) {
+  grid-column: 2;
+}
+:global(:where([data-website-canvas])) .trackerHeaderActions > :last-child {
+  grid-column: -2 / -1;
+}
