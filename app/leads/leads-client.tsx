@@ -3549,8 +3549,8 @@ export default function LeadsClient({
 
             <div className={styles.leadToolbarActions}>
               <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.leadRefreshButton}`}
+                type="button" data-tooltip="Refresh leads"
+                className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.leadRefreshButton}`}
                 onClick={() => void refreshLeads()}
                 disabled={isLoading}
               >
@@ -3559,8 +3559,8 @@ export default function LeadsClient({
               </button>
 
               <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
+                type="button" data-tooltip="Filter leads"
+                className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
                 onClick={openLeadFilterModal}
                 disabled={isLoading}
               >
@@ -3640,8 +3640,8 @@ export default function LeadsClient({
                               <>
                                 {isLeadOpen ? (
                                   <button
-                                    type="button"
-                                    className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
+                                    type="button" data-tooltip="Delete lead"
+                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
                                     onClick={() => setDeleteLeadTarget(lead)}
                                   >
                                     Delete
@@ -3649,16 +3649,16 @@ export default function LeadsClient({
                                 ) : null}
                                 {lead.maintenanceAccess?.hasMaintenanceRecords ? (
                                   <button
-                                    type="button"
-                                    className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
+                                    type="button" data-tooltip="Open tracking"
+                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
                                     onClick={() => openTracking(lead)}
                                   >
                                     Tracking
                                   </button>
                                 ) : null}
                                 <button
-                                  type="button"
-                                  className={`${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
+                                  type="button" data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'}
+                                  className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
                                   onClick={() => {
                                     if (isLeadOpen) {
                                       setOpenLeadId(null);
@@ -3673,12 +3673,11 @@ export default function LeadsClient({
                             ) : (
                               <>
                                 <button
-                                  type="button"
-                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                                  type="button" data-tooltip={isLeadDone ? 'Return to open' : 'Mark handled'}
+                                  className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
                                   onClick={() => void toggleLeadDone(lead)}
                                   disabled={Boolean(markingLeadDoneId)}
                                   aria-pressed={isLeadDone}
-                                  title={isLeadDone ? 'Return this lead to Open' : 'Mark this lead as handled'}
                                 >
                                   <CheckIcon className={assetStyles.buttonIcon} />
                                   <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
@@ -3686,12 +3685,12 @@ export default function LeadsClient({
 
                                 {isLeadOpen ? (
                                   <>
-                                    <button type="button" className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                                    <button type="button" data-tooltip="Delete lead" className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
                                       Delete
                                     </button>
                                     <button
-                                      type="button"
-                                      className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
+                                      type="button" data-tooltip="Close lead"
+                                      className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
                                       onClick={() => {
                                         setOpenLeadId(null);
                                       }}
@@ -3701,8 +3700,8 @@ export default function LeadsClient({
                                   </>
                                 ) : (
                                   <button
-                                    type="button"
-                                    className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
+                                    type="button" data-tooltip="Open lead"
+                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
                                     onClick={() => {
                                       void openLead(lead);
                                     }}
@@ -3741,10 +3740,9 @@ export default function LeadsClient({
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
                               <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
                               <button
-                                type="button"
-                                className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
+                                type="button" data-tooltip="Send a note or quote"
+                                className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
                                 onClick={() => openNoteModal(lead)}
-                                title="Send a note or quote"
                                 aria-label="Send a note or quote"
                               >
                                 <NoteIcon className={assetStyles.buttonIcon} />

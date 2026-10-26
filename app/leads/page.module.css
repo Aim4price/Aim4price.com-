@@ -5912,3 +5912,23 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Match asset-register hover labels without clipping them at the lead card edge. */
+.leadControlTooltip {
+  position: relative;
+}
+
+.leadsPage .leadThread.leadThread,
+.leadAssetCard:has(.leadControlTooltip) {
+  overflow: visible !important;
+}
+
+.leadsPage .leadThread::before {
+  top: 1rem;
+  bottom: 1rem;
+  border-radius: 4px;
+}
+
+.leadsPage .leadThread:has(.leadControlTooltip:is(:hover, :focus-visible)) {
+  z-index: 1;
+}

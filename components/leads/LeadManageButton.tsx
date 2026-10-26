@@ -29,9 +29,10 @@ export default function LeadManageButton({
   return (
     <button
       type="button"
-      className={`${assetStyles.optionsButton} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
+      className={`${assetStyles.optionsButton} ${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
       onClick={onClick}
       aria-label={label}
+      data-tooltip={label}
       aria-haspopup="dialog"
     >
       <ManageIcon className={assetStyles.buttonIcon} />
