@@ -2197,9 +2197,9 @@ export default function LeadsClient({
 
   async function openLead(leadToOpen: AssetLead) {
     setNotice(null);
-    await markLeadViewed(leadToOpen);
-
+    // Open immediately so a slow viewed-status request cannot reopen a dismissed card.
     setOpenLeadId(leadToOpen.id);
+    await markLeadViewed(leadToOpen);
   }
 
   function openTracking(leadToOpen: AssetLead) {
@@ -3594,7 +3594,17 @@ export default function LeadsClient({
                 const assetIdentifier = leadAssetIdentifier(lead);
 
                 return (
-                  <article key={lead.id} ref={isLeadOpen ? openedCardRef : null} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                  <article key={lead.id} ref={isLeadOpen ? openedCardRef : null}
+                    onClick={(event) => {
+                      if (event.defaultPrevented || window.getSelection()?.toString()) return;
+                      const target = event.target;
+                      if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
+                      if (target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable], [role="dialog"], [data-website-overlay]')) return;
+                      if (isLeadOpen) setOpenLeadId(null);
+                      else void openLead(lead);
+                    }}
+                    className={`${assetStyles.cardToggleSurface} ${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                    <span aria-hidden="true" className={`${assetStyles.controlTooltip} ${assetStyles.cardToggleHint}`} data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'} />
                     <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{assetTitle(lead)}</h3>
