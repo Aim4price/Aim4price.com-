@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
     if (!q.has("network"))
       return reply({
         networks: await listPartsNetworks(actor),
-        platformAdmin: actor.platformAdmin,
         canContribute: actor.canContribute,
         staff: actor.staff,
       });

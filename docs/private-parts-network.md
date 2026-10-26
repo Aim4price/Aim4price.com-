@@ -1,14 +1,14 @@
 # Private dealer parts network
 
-Parts is available on the website at `/parts` and in the Dealer App at `/dealer/parts`. The menu entry is visible only after network approval. The same server membership checks protect searches, contacts, uploads and member management. These tables are separate from assets, Discovery, Marketplace and AI query sources.
+Parts is available on the website at `/parts` and in the Dealer App at `/dealer/parts`. The Parts page is visible in dealer navigation, subject to staff role permissions. Stocklists remain private until network approval. The same server membership checks protect searches, contacts, uploads and member management. These tables are separate from assets, Discovery, Marketplace and AI query sources.
 
 ## First network
 
-1. Sign in with the existing Aim4price administrator website account and open `/parts`.
-2. Create a named network. Create an invitation for the initial dealer administrator's exact email. Copy and share the invitation link privately.
+1. Sign in as the dealership account owner and open Parts (`/parts`) from the dealer navigation. Aim4price administrator accounts have no Parts access.
+2. Create a named private network. Its creator becomes that network’s first administrator. Invite other dealerships by their exact email addresses and share their links privately. Creating a network grants no access to other networks.
 3. The dealer signs up through the existing Dealer signup/password flow, or signs in using their existing website account. Invitation signup defaults directory participation to off. Existing account activation and billing rules still apply.
 4. On `/parts/join`, request the email PIN and verify it. `RESEND_API_KEY` and the existing verified email sender must be configured; this feature fails closed when email is unavailable. No PIN is returned by the API or logged.
-5. In Parts → Members, the Aim4price administrator verifies the dealership independently and approves the pending administrator. The dealer administrator can then invite and approve other dealerships.
+5. In Parts → Members, the dealer network administrator verifies the dealership independently and approves its membership.
 
 No real network, member, email or stock data is seeded by this change. No invitation is sent by deployment. Network tables are created idempotently on first use, using the same database role as existing runtime schema setup. The schema is in `lib/parts-network-schema.ts`.
 
