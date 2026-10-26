@@ -17,6 +17,7 @@ import {
 import type { MiddlemanShowroom, PublicMiddlemanShowroomData } from '../lib/middleman-showroom-db';
 import styles from './MiddlemanShowroomClient.module.css';
 import dialogStyles from './AccountDialog.module.css';
+import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
 type ManagerProps = {
   initialShowroom: MiddlemanShowroom;
@@ -142,24 +143,6 @@ function ShowroomManageActionIcon({ name }: { name: ShowroomManageActionIconName
           <path d="M10 11v5M14 11v5" />
         </>
       ) : null}
-    </svg>
-  );
-}
-
-function ShowroomManageActionArrow({ direction = 'right' }: { direction?: 'right' | 'down' }) {
-  return (
-    <svg className={styles.listingManagerActionArrow} viewBox="0 0 24 24" aria-hidden="true">
-      {direction === 'down' ? (
-        <>
-          <path d="M12 4v14" />
-          <path d="m7 13 5 5 5-5" />
-        </>
-      ) : (
-        <>
-          <path d="M5 12h14" />
-          <path d="m14 7 5 5-5 5" />
-        </>
-      )}
     </svg>
   );
 }
@@ -384,14 +367,14 @@ export function MiddlemanShowroomManager({
 
   return (
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
-      <section className={styles.managerHero}>
-        <div className={styles.managerHeroCopy}>
-          <h1>Your own showroom</h1>
-          <p>All your adverts. One link to share.</p>
-        </div>
+      <div className={styles.managerTitle}>
+        <WorkspaceTitlePanel title="MY SHOWROOM" />
+      </div>
+      <section className={styles.managerToolbar} aria-label="Showroom actions">
+        <p>All your adverts. One link to share.</p>
         <div className={styles.heroActions}>
           {ownerAccount ? <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button> : <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>}
-          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer">Open public showroom <span aria-hidden="true">↗</span></Link> : null}
+          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer">Open public showroom</Link> : null}
         </div>
       </section>
 
@@ -628,12 +611,10 @@ export function MiddlemanShowroomManager({
               <Link href={valuationHref}>
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Create from estimate</strong><small>Value an asset and create its advert.</small></span>
-                <ShowroomManageActionArrow direction="right" />
               </Link>
               <Link href="/asset-register">
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Create from asset register</strong><small>Choose an asset, then open Manage → Marketplace.</small></span>
-                <ShowroomManageActionArrow direction="right" />
+                <span className={styles.listingManagerActionCopy}><strong>Create from asset register</strong><small>Choose an asset and select Marketplace from its Manage menu.</small></span>
               </Link>
             </div>
           </section>
@@ -692,7 +673,6 @@ export function MiddlemanShowroomManager({
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
                   <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Price, description and seller details.</small></span>
-                  <ShowroomManageActionArrow direction="right" />
                 </Link>
               ) : (
                 <button
@@ -703,7 +683,6 @@ export function MiddlemanShowroomManager({
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
                   <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Editing requires a saved asset.</small></span>
-                  <ShowroomManageActionArrow direction="right" />
                 </button>
               )}
               <button
@@ -716,14 +695,12 @@ export function MiddlemanShowroomManager({
                   <strong>Download JPEG</strong>
                   <small>{usesSavedBrandDesign && manageListingTarget.adBrand ? 'Download with your saved Brand Kit.' : 'Save a ready-to-share advert image.'}</small>
                 </span>
-                <ShowroomManageActionArrow direction="down" />
               </button>
               <Link
                 href={`${dealerAppMode ? `${dealerAppRoot}/marketplace` : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View your live marketplace advert.</small></span>
-                <ShowroomManageActionArrow direction="right" />
               </Link>
               <button
                 type="button"
@@ -734,10 +711,11 @@ export function MiddlemanShowroomManager({
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="remove" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Remove advert</strong><small>Record the outcome and withdraw the advert.</small></span>
-                <ShowroomManageActionArrow direction="right" />
               </button>
             </div>
-            <FacebookAdvertActions key={manageListingTarget.id} listing={manageListingTarget} />
+            <div className={styles.listingManagerShare}>
+              <FacebookAdvertActions key={manageListingTarget.id} listing={manageListingTarget} />
+            </div>
           </section>
         </div>
       ) : null}
