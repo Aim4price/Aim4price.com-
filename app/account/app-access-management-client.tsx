@@ -128,8 +128,8 @@ type OwnerAssetAccessResponse = {
 
 const DEALER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
   { value: 'owner', label: 'Owner / Manager', description: 'Full access and problem assignment.' },
-  { value: 'sales', label: 'Sales', description: 'All tools except Client Costs.' },
-  { value: 'parts', label: 'Parts', description: 'No Marketplace or Value My Asset.' },
+  { value: 'sales', label: 'Sales', description: 'Sales tools and approved Parts searches. No Client Costs.' },
+  { value: 'parts', label: 'Parts', description: 'Approved Parts searches and uploads, maintenance and Client Costs.' },
   { value: 'technician', label: 'Technician', description: 'Overview and Maintenance only.' },
 ];
 
