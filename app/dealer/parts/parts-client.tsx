@@ -9,7 +9,10 @@ import {
 import { createPortal } from "react-dom";
 import ShareModalCloseButton from "../../../components/asset-register/ShareModalCloseButton";
 import { useLeadDialog } from "../../../components/leads/useLeadDialog";
-import { WorkspaceTitlePanel } from "../../../components/WorkspacePrimitives";
+import {
+  WorkspaceTitlePanel,
+  workspaceStyles,
+} from "../../../components/WorkspacePrimitives";
 import {
   guessPartColumns,
   readPartsCsv,
@@ -213,6 +216,7 @@ export default function PartsClient({
     [inviteRole, setInviteRole] = useState("viewer"),
     [channel, setChannel] = useState("direct"),
     [folder, setFolder] = useState("mine"),
+    [listSearch, setListSearch] = useState(""),
     [opened, setOpened] = useState(false),
     [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
@@ -344,9 +348,9 @@ export default function PartsClient({
   );
   return (
     <main className={styles.page}>
-      <div className={styles.shell}>
-        <WorkspaceTitlePanel title="Parts" className={styles.title} />
-        <div className={styles.topline}>
+      <div className={`${workspaceStyles.shell} ${styles.shell}`}>
+        <WorkspaceTitlePanel title="Parts Management System" className={styles.title} />
+        <div className={styles.listToolbar}>
           {opened ? (
             <button
               onClick={() => {
@@ -359,24 +363,19 @@ export default function PartsClient({
               All parts lists
             </button>
           ) : (
-            <div className={styles.tabs}>
-              <button
-                aria-pressed={folder === "mine"}
-                onClick={() => setFolder("mine")}
-              >
-                My parts
-              </button>
-              <button
-                aria-pressed={folder === "shared"}
-                onClick={() => setFolder("shared")}
-              >
-                Shared with me
-              </button>
+            <div className={styles.search}>
+              <Icon kind="search" />
+              <input
+                aria-label="Search parts lists"
+                placeholder="Search parts lists"
+                value={listSearch}
+                onChange={(e) => setListSearch(e.target.value)}
+              />
             </div>
           )}
           {!staff && (
             <button
-              className={styles.primary}
+              className={styles.addButton}
               onClick={() => {
                 setName("");
                 setModal("create");
@@ -388,6 +387,22 @@ export default function PartsClient({
           )}
         </div>
         {!opened && (
+          <div className={styles.tabs}>
+            <button
+              aria-pressed={folder === "mine"}
+              onClick={() => setFolder("mine")}
+            >
+              My parts
+            </button>
+            <button
+              aria-pressed={folder === "shared"}
+              onClick={() => setFolder("shared")}
+            >
+              Shared with me
+            </button>
+          </div>
+        )}
+        {!opened && (
           <>
             <PartsInbox
               showShared={false}
@@ -398,25 +413,34 @@ export default function PartsClient({
             />
             <div className={styles.cards}>
               {networks
-                .filter((n) => (folder === "mine" ? n.owned : !n.owned))
+                .filter(
+                  (n) =>
+                    (folder === "mine" ? n.owned : !n.owned) &&
+                    n.name
+                      .toLowerCase()
+                      .includes(listSearch.trim().toLowerCase()),
+                )
                 .map((n) => (
                   <article key={n.id} className={styles.card}>
-                    <div className={styles.cardIcon}>
-                      <Icon kind="list" />
-                    </div>
-                    <h2>{n.name}</h2>
-                    <p>
-                      {n.part_count || 0}{" "}
-                      {n.part_count === 1 ? "part" : "parts"} ·{" "}
-                      {date(n.last_updated)}
-                    </p>
-                    {n.status !== "active" && (
+                    <div className={styles.cardContent}>
+                      <h2>{n.name}</h2>
                       <p>
-                        {n.status === "pending"
-                          ? "Awaiting approval"
-                          : "Access suspended"}
+                        {n.part_count || 0}{" "}
+                        {n.part_count === 1 ? "part" : "parts"} ·{" "}
+                        {date(n.last_updated)}
                       </p>
-                    )}
+                      {n.status !== "active" && (
+                        <p>
+                          {n.status === "pending"
+                            ? "Awaiting approval"
+                            : "Access suspended"}
+                        </p>
+                      )}
+                      <span className={styles.cardKind}>
+                        <Icon kind="list" />
+                        {n.owned ? "Your parts list" : "Shared parts list"}
+                      </span>
+                    </div>
                     <div className={styles.cardActions}>
                       {n.owned && !staff && (
                         <button
@@ -433,6 +457,7 @@ export default function PartsClient({
                         </button>
                       )}
                       <button
+                        className={styles.primary}
                         onClick={() => {
                           setNetwork(n.id);
                           setOpened(true);
@@ -459,12 +484,20 @@ export default function PartsClient({
                 ))}
             </div>
             {!loading &&
-              !networks.some((n) =>
-                folder === "mine" ? n.owned : !n.owned,
+              !networks.some(
+                (n) =>
+                  (folder === "mine" ? n.owned : !n.owned) &&
+                  n.name
+                    .toLowerCase()
+                    .includes(listSearch.trim().toLowerCase()),
               ) && (
                 <div className={styles.empty}>
                   <h2>
-                    {folder === "mine" ? "Your parts lists" : "Shared with me"}
+                    {listSearch
+                      ? "No matching lists"
+                      : folder === "mine"
+                        ? "Your parts lists"
+                        : "Shared with me"}
                   </h2>
                   <p>
                     {folder === "mine"
@@ -482,8 +515,8 @@ export default function PartsClient({
               {loading
                 ? "Loading…"
                 : staff
-                  ? "Your dealership has not joined a network yet. Contact your account owner."
-                  : "No network joined yet. Accept a dealer invitation or create your own private network."}
+                  ? "This parts list is unavailable. Contact your account owner."
+                  : "This parts list is unavailable. Return to your parts lists."}
             </div>
           ) : !active ? (
             <div className={styles.empty}>
@@ -901,22 +934,28 @@ export default function PartsClient({
               For example: Landini parts, John Deere parts or Second-hand parts.
             </p>
             {feedback}
-            <button
-              className={styles.primary}
-              disabled={busy || !name.trim()}
-              onClick={() =>
-                void run(async () => {
-                  const d = await api({ action: "create", name });
-                  await loadNetworks();
-                  setNetwork(d.id);
-                  setOpened(true);
-                  switchView("mine");
-                  setModal(null);
-                })
-              }
-            >
-              Create list
-            </button>
+            <div className={styles.modalFooter}>
+              <button disabled={busy} onClick={close}>
+                Cancel
+              </button>
+              <button
+                className={styles.primary}
+                disabled={busy || !name.trim()}
+                onClick={() =>
+                  void run(async () => {
+                    const d = await api({ action: "create", name });
+                    await loadNetworks();
+                    setNetwork(d.id);
+                    setOpened(true);
+                    switchView("mine");
+                    setModal(null);
+                  })
+                }
+              >
+                <Icon kind="plus" />
+                Create list
+              </button>
+            </div>
           </Modal>
         )}
         {modal === "invite" && (
