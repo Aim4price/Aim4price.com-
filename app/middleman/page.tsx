@@ -109,7 +109,7 @@ export default async function DealerHome() {
       count: attentionCount,
     },
     { label: 'Value My Asset', href: '/middleman/valuation', capability: 'valuation' },
-    { label: 'Ad Studio', href: '/middleman/ad-studio', capability: 'ad_studio' },
+    { label: 'Advert Studio', href: '/middleman/ad-studio', capability: 'ad_studio' },
     { label: 'My Showroom', href: '/middleman/showroom', capability: 'showroom' },
     { label: 'Discover Assets', href: '/middleman/discovery', capability: 'discovery' },
     { label: 'Marketplace', href: '/middleman/marketplace', capability: 'marketplace' },

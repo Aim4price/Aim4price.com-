@@ -113,7 +113,7 @@ export default async function PrivacyPolicyPage() {
               <p>
                 This policy covers our website, Owner, Dealer, Middleman and Field Manager
                 experiences, estimates, Asset Registers, Document Vault, budgets, costs, fuel,
-                maintenance, reports, Ad Studio, showrooms, Invoice Drop, Discovery and Marketplace,
+                maintenance, reports, Advert Studio, showrooms, Invoice Drop, Discovery and Marketplace,
                 and professional workspaces where enabled. It also applies to people whose
                 information is supplied by an account holder or a public contributor.
               </p>

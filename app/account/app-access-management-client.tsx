@@ -135,7 +135,7 @@ const DEALER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
 
 const MIDDLEMAN_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
   { value: 'owner', label: 'Owner / Manager', description: 'Full access to the Middleman workspace and login management.' },
-  { value: 'sales', label: 'Sales', description: 'Valuations, Ad Studio, Marketplace and the shared showroom.' },
+  { value: 'sales', label: 'Sales', description: 'Valuations, Advert Studio, Marketplace and the shared showroom.' },
 ];
 
 const OWNER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [

@@ -10168,7 +10168,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       {adBrandKits.length
                         ? 'Your saved logo, colours, wording and contact details will be applied.'
                         : 'No Brand Kit yet. The Aim4price standard layout will be used.'}
-                      {' '}<a href={dealerAppMode ? `${dealerAppRoot}/ad-studio` : '/ad-studio'}>Open Ad Studio</a>
+                      {' '}<a href={dealerAppMode ? `${dealerAppRoot}/ad-studio` : '/ad-studio'}>Open Advert Studio</a>
                     </small>
                   </label>
                 ) : (

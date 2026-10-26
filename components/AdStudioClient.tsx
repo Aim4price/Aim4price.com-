@@ -621,7 +621,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   return (
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       <div className={styles.titlePanel}>
-        <WorkspaceTitlePanel title="AD STUDIO" />
+        <WorkspaceTitlePanel title="ADVERT STUDIO" />
       </div>
 
       {loading ? <div className={styles.notice}>Loading your advert styles…</div> : null}

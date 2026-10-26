@@ -84,7 +84,7 @@ const ROUTE_LABELS: Array<{
   { prefix: "/fuel-scan", key: "fuel-ledger", label: "Fuel Ledger" },
   { prefix: "/scan", key: "asset-scan", label: "Asset Scan" },
   { prefix: "/marketplace", key: "marketplace", label: "Marketplace" },
-  { prefix: "/ad-studio", key: "ad-studio", label: "Ad Studio" },
+  { prefix: "/ad-studio", key: "ad-studio", label: "Advert Studio" },
   { prefix: "/my-showroom", key: "showroom", label: "My Showroom" },
   { prefix: "/showroom", key: "showroom", label: "Showroom" },
   { prefix: "/leads", key: "leads", label: "Leads / Clients" },

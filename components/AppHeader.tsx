@@ -240,7 +240,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
-  { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['dealer'] },
+  { href: '/ad-studio', label: 'Advert Studio', accountTypes: ['dealer'] },
   { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
   { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
@@ -248,7 +248,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/valuation', label: 'Value Asset' },
-  { href: '/ad-studio', label: 'Ad Studio' },
+  { href: '/ad-studio', label: 'Advert Studio' },
   { href: '/my-showroom', label: 'My Showroom' },
   { href: '/marketplace', label: 'Marketplace' },
   { href: '/account', label: 'Account' },
@@ -299,7 +299,7 @@ function buildNavItems(
     if (isMiddlemanAccountSubtype(accountSubtype)) {
       return [
         { key: 'valuation', href: '/valuation', label: 'Value Asset' },
-        { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
+        { key: 'ad-studio', href: '/ad-studio', label: 'Advert Studio' },
         { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
         { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       ];
@@ -310,7 +310,7 @@ function buildNavItems(
       { key: 'leads', href: '/leads', label: 'Leads' },
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
-      { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
+      { key: 'ad-studio', href: '/ad-studio', label: 'Advert Studio' },
       { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
       { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
     ];

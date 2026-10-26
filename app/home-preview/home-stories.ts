@@ -36,7 +36,7 @@ export const homeStories: Record<HomeAudience, HomeStoryVariant> = {
           "a clearer picture."
         ],
         "body": "Keep photos and records ready for buyers.",
-        "detail": "Present stock with your showroom and Ad Studio."
+        "detail": "Present stock with your showroom and Advert Studio."
       },
       "cost": {
         "title": "Understand what the price doesn’t show.",
