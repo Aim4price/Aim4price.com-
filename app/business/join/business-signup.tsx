@@ -9,6 +9,7 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
  const [showPassword,setShowPassword]=useState(false);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[createdEmail,setCreatedEmail]=useState('');
  const destination=returnTo||'/business';
+ const joiningTeam=returnTo==='/team';
  async function verify(email:string) {
   const response=await fetch('/api/auth/send-verification-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:destination})});
   if(!response.ok)throw Error('Your account is ready, but the verification email could not be sent. Please try again.');
@@ -19,16 +20,16 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
   const form=new FormData(event.currentTarget),email=String(form.get('email')||'').trim();
   setBusy(true);setNotice('');
   try {
-   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',accountAccess:'free',callbackURL:destination})});
+   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||(joiningTeam?form.get('name'):'')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',accountAccess:'free',callbackURL:destination})});
    const data=await response.json().catch(()=>null);
    if(!response.ok)throw Error(data?.message||'Unable to create your account. If you already have one, sign in instead.');
    setCreatedEmail(email);await verify(email);
   }catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}
  }
- return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open your shared enquiries.`:'Access your shared enquiries with a free Aim4price account.'} returnTo={returnTo}>
+ return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open ${joiningTeam?'your team workspace':'your shared enquiries'}.`:joiningTeam?'Join your team with your own free login. Use the email address your business owner invited.':'Access your shared enquiries with a free Aim4price account.'} returnTo={returnTo}>
   {createdEmail?<div className={styles.accessChoices}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={auth.form} onSubmit={submit}>
    <label className={auth.field}><span className={auth.label}>Your name</span><input className={auth.input} name="name" autoComplete="name" required maxLength={150}/></label>
-   <label className={auth.field}><span className={auth.label}>Business name</span><input className={auth.input} name="businessName" autoComplete="organization" required maxLength={200}/></label>
+   <label className={auth.field}><span className={auth.label}>{joiningTeam?'Business you work for (optional)':'Business name'}</span><input className={auth.input} name="businessName" autoComplete="organization" required={!joiningTeam} maxLength={200}/></label>
    <label className={auth.field}><span className={auth.label}>Email address</span><input className={auth.input} name="email" type="email" autoComplete="username" required maxLength={254} defaultValue={initialEmail}/></label>
    <div className={auth.field}>
     <label className={auth.label} htmlFor="free-account-password">Password</label>

@@ -1,0 +1,41 @@
+name: Desktop team access validation
+on:
+  pull_request:
+    paths:
+      - 'lib/team-access*.ts'
+      - 'app/api/team-*/**'
+      - 'app/account/team-access/**'
+      - 'app/team/**'
+      - 'components/team/**'
+      - 'app/business/join/business-signup.tsx'
+      - 'lib/auth-session.ts'
+      - 'lib/external-share-permissions.ts'
+      - 'database/migrations/143-desktop-team-access.sql'
+      - 'tests/team-access.test.cjs'
+      - 'scripts/verify-team-access.cjs'
+      - '.github/workflows/team-access-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: team-access-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/team-access.test.cjs
+      - run: node scripts/verify-team-access.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: team-access-screenshots
+          path: .next/team-access-validation

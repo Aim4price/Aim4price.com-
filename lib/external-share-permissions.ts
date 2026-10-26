@@ -30,6 +30,7 @@ export function normalizeExternalPermissions(value: unknown): ExternalSharePermi
     return { ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])), directUpdates: input.directUpdates === true, allReports: input.allReports === true } as ExternalSharePermissions;
 }
 export function sharedEnquiryReturnTo(value: unknown): string | null {
+    if (value === '/team' || value === '/account/team-access') return value;
     // Local AI consent continuation only; OAuth validates all parameters again before use.
     if (typeof value === 'string' && value.length <= 4096 && !/[\\\r\n]/.test(value)) {
       try {
