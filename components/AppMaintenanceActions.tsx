@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react';
 import AppAssetChecklistButton from './AppAssetChecklistButton';
 import AppAssetPartsButton from './AppAssetPartsButton';
 import styles from './AppMaintenanceActions.module.css';
+import assetStyles from '../app/asset-register/page.module.css';
+import AssetActionIcon from './asset-register/AssetActionIcon';
 
 function Icon({ kind }: { kind: 'checklist' | 'add' | 'parts' | 'schedule' }) {
   return <span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{kind === 'add' ? <path d="M12 5v14M5 12h14"/> : kind === 'parts' ? <><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z M4 7.5l8 4.5 8-4.5M12 12v9"/></> : kind === 'schedule' ? <><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16m-11 5 2 2 4-4"/></> : <><rect x="5" y="3" width="14" height="18" rx="2"/><path d="m8 9 1 1 2-2m2 1h3m-8 6 1 1 2-2m2 1h3"/></>}</svg></span>;
 }
-export default function AppMaintenanceActions({ apiBase, assetTitle, onRecord, onSchedule, canViewChecklist = true, canParts = true, scheduleLabel = 'Schedule maintenance' }: {
+export default function AppMaintenanceActions({ apiBase, assetTitle, onRecord, onSchedule, canViewChecklist = true, canParts = true, scheduleLabel = 'Schedule maintenance', ownerManage = false }: {
+  ownerManage?: boolean;
   scheduleLabel?: string;
   apiBase: string; assetTitle: string; onRecord?: () => void; onSchedule?: () => void; canViewChecklist?: boolean; canParts?: boolean;
 }) {
@@ -21,6 +24,15 @@ export default function AppMaintenanceActions({ apiBase, assetTitle, onRecord, o
   const record = access?.canRecord === false ? undefined : onRecord;
   const schedule = access?.canSchedule === false ? undefined : onSchedule;
   if (!record && !schedule && !canViewChecklist && !canParts) return null;
+  if (ownerManage) {
+    const card = `${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`;
+    return <>
+      {record && <button type="button" data-manage-action="addMaintenance" className={card} onClick={record}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon}/><span><strong>Add maintenance</strong><small>Log checks, services or repairs.</small></span></button>}
+      {canViewChecklist && <AppAssetChecklistButton endpoint={`${apiBase}/checklist`} className={card} manageAction="maintenance" onRecord={record} onSchedule={schedule}><AssetActionIcon action="maintenanceSchedules" className={assetStyles.buttonIcon}/><span><strong>Checklists</strong><small>View checks and service tasks.</small></span></AppAssetChecklistButton>}
+      {canParts && <AppAssetPartsButton endpoint={`${apiBase}/parts`} assetTitle={assetTitle} className={card} manageAction="viewParts"><AssetActionIcon action="viewParts" className={assetStyles.buttonIcon}/><span><strong>Parts</strong><small>View and add parts.</small></span></AppAssetPartsButton>}
+      {schedule && <button type="button" data-manage-action="maintenanceSchedules" className={card} onClick={schedule}><AssetActionIcon action="maintenanceSchedules" className={assetStyles.buttonIcon}/><span><strong>{scheduleLabel}</strong><small>{scheduleLabel === 'Edit schedule' ? 'Update the schedule.' : 'Plan upcoming work.'}</small></span></button>}
+    </>;
+  }
   return <section className={styles.section} aria-label="Maintenance actions">
     <header className={styles.heading}><h2>Maintenance</h2><p>Record completed work, find parts or plan the next job.</p></header>
     <div className={styles.grid}>

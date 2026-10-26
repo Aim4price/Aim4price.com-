@@ -2,6 +2,9 @@
 import MaintenanceDetailsCard from './MaintenanceDetailsCard';
 import { maintenanceLabel } from '../lib/maintenance-presentation';
 import AppMaintenanceActions from './AppMaintenanceActions';
+import LeadManageDialog from './leads/LeadManageDialog';
+import AssetActionIcon from './asset-register/AssetActionIcon';
+import manageActionStyles from './leads/ManageActionGrid.module.css';
 import maintenanceActionStyles from './AppMaintenanceActions.module.css';
 import { useLeadDialog } from './leads/useLeadDialog';
 import dialogStyles from './AccountDialog.module.css';
@@ -1800,24 +1803,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {managedAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedAccessId(null)} />
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal} ${dialogStyles.surface} ${dialogStyles.flush}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header}`}>
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
-                <p>{trackingAssetMeta(managedAsset)}</p>
-              </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management" data-modal-close="true">
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody} ${dialogStyles.body}`}>
-              <AppMaintenanceActions apiBase={`/api/dealer/maintenance/${managedAsset.accessId}`} assetTitle={managedAsset.assetTitle} scheduleLabel={managedAsset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : managedAsset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={managedAsset.permissions.canAddMaintenance || managedAsset.permissions.canViewMaintenanceReports || managedAsset.permissions.canCreateMaintenanceSchedules} canParts={managedAsset.permissions.canViewParts || managedAsset.permissions.canAddParts} onRecord={managedAsset.permissions.canAddMaintenance ? () => { setManagedAccessId(null); setWorkChoiceAsset(managedAsset); } : undefined} onSchedule={managedAsset.permissions.canCreateMaintenanceSchedules ? () => { setManagedAccessId(null); setScheduleAccessId(managedAsset.accessId); } : undefined} />
-              <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions}`}>
-                  <button
+        <LeadManageDialog closeLabel="Close tracking management" title={managedAsset.assetTitle} description={trackingAssetMeta(managedAsset).replace('Current Usage:', 'Usage:')} onClose={() => setManagedAccessId(null)} ownerLayout={!dealerAppMode}>
+          <div className={assetStyles.optionsContent}>
+            <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${manageActionStyles.grid}`} data-manage-actions>
+              <AppMaintenanceActions ownerManage apiBase={`/api/dealer/maintenance/${managedAsset.accessId}`} assetTitle={managedAsset.assetTitle} scheduleLabel={managedAsset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : managedAsset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={managedAsset.permissions.canAddMaintenance || managedAsset.permissions.canViewMaintenanceReports || managedAsset.permissions.canCreateMaintenanceSchedules} canParts={managedAsset.permissions.canViewParts || managedAsset.permissions.canAddParts} onRecord={managedAsset.permissions.canAddMaintenance ? () => { setManagedAccessId(null); setWorkChoiceAsset(managedAsset); } : undefined} onSchedule={managedAsset.permissions.canCreateMaintenanceSchedules ? () => { setManagedAccessId(null); setScheduleAccessId(managedAsset.accessId); } : undefined} />
+                  <button data-manage-action="whatsapp"
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${leadStyles.whatsAppActionButton}`}
                     onClick={() => openWhatsApp(managedAsset)}
@@ -1831,7 +1821,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </span>
                   </button>
 
-                  <button
+                  <button data-manage-action="phone"
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => callOwner(managedAsset)}
@@ -1845,7 +1835,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </span>
                   </button>
 
-                  <button
+                  <button data-manage-action="email"
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => emailOwner(managedAsset)}
@@ -1859,7 +1849,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </span>
                   </button>
 
-                  <button
+                  <button data-manage-action="maintenanceReports"
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => {
@@ -1869,14 +1859,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     disabled={!managedAsset.permissions.canViewMaintenanceReports}
                     title={!managedAsset.permissions.canViewMaintenanceReports ? 'The asset owner has not granted maintenance report access.' : undefined}
                   >
-                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <AssetActionIcon action="reports" className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Maintenance reports</strong>
                       <small>{managedAsset.permissions.canViewMaintenanceReports ? 'Download maintenance history.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
 
-                  <button
+                  <button data-manage-action="costOfOwnership"
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => {
@@ -1888,17 +1878,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       ? 'The asset owner has not granted Cost of Ownership access.'
                       : undefined}
                   >
-                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <AssetActionIcon action="costOfOwnership" className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Cost of ownership</strong>
                       <small>{managedAsset.permissions.canViewCostOfOwnership ? 'Download a cost report.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
-                </div>
-              </div>
             </div>
           </div>
-        </div>
+        </LeadManageDialog>
       ) : null}
 
       {filterOpen ? (
