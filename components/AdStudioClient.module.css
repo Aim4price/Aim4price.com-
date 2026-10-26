@@ -6,7 +6,7 @@
   --studio-pale: #edf6f2;
   --studio-line: #d6e4de;
   min-height: calc(var(--website-design-vh, 1vh) * 100);
-  padding: 108px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
+  padding: 24px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
   background: transparent;
   color: var(--app-text, var(--studio-ink));
   font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
@@ -22,44 +22,13 @@
 .dealerPage { padding-top: 32px; }
 .middlemanPage { padding-top: 22px; }
 
-.hero,
+.titlePanel,
 .libraryPanel,
 .workspace,
 .notice {
-  width: min(100%, 1420px);
+  width: min(100%, calc(1320px - 3.4rem));
   margin-inline: auto;
 }
-
-.hero {
-  composes: hero from "./WorkspaceHero.module.css";
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px;
-  min-height: 0;
-  margin-bottom: 24px;
-  padding: clamp(24px, calc(var(--website-design-vw, 1vw) * 2.4), 40px);
-  border: 1px solid var(--app-line, var(--studio-line));
-  border-radius: 24px;
-  background: var(--app-surface, #fff);
-  box-shadow: 0 16px 44px var(--app-shadow-colour, rgba(23, 54, 44, .06));
-}
-
-.hero::after {
-  content: "";
-  position: absolute;
-  top: -9rem;
-  right: 15%;
-  width: 20rem;
-  height: 20rem;
-  border: 2.6rem solid var(--app-line, rgba(22, 95, 73, .035));
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.heroCopy { position: relative; z-index: 1; max-width: 900px; }
 
 .reviewGrid article > span {
   display: block;
@@ -203,18 +172,21 @@
 .kitCardActions .studioIcon { width: 15px; height: 15px; }
 
 .workspace { display: grid; grid-template-columns: minmax(0, .94fr) minmax(520px, 1.06fr); gap: 24px; align-items: flex-start; scroll-margin-top: 110px; }
-.formPanel { overflow: hidden; }
+.formPanel { overflow: hidden; scroll-margin-top: 110px; }
 .editorHeader { padding: 24px 26px; border-bottom: 1px solid var(--app-line, #e1e9e6); }
 
-.stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 18px; border-bottom: 1px solid var(--app-line, #e1e9e6); background: var(--app-surface, #fff); }
-.stepButton { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 52px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 10px 12px 7px; color: var(--app-muted, #60776f); background: transparent; text-align: left; cursor: pointer; }
-.stepButton > span:first-child { display: grid; flex: 0 0 auto; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 0; color: var(--app-muted, #5d766d); background: transparent; box-shadow: none; }
-.stepButton > span:first-child .studioIcon { width: 17px; height: 17px; }
-.stepButton > span:last-child { display: grid; min-width: 0; }
+.stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 14px 18px; border-bottom: 1px solid var(--app-line, #e1e9e6); background: var(--app-surface, #fff); }
+.stepButton { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; min-width: 0; min-height: 76px; border: 1px solid transparent; border-radius: 12px; padding: 10px 6px; color: var(--app-muted, #60776f); background: transparent; cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease; }
+.stepButton > span:first-child { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; }
+.stepButton > span:first-child .studioIcon { width: 22px; height: 22px; }
 .stepButton strong { font: 800 .78rem "Montserrat", sans-serif; }
-.stepButtonActive { border-bottom-color: var(--app-accent, var(--studio-green)); color: var(--app-text, var(--studio-ink)); background: var(--app-surface, #f7fbf9); box-shadow: none; }
-.stepButtonActive > span:first-child { color: var(--app-text, var(--studio-green)); background: transparent; }
-.stepButtonComplete > span:first-child { color: var(--app-text, var(--studio-green)); background: transparent; }
+.stepButtonActive { border-color: var(--app-accent, var(--studio-green)); color: var(--app-text, var(--studio-ink)); background: var(--app-surface-soft, #edf6f2); }
+.stepButtonActive > span:first-child { color: var(--app-accent, var(--studio-green)); }
+.stepButton:hover { border-color: var(--app-accent, #43836a); box-shadow: 0 0 0 3px var(--app-accent-soft, rgba(22,95,73,.1)); }
+
+.settingsInput { position: relative; display: block; width: 100%; min-width: 0; }
+.settingsInput > svg { position: absolute; inset-inline-start: 1rem; top: 50%; transform: translateY(-50%); width: 1.25rem; height: 1.25rem; pointer-events: none; z-index: 1; }
+.formPanel .settingsInput > input:not([type="color"]):not([type="checkbox"]):not([type="file"]) { min-width: 0; padding-inline-start: 3rem; background: var(--app-input-bg, #edf5f1); }
 
 .stepContent { min-height: 480px; padding: 24px 25px 22px; }
 .stepIntro { margin-bottom: 21px; }
@@ -543,7 +515,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .page { padding-inline: 12px; padding-bottom: 42px; }
   :global(:where(html:not(:has([data-website-canvas])))) .dealerPage { padding-top: 18px; }
   :global(:where(html:not(:has([data-website-canvas])))) .middlemanPage { padding-top: 10px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 30px 24px; }
   :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader,
   :global(:where(html:not(:has([data-website-canvas])))) .editorHeader { align-items: stretch; flex-direction: column; }
   :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader .primaryButton,
@@ -561,7 +532,7 @@
     scroll-snap-type: x mandatory;
   }
   :global(:where(html:not(:has([data-website-canvas])))) .kitCard { scroll-snap-align: start; }
-  :global(:where(html:not(:has([data-website-canvas])))) .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 7px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 10px 7px; }
   :global(:where(html:not(:has([data-website-canvas])))) .stepButton { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 8px 3px 5px; text-align: center; }
   :global(:where(html:not(:has([data-website-canvas])))) .stepButton > span:first-child { width: 24px; height: 24px; }
   :global(:where(html:not(:has([data-website-canvas])))) .stepButton > span:last-child { display: grid; }
