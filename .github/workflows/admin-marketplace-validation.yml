@@ -80,6 +80,8 @@ on:
       - 'tests/ad-studio.test.mjs'
       - 'tests/asset-discovery-filter-modal.test.mjs'
       - 'tests/asset-sale-transfer.test.mjs'
+      - 'components/asset-register/AssetDisposal.module.css'
+      - 'scripts/verify-asset-disposal-destination.cjs'
       - 'tests/dealer-inventory-register.test.mjs'
       - 'tests/insurance-account-deletion.test.mjs'
       - 'tests/marketplace-view-tracking.test.mjs'
@@ -128,6 +130,9 @@ jobs:
 
       - name: Test asset outcome corrections
         run: npm run test:asset-transfers
+
+      - name: Verify asset disposal destination screens
+        run: node scripts/verify-asset-disposal-destination.cjs
 
       - name: Test showroom outcome guard
         run: node --test --test-name-pattern="deleting a Middleman showroom" tests/ad-studio.test.mjs
