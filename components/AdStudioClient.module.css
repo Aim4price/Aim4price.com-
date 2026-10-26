@@ -641,3 +641,57 @@
   outline: 3px solid var(--app-accent, #43836a);
   outline-offset: 3px;
 }
+
+/* Keep the editor controls in view while only long step content scrolls. */
+.formPanel { display: flex; flex-direction: column; position: sticky; top: 110px; max-height: max(440px, calc(var(--website-design-vh, 1vh) * 100 - 140px)); }
+.stepper { flex: 0 0 auto; padding: 10px 16px; }
+.stepButton { min-height: 62px; gap: 4px; }
+.stepContent { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--app-line, #adc7ba) transparent; padding: 20px 24px; }
+.stepIntro { margin-bottom: 18px; }
+.stepIntro h2 { font-size: 1.45rem; }
+.stepIntro p { margin-top: 5px; font-size: .82rem; }
+.actions { flex: 0 0 auto; padding: 14px 20px; }
+.actions > div { flex-wrap: wrap; }
+.previewPanel { padding: 20px; }
+.previewTools { display: flex; gap: 8px; flex-wrap: wrap; }
+.previewPhotoLab { padding: 0; border: 0; background: transparent; margin-bottom: 0; }
+.previewPhotoTray { margin-bottom: 14px; }
+.expandPreview { display: block; width: 100%; padding: 0; border: 0; border-radius: 18px; background: transparent; cursor: zoom-in; }
+.expandPreview:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 4px; }
+.previewNote { padding: 0; border: 0; background: transparent; }
+.previewNote p { font-size: .75rem; }
+.styleGrid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.colourRow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.colourControl { min-width: 0; display: grid; gap: 8px; align-content: start; }
+.colourControl > div { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.colourControl input[type='color'] { width: 36px; height: 38px; padding: 2px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 8px; background: transparent; flex: 0 0 36px; cursor: pointer; }
+.formPanel .colourControl input:not([type='color']) { min-width: 0; min-height: 38px; padding: 6px; font-size: .72rem; }
+.colourControl small { color: var(--app-muted, #677b74); font-size: .7rem; line-height: 1.4; }
+.choiceField { min-width: 0; padding: 0; margin: 0; border: 0; }
+.choiceField legend { display: flex; align-items: center; gap: 8px; padding: 0; margin-bottom: 9px; font-size: .8rem; font-weight: 800; }
+.choices { display: flex; gap: 8px; }
+.choices button { flex: 1; min-width: 0; min-height: 46px; padding: 8px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #294f44); font-size: .8rem; font-weight: 750; cursor: pointer; }
+.choices button[aria-pressed='true'] { background: var(--app-surface-soft, #edf6f2); border-color: var(--app-accent, #165f49); }
+.choices button:hover, .reviewEdit:hover { box-shadow: 0 0 0 3px var(--app-accent-soft, rgba(22,95,73,.12)); border-color: var(--app-accent, #43836a); }
+.choices button:focus-visible, .reviewEdit:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 2px; }
+.reviewGrid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.reviewGrid article { position: relative; min-height: 0; padding: 14px 62px 14px 16px; gap: 4px; }
+.reviewGrid small { font-size: .78rem; }
+.reviewEdit { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #294f44); cursor: pointer; }
+.reviewColours i { width: 27px; height: 27px; }
+.logoField.logoField { grid-template-columns: minmax(0, 1fr); padding: 14px; gap: 10px; }
+.logoPreviewCard img, .reviewLogo img { min-height: 0; max-height: 100%; box-sizing: border-box; }
+.previewDialog { width: min(1200px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 20px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 22px; background: var(--app-surface, #fff); color: var(--app-text, #17362c); }
+.previewDialog::backdrop { background: rgba(9, 23, 19, .72); backdrop-filter: blur(8px); }
+.dialogHeading { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; }
+.dialogHeading h2 { margin: 0; font-size: 1.3rem; }
+.dialogHeading button { width: 44px; height: 44px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 12px; background: var(--app-surface-soft, #edf6f2); color: inherit; font-size: 1.5rem; cursor: pointer; }
+.previewDialog canvas { display: block; width: 100%; max-height: calc(100dvh - 130px); object-fit: contain; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .formPanel { top: 80px; max-height: max(380px, calc(100dvh - 100px)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .colourRow { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .colourControl > div { max-width: 240px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { flex-direction: row; padding: 12px; gap: 8px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions > div { min-width: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewHeading { flex-wrap: wrap; }
+}

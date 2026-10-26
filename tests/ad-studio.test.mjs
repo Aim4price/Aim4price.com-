@@ -252,9 +252,9 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.doesNotMatch(client, /step\.helper/);
   assert.match(client, /logoInputRef\.current\?\.click\(\)/);
   assert.match(client, /<button className=\{styles\.logoUpload\} type="button"[\s\S]*?<span>\{draft\.logoUrl \? 'Replace logo' : 'Add logo'\}<\/span>[\s\S]*?<\/button>/);
-  assert.match(client, /selectControl/);
-  assert.match(client, /<select value=\{draft\.language\}/);
-  assert.match(client, /<select value=\{draft\.vatLabel\}/);
+  assert.match(client, /styles.choices/);
+  assert.match(client, /aria-pressed=\{draft.language === language\}/);
+  assert.match(client, /aria-pressed=\{draft.vatLabel === label\}/);
   assert.match(css, /\.logo(?:PreviewCard|Field|DropZone)/);
   assert.match(css, /\.selectControl select/);
   assert.match(css, /appearance: none/);
