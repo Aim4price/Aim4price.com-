@@ -17,6 +17,7 @@
 }
 
 .backButton {
+  text-decoration: none;
   appearance: none;
   width: fit-content;
   min-height: 2.42rem;
@@ -42,6 +43,7 @@
 }
 
 .backButton:hover {
+  text-decoration: none;
   transform: translateY(-1px);
   border-color: rgba(31, 138, 102, 0.16);
   background: #ffffff;
