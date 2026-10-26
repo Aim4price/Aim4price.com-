@@ -15,12 +15,12 @@ CREATE OR REPLACE FUNCTION asset_valuation_input_basis(asset jsonb) RETURNS json
 LANGUAGE sql IMMUTABLE AS $basis$
  SELECT jsonb_build_object(
   'fields', (SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb) FROM jsonb_each(asset)
-    WHERE key = ANY(ARRAY['year_model','year','hours','engine_hours','condition',
+    WHERE key = ANY(ARRAY['brand_name','equipment_family_id','year_model','year','hours','engine_hours','condition',
       'life_worked_percent','max_lifetime_hours','replacement_price_used_ex_vat',
       'replacement_price_ex_vat','official_replacement_price_ex_vat','user_replacement_price_ex_vat'])),
   'specs', (SELECT coalesce(jsonb_object_agg(key,value),'{}'::jsonb)
     FROM jsonb_each(coalesce(nullif(asset->'specs_json','null'::jsonb),'{}'::jsonb))
-    WHERE key ~* '^(usage|life_?worked|worked_?percent|percent_?worked|lifetime_?(worked|used)|year_?model|advanced_?assumptions|condition_?factor|popularity|expected_?lifetime|max_?lifetime|design_?life|useful_?life|basic_?usage|replacement_?price|user_?replacement|selected_?extras|front_?loader|front_?pto|gps)'
+    WHERE key ~* '^(brand|unlisted_brand|typed_brand|sector|family|usage|life_?worked|worked_?percent|percent_?worked|lifetime_?(worked|used)|year_?model|advanced_?assumptions|condition_?factor|popularity|expected_?lifetime|max_?lifetime|design_?life|useful_?life|basic_?usage|replacement_?price|user_?replacement|selected_?extras|front_?loader|front_?pto|gps)'
   )
  );
 $basis$;

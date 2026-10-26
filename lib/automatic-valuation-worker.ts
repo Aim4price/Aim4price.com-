@@ -1,3 +1,4 @@
+import { LegacyValuationRecoveryError } from './asset-register-valuation-recovery';
 import { getDb } from './db';
 import { ensureAutomaticValuationSchema } from './automatic-valuation-schema';
 import { revalueAssetRegisterItem } from './asset-register-revaluation';
@@ -14,6 +15,7 @@ export const CLAIM_VALUATION_JOB = `
  FROM due WHERE j.asset_id=due.asset_id RETURNING j.*`;
 
 async function failJob(job: Job, error: unknown) {
+  const needsDetails = error instanceof LegacyValuationRecoveryError;
   const client = await getDb().connect();
   let discard = false;
   try {
@@ -21,15 +23,16 @@ async function failJob(job: Job, error: unknown) {
     // Use the same asset -> job lock order as the input-change trigger.
     await client.query('SELECT id FROM asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE', [job.asset_id, job.owner_id]);
     const updated = await client.query(`UPDATE asset_valuation_jobs SET claim_id=NULL,lease_until=NULL,
+      attempts=CASE WHEN $6::boolean THEN 5 ELSE attempts END,
       next_attempt_at=now()+($4::integer * interval '1 second'),last_error=$5,updated_at=now()
       WHERE asset_id=$1 AND owner_id=$2 AND claim_id=$3::uuid RETURNING asset_id`,
     [job.asset_id, job.owner_id, job.claim_id, Math.min(1800, 30 * 2 ** (job.attempts - 1)),
-      (error instanceof Error ? error.message : 'Value update failed').slice(0, 500)]);
+      (error instanceof Error ? error.message : 'Value update failed').slice(0, 500), needsDetails]);
     if (updated.rows.length) {
       await client.query("SELECT set_config('aim4price.valuation_write','status',true)");
       await client.query(`UPDATE asset_register_items SET specs_json=coalesce(specs_json,'{}'::jsonb) ||
         jsonb_build_object('valuationNeedsUpdate',true,'valuation_needs_update',true,'automaticValuationStatus',$3::text)
-        WHERE id=$1 AND user_id=$2`, [job.asset_id, job.owner_id, job.attempts >= 5 ? 'failed' : 'retrying']);
+        WHERE id=$1 AND user_id=$2`, [job.asset_id, job.owner_id, needsDetails ? 'needs_details' : job.attempts >= 5 ? 'failed' : 'retrying']);
     }
     await client.query('COMMIT');
   } catch (failure) {
