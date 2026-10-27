@@ -911,3 +911,31 @@
   :global(:where(html:not(:has([data-website-canvas])))) .manageModal .manageGrid { grid-template-columns: minmax(0, 1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .manageModal .manageGrid button { min-height: 5.8rem; }
 }
+
+
+/* Dedicated list pages follow the shared asset detail layout. */
+.detailPage .listToolbar { margin-bottom: 20px; }
+.detailHeader { align-items: center; margin-bottom: 22px; }
+.detailHeader .listTitle { font-size: clamp(28px, 3vw, 38px); line-height: 1.2; margin: 0 0 12px; }
+.detailHeader .eyebrow { margin: 0; text-transform: none; letter-spacing: normal; }
+.dealerBanner { display: flex; align-items: center; gap: 20px; padding: 24px 28px; margin-bottom: 24px; border: 1px solid var(--app-border, #cbded4); border-radius: 24px; background: linear-gradient(120deg, var(--app-surface, #fff), var(--app-surface-soft, #eff8f4)); box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
+.dealerBanner > svg { flex: none; width: 26px; height: 26px; padding: 15px; box-sizing: content-box; border: 1px solid var(--app-border, #cbded4); border-radius: 16px; color: var(--app-accent, #197454); }
+.dealerBanner strong { font-size: 20px; }
+.dealerBanner p { margin: 8px 0 0; color: var(--app-text-muted, #61766c); }
+.detailPage .tableWrap { border-radius: 22px; box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
+.detailPage th { padding: 20px; white-space: nowrap; }
+.detailPage td { padding: 20px; }
+.detailPage tbody tr:hover { background: var(--app-surface-soft, #eff8f4); }
+.invitationLayout { width: min(1280px, calc(100% - 64px)); min-height: 70vh; margin: auto; padding: 64px 0; display: grid; grid-template-columns: 1.6fr 1fr; align-items: center; gap: 64px; }
+.invitationIntro h1 { font: 800 clamp(40px, 5.5vw, 76px)/1.06 var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -.045em; margin: 20px 0 28px; }
+.invitationIntro p { font-size: 21px; line-height: 1.6; color: var(--app-text-muted, #61766c); }
+.invitationCard { background: var(--app-surface, #fff); border: 1px solid var(--app-border, #cbded4); border-radius: 28px; padding: 32px; box-shadow: 0 24px 60px var(--app-shadow-colour, #173e3220); }
+.invitationCard h2 { font: 800 28px/1.2 var(--font-heading, 'Montserrat'), sans-serif; }
+.invitationCard p { line-height: 1.6; }
+.invitationCard input { width: 100%; box-sizing: border-box; padding: 14px; margin: 12px 0; border-radius: 12px; border: 1px solid var(--app-border, #cbded4); background: var(--app-surface-soft, #eff8f4); color: inherit; font: inherit; }
+@media(max-width: 700px) {
+ .invitationLayout { grid-template-columns: 1fr; width: calc(100% - 32px); gap: 24px; padding: 28px 0; }
+ .invitationCard { padding: 24px; }
+ .dealerBanner { padding: 18px; gap: 14px; }
+ .detailHeader { align-items: stretch; }
+}

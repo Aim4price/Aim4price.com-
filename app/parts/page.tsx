@@ -8,7 +8,8 @@ export const metadata: Metadata = {
   title: "Parts | Aim4price",
   robots: { index: false, follow: false },
 };
-export default async function Page() {
+export default async function Page({ searchParams }: { searchParams: { list?: string } }) {
+  if (searchParams.list) redirect("/parts/" + encodeURIComponent(searchParams.list));
   if (!(await getPartsActor())) redirect("/auth?returnTo=%2Fparts");
   return (
     <>
