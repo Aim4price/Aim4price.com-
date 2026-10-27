@@ -49,3 +49,6 @@
  :global(:where(html:not(:has([data-website-canvas])))) .preview { grid-template-columns: minmax(0,1fr); }
  :global(:where(html:not(:has([data-website-canvas])))) .photos { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+
+/* The creator uses normal page flow, without the Marketplace modal scroll body. */
+.sellerPanel { position: static !important; }

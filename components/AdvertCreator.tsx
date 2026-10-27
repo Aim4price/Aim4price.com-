@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AD_TEMPLATE_OPTIONS, type AdBrandKit, type AdBrandSnapshot, type AdTemplateId } from '../lib/ad-studio';
 import { advertDetailsError, estimateMatchesAdvert, type AdvertDetails, type AdvertEstimate } from '../lib/advert-creator';
 import { downloadMarketplaceAd, getMarketplaceAdRating, renderMarketplaceAdCanvas, type MarketplaceAdContent } from '../lib/marketplace-ad-renderer';
 import styles from './AdvertCreator.module.css';
+import marketplaceStyles from '../app/asset-register/page.module.css';
+import MarketplacePriceInput from './MarketplacePriceInput';
+import MarketplacePhotoEditor from './MarketplacePhotoEditor';
 import { pricingVatAmount } from '../lib/pricing-vat';
 import { calculateMarketplaceDealRating } from '../lib/marketplace';
 
-type Photo = { id: string; url: string; name: string };
+
 
 export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint }: {
   kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string;
@@ -24,7 +27,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     email: (defaultKit ?? fallbackBrand).email, businessName: (defaultKit ?? fallbackBrand).businessName,
   }));
   const [step, setStep] = useState(1);
-  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [photos, setPhotos] = useState<string[]>([]);
   const photosRef = useRef(photos);
   const [estimates, setEstimates] = useState<AdvertEstimate[]>([]);
   const [estimate, setEstimate] = useState<AdvertEstimate | null>(null);
@@ -36,10 +39,13 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [rendering, setRendering] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { headingRef.current?.focus(); }, [step]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const largeCanvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [province, setProvince] = useState('');
+  const [area, setArea] = useState('');
   const hasEstimate = estimateMatchesAdvert(estimate, details);
   const hasEnoughPhotos = photos.length >= (AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.photoCount ?? 1);
   const content = useMemo<MarketplaceAdContent>(() => ({
@@ -51,16 +57,16 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     aim4priceValueExVat: hasEstimate ? estimate?.valueExVat : null,
     showDealRating: hasEstimate && showRating,
     sellerName: details.contactName, sellerPhone: details.phone, sellerCompany: details.businessName,
-    location: details.location, imageUrls: photos.map(photo => photo.url),
+    location: [area, province].filter(Boolean).join(', '), imageUrls: photos,
     brand: { ...brand, templateId: template, vatLabel: details.vatLabel, contactName: details.contactName, phone: details.phone, email: details.email, businessName: details.businessName },
-  }), [details, brand, template, photos, hasEstimate, estimate, showRating]);
+  }), [details, brand, template, photos, hasEstimate, estimate, showRating, area, province]);
   const rating = getMarketplaceAdRating(content);
 
   useEffect(() => { photosRef.current = photos; }, [photos]);
-  useEffect(() => () => photosRef.current.forEach(photo => URL.revokeObjectURL(photo.url)), []);
+  useEffect(() => () => photosRef.current.forEach(url => URL.revokeObjectURL(url)), []);
   useEffect(() => { if (!hasEstimate) setShowRating(false); }, [hasEstimate]);
   useEffect(() => {
-    if (step !== 3 || !canvasRef.current) return;
+    if (step !== 2 || !canvasRef.current) return;
     let active = true;
     setRendering(true);
     const scratch = document.createElement('canvas');
@@ -88,8 +94,8 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   function goTo(next: number) {
     setError(''); setStatus('');
     if (next > 1) { const message = advertDetailsError(details); if (message) { setError(message); return; } }
-    if (next === 3 && !photos.length) { setError('Add at least one photo to preview your advert.'); return; }
-    if (next === 3 && !hasEnoughPhotos) setTemplate('photo-first');
+    if (next === 2 && !photos.length) { setError('Add at least one photo to preview your advert.'); return; }
+    if (next === 2 && !hasEnoughPhotos) setTemplate('photo-first');
     setStep(next);
   }
   async function loadEstimates() {
@@ -108,35 +114,28 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     setEstimate(selected); setShowRating(false);
     if (selected) setDetails(current => ({ ...current, title: selected.title, year: selected.year, usage: selected.usage, usageUnit: selected.usageUnit, condition: selected.condition }));
   }
-  async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []); event.target.value = '';
-    if (!files.length) return;
-    if (files.length + photos.length > 4) { setError('Choose up to four photos.'); return; }
-    if (files.some(file => !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 10_000_000)) { setError('Choose JPG, PNG or WebP photos, up to 10 MB each.'); return; }
-    setUploading(true); setError('');
-    const added: Photo[] = [];
+  async function uploadPhotos(files: File[]): Promise<string[]> {
+    if (files.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10_000_000)) throw new Error('Choose JPG, PNG or WebP photos, up to 10 MB each.');
+    const added: string[] = [];
     try {
       for (const file of files) {
         const bitmap = await createImageBitmap(file); bitmap.close();
-        added.push({ id: crypto.randomUUID(), url: URL.createObjectURL(file), name: file.name });
+        added.push(URL.createObjectURL(file));
       }
-      setPhotos(current => [...current, ...added]);
-    } catch { added.forEach(photo => URL.revokeObjectURL(photo.url)); setError('One of these photos could not be opened. Choose another image.'); }
-    finally { setUploading(false); }
+      return added;
+    } catch (cause) { added.forEach(url => URL.revokeObjectURL(url)); throw new Error('One of these photos could not be opened. Choose another image.'); }
   }
-  function removePhoto(id: string) {
-    const photo = photos.find(item => item.id === id); if (photo) URL.revokeObjectURL(photo.url);
-    setPhotos(current => current.filter(item => item.id !== id));
-  }
-  function movePhoto(index: number, offset: number) {
-    setPhotos(current => { const next = [...current]; [next[index], next[index + offset]] = [next[index + offset], next[index]]; return next; });
+  function changePhotos(next: string[]) {
+    photos.filter(url => !next.includes(url)).forEach(url => URL.revokeObjectURL(url));
+    photosRef.current = next;
+    setPhotos(next); setError('');
   }
   function openPreview() {
     if (!canvasRef.current || !largeCanvasRef.current || rendering) return;
     largeCanvasRef.current.getContext('2d')?.drawImage(canvasRef.current, 0, 0);
     dialogRef.current?.showModal(); dialogRef.current?.querySelector<HTMLButtonElement>('[data-modal-close]')?.focus();
   }
-  const shareText = [details.title, [details.year, content.usage, content.condition].filter(Boolean).join(' · '), `R ${pricingVatAmount(Number(details.askingPrice), details.vatLabel === 'vat-included').toLocaleString('en-ZA')} ${details.vatLabel === 'plus-vat' ? '+ VAT' : details.vatLabel === 'vat-included' ? 'VAT included' : 'No VAT'}`, details.description, details.location, `${details.contactName} · ${details.phone}`, details.email].filter(Boolean).join('\n');
+  const shareText = [details.title, [details.year, content.usage, content.condition].filter(Boolean).join(' · '), `R ${pricingVatAmount(Number(details.askingPrice), details.vatLabel === 'vat-included').toLocaleString('en-ZA')} ${details.vatLabel === 'plus-vat' ? '+ VAT' : details.vatLabel === 'vat-included' ? 'VAT included' : 'No VAT'}`, details.description, content.location, `${details.contactName} · ${details.phone}`, details.email].filter(Boolean).join('\n');
   async function exportPng(share = false) {
     const message = advertDetailsError(details);
     if (message || !hasEnoughPhotos) { setError(message || 'Add the photos required by this layout.'); return; }
@@ -160,60 +159,58 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }
 
   return <section className={styles.creator} aria-label="Advert Creator">
-    <nav className={styles.steps} aria-label="Create advert steps">{['Advert details','Photos','Preview & share'].map((label,index) => <button type="button" key={label} aria-current={step === index + 1 ? 'step' : undefined} onClick={() => goTo(index + 1)}>{label}</button>)}</nav>
-    {error ? <p className={styles.status} role="alert">{error}</p> : null}
+    {error && step !== 1 ? <p className={styles.status} role="alert">{error}</p> : null}
     {status ? <p className={styles.status} role="status">{status}</p> : null}
     {step === 1 ? <div className={styles.card}>
-      <h2>Create your advert</h2><p className={styles.help}>Add your machinery details and asking price. An estimate is optional.</p>
-      <div className={styles.fields}>
-        <label className={styles.full}>Machinery title<input value={details.title} maxLength={160} placeholder="e.g. John Deere 6155M tractor" onChange={e => update('title',e.target.value)} /></label>
+      <h2 ref={headingRef} tabIndex={-1}>Create your advert</h2><p className={styles.help}>Add your listing details, photos and seller information, then preview your advert.</p>
+      <form className={marketplaceStyles.marketplaceForm} onSubmit={event => { event.preventDefault(); goTo(2); }}>
+        <section className={marketplaceStyles.marketplaceAssetSummary}>
+          <label className={marketplaceStyles.marketplaceTitlePreview}><span>Listing title</span><input className={marketplaceStyles.marketplaceTitleInput} aria-label="Listing title" value={details.title} maxLength={160} required onChange={e => update('title', e.target.value)} /><small>Shown on your advert.</small></label>
+          <div className={marketplaceStyles.marketplaceAssetSummaryValue}><span>Aim4price estimate</span><strong>{hasEstimate ? `R ${estimate!.valueExVat.toLocaleString('en-ZA')}` : 'Optional'}</strong><small>{hasEstimate ? 'Excl. VAT' : 'Create an advert without an estimate'}</small></div>
+        </section>
+        <div className={marketplaceStyles.marketplaceBodyGrid}>
+          <div className={marketplaceStyles.marketplaceListingColumn}>
+            <section className={marketplaceStyles.marketplacePricePanel}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} /></section>
+            <MarketplacePhotoEditor photos={photos} onChange={changePhotos} busy={uploading} onBusyChange={setUploading} uploadPhotos={uploadPhotos} maxPhotos={4} hint="Add up to four photos. The main photo appears first on your advert." />
+            <label className={marketplaceStyles.marketplaceNotesField}><span>Listing notes</span><textarea value={details.description} maxLength={2000} placeholder="Add important buyer notes, extras, service history or known issues." onChange={e => update('description', e.target.value)} /></label>
+          </div>
+          <section className={`${marketplaceStyles.marketplaceSellerPanel} ${styles.sellerPanel}`}>
+            <div className={marketplaceStyles.marketplaceSellerHeader}><h4>Edit seller details</h4><span>Shown on your advert and shared text</span></div>
+            <div className={marketplaceStyles.marketplaceSellerGrid}>
+              {([['businessName','Business name','text',true], ['contactName','Contact name','text',false], ['phone','Phone','tel',false], ['email','Business email','email',true]] as const).map(([key,label,type,wide]) => <label key={key} className={`${marketplaceStyles.marketplaceContactField} ${wide ? marketplaceStyles.marketplaceWideField : ''}`}><span>{label}</span><input aria-label={label} type={type} value={details[key]} required={key === 'contactName' || key === 'phone'} maxLength={160} onChange={e => update(key,e.target.value)} /></label>)}
+              <label className={marketplaceStyles.marketplaceContactField}><span>Province</span><input aria-label="Province" value={province} maxLength={80} onChange={e => setProvince(e.target.value)} /></label>
+              <label className={marketplaceStyles.marketplaceContactField}><span>Area</span><input aria-label="Area" value={area} maxLength={80} onChange={e => setArea(e.target.value)} /></label>
+            </div>
+          </section>
+        </div>
+        <details className={styles.estimate}><summary>Machinery details</summary><div className={styles.fields}>
         <label>Year<input inputMode="numeric" value={details.year} placeholder="Optional" onChange={e => update('year',e.target.value)} /></label>
         <label>Condition<select value={details.condition} onChange={e => update('condition',e.target.value)}>{['excellent','good','fair','used','serious'].map(value => <option key={value} value={value}>{value === 'serious' ? 'Needs repairs' : value.charAt(0).toUpperCase()+value.slice(1)}</option>)}</select></label>
         <label>Usage<input inputMode="decimal" value={details.usage} disabled={details.usageUnit === 'none'} placeholder="Optional" onChange={e => update('usage',e.target.value)} /></label>
         <label>Usage unit<select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select></label>
-        <label>Asking price (R, excluding VAT)<input inputMode="decimal" value={details.askingPrice} onChange={e => update('askingPrice',e.target.value)} /></label>
-        <label>VAT display<select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select></label>
-        <label className={styles.full}>Location<input value={details.location} maxLength={160} placeholder="Town, province" onChange={e => update('location',e.target.value)} /></label>
-        <label className={styles.full}>Description for sharing<textarea value={details.description} maxLength={2000} onChange={e => update('description',e.target.value)} /></label>
-      </div>
-      <h3>Contact details</h3><div className={styles.fields}>
-        <label>Business name<input value={details.businessName} maxLength={120} onChange={e => update('businessName',e.target.value)} /></label>
-        <label>Contact person<input value={details.contactName} maxLength={120} onChange={e => update('contactName',e.target.value)} /></label>
-        <label>Phone / WhatsApp<input type="tel" value={details.phone} maxLength={40} onChange={e => update('phone',e.target.value)} /></label>
-        <label>Email<input type="email" value={details.email} maxLength={160} onChange={e => update('email',e.target.value)} /></label>
-      </div>
+        <label>VAT label on advert<select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select></label>
+        </div></details>
       <details className={styles.estimate}>
         <summary>Want guidance on your asking price?</summary><p className={styles.help}>Use a saved Aim4price estimate to enable a price rating, or get an estimate in a new tab. Your advert stays here.</p>
-        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : 'Load / refresh saved estimates'}</button></div>
+        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : 'Load / refresh saved estimates'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
         {estimates.length ? <label className={styles.field}>Use an estimate<select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
       </details>
       <label className={styles.toggle}><input type="checkbox" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show price rating</label>
       <p className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating is hidden on your advert.'}` : 'Get an estimate or select a saved estimate to enable a price rating.'}</p>
-      <div className={styles.actions}><button className={styles.primary} onClick={() => goTo(2)}>Continue to photos</button></div>
+      {error ? <p className={styles.status} role="alert">{error}</p> : null}
+      <div className={marketplaceStyles.marketplaceActions}><span className={styles.help}>Next: choose your advert design</span><button type="submit" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={uploading}>Next</button></div>
+      </form>
     </div> : null}
     {step === 2 ? <div className={styles.card}>
-      <h2>Advert photos</h2><p className={styles.help}>Add up to four photos. Put your best photo first.</p>
-      <input ref={inputRef} type="file" hidden accept="image/jpeg,image/png,image/webp" multiple onChange={upload} />
-      <button className={styles.secondary} disabled={uploading || photos.length >= 4} onClick={() => inputRef.current?.click()}>{uploading ? 'Opening photos…' : 'Upload photos'}</button>
-      <div className={styles.photos}>{photos.map((photo,index) => <div className={styles.photo} key={photo.id}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}<img src={photo.url} alt={`${index === 0 ? 'Main photo' : `Photo ${index+1}`}: ${photo.name}`} />
-        <strong>{index === 0 ? 'Main photo' : `Photo ${index+1}`}</strong><div className={styles.actions}>
-          <button disabled={index === 0} aria-label={`Move photo ${index+1} earlier`} onClick={() => movePhoto(index,-1)}>←</button>
-          <button disabled={index === photos.length-1} aria-label={`Move photo ${index+1} later`} onClick={() => movePhoto(index,1)}>→</button>
-          <button aria-label={`Remove photo ${index+1}`} onClick={() => removePhoto(photo.id)}>Remove</button>
-        </div></div>)}</div>
-      <div className={styles.actions}><button className={styles.secondary} onClick={() => goTo(1)}>Back to details</button><button className={styles.primary} disabled={uploading} onClick={() => goTo(3)}>Preview designs</button></div>
-    </div> : null}
-    {step === 3 ? <div className={styles.card}>
-      <h2>Preview your advert</h2><p className={styles.help}>Choose a design, then download or share. This does not publish a Marketplace listing.</p>
+      <h2 ref={headingRef} tabIndex={-1}>Preview your advert</h2><p className={styles.help}>Choose a design, then download or share. This does not publish a Marketplace listing.</p>
       <div className={styles.preview}><div>
         <label className={styles.field}>Advert style<select value={brandId} onChange={e => chooseStyle(e.target.value)}><option value="">Account branding</option>{kits.map(kit => <option key={kit.id} value={kit.id}>{kit.name}</option>)}</select></label>
         <div className={styles.templates}>{AD_TEMPLATE_OPTIONS.map(item => <button key={item.id} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)}><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Add ${item.photoCount} photos to use this layout.` : item.description}</small></button>)}</div>
       </div><div><button className={styles.canvasButton} disabled={rendering} onClick={openPreview} aria-label="Open advert preview"><canvas ref={canvasRef} className={styles.canvas} width={1600} height={900} aria-label="Your advert preview" /></button>
         {rendering ? <p role="status">Updating preview…</p> : <p className={styles.help}>Click the advert to enlarge.</p>}
         <div className={styles.actions}><button className={styles.primary} disabled={busy || rendering} onClick={() => exportPng()}>{busy ? 'Preparing…' : 'Download PNG'}</button><button className={styles.secondary} disabled={busy || rendering} onClick={() => exportPng(true)}>Share advert</button><button className={styles.secondary} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}>Copy advert text</button></div>
-      </div></div><div className={styles.actions}><button className={styles.secondary} onClick={() => goTo(2)}>Edit photos</button><button className={styles.secondary} onClick={() => goTo(1)}>Edit details</button></div>
+      </div></div><div className={styles.actions}><button className={styles.secondary} onClick={() => goTo(1)}>Back to advert details</button></div>
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="creator-preview-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
         <div className={styles.dialogHeader}><h2 id="creator-preview-title">Advert preview</h2><div className={styles.actions}><button className={styles.primary} disabled={busy} onClick={() => exportPng()}>Download PNG</button><button data-modal-close="true" aria-label="Close advert preview" onClick={() => dialogRef.current?.close()}>×</button></div></div>
         {error ? <p role="alert">{error}</p> : null}{status ? <p role="status">{status}</p> : null}

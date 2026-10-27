@@ -2,9 +2,10 @@
 import { useRef, useState } from 'react';
 import styles from './MarketplacePhotoEditor.module.css';
 
-export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyChange, disabled = false }: {
+export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyChange, disabled = false, maxPhotos = 12, uploadPhotos, hint }: {
   photos: string[]; onChange: (photos: string[]) => void; busy: boolean;
-  onBusyChange: (busy: boolean) => void; disabled?: boolean;
+  onBusyChange: (busy: boolean) => void; disabled?: boolean; maxPhotos?: number;
+  uploadPhotos?: (files: File[]) => Promise<string[]>; hint?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const uploadLock = useRef(false);
@@ -14,10 +15,14 @@ export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyC
   const locked = busy || disabled;
   async function upload(files: File[]) {
     if (!files.length || locked || uploadLock.current) return;
-    if (photos.length + files.length > 12) { setError('Choose up to 12 photos in total.'); return; }
+    if (photos.length + files.length > maxPhotos) { setError(`Choose up to ${maxPhotos} photos in total.`); return; }
     uploadLock.current = true;
     onBusyChange(true); setError('');
     try {
+      if (uploadPhotos) {
+        const urls = await uploadPhotos(files);
+        onChange([...photos, ...urls]); setSelected(photos.length); return;
+      }
       const body = new FormData(); body.append('uploadType', 'photo');
       files.forEach(file => body.append('files', file));
       const response = await fetch('/api/asset-register/uploads', { method: 'POST', credentials: 'include', body });
@@ -53,13 +58,13 @@ export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyC
         <button type="button" className={`${styles.nav} ${styles.previous}`} aria-label="Previous photo" onClick={() => setSelected((index + photos.length - 1) % photos.length)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg></button>
         <button type="button" className={`${styles.nav} ${styles.next}`} aria-label="Next photo" onClick={() => setSelected((index + 1) % photos.length)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg></button>
       </> : null}
-      <button type="button" className={styles.add} disabled={locked || photos.length >= 12} onClick={() => inputRef.current?.click()}>
+      <button type="button" className={styles.add} disabled={locked || photos.length >= maxPhotos} onClick={() => inputRef.current?.click()}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>{busy ? 'Uploading…' : 'Add photo'}
       </button>
-      <input ref={inputRef} className={styles.fileInput} type="file" aria-label="Add listing photos" accept="image/*" multiple disabled={locked || photos.length >= 12} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} />
+      <input ref={inputRef} className={styles.fileInput} type="file" aria-label="Add listing photos" accept="image/*" multiple disabled={locked || photos.length >= maxPhotos} onChange={e => { const files = Array.from(e.target.files || []); e.target.value = ''; void upload(files); }} />
     </div>
     {photos.length > 1 ? <div className={styles.thumbnails} aria-label="Choose listing photo">{photos.map((url, i) => <button type="button" key={`${url}-${i}`} className={styles.thumbnail} aria-label={`View photo ${i + 1}${i === 0 ? ', main photo' : ''}`} aria-pressed={index === i} onClick={() => setSelected(i)}><img src={url} alt="" />{i === 0 ? <span>Main</span> : null}</button>)}</div> : null}
-    <p className={styles.hint}>The main photo appears first. Changes also update the asset register photos when you save.</p>
+    <p className={styles.hint}>{hint ?? 'The main photo appears first. Changes also update the asset register photos when you save.'}</p>
     {error ? <p className={styles.error} role="alert">{error}</p> : null}
   </section>;
 }
