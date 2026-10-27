@@ -713,7 +713,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function renderAccountNameSetup() {
-    if (accountName) return kind === 'owner' && businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
+    if (accountName) return kind !== 'dealer' && businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
     const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
@@ -738,7 +738,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </div>
       </form>
     </section>;
-    if (kind !== 'owner' && activeFlow === 'manage' && records.length > 0) {
+    if (kind === 'dealer' && activeFlow === 'manage' && records.length > 0) {
       return <details className={styles.loginSetupDisclosure}>
         <summary>Set up a business login ID <span>Existing logins still work</span></summary>
         {setup}
@@ -1016,7 +1016,7 @@ function AppAccessManagement({ kind, configOverride }: {
             </button>
           ) : null}
         </div>
-        {kind !== 'owner' ? <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
+        {kind === 'dealer' ? <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
           {roleSummary ? <span><LoginDetailIcon kind="shield" />{roleSummary}</span> : null}
           <span><LoginDetailIcon kind="clock" /><span>Last login <span>{formatDateTime(record.lastLoginAtIso)}</span></span></span>
           {!includeManageButton ? <span><LoginDetailIcon kind="clock" /><span>Updated <span>{formatDateTime(record.updatedAtIso)}</span></span></span> : null}
@@ -1153,7 +1153,7 @@ function AppAccessManagement({ kind, configOverride }: {
         onClose={closeFlow}
       >
         <InlineNotice notice={notice} />
-        {kind !== 'owner' ? renderAccountNameSetup() : null}
+        {kind === 'dealer' ? renderAccountNameSetup() : null}
         {businessSettingsOpen ? <div className={styles.newUserSetup}>
           <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>‹ All logins</button>
           {renderAccountNameSetup()}
@@ -1161,7 +1161,7 @@ function AppAccessManagement({ kind, configOverride }: {
           <section className={`${baseStyles.card} ${styles.surface}`}>
             <div className={styles.directoryHeader}>
               <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
-              {kind === 'owner' ? <div className={ownerStyles.listActions}>
+              {kind !== 'dealer' ? <div className={ownerStyles.listActions}>
                 <button type="button" onClick={() => setBusinessSettingsOpen(true)}>Business login settings</button>
                 <button type="button" className={ownerStyles.primary} onClick={() => openFlow('new')}>Add user</button>
               </div> : <span>Select one person to continue.</span>}
@@ -1177,7 +1177,7 @@ function AppAccessManagement({ kind, configOverride }: {
             {!loading && records.length ? (
               <div className={`${baseStyles.managerList} ${styles.directoryList}`}>
                 {records.map((record) => (
-                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard} ${kind === 'owner' ? ownerStyles.directoryRow : ''}`}>
+                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard} ${kind !== 'dealer' ? ownerStyles.directoryRow : ''}`}>
                     {renderRecordSummary(record, true)}
                   </article>
                 ))}
