@@ -1,0 +1,59 @@
+.creator { color: var(--app-text, #163d31); }
+.entry { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; padding: 28px; border-radius: 26px; background: var(--app-surface, #fff); border: 1px solid var(--app-line, #d9e5df); }
+.entry button { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 14px; min-height: 250px; padding: 32px; border: 1px solid #29644f; border-radius: 24px; background: linear-gradient(135deg,#214e40,#092c23); color: white; text-align: left; cursor: pointer; font: inherit; }
+.entry button:hover { box-shadow: 0 0 0 3px var(--app-accent-soft, #d6ebe1); }
+.entry button:focus-visible, .creator button:focus-visible, .creator a:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+.entry svg { width: 42px; height: 42px; margin-bottom: 24px; }
+.entry strong { font-size: 1.8rem; font-weight: 800; }
+.entry span { font-size: .95rem; color: #dcebe5; }
+.back { margin-bottom: 18px; }
+.steps, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.steps { margin-bottom: 20px; }
+.steps button, .creator button, .creator a { font: inherit; }
+.steps button, .secondary, .primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; min-height: 46px; border-radius: 13px; font-weight: 700 !important; text-decoration: none; cursor: pointer; }
+.steps button, .secondary { border: 1px solid var(--app-line, #c9dcd3); background: var(--app-surface, #fff); color: var(--app-text, #184c3a); }
+.steps button[aria-current='step'] { background: var(--app-accent-soft, #e5f2eb); border-color: var(--app-accent, #337b5c); }
+.primary { border: 1px solid var(--app-accent, #165f49); background: var(--app-accent, #165f49); color: #fff; }
+.creator button:disabled { opacity: .5; cursor: default; }
+.card { padding: 24px; border: 1px solid var(--app-line, #d9e5df); border-radius: 24px; background: var(--app-surface, #fff); }
+.card h2 { margin: 0 0 8px; font-size: 1.5rem; }
+.card h3 { margin: 20px 0 12px; }
+.help { color: var(--app-muted, #657c71); line-height: 1.5; margin: 6px 0 18px; }
+.fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.fields label, .field { display: grid; gap: 8px; font-weight: 650; min-width: 0; }
+.creator input:not([type='checkbox']), .creator select, .creator textarea { box-sizing: border-box; width: 100%; min-height: 46px; padding: 12px 14px; border: 1px solid var(--app-line, #c9dcd3); border-radius: 12px; background: var(--app-surface-soft, #eff7f3); color: var(--app-text, #183f31); font: inherit; }
+.creator textarea { min-height: 90px; resize: vertical; }
+.full { grid-column: 1 / -1; }
+.estimate { margin-top: 20px; padding: 18px; border-radius: 16px; background: var(--app-surface-soft, #eff7f3); border: 1px solid var(--app-line, #d1e4da); }
+.estimate summary { font-weight: 750; cursor: pointer; }
+.toggle { display: flex; align-items: center; gap: 12px; padding: 18px 0 0; font-weight: 650; }
+.toggle input { width: 20px; height: 20px; accent-color: #165f49; }
+.photos { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin: 20px 0; }
+.photo { min-width: 0; }
+.photo img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 14px; }
+.photo .actions { gap: 6px; margin-top: 8px; }
+.photo button { padding: 8px; min-height: 40px; border: 1px solid var(--app-line, #c9dcd3); border-radius: 10px; background: var(--app-surface-soft, #eff7f3); color: inherit; cursor: pointer; }
+.preview { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 20px; }
+.templates { display: grid; gap: 10px; }
+.templates button { text-align: left; display: grid; gap: 5px; padding: 12px; border: 1px solid var(--app-line, #c9dcd3); border-radius: 12px; background: var(--app-surface, #fff); color: inherit; cursor: pointer; }
+.templates button[aria-pressed='true'] { background: var(--app-accent-soft, #e5f2eb); border-color: var(--app-accent, #337b5c); }
+.templates small { color: var(--app-muted, #657c71); line-height: 1.4; }
+.canvas { display: block; width: 100%; height: auto; border-radius: 14px; }
+.preview button.canvasButton { width: 100%; padding: 0; background: transparent; border: 0; cursor: zoom-in; }
+.actions { margin-top: 18px; }
+.status { padding: 14px 18px; border-radius: 12px; background: var(--app-surface-soft, #eff7f3); margin: 12px 0; }
+.dialog { width: min(1200px, calc(var(--website-design-vw, 1vw) * 100 - 32px)); height: min(820px, calc(100% - 32px)); max-height: calc(100% - 32px); box-sizing: border-box; padding: 20px; overflow: hidden; border: 1px solid var(--app-line, #c9dcd3); border-radius: 22px; background: var(--app-surface, #fff); color: var(--app-text, #183f31); }
+.dialog[open] { display: flex; flex-direction: column; gap: 16px; }
+.dialog::backdrop { background: rgba(9,23,19,.72); backdrop-filter: blur(8px); }
+.dialogHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.dialogHeader h2 { margin: 0; }
+.dialogHeader .actions { margin: 0; }
+.dialogBody { min-height: 0; flex: 1; overflow: hidden; }
+.dialogBody canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .entry,
+ :global(:where(html:not(:has([data-website-canvas])))) .fields,
+ :global(:where(html:not(:has([data-website-canvas])))) .preview { grid-template-columns: minmax(0,1fr); }
+ :global(:where(html:not(:has([data-website-canvas])))) .photos { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ :global(:where(html:not(:has([data-website-canvas])))) .entry button { min-height: 180px; }
+}

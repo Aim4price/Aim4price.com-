@@ -27,6 +27,8 @@ import {
   type MarketplaceAdContent,
 } from '../lib/marketplace-ad-renderer';
 import styles from './AdStudioClient.module.css';
+import AdvertCreator from './AdvertCreator';
+import creatorStyles from './AdvertCreator.module.css';
 import SettingsDetailIcon from './SettingsDetailIcon';
 import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
@@ -272,6 +274,8 @@ function createPreviewPhotoId(): string {
 export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
   const dealerAppRoot = useDealerAppRoot();
   const brandKitsEndpoint = dealerAppMode ? `/api${dealerAppRoot}/ad-studio/brand-kits` : '/api/ad-studio/brand-kits';
+  const [studioMode, setStudioMode] = useState<'home' | 'style' | 'creator'>('home');
+  const [creatorStarted, setCreatorStarted] = useState(false);
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>({});
@@ -356,7 +360,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     return () => {
       active = false;
     };
-  }, [previewContent]);
+  }, [previewContent, loading, studioMode]);
 
   useEffect(() => {
     previewPhotosRef.current = previewPhotos;
@@ -657,8 +661,16 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         <div className={styles.notice}>Your Dealer login does not have permission to edit advert styles.</div>
       ) : null}
 
+      {!loading && studioMode === 'home' ? <div className={creatorStyles.entry} aria-label="Advert Studio options">
+        <button type="button" onClick={() => setStudioMode('style')}><StudioIcon name="palette" /><strong>Advert Style</strong><span>Set your branding and default layout.</span></button>
+        <button type="button" onClick={() => { setCreatorStarted(true); setStudioMode('creator'); }}><StudioIcon name="image" /><strong>Advert Creator</strong><span>Create, preview and share your advert.</span></button>
+      </div> : null}
+      {!loading && studioMode !== 'home' ? <div className={creatorStyles.back}><button type="button" className={styles.secondaryButton} onClick={() => setStudioMode('home')}>Back to Advert Studio</button></div> : null}
+      {!loading && creatorStarted ? <div style={studioMode === 'creator' ? undefined : { display: 'none' }}>
+        <AdvertCreator kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
+      </div> : null}
       {!loading ? (
-        <>
+        <div style={studioMode === 'style' ? undefined : { display: 'none' }}>
           {kits.length ? (
             <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
               <div className={styles.sectionHeader}>
@@ -1068,7 +1080,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             </dialog>
           </aside>
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );
