@@ -147,10 +147,12 @@ function Modal({
   onClose,
   busy,
   subtitle,
+  manage = false,
   children,
 }: {
   title: string;
   subtitle?: string;
+  manage?: boolean;
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -167,7 +169,7 @@ function Modal({
     <div className={styles.backdrop}>
       <section
         ref={ref}
-        className={styles.modal}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -851,6 +853,7 @@ export default function PartsClient({
           ))}
         {modal === "manage" && (
           <Modal
+            manage
             title={current?.name || "Parts list"}
             subtitle={`${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · ${date(current?.last_updated || "")}`}
             onClose={close}

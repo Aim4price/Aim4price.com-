@@ -869,3 +869,45 @@
     margin-left: 0;
   }
 }
+
+
+/* Match the Owner / Leads Manage command-centre button dimensions. */
+.manageModal {
+  width: min(calc(var(--website-design-vw, 1vw) * 97), 84rem);
+  max-width: 84rem;
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.75rem);
+}
+.manageModal .manageGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.88rem;
+}
+.manageModal .manageGrid button {
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  min-height: 6.25rem;
+  padding: 1.08rem 1.12rem;
+  gap: 0.95rem;
+  box-sizing: border-box;
+}
+.manageModal .manageGrid button svg {
+  justify-self: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.manageModal .manageGrid button span { min-width: 0; gap: 0.26rem; }
+.manageModal .manageGrid button strong { font-size: 1.12rem; line-height: 1.2; }
+.manageModal .manageGrid button small { font-size: 0.94rem; line-height: 1.42; }
+@media (min-width: 701px) and (max-width: 1180px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .manageModal { width: min(97vw, 68rem); max-width: 68rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .manageModal .manageGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .manageModal .manageGrid { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .manageModal .manageGrid button { min-height: 5.8rem; }
+}
