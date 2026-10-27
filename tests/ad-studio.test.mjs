@@ -579,7 +579,10 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
   assert.doesNotMatch(managerCss, /\.statusPill\s*\{/);
   assert.doesNotMatch(managerCss, /\.managerHero\s*\{[^}]*min-height:\s*clamp\(16\.5rem,\s*calc\(var\(--website-design-vw(?:, 1vw)?\) \* 23\),\s*20rem\)/);
-  assert.match(manager, /target="_blank" rel="noreferrer">Open public showroom/);
+  assert.match(manager, /aria-haspopup="dialog"/);
+  assert.match(manager, /aria-labelledby="showroom-intro-title" aria-describedby="showroom-intro-description"/);
+  assert.match(manager, /href=\{publicHref\(showroom.slug\)\} target="_blank" rel="noreferrer"[^\n]*>View my showroom/);
+  assert.match(managerCss, /prefers-reduced-motion: reduce[\s\S]*?\.showroomPulse \{ animation: none/);
   assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.stockCard\s*\{[^}]*order:\s*-1/);
   assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.listingActions\s*\{[^}]*grid-template-columns:\s*1fr/);
 });
