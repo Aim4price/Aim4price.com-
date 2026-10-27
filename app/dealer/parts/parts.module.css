@@ -191,7 +191,7 @@
 .modal {
   position: relative;
   width: min(900px, 100%);
-  max-height: calc(100dvh - 48px);
+  max-height: calc(var(--website-visible-height, 100dvh) - 48px);
   overflow-y: auto;
   scrollbar-width: thin;
   box-sizing: border-box;
@@ -427,11 +427,7 @@
   min-width: 0;
 }
 .listToolbar > button {
-  min-height: 60px;
   min-width: 180px;
-  border-radius: 18px;
-  font-size: 18px;
-  font-weight: 850;
 }
 .page .addButton {
   color: var(--app-text, #723b0d);
@@ -464,9 +460,6 @@
   }
   .listToolbar .search {
     flex-basis: 100%;
-  }
-  .listToolbar > button {
-    min-height: 50px;
   }
 }
 .listTitle {
@@ -876,8 +869,31 @@
   width: min(calc(var(--website-design-vw, 1vw) * 97), 84rem);
   max-width: 84rem;
   padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.75rem);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.95), 60rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.manageModal .dialogHeader {
+  flex: 0 0 auto;
+  padding: 0 3.25rem 1.05rem 0;
+  margin-bottom: 1.05rem;
+}
+.manageModal .dialogHeader h2 {
+  margin: 0;
+  font-size: clamp(2.05rem, calc(var(--website-design-vw, 1vw) * 3.25), 2.8rem);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+.manageModal .dialogHeader p {
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.45;
 }
 .manageModal .manageGrid {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.08rem 0.45rem 0.4rem 0.08rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.88rem;
 }
@@ -947,8 +963,32 @@
 .detailHeader .listTitle { margin-bottom: 8px; font-weight: 800; }
 .dealerSubtitle { margin: 0 0 6px; font-size: 19px; line-height: 1.4; }
 .detailHeader .eyebrow { font-size: 15px; }
-.detailActions { gap: 12px; }
-.detailActions button { min-height: 48px; padding: 12px 20px; border-radius: 15px; font-weight: 750; }
+/* The same primary control scale as the Leads workspace toolbar. */
+.page .cardActions button,
+.page .listToolbar > .addButton,
+.page .detailActions button,
+.page .tableEmpty button {
+  min-height: 3.45rem;
+  padding: 0.75rem 1.15rem;
+  border-width: 1.5px;
+  border-radius: 1.02rem;
+  font-family: var(--font-body, "Inter"), sans-serif;
+  font-size: 0.96rem;
+  font-weight: 760;
+  line-height: 1;
+  white-space: nowrap;
+  gap: 0.55rem;
+}
+.detailActions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.detailActions button { min-width: 0; }
+.detailActions button svg,
+.listToolbar > .addButton svg,
+.tableEmpty button svg { width: 20px; height: 20px; flex-shrink: 0; }
 .partsPanel { overflow: hidden; border: 1px solid var(--app-border, #cbded4); border-radius: 22px; background: var(--app-surface, #fff); box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
 .tableToolbar { display: flex; align-items: center; gap: 24px; padding: 16px; }
 .tableToolbar .search { flex: 1; margin: 0; min-width: 0; min-height: 48px; }
@@ -965,13 +1005,21 @@
 @media(max-width: 700px) {
  .detailHeader { gap: 16px; }
  .detailActions { width: 100%; gap: 8px; }
- .detailActions button { flex: 1; padding: 10px; font-size: 14px; }
+
  .tableToolbar { gap: 10px; padding: 12px; flex-wrap: wrap; }
  .tableToolbar .search { flex-basis: 100%; }
  .resultCount { padding: 0 4px; }
  .dealerSubtitle { font-size: 16px; }
 }
 @media(max-width: 700px) {
- .detailActions button { padding: 10px 8px; gap: 6px; font-size: 13px; white-space: nowrap; }
+ .page .detailActions button,
+ .page .cardActions button { padding: 0.75rem 0.5rem; gap: 6px; font-size: 0.875rem; }
  .detailActions button svg { width: 18px; height: 18px; flex-shrink: 0; }
+}
+
+@media (max-width: 420px) {
+  .page .detailActions button {
+    flex-direction: column;
+    min-height: 4rem;
+  }
 }
