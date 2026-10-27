@@ -22,6 +22,10 @@ import {
 import PartsInbox from "../../../components/PartsInbox";
 import styles from "./parts.module.css";
 type Network = {
+  owner_business_name?: string;
+  owner_town?: string;
+  owner_vat_included?: boolean;
+  owner_uploaded_at?: string;
   owned: boolean;
   list_mode: boolean;
   part_count: number;
@@ -92,6 +96,8 @@ function Icon({
   kind,
 }: {
   kind:
+    | "back"
+    | "message"
     | "link"
     | "building"
     | "search"
@@ -108,6 +114,8 @@ function Icon({
     | "eye";
 }) {
   const paths = {
+    back: "M19 12H5 M11 6l-6 6 6 6",
+    message: "M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z",
     link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
     building: "M3 21V7l9-4 9 4v14 M1 21h22 M7 21V11h10v10 M8 7h8",
     share:
@@ -254,6 +262,11 @@ export default function PartsClient({
     window.location.assign(`${basePath}/${encodeURIComponent(id)}${members ? "?view=members" : ""}`);
   }
   const current = networks.find((n) => n.id === network);
+  const singleDealer = Boolean(current?.list_mode);
+  const dealerName = singleDealer ? current?.owner_business_name || (current?.owned ? current.business_name : "") : "";
+  const dealerTown = singleDealer ? current?.owner_town || (current?.owned ? current.town : "") : "";
+  const uploadedAt = singleDealer ? current?.owner_uploaded_at || (current?.owned ? current.last_updated : "") : current?.last_updated;
+  const vatIncluded = current?.owner_vat_included ?? current?.vat_included;
   const active = current?.status === "active";
   const admin =
     !staff &&
@@ -391,11 +404,12 @@ export default function PartsClient({
         <div className={styles.listToolbar}>
           {opened ? (
             <button
+              className={styles.backButton}
               onClick={() => {
                 window.location.assign(basePath);
               }}
             >
-              <Icon kind="list" />
+              <Icon kind="back" />
               Back to Parts
             </button>
           ) : (
@@ -562,13 +576,14 @@ export default function PartsClient({
               <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
                   <h1 className={styles.listTitle}>{current?.name}</h1>
+                  {dealerName && <p className={styles.dealerSubtitle}>{dealerName}{dealerTown ? ` · ${dealerTown}` : ""}</p>}
                   <p className={styles.eyebrow}>
                     {view === "members"
                       ? "Sharing history and access"
-                      : `${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · ${current?.last_updated ? `Updated ${date(current.last_updated)}` : "Not uploaded"}`}
+                      : `${uploadedAt ? `Updated ${date(uploadedAt)}` : "Not uploaded"}${singleDealer && uploadedAt ? ` · Prices ${vatIncluded ? "incl." : "excl."} VAT` : ""}`}
                   </p>
                 </div>
-                <div className={styles.actions}>
+                <div className={`${styles.actions} ${styles.detailActions}`}>
                   {canUpload && (
                     <button className={styles.primary} onClick={openUpload}>
                       <Icon kind="upload" />
@@ -577,6 +592,7 @@ export default function PartsClient({
                   )}
                   {admin && (
                     <button
+                      className={styles.shareAction}
                       onClick={() => {
                         setInviteEmail("");
                         setInviteUrl("");
@@ -589,6 +605,7 @@ export default function PartsClient({
                   )}
                   {admin && (
                     <button
+                      className={styles.manageAction}
                       onClick={() => {
                         setName(current?.name || "");
                         setNotice("");
@@ -612,7 +629,8 @@ export default function PartsClient({
               </div>
               {view !== "members" && (
                 <>
-                  <div className={styles.dealerBanner}><Icon kind={current?.owned ? "list" : "share"} /><div><strong>{current?.owned ? "Your parts list" : "Shared with you"}</strong><p>{current?.owned ? (current.business_name || current.name) : current?.name}{current?.owned && current.town ? ` · ${current.town}` : ""}</p></div></div>
+                  <div className={styles.partsPanel}>
+                  <div className={styles.tableToolbar}>
                   <div className={styles.search}>
                     <Icon kind="search" />
                     <input
@@ -625,11 +643,7 @@ export default function PartsClient({
                       }}
                     />
                   </div>
-                  <div className={styles.topline}>
-                    <p>
-                      {current?.name} · {total.toLocaleString()} matching{" "}
-                      {total === 1 ? "part" : "parts"}
-                    </p>
+                  <span className={styles.resultCount} aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
                   </div>
                   <div
                     className={styles.tableWrap}
@@ -643,10 +657,9 @@ export default function PartsClient({
                           <th>Part number</th>
                           <th className={styles.numeric}>Quantity</th>
                           <th className={styles.numeric}>Unit price</th>
-                          <th>Dealer</th>
-                          <th>Last updated</th>
+                          {!singleDealer && <><th>Dealer</th><th>Last updated</th></>}
                           <th>
-                            <span className={styles.srOnly}>Contact</span>
+                            Action
                           </th>
                         </tr>
                       </thead>
@@ -664,11 +677,9 @@ export default function PartsClient({
                                   currency: "ZAR",
                                 })}
                               </strong>
-                              <small>
-                                {r.vat_included ? "Incl. VAT" : "Excl. VAT"}
-                              </small>
+                              {!singleDealer && <small>{r.vat_included ? "Incl. VAT" : "Excl. VAT"}</small>}
                             </td>
-                            <td>
+                            {!singleDealer && <><td>
                               {r.business_name}
                               <small>{r.town}</small>
                             </td>
@@ -676,7 +687,7 @@ export default function PartsClient({
                               {date(r.uploaded_at)}
                               {Date.now() - new Date(r.uploaded_at).getTime() >
                                 45 * 86400000 && <small>Update overdue</small>}
-                            </td>
+                            </td></>}
                             <td>
                               <button
                                 aria-label={`Contact ${r.business_name} about ${r.part_number}`}
@@ -687,7 +698,7 @@ export default function PartsClient({
                                   );
                                 }}
                               >
-                                <Icon kind="phone" />
+                                <Icon kind={current?.owned ? "phone" : "message"} />
                                 {current?.owned ? "Contact" : "Enquire"}
                               </button>
                             </td>
@@ -696,17 +707,20 @@ export default function PartsClient({
                       </tbody>
                     </table>
                     {!rows.length && (
-                      <p className={styles.empty}>
-                        {loading ? "Loading parts…" : "No parts found."}
-                      </p>
+                      <div className={styles.tableEmpty}>
+                        <Icon kind={search.trim() ? "search" : "upload"} />
+                        <strong>{loading ? "Loading parts…" : search.trim() ? "No matching parts" : !uploadedAt ? "No parts uploaded yet" : "No parts available"}</strong>
+                        {!loading && !search.trim() && canUpload && <button className={styles.primary} onClick={openUpload}><Icon kind="upload" />Upload CSV</button>}
+                        {!loading && search.trim() && <button onClick={() => { setSearch(""); setPage(0); }}>Clear search</button>}
+                      </div>
                     )}
+                  </div>
                   </div>
                   <div className={styles.topline}>
                     <small>
-                      Availability is from the latest CSV. Confirm price and
-                      stock with the dealer.
+                      Confirm availability and price with the dealer.
                     </small>
-                    <div className={styles.actions}>
+                    {total > 50 && <div className={styles.actions}>
                       <button
                         disabled={loading || page === 0}
                         onClick={() => setPage((p) => p - 1)}
@@ -720,7 +734,7 @@ export default function PartsClient({
                       >
                         Next
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 </>
               )}
