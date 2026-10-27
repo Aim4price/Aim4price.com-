@@ -244,7 +244,10 @@ test('Advert Studio is limited to dealer accounts and uses a four-step guided se
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
   assert.match(client, /(?:Brand kits|advert styles)/i);
-  assert.match(client, /<WorkspaceTitlePanel title="ADVERT STUDIO"/);
+  assert.match(client, /studioMode === 'creator' \? 'CREATE ADVERT' : 'ADVERT STUDIO'/);
+  assert.match(client, /registerStyles\.registerChangeButton/);
+  assert.match(client, /data-tooltip=\{studioMode === 'creator' \? 'Switch to Advert Studio' : 'Switch to Create Advert'\}/);
+  assert.doesNotMatch(client, /Back to Advert Studio/);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
