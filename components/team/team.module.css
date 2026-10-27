@@ -65,3 +65,7 @@
   :global(body:not(:has([data-website-canvas]))) .values { text-align:left; }
   :global(body:not(:has([data-website-canvas]))) .footer > * { flex:1; }
 }
+
+/* Desktop access opts into the same modal surface as Owner App users. */
+.overlayTheme { color:var(--app-text,#14392f); font-family:var(--font-heading,"Montserrat"),sans-serif; }
+.ownerModal.ownerModal { display:flex; flex-direction:column; }
