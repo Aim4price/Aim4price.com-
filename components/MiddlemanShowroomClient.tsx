@@ -167,6 +167,8 @@ export function MiddlemanShowroomManager({
   const [logoFeedback, setLogoFeedback] = useState<{ text: string; error: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [showroomIntroOpen, setShowroomIntroOpen] = useState(false);
+  const [showroomIntroSeen, setShowroomIntroSeen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deletingShowroom, setDeletingShowroom] = useState(false);
@@ -186,7 +188,7 @@ export function MiddlemanShowroomManager({
     || showroomLogoUrl !== showroom.showroomLogoUrl;
 
   useEffect(() => {
-    if ((!manageListingTarget && !createDialogOpen) || typeof window === 'undefined') return undefined;
+    if ((!manageListingTarget && !createDialogOpen && !showroomIntroOpen) || typeof window === 'undefined') return undefined;
 
     const dialog = manageDialogRef.current;
     const previousOverflow = document.body.style.overflow;
@@ -201,6 +203,7 @@ export function MiddlemanShowroomManager({
         event.preventDefault();
         setManageListingTarget(null);
         setCreateDialogOpen(false);
+        setShowroomIntroOpen(false);
         return;
       }
       if (event.key !== 'Tab' || !dialog) return;
@@ -230,7 +233,7 @@ export function MiddlemanShowroomManager({
       document.body.style.overflow = previousOverflow;
       manageTriggerRef.current?.focus();
     };
-  }, [manageListingTarget, createDialogOpen]);
+  }, [manageListingTarget, createDialogOpen, showroomIntroOpen]);
 
   function applyShowroomLogoFile(file?: File) {
     if (!file || saving || readingLogo) return;
@@ -368,13 +371,21 @@ export function MiddlemanShowroomManager({
   return (
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <div className={styles.managerTitle}>
-        <WorkspaceTitlePanel title="MY SHOWROOM" />
+        <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" />
       </div>
       <section className={styles.managerToolbar} aria-label="Showroom actions">
-        <p>All your adverts. One link to share.</p>
+        <p>Your adverts, hosted by Aim4price. One link to share.</p>
         <div className={styles.heroActions}>
           {ownerAccount ? <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button> : <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>}
-          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer">Open public showroom</Link> : null}
+          {showroom.isPublic ? (
+            <button type="button" className={`${styles.secondaryButton} ${styles.openShowroomButton} ${showroomIntroSeen ? '' : styles.showroomPulse}`} aria-haspopup="dialog" onClick={(event) => {
+              manageTriggerRef.current = event.currentTarget;
+              setShowroomIntroSeen(true);
+              setShowroomIntroOpen(true);
+            }}>
+              <ShowroomManageActionIcon name="marketplace" /> Open showroom
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -599,6 +610,33 @@ export function MiddlemanShowroomManager({
           )}
         </section>
       </div>
+
+      {showroomIntroOpen ? (
+        <div className={styles.listingManagerBackdrop} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setShowroomIntroOpen(false); }}>
+          <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${styles.showroomIntroDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="showroom-intro-title" aria-describedby="showroom-intro-description" tabIndex={-1}>
+            <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
+              <div>
+                <h2 id="showroom-intro-title">Your adverts. Your own showroom.</h2>
+                <p id="showroom-intro-description">Aim4price hosts your live adverts on a public page, ready for you to share with customers.</p>
+              </div>
+              <button type="button" className={dialogStyles.close} aria-label="Close showroom introduction" onClick={() => setShowroomIntroOpen(false)} data-modal-close="true">×</button>
+            </header>
+            <div className={styles.showroomIntroBody}>
+              <div className={styles.showroomBenefits}>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span><div><strong>All your live adverts together</strong><p>Customers can browse your available machinery and view your contact details.</p></div></div>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomDetailIcon name="website" /></span><div><strong>One link to share</strong><p>Use your showroom link on WhatsApp, social media or in an email. No separate website needed.</p></div></div>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span><div><strong>You stay in control</strong><p>Manage your adverts here, record sale outcomes and choose when your showroom is public.</p></div></div>
+              </div>
+              <div className={styles.showroomAddress}><span>Your public showroom</span><strong>aim4price.com/showroom/{showroom.slug}</strong></div>
+              {hasUnsavedShowroomChanges ? <p className={styles.showroomIntroNote}>This opens your saved showroom. Save your changes here to update the public page.</p> : null}
+              <div className={styles.showroomIntroActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setShowroomIntroOpen(false)}>Keep managing</button>
+                <Link className={styles.primaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer" onClick={() => setShowroomIntroOpen(false)}>View my showroom<span className={styles.newTabHint}>Opens in a new tab</span></Link>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {createDialogOpen ? (
         <div className={styles.listingManagerBackdrop} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setCreateDialogOpen(false); }}>
