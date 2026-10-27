@@ -455,19 +455,29 @@
 }
 .showroomIntroDialog { width: min(780px, var(--website-dialog-reference-width, 100%)); }
 .showroomIntroBody { padding: var(--account-dialog-padding); }
-.showroomBenefits { display: grid; gap: 20px; }
-.showroomBenefits > div { display: grid; grid-template-columns: 44px minmax(0,1fr); align-items: start; gap: 14px; }
+.showroomBenefits { display: grid; gap: 12px; }
+.showroomBenefits > div { display: grid; grid-template-columns: 52px minmax(0,1fr); align-items: center; gap: 16px; padding: 16px; border: 1px solid var(--app-line, #d0e4dc); border-radius: 16px; background: var(--app-surface-soft, #f0f8f5); }
 .showroomBenefits strong { font-size: .95rem; line-height: 1.4; }
 .showroomBenefits p, .showroomIntroNote { margin: 5px 0 0; color: var(--app-muted, #677b74); font-size: .85rem; line-height: 1.6; }
 .showroomAddress { display: grid; gap: 6px; margin-top: 24px; padding: 16px; border: 1px solid var(--app-line, #d6e4de); border-radius: 14px; background: var(--app-surface-soft, #edf6f2); }
 .showroomAddress > span { color: var(--app-muted, #677b74); font-size: .76rem; font-weight: 650; }
 .showroomAddress > strong { font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
 .showroomIntroActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-.showroomIntroActions > a { flex-direction: column; padding-block: 12px; }
-.newTabHint { font-size: .68rem; font-weight: 500; }
+.showroomIntroActions > :is(a, button) { min-height: 48px; padding-block: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .showroomPulse { animation: none; }
 }
 @media (max-width: 620px) {
   :global(:where(html:not(:has([data-website-canvas])))) .showroomIntroActions > * { width: 100%; }
 }
+
+/* Match the approved showroom and create-advert cards. */
+.showroomBenefits .listingManagerActionIcon,
+.createAdvertActions .listingManagerActionIcon { width: 52px; height: 52px; border-radius: 14px; color: var(--app-accent, #165f49); border-color: var(--app-line, #cce3d9); background: var(--app-accent-soft, #e1f1e9); }
+.showroomBenefits .listingManagerActionIcon svg,
+.createAdvertActions .listingManagerActionIcon svg { width: 28px; height: 28px; }
+.createAdvertActions > a { grid-template-columns: 52px minmax(0,1fr); gap: 16px; background: var(--app-surface-soft, #f0f8f5); border-color: var(--app-line, #cce3d9); }
+.createAdvertActions > a:last-child { background: var(--app-info-soft, #eef7ff); border-color: var(--app-info-line, #c7dff1); }
+.createAdvertActions > a:last-child .listingManagerActionIcon { color: var(--app-info, #225b83); border-color: var(--app-info-line, #c7dff1); background: var(--app-info-soft, #e1f0ff); }
+.createAdvertActions > a:hover { border-color: var(--app-accent, #43836a); box-shadow: 0 0 0 3px var(--app-accent-soft, rgba(22,95,73,.1)); }
+.createAdvertActions .listingManagerActionCopy small { font-weight: 500; }
