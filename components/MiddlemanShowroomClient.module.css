@@ -17,40 +17,18 @@
 
 .managerPage {
   min-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 7rem);
-  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 2rem);
+  padding: 24px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
   background: transparent;
 }
 .managerPageMobile { min-height: calc(var(--website-design-vh, 1dvh) * 100); padding: 1rem; }
-.managerHero, .managerGrid { width: min(1460px, 100%); margin-inline: auto; }
-
-.managerHero {
-  composes: hero from "./WorkspaceHero.module.css";
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3.5), 3.75rem);
-  overflow: hidden;
-  min-height: 0;
-  padding: clamp(24px, calc(var(--website-design-vw, 1vw) * 2.4), 40px);
-  border: 1px solid var(--app-line, #d6e4de);
-  border-radius: 22px;
-  background: var(--app-surface, rgba(255,255,255,.97));
-  box-shadow: 0 16px 44px var(--app-shadow-colour, rgba(23,54,44,.07));
+/* Match Advert Studio's centered title and workspace exactly. */
+.managerTitle, .managerToolbar, .managerGrid {
+  width: min(100%, calc(1320px - 3.4rem));
+  margin-inline: auto;
+  min-width: 0;
 }
-.managerHero::after {
-  position: absolute;
-  top: -7.5rem;
-  right: 20%;
-  width: 18rem;
-  height: 18rem;
-  border: 2.5rem solid var(--app-line, rgba(22,95,73,.035));
-  border-radius: 50%;
-  content: '';
-  pointer-events: none;
-}
-.managerHeroCopy, .heroActions { position: relative; z-index: 1; }
-.managerHeroCopy { min-width: 0; }
+.managerToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.managerToolbar > p { margin: 0; color: var(--app-muted, #677b74); font-size: .9rem; line-height: 1.5; }
 .heroActions, .settingsActions, .publicContactActions { display: flex; flex-wrap: wrap; gap: .7rem; }
 .heroActions { flex: 0 0 auto; align-self: center; }
 
@@ -205,19 +183,18 @@
 .listingManagerSummary strong { overflow-wrap: anywhere; font-size: .98rem; font-weight: 820; line-height: 1.35; }
 .listingManagerSummary span { color: var(--app-muted, #687c74); font-size: .75rem; font-weight: 650; line-height: 1.45; }
 .listingManagerActions { display: grid; gap: .7rem; padding: 1.2rem 1.6rem 1.6rem; }
-.listingManagerActions > a, .listingManagerActions > button { display: grid; grid-template-columns: 2.75rem minmax(0,1fr) 1.35rem; align-items: center; gap: .9rem; min-height: 5.25rem; border: 1px solid var(--app-line, #d6e2dd); border-radius: 16px; padding: .85rem 1rem; color: var(--app-text, #244c40); background: var(--app-surface, #fff); box-shadow: 0 8px 24px var(--app-shadow-colour, rgba(23,54,44,.035)); font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
+.listingManagerActions > a, .listingManagerActions > button { display: grid; grid-template-columns: 2.75rem minmax(0,1fr); align-items: center; gap: .9rem; min-height: 5.25rem; border: 1px solid var(--app-line, #d6e2dd); border-radius: 16px; padding: .85rem 1rem; color: var(--app-text, #244c40); background: var(--app-surface, #fff); box-shadow: 0 8px 24px var(--app-shadow-colour, rgba(23,54,44,.035)); font: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease; }
 .listingManagerActions > a:hover, .listingManagerActions > button:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--app-line, #9fc3b5); background: var(--app-surface, #f7fbf9); box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(23,54,44,.075)); }
 .listingManagerActionIcon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border: 1px solid var(--app-line, #d2e5dd); border-radius: 12px; color: var(--app-text, var(--green)); background: var(--app-surface-soft, #edf7f3); }
 .listingManagerActionIcon svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
 .listingManagerActionCopy { display: grid; gap: .25rem; min-width: 0; }
 .listingManagerActions strong { font-size: .9rem; font-weight: 820; }
 .listingManagerActions small { color: var(--app-muted, #687c74); font-size: .74rem; font-weight: 600; line-height: 1.45; }
-.listingManagerActionArrow { width: 1.15rem; height: 1.15rem; fill: none; stroke: var(--app-text, #286650); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .listingManagerActions > button:disabled { cursor: wait; opacity: .5; }
 .listingManagerActions .listingManagerPrimary { border-color: var(--app-line, #c6ded4); background: var(--app-surface, #f5faf8); }
 .listingManagerActions .listingManagerPrimary:disabled { cursor: not-allowed; }
 .listingManagerActions .listingManagerRemove { border-color: var(--app-danger-line, #ead0cc); color: var(--app-danger, #92372f); background: var(--app-danger-soft, #fffafa); }
-.listingManagerActions .listingManagerRemove strong, .listingManagerActions .listingManagerRemove .listingManagerActionArrow { color: var(--app-danger, #92372f); stroke: var(--app-danger, #92372f); }
+.listingManagerActions .listingManagerRemove strong { color: var(--app-danger, #92372f); stroke: var(--app-danger, #92372f); }
 .listingManagerActions .listingManagerRemove .listingManagerActionIcon { border-color: var(--app-danger-line, #efd8d4); color: var(--app-danger, #a13b32); background: var(--app-danger-soft, #fff1ef); }
 .listingManagerClose:focus-visible, .listingManagerActions > a:focus-visible, .listingManagerActions > button:focus-visible { outline: 3px solid var(--app-warning-line, rgba(243,182,64,.55)); outline-offset: 2px; }
 
@@ -284,7 +261,6 @@
 .publicFooter a:focus-visible { outline: 3px solid var(--app-warning-line, rgba(243,182,64,.55)); outline-offset: 2px; }
 
 @media (max-width: 1060px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .managerHero { align-items: flex-start; flex-direction: column; }
   :global(:where(html:not(:has([data-website-canvas])))) .managerGrid { grid-template-columns: 1fr; }
 }
 
@@ -305,9 +281,7 @@
 
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .managerPage, :global(:where(html:not(:has([data-website-canvas])))) .managerPageMobile { padding: .75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .managerHero { gap: 1.35rem; border-radius: 18px; padding: 1.3rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .managerHero::after { display: none; }
-  :global(:where(html:not(:has([data-website-canvas])))) .heroActions, :global(:where(html:not(:has([data-website-canvas])))) .heroActions a { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .heroActions, :global(:where(html:not(:has([data-website-canvas])))) .heroActions > :is(a, button) { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .managerGrid { gap: .75rem; margin-top: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .stockCard { order: -1; }
   :global(:where(html:not(:has([data-website-canvas])))) .settingsCard, :global(:where(html:not(:has([data-website-canvas])))) .stockCard { border-radius: 18px; padding: 1rem; }
@@ -365,7 +339,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerHeader { padding: 1.2rem 1rem 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary { padding: .9rem 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions { padding: 1rem 1rem max(1rem,env(safe-area-inset-bottom)); }
-  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > a, :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > button { grid-template-columns: 2.55rem minmax(0,1fr) 1.15rem; min-height: 5rem; padding-inline: .8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > a, :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > button { grid-template-columns: 2.55rem minmax(0,1fr); min-height: 5rem; padding-inline: .8rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActionIcon { width: 2.55rem; height: 2.55rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary { grid-template-columns: 4.5rem minmax(0,1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary img { width: 4.5rem; height: 3.5rem; }
@@ -401,10 +375,6 @@
 .deleteDialog p { font-size: 0.88rem; }
 
 /* Keep the showroom readable and the four advert actions visible together. */
-.managerHero { padding-block: 1.65rem; }
-.managerHero::after { opacity: .35; }
-.managerHeroCopy h1 { font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.8rem); line-height: 1.12; }
-.managerHeroCopy p { margin-top: .65rem; }
 .managerGrid { gap: 1.25rem; margin-top: 1.25rem; }
 .managerPage .primaryButton, .managerPage .secondaryButton { font-size: .9rem; }
 .sectionHeading p { font-size: .84rem; }
@@ -453,3 +423,24 @@
 .settingsCard .showroomLogoCopy > small, .settingsCard label > small { font-size: .75rem; }
 :global(html[data-app-theme='dark']) .settingsCard { --typing-field-surface: #252b30; --typing-field-focus: #30383e; }
 :global(html[data-app-theme='dark']) .settingsCard :is(.showroomLogoField, .advertDesignField, .switchRow, .slugField, .statusText) { background: #252b30; }
+
+/* A quieter card hierarchy keeps long advert names and actions easy to scan. */
+.settingsCard, .stockCard { min-width: 0; }
+.managerListing { background: var(--app-surface, #fff); }
+.listingTitleRow > strong { overflow-wrap: anywhere; }
+.managerListing:focus-within { border-color: var(--app-accent, #43836a); }
+.managerPage .listingActions button { min-height: 44px; }
+.managerPage .statusLive { color: var(--app-accent, #165f49); background: var(--app-accent-soft, #edf6f2); }
+.managerPage .statusLive::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; }
+.managerPage .showroomLogoPreview { width: 4.75rem; height: 4.75rem; border-style: solid; }
+.settingsCard .showroomLogoField { grid-template-columns: 4.75rem minmax(0,1fr); }
+.settingsCard textarea { min-height: 110px; }
+.listingManagerShare { padding: 0 var(--account-dialog-padding) var(--account-dialog-padding); }
+.managerPage .listingManagerDialog { scrollbar-width: auto; scrollbar-color: var(--app-accent, #43836a) var(--app-surface-soft, #edf6f2); }
+.managerPage .listingManagerDialog::-webkit-scrollbar { width: 14px; }
+.managerPage .listingManagerDialog::-webkit-scrollbar-thumb { border: 3px solid var(--app-surface-soft, #edf6f2); border-radius: 12px; background: var(--app-accent, #43836a); }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .managerPage { padding: 16px 12px 44px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerToolbar { gap: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .heroActions { gap: 8px; }
+}
