@@ -26,6 +26,8 @@ export default function TeamModal({ title, subtitle, children, onClose, busy = f
     <div className={ownerStyle ? accessStyles.modalBackdrop : styles.backdrop} onClick={() => { if (!busy)
         onClose(); }}/>
     <div ref={ref} className={ownerStyle ? `${accessStyles.modal} ${accessStyles.notificationStyle} ${styles.ownerModal}` : styles.modal} role="dialog" aria-modal="true" aria-labelledby="team-modal-title" onKeyDown={event => {
+            // Portalled calendars handle their own keyboard navigation and dismissal.
+            if (!event.currentTarget.contains(event.target as Node)) return;
             if (event.key === 'Escape') {
                 event.stopPropagation();
                 if (!busy)
