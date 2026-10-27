@@ -81,7 +81,7 @@ function websiteLabel(value: string): string {
 }
 
 type ShowroomDetailIconName = 'location' | 'phone' | 'email' | 'website';
-type ShowroomManageActionIconName = 'edit' | 'download' | 'marketplace' | 'remove';
+type ShowroomManageActionIconName = 'edit' | 'download' | 'marketplace' | 'remove' | 'calculator' | 'link' | 'controls' | 'assets';
 
 function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
   return (
@@ -114,6 +114,10 @@ function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
 function ShowroomManageActionIcon({ name }: { name: ShowroomManageActionIconName }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
+      {name === 'assets' ? <path d="M12 2 3 7v10l9 5 9-5V7Z M3 7l9 5 9-5 M12 12v10" /> : null}
+      {name === 'calculator' ? <><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M8 6h8v4H8zM8 14h1M12 14h1M16 14h.01M8 18h1M12 18h1M16 18h.01" /></> : null}
+      {name === 'link' ? <><path d="m10 13 4-4M8 15l-1 1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0M13 17a3.5 3.5 0 0 0 5 0l4-4a3.5 3.5 0 0 0-5-5l-1 1" /></> : null}
+      {name === 'controls' ? <><path d="M3 6h4m4 0h10M3 12h10m4 0h4M3 18h4m4 0h10" /><circle cx="9" cy="6" r="2" /><circle cx="15" cy="12" r="2" /><circle cx="9" cy="18" r="2" /></> : null}
       {name === 'edit' ? (
         <>
           <path d="m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Z" />
@@ -616,22 +620,22 @@ export function MiddlemanShowroomManager({
           <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${styles.showroomIntroDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="showroom-intro-title" aria-describedby="showroom-intro-description" tabIndex={-1}>
             <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
               <div>
-                <h2 id="showroom-intro-title">Your adverts. Your own showroom.</h2>
-                <p id="showroom-intro-description">Aim4price hosts your live adverts on a public page, ready for you to share with customers.</p>
+                <h2 id="showroom-intro-title">Your advert showroom</h2>
+                <p id="showroom-intro-description">Hosted by Aim4price. Ready to share.</p>
               </div>
               <button type="button" className={dialogStyles.close} aria-label="Close showroom introduction" onClick={() => setShowroomIntroOpen(false)} data-modal-close="true">×</button>
             </header>
             <div className={styles.showroomIntroBody}>
               <div className={styles.showroomBenefits}>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span><div><strong>All your live adverts together</strong><p>Customers can browse your available machinery and view your contact details.</p></div></div>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomDetailIcon name="website" /></span><div><strong>One link to share</strong><p>Use your showroom link on WhatsApp, social media or in an email. No separate website needed.</p></div></div>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span><div><strong>You stay in control</strong><p>Manage your adverts here, record sale outcomes and choose when your showroom is public.</p></div></div>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span><div><strong>All your adverts</strong><p>Your live machinery listings in one place.</p></div></div>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="link" /></span><div><strong>One link to share</strong><p>Send it on WhatsApp, social media or email.</p></div></div>
+                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="controls" /></span><div><strong>You stay in control</strong><p>Update adverts and manage visibility.</p></div></div>
               </div>
-              <div className={styles.showroomAddress}><span>Your public showroom</span><strong>aim4price.com/showroom/{showroom.slug}</strong></div>
+              <div className={styles.showroomAddress}><span>Your showroom link</span><strong>aim4price.com/showroom/{showroom.slug}</strong></div>
               {hasUnsavedShowroomChanges ? <p className={styles.showroomIntroNote}>This opens your saved showroom. Save your changes here to update the public page.</p> : null}
               <div className={styles.showroomIntroActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setShowroomIntroOpen(false)}>Keep managing</button>
-                <Link className={styles.primaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer" onClick={() => setShowroomIntroOpen(false)}>View my showroom<span className={styles.newTabHint}>Opens in a new tab</span></Link>
+                <Link className={styles.primaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer" onClick={() => setShowroomIntroOpen(false)} aria-label="Open showroom (opens in a new tab)">Open showroom</Link>
               </div>
             </div>
           </section>
@@ -642,17 +646,17 @@ export function MiddlemanShowroomManager({
         <div className={styles.listingManagerBackdrop} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setCreateDialogOpen(false); }}>
           <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="create-advert-title" tabIndex={-1}>
             <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
-              <div><h2 id="create-advert-title">Create advert</h2><p>Start with an estimate or an asset you already own.</p></div>
+              <div><h2 id="create-advert-title">Create advert</h2><p>Choose where to start.</p></div>
               <button type="button" className={dialogStyles.close} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)} data-modal-close="true">×</button>
             </header>
             <div className={`${styles.listingManagerActions} ${styles.createAdvertActions}`}>
               <Link href={valuationHref}>
-                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Create from estimate</strong><small>Value an asset and create its advert.</small></span>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="calculator" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>From estimate</strong><small>Value an asset and create an advert.</small></span>
               </Link>
               <Link href="/asset-register">
-                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Create from asset register</strong><small>Choose an asset and select Marketplace from its Manage menu.</small></span>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="assets" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>From asset register</strong><small>Choose an asset you already own.</small></span>
               </Link>
             </div>
           </section>
