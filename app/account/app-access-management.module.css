@@ -1348,3 +1348,21 @@
 .compactEditorModal { grid-template-rows: auto minmax(0, 1fr) auto; }
 .editorToolbar { margin-bottom: 1rem; }
 .editorFooter .editorFooterActions > button:first-child { background: var(--app-accent, #175b45); color: var(--app-on-accent, #fff); border: 1px solid var(--app-accent, #175b45); }
+
+/* New Owner / Field logins share the Desktop user form's content alignment. */
+.newUserSetup { min-width:0; }
+.newUserSetup .businessLoginForm { max-width:none; width:100%; margin:0; gap:1rem; }
+.setupTitle { font-size:1.2rem; font-weight:750; line-height:1.4; margin:0 0 1rem; color:var(--app-text,#173f31); }
+.newUserSetup .setupForm { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:1.25rem; margin:0; }
+.newUserSetup .field { align-content:start; gap:.6rem; }
+.newUserSetup .field > span { font-size:.9rem; font-weight:650; }
+.newUserSetup .setupInputIcon { position:relative; display:block; min-width:0; }
+.newUserSetup .setupInputIcon > svg { position:absolute; top:50%; left:1rem; width:1.15rem; height:1.15rem; transform:translateY(-50%); color:var(--app-muted,#65796f); opacity:.55; pointer-events:none; }
+.newUserSetup .setupInputIcon input { height:3.35rem; min-height:3.35rem; padding-left:2.9rem; background:var(--app-surface-soft,#f3f8f5); }
+.newUserSetup .formActions { grid-column:1 / -1; margin-top:.25rem; padding-top:1rem; border-top:1px solid var(--app-line,#e0e6e3); }
+.newUserSetup .loginExample { margin:0; }
+.newUserSetup .loginHint { margin:0; }
+.newUserSetup .loginHelp summary { text-decoration:none; }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .newUserSetup .setupForm { grid-template-columns:1fr; }
+}
