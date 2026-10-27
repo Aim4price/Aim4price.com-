@@ -80,13 +80,12 @@ function websiteLabel(value: string): string {
   }
 }
 
-type ShowroomDetailIconName = 'location' | 'phone' | 'email' | 'website' | 'whatsapp';
+type ShowroomDetailIconName = 'location' | 'phone' | 'email' | 'website';
 type ShowroomManageActionIconName = 'edit' | 'download' | 'marketplace' | 'remove' | 'calculator' | 'link' | 'controls' | 'assets';
 
 function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      {name === 'whatsapp' ? <><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 21l1.7-4.9A8.5 8.5 0 1 1 20.5 11.7Z" /><path d="m8 7 2 3-1 1c1 2 2 3 4 4l1-1 3 2" /></> : null}
       {name === 'location' ? (
         <>
           <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -807,7 +806,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
           <Link href="/" className={styles.aim4priceMark} aria-label="Aim4price home">
             <img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" />
           </Link>
-          <Link className={styles.publicTopbarAction} href="/marketplace">Browse marketplace</Link>
+          <Link className={styles.publicTopbarAction} href="/valuation">Value your machinery</Link>
         </div>
       </header>
       <section className={styles.publicHero}>
@@ -816,17 +815,17 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
             <div className={styles.profileIdentity}>
               {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span aria-hidden="true">{showroom.name.slice(0, 2).toUpperCase()}</span>}
               <div>
-                <div className={styles.publicIdentityHeading}><h1>{showroom.name}</h1>
-                <p className={styles.publicAdvertSummary}>{liveAdvertLabel}</p></div>
+                <h1>{showroom.name}</h1>
+                <p className={styles.publicAdvertSummary}>{liveAdvertLabel}</p>
                 {showroom.bio
                   ? <p className={styles.publicBio}>{showroom.bio}</p>
-                  : <p className={styles.publicTrustLine}>Browse our available machinery.</p>}
+                  : <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>}
               </div>
             </div>
             <div className={styles.publicContactActions} role="group" aria-label={`${showroom.name} contact options`}>
-              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}><ShowroomDetailIcon name="whatsapp" />WhatsApp</a> : null}
-              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call</a> : null}
-              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}><ShowroomDetailIcon name="email" />Email</a> : null}
+              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}>Chat on WhatsApp</a> : null}
+              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}>Call business</a> : null}
+              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}>Email business</a> : null}
             </div>
           </div>
           {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
@@ -878,19 +877,10 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         />
       </section>
 
-      {showroom.phone || showroom.email ? (
-        <section className={styles.sellerContactPanel} aria-labelledby="seller-contact-title">
-          <div><h2 id="seller-contact-title">Interested in our equipment?</h2><p>Contact {showroom.name} directly.</p></div>
-          <div className={styles.publicContactActions}>
-            {showroom.phone ? <><a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer"><ShowroomDetailIcon name="whatsapp" />WhatsApp seller</a><a className={styles.secondaryButton} href={`tel:${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call seller</a></> : null}
-            {!showroom.phone && showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`}><ShowroomDetailIcon name="email" />Email seller</a> : null}
-          </div>
-        </section>
-      ) : null}
       <footer className={styles.publicFooter}>
         <div className={styles.publicFooterInner}>
-          <div className={styles.hostedBrand}><img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" /><span>Showroom hosted by Aim4price</span></div>
-          <Link href="/my-showroom">Create your own showroom</Link>
+          <div><strong>Hosted on Aim4price.com</strong><span>Professional machinery advertising and direct seller contact.</span></div>
+          <Link href="/valuation">Value your machinery</Link>
         </div>
       </footer>
     </div>
