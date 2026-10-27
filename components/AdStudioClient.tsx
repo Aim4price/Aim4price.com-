@@ -29,6 +29,8 @@ import {
 import styles from './AdStudioClient.module.css';
 import AdvertCreator from './AdvertCreator';
 import creatorStyles from './AdvertCreator.module.css';
+import valuationStyles from '../app/valuation/page.module.css';
+import entryStyles from '../app/marketplace/marketplace-entry.module.css';
 import SettingsDetailIcon from './SettingsDetailIcon';
 import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
@@ -649,10 +651,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   return (
-    <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
-      <div className={styles.titlePanel}>
+    <div className={studioMode === 'home' ? valuationStyles.page : `${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
+      {studioMode !== 'home' ? <div className={styles.titlePanel}>
         <WorkspaceTitlePanel title="ADVERT STUDIO" />
-      </div>
+      </div> : null}
 
       {loading ? <div className={styles.notice}>Loading your advert styles…</div> : null}
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
@@ -661,10 +663,42 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         <div className={styles.notice}>Your Dealer login does not have permission to edit advert styles.</div>
       ) : null}
 
-      {!loading && studioMode === 'home' ? <div className={creatorStyles.entry} aria-label="Advert Studio options">
-        <button type="button" onClick={() => setStudioMode('style')}><StudioIcon name="palette" /><strong>Advert Style</strong><span>Set your branding and default layout.</span></button>
-        <button type="button" onClick={() => { setCreatorStarted(true); setStudioMode('creator'); }}><StudioIcon name="image" /><strong>Advert Creator</strong><span>Create, preview and share your advert.</span></button>
-      </div> : null}
+      {!loading && studioMode === 'home' ? (
+        <div className={`${valuationStyles.container} ${entryStyles.entryContainer}`}>
+          <section className={`${valuationStyles.wizardShell} ${valuationStyles.sectorWizardShell} ${entryStyles.entryShell}`}>
+            <div className={`${valuationStyles.wizardCard} ${valuationStyles.sectorWizardCard} ${entryStyles.entryCard}`}>
+              <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}>
+                <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
+                  <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
+                    <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Advert Studio</h1>
+                    <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>Create your advert style or design an advert to share.</p>
+                  </div>
+                  <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Advert Studio options">
+                    <button type="button" className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`} onClick={() => setStudioMode('style')}>
+                      <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
+                      <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
+                        <span className={valuationStyles.sectorLabelWrap}>
+                          <strong className={valuationStyles.sectorLabel}>Advert Style</strong>
+                          <span className={valuationStyles.sectorCardHint}>Set your branding and default layout.</span>
+                        </span>
+                      </span>
+                    </button>
+                    <button type="button" className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`} onClick={() => { setCreatorStarted(true); setStudioMode('creator'); }}>
+                      <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
+                      <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
+                        <span className={valuationStyles.sectorLabelWrap}>
+                          <strong className={valuationStyles.sectorLabel}>Advert Creator</strong>
+                          <span className={valuationStyles.sectorCardHint}>Create, preview and share your advert.</span>
+                        </span>
+                      </span>
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
       {!loading && studioMode !== 'home' ? <div className={creatorStyles.back}><button type="button" className={styles.secondaryButton} onClick={() => setStudioMode('home')}>Back to Advert Studio</button></div> : null}
       {!loading && creatorStarted ? <div style={studioMode === 'creator' ? undefined : { display: 'none' }}>
         <AdvertCreator kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
