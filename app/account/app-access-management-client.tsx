@@ -718,8 +718,8 @@ function AppAccessManagement({ kind, configOverride }: {
       <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
           <span>Business login ID</span>
-          <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
-            autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
+          <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="business" /> : null}<input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
+            autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} /></span>
         </label>
         <p className={styles.loginExample} aria-live="polite">App login example: <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong></p>
         <p className={styles.loginHint}>A permanent ID shared by all your app logins.</p>
@@ -730,6 +730,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </details>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
         <div className={styles.loginSetupActions}>
+          {activeFlow === 'new' && kind !== 'dealer' ? <button type="button" className={styles.cancelButton} onClick={closeFlow} disabled={namespaceBusy}>Cancel</button> : null}
           <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
             {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
           </button>
@@ -1061,22 +1062,24 @@ function AppAccessManagement({ kind, configOverride }: {
         closeDisabled={creating || namespaceBusy}
         onClose={closeFlow}
       >
+        <div className={kind === 'owner' || kind === 'field' ? styles.newUserSetup : undefined}>
         <InlineNotice notice={notice} />
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
-          <form className={baseStyles.form} onSubmit={createRecord}>
+          {kind !== 'dealer' ? <h3 className={styles.setupTitle}>Login details</h3> : null}
+          <form className={`${baseStyles.form} ${styles.setupForm}`} onSubmit={createRecord}>
             <label className={`${baseStyles.field} ${styles.field}`}>
               <span>{config.displayNameLabel}</span>
-              <input
+              <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="person" /> : null}<input
                 value={draft.displayName}
                 onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
                 placeholder={config.displayNamePlaceholder}
                 autoComplete="off"
-              />
+              /></span>
             </label>
             <label className={`${baseStyles.field} ${styles.field}`}>
               <span>Person’s username</span>
-              <input
+              <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="email" /> : null}<input
                 value={draft.username}
                 onChange={(event) => {
                   setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }));
@@ -1087,14 +1090,14 @@ function AppAccessManagement({ kind, configOverride }: {
                 autoCapitalize="none"
                 autoComplete="off"
                 aria-invalid={Boolean(createUsernameError)}
-              />
+              /></span>
               <small className={styles.usernamePreview}>{`Full app login: ${usernamePreview(draft.username || 'john')}`}</small>
               {createUsernameError ? <small className={baseStyles.fieldError} role="alert">{createUsernameError}</small> : null}
             </label>
             {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
             <div className={`${baseStyles.field} ${styles.field}`}>
               <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-create-password`}>{config.passwordLabel}</label>
-              <div className={baseStyles.passwordInputWrap}>
+              <div className={`${baseStyles.passwordInputWrap} ${styles.setupInputIcon}`}>{kind !== 'dealer' ? <SettingsDetailIcon name="lock" /> : null}
                 <input
                   id={`${kind}-create-password`}
                   type={showCreatePassword ? 'text' : 'password'}
@@ -1118,6 +1121,7 @@ function AppAccessManagement({ kind, configOverride }: {
             </div>
           </form>
         </section> : null}
+        </div>
       </AppAccessModal>
 
       <AppAccessModal
