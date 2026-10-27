@@ -83,3 +83,36 @@
   font-size:.9rem; color:var(--app-text,#173f31);
 }
 .ownerManager .statusLink svg { width:1.1rem; height:1.1rem; opacity:.7; }
+
+.detailsGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.detailsGrid > p,.detailsGrid > button { grid-column:1 / -1; }
+.inputIcon { position:relative; display:block; }
+.inputIcon > svg { position:absolute; left:1rem; top:50%; transform:translateY(-50%); width:1.2rem; height:1.2rem; opacity:.55; pointer-events:none; }
+.fields .inputIcon input { padding-left:2.9rem; }
+.password.inputIcon input { padding-right:3.7rem; }
+.password.inputIcon button { position:absolute; right:.3rem; top:50%; transform:translateY(-50%); border:0; background:transparent; padding:.5rem; }
+.password button svg,.statusAction button svg,.history svg,.roleIcon svg { width:1.25rem; height:1.25rem; flex-shrink:0; }
+.roleIcon { opacity:.6; }
+.history dt,.statusAction button { display:flex; align-items:center; gap:.65rem; }
+.history svg { opacity:.6; }
+.ownerManager .footer { position:static; border-top:1px solid var(--app-line,#d8e5dd); margin-top:1.25rem; padding-top:1rem; }
+.fullAccess { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.pickerCards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0; padding:4px; }
+.picker { --picker-padding:1.5rem; padding:0; border:1px solid var(--app-line,#d8e5dd); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#173f31); max-height:85dvh; overflow:hidden; font-family:var(--font-body,'Montserrat'),sans-serif; }
+.picker[open] { display:flex; flex-direction:column; }
+.picker::backdrop { background:rgba(15,35,28,.55); backdrop-filter:blur(6px); }
+.pickerHeader { display:flex; justify-content:space-between; gap:1rem; padding:1.5rem; border-bottom:1px solid var(--app-line,#d8e5dd); }
+.pickerHeader h2 { margin:0; font-size:1.6rem; }
+.pickerHeader p { margin:.4rem 0 0; color:var(--app-muted,#65796f); }
+.picker button { font:inherit; color:inherit; border:1px solid var(--app-line,#d8e5dd); border-radius:.8rem; padding:.7rem 1rem; background:var(--app-surface-soft,#f3f8f5); cursor:pointer; }
+.picker .primary { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
+.pickerFooter { display:flex; justify-content:flex-end; align-items:center; gap:.75rem; border-top:1px solid var(--app-line,#d8e5dd); padding:1rem 1.5rem; }
+.pickerFooter > span { margin-right:auto; }
+@media(max-width:640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .detailsGrid,
+ :global(:where(html:not(:has([data-website-canvas])))) .pickerCards { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .fullAccess { flex-wrap:wrap; }
+ :global(:where(html:not(:has([data-website-canvas])))) .pickerFooter { flex-wrap:wrap; }
+}
+
+.picker input[type=checkbox] { accent-color:var(--app-accent,#267254); }

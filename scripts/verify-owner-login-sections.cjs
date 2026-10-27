@@ -61,7 +61,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  let data={ok:true};let ok=true;
  if(url==='/api/account/app-login-name')data={ok:true,accountName:'skb',suggestedName:'skb'};
  else if(url==='/api/owner-app/users')data={ok:true,users};
- else if(url.endsWith('/access')){if(method==='PUT'){if(window.holdAccess)await new Promise(resolve=>window.releaseAccess=resolve);settings=body;}data={ok:true,settings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor'}],groups:[{id:'farm',name:'Farm equipment',memberCount:2}]};}
+ else if(url.endsWith('/access')){if(method==='PUT'){if(window.holdAccess)await new Promise(resolve=>window.releaseAccess=resolve);settings=body;}data={ok:true,settings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor',registerId:'register-a'}],registers:[{id:'register-a',name:'Farm register'}],groups:[{id:'farm',name:'Farm equipment',memberCount:2,memberAssetIds:['tractor']}]};}
  else if(method==='PATCH'){if(window.failSave){ok=false;data={ok:false,error:'Username is already in use.'};}else{users=users.map(u=>url.endsWith(u.id)?{...u,...body}:u);data={ok:true,user:users.find(u=>url.endsWith(u.id))};}}
  else if(method==='DELETE')users=users.filter(u=>!url.endsWith(u.id));
  return {ok,json:async()=>data};};
@@ -83,10 +83,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));
  await page.screenshot({path:'.next/owner-login-validation/overview-mobile.png'});
  await page.setViewport({width:1280,height:900});
- await card('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Owner / Admin has access to all umbrellas and assets.')));
+ await card('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Full access to all assets')));
  assert.equal(await page.$$eval('input[type="checkbox"]',els=>els.length),0);await click('‹ Back');
  await card('Permissions');await page.click('input[value="operations"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{accessRole:'operations'});
- await card('Asset access');await page.waitForSelector('input[type="checkbox"]');await page.click('input[type="checkbox"]');await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body.groupIds),['farm']);
+ await card('Asset access');await card('Umbrella');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
+ await card('Registers');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
+ await card('Registers');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
+ await card('Choose assets');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await page.screenshot({path:'.next/owner-login-validation/asset-picker.png'});await click('Confirm selection');
+ assert(await page.evaluate(()=>document.body.textContent.includes('1 asset included')));
+ await card('Umbrella');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Asset access');
+ await page.screenshot({path:'.next/owner-login-validation/asset-access.png'});
+ await page.setViewport({width:390,height:844});await card('Choose assets');
+ assert(await page.$eval('dialog[open]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}));
+ await page.screenshot({path:'.next/owner-login-validation/picker-mobile.png'});await click('Cancel');await page.setViewport({width:1280,height:900});
+ await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body),{assetScope:'selected',assetIds:['tractor'],groupIds:['farm'],registerIds:['register-a']});
  await card('Passcode');await fill('New passcode','4321');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'4321'});
  await card('Login details');await fill('Display name','George Junior');await page.evaluate(()=>window.failSave=true);await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Username is already in use.'));await heading('Login details');
  await page.evaluate(()=>window.failSave=false);await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{displayName:'George Junior',username:'jnr@skb'});
