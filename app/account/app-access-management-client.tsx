@@ -1177,7 +1177,7 @@ function AppAccessManagement({ kind, configOverride }: {
             {!loading && records.length ? (
               <div className={`${baseStyles.managerList} ${styles.directoryList}`}>
                 {records.map((record) => (
-                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard}`}>
+                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard} ${kind === 'owner' ? ownerStyles.directoryRow : ''}`}>
                     {renderRecordSummary(record, true)}
                   </article>
                 ))}
