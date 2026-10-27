@@ -22,6 +22,7 @@ import {
 } from '../lib/ad-studio';
 import {
   getMarketplaceAdRating,
+  downloadMarketplaceAd,
   renderMarketplaceAdCanvas,
   type MarketplaceAdContent,
 } from '../lib/marketplace-ad-renderer';
@@ -83,6 +84,7 @@ type StudioIconName =
   | 'back'
   | 'next'
   | 'preview'
+  | 'download'
   | 'image'
   | 'language'
   | 'price'
@@ -113,6 +115,7 @@ function StudioIcon({ name }: { name: StudioIconName }) {
           <path {...strokeProps} d="m16.2 13.8.55 1.1 1.2.18-.87.85.2 1.2-1.08-.57-1.08.57.2-1.2-.87-.85 1.2-.18.55-1.1Z" />
         </>
       ) : null}
+      {name === 'download' ? <path {...strokeProps} d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4" /> : null}
       {name === 'plus' ? <path {...strokeProps} d="M12 5v14M5 12h14" /> : null}
       {name === 'edit' ? (
         <>
@@ -275,6 +278,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [canManage, setCanManage] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloadingPreview, setDownloadingPreview] = useState(false);
+  const [previewDownloadError, setPreviewDownloadError] = useState('');
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
@@ -396,12 +401,33 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setError('');
   }
 
+  async function downloadPreviewPng() {
+    if (downloadingPreview) return;
+    setDownloadingPreview(true);
+    setPreviewDownloadError('');
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1600;
+      canvas.height = 900;
+      await renderMarketplaceAdCanvas(canvas, previewContent, { includeImages: true, useBestPhotoFit: false });
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => result ? resolve(result) : reject(new Error('PNG export failed.')), 'image/png');
+      });
+      downloadMarketplaceAd(blob, 'aim4price-advert-preview.png');
+    } catch {
+      setPreviewDownloadError('Could not download the PNG. Please try again.');
+    } finally {
+      setDownloadingPreview(false);
+    }
+  }
+
   function openPreview() {
     const source = previewCanvasRef.current;
     const target = enlargedCanvasRef.current;
     if (!source || !target) return;
     target.getContext('2d')?.drawImage(source, 0, 0);
     previewDialogRef.current?.showModal();
+    previewDialogRef.current?.querySelector<HTMLButtonElement>('[data-modal-close]')?.focus();
   }
 
   function revealEditor() {
@@ -962,9 +988,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               </div>
               <div className={styles.previewTools}>
                 <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={() => previewPhotoInputRef.current?.click()}><StudioIcon name="image" />Upload photos</button>
-                {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}>Clear</button> : null}
+                {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}><StudioIcon name="delete" />Clear</button> : null}
+                <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
               </div>
             </div>
+            {previewDownloadError ? <p role="alert">{previewDownloadError}</p> : null}
             <div className={styles.previewPhotoLab}>
               <input
                 ref={previewPhotoInputRef}
@@ -1028,8 +1056,12 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <dialog ref={previewDialogRef} className={styles.previewDialog} aria-labelledby="studio-large-preview-title" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
                 <h2 id="studio-large-preview-title">Advert preview</h2>
-                <button type="button" data-modal-close="true" aria-label="Close advert preview" autoFocus title="Close advert preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
+                <div className={styles.dialogTools}>
+                  <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
+                  <button type="button" data-modal-close="true" aria-label="Close advert preview" autoFocus title="Close advert preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
+                </div>
               </div>
+              {previewDownloadError ? <p role="alert">{previewDownloadError}</p> : null}
               <div className={styles.previewDialogBody}>
                 <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged advert preview" />
               </div>
