@@ -3,9 +3,12 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
+const cssMaps={};
 const stubs={'components/WebsitePortal':'exports.createPortal=(children,target)=>require("react-dom").createPortal(children,target);','components/SwitchAccountButton':'module.exports=()=>null;'};
 function cssModule(file){
+ if(cssMaps[file])return cssMaps[file];
  const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
+ cssMaps[file]=map;
  sheet.walkRules(rule=>{
   const globals=[];let selector=rule.selector;
   while(selector.includes(':global(')){
@@ -18,7 +21,18 @@ function cssModule(file){
   globals.forEach((value,index)=>{selector=selector.replace('GLOBALTOKEN'+index,value);});
   rule.selector=selector;
  });
+ sheet.walkDecls('composes',decl=>{
+  const match=decl.value.match(/^(\w+) from ['"](.+)['"]$/);
+  assert(match,'Unsupported CSS composition: '+decl.value);
+  const dependency=path.posix.normalize(path.posix.join(path.posix.dirname(file),match[2]));
+  const composed=cssModule(dependency);
+  const key=decl.parent.selector.slice(prefix.length+1);
+  assert(map[key]&&composed[match[1]],'Missing composed class');
+  map[key]+=' '+composed[match[1]];
+  decl.remove();
+ });
  sheets.push(sheet.toString());modules[file]='module.exports='+JSON.stringify(map);
+ return map;
 }
 function add(file){
  if(Object.hasOwn(modules,file))return;
@@ -74,17 +88,17 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     };
     ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('${mode==='login'?'components/team/TeamLogin':mode==='owner'?'app/account/team-access/team-access-client':'app/team/team-workspace-client'}').default,{email:'staff@example.com',business:'owner-a'}));`});
  }
- async function click(text){await page.waitForFunction(t=>Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t)),{},text);await page.evaluate(t=>Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t)).click(),text);}
+ async function click(text){await page.waitForFunction(t=>Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)),{},text);await page.evaluate(t=>Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)).click(),text);}
  async function fillLabel(label,value){await page.evaluate((label)=>{const node=Array.from(document.querySelectorAll('label')).find(l=>l.childNodes[0]?.textContent.trim()===label);node.querySelector('input,textarea').setAttribute('data-fill','true');},label);await page.locator('[data-fill=true]').fill(value);await page.$eval('[data-fill=true]',e=>e.removeAttribute('data-fill'));}
  async function assertFits(){assert(await page.$eval('[role=dialog]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}),'Dialog bounds');}
  await mount('login');await fillLabel('Email address','staff@example.com');await fillLabel('Password','Initial-password-123');await page.evaluate(()=>{window.fetch=async(url,init)=>{window.loginRequest=JSON.parse(init.body);return {ok:false,json:async()=>({error:'Incorrect email or password.'})}}});await click('Sign in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect email or password.'));assert.deepEqual(await page.evaluate(()=>window.loginRequest),{email:'staff@example.com',password:'Initial-password-123',business:'owner-a'});
- await mount('owner');await click('Manage users');await assertFits();await click('Manage');await page.waitForFunction(()=>document.body.textContent.includes('Manage desktop user'));await click('Cancel');await page.waitForFunction(()=>document.body.textContent.includes('Choose a person to manage.'));await page.screenshot({path:'.next/team-access-validation/desktop-users-manager.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));await page.screenshot({path:'.next/team-access-validation/desktop-users-launcher.png'});await click('Add user');await fillLabel('Name','Workshop staff');await fillLabel('Email address','staff@example.com');await fillLabel('Initial password','Initial-password-123');await click('Continue');await click('Workshop');
+ await mount('owner');await click('Manage users');await assertFits();await click('Manage');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent === 'Manage Existing user');await click('Permissions');await page.waitForSelector('input[type=checkbox]');await click('Back');await click('‹ All users');await page.waitForFunction(()=>document.body.textContent.includes('Choose a person to manage.'));await page.screenshot({path:'.next/team-access-validation/desktop-users-manager.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));await page.screenshot({path:'.next/team-access-validation/desktop-users-launcher.png'});await click('Add user');await fillLabel('Name','Workshop staff');await fillLabel('Email address','staff@example.com');await fillLabel('Initial password','Initial-password-123');await click('Continue');await click('Workshop');
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),false);
  await page.screenshot({path:'.next/team-access-validation/owner-permissions-desktop.png'});
  await click('Continue');await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='Skimmelkrans Boerdery').querySelector('input').click());await click('Continue');
  await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='Operator manual').querySelector('input').click());await assertFits();
  await click('Create user');await page.waitForFunction(()=>window.saved);const saved=await page.evaluate(()=>window.saved);assert.equal(saved.email,'staff@example.com');assert.equal(saved.password,'Initial-password-123');assert.equal(saved.permissions.viewValues,false);assert.deepEqual(saved.registerIds,['register-a']);assert.deepEqual(saved.documentIds,['document-a']);
- await page.setViewport({width:390,height:844});await click('Add user');await assertFits();await click('Permissions');await page.screenshot({path:'.next/team-access-validation/owner-permissions-mobile.png'});
+ await page.setViewport({width:390,height:844});await click('Add user');await assertFits();await click('Continue');await page.waitForSelector('input[type=checkbox]');await page.screenshot({path:'.next/team-access-validation/owner-permissions-mobile.png'});
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
  await mount('member');await click('Open workspace');await click('Open asset →');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);
  await click('Edit permitted details');await fillLabel('Brand','Landini updated');await click('Save changes');await page.waitForFunction(()=>window.updated);assert.deepEqual(await page.evaluate(()=>window.updated.patch),{brand:'Landini updated'});

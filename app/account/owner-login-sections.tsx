@@ -17,7 +17,7 @@ const roles = [
   { value: 'operations', label: 'Operations', text: 'Update usage, maintenance, fuel, location, photos and problems.' },
   { value: 'admin', label: 'Owner / Admin', text: 'Full access, including values, finance, Marketplace and deletion.' },
 ];
-function Icon({ name }: { name: string }) {
+export function AccessSectionIcon({ name }: { name: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{name === 'details' ? <><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></> : name === 'permissions' ? <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></> : name === 'assets' ? <><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></> : <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></>}</svg>;
 }
 function date(value: string | null) { return value ? new Date(value).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'; }
@@ -72,7 +72,7 @@ export default function OwnerLoginSections(props: Props) {
     {section === 'overview' ? <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>What would you like to change?</h3>
       <div className={styles.grid}>{cards.map(card => <button key={card.id} type="button" className={styles.card} onClick={() => open(card.id)}>
-        <span className={styles.icon}><Icon name={card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
+        <span className={styles.icon}><AccessSectionIcon name={card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
       </button>)}</div>
       <button type="button" className={styles.statusLink} onClick={() => open('status')}>Manage login status</button>
     </> : <>
