@@ -730,7 +730,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </details>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
         <div className={styles.loginSetupActions}>
-          {activeFlow === 'new' && kind !== 'dealer' ? <button type="button" className={styles.cancelButton} onClick={closeFlow} disabled={namespaceBusy}>Cancel</button> : null}
+          {kind !== 'dealer' && (activeFlow === 'new' || businessSettingsOpen) ? <button type="button" className={styles.cancelButton} onClick={businessSettingsOpen ? () => setBusinessSettingsOpen(false) : closeFlow} disabled={namespaceBusy}>Cancel</button> : null}
           <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
             {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
           </button>
@@ -1154,10 +1154,10 @@ function AppAccessManagement({ kind, configOverride }: {
       >
         <InlineNotice notice={notice} />
         {kind !== 'owner' ? renderAccountNameSetup() : null}
-        {businessSettingsOpen ? <>
+        {businessSettingsOpen ? <div className={styles.newUserSetup}>
           <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>‹ All logins</button>
           {renderAccountNameSetup()}
-        </> : !selectedRecord ? (
+        </div> : !selectedRecord ? (
           <section className={`${baseStyles.card} ${styles.surface}`}>
             <div className={styles.directoryHeader}>
               <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
