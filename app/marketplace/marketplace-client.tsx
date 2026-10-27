@@ -140,16 +140,6 @@ const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'motor', label: 'Motor', shortLabel: 'Motor' },
 ];
 
-function ShowroomCategoryIcon({ sector }: { sector?: SectorKey }) {
-  const paths = {
-    agricultural: 'M12 21V9M12 15C5 15 3 10 3 5c6 0 9 4 9 10Zm0-4c0-5 3-8 9-8 0 5-3 8-9 8Z',
-    construction: 'M3 18h18M5 18v-6a7 7 0 0 1 14 0v6M10 5V3h4v2M8 10v4M16 10v4',
-    industrial: 'M3 21V10l6 3V8l6 3V3h5l1 18H3ZM6 17h2m3 0h2m3 0h2',
-    motor: 'm3 10 2-6h14l2 6M3 10h18v8H3ZM6 18v3m12-3v3M6 14h2m8 0h2',
-  };
-  return <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={sector ? paths[sector] : 'M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z'} /></svg>;
-}
-
 const FALLBACK_FAMILIES: FamilyOption[] = [
   { sectorKey: 'agricultural', familyKey: 'tractors', familyLabel: 'Tractors', sortOrder: 1 },
   { sectorKey: 'agricultural', familyKey: 'combines', familyLabel: 'Combines', sortOrder: 2 },
@@ -569,7 +559,7 @@ function formatLocation(listing: MarketplaceListing): string {
   const area = String(listing.area ?? '').trim();
   const province = String(listing.province ?? '').trim();
 
-  if (area && province && area.toLowerCase() !== province.toLowerCase()) {
+  if (area && province) {
     return `${area}, ${province}`;
   }
 
@@ -3157,21 +3147,21 @@ export default function MarketplaceClient({
                 className={`${styles.categoryButton} ${!sectorFilter ? styles.categoryButtonActive : ''}`}
                 onClick={() => selectSector('')}
               >
-                <span className={styles.categoryIcon}>{showroomMode ? <ShowroomCategoryIcon /> : 'A'}</span>
+                <span className={styles.categoryIcon}>A</span>
                 <span className={styles.categoryText}>
                   <strong>All categories</strong>
                   <small>{items.length} listings</small>
                 </span>
               </button>
 
-              {SECTOR_OPTIONS.filter((sector) => !showroomMode || listingCountsBySector[sector.key] > 0 || sectorFilter === sector.key).map((sector) => (
+              {SECTOR_OPTIONS.map((sector) => (
                 <button
                   key={sector.key}
                   type="button"
                   className={`${styles.categoryButton} ${sectorFilter === sector.key ? styles.categoryButtonActive : ''}`}
                   onClick={() => selectSector(sector.key)}
                 >
-                  <span className={styles.categoryIcon}>{showroomMode ? <ShowroomCategoryIcon sector={sector.key} /> : sector.shortLabel.charAt(0)}</span>
+                  <span className={styles.categoryIcon}>{sector.shortLabel.charAt(0)}</span>
                   <span className={styles.categoryText}>
                     <strong>{sector.label}</strong>
                     <small>{listingCountsBySector[sector.key]} listings</small>
@@ -3411,9 +3401,7 @@ export default function MarketplaceClient({
             </article>
           )}
 
-          {showroomMode && totalPages === 1 && visible.length > 0 ? (
-            <p className={styles.showroomResultCount} aria-live="polite">{visible.length} {visible.length === 1 ? 'advert' : 'adverts'}</p>
-          ) : visible.length > 0 ? (
+          {visible.length > 0 ? (
             <ListPagination label="Marketplace listing pages" page={normalizedCurrentPage} pageCount={totalPages}
               onPageChange={goToPage} summary={<>Showing {firstVisibleListingNumber}–{lastVisibleListingNumber} of {visible.length} listings</>} />
           ) : null}

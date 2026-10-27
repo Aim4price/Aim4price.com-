@@ -482,25 +482,28 @@
 .createAdvertActions > a:hover { border-color: var(--app-accent, #43836a); box-shadow: 0 0 0 3px var(--app-accent-soft, rgba(22,95,73,.1)); }
 .createAdvertActions .listingManagerActionCopy small { font-weight: 500; }
 
-/* Seller-first public showroom header and closing contact section. */
-.publicPage .aim4priceMark img { height: 2.6rem; }
-.publicIdentityHeading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-.publicPage .publicAdvertSummary { margin: 0; padding: 7px 11px; border: 1px solid var(--app-line, #d0e4dc); border-radius: 999px; background: var(--app-surface-soft, #edf6f2); white-space: nowrap; }
-.publicPage .publicContactActions { max-width: none; }
-.publicPage .publicContactActions a { flex: 0 1 auto; max-width: none; gap: 8px; }
+/* Approved image preview: original showroom structure, quieter header/footer. */
+.publicPage .aim4priceMark img { height: 2.4rem; }
+.publicPage .publicHeroMain { grid-template-columns: minmax(0, 1fr) auto; gap: 24px; }
+.publicPage .publicContactActions { max-width: none; width: auto; gap: 10px; }
+.publicPage .publicContactActions a { flex: 0 1 auto; max-width: none; min-height: 48px; padding-inline: 16px; gap: 8px; white-space: nowrap; }
 .publicContactActions svg { width: 20px; height: 20px; flex: 0 0 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.publicPage .publicContactActions .secondaryButton { background: var(--app-surface-soft, #edf6f2); }
-.publicPage .publicBusinessDetails > * { grid-template-columns: 40px minmax(0,1fr); }
-.publicPage .publicBusinessDetails svg { box-sizing: border-box; width: 40px; height: 40px; padding: 9px; border-radius: 12px; background: var(--app-surface-soft, #edf6f2); }
-.sellerContactPanel { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; width: min(1560px, calc(100% - 3rem)); margin: 24px auto; padding: 24px 28px; border: 1px solid var(--app-line, #d0e4dc); border-radius: 20px; background: var(--app-surface-soft, #edf6f2); }
-.sellerContactPanel h2 { margin: 0; font-size: 1.4rem; letter-spacing: -.03em; }
-.sellerContactPanel p { margin: 6px 0 0; font-size: .85rem; color: var(--app-muted, #677b74); }
-.sellerContactPanel .publicContactActions { width: auto; }
-.publicFooterInner .hostedBrand { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-.hostedBrand img { width: 115px; height: auto; }
-.publicFooter .publicFooterInner > a { background: transparent; color: var(--app-text, #165f49); border-color: transparent; box-shadow: none; }
-.publicFooter .publicFooterInner > a:hover { background: var(--app-surface-soft, #edf6f2); transform: none; }
+.publicPage .publicBusinessDetails { gap: 0; padding-top: 16px; margin-top: 24px; }
+.publicPage .publicBusinessDetails > * { padding: 0 20px; }
+.publicPage .publicBusinessDetails > :first-child { padding-left: 0; }
+.publicPage .publicBusinessDetails > * + * { border-left: 1px solid var(--app-line, #d8e4df); }
+.publicFooterInner .footerBrand { display: flex; align-items: center; gap: 24px; min-width: 0; }
+.footerBrand img { display: block; width: 115px; height: auto; }
+.footerBrand > div { display: grid; gap: 6px; padding-left: 24px; border-left: 1px solid var(--app-line, #cddbd5); }
+.publicPage .publicFooterInner { padding-block: 24px; }
+.publicPage .publicFooter a { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+@media (max-width: 1100px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicHeroMain { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicContactActions { justify-content: flex-start; }
+}
 @media (max-width: 760px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .sellerContactPanel { width: calc(100% - 1.3rem); padding: 20px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .sellerContactPanel .publicContactActions { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicBusinessDetails { gap: 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicBusinessDetails > * { padding: 0; border-left: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicContactActions { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footerBrand { flex-wrap: wrap; }
 }
