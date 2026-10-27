@@ -3934,5 +3934,3 @@
 
 /* Owner shortcut sits beside the existing VAT and share actions. */
 .cardShareButton.cardEditButton { right: 6.85rem; }
-
-.showroomResultCount { margin: 16px 0 0; padding: 8px 2px; color: var(--app-muted, #677b74); font-size: .85rem; font-weight: 650; }

@@ -394,7 +394,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(marketplaceUi, /if \(showroomMode\)/);
   assert.match(marketplaceUi, /!showroomMode \? \(/);
   assert.match(manager, /Download JPEG/);
-  assert.match(manager, /Showroom hosted by Aim4price/);
+  assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
   assert.match(dealerHome, /new Set<DealerAppCapability>\(\['notifications', 'valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]\)/);
@@ -495,7 +495,7 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(publicShowroom, /<h2 id="showroom-inventory-title">Available equipment<\/h2>/);
   assert.match(publicShowroom, /Browse our available machinery\./);
   assert.match(publicShowroom, /Browse equipment listed by \{showroom\.name\} and contact the seller directly\./);
-  assert.match(publicShowroom, /Interested in our equipment\?/);
+  assert.match(publicShowroom, /Machinery advertising\. Direct seller contact\./);
   assert.doesNotMatch(publicShowroom, /valuation-backed equipment|Every advert is backed by an Aim4price valuation|advertising backed by valuations/i);
   assert.doesNotMatch(publicAdvertSummaryRule, /border(?:-radius)?:|background:/);
 

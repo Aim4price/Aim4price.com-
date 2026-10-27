@@ -807,7 +807,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
           <Link href="/" className={styles.aim4priceMark} aria-label="Aim4price home">
             <img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" />
           </Link>
-          <Link className={styles.publicTopbarAction} href="/marketplace">Browse marketplace</Link>
+          <Link className={styles.publicTopbarAction} href="/valuation">Value your machinery</Link>
         </div>
       </header>
       <section className={styles.publicHero}>
@@ -816,17 +816,17 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
             <div className={styles.profileIdentity}>
               {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span aria-hidden="true">{showroom.name.slice(0, 2).toUpperCase()}</span>}
               <div>
-                <div className={styles.publicIdentityHeading}><h1>{showroom.name}</h1>
-                <p className={styles.publicAdvertSummary}>{liveAdvertLabel}</p></div>
+                <h1>{showroom.name}</h1>
+                <p className={styles.publicAdvertSummary}>{liveAdvertLabel}</p>
                 {showroom.bio
                   ? <p className={styles.publicBio}>{showroom.bio}</p>
                   : <p className={styles.publicTrustLine}>Browse our available machinery.</p>}
               </div>
             </div>
             <div className={styles.publicContactActions} role="group" aria-label={`${showroom.name} contact options`}>
-              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}><ShowroomDetailIcon name="whatsapp" />WhatsApp</a> : null}
-              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call</a> : null}
-              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}><ShowroomDetailIcon name="email" />Email</a> : null}
+              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}><ShowroomDetailIcon name="whatsapp" />Chat on WhatsApp</a> : null}
+              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call business</a> : null}
+              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}><ShowroomDetailIcon name="email" />Email business</a> : null}
             </div>
           </div>
           {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
@@ -878,19 +878,10 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         />
       </section>
 
-      {showroom.phone || showroom.email ? (
-        <section className={styles.sellerContactPanel} aria-labelledby="seller-contact-title">
-          <div><h2 id="seller-contact-title">Interested in our equipment?</h2><p>Contact {showroom.name} directly.</p></div>
-          <div className={styles.publicContactActions}>
-            {showroom.phone ? <><a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer"><ShowroomDetailIcon name="whatsapp" />WhatsApp seller</a><a className={styles.secondaryButton} href={`tel:${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call seller</a></> : null}
-            {!showroom.phone && showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`}><ShowroomDetailIcon name="email" />Email seller</a> : null}
-          </div>
-        </section>
-      ) : null}
       <footer className={styles.publicFooter}>
         <div className={styles.publicFooterInner}>
-          <div className={styles.hostedBrand}><img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" /><span>Showroom hosted by Aim4price</span></div>
-          <Link href="/my-showroom">Create your own showroom</Link>
+          <div className={styles.footerBrand}><img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" /><div><strong>Hosted on Aim4price.com</strong><span>Machinery advertising. Direct seller contact.</span></div></div>
+          <Link href="/valuation">Value your machinery</Link>
         </div>
       </footer>
     </div>
