@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal } from "../../../components/WebsitePortal";
 import ShareModalCloseButton from "../../../components/asset-register/ShareModalCloseButton";
 import { useLeadDialog } from "../../../components/leads/useLeadDialog";
 import {

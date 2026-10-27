@@ -222,7 +222,7 @@ const appCode =
       }
       return r.respond({
         contentType: "text/html",
-        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
+        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><div id="aim4price-website-overlays"></div><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
       });
     });
     await page.goto("https://example.test/parts");
@@ -355,6 +355,9 @@ const appCode =
           document.body.innerText.includes("Delete list"),
       ),
     );
+    assert.ok(await page.$eval("[role=dialog]", (dialog) =>
+      Boolean(dialog.closest("#aim4price-website-overlays")),
+    ), "Parts dialogs use the shared website overlay host");
     await page.screenshot({ path: path.join(output, "manage-parts.png") });
     await page.setViewport({ width: 390, height: 844 });
     assert.ok(
