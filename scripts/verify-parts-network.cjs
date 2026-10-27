@@ -260,7 +260,7 @@ const appCode =
 
     const click = async (text) => {
       await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.disabled), {}, text);
-      const navigation = ["Open", "Back to Parts"].includes(text) ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
+      const navigation = text === "Open" ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
       assert.ok(
         await page.evaluate((t) => {
           const b = [...document.querySelectorAll("button")].find(
@@ -310,6 +310,12 @@ const appCode =
     await page.reload({waitUntil:"domcontentloaded"});
     await page.waitForSelector("tbody tr");
     assert.equal(await page.$$eval("table", (e) => e.length), 1);
+    assert.ok(await page.evaluate(() => {
+      const buttons = [...document.querySelectorAll("button")];
+      return !buttons.some(b => b.textContent.trim() === "Back to Parts") &&
+        ["Upload CSV", "Share", "Manage"].every(label =>
+          buttons.find(b => b.textContent.trim() === label)?.closest('[class*="tableToolbar"]'));
+    }), "List actions belong to the table toolbar without a back button");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
     assert.equal(await page.$$eval("thead th", cells => cells.length), 4);
     assert.ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Next"))));
@@ -415,7 +421,7 @@ const appCode =
     });
     await page.setViewport({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(output, "table-dark.png") });
-    await click("Back to Parts");
+    await page.goto("https://example.test/parts");
     await page.waitForSelector("article");
     await page.screenshot({ path: path.join(output, "lists-dark.png") });
     const sharedNavigation = page.waitForNavigation({waitUntil:"domcontentloaded"});
@@ -449,7 +455,7 @@ const appCode =
       actions.find((a) => a.action === "enquire").network,
       "44444444-4444-4444-8444-444444444444",
     );
-    await click("Back to Parts");
+    await page.goto("https://example.test/parts");
     await click("Share");
     await click("Inside Aim4price");
     await page.waitForSelector('input[type="email"]');
@@ -482,7 +488,7 @@ const appCode =
     network.last_updated = null;
     await page.goto("https://example.test/parts/11111111-1111-4111-8111-111111111111");
     await page.waitForFunction(() => document.body.innerText.includes("No parts uploaded yet"));
-    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Upload CSV").length === 2));
+    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Upload CSV").length === 1));
     await page.screenshot({path:path.join(output,"empty-list.png")});
     await page.goto("https://example.test/parts/join?token=fixture");
     await page.waitForSelector('a[href^="/auth?returnTo="]');

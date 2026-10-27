@@ -383,6 +383,51 @@ export default function PartsClient({
       setError("");
     }
   }
+  const detailActions = (
+    <div className={`${styles.actions} ${styles.detailActions}`}>
+      {canUpload && (
+        <button className={styles.primary} onClick={openUpload}>
+          <Icon kind="upload" />
+          Upload CSV
+        </button>
+      )}
+      {admin && (
+        <button
+          className={styles.shareAction}
+          onClick={() => {
+            setInviteEmail("");
+            setInviteUrl("");
+            setModal("share");
+          }}
+        >
+          <Icon kind="share" />
+          Share
+        </button>
+      )}
+      {admin && (
+        <button
+          className={styles.manageAction}
+          onClick={() => {
+            setName(current?.name || "");
+            setNotice("");
+            setModal("manage");
+          }}
+        >
+          <Icon kind="manage" />
+          Manage
+        </button>
+      )}
+      {view === "members" && (
+        <button
+          onClick={() =>
+            switchView(current?.owned ? "mine" : "search")
+          }
+        >
+          View parts
+        </button>
+      )}
+    </div>
+  );
   const feedback = (
     <>
       {error && (
@@ -401,18 +446,7 @@ export default function PartsClient({
     <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
         {!listId && <WorkspaceTitlePanel title="Parts Management System" className={styles.title} />}
-        <div className={styles.listToolbar}>
-          {opened ? (
-            <button
-              className={styles.backButton}
-              onClick={() => {
-                window.location.assign(basePath);
-              }}
-            >
-              <Icon kind="back" />
-              Back to Parts
-            </button>
-          ) : (
+        {!opened && <div className={styles.listToolbar}>
             <div className={styles.search}>
               <Icon kind="search" />
               <input
@@ -422,7 +456,6 @@ export default function PartsClient({
                 onChange={(e) => setListSearch(e.target.value)}
               />
             </div>
-          )}
           {!staff && !listId && (
             <button
               className={styles.addButton}
@@ -435,7 +468,7 @@ export default function PartsClient({
               Add parts list
             </button>
           )}
-        </div>
+        </div>}
         {!opened && (
           <>
             <PartsInbox
@@ -583,49 +616,6 @@ export default function PartsClient({
                       : `${uploadedAt ? `Updated ${date(uploadedAt)}` : "Not uploaded"}${singleDealer && uploadedAt ? ` · Prices ${vatIncluded ? "incl." : "excl."} VAT` : ""}`}
                   </p>
                 </div>
-                <div className={`${styles.actions} ${styles.detailActions}`}>
-                  {canUpload && (
-                    <button className={styles.primary} onClick={openUpload}>
-                      <Icon kind="upload" />
-                      Upload CSV
-                    </button>
-                  )}
-                  {admin && (
-                    <button
-                      className={styles.shareAction}
-                      onClick={() => {
-                        setInviteEmail("");
-                        setInviteUrl("");
-                        setModal("share");
-                      }}
-                    >
-                      <Icon kind="share" />
-                      Share
-                    </button>
-                  )}
-                  {admin && (
-                    <button
-                      className={styles.manageAction}
-                      onClick={() => {
-                        setName(current?.name || "");
-                        setNotice("");
-                        setModal("manage");
-                      }}
-                    >
-                      <Icon kind="manage" />
-                      Manage
-                    </button>
-                  )}
-                  {view === "members" && (
-                    <button
-                      onClick={() =>
-                        switchView(current?.owned ? "mine" : "search")
-                      }
-                    >
-                      View parts
-                    </button>
-                  )}
-                </div>
               </div>
               {view !== "members" && (
                 <>
@@ -643,8 +633,10 @@ export default function PartsClient({
                       }}
                     />
                   </div>
-                  <span className={styles.resultCount} aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
+                  {(canUpload || admin) && detailActions}
                   </div>
+                  <span className={styles.resultCount} aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
+
                   <div
                     className={styles.tableWrap}
                     tabIndex={0}
@@ -710,7 +702,7 @@ export default function PartsClient({
                       <div className={styles.tableEmpty}>
                         <Icon kind={search.trim() ? "search" : "upload"} />
                         <strong>{loading ? "Loading parts…" : search.trim() ? "No matching parts" : !uploadedAt ? "No parts uploaded yet" : "No parts available"}</strong>
-                        {!loading && !search.trim() && canUpload && <button className={styles.primary} onClick={openUpload}><Icon kind="upload" />Upload CSV</button>}
+                        {!loading && !search.trim() && canUpload && <p>Upload your CSV to add parts to this list.</p>}
                         {!loading && search.trim() && <button onClick={() => { setSearch(""); setPage(0); }}>Clear search</button>}
                       </div>
                     )}
@@ -746,6 +738,7 @@ export default function PartsClient({
                     owner.
                   </p>
                   <div className={styles.tableWrap}>
+                    <div className={styles.tableToolbar}>{detailActions}</div>
                     <table>
                       <thead>
                         <tr>

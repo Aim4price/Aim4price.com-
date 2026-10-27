@@ -930,9 +930,8 @@
 
 
 /* Dedicated list pages follow the shared asset detail layout. */
-.detailPage .listToolbar { margin-bottom: 20px; }
 .detailHeader { align-items: center; margin-bottom: 22px; }
-.detailHeader .listTitle { font-size: clamp(28px, 3vw, 38px); line-height: 1.2; margin: 0 0 12px; }
+.detailHeader .listTitle { font-size: clamp(28px, calc(var(--website-design-vw, 1vw) * 2.4), 34px); line-height: 1.2; margin: 0 0 12px; }
 .detailHeader .eyebrow { margin: 0; text-transform: none; letter-spacing: normal; }
 .dealerBanner { display: flex; align-items: center; gap: 20px; padding: 24px 28px; margin-bottom: 24px; border: 1px solid var(--app-border, #cbded4); border-radius: 24px; background: linear-gradient(120deg, var(--app-surface, #fff), var(--app-surface-soft, #eff8f4)); box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
 .dealerBanner > svg { flex: none; width: 26px; height: 26px; padding: 15px; box-sizing: content-box; border: 1px solid var(--app-border, #cbded4); border-radius: 16px; color: var(--app-accent, #197454); }
@@ -957,9 +956,7 @@
 }
 
 /* Compact parts workspace: one heading and one search/table panel. */
-.detailPage .backButton { min-height: 40px; padding: 9px 15px; font-size: 15px; border-radius: 14px; }
-.detailPage .listToolbar { margin-bottom: 22px; }
-.detailHeader { gap: 24px; margin-bottom: 24px; }
+.detailHeader { gap: 24px; margin-bottom: 24px; padding-top: 8px; }
 .detailHeader .listTitle { margin-bottom: 8px; font-weight: 800; }
 .dealerSubtitle { margin: 0 0 6px; font-size: 19px; line-height: 1.4; }
 .detailHeader .eyebrow { font-size: 15px; }
@@ -990,9 +987,10 @@
 .listToolbar > .addButton svg,
 .tableEmpty button svg { width: 20px; height: 20px; flex-shrink: 0; }
 .partsPanel { overflow: hidden; border: 1px solid var(--app-border, #cbded4); border-radius: 22px; background: var(--app-surface, #fff); box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
-.tableToolbar { display: flex; align-items: center; gap: 24px; padding: 16px; }
-.tableToolbar .search { flex: 1; margin: 0; min-width: 0; min-height: 48px; }
-.resultCount { flex: none; padding-right: 10px; font-size: 15px; color: var(--app-text-muted, #61766c); }
+.tableToolbar { display: flex; align-items: stretch; gap: 16px; padding: 16px; }
+.tableToolbar .detailActions { flex: 0 0 auto; }
+.tableToolbar .search { flex: 1; margin: 0; min-width: 0; min-height: 3.45rem; }
+.resultCount { display: block; padding: 0 20px 14px; font-size: 15px; color: var(--app-text-muted, #61766c); }
 .detailPage .partsPanel .tableWrap { border: 0; border-radius: 0; box-shadow: none; margin: 0; }
 .detailPage .partsPanel table { width: 100%; min-width: 600px; }
 .detailPage .partsPanel th { padding: 15px 24px; font-size: 16px; }
@@ -1002,13 +1000,19 @@
 .tableEmpty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 190px; padding: 28px; color: var(--app-text-muted, #61766c); }
 .tableEmpty > svg { width: 32px; height: 32px; color: var(--app-accent, #197454); }
 .tableEmpty strong { font-size: 18px; }
+.tableEmpty p { margin: 0; text-align: center; line-height: 1.5; }
+@media (max-width: 1000px) {
+ .tableToolbar { flex-wrap: wrap; }
+ .tableToolbar .search { flex-basis: 100%; }
+ .tableToolbar .detailActions { width: 100%; }
+}
 @media(max-width: 700px) {
  .detailHeader { gap: 16px; }
  .detailActions { width: 100%; gap: 8px; }
 
  .tableToolbar { gap: 10px; padding: 12px; flex-wrap: wrap; }
  .tableToolbar .search { flex-basis: 100%; }
- .resultCount { padding: 0 4px; }
+ .resultCount { padding: 0 16px 12px; }
  .dealerSubtitle { font-size: 16px; }
 }
 @media(max-width: 700px) {
