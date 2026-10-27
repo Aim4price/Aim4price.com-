@@ -121,9 +121,11 @@ export async function listPartsNetworks(actor: PartsActor) {
   return (
     await getDb().query(
       `SELECT n.id,n.name,n.list_mode,(n.created_by=$1) AS owned,
+ owner.business_name AS owner_business_name,owner.town AS owner_town,owner.vat_included AS owner_vat_included,owner.uploaded_at AS owner_uploaded_at,
  (SELECT count(*)::int FROM parts_network_rows r WHERE r.network_id=n.id AND (NOT n.list_mode OR r.dealer_id=n.created_by)) AS part_count,
  (SELECT max(uploaded_at) FROM parts_network_members u WHERE u.network_id=n.id) AS last_updated,m.status,m.role, m.revision,m.visible,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at
- FROM parts_networks n LEFT JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=$1
+ FROM parts_networks n LEFT JOIN parts_network_members owner ON owner.network_id=n.id AND owner.dealer_id=n.created_by
+ LEFT JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=$1
  WHERE m.dealer_id=$1 AND n.archived=false ORDER BY n.name`,
       [actor.id],
     )

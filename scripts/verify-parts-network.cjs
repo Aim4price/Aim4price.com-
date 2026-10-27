@@ -122,6 +122,7 @@ const appCode =
       actions = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setViewport({ width: 1440, height: 1000 });
+    let emptyFixture = false;
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
       name: "Landini parts",
@@ -133,6 +134,10 @@ const appCode =
       role: "admin",
       visible: true,
       revision: 1,
+      owner_business_name: "Example Agricultural",
+      owner_town: "George",
+      owner_vat_included: false,
+      owner_uploaded_at: new Date().toISOString(),
       business_name: "Example Agricultural",
       town: "George",
       phone: "0821234567",
@@ -209,7 +214,7 @@ const appCode =
             ],
             invites: [],
           };
-        else data = { rows: [row], total: 1 };
+        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : { rows: [row], total: 1 };
         return r.respond({
           contentType: "application/json",
           body: JSON.stringify(data),
@@ -306,6 +311,12 @@ const appCode =
     await page.waitForSelector("tbody tr");
     assert.equal(await page.$$eval("table", (e) => e.length), 1);
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
+    assert.equal(await page.$$eval("thead th", cells => cells.length), 4);
+    assert.ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Next"))));
+    await page.type('input[aria-label="Search part number"]', "not-found");
+    await page.waitForFunction(() => document.body.innerText.includes("No matching parts"));
+    await click("Clear search");
+    await page.waitForSelector("tbody tr");
     await click("Contact");
     await page.waitForSelector("[role=dialog]");
     assert.equal(
@@ -462,6 +473,14 @@ const appCode =
       actions.filter((a) => a.action === "invite").at(-1).channel,
       "link",
     );
+    emptyFixture = true;
+    network.part_count = 0;
+    network.owner_uploaded_at = null;
+    network.last_updated = null;
+    await page.goto("https://example.test/parts/11111111-1111-4111-8111-111111111111");
+    await page.waitForFunction(() => document.body.innerText.includes("No parts uploaded yet"));
+    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Upload CSV").length === 2));
+    await page.screenshot({path:path.join(output,"empty-list.png")});
     await page.goto("https://example.test/parts/join?token=fixture");
     await page.waitForSelector('a[href^="/auth?returnTo="]');
     assert.ok(await page.$eval('a[href^="/auth?returnTo="]', e => decodeURIComponent(e.getAttribute("href")).includes("/parts/join?token=fixture")));

@@ -939,3 +939,39 @@
  .dealerBanner { padding: 18px; gap: 14px; }
  .detailHeader { align-items: stretch; }
 }
+
+/* Compact parts workspace: one heading and one search/table panel. */
+.detailPage .backButton { min-height: 40px; padding: 9px 15px; font-size: 15px; border-radius: 14px; }
+.detailPage .listToolbar { margin-bottom: 22px; }
+.detailHeader { gap: 24px; margin-bottom: 24px; }
+.detailHeader .listTitle { margin-bottom: 8px; font-weight: 800; }
+.dealerSubtitle { margin: 0 0 6px; font-size: 19px; line-height: 1.4; }
+.detailHeader .eyebrow { font-size: 15px; }
+.detailActions { gap: 12px; }
+.detailActions button { min-height: 48px; padding: 12px 20px; border-radius: 15px; font-weight: 750; }
+.partsPanel { overflow: hidden; border: 1px solid var(--app-border, #cbded4); border-radius: 22px; background: var(--app-surface, #fff); box-shadow: 0 12px 30px var(--app-shadow-colour, #173e3210); }
+.tableToolbar { display: flex; align-items: center; gap: 24px; padding: 16px; }
+.tableToolbar .search { flex: 1; margin: 0; min-width: 0; min-height: 48px; }
+.resultCount { flex: none; padding-right: 10px; font-size: 15px; color: var(--app-text-muted, #61766c); }
+.detailPage .partsPanel .tableWrap { border: 0; border-radius: 0; box-shadow: none; margin: 0; }
+.detailPage .partsPanel table { width: 100%; min-width: 600px; }
+.detailPage .partsPanel th { padding: 15px 24px; font-size: 16px; }
+.detailPage .partsPanel td { padding: 14px 24px; font-size: 17px; }
+.detailPage .partsPanel td:last-child { width: 170px; text-align: right; }
+.detailPage .partsPanel td button { min-height: 38px; border-radius: 12px; font-size: 14px; padding: 8px 16px; }
+.tableEmpty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 190px; padding: 28px; color: var(--app-text-muted, #61766c); }
+.tableEmpty > svg { width: 32px; height: 32px; color: var(--app-accent, #197454); }
+.tableEmpty strong { font-size: 18px; }
+@media(max-width: 700px) {
+ .detailHeader { gap: 16px; }
+ .detailActions { width: 100%; gap: 8px; }
+ .detailActions button { flex: 1; padding: 10px; font-size: 14px; }
+ .tableToolbar { gap: 10px; padding: 12px; flex-wrap: wrap; }
+ .tableToolbar .search { flex-basis: 100%; }
+ .resultCount { padding: 0 4px; }
+ .dealerSubtitle { font-size: 16px; }
+}
+@media(max-width: 700px) {
+ .detailActions button { padding: 10px 8px; gap: 6px; font-size: 13px; white-space: nowrap; }
+ .detailActions button svg { width: 18px; height: 18px; flex-shrink: 0; }
+}
