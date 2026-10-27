@@ -30,7 +30,7 @@ const AD_TEMPLATE_IDS = [
   'catalogue-grid',
 ];
 
-test('Ad Studio exposes eight reusable one-to-four-photo layouts and safe Brand Kit fields', async () => {
+test('Advert Studio exposes eight reusable one-to-four-photo layouts and safe Brand Kit fields', async () => {
   const source = await read('lib/ad-studio.ts');
   for (const template of AD_TEMPLATE_IDS) {
     assert.match(source, new RegExp(`id: '${template}'`));
@@ -46,7 +46,7 @@ test('Ad Studio exposes eight reusable one-to-four-photo layouts and safe Brand 
   assert.match(source, /normalizeAdBrandSnapshot/);
 });
 
-test('schema accepts every supported Ad Studio template', async () => {
+test('schema accepts every supported Advert Studio template', async () => {
   const migration = await read('database/migrations/96-ad-studio-template-options.sql');
 
   assert.match(migration, /drop constraint if exists ad_brand_kits_template_check/);
@@ -56,7 +56,7 @@ test('schema accepts every supported Ad Studio template', async () => {
   }
 });
 
-test('Brand Kits are dealer-only and editing follows the Ad Studio capability', async () => {
+test('Brand Kits are dealer-only and editing follows the Advert Studio capability', async () => {
   const [route, database, capability] = await Promise.all([
     read('app/api/ad-studio/brand-kits/route.ts'),
     read('lib/ad-studio-db.ts'),
@@ -188,7 +188,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
 });
 
-test('Ad Studio uses centered upload buttons and local-only sample photo ordering', async () => {
+test('Advert Studio uses centered upload buttons and local-only sample photo ordering', async () => {
   const [client, css] = await Promise.all([
     read('components/AdStudioClient.tsx'),
     read('components/AdStudioClient.module.css'),
@@ -225,7 +225,7 @@ test('Ad Studio uses centered upload buttons and local-only sample photo orderin
   assert.match(css, /\.previewPhotoDragging/);
 });
 
-test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
+test('Advert Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
   const [desktopPage, dealerPage, client, css, header] = await Promise.all([
     read('app/ad-studio/page.tsx'),
     read('app/dealer/ad-studio/page.tsx'),
@@ -244,7 +244,7 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
   assert.match(client, /(?:Brand kits|advert styles)/i);
-  assert.match(client, /<WorkspaceTitlePanel title="AD STUDIO"/);
+  assert.match(client, /<WorkspaceTitlePanel title="ADVERT STUDIO"/);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
@@ -261,11 +261,11 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(css, /font-family:[^;\n]*Montserrat/);
   assert.doesNotMatch(css, /\.stepButton small/);
   assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
-  assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
-  assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
+  assert.match(header, /href: '\/ad-studio', label: 'Advert Studio', accountTypes: \['dealer'\]/);
+  assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Advert Studio', accountTypes: \['owner'/);
 });
 
-test('Ad Studio follows the shared workspace header and accessible icon navigation', async () => {
+test('Advert Studio follows the shared workspace header and accessible icon navigation', async () => {
   const [client, css] = await Promise.all([
     read('components/AdStudioClient.tsx'),
     read('components/AdStudioClient.module.css'),
@@ -798,7 +798,7 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   assert.ok(titleLines.every((line) => drawingContext.measureText(line).width <= 526));
 });
 
-test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
+test('showroom logos inherit Advert Studio branding and allow a compact showroom-only override', async () => {
   const [showroomDb, studioDb, validation, route, manager, managerCss, migration] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
     read('lib/ad-studio-db.ts'),
@@ -906,7 +906,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
 
   const middlemanHeader = header.match(/if \(isMiddlemanAccountSubtype\(accountSubtype\)\) \{[\s\S]*?\n    \}/)?.[0] ?? '';
   assert.match(middlemanHeader, /Value Asset/);
-  assert.match(middlemanHeader, /Ad Studio/);
+  assert.match(middlemanHeader, /Advert Studio/);
   assert.match(middlemanHeader, /My Showroom/);
   assert.match(middlemanHeader, /Marketplace/);
   assert.doesNotMatch(middlemanHeader, /label: 'Account'/);
@@ -988,7 +988,7 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });
 
-test('Ad Studio API lets Owner/Manager and Sales manage their dealer brand kits', async () => {
+test('Advert Studio API lets Owner/Manager and Sales manage their dealer brand kits', async () => {
   const { dealerRoleCan } = await loadTypeScriptModule('lib/dealer-app-access.ts');
   for (const role of [null, 'owner', 'sales']) {
     const calls = [];
@@ -1022,7 +1022,7 @@ test('Ad Studio API lets Owner/Manager and Sales manage their dealer brand kits'
   }
 });
 
-test('Ad Studio API denies unauthenticated, inactive, non-dealer and restricted staff access', async () => {
+test('Advert Studio API denies unauthenticated, inactive, non-dealer and restricted staff access', async () => {
   const { dealerRoleCan } = await loadTypeScriptModule('lib/dealer-app-access.ts');
   for (const scenario of [
     { signedIn: false },
@@ -1088,7 +1088,7 @@ test('Middleman shares Dealer launcher styling with notifications, its five tool
 
 
 
-test('installed Ad Studio routes keep Middleman and Dealer sessions separate without a referrer', async () => {
+test('installed Advert Studio routes keep Middleman and Dealer sessions separate without a referrer', async () => {
   const { requestAppRealm } = await loadTypeScriptModule('lib/app-realm.ts');
   const { isMiddlemanAccountSubtype } = await loadTypeScriptModule('lib/middleman-account.ts');
   const crypto = await import('node:crypto');

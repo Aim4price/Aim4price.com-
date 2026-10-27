@@ -137,7 +137,7 @@ export default async function TermsOfServicePage() {
                 Aim4price provides digital tools for asset estimates, Asset Registers, documents,
                 values, costs, fuel, maintenance, licensing, finance, insurance, accounting-related
                 records, budgets, reports, QR-linked information, Invoice Drop, assisted capture,
-                Document Vault, Ad Studio, showrooms, mobile and offline tools, collaboration,
+                Document Vault, Advert Studio, showrooms, mobile and offline tools, collaboration,
                 Discovery and Marketplace.
                 Features may differ by account type, role, subscription and stage of development.
               </p>
@@ -259,7 +259,7 @@ export default async function TermsOfServicePage() {
                 will be completed.
               </p>
               <p>
-                Ad Studio and showrooms use content and branding supplied or authorised by users.
+                Advert Studio and showrooms use content and branding supplied or authorised by users.
                 You must have rights to the photos, logos and claims you publish. A directory or
                 Google Business entry is not proof of a commercial relationship or endorsement. Do
                 not infer consent to unsolicited marketing from an enquiry or visible contact

@@ -39,7 +39,7 @@ async function resolveAccess() {
 export async function GET() {
   const access = await resolveAccess();
   if (!access) {
-    return NextResponse.json({ ok: false, error: 'Ad Studio is not available for this account.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Advert Studio is not available for this account.' }, { status: 403 });
   }
 
   try {
@@ -67,7 +67,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const access = await resolveAccess();
   if (!access) {
-    return NextResponse.json({ ok: false, error: 'Ad Studio is not available for this account.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Advert Studio is not available for this account.' }, { status: 403 });
   }
   if (!access.canManage) {
     return NextResponse.json({ ok: false, error: 'Your Dealer login does not have permission to change company Brand Kits.' }, { status: 403 });
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const access = await resolveAccess();
   if (!access) {
-    return NextResponse.json({ ok: false, error: 'Ad Studio is not available for this account.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Advert Studio is not available for this account.' }, { status: 403 });
   }
   if (!access.canManage) {
     return NextResponse.json({ ok: false, error: 'Your Dealer login does not have permission to remove company Brand Kits.' }, { status: 403 });
