@@ -215,13 +215,6 @@
 .deleteConfirmButton:disabled { opacity: .45; cursor: not-allowed; }
 
 .publicPage { min-height: calc(var(--website-design-vh, 1vh) * 100); background: var(--app-surface, #fff); }
-.publicTopbar { border-bottom: 1px solid var(--app-line, var(--line)); background: var(--app-surface, #fff); }
-.publicTopbarInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); min-height: 4.25rem; margin-inline: auto; padding: 0 clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 4.5),4.5rem); }
-.aim4priceMark { display: inline-flex; align-items: center; text-decoration: none; }
-.aim4priceMark img { display: block; width: auto; height: 1.95rem; object-fit: contain; }
-.publicTopbarAction { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; border: 1px solid var(--app-line, #cddbd5); border-radius: 10px; padding: 0 1rem; color: var(--app-text, var(--green)); background: var(--app-surface, #fff); font-size: .72rem; font-weight: 800; text-decoration: none; transition: border-color .16s ease, background .16s ease; }
-.publicTopbarAction:hover { border-color: var(--app-line, #a9c7bb); background: var(--app-surface, #f4f9f7); }
-.publicTopbarAction:focus-visible { outline: 3px solid var(--app-warning-line, rgba(243,182,64,.55)); outline-offset: 2px; }
 
 .publicHero { padding: clamp(.85rem,calc(var(--website-design-vw, 1vw) * 1.6),1.5rem); background: var(--app-surface-soft, #f4f8f6); }
 .publicHeroInner { width: min(1560px,100%); margin-inline: auto; border: 1px solid var(--app-line, #d6e4de); border-radius: 20px; padding: clamp(1.25rem,calc(var(--website-design-vw, 1vw) * 2),2rem); background: var(--app-surface, #fff); box-shadow: 0 14px 38px var(--app-shadow-colour, rgba(23,54,44,.05)); }
@@ -299,9 +292,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .listingTitleRow > strong { width: 100%; white-space: normal; }
   :global(:where(html:not(:has([data-website-canvas])))) .dangerZone { align-items: stretch; flex-direction: column; }
   :global(:where(html:not(:has([data-website-canvas])))) .dangerZone button { width: 100%; }
-  :global(:where(html:not(:has([data-website-canvas])))) .publicTopbarInner { min-height: 4.2rem; padding-inline: 1rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .aim4priceMark img { height: 1.85rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .publicTopbarAction { min-height: 2.45rem; padding-inline: .8rem; font-size: .67rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .publicHero { padding: .65rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .publicHeroInner { border-radius: 18px; padding: 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity { align-items: flex-start; }
@@ -483,7 +473,6 @@
 .createAdvertActions .listingManagerActionCopy small { font-weight: 500; }
 
 /* Approved image preview: original showroom structure, quieter header/footer. */
-.publicPage .aim4priceMark img { height: 2.4rem; }
 .publicPage .publicHeroMain { grid-template-columns: minmax(0, 1fr) auto; gap: 24px; }
 .publicPage .publicContactActions { max-width: none; width: auto; gap: 10px; }
 .publicPage .publicContactActions a { flex: 0 1 auto; max-width: none; min-height: 48px; padding-inline: 16px; gap: 8px; white-space: nowrap; }

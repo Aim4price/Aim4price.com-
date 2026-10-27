@@ -86,7 +86,8 @@ type ShowroomManageActionIconName = 'edit' | 'download' | 'marketplace' | 'remov
 function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      {name === 'whatsapp' ? <><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 21l1.7-4.9A8.5 8.5 0 1 1 20.5 11.7Z" /><path d="m8 7 2 3-1 1c1 2 2 3 4 4l1-1 3 2" /></> : null}
+      {name === 'whatsapp' ? <><path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" stroke="none" /></> : null}
       {name === 'location' ? (
         <>
           <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -802,14 +803,6 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
 
   return (
     <div className={styles.publicPage}>
-      <header className={styles.publicTopbar}>
-        <div className={styles.publicTopbarInner}>
-          <Link href="/" className={styles.aim4priceMark} aria-label="Aim4price home">
-            <img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" />
-          </Link>
-          <Link className={styles.publicTopbarAction} href="/valuation">Value your machinery</Link>
-        </div>
-      </header>
       <section className={styles.publicHero}>
         <div className={styles.publicHeroInner}>
           <div className={styles.publicHeroMain}>
