@@ -116,7 +116,7 @@ export default function PartsInbox({
             <h3>{list.name}</h3>
             <a
               className={styles.button}
-              href={`${base}?list=${encodeURIComponent(list.id)}`}
+              href={`${base}/${encodeURIComponent(list.id)}`}
             >
               {list.status === "active"
                 ? "View shared parts"

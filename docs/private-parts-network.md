@@ -1,12 +1,12 @@
 # Dealer parts lists
 
-Parts lives in dealer accounts at `/parts` and `/dealer/parts`. Named cards use Share / View parts / Manage. Owners can create separate Landini, John Deere or second-hand lists; these are names, not compatibility claims. Each list opens a searchable table. CSV replacement changes only the selected list. Aim4price never reserves, deducts or manages master stock.
+Parts lives in dealer accounts at `/parts` and `/dealer/parts`. Named cards use Share / Open / Manage. Owners can create separate Landini, John Deere or second-hand lists; these are names, not compatibility claims. Open navigates to a dedicated page at `/parts/[listId]` or `/dealer/parts/[listId]` with a searchable table and Back to Parts navigation. Legacy `?list=` links redirect to the dedicated page; website login preserves that destination. CSV replacement changes only the selected list. Aim4price never reserves, deducts or manages master stock.
 
 ## Sharing and receiving
 
 - **Inside Aim4price:** the owner enters the recipient email. A private invitation appears in that account’s Parts and Leads inbox. The signed-in account owner accepts it; the sender’s explicit share grants view/enquiry access. No email is sent automatically.
 - **Share a link:** email-bound, seven-day invitation. Existing sign-in/signup flow is reused. The recipient verifies the emailed PIN and the owner approves them through Manage → Sharing & access. Reopening an accepted link checks account access and opens the list without demanding another login from an already signed-in user.
-- Accepted shares remain under Shared with me and in the Parts section of Leads. Pending/suspended accounts see access status, not the parts table. Revocation is checked on every API request.
+- Accepted shares remain alongside owned lists on Parts (labelled Shared parts list) and in the Parts section of Leads. Pending/suspended accounts see access status, not the parts table. Revocation is checked on every API request.
 - New lists are owned by one dealership. Recipients cannot replace its CSV, reshare it, change permissions or rename/delete it. They can create and share their own independent lists.
 - Existing legacy groups and their contributions are retained, including legacy role permissions. The UI no longer asks users to create a network. No live data migration or deletion is performed.
 

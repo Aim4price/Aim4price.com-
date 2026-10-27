@@ -189,11 +189,13 @@ function Modal({
 }
 export default function PartsClient({
   website = false,
+  listId = "",
 }: {
   website?: boolean;
+  listId?: string;
 }) {
   const [networks, setNetworks] = useState<Network[]>([]),
-    [network, setNetwork] = useState(""),
+    [network, setNetwork] = useState(listId),
     [staff, setStaff] = useState(true),
     [contribute, setContribute] = useState(false);
   const [view, setView] = useState("search"),
@@ -243,10 +245,14 @@ export default function PartsClient({
     [inviteRole, setInviteRole] = useState("viewer"),
     [channel, setChannel] = useState("direct"),
     [listSearch, setListSearch] = useState(""),
-    [opened, setOpened] = useState(false),
+    [opened, setOpened] = useState(Boolean(listId)),
     [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
+  const basePath = website ? "/parts" : "/dealer/parts";
+  function openList(id: string, members = false) {
+    window.location.assign(`${basePath}/${encodeURIComponent(id)}${members ? "?view=members" : ""}`);
+  }
   const current = networks.find((n) => n.id === network);
   const active = current?.status === "active";
   const admin =
@@ -259,26 +265,32 @@ export default function PartsClient({
     active &&
     (!current?.list_mode || current.owned);
   const latest = useRef(0);
+  const initialViewSet = useRef(false);
   const loadNetworks = useCallback(async () => {
     const d = await api();
     setNetworks(d.networks);
+    if (listId && !initialViewSet.current && new URLSearchParams(window.location.search).get("view") !== "members") {
+      initialViewSet.current = true;
+      setView(d.networks.find((n: Network) => n.id === listId)?.owned ? "mine" : "search");
+    }
     setStaff(d.staff);
     setContribute(d.canContribute);
     setNetwork((old) =>
       d.networks.some((n: Network) => n.id === old) ? old : "",
     );
     return d;
-  }, []);
+  }, [listId]);
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get("list");
-    if (requested) {
-      setNetwork(requested);
-      setOpened(true);
+    if (requested && !listId) {
+      window.location.replace(`${website ? "/parts" : "/dealer/parts"}/${encodeURIComponent(requested)}`);
+      return;
     }
+    if (new URLSearchParams(window.location.search).get("view") === "members") setView("members");
     void loadNetworks()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [loadNetworks]);
+  }, [loadNetworks, listId, website]);
   useEffect(() => {
     const request = ++latest.current;
     setRows([]);
@@ -373,23 +385,18 @@ export default function PartsClient({
     </>
   );
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        <WorkspaceTitlePanel
-          title="Parts Management System"
-          className={styles.title}
-        />
+        {!listId && <WorkspaceTitlePanel title="Parts Management System" className={styles.title} />}
         <div className={styles.listToolbar}>
           {opened ? (
             <button
               onClick={() => {
-                setOpened(false);
-                setNetwork("");
-                switchView("search");
+                window.location.assign(basePath);
               }}
             >
               <Icon kind="list" />
-              All parts lists
+              Back to Parts
             </button>
           ) : (
             <div className={styles.search}>
@@ -402,7 +409,7 @@ export default function PartsClient({
               />
             </div>
           )}
-          {!staff && (
+          {!staff && !listId && (
             <button
               className={styles.addButton}
               onClick={() => {
@@ -441,9 +448,7 @@ export default function PartsClient({
                         )
                       )
                         return;
-                      setNetwork(n.id);
-                      setOpened(true);
-                      switchView(n.owned ? "mine" : "search");
+                      openList(n.id);
                     }}
                   >
                     <div className={styles.cardContent}>
@@ -486,9 +491,7 @@ export default function PartsClient({
                         className={styles.openAction}
                         data-tooltip="Open parts list"
                         onClick={() => {
-                          setNetwork(n.id);
-                          setOpened(true);
-                          switchView(n.owned ? "mine" : "search");
+                          openList(n.id);
                         }}
                       >
                         <Icon kind="open" />
@@ -556,13 +559,13 @@ export default function PartsClient({
             </div>
           ) : (
             <>
-              <div className={styles.toolbar}>
+              <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
-                  <h2 className={styles.listTitle}>{current?.name}</h2>
+                  <h1 className={styles.listTitle}>{current?.name}</h1>
                   <p className={styles.eyebrow}>
                     {view === "members"
                       ? "Sharing history and access"
-                      : "Parts from the latest CSV"}
+                      : `${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · ${current?.last_updated ? `Updated ${date(current.last_updated)}` : "Not uploaded"}`}
                   </p>
                 </div>
                 <div className={styles.actions}>
@@ -609,6 +612,7 @@ export default function PartsClient({
               </div>
               {view !== "members" && (
                 <>
+                  <div className={styles.dealerBanner}><Icon kind={current?.owned ? "list" : "share"} /><div><strong>{current?.owned ? "Your parts list" : "Shared with you"}</strong><p>{current?.owned ? (current.business_name || current.name) : current?.name}{current?.owned && current.town ? ` · ${current.town}` : ""}</p></div></div>
                   <div className={styles.search}>
                     <Icon kind="search" />
                     <input
@@ -871,7 +875,6 @@ export default function PartsClient({
                 <button
                   data-tone="blue"
                   onClick={() => {
-                    setOpened(true);
                     openUpload();
                   }}
                 >
@@ -884,9 +887,8 @@ export default function PartsClient({
               )}
               <button
                 onClick={() => {
-                  setOpened(true);
-                  switchView("members");
-                  setModal(null);
+                  if (!listId) openList(network, true);
+                  else { switchView("members"); setModal(null); }
                 }}
               >
                 <Icon kind="users" />
@@ -975,9 +977,8 @@ export default function PartsClient({
                 onClick={() =>
                   void run(async () => {
                     await mutate({ action: "archive" });
-                    setOpened(false);
-                    setNetwork("");
-                    setModal(null);
+                    if (listId) window.location.assign(basePath);
+                    else { setOpened(false); setNetwork(""); setModal(null); }
                   })
                 }
               >
@@ -1012,10 +1013,7 @@ export default function PartsClient({
                   void run(async () => {
                     const d = await api({ action: "create", name });
                     await loadNetworks();
-                    setNetwork(d.id);
-                    setOpened(true);
-                    switchView("mine");
-                    setModal(null);
+                    openList(d.id);
                   })
                 }
               >
@@ -1062,9 +1060,8 @@ export default function PartsClient({
             <div className={styles.shareHistory}>
               <button
                 onClick={() => {
-                  setOpened(true);
-                  switchView("members");
-                  setModal(null);
+                  if (!listId) openList(network, true);
+                  else { switchView("members"); setModal(null); }
                 }}
               >
                 <Icon kind="users" />

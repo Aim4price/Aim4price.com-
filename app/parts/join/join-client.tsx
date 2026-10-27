@@ -28,7 +28,7 @@ export default function JoinParts() {
             setList(d.network);
             if (d.status === "active")
               window.location.replace(
-                "/parts?list=" + encodeURIComponent(d.network),
+                "/parts/" + encodeURIComponent(d.network),
               );
           }
         })
@@ -61,9 +61,11 @@ export default function JoinParts() {
   const returnTo = "/parts/join?token=" + encodeURIComponent(token);
   return (
     <main className={styles.page}>
-      <section className={styles.join}>
+      <section className={styles.invitationLayout}>
+        <div className={styles.invitationIntro}><span className={styles.eyebrow}>Aim4price · Dealer parts</span><h1>Parts.<br />Shared with you.</h1><p>A private parts list from another dealer.</p></div>
+        <div className={styles.invitationCard}>
         <span className={styles.eyebrow}>Aim4price · Shared parts</span>
-        <h1>Open shared parts</h1>
+        <h2>Open shared parts</h2>
         {done ? (
           <>
             <p>
@@ -73,7 +75,7 @@ export default function JoinParts() {
             <a
               className={styles.button}
               href={
-                "/parts" + (list ? "?list=" + encodeURIComponent(list) : "")
+                "/parts" + (list ? "/" + encodeURIComponent(list) : "")
               }
             >
               View shared parts
@@ -95,7 +97,7 @@ export default function JoinParts() {
                 </a>
               </>
             )}
-            <p>Once signed in, verify your invitation with an email PIN.</p>
+            {signedIn && <p>Verify your invitation with an email PIN.</p>}
             {sent && (
               <label>
                 Email PIN
@@ -108,7 +110,7 @@ export default function JoinParts() {
                 />
               </label>
             )}
-            <div className={styles.actions}>
+            {signedIn && <div className={styles.actions}>
               <button
                 disabled={busy || !token}
                 onClick={() => void submit("send-pin")}
@@ -123,7 +125,7 @@ export default function JoinParts() {
                   Verify invitation
                 </button>
               )}
-            </div>
+            </div>}
           </>
         )}
         {error && (
@@ -131,6 +133,7 @@ export default function JoinParts() {
             {error}
           </p>
         )}
+        </div>
       </section>
     </main>
   );

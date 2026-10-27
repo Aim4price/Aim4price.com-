@@ -86,6 +86,7 @@ function add(file) {
 }
 const entry = "app/dealer/parts/parts-client";
 add(entry);
+add("app/parts/join/join-client");
 const react = fs.readFileSync(
   path.join(
     path.dirname(require.resolve("react/package.json")),
@@ -105,9 +106,9 @@ const appCode =
   JSON.stringify(modules) +
   ",cache={};" +
   'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
-  "const Component=require(" +
+  "const Component=require(location.pathname === '/parts/join' ? 'app/parts/join/join-client' : " +
   JSON.stringify(entry) +
-  ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true}));';
+  ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true,listId:location.pathname.split("/")[2]||""}));';
 (async () => {
   const browser = await puppeteer.launch({
     executablePath: await chromium.executablePath(),
@@ -155,6 +156,7 @@ const appCode =
       if (r.url().includes("/api/parts-network")) {
         const url = new URL(r.url());
         let data;
+        if (url.searchParams.has("token")) return r.respond({status:401,contentType:"application/json",body:JSON.stringify({error:"Sign in required"})});
         if (r.method() === "POST") {
           const b = JSON.parse(r.postData());
           actions.push(b);
@@ -215,18 +217,10 @@ const appCode =
       }
       return r.respond({
         contentType: "text/html",
-        body: '<html><head></head><body><div id="app"></div></body></html>',
+        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
       });
     });
     await page.goto("https://example.test/parts");
-    await page.addStyleTag({
-      content:
-        "*{box-sizing:border-box}body{margin:0;background:#eef4f0}" +
-        sheets.join("\n"),
-    });
-    await page.addScriptTag({ content: react });
-    await page.addScriptTag({ content: reactDOM });
-    await page.addScriptTag({ content: appCode });
     await page.waitForSelector("article");
     assert.ok(
       await page.$eval("h1", (e) =>
@@ -260,6 +254,8 @@ const appCode =
     );
 
     const click = async (text) => {
+      await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.disabled), {}, text);
+      const navigation = ["Open", "Back to Parts"].includes(text) ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
       assert.ok(
         await page.evaluate((t) => {
           const b = [...document.querySelectorAll("button")].find(
@@ -274,6 +270,7 @@ const appCode =
         }, text),
         text,
       );
+      if (navigation) await navigation;
     };
     const output = path.join(root, ".next/parts-network-validation");
     fs.mkdirSync(output, { recursive: true });
@@ -303,6 +300,9 @@ const appCode =
     });
     await page.keyboard.press("Escape");
     await click("Open");
+    await page.waitForSelector("tbody tr");
+    assert.ok(page.url().endsWith("/parts/11111111-1111-4111-8111-111111111111"));
+    await page.reload({waitUntil:"domcontentloaded"});
     await page.waitForSelector("tbody tr");
     assert.equal(await page.$$eval("table", (e) => e.length), 1);
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
@@ -401,15 +401,18 @@ const appCode =
     });
     await page.setViewport({ width: 1440, height: 1000 });
     await page.screenshot({ path: path.join(output, "table-dark.png") });
-    await click("All parts lists");
+    await click("Back to Parts");
     await page.waitForSelector("article");
     await page.screenshot({ path: path.join(output, "lists-dark.png") });
+    const sharedNavigation = page.waitForNavigation({waitUntil:"domcontentloaded"});
     await page.evaluate(() =>
       [...document.querySelectorAll("article")]
         .find((a) => a.textContent.includes("Shared parts list"))
         .querySelector("button")
         .click(),
     );
+    await sharedNavigation;
+    assert.ok(page.url().endsWith("/parts/44444444-4444-4444-8444-444444444444"));
     await page.waitForSelector("tbody tr");
     assert.ok(
       !(await page.evaluate(() =>
@@ -432,7 +435,7 @@ const appCode =
       actions.find((a) => a.action === "enquire").network,
       "44444444-4444-4444-8444-444444444444",
     );
-    await click("All parts lists");
+    await click("Back to Parts");
     await click("Share");
     await click("Inside Aim4price");
     await page.waitForSelector('input[type="email"]');
@@ -459,6 +462,12 @@ const appCode =
       actions.filter((a) => a.action === "invite").at(-1).channel,
       "link",
     );
+    await page.goto("https://example.test/parts/join?token=fixture");
+    await page.waitForSelector('a[href^="/auth?returnTo="]');
+    assert.ok(await page.$eval('a[href^="/auth?returnTo="]', e => decodeURIComponent(e.getAttribute("href")).includes("/parts/join?token=fixture")));
+    await page.screenshot({path:path.join(output,"invitation-desktop.png")});
+    await page.setViewport({width:390,height:844});
+    await page.screenshot({path:path.join(output,"invitation-phone.png")});
     assert.deepEqual(errors, []);
     console.log(
       "Parts network UI: table, contact, CSV review/import, membership cancellation, phone and dark mode passed.",
