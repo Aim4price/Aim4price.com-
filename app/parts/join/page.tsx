@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import AppHeader from "../../../components/AppHeader";
 import JoinParts from "./join-client";
 export const metadata: Metadata = {
@@ -6,5 +7,12 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 export default function Page() {
-  return <><AppHeader active="parts" /><JoinParts /></>;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AppHeader active="parts" />
+      </Suspense>
+      <JoinParts />
+    </>
+  );
 }
