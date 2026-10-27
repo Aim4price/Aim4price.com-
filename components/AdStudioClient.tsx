@@ -1028,9 +1028,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <dialog ref={previewDialogRef} className={styles.previewDialog} aria-labelledby="studio-large-preview-title" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
                 <h2 id="studio-large-preview-title">Advert preview</h2>
-                <button type="button" data-modal-close="true" aria-label="Close advert preview" onClick={() => previewDialogRef.current?.close()}>×</button>
+                <button type="button" data-modal-close="true" aria-label="Close advert preview" autoFocus title="Close advert preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
               </div>
-              <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged advert preview" />
+              <div className={styles.previewDialogBody}>
+                <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged advert preview" />
+              </div>
             </dialog>
           </aside>
           </div>
