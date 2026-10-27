@@ -723,3 +723,5 @@
 @media (max-width: 470px) {
   :global(:where(html:not(:has([data-website-canvas])))) .logoControls.logoControls { flex-direction: column; }
 }
+
+.titlePanel { margin-bottom: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.3rem); }

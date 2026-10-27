@@ -28,11 +28,10 @@ import {
 } from '../lib/marketplace-ad-renderer';
 import styles from './AdStudioClient.module.css';
 import AdvertCreator from './AdvertCreator';
-import creatorStyles from './AdvertCreator.module.css';
+import registerStyles from '../app/asset-register/page.module.css';
 import valuationStyles from '../app/valuation/page.module.css';
 import entryStyles from '../app/marketplace/marketplace-entry.module.css';
 import SettingsDetailIcon from './SettingsDetailIcon';
-import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
 type AdStudioClientProps = {
   dealerAppMode?: boolean;
@@ -653,7 +652,27 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   return (
     <div className={studioMode === 'home' ? valuationStyles.page : `${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       {studioMode !== 'home' ? <div className={styles.titlePanel}>
-        <WorkspaceTitlePanel title="ADVERT STUDIO" />
+        <section className={registerStyles.businessRegisterTitleBlock}>
+          <div className={registerStyles.businessRegisterTitleCard}>
+            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'ADVERT STUDIO'}</h1>
+            <button
+              type="button"
+              className={`${registerStyles.registerChangeButton} ${registerStyles.controlTooltip}`}
+              disabled={loading}
+              aria-label={studioMode === 'creator' ? 'Switch to Advert Studio' : 'Switch to Create Advert'}
+              data-tooltip={studioMode === 'creator' ? 'Switch to Advert Studio' : 'Switch to Create Advert'}
+              onClick={() => {
+                if (studioMode === 'creator') setStudioMode('style');
+                else { setCreatorStarted(true); setStudioMode('creator'); }
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={registerStyles.registerChangeIcon} aria-hidden="true">
+                <path d="M7 7h10" /><path d="m14 4 3 3-3 3" />
+                <path d="M17 17H7" /><path d="m10 14-3 3 3 3" />
+              </svg>
+            </button>
+          </div>
+        </section>
       </div> : null}
 
       {loading ? <div className={styles.notice}>Loading your advert styles…</div> : null}
@@ -699,7 +718,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
           </section>
         </div>
       ) : null}
-      {!loading && studioMode !== 'home' ? <div className={creatorStyles.back}><button type="button" className={styles.secondaryButton} onClick={() => setStudioMode('home')}>Back to Advert Studio</button></div> : null}
       {!loading && creatorStarted ? <div style={studioMode === 'creator' ? undefined : { display: 'none' }}>
         <AdvertCreator kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
       </div> : null}
