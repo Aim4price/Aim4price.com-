@@ -64,17 +64,17 @@ export default function OwnerLoginSections(props: Props) {
     { id: 'passcode', title: 'Passcode', text: 'Set a new login passcode.', value: 'Change passcode' },
   ];
   const title = section === 'status' ? 'Manage login status' : cards.find(c => c.id === section)?.title;
-  return <div className={styles.manager}>
+  return <div className={`${styles.manager} ${styles.ownerManager}`}>
     <div className={styles.toolbar}>
       {section === 'overview' ? <button type="button" onClick={back} disabled={busy}>‹ All logins</button> : <button type="button" disabled={busy} onClick={() => { if (!(dirty || props.hasUnsavedChanges) || window.confirm('Discard unsaved changes?')) open('overview'); }}>‹ Back</button>}
       <span className={styles.status} data-active={record.isActive}>{record.isActive ? 'Active' : 'Inactive'}</span>
     </div>
     {section === 'overview' ? <>
-      <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>What would you like to change?</h3>
+      <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>Manage access</h3>
       <div className={styles.grid}>{cards.map(card => <button key={card.id} type="button" className={styles.card} onClick={() => open(card.id)}>
         <span className={styles.icon}><AccessSectionIcon name={card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
       </button>)}</div>
-      <button type="button" className={styles.statusLink} onClick={() => open('status')}>Manage login status</button>
+      <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button>
     </> : <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{title}</h3>
       {section === 'assets' ? record.accessRole === 'admin' ? <div className={styles.info}>Owner / Admin has access to all umbrellas and assets. Change their permissions to limit asset access.</div> : props.renderAssetAccess(() => open('overview')) : section === 'status' ? <>

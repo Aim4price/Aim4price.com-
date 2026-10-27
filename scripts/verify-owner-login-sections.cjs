@@ -73,7 +73,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function patch(){return page.evaluate(()=>window.requests.filter(r=>r.method==='PATCH').at(-1).body);}
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('Manage logins')));
  await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
- await click('Manage George Jnr');await heading('What would you like to change?');
+ await click('Manage George Jnr');await heading('Manage access');
  assert.equal(await page.$$eval('button strong',els=>els.filter(e=>['Login details','Permissions','Asset access','Passcode'].includes(e.textContent)).length),4);
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(b=>b.textContent==='Delete')),false);
  fs.mkdirSync('.next/owner-login-validation',{recursive:true});
@@ -85,12 +85,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:1280,height:900});
  await card('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Owner / Admin has access to all umbrellas and assets.')));
  assert.equal(await page.$$eval('input[type="checkbox"]',els=>els.length),0);await click('‹ Back');
- await card('Permissions');await page.click('input[value="operations"]');await click('Save changes');await heading('What would you like to change?');assert.deepEqual(await patch(),{accessRole:'operations'});
- await card('Asset access');await page.waitForSelector('input[type="checkbox"]');await page.click('input[type="checkbox"]');await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await heading('What would you like to change?');assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body.groupIds),['farm']);
- await card('Passcode');await fill('New passcode','4321');await click('Save changes');await heading('What would you like to change?');assert.deepEqual(await patch(),{password:'4321'});
+ await card('Permissions');await page.click('input[value="operations"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{accessRole:'operations'});
+ await card('Asset access');await page.waitForSelector('input[type="checkbox"]');await page.click('input[type="checkbox"]');await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body.groupIds),['farm']);
+ await card('Passcode');await fill('New passcode','4321');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'4321'});
  await card('Login details');await fill('Display name','George Junior');await page.evaluate(()=>window.failSave=true);await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Username is already in use.'));await heading('Login details');
- await page.evaluate(()=>window.failSave=false);await click('Save changes');await heading('What would you like to change?');assert.deepEqual(await patch(),{displayName:'George Junior',username:'jnr@skb'});
- await card('Login details');await fill('Display name','Unsaved');confirm=false;await click('‹ Back');await heading('Login details');confirm=true;await click('‹ Back');await heading('What would you like to change?');
+ await page.evaluate(()=>window.failSave=false);await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{displayName:'George Junior',username:'jnr@skb'});
+ await card('Login details');await fill('Display name','Unsaved');confirm=false;await click('‹ Back');await heading('Login details');confirm=true;await click('‹ Back');await heading('Manage access');
  await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
  confirm=false;await click('Delete');assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='DELETE').length),0);confirm=true;await click('Delete');await page.waitForFunction(()=>!document.body.textContent.includes('Manage George Junior'));
  assert.deepEqual(errors,[]);console.log('PASS: section navigation, role/asset access, scoped saves, duplicate errors, unsaved edits, status actions and mobile layout');

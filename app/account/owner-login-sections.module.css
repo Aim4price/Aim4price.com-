@@ -53,3 +53,33 @@
 }
 
 .manager .assetPanel.assetPanel { border:0; padding:0; background:transparent; }
+
+/* Quiet green surfaces distinguish actions from the modal background. */
+.directoryRow.directoryRow.directoryRow,
+.ownerManager .card {
+  background:color-mix(in srgb, var(--app-accent,#267254) 5%, var(--app-surface,#fff));
+  border-color:color-mix(in srgb, var(--app-accent,#267254) 22%, var(--app-surface,#fff));
+}
+.directoryRow.directoryRow.directoryRow button {
+  background:color-mix(in srgb, var(--app-accent,#267254) 12%, var(--app-surface,#fff));
+  border-color:color-mix(in srgb, var(--app-accent,#267254) 28%, var(--app-surface,#fff));
+}
+.ownerManager .card { transition:background 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.ownerManager .card:hover:not(:disabled),
+.directoryRow.directoryRow.directoryRow button:hover:not(:disabled) {
+  background:color-mix(in srgb, var(--app-accent,#267254) 10%, var(--app-surface,#fff));
+  border-color:var(--app-accent,#267254);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--app-accent,#267254) 14%, transparent);
+}
+.ownerManager .card > .icon {
+  display:grid; place-items:center; flex-basis:2.6rem; height:2.6rem; margin-top:0;
+  border-radius:.75rem; opacity:1;
+  background:color-mix(in srgb, var(--app-accent,#267254) 10%, var(--app-surface,#fff));
+}
+.ownerManager .card > .icon svg { width:1.4rem; height:1.4rem; opacity:.75; }
+.ownerManager .statusLink {
+  display:inline-flex; align-items:center; gap:.65rem; padding:.65rem .9rem;
+  border-color:var(--app-line,#d8e5dd); background:var(--app-surface,#fff);
+  font-size:.9rem; color:var(--app-text,#173f31);
+}
+.ownerManager .statusLink svg { width:1.1rem; height:1.1rem; opacity:.7; }
