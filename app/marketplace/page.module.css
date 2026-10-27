@@ -3185,18 +3185,17 @@
 }
 
 .showroomSidebar {
-  position: sticky;
-  top: 1rem;
+  position: static;
+  align-self: start;
+  top: auto;
   min-height: 0;
-  max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 2rem);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   padding: 1.15rem;
   border: 1px solid var(--app-line, rgba(200, 218, 210, 0.92));
   border-radius: 1rem;
   background: var(--app-surface, #fff);
   box-shadow: 0 10px 30px var(--app-shadow-colour, rgba(14, 55, 43, 0.055));
-  scrollbar-color: rgba(22, 83, 64, 0.24) transparent;
-  scrollbar-width: thin;
 }
 
 .showroomSidebar .searchBox {
