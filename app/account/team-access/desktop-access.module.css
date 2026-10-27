@@ -14,7 +14,7 @@
   border-top: 1px solid var(--app-line, #e0e6e3);
   background: var(--app-surface, #fff);
 }
-.fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:1.25rem; max-width:40rem; margin:0 auto; }
+.fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:1.25rem; width:100%; margin:0; }
 .field { display:grid; align-content:start; gap:.6rem; min-width:0; font-size:.9rem; font-weight:650; color:var(--app-text,#173f31); }
 .field small { font-weight:500; }
 .input { width:100%; min-width:0; box-sizing:border-box; height:3.35rem; border:1px solid var(--app-line,#d8e5dd); border-radius:.8rem; padding:.85rem 1rem; background:var(--app-surface-soft,#f3f8f5); color:var(--app-text,#173f31); font:inherit; }
@@ -35,3 +35,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .footer { padding:1rem 1.1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .directoryToolbar { flex-wrap:wrap; }
 }
+
+.inputWithIcon { position:relative; display:block; min-width:0; }
+.inputWithIcon > svg { position:absolute; top:50%; left:1rem; width:1.15rem; height:1.15rem; transform:translateY(-50%); color:var(--app-muted,#65796f); opacity:.55; pointer-events:none; }
+.inputWithIcon .input { padding-left:2.9rem; }
