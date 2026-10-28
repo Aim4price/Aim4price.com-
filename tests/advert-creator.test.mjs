@@ -42,3 +42,12 @@ test('estimate endpoint rejects unauthenticated and unauthorized access and scop
  dealer={role:'manager'};const response=await GET();assert.equal(response.status,200);assert.deepEqual(queries[0].params,['seller-123']);assert.match(queries[0].sql,/where user_id = \$1/);
  assert.equal(response.body.estimates[0].usageUnit,'percent');assert.equal(response.body.estimates[0].usage,'35');assert.equal(response.body.estimates[0].valueExVat,500000);
 });
+
+test('wizard validates only the fields belonging to the current step', async () => {
+ const {advertStepErrors}=await load('lib/advert-creator.ts');
+ assert.deepEqual(advertStepErrors({...details,contactName:'',phone:'',email:'bad'},1),{});
+ assert.deepEqual(advertStepErrors({...details,title:'',askingPrice:''},2,1),{});
+ assert.deepEqual(Object.keys(advertStepErrors({...details,title:'',year:'1700',usage:'101',usageUnit:'percent',askingPrice:'0'},1)).sort(),['askingPrice','title','usage','year']);
+ assert.deepEqual(Object.keys(advertStepErrors({...details,contactName:'',phone:'',email:'bad'},2,0)).sort(),['contactName','email','phone','photos']);
+ assert.deepEqual(advertStepErrors(details,2,1),{});
+});
