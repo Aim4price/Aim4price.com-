@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AD_TEMPLATE_OPTIONS, type AdBrandKit, type AdBrandSnapshot, type AdTemplateId } from '../lib/ad-studio';
 import { advertDetailsError, advertStepErrors, type AdvertFieldErrors, estimateMatchesAdvert, type AdvertDetails, type AdvertEstimate } from '../lib/advert-creator';
 import { downloadMarketplaceAd, getMarketplaceAdRating, renderMarketplaceAdCanvas, type MarketplaceAdContent } from '../lib/marketplace-ad-renderer';
 import styles from './AdvertCreator.module.css';
+import studioStyles from './AdStudioClient.module.css';
+import StudioIcon, { type StudioIconName } from './StudioIcon';
 import marketplaceStyles from '../app/asset-register/page.module.css';
 import MarketplacePriceInput from './MarketplacePriceInput';
 import MarketplacePhotoEditor from './MarketplacePhotoEditor';
@@ -12,6 +14,14 @@ import { pricingVatAmount } from '../lib/pricing-vat';
 import { calculateMarketplaceDealRating } from '../lib/marketplace';
 
 
+
+const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
+  showcase: studioStyles.templateShowcase, 'price-focus': studioStyles.templatePriceFocus,
+  'photo-first': studioStyles.templatePhotoFirst, classic: studioStyles.templateClassic,
+  minimal: studioStyles.templateMinimal, 'duo-split': studioStyles.templateDuoSplit,
+  'gallery-three': studioStyles.templateGalleryThree, 'catalogue-grid': studioStyles.templateCatalogueGrid,
+};
+const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
 export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint }: {
   kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string;
@@ -174,7 +184,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }
 
   return <section className={styles.creator} aria-label="Advert Creator">
-    <nav className={styles.stepNav} aria-label="Create advert steps">{['Advert details', 'Photos & contact', 'Preview & share'].map((label, index) => <button type="button" key={label} aria-current={step === index + 1 ? 'step' : undefined} disabled={index + 1 > furthestStep || uploading} onClick={() => goTo(index + 1)}><span aria-hidden="true">{index + 1 < furthestStep && index + 1 !== step ? '✓' : index + 1}</span>{label}</button>)}</nav>
+    <nav className={`${studioStyles.stepper} ${styles.studioStepper}`} aria-label="Create advert steps">{['Advert details', 'Photos & contact', 'Preview & share'].map((label, index) => <button type="button" key={label} className={`${studioStyles.stepButton} ${step === index + 1 ? studioStyles.stepButtonActive : ''}`} aria-current={step === index + 1 ? 'step' : undefined} disabled={index + 1 > furthestStep || uploading} onClick={() => goTo(index + 1)}><span aria-hidden="true"><StudioIcon name={index + 1 < furthestStep && index + 1 !== step ? 'check' : STEP_ICONS[index]} /></span><strong>{label}</strong><span className={studioStyles.srOnly}>Step {index + 1} of 3</span></button>)}</nav>
     {error ? <p className={styles.status} role="alert">{error}</p> : null}
     {status ? <p className={styles.status} role="status">{status}</p> : null}
     {step === 1 ? <div className={styles.card}>
@@ -188,23 +198,22 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
           <div className={styles.optionHeading}><span className={styles.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9" /></svg></span><div><h3 id="machinery-details-title">Machinery details</h3><p>Add details buyers will want to know.</p></div></div>
           <div className={styles.fields}>
         <label>Year<input inputMode="numeric" value={details.year} placeholder="Optional" onChange={e => update('year',e.target.value)} {...fieldA11y('year')} />{fieldError('year')}</label>
-        <label>Condition<select value={details.condition} onChange={e => update('condition',e.target.value)}>{['excellent','good','fair','used','serious'].map(value => <option key={value} value={value}>{value === 'serious' ? 'Needs repairs' : value.charAt(0).toUpperCase()+value.slice(1)}</option>)}</select></label>
+        <label>Condition<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="review" /></span><select value={details.condition} onChange={e => update('condition',e.target.value)}>{['excellent','good','fair','used','serious'].map(value => <option key={value} value={value}>{value === 'serious' ? 'Needs repairs' : value.charAt(0).toUpperCase()+value.slice(1)}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         <label>Usage<input inputMode="decimal" value={details.usage} disabled={details.usageUnit === 'none'} placeholder="Optional" onChange={e => update('usage',e.target.value)} {...fieldA11y('usage')} />{fieldError('usage')}</label>
-        <label>Usage unit<select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select></label>
-        <label>VAT label on advert<select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select></label>
+        <label>Usage unit<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="details" /></span><select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
+        <label>VAT label on advert<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         </div></section>
 <div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section><details className={styles.estimateDisclosure}><summary>Add an Aim4price estimate <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
-        <div className={styles.optionHeading}><span className={styles.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2" /></svg></span><div><h3 id="price-rating-title">Estimate &amp; price rating</h3><p>Optional — create your advert without an estimate.</p></div></div>
-        <p className={styles.help}>Link a saved Aim4price estimate to show a price rating.</p>
+        <p id="price-rating-title" className={styles.help}>Link an estimate to add a price rating. Your advert can also be created without one.</p>
         <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
-        {estimates.length ? <label className={styles.field}>Use an estimate<select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
+        {estimates.length ? <label className={styles.field}>Use an estimate<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
       <div className={styles.ratingPanel}>
       <label className={styles.toggle}><input type="checkbox" role="switch" aria-describedby="price-rating-help" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show price rating</label>
       <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
       </div></section>
 </details></div></div>
-      <div className={styles.formFooter}><span className={styles.help}>Step 1 of 3</span><button type="submit" className={styles.primary}>Next: Photos &amp; contact</button></div>
+      <div className={styles.formFooter}><span className={styles.help}>Step 1 of 3</span><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
       </form></div> : null}
     {step === 2 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Photos &amp; contact</h2><p className={styles.help}>Add your photos and confirm how buyers can contact you.</p>
@@ -222,17 +231,18 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
             </div>
           </section>
         </div>
-      <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => goTo(1)} disabled={uploading}>Back</button><button type="submit" className={styles.primary} disabled={uploading}>Next: Preview advert</button></div>
+      <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => goTo(1)} disabled={uploading}><StudioIcon name="back" />Back</button><button type="submit" className={styles.primary} disabled={uploading}>Next: Preview advert<StudioIcon name="next" /></button></div>
       </form></div> : null}
     {step === 3 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Preview &amp; share</h2><p className={styles.help}>Choose a design, then download or share. This does not publish a Marketplace listing.</p>
       <div className={styles.preview}><div>
-        <label className={styles.field}>Advert style<select value={brandId} onChange={e => chooseStyle(e.target.value)}><option value="">Account branding</option>{kits.map(kit => <option key={kit.id} value={kit.id}>{kit.name}</option>)}</select></label>
-        <div className={styles.templates}>{AD_TEMPLATE_OPTIONS.map(item => <button key={item.id} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)}><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Add ${item.photoCount} photos to use this layout.` : item.description}</small></button>)}</div>
-      </div><div><button className={styles.canvasButton} disabled={rendering} onClick={openPreview} aria-label="Open advert preview"><canvas ref={canvasRef} className={styles.canvas} width={1600} height={900} aria-label="Your advert preview" /></button>
+        <label className={styles.field}>Advert style<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="palette" /></span><select value={brandId} onChange={e => chooseStyle(e.target.value)}><option value="">Account branding</option>{kits.map(kit => <option key={kit.id} value={kit.id}>{kit.name}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
+        <div className={styles.layoutGrid} aria-label="Advert layouts">{AD_TEMPLATE_OPTIONS.map(item => <button type="button" key={item.id} className={`${studioStyles.templateChoice} ${styles.layoutChoice} ${template === item.id ? studioStyles.templateChoiceActive : ''}`} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)} style={{ '--brand-primary': brand.primaryColor, '--brand-secondary': brand.secondaryColor, '--brand-accent': brand.accentColor } as CSSProperties}><span className={`${studioStyles.miniTemplate} ${TEMPLATE_CLASSES[item.id]}`} aria-hidden="true"><i /><b /><em /><u /></span><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Needs ${item.photoCount} photos` : `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`}</small></button>)}</div>
+        <p className={styles.layoutHelp}>{AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.description}</p>
+      </div><div className={styles.previewPanel}><div className={styles.previewToolbar}><h3>Advert preview</h3><button type="button" className={styles.secondary} disabled={rendering} onClick={openPreview}><StudioIcon name="preview" />Enlarge</button></div><button className={styles.canvasButton} disabled={rendering} onClick={openPreview} aria-label="Open advert preview"><canvas ref={canvasRef} className={styles.canvas} width={1600} height={900} aria-label="Your advert preview" /></button>
         {rendering ? <p role="status">Updating preview…</p> : <p className={styles.help}>Click the advert to enlarge.</p>}
-        <div className={styles.actions}><button className={styles.primary} disabled={busy || rendering} onClick={() => exportPng()}>{busy ? 'Preparing…' : 'Download PNG'}</button><button className={styles.secondary} disabled={busy || rendering} onClick={() => exportPng(true)}>Share advert</button><button className={styles.secondary} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}>Copy advert text</button></div>
-      </div></div><div className={styles.formFooter}><button className={styles.secondary} onClick={() => goTo(2)}>Back</button><span className={styles.help}>Step 3 of 3</span></div>
+        <div className={styles.actions}><button className={styles.primary} disabled={busy || rendering} onClick={() => exportPng()}><StudioIcon name="download" />{busy ? 'Preparing…' : 'Download PNG'}</button><button className={styles.secondary} disabled={busy || rendering} onClick={() => exportPng(true)}><StudioIcon name="share" />Share advert</button><button className={styles.secondary} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}><StudioIcon name="copy" />Copy advert text</button></div>
+      </div></div><div className={styles.formFooter}><button className={styles.secondary} onClick={() => goTo(2)}><StudioIcon name="back" />Back</button><span className={styles.help}>Step 3 of 3</span></div>
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="creator-preview-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
         <div className={styles.dialogHeader}><h2 id="creator-preview-title">Advert preview</h2><div className={styles.actions}><button className={styles.primary} disabled={busy} onClick={() => exportPng()}>Download PNG</button><button data-modal-close="true" aria-label="Close advert preview" onClick={() => dialogRef.current?.close()}>×</button></div></div>
         {error ? <p role="alert">{error}</p> : null}{status ? <p role="status">{status}</p> : null}

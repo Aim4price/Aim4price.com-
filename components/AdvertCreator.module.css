@@ -97,3 +97,37 @@
  :global(:where(html:not(:has([data-website-canvas])))) .stepNav { gap: 6px; }
  :global(:where(html:not(:has([data-website-canvas])))) .stepNav button { flex-direction: column; padding: 10px 6px; gap: 6px; text-align: center; font-size: .8rem; }
 }
+/* Reuse Advert Style's tabs, select controls, icons and layout illustrations. */
+.creator { --studio-ink: #17362c; --studio-green: #165f49; }
+.studioStepper { grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--app-line, #d9e5df); border-radius: 24px 24px 0 0; }
+.studioStepper button:disabled { opacity: 1; color: var(--app-muted, #71857e); cursor: default; }
+.studioStepper button:disabled:hover { border-color: transparent; box-shadow: none; }
+.creator > .card { border-top: 0; border-radius: 0 0 24px 24px; padding: 24px 26px; }
+.card h2 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.8rem); font-weight: 850; letter-spacing: -.032em; line-height: 1.12; }
+.card > .help { font-size: .9rem; margin: 9px 0 24px; line-height: 1.6; }
+.optionCard { background: var(--app-surface, #fff); }
+.creator .studioSelect select { appearance: none; min-height: 54px; padding: 12px 48px 12px 50px; background: var(--app-surface, #fff); font-size: .84rem; font-weight: 750; }
+.formFooter { background: transparent; border: 0; border-top: 1px solid var(--app-line, #d9e5df); border-radius: 0; padding: 20px 0 0; }
+.formFooter .primary, .formFooter .secondary { min-height: 48px; }
+.creator .actions svg, .creator .primary > svg, .creator .secondary > svg { width: 20px; height: 20px; flex: none; }
+.preview { grid-template-columns: 340px minmax(0, 1fr); gap: 24px; align-items: start; }
+.layoutGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.layoutGrid .layoutChoice { min-width: 0; gap: 7px; padding: 10px; border-radius: 14px; text-align: left; }
+.layoutChoice strong { color: var(--app-text, #17362c); font-size: .78rem; font-weight: 800; }
+.layoutGrid .layoutChoice small { min-height: 0; font-size: .72rem; color: var(--app-muted, #657c71); }
+.layoutChoice:disabled { opacity: .65; }
+.layoutChoice:disabled:hover { transform: none; }
+.layoutHelp { margin: 14px 0 0; color: var(--app-muted, #657c71); font-size: .82rem; line-height: 1.5; }
+.previewPanel { min-width: 0; padding: 20px; border: 1px solid var(--app-line, #d6e4de); border-radius: 20px; background: var(--app-surface, #fff); box-shadow: 0 12px 32px var(--app-shadow-colour, rgba(20,50,39,.05)); }
+.previewToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.previewToolbar h3 { margin: 0; font-size: 1.15rem; font-weight: 850; }
+.preview .canvasButton { border-radius: 14px; }
+.previewPanel .actions { padding-top: 16px; border-top: 1px solid var(--app-line, #d6e4de); }
+.previewPanel .actions button { font-size: .82rem; padding: 12px 14px; }
+@media (max-width: 760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .preview { grid-template-columns: minmax(0, 1fr); }
+ :global(:where(html:not(:has([data-website-canvas])))) .studioStepper { padding: 10px 8px; gap: 4px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .creator > .card { padding: 20px 16px; }
+}
+
+.card h2[tabindex='-1']:focus { outline: none; }
