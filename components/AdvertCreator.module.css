@@ -79,3 +79,21 @@
  :global(:where(html:not(:has([data-website-canvas])))) .optionsGrid { grid-template-columns: minmax(0, 1fr); }
  :global(:where(html:not(:has([data-website-canvas])))) .formFooter button { width: 100%; }
 }
+.stepNav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+.stepNav button { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--app-line, #d1e4da); border-radius: 16px; background: var(--app-surface, #fff); color: var(--app-text, #163d31); font-weight: 750; text-align: left; cursor: pointer; }
+.stepNav button > span { display: grid; place-items: center; flex: 0 0 30px; height: 30px; border-radius: 50%; background: var(--app-surface-soft, #edf6f2); color: var(--app-accent, #165f49); }
+.stepNav button[aria-current='step'] { background: var(--app-accent-soft, #e5f2eb); border-color: var(--app-accent, #337b5c); }
+.stepNav button[aria-current='step'] > span { background: var(--app-accent, #165f49); color: #fff; }
+.priceColumn, .photoColumn { display: grid; gap: 18px; min-width: 0; }
+.estimateDisclosure { border: 1px solid var(--app-line, #d1e4da); border-radius: 18px; background: var(--app-surface-soft, #f4f9f6); }
+.estimateDisclosure summary { padding: 18px; font-weight: 750; cursor: pointer; }
+.estimateDisclosure summary span { font-weight: 500; color: var(--app-muted, #657c71); }
+.estimateDisclosure .optionCard { border: 0; padding-top: 0; }
+.fieldError { display: block; margin: 8px 0 0; color: var(--app-danger, #a32b23); font-size: .85rem; line-height: 1.4; font-weight: 600; }
+.creator [aria-invalid='true'] { outline: 2px solid var(--app-danger, #a32b23); outline-offset: 2px; }
+.formFooter { margin-top: 18px; }
+.formFooter .help { margin: 0; }
+@media (max-width: 760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .stepNav { gap: 6px; }
+ :global(:where(html:not(:has([data-website-canvas])))) .stepNav button { flex-direction: column; padding: 10px 6px; gap: 6px; text-align: center; font-size: .8rem; }
+}
