@@ -2,10 +2,10 @@
 import { useRef, useState } from 'react';
 import styles from './MarketplacePhotoEditor.module.css';
 
-export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyChange, disabled = false, maxPhotos = 12, uploadPhotos, hint }: {
+export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyChange, disabled = false, maxPhotos = 12, uploadPhotos, hint, compact = false }: {
   photos: string[]; onChange: (photos: string[]) => void; busy: boolean;
   onBusyChange: (busy: boolean) => void; disabled?: boolean; maxPhotos?: number;
-  uploadPhotos?: (files: File[]) => Promise<string[]>; hint?: string;
+  uploadPhotos?: (files: File[]) => Promise<string[]>; hint?: string; compact?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const uploadLock = useRef(false);
@@ -42,9 +42,9 @@ export default function MarketplacePhotoEditor({ photos, onChange, busy, onBusyC
     setSelected(Math.max(0, Math.min(index, photos.length - 2)));
     setError('');
   }
-  return <section className={styles.editor} aria-label="Listing photos">
+  return <section className={`${styles.editor} ${compact ? styles.compact : ''}`} aria-label="Listing photos">
     <div className={styles.heading}><strong>Photos</strong><span aria-live="polite">{photos.length ? `${index + 1} of ${photos.length}` : 'No photos yet'}</span></div>
-    <div className={styles.frame}>
+    <div className={`${styles.frame} ${!photos.length ? styles.emptyFrame : ''}`}>
       {photos.length ? <img className={styles.mainPhoto} src={photos[index]} alt={`Listing photo ${index + 1}${index === 0 ? ', main photo' : ''}`} /> : <div className={styles.empty}>Add photos to show buyers your asset.</div>}
       {photos.length ? <div className={styles.tools}>
         <button type="button" className={styles.mainAction} disabled={locked || index === 0} onClick={makeMain}>

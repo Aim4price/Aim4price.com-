@@ -1,4 +1,4 @@
-.creator { color: var(--app-text, #163d31); }
+.creator { width: min(100%, calc(1320px - 3.4rem)); margin-inline: auto; min-width: 0; color: var(--app-text, #163d31); }
 .creator button:focus-visible, .creator a:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
 .back { margin-bottom: 18px; }
 .steps, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
@@ -52,3 +52,30 @@
 
 /* The creator uses normal page flow, without the Marketplace modal scroll body. */
 .sellerPanel { position: static !important; }
+
+.optionsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.optionCard { min-width: 0; padding: 22px; border: 1px solid var(--app-line, #d1e4da); border-radius: 20px; background: var(--app-surface-soft, #f4f9f6); }
+.optionHeading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.optionHeading h3 { margin: 0 0 5px; font-size: 1.08rem; }
+.optionHeading p, .formFooter p { margin: 0; color: var(--app-muted, #657c71); line-height: 1.5; font-size: .88rem; }
+.optionIcon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border: 1px solid var(--app-line, #c9ded3); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-accent, #165f49); }
+.optionIcon svg, .formFooter svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.optionCard .actions { margin: 0 0 18px; }
+.optionCard .field { margin: 16px 0; }
+.optionCard .field small { color: var(--app-muted, #657c71); font-weight: 450; line-height: 1.5; }
+.ratingPanel { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--app-line, #d1e4da); }
+.ratingPanel .toggle { padding: 0; cursor: pointer; }
+.ratingPanel .help { margin: 10px 0 0; font-size: .85rem; }
+.toggle input[role='switch'] { appearance: none; position: relative; flex: 0 0 42px; width: 42px; height: 24px; margin: 0; border: 1px solid var(--app-line, #a9c5b8); border-radius: 999px; background: var(--app-surface, #fff); cursor: pointer; }
+.toggle input[role='switch']::after { content: ''; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px; border-radius: 50%; background: var(--app-muted, #657c71); transition: transform 120ms ease; }
+.toggle input[role='switch']:checked { background: var(--app-accent, #165f49); }
+.toggle input[role='switch']:checked::after { transform: translateX(18px); background: #fff; }
+.toggle input[role='switch']:disabled { opacity: .55; cursor: not-allowed; }
+.toggle input[role='switch']:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+.formFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; padding: 20px 22px; border: 1px solid var(--app-line, #d1e4da); border-radius: 18px; background: var(--app-surface-soft, #f4f9f6); }
+.formFooter strong { display: block; margin-bottom: 5px; }
+.formFooter button { min-height: 52px; padding-inline: 24px; }
+@media (max-width: 760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .optionsGrid { grid-template-columns: minmax(0, 1fr); }
+ :global(:where(html:not(:has([data-website-canvas])))) .formFooter button { width: 100%; }
+}
