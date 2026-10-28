@@ -98,7 +98,7 @@
 .ownerManager .footer { position:static; border-top:1px solid var(--app-line,#d8e5dd); margin-top:1.25rem; padding-top:1rem; }
 .fullAccess { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .pickerCards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0; padding:4px; }
-.picker { --picker-padding:1.5rem; padding:0; border:1px solid var(--app-line,#d8e5dd); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#173f31); max-height:85dvh; overflow:hidden; font-family:var(--font-body,'Montserrat'),sans-serif; }
+.picker { --picker-padding:1.5rem; padding:0; border:1px solid var(--app-line,#d8e5dd); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#173f31); max-height:calc(var(--website-visible-height, 100dvh) * .85); overflow:hidden; font-family:var(--font-body,'Montserrat'),sans-serif; }
 .picker[open] { display:flex; flex-direction:column; }
 .picker::backdrop { background:rgba(15,35,28,.55); backdrop-filter:blur(6px); }
 .pickerHeader { display:flex; justify-content:space-between; gap:1rem; padding:1.5rem; border-bottom:1px solid var(--app-line,#d8e5dd); }
