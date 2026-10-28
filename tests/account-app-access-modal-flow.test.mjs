@@ -182,6 +182,6 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
 
   assert.match(shared, /const onCloseRef = useRef\(onClose\)/);
   assert.match(shared, /const closeDisabledRef = useRef\(closeDisabled\)/);
-  assert.match(shared, /if \(event\.key === 'Escape' && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
+  assert.match(shared, /if \(event\.key === 'Escape' && !document\.querySelector\('dialog\[open\]'\) && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
   assert.match(shared, /\}, \[open\]\);/);
 });

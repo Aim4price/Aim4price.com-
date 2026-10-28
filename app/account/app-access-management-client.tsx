@@ -1,5 +1,7 @@
 'use client';
 
+import OwnerAccessPicker from './owner-access-picker';
+import { AccessSectionIcon } from './owner-login-sections';
 import OwnerLoginSections from './owner-login-sections';
 import ownerStyles from './owner-login-sections.module.css';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -99,9 +101,9 @@ type ManagerAccessSettings = {
   fuelStorageIds: string[];
 };
 
-type AssetAccessSettings = Pick<ManagerAccessSettings, 'assetScope' | 'assetIds' | 'groupIds'>;
+type AssetAccessSettings = Pick<ManagerAccessSettings, 'assetScope' | 'assetIds' | 'groupIds'> & { registerIds?: string[] };
 
-type AssetAccessOption = { id: string; title: string; kind: string };
+type AssetAccessOption = { id: string; title: string; kind: string; registerId?: string | null };
 type AssetGroupAccessOption = {
   id: string;
   name: string;
@@ -119,6 +121,7 @@ type ManagerAccessResponse = {
 };
 
 type OwnerAssetAccessResponse = {
+  registers?: { id: string; name: string }[];
   ok?: boolean;
   settings?: AssetAccessSettings;
   assets?: AssetAccessOption[];
@@ -477,7 +480,7 @@ function AppAccessModal({
     const focusFrame = window.requestAnimationFrame(() => closeRef.current?.focus());
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !closeDisabledRef.current) onCloseRef.current();
+      if (event.key === 'Escape' && !document.querySelector('dialog[open]') && !closeDisabledRef.current) onCloseRef.current();
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -1433,6 +1436,8 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
   const [settings, setSettings] = useState<AssetAccessSettings | null>(null);
   const [assets, setAssets] = useState<AssetAccessOption[]>([]);
   const [groups, setGroups] = useState<AssetGroupAccessOption[]>([]);
+  const [registers, setRegisters] = useState<{ id: string; name: string }[]>([]);
+  const [picker, setPicker] = useState<'groupIds' | 'registerIds' | 'assetIds' | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -1449,6 +1454,7 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
         savedSettings.current = JSON.stringify(payload.settings);
         setSettings(payload.settings);
+        setRegisters(sortAccessOptions(payload.registers ?? [], register => register.name));
         setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
         setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
       })
@@ -1456,13 +1462,6 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [userId]);
-
-  function toggleId(key: 'assetIds' | 'groupIds', id: string) {
-    setSettings((current) => current ? {
-      ...current,
-      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
-    } : current);
-  }
 
   async function saveAccess() {
     if (!settings) return;
@@ -1493,54 +1492,27 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
   if (loading) return <div className={styles.accessPanel}><p className={styles.accessMessage}>Loading app access…</p></div>;
   if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
 
+  const includedCount = new Set([...settings.assetIds, ...groups.filter(group => settings.groupIds.includes(group.id)).flatMap(group => group.memberAssetIds ?? []), ...assets.filter(asset => asset.registerId && settings.registerIds?.includes(asset.registerId)).map(asset => asset.id)]).size;
+  const countLabel = (count: number, label: string) => `${count} ${label}${count === 1 ? '' : 's'}`;
   return (
     <section className={`${styles.accessPanel} ${ownerStyles.assetPanel}`} aria-label="Owner App asset access">
       <fieldset className={ownerStyles.fields} disabled={saving}>
         <legend className={ownerStyles.hint}>Which assets can this person access?</legend>
         <div className={ownerStyles.choices}>{ASSET_SCOPE_OPTIONS.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings.assetScope === option.value}>
           <input type="radio" name="owner-asset-scope" checked={settings.assetScope === option.value} onChange={() => setSettings(current => current ? { ...current, assetScope: option.value } : current)} />
-          <span><strong>{option.label}</strong><small>{option.value === 'all' ? 'Include all current and future assets.' : 'Choose umbrellas or individual assets.'}</small></span>
+          <span><strong>{option.label}</strong><small>{option.value === 'all' ? 'Include all current and future assets.' : 'Choose umbrellas, registers or individual assets.'}</small></span>
         </label>)}</div>
       </fieldset>
 
-      {settings.assetScope === 'selected' ? (
-        <div className={styles.assetAccessChoices} data-asset-choice-surface="true">
-          {groups.length ? (
-            <div className={styles.accessChoiceGroup}>
-              <strong>Umbrellas</strong>
-              <small data-asset-choice-secondary="true">Choosing an umbrella includes its current and future linked assets.</small>
-              <div className={styles.accessChecklist} data-asset-choice-list="true">
-                {groups.map((group) => (
-                  <label
-                    key={group.id}
-                    data-asset-choice-row="true"
-                    data-asset-choice-selected={settings.groupIds.includes(group.id) ? 'true' : undefined}
-                  >
-                    <input type="checkbox" disabled={saving} checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
-                    <span data-asset-choice-copy="true"><strong>{group.name}</strong><small data-asset-choice-meta="true">{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className={styles.accessChoiceGroup}>
-            <strong>Individual assets</strong>
-            <small data-asset-choice-secondary="true">Use these for exceptions or assets outside an umbrella.</small>
-            <div className={styles.accessChecklist} data-asset-choice-list="true">
-              {assets.length ? assets.map((asset) => (
-                <label
-                  key={asset.id}
-                  data-asset-choice-row="true"
-                  data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
-                >
-                  <input type="checkbox" disabled={saving} checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                  <span data-asset-choice-copy="true"><strong>{asset.title}</strong><AssetPickerDetail>{asset.kind}</AssetPickerDetail></span>
-                </label>
-              )) : <p className={styles.accessMessage}>No assets available.</p>}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {settings.assetScope === 'selected' ? <>
+        <div className={ownerStyles.pickerCards}>{([
+          { key: 'groupIds', title: 'Umbrella', icon: 'umbrella', text: 'Current and future linked assets.' },
+          { key: 'registerIds', title: 'Registers', icon: 'assets', text: 'Current and future register assets.' },
+          { key: 'assetIds', title: 'Choose assets', icon: 'box', text: 'Select individual assets.' },
+        ] as const).map(choice => <button type="button" className={ownerStyles.card} key={choice.key} disabled={saving} onClick={() => setPicker(choice.key)}><span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><span>{choice.text}</span><small>{(settings[choice.key] ?? []).length} selected</small></span></button>)}</div>
+        <p className={ownerStyles.hint} aria-live="polite">{countLabel(settings.groupIds.length, 'umbrella')} · {countLabel((settings.registerIds ?? []).length, 'register')} · {countLabel(settings.assetIds.length, 'individual asset')} · {countLabel(includedCount, 'asset')} included</p>
+        {picker ? <OwnerAccessPicker key={picker} title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'registerIds' ? 'Choose registers' : 'Choose assets'} description={picker === 'assetIds' ? 'Choose individual assets for this login.' : 'Includes current and future assets.'} selected={settings[picker] ?? []} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'registerIds' ? registers.map(register => ({ id: register.id, title: register.name, detail: `${assets.filter(asset => asset.registerId === register.id).length} assets` })) : assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/>: null}
+      </> : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
       <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving}>

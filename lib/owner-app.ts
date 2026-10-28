@@ -3,6 +3,7 @@ import { normalizeAppLogin } from './app-login-name';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { getDb } from './db';
+import { listAssetRegisters } from './asset-registers';
 import { listAssetGroups } from './asset-groups';
 import { listAllOwnerAppAssets } from './owner-app-assets';
 
@@ -47,6 +48,7 @@ export type OwnerAppAssetAccessSettings = {
   assetScope: 'all' | 'selected';
   assetIds: string[];
   groupIds: string[];
+  registerIds: string[];
 };
 
 let ownerAppTablesPromise: Promise<void> | null = null;
@@ -110,6 +112,7 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
       updated_at timestamptz not null default now()
     )
   `);
+  await db.query(`alter table public.owner_app_user_access_settings add column if not exists register_ids uuid[] not null default '{}'::uuid[]`);
   await db.query(`
     create table if not exists public.owner_app_user_asset_access (
       owner_app_user_id uuid not null references public.owner_app_users(id) on delete cascade,
@@ -191,10 +194,12 @@ export async function getOwnerAppAssetAccessSettings(
     asset_scope: string | null;
     asset_ids: unknown;
     group_ids: unknown;
+    register_ids: unknown;
     access_role: OwnerAppAccessRole;
   }>(
     `select
       coalesce(settings.asset_scope, 'all') as asset_scope,
+      settings.register_ids,
       owner_user.access_role,
       coalesce((
         select jsonb_agg(access.asset_id::text order by access.asset_id::text)
@@ -215,12 +220,13 @@ export async function getOwnerAppAssetAccessSettings(
   const row = result.rows[0];
   if (!row) throw new Error('Owner App user not found.');
   if (normalizeOwnerAppAccessRole(row.access_role) === 'admin') {
-    return { assetScope: 'all', assetIds: [], groupIds: [] };
+    return { assetScope: 'all', assetIds: [], groupIds: [], registerIds: [] };
   }
   return {
     assetScope: ownerAssetAccessScope(row.asset_scope),
     assetIds: uuidList(row.asset_ids),
     groupIds: uuidList(row.group_ids),
+    registerIds: uuidList(row.register_ids),
   };
 }
 
@@ -245,7 +251,8 @@ export async function resolveOwnerAppAccessibleAssetIds(
        where group_access.owner_app_user_id = $1::uuid and owner_user.parent_owner_user_id = $2`,
     [ownerAppUserId, parentOwnerUserId],
   );
-  return Array.from(new Set(result.rows.map((row) => cleanText(row.asset_id)).filter(Boolean)));
+  const registerAssets = settings.registerIds.length ? (await listAllOwnerAppAssets(parentOwnerUserId)).items.filter(asset => asset.registerId && settings.registerIds.includes(asset.registerId)).map(asset => asset.id) : [];
+  return Array.from(new Set([...result.rows.map((row) => cleanText(row.asset_id)).filter(Boolean), ...registerAssets]));
 }
 
 export async function updateOwnerAppAssetAccessSettings(
@@ -263,21 +270,23 @@ export async function updateOwnerAppAssetAccessSettings(
   const assetScope = ownerAssetAccessScope(input.assetScope);
   const requestedAssetIds = uuidList(input.assetIds);
   const requestedGroupIds = uuidList(input.groupIds);
-  const [assetData, groups] = await Promise.all([
+  const [assetData, groups, registers] = await Promise.all([
     listAllOwnerAppAssets(parentOwnerUserId),
     listAssetGroups(parentOwnerUserId),
+    listAssetRegisters(parentOwnerUserId),
   ]);
   const ownedAssetIds = new Set(assetData.items.map((asset) => asset.id));
   const ownedGroupIds = new Set(groups.map((group) => group.id));
   const assetIds = requestedAssetIds.filter((assetId) => ownedAssetIds.has(assetId));
   const groupIds = requestedGroupIds.filter((groupId) => ownedGroupIds.has(groupId));
+  const registerIds = uuidList(input.registerIds ?? current.registerIds).filter(id => registers.some(register => register.id === id));
   const db = getDb();
 
   await db.query(
-    `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, updated_at)
-     values ($1::uuid, $2, now())
-     on conflict (owner_app_user_id) do update set asset_scope = excluded.asset_scope, updated_at = now()`,
-    [ownerAppUserId, assetScope],
+    `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, register_ids, updated_at)
+     values ($1::uuid, $2, $3::uuid[], now())
+     on conflict (owner_app_user_id) do update set asset_scope = excluded.asset_scope, register_ids = excluded.register_ids, updated_at = now()`,
+    [ownerAppUserId, assetScope, assetScope === 'selected' ? registerIds : []],
   );
   await db.query('delete from public.owner_app_user_asset_access where owner_app_user_id = $1::uuid', [ownerAppUserId]);
   await db.query('delete from public.owner_app_user_group_access where owner_app_user_id = $1::uuid', [ownerAppUserId]);

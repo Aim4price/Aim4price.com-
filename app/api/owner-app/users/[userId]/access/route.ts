@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../../lib/account-profile';
 import { getServerSession, isOwnerAppSession } from '../../../../../../lib/auth-session';
 import { buildAppAssetDirectoryGroups } from '../../../../../../lib/app-asset-directory';
+import { listAssetRegisters } from '../../../../../../lib/asset-registers';
 import { listAssetGroups } from '../../../../../../lib/asset-groups';
 import {
   getOwnerAppAssetAccessSettings,
@@ -26,15 +27,17 @@ export async function GET(_request: NextRequest, { params }: { params: { userId:
   }
 
   try {
-    const [settings, assetData, assetGroups] = await Promise.all([
+    const [settings, assetData, assetGroups, registers] = await Promise.all([
       getOwnerAppAssetAccessSettings(ownerUserId, params.userId),
       listAllOwnerAppAssets(ownerUserId),
       listAssetGroups(ownerUserId),
+      listAssetRegisters(ownerUserId),
     ]);
     return NextResponse.json({
       ok: true,
       settings,
-      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind })),
+      registers: registers.map(register => ({ id: register.id, name: register.businessName })),
+      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind, registerId: asset.registerId })),
       groups: buildAppAssetDirectoryGroups(assetGroups, assetData.items.map((asset) => asset.id)),
     });
   } catch (error) {
