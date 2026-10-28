@@ -171,7 +171,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         <div className={marketplaceStyles.marketplaceBodyGrid}>
           <div className={marketplaceStyles.marketplaceListingColumn}>
             <section className={marketplaceStyles.marketplacePricePanel}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} /></section>
-            <MarketplacePhotoEditor photos={photos} onChange={changePhotos} busy={uploading} onBusyChange={setUploading} uploadPhotos={uploadPhotos} maxPhotos={4} hint="Add up to four photos. The main photo appears first on your advert." />
+            <MarketplacePhotoEditor compact photos={photos} onChange={changePhotos} busy={uploading} onBusyChange={setUploading} uploadPhotos={uploadPhotos} maxPhotos={4} hint="Add up to four photos. The main photo appears first on your advert." />
             <label className={marketplaceStyles.marketplaceNotesField}><span>Listing notes</span><textarea value={details.description} maxLength={2000} placeholder="Add important buyer notes, extras, service history or known issues." onChange={e => update('description', e.target.value)} /></label>
           </div>
           <section className={`${marketplaceStyles.marketplaceSellerPanel} ${styles.sellerPanel}`}>
@@ -183,23 +183,28 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
             </div>
           </section>
         </div>
-        <details className={styles.estimate}><summary>Machinery details</summary><div className={styles.fields}>
+        <div className={styles.optionsGrid}>
+        <section className={styles.optionCard} aria-labelledby="machinery-details-title">
+          <div className={styles.optionHeading}><span className={styles.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9" /></svg></span><div><h3 id="machinery-details-title">Machinery details</h3><p>Add details buyers will want to know.</p></div></div>
+          <div className={styles.fields}>
         <label>Year<input inputMode="numeric" value={details.year} placeholder="Optional" onChange={e => update('year',e.target.value)} /></label>
         <label>Condition<select value={details.condition} onChange={e => update('condition',e.target.value)}>{['excellent','good','fair','used','serious'].map(value => <option key={value} value={value}>{value === 'serious' ? 'Needs repairs' : value.charAt(0).toUpperCase()+value.slice(1)}</option>)}</select></label>
         <label>Usage<input inputMode="decimal" value={details.usage} disabled={details.usageUnit === 'none'} placeholder="Optional" onChange={e => update('usage',e.target.value)} /></label>
         <label>Usage unit<select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select></label>
         <label>VAT label on advert<select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select></label>
-        </div></details>
-      <details className={styles.estimate}>
-        <summary>Want guidance on your asking price?</summary><p className={styles.help}>Use a saved Aim4price estimate to enable a price rating, or get an estimate in a new tab. Your advert stays here.</p>
-        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : 'Load / refresh saved estimates'}</button></div>
+        </div></section>
+      <section className={styles.optionCard} aria-labelledby="price-rating-title">
+        <div className={styles.optionHeading}><span className={styles.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2" /></svg></span><div><h3 id="price-rating-title">Estimate &amp; price rating</h3><p>Optional — create your advert without an estimate.</p></div></div>
+        <p className={styles.help}>Link a saved Aim4price estimate to show a price rating.</p>
+        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
         {estimates.length ? <label className={styles.field}>Use an estimate<select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
-      </details>
-      <label className={styles.toggle}><input type="checkbox" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show price rating</label>
-      <p className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating is hidden on your advert.'}` : 'Get an estimate or select a saved estimate to enable a price rating.'}</p>
+      <div className={styles.ratingPanel}>
+      <label className={styles.toggle}><input type="checkbox" role="switch" aria-describedby="price-rating-help" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show price rating</label>
+      <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
+      </div></section></div>
       {error ? <p className={styles.status} role="alert">{error}</p> : null}
-      <div className={marketplaceStyles.marketplaceActions}><span className={styles.help}>Next: choose your advert design</span><button type="submit" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={uploading}>Next</button></div>
+      <div className={styles.formFooter}><div><strong>Ready to preview?</strong><p>Choose a design, then download or share.</p></div><button type="submit" className={styles.primary} disabled={uploading}>Next: Preview advert<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button></div>
       </form>
     </div> : null}
     {step === 2 ? <div className={styles.card}>

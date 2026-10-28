@@ -27,3 +27,9 @@
 .error { color: var(--app-danger, #a32b23); }
 .empty { padding: 8rem 1rem 5rem; text-align: center; color: #fff; }
 .fileInput { display: none; }
+
+/* Advert drafts use a shorter frame; existing Marketplace editors keep their sizing. */
+.compact .frame { aspect-ratio: 16 / 10; min-height: 16rem; max-height: 22rem; }
+.compact .emptyFrame { aspect-ratio: auto; min-height: 12rem; background: var(--app-surface-soft, #eff7f3); border: 1px dashed var(--app-line, #b9d5c7); }
+.compact .empty { padding: 2.5rem 1rem 5rem; color: var(--app-muted, #64746a); }
+.compact .emptyFrame .add { left: 50%; transform: translateX(-50%); bottom: 1.5rem; box-shadow: none; white-space: nowrap; }
