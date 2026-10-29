@@ -25,14 +25,14 @@ function Icon({ kind }: { kind: 'download' | 'copy' | 'marketplace' | 'groups' |
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind]} /></svg>;
 }
 
-export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { listing: MarketplaceListing; onClose: () => void; whatsappUrl?: string }) {
+export function MarketplaceShareDialog({ listing, onClose, whatsappUrl, prepareAdvert, initialCaption }: { listing: MarketplaceListing; onClose: () => void; whatsappUrl?: string; prepareAdvert?: () => Promise<File>; initialCaption?: string }) {
   const [step, setStep] = useState(1);
   const [mode, setMode] = useState<'ad' | 'details' | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const isWhatsApp = whatsappUrl !== undefined;
   const asset = marketplaceListingToAdContent(listing);
   const ref = useRef<HTMLDialogElement>(null);
-  const [caption, setCaption] = useState(() => marketplaceShareCaption(listing));
+  const [caption, setCaption] = useState(() => initialCaption ?? marketplaceShareCaption(listing));
   const [feedback, setFeedback] = useState('');
   const [busy, setBusy] = useState(false);
   const photos = [...new Set([listing.imageSrc, ...(listing.imageUrls || [])].filter(Boolean))];
@@ -87,7 +87,7 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
     try {
       if (nextMode === 'details' && !photos.length) throw new Error('No photos');
       const prepared = nextMode === 'ad'
-        ? [new File([(await createMarketplaceAdJpeg(listing)).blob], marketplaceAdFilename(listing.title), { type: 'image/jpeg' })]
+        ? [prepareAdvert ? await prepareAdvert() : new File([(await createMarketplaceAdJpeg(listing)).blob], marketplaceAdFilename(listing.title), { type: 'image/jpeg' })]
         : await Promise.all(photos.map(async (src, index) => {
             const response = await fetch(src);
             if (!response.ok) throw new Error('Photo unavailable');
@@ -114,7 +114,7 @@ export function MarketplaceShareDialog({ listing, onClose, whatsappUrl }: { list
     <div className={styles.body}>
       {isWhatsApp && mode && <div className={styles.stageLabel}><Icon kind={mode === 'ad' ? 'photo' : 'details'} /><span>{mode === 'ad' ? 'Send Ad' : 'Send Marketplace Ad Details'}</span></div>}
       {isWhatsApp && !mode ? <div className={styles.options}>
-        <a href={`https://wa.me/?text=${encodeURIComponent(`${marketplaceListingToAdContent(listing).title}\n${whatsappUrl}`)}`} target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="link" /></span><span className={styles.optionCopy}><strong>Send Aim4price Link</strong><small>Open the listing inside Aim4price.</small></span></a>
+        {whatsappUrl ? <a href={`https://wa.me/?text=${encodeURIComponent(`${marketplaceListingToAdContent(listing).title}\n${whatsappUrl}`)}`} target="_blank" rel="noopener noreferrer"><span className={styles.optionIcon}><Icon kind="link" /></span><span className={styles.optionCopy}><strong>Send Aim4price Link</strong><small>Open the listing inside Aim4price.</small></span></a> : <p>Publish your advert to share an Aim4price link.</p>}
         <button type="button" onClick={() => void prepareFiles('ad')}><span className={styles.optionIcon}><Icon kind="photo" /></span><span className={styles.optionCopy}><strong>Send Ad</strong><small>Share the ad image created by Aim4price.</small></span></button>
         <button type="button" onClick={() => void prepareFiles('details')}><span className={styles.optionIcon}><Icon kind="details" /></span><span className={styles.optionCopy}><strong>Send Marketplace Ad Details</strong><small>Share the photos and Facebook caption.</small></span></button>
       </div> : null}

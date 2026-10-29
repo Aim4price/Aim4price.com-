@@ -6,6 +6,13 @@ on:
       - 'app/valuation/**'
       - 'lib/estimate-photo-handoff.ts'
       - 'lib/marketplace-ad-renderer.ts'
+      - 'lib/advert-publication.ts'
+      - 'lib/marketplace-db.ts'
+      - 'app/api/ad-studio/publish/**'
+      - 'components/AdvertCreator*'
+      - 'components/AdvertShareSheet*'
+      - 'components/FacebookAdvertActions*'
+      - 'tests/advert-publication.test.cjs'
       - 'tests/estimate-ad-handoff.test.mjs'
       - 'tests/estimate-report-enhancement.test.mjs'
       - 'tests/ad-studio*.test.mjs'
@@ -32,4 +39,6 @@ jobs:
       - run: npm ci
       - name: Photo handoff, PDF and JPEG regression tests
         run: node --experimental-strip-types --test tests/estimate-ad-handoff.test.mjs tests/estimate-report-enhancement.test.mjs tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs
+      - name: Advert creation and publication regression tests
+        run: node --experimental-strip-types --test tests/advert-creator.test.mjs tests/advert-publication.test.cjs
       - run: npm run typecheck
