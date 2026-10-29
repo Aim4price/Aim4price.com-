@@ -230,7 +230,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         {([{ id: 'manual', label: 'Manual', icon: 'edit', note: 'Add details and photos from scratch.' },
           { id: 'asset', label: 'Asset Register', icon: 'box', note: 'Reuse an asset and its photos.' },
           { id: 'estimate', label: 'Saved Estimate', icon: 'price', note: 'Start with an existing valuation.' }] as const).map(item =>
-          <button type="button" key={item.id} className={styles.sourceCard} aria-pressed={source === item.id} onClick={() => item.id === 'manual' ? startAdvert() : void chooseSource(item.id)}>
+          <button type="button" key={item.id} className={styles.sourceCard} data-source={item.id} aria-pressed={source === item.id} onClick={() => item.id === 'manual' ? startAdvert() : void chooseSource(item.id)}>
             <span className={styles.optionIcon}><StudioIcon name={item.icon} /></span><strong>{item.label}</strong><span>{item.note}</span>
           </button>)}
       </div>
