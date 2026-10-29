@@ -18,7 +18,7 @@ export default function MarketplacePriceInput({ value, onChange, disabled = fals
       <button type="button" disabled={disabled} aria-pressed={!included} onClick={() => { setIncluded(false); setEntry(null); }}>Excl. VAT</button>
       <button type="button" disabled={disabled} aria-pressed={included} onClick={() => { setIncluded(true); setEntry(null); }}>Incl. VAT</button>
     </div></div>
-    <label className={styles.input}><span aria-hidden="true">R</span><GroupedCurrencyInput className={styles.amount} value={displayed} disabled={disabled} aria-label={`Asking price ${included ? 'including' : 'excluding'} VAT`} placeholder="0" onValueChange={text => {
+    <label className={styles.input} data-value-input-surface><span aria-hidden="true">R</span><GroupedCurrencyInput className={styles.amount} value={displayed} disabled={disabled} aria-label={`Asking price ${included ? 'including' : 'excluding'} VAT`} placeholder="0" onValueChange={text => {
       const parsed = parseCurrencyInput(text);
       const canonical = parsed === null ? '' : String(Math.round(parsed / (included ? 1.15 : 1) * 100) / 100);
       setEntry({ canonical, text, included }); onChange(canonical);
