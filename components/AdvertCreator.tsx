@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { AD_TEMPLATE_OPTIONS, type AdBrandKit, type AdBrandSnapshot, type AdTemplateId } from '../lib/ad-studio';
 import { advertDetailsError, advertStepErrors, type AdvertFieldErrors, estimateMatchesAdvert, type AdvertDetails, type AdvertEstimate } from '../lib/advert-creator';
 import { downloadMarketplaceAd, getMarketplaceAdRating, renderMarketplaceAdCanvas, type MarketplaceAdContent } from '../lib/marketplace-ad-renderer';
+import type { AdvertSourceAsset } from '../lib/advert-source';
 import styles from './AdvertCreator.module.css';
 import studioStyles from './AdStudioClient.module.css';
 import StudioIcon, { type StudioIconName } from './StudioIcon';
@@ -36,7 +37,12 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     contactName: (defaultKit ?? fallbackBrand).contactName, phone: (defaultKit ?? fallbackBrand).phone,
     email: (defaultKit ?? fallbackBrand).email, businessName: (defaultKit ?? fallbackBrand).businessName,
   }));
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [source, setSource] = useState<'asset' | 'estimate' | null>(null);
+  const [assets, setAssets] = useState<AdvertSourceAsset[]>([]);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceStatus, setSourceStatus] = useState('');
+  const [search, setSearch] = useState('');
   const [furthestStep, setFurthestStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<AdvertFieldErrors>({});
   const fieldError = (key: keyof AdvertFieldErrors) => fieldErrors[key] ? <small id={`advert-error-${key}`} className={styles.fieldError} role="alert">{fieldErrors[key]}</small> : null;
@@ -54,7 +60,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const [uploading, setUploading] = useState(false);
   const [rendering, setRendering] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { headingRef.current?.focus(); }, [step]);
+  useEffect(() => { headingRef.current?.focus(); }, [step, source]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const largeCanvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -142,6 +148,31 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     setEstimate(selected); setShowRating(false); setFieldErrors({});
     if (selected) setDetails(current => ({ ...current, title: selected.title, year: selected.year, usage: selected.usage, usageUnit: selected.usageUnit, condition: selected.condition }));
   }
+  async function chooseSource(next: 'asset' | 'estimate') {
+    setSource(next); setSearch(''); setSourceStatus('');
+    if (next === 'estimate') { await loadEstimates(); return; }
+    setSourceLoading(true);
+    try {
+      const response = await fetch(estimatesEndpoint.replace(/\/estimates$/, '/assets'), { cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not load assets.');
+      setAssets(payload.assets);
+      if (!payload.assets.length) setSourceStatus('No assets yet. Start manually to create your advert.');
+    } catch (cause) { setSourceStatus(cause instanceof Error ? cause.message : 'Could not load assets.'); }
+    finally { setSourceLoading(false); }
+  }
+  function startAdvert(asset?: AdvertSourceAsset, savedEstimate?: AdvertEstimate) {
+    const chosen = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
+    setDetails({ title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
+      vatLabel: chosen.vatLabel, location: '', description: '', contactName: chosen.contactName,
+      phone: chosen.phone, email: chosen.email, businessName: chosen.businessName,
+      ...(asset?.details ?? {}), ...(savedEstimate ? { title: savedEstimate.title, year: savedEstimate.year,
+        usage: savedEstimate.usage, usageUnit: savedEstimate.usageUnit, condition: savedEstimate.condition } : {}),
+    });
+    changePhotos(asset?.photos ?? []); setProvince(asset?.province ?? ''); setArea(asset?.area ?? '');
+    setEstimate(asset?.estimate ?? savedEstimate ?? null); setShowRating(false);
+    setFieldErrors({}); setError(''); setStatus(''); setFurthestStep(1); setStep(1);
+  }
   async function uploadPhotos(files: File[]): Promise<string[]> {
     if (files.some(file => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10_000_000)) throw new Error('Choose JPG, PNG or WebP photos, up to 10 MB each.');
     const added: string[] = [];
@@ -187,15 +218,38 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }
 
   return <section className={styles.creator} aria-label="Advert Creator">
-    <nav className={`${studioStyles.stepper} ${styles.studioStepper}`} aria-label="Create advert steps">{['Advert details', 'Photos & contact', 'Preview & share'].map((label, index) => <button type="button" key={label} className={`${studioStyles.stepButton} ${step === index + 1 ? studioStyles.stepButtonActive : ''}`} aria-current={step === index + 1 ? 'step' : undefined} disabled={index + 1 > furthestStep || uploading} onClick={() => goTo(index + 1)}><span aria-hidden="true"><StudioIcon name={index + 1 < furthestStep && index + 1 !== step ? 'check' : STEP_ICONS[index]} /></span><strong>{label}</strong><span className={studioStyles.srOnly}>Step {index + 1} of 3</span></button>)}</nav>
+    {step > 0 ? <nav className={`${studioStyles.stepper} ${styles.studioStepper}`} aria-label="Create advert steps">{['Advert details', 'Photos & contact', 'Preview & share'].map((label, index) => <button type="button" key={label} className={`${studioStyles.stepButton} ${step === index + 1 ? studioStyles.stepButtonActive : ''}`} aria-current={step === index + 1 ? 'step' : undefined} disabled={index + 1 > furthestStep || uploading} onClick={() => goTo(index + 1)}><span aria-hidden="true"><StudioIcon name={index + 1 < furthestStep && index + 1 !== step ? 'check' : STEP_ICONS[index]} /></span><strong>{label}</strong><span className={studioStyles.srOnly}>Step {index + 1} of 3</span></button>)}</nav> : null}
     {error ? <p className={styles.status} role="alert">{error}</p> : null}
     {status ? <p className={styles.status} role="status">{status}</p> : null}
+    {step === 0 ? <div className={`${styles.card} ${styles.sourceIntro}`}>
+      <h2 ref={headingRef} tabIndex={-1}>{source ? source === 'asset' ? 'Choose an asset' : 'Choose a saved estimate' : 'How would you like to start?'}</h2>
+      <p className={styles.help}>{details.title ? 'Choosing a new source replaces this advert’s details. You can also continue your current advert below.' : 'Start fresh or reuse saved details. You can edit everything before previewing.'}</p>
+      <div className={styles.sourceGrid}>
+        {([{ id: 'manual', label: 'Manual', icon: 'edit', note: 'Add details and photos from scratch.' },
+          { id: 'asset', label: 'Asset Register', icon: 'box', note: 'Reuse an asset and its photos.' },
+          { id: 'estimate', label: 'Saved Estimate', icon: 'price', note: 'Start with an existing valuation.' }] as const).map(item =>
+          <button type="button" key={item.id} className={styles.sourceCard} aria-pressed={source === item.id} onClick={() => item.id === 'manual' ? startAdvert() : void chooseSource(item.id)}>
+            <span className={styles.optionIcon}><StudioIcon name={item.icon} /></span><strong>{item.label}</strong><span>{item.note}</span>
+          </button>)}
+      </div>
+      {source ? <div className={styles.sourcePicker}>
+        <label className={styles.field}>Search {source === 'asset' ? 'assets' : 'estimates'}<input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search by name or year" /></label>
+        {(source === 'asset' ? sourceLoading : estimateLoading) ? <p role="status">Loading…</p> : <>
+          {(source === 'asset' ? sourceStatus : estimateStatus) ? <p role="status">{source === 'asset' ? sourceStatus : estimateStatus}<button type="button" className={styles.secondary} onClick={() => void chooseSource(source)}>Refresh</button></p> : null}
+          <div className={styles.sourceResults}>{(source === 'asset' ? assets.map(asset => ({ id: asset.id, title: asset.details.title, year: asset.details.year, asset })) : estimates.map(savedEstimate => ({ id: savedEstimate.id, title: savedEstimate.title, year: savedEstimate.year, savedEstimate }))).filter(item => `${item.title} ${item.year}`.toLowerCase().includes(search.trim().toLowerCase())).map(item =>
+            <button type="button" className={styles.sourceResult} key={item.id} onClick={() => startAdvert('asset' in item ? item.asset : undefined, 'savedEstimate' in item ? item.savedEstimate : undefined)}><span><strong>{item.title || 'Untitled asset'}</strong><small>{item.year || 'Year not specified'}{'savedEstimate' in item ? ` · ${new Date(item.savedEstimate.createdAt).toLocaleDateString('en-ZA')}` : ''}</small></span><span>Use {source === 'asset' ? 'asset' : 'estimate'}<StudioIcon name="next" /></span></button>)}</div>
+          {search && !(source === 'asset' ? assets.map(item => `${item.details.title} ${item.details.year}`) : estimates.map(item => `${item.title} ${item.year}`)).some(text => text.toLowerCase().includes(search.trim().toLowerCase())) ? <p role="status">No matches. Try another name or start manually.</p> : null}
+        </>}
+        <p className={styles.help}>Imported details are copied into this advert. Your saved records stay unchanged.</p>
+      </div> : <p className={styles.help}>A valuation is optional. Add one later to show an Aim4price value rating.</p>}
+      {furthestStep > 0 && details.title ? <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Continue current advert</button> : null}
+    </div> : null}
     {step === 1 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Advert details</h2><p className={styles.help}>Describe your machinery and set your asking price.</p>
       <form noValidate className={marketplaceStyles.marketplaceForm} onSubmit={event => { event.preventDefault(); goTo(2); }}>
-        <section className={marketplaceStyles.marketplaceAssetSummary}>
+        <section className={styles.titleSummary}>
           <label className={marketplaceStyles.marketplaceTitlePreview}><span>Listing title</span><input className={marketplaceStyles.marketplaceTitleInput} aria-label="Listing title" {...fieldA11y('title')} value={details.title} maxLength={160} required onChange={e => update('title', e.target.value)} />{fieldError('title')}<small>Shown on your advert.</small></label>
-          <div className={marketplaceStyles.marketplaceAssetSummaryValue}><span>Aim4price estimate</span><strong>{hasEstimate ? `R ${estimate!.valueExVat.toLocaleString('en-ZA')}` : 'Optional'}</strong><small>{hasEstimate ? 'Excl. VAT' : 'Create an advert without an estimate'}</small></div>
+
         </section>
 <div className={styles.optionsGrid}>        <section className={styles.optionCard} aria-labelledby="machinery-details-title">
           <div className={styles.optionHeading}><span className={styles.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9" /></svg></span><div><h3 id="machinery-details-title">Machinery details</h3><p>Add details buyers will want to know.</p></div></div>
@@ -206,9 +260,9 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         <label>Usage unit<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="details" /></span><select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         <label>VAT label on advert<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         </div></section>
-<div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section><details className={styles.estimateDisclosure}><summary>Add an Aim4price estimate <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
+<div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section><details className={styles.estimateDisclosure} open={hasEstimate || undefined}><summary>{hasEstimate ? 'Aim4price value rating' : 'Add a valuation'} <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
         <p id="price-rating-title" className={styles.help}>Reuse an estimate to show a value comparison. Your advert can also be created without one.</p>
-        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
+        <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Value an asset</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
         {estimates.length ? <label className={styles.field}>Use an estimate<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
       <div className={styles.ratingPanel}>
@@ -216,7 +270,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating strip is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
       </div></section>
 </details></div></div>
-      <div className={styles.formFooter}><span className={styles.help}>Step 1 of 3</span><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
+      <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => { setSource(null); setStep(0); }}>Change source</button><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
       </form></div> : null}
     {step === 2 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Photos &amp; contact</h2><p className={styles.help}>Add your photos and confirm how buyers can contact you.</p>

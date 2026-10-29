@@ -131,3 +131,26 @@
 }
 
 .card h2[tabindex='-1']:focus { outline: none; }
+
+.titleSummary { display: grid; width: 100%; }
+.sourceGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.sourceCard { display: flex; flex-direction: column; align-items: flex-start; gap: .85rem; padding: 1.5rem; border: 1px solid var(--app-line, #d9e5de); border-radius: 20px; background: var(--app-surface, #fff); color: var(--app-text, #173e2b); text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.sourceCard strong { font-size: 1.12rem; }
+.sourceCard > span:last-child { color: var(--app-muted, #5b6e62); line-height: 1.5; }
+.sourceCard:hover, .sourceCard[aria-pressed='true'] { border-color: #27834c; background: var(--app-surface-soft, #f2f8f4); }
+.sourceCard:focus-visible, .sourceResult:focus-visible { outline: 3px solid #27834c; outline-offset: 3px; }
+.sourcePicker { display: grid; gap: 1rem; border-top: 1px solid var(--app-line, #d9e5de); padding-top: 1.5rem; }
+.sourceResults { display: grid; gap: .65rem; }
+.sourceResult { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--app-line, #d9e5de); border-radius: 14px; background: var(--app-surface, #fff); color: var(--app-text, #173e2b); text-align: left; font: inherit; cursor: pointer; }
+.sourceResult:hover { background: var(--app-surface-soft, #f2f8f4); border-color: #27834c; }
+.sourceResult > span:first-child { display: grid; gap: .35rem; min-width: 0; overflow-wrap: anywhere; }
+.sourceResult > span:last-child { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; font-weight: 700; }
+.sourceResult small { color: var(--app-muted, #5b6e62); }
+.sourceResult svg { width: 18px; height: 18px; }
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceCard { padding: 1rem; }
+}
+
+.creator > .sourceIntro { border: 1px solid var(--app-line, #d9e5df); border-radius: 24px; }
+.sourceCard .optionIcon { width: 42px; flex: none; }
