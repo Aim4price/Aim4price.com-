@@ -1,4 +1,5 @@
 'use client';
+import MarketplacePublishReview from '../../components/MarketplacePublishReview';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 
 import AssetTrackingUsage from '../../components/asset-register/AssetTrackingUsage';
@@ -6464,6 +6465,7 @@ export default function AssetRegisterClient({
   const [acquisitionDetailsError, setAcquisitionDetailsError] = useState('');
   const [marketplaceVatIncluded, setMarketplaceVatIncluded] = useState(false);
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
+  const [marketplaceReview, setMarketplaceReview] = useState(false);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplacePhotosBusy, setMarketplacePhotosBusy] = useState(false);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
@@ -11836,6 +11838,7 @@ export default function AssetRegisterClient({
 
   async function openMarketplaceModal(asset: RegisterAsset) {
     const profile = await ensureAccountProfile();
+    setMarketplaceReview(false);
     setMarketplaceAsset(asset);
     setMarketplaceDraft(createMarketplaceDraft(asset, profile));
     setMarketplaceVatIncluded(false);
@@ -12957,6 +12960,15 @@ export default function AssetRegisterClient({
       return;
     }
 
+    if (!marketplaceReview) {
+      setMarketplaceReview(true);
+      requestAnimationFrame(() => {
+        const heading = document.getElementById('marketplace-confirm-title');
+        heading?.focus();
+        heading?.closest('[role="dialog"]')?.querySelector('[data-marketplace-scroll]')?.scrollTo(0, 0);
+      });
+      return;
+    }
     setIsPublishingMarketplace(true);
 
     try {
@@ -21350,8 +21362,8 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.marketplaceModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="marketplace-confirm-title">{marketplaceModalTitle}</h3>
-                <p>Check the listing title, asking price, photos and seller details before it goes live.</p>
+                <h3 id="marketplace-confirm-title" tabIndex={-1}>{marketplaceReview ? 'Review listing' : marketplaceModalTitle}</h3>
+                <p>{marketplaceReview ? 'Preview your listing and choose what buyers see.' : 'Add your listing details, photos and seller information.'}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeMarketplaceModal} aria-label="Close marketplace modal" data-modal-close="true">
@@ -21359,8 +21371,9 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
+            <div data-marketplace-scroll className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
+                {marketplaceReview ? <MarketplacePublishReview draft={marketplaceDraft} price={parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0} vatIncluded={marketplaceVatIncluded} idealValue={marketplaceAsset.aim4priceValueExVat} assessment={realisticSellingAssessment(marketplaceAsset, savedSaleability[marketplaceAsset.id])} saved={savedSaleability[marketplaceAsset.id]} stale={!!savedSaleability[marketplaceAsset.id] && savedSaleability[marketplaceAsset.id].basis !== saleabilityBasis(marketplaceAsset)} loading={saleabilityLoading} loadError={saleabilityLoadError} busy={isPublishingMarketplace} onRatingChange={showDealRating => setMarketplaceDraft(current => current ? {...current, showDealRating} : current)} /> : <>
                 <section className={styles.marketplaceAssetSummary}>
                   <label className={styles.marketplaceTitlePreview}>
                     <span>Listing title</span>
@@ -21384,7 +21397,7 @@ export default function AssetRegisterClient({
                         onChange={askingPriceExVat => setMarketplaceDraft(current => current ? { ...current, askingPriceExVat } : current)} />
                     </section>
 
-                    <label className={styles.field}><span><input type="checkbox" checked={marketplaceDraft.showDealRating} disabled={isPublishingMarketplace} onChange={event=>setMarketplaceDraft(current=>current ? {...current,showDealRating:event.target.checked} : current)}/> Show value rating</span>{(()=>{const assessment=realisticSellingAssessment(marketplaceAsset,savedSaleability[marketplaceAsset.id]);const comparison=sellingPriceComparison({askingPriceExVat:parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0,aim4priceValueExVat:marketplaceAsset.aim4priceValueExVat,realisticSellingPriceExVat:assessment?.priceExVat,sellingPriceNeedsReview:assessment?.needsReview});return <small>{assessment?.needsReview ? 'Update the realistic selling price from the asset card to show its rating.' : comparison ? `${comparison.basis==='realistic' ? comparison.label+' · ' : ''}${comparison.difference}` : 'No estimate available. You can publish without a rating.'}</small>;})()}<small>Uses your saved realistic selling price, or an explicitly labelled ideal-price comparison. No calculation is required. Outdated estimates must be refreshed before a rating is shown.</small></label>
+
 
                     <MarketplacePhotoEditor photos={marketplaceDraft.photos} busy={marketplacePhotosBusy} onBusyChange={setMarketplacePhotosBusy} disabled={marketplacePhotosBusy || isPublishingMarketplace}
                       onChange={photos => setMarketplaceDraft(current => current ? { ...current, photos } : current)} />
@@ -21470,9 +21483,10 @@ export default function AssetRegisterClient({
                   </section>
                 </div>
 
+                </>}
                 <div className={`${styles.formActions} ${styles.marketplaceActions}`}>
-                  <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={marketplacePhotosBusy || isPublishingMarketplace}>
-                    Cancel
+                  <button type="button" className={styles.secondaryButton} onClick={() => { if (marketplaceReview) { setMarketplaceReview(false); requestAnimationFrame(() => document.getElementById('marketplace-confirm-title')?.focus()); } else closeMarketplaceModal(); }} disabled={marketplacePhotosBusy || isPublishingMarketplace}>
+                    {marketplaceReview ? 'Back' : 'Cancel'}
                   </button>
 
                   {isLiveOnMarketplace(marketplaceAsset) ? (
@@ -21491,11 +21505,11 @@ export default function AssetRegisterClient({
                     className={styles.primaryButton}
                     disabled={marketplacePhotosBusy || isPublishingMarketplace || (parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0) <= 0}
                   >
-                    {isPublishingMarketplace
+                    {!marketplaceReview ? 'Continue' : isPublishingMarketplace
                       ? 'Publishing...'
                       : isLiveOnMarketplace(marketplaceAsset)
                         ? 'Update and view listing'
-                        : 'Confirm and view listing'}
+                        : 'Publish listing'}
                   </button>
                 </div>
               </form>
