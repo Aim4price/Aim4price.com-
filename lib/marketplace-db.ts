@@ -915,7 +915,7 @@ function buildMarketplaceListing(
     sellingPriceAssessedAt: assessment?.assessedAt,
     dealRating: dealRating.rating,
     dealRatingPercentDiff: dealRating.percentDiff,
-    showDealRating: pick(row, ['marketplace_show_deal_rating']) !== false,
+    showDealRating: (pick(row, ['marketplace_show_deal_rating']) ?? specs.showDealRating) !== false,
     imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey,
@@ -1229,3 +1229,35 @@ export async function publishAssetRegisterItemToMarketplace(input: {
 }
 
 
+
+/** Listing-only adverts appear in Marketplace and the seller's showroom, without an asset-register item. */
+export async function publishStudioAdvert(userId: string, input: ReturnType<typeof import('./advert-publication').normalizeAdvertPublication>) {
+  await ensureMarketplaceColumns();
+  const d = input.details;
+  const specs = {
+    advertStudioId: input.id, kind: 'manual', selected_method: 'manual', yearModel: Number(d.year) || 0,
+    usageAmount: d.usageUnit === 'none' ? 0 : Number(d.usage) || 0,
+    usageUnit: d.usageUnit, lifeWorkedPercent: d.usageUnit === 'percent' ? Number(d.usage) || 0 : null,
+    conditionLabel: d.condition, marketplaceAdBrand: input.brand, showDealRating: false,
+  };
+  const result = await getDb().query(`
+    insert into marketplace_listings (
+      id,user_id,status,title,description,asking_price_ex_vat,province,area,
+      seller_name,seller_company,seller_phone,seller_email,primary_image_url,image_urls,
+      specs_json,published_at,created_at,updated_at
+    ) values ($1::uuid,$2,'live',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,$14::jsonb,now(),now(),now())
+    on conflict (id) do update set
+      title=excluded.title,description=excluded.description,asking_price_ex_vat=excluded.asking_price_ex_vat,
+      province=excluded.province,area=excluded.area,seller_name=excluded.seller_name,
+      seller_company=excluded.seller_company,seller_phone=excluded.seller_phone,seller_email=excluded.seller_email,
+      primary_image_url=excluded.primary_image_url,image_urls=excluded.image_urls,specs_json=excluded.specs_json,updated_at=now()
+    where marketplace_listings.user_id=excluded.user_id
+      and marketplace_listings.asset_register_item_id is null
+      and marketplace_listings.specs_json->>'advertStudioId'=excluded.specs_json->>'advertStudioId'
+      and marketplace_listings.status='live'
+    returning *
+  `, [input.id,userId,d.title,d.description,Number(d.askingPrice),input.province,input.area,
+    d.contactName,d.businessName,d.phone,d.email,input.photos[0],JSON.stringify(input.photos),JSON.stringify(specs)]);
+  if (!result.rows[0]) throw new Error('This advert can no longer be updated from this draft.');
+  return buildMarketplaceListing(result.rows[0], {viewerUserId:userId,exposeContact:true,listingSnapshot:true});
+}

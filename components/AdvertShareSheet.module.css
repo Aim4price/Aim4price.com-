@@ -1,0 +1,23 @@
+.dialog { box-sizing:border-box; width:min(68rem,calc(100% - 2rem)); max-height:calc(100% - 2rem); padding:1.6rem; border:1px solid var(--app-line,#d8e1ea); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#17362c); font-family:var(--font-heading,"Montserrat"),sans-serif; overflow:auto; }
+.dialog::backdrop {background:rgba(8,24,18,.65);backdrop-filter:blur(8px);}
+.dialog header {display:flex;align-items:start;justify-content:space-between;gap:1rem;}
+.dialog h2 {margin:0;font-size:1.7rem;letter-spacing:-.035em;}
+.dialog p {color:var(--app-muted,#64746a);font-size:.9rem;line-height:1.5;}
+.dialog header button {width:2.75rem;height:2.75rem;flex-shrink:0;}
+.dialog button {border:1px solid var(--app-info-line,#d8e1ea);border-radius:.9rem;background:var(--app-info-soft,#f2f5f8);color:inherit;font:inherit;font-weight:700;cursor:pointer;}
+.dialog button:hover:not(:disabled),.dialog button:focus-visible {outline:3px solid var(--app-accent,#23825b);outline-offset:3px;}
+.dialog button:disabled {opacity:.5;cursor:not-allowed;}
+.summary {display:flex;align-items:center;gap:1.25rem;padding:1rem;background:var(--app-info-soft,#f2f5f8);border-radius:1rem;margin:1.2rem 0;}
+.summary img {width:9rem;aspect-ratio:16/9;object-fit:cover;border-radius:.7rem;}
+.summary div {display:grid;gap:.5rem;min-width:0;overflow-wrap:anywhere;}
+.summary span {color:var(--app-muted,#64746a);}
+.actions {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin:1.25rem 0;}
+.actions button {display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;min-height:5.5rem;padding:.7rem;}
+.actions img,.actions svg {width:1.6rem;height:1.6rem;}
+.dialog label {display:grid;gap:.5rem;font-size:.8rem;}
+.dialog input {width:100%;box-sizing:border-box;min-height:3rem;padding:.7rem;border:1px solid var(--app-line,#d8e1ea);border-radius:.7rem;background:var(--app-surface,#fff);color:inherit;font:inherit;}
+.caption {padding:.7rem 1rem;margin-top:1rem;}
+@media(max-width:700px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .actions {grid-template-columns:repeat(2,minmax(0,1fr));}
+ :global(:where(html:not(:has([data-website-canvas])))) .summary img {width:5rem;}
+}

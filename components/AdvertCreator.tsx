@@ -11,6 +11,8 @@ import studioStyles from './AdStudioClient.module.css';
 import StudioIcon, { type StudioIconName } from './StudioIcon';
 import marketplaceStyles from '../app/asset-register/page.module.css';
 import MarketplacePriceInput from './MarketplacePriceInput';
+import AdvertShareSheet from './AdvertShareSheet';
+import type { MarketplaceListing } from '../lib/marketplace';
 import AssetModalSelect from './AssetModalSelect';
 import MarketplacePhotoEditor from './MarketplacePhotoEditor';
 import { pricingVatAmount } from '../lib/pricing-vat';
@@ -26,8 +28,8 @@ const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
 };
 const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
-export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false }: {
-  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean;
+export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false, onEditBranding }: {
+  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean; onEditBranding?: () => void;
 }) {
   const defaultKit = kits.find(kit => kit.isDefault) ?? kits[0];
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
@@ -62,6 +64,12 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const largeCanvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [published, setPublished] = useState<{listing: MarketplaceListing; showroomUrl: string; showroomPublic: boolean} | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const publishLock = useRef(false);
+  const publicationId = useRef('');
+  const uploadedPhotos = useRef(new Map<string,string>());
   const [province, setProvince] = useState('');
   const [area, setArea] = useState('');
   const hasEstimate = estimateMatchesAdvert(estimate, details);
@@ -113,7 +121,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     setTemplate(AD_TEMPLATE_OPTIONS.find(item => item.id === chosen.templateId)!.photoCount <= photos.length ? chosen.templateId : 'photo-first');
   }
   function goTo(next: number) {
-    if (uploading) return;
+    if (uploading || publishLock.current) return;
     setError(''); setStatus(''); setFieldErrors({});
     if (next > step) {
       for (const prerequisite of [1, 2] as const) {
@@ -147,6 +155,8 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     if (selected) setDetails(current => ({ ...current, title: selected.title, year: selected.year, usage: selected.usage, usageUnit: selected.usageUnit, condition: selected.condition }));
   }
   function startAdvert(asset?: AdvertSourceAsset, savedEstimate?: AdvertEstimate) {
+    if (publishLock.current) return;
+    publicationId.current = ''; setPublished(null);
     setAdvertSource(asset ? 'asset' : savedEstimate ? 'estimate' : 'manual');
     const chosen = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
     setDetails({ title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
@@ -181,6 +191,53 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     dialogRef.current?.showModal(); dialogRef.current?.querySelector<HTMLButtonElement>('[data-modal-close]')?.focus();
   }
   const shareText = [details.title, [details.year, content.usage, content.condition].filter(Boolean).join(' · '), `R ${pricingVatAmount(Number(details.askingPrice), details.vatLabel === 'vat-included').toLocaleString('en-ZA')} ${details.vatLabel === 'plus-vat' ? '+ VAT' : details.vatLabel === 'vat-included' ? 'VAT included' : 'No VAT'}`, details.description, content.location, `${details.contactName} · ${details.phone}`, details.email].filter(Boolean).join('\n');
+
+  const shareListing: MarketplaceListing = {
+    id: published?.listing.id ?? 'draft', title:details.title,brandName:'',brandSlug:'',modelName:details.title,
+    tractorType:'field',drive:'4wd',cab:'cab',powerKw:0,powerHp:0,horsepowerHp:0,
+    yearModel:Number(details.year)||0,year:Number(details.year)||0,hours:details.usageUnit === 'none' ? 0 : Number(details.usage)||0,
+    usageUnit:details.usageUnit === 'none' ? 'hours' : details.usageUnit,lifeWorkedPercent:details.usageUnit === 'percent' ? Number(details.usage)||0 : null,
+    province,area,location:content.location||'',description:details.description,sellerName:details.contactName,
+    sellerCompany:details.businessName,sellerPhone:details.phone,sellerEmail:details.email,dateAdvertised:'',publishedAtIso:'',
+    askingPriceExVat:Number(details.askingPrice),advertisedPriceExVat:Number(details.askingPrice),
+    priceExVat:Number(details.askingPrice),price:Number(details.askingPrice),imageSrc:photos[0]||'',imageUrls:photos,
+    publishedBy:'asset-register',assetKind:'manual',conditionKey:details.condition,conditionLabel:content.condition,
+    adBrand:content.brand,showDealRating:false,
+  };
+  async function prepareAdvertFile() {
+    const canvas = document.createElement('canvas');
+    await renderMarketplaceAdCanvas(canvas, content, {useBestPhotoFit:false,requireImages:true});
+    const blob = await new Promise<Blob>((resolve,reject)=>canvas.toBlob(value=>value ? resolve(value) : reject(new Error('Could not prepare advert.')),'image/png'));
+    return new File([blob], 'aim4price-advert.png', {type:'image/png'});
+  }
+  async function publishAdvert() {
+    if (publishLock.current) return;
+    const errors = {...advertStepErrors(details,1),...advertStepErrors(details,2,photos.length)};
+    if (Object.keys(errors).length) {setError(Object.values(errors)[0] || 'Check your advert.');return;}
+    publishLock.current = true; setPublishing(true);setError('');setStatus('');
+    try {
+      publicationId.current ||= crypto.randomUUID();
+      const stored = [];
+      for (const url of photos) {
+        if (url.startsWith('/api/asset-register/uploads/')) {stored.push(url);continue;}
+        let saved = uploadedPhotos.current.get(url);
+        if (!saved) {
+          const blob = await (await fetch(url)).blob();
+          const body = new FormData();body.append('uploadType','photo');body.append('files',new File([blob],'advert-photo.'+(blob.type.split('/')[1]||'png'),{type:blob.type}));
+          const response = await fetch('/api/asset-register/uploads',{method:'POST',body});
+          const data = await response.json();
+          if (!response.ok || !data.ok || !data.uploads?.[0]?.url) throw new Error(data.error || 'Could not upload advert photos.');
+          saved = data.uploads[0].url as string;uploadedPhotos.current.set(url,saved);
+        }
+        stored.push(saved);
+      }
+      const response = await fetch('/api/ad-studio/publish',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:publicationId.current,details,photos:stored,province,area,brand:content.brand})});
+      const data = await response.json();
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Could not publish your advert.');
+      setPublished(data);setStatus('Advert published. Marketplace and your showroom use the same listing.');
+    } catch (error) {setError(error instanceof Error ? error.message : 'Could not publish your advert. Please try again.');}
+    finally {publishLock.current=false;setPublishing(false);}
+  }
   async function exportPng(share = false) {
     const message = advertDetailsError(details);
     if (message || !hasEnoughPhotos) { setError(message || 'Add the photos required by this layout.'); return; }
@@ -270,15 +327,20 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       <div className={`${styles.formFooter} ${marketplaceStyles.marketplaceActions}`}><button type="button" className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={() => goTo(1)} disabled={uploading}>Back</button><button type="submit" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={uploading}>Preview advert</button></div>
       </form></div> : null}
     {step === 3 ? <div className={styles.card}>
-      <h2 ref={headingRef} tabIndex={-1}>Preview &amp; share</h2><p className={styles.help}>Choose a design, then download or share. This does not publish a Marketplace listing.</p>
+      <h2 ref={headingRef} tabIndex={-1}>Preview &amp; share</h2><p className={styles.help}>Choose your layout, then share or publish to Marketplace and your showroom.</p>
       <div className={styles.preview}><div>
-        <label className={styles.field}>Advert template<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="palette" /></span><select value={brandId} onChange={e => chooseStyle(e.target.value)}><option value="">Account branding</option>{kits.map(kit => <option key={kit.id} value={kit.id}>{kit.name}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
+        <section className={styles.brandingPanel}>
+          {kits.length ? <AssetModalSelect label="Branding" buttonLabel="Branding" value={brandId} onChange={chooseStyle} options={[{value:'',label:'Use account branding'},...kits.map(kit=>({value:kit.id,label:kit.name}))]} usePortal={false} showDescriptions={false} /> : <p><strong>Branding</strong><span>Using your account branding</span></p>}
+          {onEditBranding ? <button type="button" className={styles.secondary} onClick={onEditBranding}><StudioIcon name="edit" />Edit branding</button> : null}
+        </section>
+        <h3 className={styles.layoutHeading}>Layout</h3>
         <div className={styles.layoutGrid} aria-label="Advert layouts">{AD_TEMPLATE_OPTIONS.map(item => <button type="button" key={item.id} className={`${studioStyles.templateChoice} ${styles.layoutChoice} ${template === item.id ? studioStyles.templateChoiceActive : ''}`} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)} style={{ '--brand-primary': brand.primaryColor, '--brand-secondary': brand.secondaryColor, '--brand-accent': brand.accentColor } as CSSProperties}><span className={`${studioStyles.miniTemplate} ${TEMPLATE_CLASSES[item.id]}`} aria-hidden="true"><i /><b /><em /><u /></span><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Needs ${item.photoCount} photos` : `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`}</small></button>)}</div>
         <p className={styles.layoutHelp}>{AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.description}</p>
       </div><div className={styles.previewPanel}><div className={styles.previewToolbar}><h3>Advert preview</h3><button type="button" className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} disabled={rendering} onClick={openPreview}><StudioIcon name="preview" />Enlarge</button></div><button className={styles.canvasButton} disabled={rendering} onClick={openPreview} aria-label="Open advert preview"><canvas ref={canvasRef} className={styles.canvas} width={1600} height={900} aria-label="Your advert preview" /></button>
         {rendering ? <p role="status">Updating preview…</p> : <p className={styles.help}>Click the advert to enlarge.</p>}
-        <div className={styles.actions}><button className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={busy || rendering} onClick={() => exportPng()}><StudioIcon name="download" />{busy ? 'Preparing…' : 'Download PNG'}</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} disabled={busy || rendering} onClick={() => exportPng(true)}><StudioIcon name="share" />Share advert</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}><StudioIcon name="copy" />Copy advert text</button></div>
-      </div></div><div className={`${styles.formFooter} ${marketplaceStyles.marketplaceActions}`}><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={() => goTo(2)}>Back</button><span className={styles.help}>Step 3 of 3</span></div>
+        <div className={styles.actions}><button className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={busy || rendering} onClick={() => exportPng()}><StudioIcon name="download" />{busy ? 'Preparing…' : 'Download PNG'}</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} disabled={busy || rendering} onClick={() => setShareOpen(true)}><StudioIcon name="share" />Share advert</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}><StudioIcon name="copy" />Copy advert text</button></div>
+      </div></div><div className={`${styles.formFooter} ${marketplaceStyles.marketplaceActions}`}><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={() => goTo(2)}>Back</button><div className={styles.publishActions}><p className={styles.help}>{published ? (published.showroomPublic ? 'Live in Marketplace and your showroom.' : 'Live in Marketplace. Your showroom is currently private.') : 'One advert, shown in Marketplace and your showroom.'}</p><button type="button" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={publishing || rendering || uploading} onClick={() => void publishAdvert()}><StudioIcon name="check" />{publishing ? 'Publishing…' : published ? 'Update published advert' : 'Publish to Marketplace & showroom'}</button>{published ? <a href={`/marketplace/browse?listing=${published.listing.id}&preview=photo`} target="_blank" rel="noreferrer">View listing</a> : null}</div></div>
+      {shareOpen ? <AdvertShareSheet listing={shareListing} shareUrl={published ? `${window.location.origin}/marketplace/browse?listing=${published.listing.id}&preview=photo` : ''} caption={shareText} prepareAdvert={prepareAdvertFile} onClose={()=>setShareOpen(false)} /> : null}
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="creator-preview-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
         <div className={styles.dialogHeader}><h2 id="creator-preview-title">Advert preview</h2><div className={styles.actions}><button className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={busy} onClick={() => exportPng()}>Download PNG</button><button data-modal-close="true" aria-label="Close advert preview" onClick={() => dialogRef.current?.close()}>×</button></div></div>
         {error ? <p role="alert">{error}</p> : null}{status ? <p role="status">{status}</p> : null}
