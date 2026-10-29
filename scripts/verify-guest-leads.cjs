@@ -405,8 +405,12 @@ export default function Validation(){
    await click('WhatsApp');await page.waitForSelector('dialog[open] [data-share-consent]');
    await page.click('dialog [data-share-consent]');await click('Continue to WhatsApp');
    await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('This device cannot share these attachments'));
-   assert.equal(await page.$$eval('dialog[open] a[download]',links=>links.length),0,'No manual download fallback');
-   assert.equal(await page.$$eval('dialog[open] a[href^="https://wa.me/"]',links=>links.length),0,'No text-only substitute for blocked attachments');
+   assert.equal(await page.$$eval('dialog[open] a[download]',links=>links.length),1,'Unsupported native sharing offers the selected PDF for download');
+   const download=await page.$eval('dialog[open] a[download]',async link=>({name:link.download,body:await (await fetch(link.href)).text()}));
+   assert.deepEqual(download,{name:'valuation.pdf',body:'%PDF-1.4 fixture'},'Fallback preserves the original report filename and bytes');
+   assert.equal(await page.$$eval('dialog[open] a[href^="https://wa.me/"]',links=>links.length),1,'Manual attachment route is available');
+   assert(await page.$eval('dialog[open]',node=>node.textContent.includes('Downloaded files are not attached automatically.')));
+   assert.equal(await page.evaluate(()=>window.__opened.length),0,'Recovery never opens a text-only message automatically');
    assert.equal(await page.$eval('dialog[open] [data-share-consent]',e=>e.checked),true,'Recovery retains consent for the unchanged selection');
    assert.equal(await page.evaluate(()=>window.__nativeShares.length),2,'Unsupported payloads are not sent');
    await page.screenshot({path:path.join(output,`standard-external-${width}.png`),fullPage:true});
