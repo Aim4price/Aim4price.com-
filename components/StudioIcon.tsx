@@ -17,6 +17,7 @@ export type StudioIconName =
   | 'next'
   | 'preview'
   | 'download'
+  | 'image-add'
   | 'image'
   | 'language'
   | 'price'
@@ -99,6 +100,13 @@ export default function StudioIcon({ name }: { name: StudioIconName }) {
         <>
           <path {...strokeProps} d="M3.8 12s3-5 8.2-5 8.2 5 8.2 5-3 5-8.2 5-8.2-5-8.2-5Z" />
           <circle {...strokeProps} cx="12" cy="12" r="2.2" />
+        </>
+      ) : null}
+      {name === 'image-add' ? (
+        <>
+          <path {...strokeProps} d="M13 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8" />
+          <circle {...strokeProps} cx="8" cy="9" r="1.5" />
+          <path {...strokeProps} d="m3 17 5-5 4 4 3-3 6 6M19 2v6M16 5h6" />
         </>
       ) : null}
       {name === 'image' ? (

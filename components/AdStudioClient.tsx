@@ -170,7 +170,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
   const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
   const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
-  const photoHelpSeen = useRef(false);
   const photoHelpDialogRef = useRef<HTMLDialogElement | null>(null);
   const editorRef = useRef<HTMLFormElement | null>(null);
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
@@ -414,8 +413,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   function requestPreviewPhotos() {
-    if (photoHelpSeen.current) previewPhotoInputRef.current?.click();
-    else photoHelpDialogRef.current?.showModal();
+    photoHelpDialogRef.current?.showModal();
   }
 
   function handlePreviewPhotoChange(event: ChangeEvent<HTMLInputElement>) {
@@ -938,8 +936,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <strong>Template preview</strong>
               </div>
               <div className={styles.previewTools}>
-                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={requestPreviewPhotos}><StudioIcon name="image" />Add photo</button>
-                <button className={styles.photoHelpButton} type="button" aria-label="About template photos" title="About template photos" onClick={() => photoHelpDialogRef.current?.showModal()}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg></button>
+                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={requestPreviewPhotos}><StudioIcon name="image-add" />Add photo</button>
                 {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}><StudioIcon name="delete" />Clear</button> : null}
                 <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
               </div>
@@ -1005,13 +1002,13 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <div className={styles.previewNote}>
               <p>Sample details for testing your template. Click to enlarge.</p>
             </div>
-            <dialog ref={photoHelpDialogRef} className={styles.photoHelpDialog} aria-labelledby="template-photo-help-title" aria-describedby="template-photo-help-description" onClose={() => { photoHelpSeen.current = true; }} onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+            <dialog ref={photoHelpDialogRef} className={styles.photoHelpDialog} aria-labelledby="template-photo-help-title" aria-describedby="template-photo-help-description" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
-                <h2 id="template-photo-help-title">Test your template</h2>
+                <div className={styles.photoHelpTitle}><span className={styles.photoHelpIcon}><StudioIcon name="image-add" /></span><h2 id="template-photo-help-title">Test your template</h2></div>
                 <button type="button" data-modal-close="true" aria-label="Close photo guidance" onClick={() => photoHelpDialogRef.current?.close()}>×</button>
               </div>
               <p id="template-photo-help-description">Add a sample photo to see how your design looks. Use Create Advert to add your actual listing photos.</p>
-              <button type="button" className={styles.primaryButton} autoFocus onClick={() => { photoHelpSeen.current = true; photoHelpDialogRef.current?.close(); previewPhotoInputRef.current?.click(); }}><StudioIcon name="image" />Choose photo</button>
+              <button type="button" className={styles.primaryButton} autoFocus onClick={() => { photoHelpDialogRef.current?.close(); previewPhotoInputRef.current?.click(); }}><StudioIcon name="image-add" />Choose photo</button>
             </dialog>
             <dialog ref={previewDialogRef} className={styles.previewDialog} aria-labelledby="studio-large-preview-title" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
