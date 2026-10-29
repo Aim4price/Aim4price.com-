@@ -39,3 +39,10 @@
 .inputWithIcon { position:relative; display:block; min-width:0; }
 .inputWithIcon > svg { position:absolute; top:50%; left:1rem; width:1.15rem; height:1.15rem; transform:translateY(-50%); color:var(--app-muted,#65796f); opacity:.55; pointer-events:none; }
 .inputWithIcon .input { padding-left:2.9rem; }
+
+.passwordField .input { padding-right:3.5rem; }
+.passwordField .passwordToggle { position:absolute; top:50%; right:.4rem; transform:translateY(-50%); display:grid; place-items:center; width:2.5rem; height:2.5rem; min-height:0; padding:.5rem; border:0; border-radius:.65rem; background:transparent; color:var(--app-muted,#65796f); cursor:pointer; }
+.passwordToggle svg { width:1.25rem; height:1.25rem; }
+.passwordToggle:hover:not(:disabled) { background:var(--app-success-soft,#e8f3ec); color:var(--app-accent,#28815f); }
+.passwordToggle:focus-visible { outline:2px solid var(--app-accent,#28815f); outline-offset:2px; }
+.passwordToggle:disabled { opacity:.5; cursor:not-allowed; }

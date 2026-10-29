@@ -93,6 +93,15 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function assertFits(){assert(await page.$eval('[role=dialog]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}),'Dialog bounds');}
  await mount('login');await fillLabel('Email address','staff@example.com');await fillLabel('Password','Initial-password-123');await page.evaluate(()=>{window.fetch=async(url,init)=>{window.loginRequest=JSON.parse(init.body);return {ok:false,json:async()=>({error:'Incorrect email or password.'})}}});await click('Sign in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect email or password.'));assert.deepEqual(await page.evaluate(()=>window.loginRequest),{email:'staff@example.com',password:'Initial-password-123',business:'owner-a'});
  await mount('owner');await click('Manage users');await assertFits();await click('Manage');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent === 'Manage Existing user');await click('Permissions');await page.waitForSelector('input[type=checkbox]');await click('Back');await click('‹ All users');await page.waitForFunction(()=>document.body.textContent.includes('Choose a person to manage.'));await page.screenshot({path:'.next/team-access-validation/desktop-users-manager.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));await page.screenshot({path:'.next/team-access-validation/desktop-users-launcher.png'});await click('Add user');await fillLabel('Name','Workshop staff');await fillLabel('Email address','staff@example.com');await fillLabel('Initial password','Initial-password-123');
+ assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
+ await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'text');
+ assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.value),'Initial-password-123');
+ assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);
+ await click('Hide password');assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
+ await page.screenshot({path:'.next/team-access-validation/password-preview.png'});
+ await click('Show password');await click('Continue');await click('Back');
+ assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
+
  await click('Open calendar');await page.waitForSelector('dialog[open]');
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.$eval('[role=dialog] h2',el=>el.textContent),'New desktop user');
