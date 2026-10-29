@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AD_TEMPLATE_OPTIONS, type AdBrandKit, type AdBrandSnapshot, type AdTemplateId } from '../lib/ad-studio';
 import { advertDetailsError, advertStepErrors, type AdvertFieldErrors, estimateMatchesAdvert, type AdvertDetails, type AdvertEstimate } from '../lib/advert-creator';
@@ -24,8 +25,8 @@ const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
 };
 const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
-export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint }: {
-  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string;
+export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register?dealerView=dealer', middlemanMode = false }: {
+  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean;
 }) {
   const defaultKit = kits.find(kit => kit.isDefault) ?? kits[0];
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
@@ -39,11 +40,6 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }));
   const [step, setStep] = useState(0);
   const [advertSource, setAdvertSource] = useState<'manual' | 'asset' | 'estimate'>('manual');
-  const [source, setSource] = useState<'asset' | 'estimate' | null>(null);
-  const [assets, setAssets] = useState<AdvertSourceAsset[]>([]);
-  const [sourceLoading, setSourceLoading] = useState(false);
-  const [sourceStatus, setSourceStatus] = useState('');
-  const [search, setSearch] = useState('');
   const [furthestStep, setFurthestStep] = useState(1);
   const [fieldErrors, setFieldErrors] = useState<AdvertFieldErrors>({});
   const fieldError = (key: keyof AdvertFieldErrors) => fieldErrors[key] ? <small id={`advert-error-${key}`} className={styles.fieldError} role="alert">{fieldErrors[key]}</small> : null;
@@ -61,7 +57,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const [uploading, setUploading] = useState(false);
   const [rendering, setRendering] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { headingRef.current?.focus(); }, [step, source]);
+  useEffect(() => { headingRef.current?.focus(); }, [step]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const largeCanvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -149,19 +145,6 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     setEstimate(selected); setShowRating(false); setFieldErrors({});
     if (selected) setDetails(current => ({ ...current, title: selected.title, year: selected.year, usage: selected.usage, usageUnit: selected.usageUnit, condition: selected.condition }));
   }
-  async function chooseSource(next: 'asset' | 'estimate') {
-    setSource(next); setSearch(''); setSourceStatus('');
-    if (next === 'estimate') { await loadEstimates(); return; }
-    setSourceLoading(true);
-    try {
-      const response = await fetch(estimatesEndpoint.replace(/\/estimates$/, '/assets'), { cache: 'no-store' });
-      const payload = await response.json();
-      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not load assets.');
-      setAssets(payload.assets);
-      if (!payload.assets.length) setSourceStatus('No assets yet. Start manually to create your advert.');
-    } catch (cause) { setSourceStatus(cause instanceof Error ? cause.message : 'Could not load assets.'); }
-    finally { setSourceLoading(false); }
-  }
   function startAdvert(asset?: AdvertSourceAsset, savedEstimate?: AdvertEstimate) {
     setAdvertSource(asset ? 'asset' : savedEstimate ? 'estimate' : 'manual');
     const chosen = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
@@ -224,26 +207,19 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     {error ? <p className={styles.status} role="alert">{error}</p> : null}
     {status ? <p className={styles.status} role="status">{status}</p> : null}
     {step === 0 ? <div className={`${styles.card} ${styles.sourceIntro}`}>
-      <h2 ref={headingRef} tabIndex={-1}>{source ? source === 'asset' ? 'Choose an asset' : 'Choose a saved estimate' : 'How would you like to start?'}</h2>
-      <p className={styles.help}>{details.title ? 'Choosing a new source replaces this advert’s details. You can also continue your current advert below.' : 'Start fresh or reuse saved details. You can edit everything before previewing.'}</p>
-      <div className={styles.sourceGrid}>
-        {([{ id: 'manual', label: 'Manual', icon: 'edit', note: 'Add details and photos from scratch.' },
-          { id: 'asset', label: 'Asset Register', icon: 'box', note: 'Reuse an asset and its photos.' },
-          { id: 'estimate', label: 'Saved Estimate', icon: 'price', note: 'Start with an existing valuation.' }] as const).map(item =>
-          <button type="button" key={item.id} className={styles.sourceCard} data-source={item.id} aria-pressed={source === item.id} onClick={() => item.id === 'manual' ? startAdvert() : void chooseSource(item.id)}>
-            <span className={styles.optionIcon}><StudioIcon name={item.icon} /></span><strong>{item.label}</strong><span>{item.note}</span>
-          </button>)}
+      <h2 ref={headingRef} tabIndex={-1}>How would you like to start?</h2>
+      <p className={styles.help}>Create an advert manually, or start with {middlemanMode ? 'an estimate' : 'your asset register or an estimate'}.</p>
+      <div className={`${styles.sourceGrid} ${middlemanMode ? styles.sourceGridTwo : ''}`}>
+        <button type="button" className={styles.sourceCard} data-source="manual" onClick={() => startAdvert()}>
+          <span className={styles.optionIcon}><StudioIcon name="edit" /></span><strong>Manual</strong><span>Add details and photos from scratch.</span>
+        </button>
+        {!middlemanMode ? <Link href={assetRegisterHref} className={styles.sourceCard} data-source="asset">
+          <span className={styles.optionIcon}><StudioIcon name="box" /></span><strong>Asset Register</strong><span>Open your dealer asset register.</span>
+        </Link> : null}
+        <Link href={estimateHref} className={styles.sourceCard} data-source="estimate">
+          <span className={styles.optionIcon}><StudioIcon name="price" /></span><strong>Estimate</strong><span>Value an asset to create your advert.</span>
+        </Link>
       </div>
-      {source ? <div className={styles.sourcePicker}>
-        <label className={styles.field}>Search {source === 'asset' ? 'assets' : 'estimates'}<input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search by name or year" /></label>
-        {(source === 'asset' ? sourceLoading : estimateLoading) ? <p role="status">Loading…</p> : <>
-          {(source === 'asset' ? sourceStatus : estimateStatus) ? <p role="status">{source === 'asset' ? sourceStatus : estimateStatus}<button type="button" className={styles.secondary} onClick={() => void chooseSource(source)}>Refresh</button></p> : null}
-          <div className={styles.sourceResults}>{(source === 'asset' ? assets.map(asset => ({ id: asset.id, title: asset.details.title, year: asset.details.year, asset })) : estimates.map(savedEstimate => ({ id: savedEstimate.id, title: savedEstimate.title, year: savedEstimate.year, savedEstimate }))).filter(item => `${item.title} ${item.year}`.toLowerCase().includes(search.trim().toLowerCase())).map(item =>
-            <button type="button" className={styles.sourceResult} key={item.id} onClick={() => startAdvert('asset' in item ? item.asset : undefined, 'savedEstimate' in item ? item.savedEstimate : undefined)}><span><strong>{item.title || 'Untitled asset'}</strong><small>{item.year || 'Year not specified'}{'savedEstimate' in item ? ` · ${new Date(item.savedEstimate.createdAt).toLocaleDateString('en-ZA')}` : ''}</small></span><span>Use {source === 'asset' ? 'asset' : 'estimate'}<StudioIcon name="next" /></span></button>)}</div>
-          {search && !(source === 'asset' ? assets.map(item => `${item.details.title} ${item.details.year}`) : estimates.map(item => `${item.title} ${item.year}`)).some(text => text.toLowerCase().includes(search.trim().toLowerCase())) ? <p role="status">No matches. Try another name or start manually.</p> : null}
-        </>}
-        <p className={styles.help}>Imported details are copied into this advert. Your saved records stay unchanged.</p>
-      </div> : <p className={styles.help}>Choose an asset or saved estimate to include a value comparison.</p>}
       {furthestStep > 0 && details.title ? <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Continue current advert</button> : null}
     </div> : null}
     {step === 1 ? <div className={styles.card}>
@@ -272,7 +248,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating strip is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
       </div></section>
 </details>}</div></div>
-      <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => { setSource(null); setStep(0); }}>Change source</button><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
+      <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => { setStep(0); }}>Change source</button><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
       </form></div> : null}
     {step === 2 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Photos &amp; contact</h2><p className={styles.help}>Add your photos and confirm how buyers can contact you.</p>
