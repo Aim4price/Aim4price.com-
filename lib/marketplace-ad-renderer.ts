@@ -586,24 +586,27 @@ function drawBrandHeader(
   if (logo) {
     const sourceWidth = logo.naturalWidth || logo.width;
     const sourceHeight = Math.max(1, logo.naturalHeight || logo.height);
-    const plateWidth = Math.min(options.logoWidth ?? 196, rect.width * .43);
+    const maximumPlateWidth = Math.min(options.logoWidth ?? 196, rect.width * .43);
     const plateHeight = Math.min(92, rect.height - 4);
-    const scale = Math.min((plateWidth - 28) / sourceWidth, (plateHeight - 20) / sourceHeight);
+    const scale = Math.min((maximumPlateWidth - 24) / sourceWidth, (plateHeight - 20) / sourceHeight);
     const logoWidth = sourceWidth * scale;
     const logoHeight = sourceHeight * scale;
+    const plateWidth = logoWidth + 24;
     const plate: Rect = {
       x: rect.x,
       y: rect.y + (rect.height - plateHeight) / 2,
       width: plateWidth,
       height: plateHeight,
     };
-    context.save();
-    context.shadowColor = 'rgba(8, 35, 28, .12)';
-    context.shadowBlur = 10;
-    context.shadowOffsetY = 3;
-    fillRounded(context, plate, 14, 'rgba(255, 255, 255, .96)');
-    context.restore();
-    strokeRounded(context, plate, 14, 'rgba(16, 50, 40, .11)', 1);
+    if (content.brand.logoBackground !== false) {
+      context.save();
+      context.shadowColor = 'rgba(8, 35, 28, .12)';
+      context.shadowBlur = 10;
+      context.shadowOffsetY = 3;
+      fillRounded(context, plate, 14, 'rgba(255, 255, 255, .96)');
+      context.restore();
+      strokeRounded(context, plate, 14, 'rgba(16, 50, 40, .11)', 1);
+    }
     context.drawImage(
       logo,
       plate.x + (plate.width - logoWidth) / 2,

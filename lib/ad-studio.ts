@@ -74,6 +74,7 @@ export type AdBrandSnapshot = {
   name: string;
   templateId: AdTemplateId;
   logoUrl: string;
+  logoBackground?: boolean;
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
@@ -155,6 +156,7 @@ export function normalizeAdBrandSnapshot(
     name: asText(record.name, 100) || 'Default style',
     templateId: normalizeAdTemplateId(record.templateId ?? record.template_id),
     logoUrl: normalizeAdLogoUrl(record.logoUrl ?? record.logo_url),
+    logoBackground: (record.logoBackground ?? record.logo_background) !== false,
     primaryColor: normalizeAdColor(record.primaryColor ?? record.primary_color, DEFAULT_AD_BRAND_COLORS.primary),
     secondaryColor: normalizeAdColor(record.secondaryColor ?? record.secondary_color, DEFAULT_AD_BRAND_COLORS.secondary),
     accentColor: normalizeAdColor(record.accentColor ?? record.accent_color, DEFAULT_AD_BRAND_COLORS.accent),
@@ -174,6 +176,7 @@ export function sanitizeAdBrandKitInput(input: unknown): AdBrandSnapshot {
     name: 'Default style',
     templateId: 'showcase',
     logoUrl: '',
+    logoBackground: true,
     primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
     secondaryColor: DEFAULT_AD_BRAND_COLORS.secondary,
     accentColor: DEFAULT_AD_BRAND_COLORS.accent,
@@ -193,6 +196,7 @@ export function toAdBrandSnapshot(kit: AdBrandKit): AdBrandSnapshot {
     name: kit.name,
     templateId: kit.templateId,
     logoUrl: kit.logoUrl,
+    logoBackground: kit.logoBackground !== false,
     primaryColor: kit.primaryColor,
     secondaryColor: kit.secondaryColor,
     accentColor: kit.accentColor,

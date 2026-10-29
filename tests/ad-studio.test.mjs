@@ -169,7 +169,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /function drawCameraIcon/);
   assert.match(renderer, /Main photo/);
   assert.match(renderer, /function drawBrandHeader/);
-  assert.match(renderer, /const plateWidth = Math\.min\(options\.logoWidth \?\? 196, rect\.width \* \.43\)/);
+  assert.match(renderer, /const maximumPlateWidth = Math\.min\(options\.logoWidth \?\? 196, rect\.width \* \.43\)/);
   assert.match(renderer, /const plateHeight = Math\.min\(92, rect\.height - 4\)/);
   assert.match(renderer, /drawFittedMultilineText\(context, content\.sellerCompany/);
   assert.doesNotMatch(renderer, /context\.fillText\(String\(index \+ 1\)/);
@@ -1163,4 +1163,38 @@ test('installed Advert Studio routes keep Middleman and Dealer sessions separate
   const client = await read('components/AdStudioClient.tsx');
   assert.match(client, /dealerAppMode \? `\/api\$\{dealerAppRoot\}\/ad-studio\/brand-kits`/);
   assert.doesNotMatch(client, /fetch\(['"]\/api\/ad-studio\/brand-kits/);
+});
+
+
+test('logo background defaults on and false survives saved brand snapshots', async () => {
+  const { normalizeAdBrandSnapshot, sanitizeAdBrandKitInput, toAdBrandSnapshot } = await loadTypeScriptModule('lib/ad-studio.ts');
+  assert.equal(normalizeAdBrandSnapshot({}).logoBackground, true);
+  assert.equal(sanitizeAdBrandKitInput({ logoBackground: false }).logoBackground, false);
+  assert.equal(normalizeAdBrandSnapshot({ logo_background: false }).logoBackground, false);
+  assert.equal(toAdBrandSnapshot({ ...sanitizeAdBrandKitInput({ logoBackground: false }), id: 'test' }).logoBackground, false);
+});
+
+
+test('saved logo background preference is persisted for new and existing templates', async () => {
+  const studio = await loadTypeScriptModule('lib/ad-studio.ts');
+  const writes = [];
+  const row = { id: 'kit', name: 'Test', logo_background: false };
+  const client = {
+    async query(sql, values) {
+      if (/select exists/.test(sql)) return { rows: [{ exists: true }] };
+      if (/returning \*/.test(sql)) { writes.push({ sql, values }); return { rows: [row] }; }
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const db = { query: async () => ({ rows: [row] }), connect: async () => client };
+  const api = await loadTypeScriptModule('lib/ad-studio-db.ts', { './db': { getDb: () => db }, './ad-studio': studio });
+  assert.equal((await api.saveAdBrandKit('owner', { logoBackground: false })).logoBackground, false);
+  assert.equal((await api.saveAdBrandKit('owner', { id: 'kit', logoBackground: false })).logoBackground, false);
+  assert.equal(writes[0].values[15], false);
+  assert.equal(writes[1].values[15], false);
+  assert.equal(writes[1].values[16], 'kit');
+  assert.match(writes[1].sql, /logo_background = \$16/);
+  assert.match(writes[1].sql, /id = \$17::uuid/);
+  assert.equal((await api.listAdBrandKits('owner'))[0].logoBackground, false);
 });

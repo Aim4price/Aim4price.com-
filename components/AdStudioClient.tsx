@@ -97,6 +97,7 @@ const EMPTY_KIT: EditableBrandKit = {
   name: 'My advert template',
   templateId: 'showcase',
   logoUrl: '',
+  logoBackground: true,
   primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
   secondaryColor: DEFAULT_AD_BRAND_COLORS.secondary,
   accentColor: DEFAULT_AD_BRAND_COLORS.accent,
@@ -128,6 +129,7 @@ function editableKit(kit: AdBrandKit): EditableBrandKit {
     name: kit.name,
     templateId: kit.templateId,
     logoUrl: kit.logoUrl,
+    logoBackground: kit.logoBackground !== false,
     primaryColor: kit.primaryColor,
     secondaryColor: kit.secondaryColor,
     accentColor: kit.accentColor,
@@ -201,6 +203,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       name: draft.name,
       templateId: draft.templateId,
       logoUrl: draft.logoUrl,
+      logoBackground: draft.logoBackground !== false,
       primaryColor: draft.primaryColor,
       secondaryColor: draft.secondaryColor,
       accentColor: draft.accentColor,
@@ -759,6 +762,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                           ) : null}
                         </div>
                       </div>
+                      {draft.logoUrl ? <label className={styles.checkField}>
+                        <input type="checkbox" checked={draft.logoBackground !== false} onChange={(event) => update('logoBackground', event.target.checked)} />
+                        <span>White logo background</span>
+                      </label> : null}
                     </div>
                   </fieldset>
                 </section>
