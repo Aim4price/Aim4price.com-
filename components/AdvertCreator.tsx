@@ -25,7 +25,7 @@ const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
 };
 const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
-export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register?dealerView=dealer', middlemanMode = false }: {
+export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false }: {
   kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean;
 }) {
   const defaultKit = kits.find(kit => kit.isDefault) ?? kits[0];
@@ -214,7 +214,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
           <span className={styles.optionIcon}><StudioIcon name="edit" /></span><strong>Manual</strong><span>Add details and photos from scratch.</span>
         </button>
         {!middlemanMode ? <Link href={assetRegisterHref} className={styles.sourceCard} data-source="asset">
-          <span className={styles.optionIcon}><StudioIcon name="box" /></span><strong>Asset Register</strong><span>Open your dealer asset register.</span>
+          <span className={styles.optionIcon}><StudioIcon name="box" /></span><strong>Asset Register</strong><span>Choose a dealer or client asset register.</span>
         </Link> : null}
         <Link href={estimateHref} className={styles.sourceCard} data-source="estimate">
           <span className={styles.optionIcon}><StudioIcon name="price" /></span><strong>Estimate</strong><span>Value an asset to create your advert.</span>
