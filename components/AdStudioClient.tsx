@@ -988,9 +988,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <img src={photo.previewUrl} alt={`Sample advert photo ${index + 1}: ${photo.name}`} />
                       <span>{index === 0 ? 'Main photo' : `Photo ${index + 1}`}</span>
                       <div className={styles.previewPhotoActions}>
-                        <button type="button" onClick={() => movePreviewPhoto(photo.id, -1)} disabled={index === 0} aria-label={`Move ${photo.name} earlier`}>←</button>
-                        <button type="button" onClick={() => movePreviewPhoto(photo.id, 1)} disabled={index === previewPhotos.length - 1} aria-label={`Move ${photo.name} later`}>→</button>
-                        <button type="button" onClick={() => removePreviewPhoto(photo.id)} aria-label={`Remove ${photo.name}`}>×</button>
+                        <button type="button" onClick={() => movePreviewPhoto(photo.id, -1)} disabled={index === 0} aria-label={`Move ${photo.name} earlier`} data-photo-tooltip="Move earlier"><StudioIcon name="back" /></button>
+                        <button type="button" onClick={() => movePreviewPhoto(photo.id, 1)} disabled={index === previewPhotos.length - 1} aria-label={`Move ${photo.name} later`} data-photo-tooltip="Move later"><StudioIcon name="next" /></button>
+                        <button type="button" onClick={() => removePreviewPhoto(photo.id)} aria-label={`Remove ${photo.name}`} data-photo-tooltip="Remove photo" className={styles.previewPhotoRemove}><StudioIcon name="delete" /></button>
                       </div>
                     </article>
                   ))}
