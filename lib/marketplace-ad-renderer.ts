@@ -469,6 +469,17 @@ function drawCover(context: CanvasRenderingContext2D, image: HTMLImageElement, r
   context.restore();
 }
 
+export function marketplaceAdImageSource(source: string, origin: string): string {
+  try {
+    const url = new URL(source, origin);
+    if (url.origin === origin && url.pathname.startsWith('/api/asset-register/uploads/')) {
+      url.searchParams.set('share', '1');
+      return url.href;
+    }
+  } catch { /* Preserve sources that are not URLs for the image loader to handle. */ }
+  return source;
+}
+
 async function loadImage(source: string): Promise<HTMLImageElement | null> {
   if (!source || typeof Image === 'undefined') return null;
   return new Promise((resolve) => {
@@ -484,7 +495,8 @@ async function loadImage(source: string): Promise<HTMLImageElement | null> {
     }
     image.onload = () => finish(image);
     image.onerror = () => finish(null);
-    image.src = source;
+    // Canvas exports need same-origin bytes, not a redirect to private object storage.
+    image.src = typeof window === 'undefined' ? source : marketplaceAdImageSource(source, window.location.origin);
   });
 }
 

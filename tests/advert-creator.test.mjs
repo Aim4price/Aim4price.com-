@@ -30,6 +30,8 @@ test('estimate endpoint rejects unauthenticated and unauthorized access and scop
  let session=null,profile={accountType:'dealer',accountStatus:'active'},dealer=null,queries=[];
  const {GET}=await load('app/api/ad-studio/estimates/route.ts',{
   'next/server':{NextResponse:{json:(body,options={})=>({body,status:options.status??200})}},
+  '../../../../lib/asset-register-db':{listAssetRegisterItems:async userId=>{assert.equal(userId,'seller-123');return [];}},
+  '../../../../lib/realistic-selling-assessments':{withRealisticSellingAssessments:async assets=>assets},
   '../../../../lib/auth-session':{getServerSession:async()=>session},
   '../../../../lib/account-profile':{getAccountProfile:async()=>profile},
   '../../../../lib/dealer-app-session':{getDealerAppSession:async()=>dealer},
