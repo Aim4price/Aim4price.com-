@@ -922,7 +922,7 @@ textarea.messagePreview:focus { outline:2px solid #168461; outline-offset:2px; }
 .recovery { padding:1rem; border:1px solid var(--app-line,#cdded4); border-radius:12px; }
 .recovery p { font-size:.9rem; line-height:1.5; }
 .recovery button, .messagePartLink { display:inline-block; padding:.75rem; margin:.3rem; border:1px solid var(--app-line,#cdded4); border-radius:8px; background:var(--app-surface,#fff); color:var(--app-text,#173f31); font:inherit; cursor:pointer; }
- .messagePartLink { display:block; text-align:center; text-decoration:none; font-weight:700; }
+ .messagePartLink { display:block; text-align:center; text-decoration:none; font-weight:700; overflow-wrap:anywhere; }
 .messagePartPreview { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:.85rem; line-height:1.5; padding:1rem; border-radius:10px; background:var(--app-surface-soft,#f3f8f5); }
 .messagePartNavigation { display:flex; flex-wrap:wrap; gap:.5rem; }
 .recovery button:disabled { opacity:.45; cursor:default; }
