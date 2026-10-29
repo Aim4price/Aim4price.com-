@@ -78,6 +78,10 @@ on:
       - 'middleware.ts'
       - 'lib/trusted-request-origin.ts'
       - 'tests/ad-studio.test.mjs'
+      - 'lib/selling-price.ts'
+      - 'lib/realistic-selling-assessments.ts'
+      - 'tests/realistic-selling-*.test.cjs'
+      - 'scripts/verify-selling-price-ad.cjs'
       - 'tests/asset-discovery-filter-modal.test.mjs'
       - 'tests/asset-sale-transfer.test.mjs'
       - 'components/asset-register/AssetDisposal.module.css'
@@ -118,6 +122,11 @@ jobs:
 
       - name: Type check
         run: npm run typecheck
+
+      - name: Validate realistic selling prices and advert strips
+        run: |
+          node --test tests/realistic-selling-price.test.cjs tests/realistic-selling-report.test.cjs tests/ad-studio-renderer.test.mjs
+          node scripts/verify-selling-price-ad.cjs
 
       - name: Test Admin Marketplace
         run: npm run test:admin-marketplace

@@ -1,4 +1,5 @@
 'use client';
+import { sellingPriceComparison } from './selling-price';
 
 import {
   AD_TEMPLATE_OPTIONS,
@@ -23,7 +24,10 @@ export type MarketplaceAdContent = {
   condition: string;
   familyLabel: string;
   askingPriceExVat: number;
+  ratingAskingPriceExVat?: number;
   aim4priceValueExVat?: number | null;
+  realisticSellingPriceExVat?: number | null;
+  sellingPriceNeedsReview?: boolean;
   dealRating?: MarketplaceDealRating | null;
   showDealRating?: boolean;
   sellerName: string;
@@ -52,10 +56,10 @@ type Rect = { x: number; y: number; width: number; height: number };
 
 const RATING_PRESENTATION: Record<MarketplaceDealRating, MarketplaceAdRatingPresentation> = {
   low: { value: 'low', label: 'Low price', background: '#f97316', foreground: '#ffffff' },
-  great: { value: 'great', label: 'Great price', background: '#22b24b', foreground: '#ffffff' },
-  fair: { value: 'fair', label: 'Fair price', background: '#1e9bb3', foreground: '#ffffff' },
-  high: { value: 'high', label: 'High price', background: '#ef4444', foreground: '#ffffff' },
-  none: { value: 'none', label: 'No rating', background: '#69788a', foreground: '#ffffff' },
+  great: { value: 'great', label: 'Good value', background: '#22b24b', foreground: '#ffffff' },
+  fair: { value: 'fair', label: 'Fair value', background: '#1e9bb3', foreground: '#ffffff' },
+  high: { value: 'high', label: 'Above estimate', background: '#ef4444', foreground: '#ffffff' },
+  none: { value: 'none', label: 'Not assessed', background: '#69788a', foreground: '#ffffff' },
 };
 
 function clean(value: unknown): string {
@@ -98,14 +102,27 @@ function isManualListing(listing: MarketplaceListing): boolean {
   return clean(listing.assetKind).toLowerCase().replace(/[\s_-]+/g, '-') === 'manual';
 }
 
-export function getMarketplaceAdRating(content: Pick<MarketplaceAdContent, 'dealRating' | 'askingPriceExVat' | 'aim4priceValueExVat'>): MarketplaceAdRatingPresentation {
-  const rating = isRating(content.dealRating)
-    ? content.dealRating
-    : calculateMarketplaceDealRating({
-      askingPriceExVat: content.askingPriceExVat,
-      aim4priceValueExVat: content.aim4priceValueExVat,
-    }).rating;
-  return RATING_PRESENTATION[rating];
+export function getMarketplaceAdRating(content: Pick<MarketplaceAdContent, 'dealRating' | 'askingPriceExVat' | 'aim4priceValueExVat' | 'realisticSellingPriceExVat' | 'sellingPriceNeedsReview' | 'ratingAskingPriceExVat'>): MarketplaceAdRatingPresentation {
+  const comparison = sellingPriceComparison({...content,askingPriceExVat:content.ratingAskingPriceExVat ?? content.askingPriceExVat});
+  const rating = calculateMarketplaceDealRating({...content,askingPriceExVat:content.ratingAskingPriceExVat ?? content.askingPriceExVat}).rating;
+  return {...RATING_PRESENTATION[rating],label:comparison?.label ?? 'Not assessed'};
+}
+
+function hasValueStrip(content: MarketplaceAdContent) {
+  return content.showDealRating !== false && sellingPriceComparison({...content,askingPriceExVat:content.ratingAskingPriceExVat ?? content.askingPriceExVat}) !== null;
+}
+function drawValueStrip(context: CanvasRenderingContext2D, content: MarketplaceAdContent, rect: Rect) {
+  const comparison = sellingPriceComparison({...content,askingPriceExVat:content.ratingAskingPriceExVat ?? content.askingPriceExVat});
+  if (!hasValueStrip(content) || !comparison) return;
+  context.save();
+  fillRounded(context, rect, 14, '#edf3f0');
+  strokeRounded(context, rect, 14, '#d5e1db', 1.5);
+  context.textAlign='left';context.textBaseline='middle';
+  context.fillStyle='#173f31';
+  context.font='750 22px Montserrat, Inter, Arial, sans-serif';
+  const text = comparison.basis === 'realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference;
+  context.fillText(fitText(context,text,rect.width-36),rect.x+18,rect.y+rect.height/2);
+  context.restore();
 }
 
 function vatLabel(brand: AdBrandSnapshot): string {
@@ -206,6 +223,8 @@ export function marketplaceListingToAdContent(
     familyLabel: titleCase(familyLabel),
     askingPriceExVat: Number(listing.askingPriceExVat) || 0,
     aim4priceValueExVat: Number(listing.aim4priceValueExVat) || null,
+    realisticSellingPriceExVat: listing.realisticSellingPriceExVat,
+    sellingPriceNeedsReview: listing.sellingPriceNeedsReview,
     dealRating: isRating(listing.dealRating) ? listing.dealRating : calculatedRating,
     showDealRating: listing.showDealRating !== false,
     sellerName: clean(brand.contactName || listing.sellerName),
@@ -646,21 +665,6 @@ function drawBrandHeader(
   }
 }
 
-function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdContent, x: number, y: number): number {
-  if (content.showDealRating === false) return 0;
-  const rating = getMarketplaceAdRating(content);
-  context.save();
-  context.font = '900 20px Montserrat, Inter, Arial, sans-serif';
-  const width = Math.max(152, context.measureText(rating.label).width + 44);
-  fillRounded(context, { x, y, width, height: 48 }, 9, rating.background);
-  context.fillStyle = rating.foreground;
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(rating.label, x + width / 2, y + 25);
-  context.restore();
-  return 48;
-}
-
 function drawAim4priceCredit(context: CanvasRenderingContext2D, x: number, y: number, color: string) {
   context.save();
   context.fillStyle = color;
@@ -910,7 +914,8 @@ async function renderAim4priceStandardCanvas(
   const width = MARKETPLACE_AD_WIDTH;
   const height = MARKETPLACE_AD_HEIGHT;
   const frame: Rect = { x: 36, y: 36, width: width - 72, height: height - 72 };
-  const photoArea: Rect = { x: 64, y: 72, width: 904, height: 764 };
+  const stripHeight = hasValueStrip(content) ? 84 : 0;
+  const photoArea: Rect = { x: 64, y: 72, width: 904, height: 764 - stripHeight };
   const contentX = 1010;
   const contentWidth = 526;
   const thumbGap = 14;
@@ -960,7 +965,7 @@ async function renderAim4priceStandardCanvas(
   context.stroke();
   context.restore();
 
-  drawRating(context, content, contentX, 72);
+  drawValueStrip(context, content, {x:64,y:768,width:904,height:68});
   if (content.location) {
     context.save();
     context.fillStyle = '#61756e';
@@ -1042,8 +1047,7 @@ function drawInformationPanel(
   }, { foreground, logoWidth: variant === 'minimal' ? 208 : 190 });
 
   let cursor = rect.y + 136;
-  const ratingHeight = drawRating(context, content, rect.x + pad, cursor);
-  cursor += ratingHeight ? ratingHeight + 22 : 36;
+  cursor += 36;
 
   if (variant === 'price-focus') {
     drawPriceCard(context, content, {
@@ -1147,7 +1151,7 @@ export async function renderMarketplaceAdCanvas(
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas is unavailable.');
   canvas.width = MARKETPLACE_AD_WIDTH;
-  canvas.height = MARKETPLACE_AD_HEIGHT;
+  canvas.height = MARKETPLACE_AD_HEIGHT + (content.design !== 'aim4price-marketplace' && content.brand.templateId === 'photo-first' && hasValueStrip(content) ? 84 : 0);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
   if (typeof document !== 'undefined' && 'fonts' in document) await document.fonts.ready.catch(() => undefined);
@@ -1197,7 +1201,7 @@ export async function renderMarketplaceAdCanvas(
       foreground: '#ffffff',
       logoWidth: 224,
     });
-    drawRating(context, content, 1320, 68);
+
     context.save();
     context.fillStyle = '#fff';
     context.shadowColor = 'rgba(0,0,0,.42)';
@@ -1224,6 +1228,7 @@ export async function renderMarketplaceAdCanvas(
     drawPriceCard(context, content, { x: 1012, y: 588, width: 500, height: 168 });
     drawContactDetails(context, content, { x: 76, y: 716, width: 862, height: 118 }, '#ffffff', { surface: 'dark' });
     drawAim4priceCredit(context, 1510, 838, '#ffffff');
+    drawValueStrip(context,content,{x:28,y:900,width:1544,height:68});
     return templateId;
   }
 
@@ -1237,6 +1242,7 @@ export async function renderMarketplaceAdCanvas(
   if (templateId === 'classic') {
     strokeRounded(context, { x: 8, y: 8, width: width - 16, height: height - 16 }, 27, content.brand.primaryColor, 9);
   }
+  if (hasValueStrip(content)) photoArea.height -= 84;
   const rects = photoRects(templateId, photoArea);
   const equalPhotoWeight = templateId === 'duo-split' || templateId === 'catalogue-grid';
   rects.forEach((rect, index) => drawPhoto(
@@ -1247,6 +1253,7 @@ export async function renderMarketplaceAdCanvas(
     rect,
     !equalPhotoWeight && index === 0,
   ));
+  drawValueStrip(context,content,{x:photoArea.x,y:photoArea.y+photoArea.height+16,width:photoArea.width,height:68});
   drawInformationPanel(context, content, logo, infoArea, {
     variant: templateId === 'price-focus'
       ? 'price-focus'

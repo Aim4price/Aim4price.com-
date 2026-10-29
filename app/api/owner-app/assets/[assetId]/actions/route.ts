@@ -115,6 +115,7 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
         userId: access.ownerUserId,
         assetId: params.assetId,
         askingPriceExVat: Math.round(Number(body.askingPriceExVat) || 0) || null,
+        showDealRating: body.showDealRating !== false,
         marketplaceNotes: text(body.marketplaceNotes) || null,
         sellerPhone: text(body.sellerPhone) || null,
         sellerName: text(body.sellerName) || null,

@@ -1,4 +1,5 @@
 'use client';
+import { sellingPriceComparison } from '../../lib/selling-price';
 
 import FacebookAdvertActions, { WhatsAppAdvertActions } from '../../components/FacebookAdvertActions';
 import ListPagination from '../../components/ListPagination';
@@ -190,9 +191,9 @@ const DEAL_RATING_OPTIONS: Array<{
   shortLabel: string;
 }> = [
   { value: 'low', label: 'Low price', shortLabel: 'Low' },
-  { value: 'great', label: 'Great price', shortLabel: 'Great' },
-  { value: 'fair', label: 'Fair price', shortLabel: 'Fair' },
-  { value: 'high', label: 'High price', shortLabel: 'High' },
+  { value: 'great', label: 'Good value', shortLabel: 'Good value' },
+  { value: 'fair', label: 'Fair value', shortLabel: 'Fair' },
+  { value: 'high', label: 'Above estimate', shortLabel: 'High' },
   { value: 'none', label: 'No rating', shortLabel: 'No rating' },
 ];
 
@@ -747,15 +748,7 @@ function getListingDealRating(listing: MarketplaceListing): MarketplaceDealRatin
     return 'none';
   }
 
-  if (isDealRatingKey(listing.dealRating)) {
-    return listing.dealRating;
-  }
-
-  return calculateMarketplaceDealRating({
-    askingPriceExVat: listing.askingPriceExVat,
-    aim4priceValueExVat: listing.aim4priceValueExVat,
-    isManualEquipment: isManualMarketplaceListing(listing),
-  }).rating;
+  return calculateMarketplaceDealRating({...listing, isManualEquipment:isManualMarketplaceListing(listing)}).rating;
 }
 
 function getDealRatingOption(value: MarketplaceDealRating) {
@@ -791,7 +784,9 @@ function DealRatingBadge({
   if (listing.showDealRating === false) return null;
 
   const rating = getListingDealRating(listing);
-  const label = variant === 'card' ? getDealRatingShortLabel(rating) : getDealRatingLabel(rating);
+  const comparison = sellingPriceComparison(listing);
+  if (!comparison) return null;
+  const label = comparison.basis === 'realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference;
 
   return (
     <span
@@ -3327,7 +3322,6 @@ export default function MarketplaceClient({
                         className={styles.cardImage}
                         variant="card"
                       />
-                      <DealRatingBadge listing={listing} />
                       {images.length > 1 ? <span className={styles.photoPill}>{images.length} photos</span> : null}
                       {listing.canManage && listing.sourceAssetId ? (
                         <button type="button" className={`${styles.cardShareButton} ${styles.cardEditButton}`}
@@ -3357,6 +3351,7 @@ export default function MarketplaceClient({
                       </button>
                     </div>
 
+                    <DealRatingBadge listing={listing} />
                     <div className={styles.cardBody}>
                       <PriceWithVat included={vatIncluded} value={listing.askingPriceExVat} className={styles.cardPrice} />
                       <h3>{listingDisplayTitle(listing)}</h3>
@@ -3527,7 +3522,7 @@ export default function MarketplaceClient({
                   <ListingPlaceholder listing={activeListing} variant="modal" />
                 )}
 
-                <DealRatingBadge listing={activeListing} variant="modal" />
+
 
                 {activeImages.length > 1 ? (
                   <>
@@ -3572,6 +3567,7 @@ export default function MarketplaceClient({
                   ))}
                 </div>
               ) : null}
+              <DealRatingBadge listing={activeListing} variant="modal" />
             </div>
 
             <aside className={styles.modalDetails} tabIndex={0} aria-label="Listing details">

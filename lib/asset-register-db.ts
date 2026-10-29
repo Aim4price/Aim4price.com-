@@ -38,6 +38,7 @@ export type AssetRegisterDocument = {
 };
 
 export type AssetRegisterItem = {
+  realisticSellingAssessment?: {priceExVat:number; assessedAt:string; needsReview:boolean} | null;
   id: string;
   userId: string;
   registerId: string | null;
@@ -91,6 +92,7 @@ export type AssetRegisterItem = {
   marketplaceSellerEmail: string;
   marketplaceProvince: string;
   marketplaceArea: string;
+  marketplaceShowDealRating?: boolean;
   photos: string[];
   documents: AssetRegisterDocument[];
   publicAssetCode: string;
@@ -252,6 +254,7 @@ type AssetRegisterRow = {
   marketplace_seller_email: string | null;
   marketplace_province: string | null;
   marketplace_area: string | null;
+  marketplace_show_deal_rating?: boolean;
   photos: unknown;
   documents: unknown;
   public_asset_code: string | null;
@@ -1796,6 +1799,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     marketplaceSellerEmail: asText(row.marketplace_seller_email),
     marketplaceProvince: asText(row.marketplace_province),
     marketplaceArea: asText(row.marketplace_area),
+    marketplaceShowDealRating: row.marketplace_show_deal_rating !== false,
     photos: normalizePhotoArray(row.photos),
     documents: normalizeDocumentArray(row.documents),
     publicAssetCode: asText(row.public_asset_code),
@@ -2054,6 +2058,7 @@ function buildSelectList(schema: TableSchema): string {
     marketplaceSellerEmailColumn ? `${marketplaceSellerEmailColumn} as marketplace_seller_email` : 'null::text as marketplace_seller_email',
     marketplaceProvinceColumn ? `${marketplaceProvinceColumn} as marketplace_province` : 'null::text as marketplace_province',
     marketplaceAreaColumn ? `${marketplaceAreaColumn} as marketplace_area` : 'null::text as marketplace_area',
+    schema.columns.has('marketplace_show_deal_rating') ? 'marketplace_show_deal_rating' : 'true as marketplace_show_deal_rating',
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
     documentsColumn ? `${documentsColumn} as documents` : `'[]'::jsonb as documents`,
     publicAssetCodeColumn ? `${publicAssetCodeColumn} as public_asset_code` : `''::text as public_asset_code`,

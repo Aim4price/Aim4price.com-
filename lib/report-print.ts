@@ -67,6 +67,7 @@ export type AssetSheetPayload = {
 };
 
 export type AssetRegisterSummaryRow = {
+  realisticSellingPrice?: string;
   asset: string;
   type: string;
   method: string;
@@ -2630,8 +2631,9 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
               </div>
 
               <div class="fullRegisterAssetValue">
-                <span>Register value</span>
-                <strong>${escapeHtml(value)}</strong>
+                <span>Realistic selling price</span>
+                <strong>${escapeHtml(row.realisticSellingPrice || 'N/A')}</strong>
+                <b class="fullRegisterReplacementValue">Register value: ${escapeHtml(value)}</b>
                 <small>VAT excluded</small>
                 ${replacementPrice !== '-' ? `<b class="fullRegisterReplacementValue">Replacement: ${escapeHtml(replacementPrice)}</b>` : ''}
                 <em>${escapeHtml(method)}</em>

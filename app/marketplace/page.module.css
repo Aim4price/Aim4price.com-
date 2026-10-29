@@ -3933,3 +3933,23 @@
 
 /* Owner shortcut sits beside the existing VAT and share actions. */
 .cardShareButton.cardEditButton { right: 6.85rem; }
+
+/* Optional comparison strip sits below the photos and takes no space when hidden. */
+.dealRatingBadge.cardDealRatingBadge,
+.dealRatingBadge.modalDealRatingBadge {
+  position: static;
+  display: flex;
+  width: auto;
+  margin: .65rem .85rem;
+  padding: .7rem .85rem;
+  border: 1px solid var(--app-line, #d5e1db);
+  border-radius: .65rem;
+  background: var(--app-surface-soft, #edf3f0);
+  color: var(--app-text, #173f31);
+  box-shadow: none;
+  white-space: normal;
+  line-height: 1.4;
+  font-size: .85rem;
+  text-align: left;
+  justify-content: flex-start;
+}

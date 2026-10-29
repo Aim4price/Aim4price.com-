@@ -7,6 +7,7 @@ import AssetPickerDetail from '../../components/AssetPickerDetail';
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
 import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
 import AssetMarketDetail from '../../components/asset-register/AssetMarketDetail';
+import { realisticSellingAssessment, sellingPriceComparison } from '../../lib/selling-price';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
@@ -788,6 +789,7 @@ type RegisterAsset = {
   marketplaceSellerEmail: string;
   marketplaceProvince: string;
   marketplaceArea: string;
+  marketplaceShowDealRating?: boolean;
   photos: string[];
   documents: AssetDocument[];
   publicAssetCode: string;
@@ -1073,6 +1075,7 @@ type PricingRevaluePreview = {
 };
 
 type MarketplacePublishDraft = {
+  showDealRating: boolean;
   title: string;
   photos: string[];
   sellerName: string;
@@ -4823,6 +4826,7 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
   const savedListingNotes = asset.marketplaceNotes?.trim() || getManualAssetNote(asset.note);
 
   return {
+    showDealRating: asset.marketplaceShowDealRating !== false,
     title: asset.marketplaceTitle?.trim() || buildMarketplaceListingTitle(asset, true),
     sellerName:
       asset.marketplaceSellerName?.trim() ||
@@ -12962,6 +12966,7 @@ export default function AssetRegisterClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: marketplaceAsset.id,
+          showDealRating: marketplaceDraft.showDealRating,
           marketplaceTitle: marketplaceDraft.title.trim(),
           photos: marketplaceDraft.photos,
           replacePhotos: true,
@@ -12994,6 +12999,7 @@ export default function AssetRegisterClient({
         marketplaceSellerEmail: marketplaceDraft.sellerEmail.trim(),
         marketplaceProvince: marketplaceDraft.province.trim(),
         marketplaceArea: marketplaceDraft.area.trim(),
+        marketplaceShowDealRating: marketplaceDraft.showDealRating,
         openPartnerNote: data.note ?? marketplaceAsset.openPartnerNote ?? null,
         updatedAtIso: new Date().toISOString(),
       };
@@ -13872,11 +13878,10 @@ export default function AssetRegisterClient({
           { label: 'Last Updated', value: assetStatusDateLabel(asset) },
         ];
 
-    const marketAssessment = savedSaleability[asset.id];
-    if (marketAssessment) assetRows.push({
-      label: 'Realistic Market Value',
-      value: `${money(marketAssessment.priceExVat)} excl. VAT${marketAssessment.basis !== saleabilityBasis(asset) ? ' · Update needed' : ''}`,
-    });
+    const marketAssessment = realisticSellingAssessment(asset,savedSaleability[asset.id]);
+    const marketPrice = marketAssessment && !marketAssessment.needsReview ? money(marketAssessment.priceExVat) : 'N/A';
+    assetRows.push({label:'Realistic selling price',value:`${marketPrice} excl. VAT${marketAssessment?.needsReview ? ' · Update needed' : ''}`});
+    assetRows.push({label:asset.selectedMethod === 'manual' ? 'Manual value' : 'Ideal selling price',value:`${money(asset.value)} excl. VAT`});
 
     const reportPayload: AssetSheetPayload = {
       logoUrl: reportLogoUrl,
@@ -13884,9 +13889,9 @@ export default function AssetRegisterClient({
       assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: asset.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price Value',
-      value: money(asset.value),
-      valueNote: methodLabel(asset.selectedMethod),
+      valueLabel: 'Realistic selling price',
+      value: marketPrice,
+      valueNote: marketAssessment?.needsReview ? 'Update needed · VAT excluded' : 'VAT excluded',
       statusLabel: assetStatusDateLabel(asset),
       issuerName: 'Aim4price',
       issuerAddress: 'Saved asset register data',
@@ -14953,19 +14958,22 @@ export default function AssetRegisterClient({
       buildPrintableAssetThumbnailMap(orderedReportAssets),
     ]);
 
+    const eligibleSellingAssets = orderedReportAssets.filter(asset=>assetCountsTowardRegisterTotal(asset.id,reportAssetGroupMemberships));
+    const sellingAssessments = eligibleSellingAssets.map(asset=>realisticSellingAssessment(asset,savedSaleability[asset.id])).filter(item=>item && !item.needsReview);
+    const sellingTotal = sellingAssessments.reduce((sum,item)=>sum+(item?.priceExVat ?? 0),0);
     const reportPayload: AssetRegisterSummaryPayload = {
       logoUrl: reportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportName} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
-      valueLabel: isCustomAssetSelection ? 'Selected Register Value' : reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
+      valueLabel: 'Realistic selling price',
       assetSectionTitle: reportOption.sectionTitle,
       emptyStateMessage: reportOption.emptyLabel,
       ownerName,
       ownerMeta: buildOwnerMeta(profile),
       intro: reportOption.intro,
-      registerValue: money(reportValue),
-      registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT · Replacement ${money(reportReplacementValue)} excl. VAT`,
+      registerValue: sellingAssessments.length ? money(sellingTotal) : 'N/A',
+      registerValueNote: `VAT excluded · ${sellingAssessments.length} of ${eligibleSellingAssets.length} counted assets assessed · Register value ${money(reportValue)} excl. VAT`,
       ownerRows: [
         { label: 'Name', value: ownerName },
         { label: 'Business email', value: ownerEmail },
@@ -15006,6 +15014,7 @@ export default function AssetRegisterClient({
           method: methodLabel(asset.selectedMethod),
           detail: [groupDetail, buildExportDetail(asset)].filter(Boolean).join(' · '),
           value: money(asset.value),
+          realisticSellingPrice: (()=>{const assessment=realisticSellingAssessment(asset,savedSaleability[asset.id]);return assessment && !assessment.needsReview ? money(assessment.priceExVat) : 'N/A';})(),
           replacementPrice: readAssetReplacementPriceExVat(asset) !== null ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set',
           status: assetStatusDateLabel(asset),
           brand: isPropertyAsset ? '—' : reportBrandName,
@@ -21375,6 +21384,8 @@ export default function AssetRegisterClient({
                         disabled={isPublishingMarketplace || marketplacePhotosBusy}
                         onChange={askingPriceExVat => setMarketplaceDraft(current => current ? { ...current, askingPriceExVat } : current)} />
                     </section>
+
+                    <label className={styles.field}><span><input type="checkbox" checked={marketplaceDraft.showDealRating} disabled={isPublishingMarketplace} onChange={event=>setMarketplaceDraft(current=>current ? {...current,showDealRating:event.target.checked} : current)}/> Show value rating</span>{(()=>{const assessment=realisticSellingAssessment(marketplaceAsset,savedSaleability[marketplaceAsset.id]);const comparison=sellingPriceComparison({askingPriceExVat:parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0,aim4priceValueExVat:marketplaceAsset.aim4priceValueExVat,realisticSellingPriceExVat:assessment?.priceExVat,sellingPriceNeedsReview:assessment?.needsReview});return <small>{assessment?.needsReview ? 'Update the realistic selling price from the asset card to show its rating.' : comparison ? `${comparison.basis==='realistic' ? comparison.label+' · ' : ''}${comparison.difference}` : 'No estimate available. You can publish without a rating.'}</small>;})()}<small>Uses your saved realistic selling price, or an explicitly labelled ideal-price comparison. No calculation is required. Outdated estimates must be refreshed before a rating is shown.</small></label>
 
                     <MarketplacePhotoEditor photos={marketplaceDraft.photos} busy={marketplacePhotosBusy} onBusyChange={setMarketplacePhotosBusy} disabled={marketplacePhotosBusy || isPublishingMarketplace}
                       onChange={photos => setMarketplaceDraft(current => current ? { ...current, photos } : current)} />
