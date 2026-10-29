@@ -145,7 +145,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
 
   assert.match(marketplace, /createSharedMarketplaceAdJpeg\(shareListing\)/);
   assert.match(studio, /renderMarketplaceAdCanvas\(renderCanvas, previewContent/);
-  assert.match(studio, /(?:downloaded JPEG[^<}`]*match(?:es)? this preview|downloaded advert will look)/i);
+  assert.match(studio, /Sample details for testing your template/);
   assert.match(renderer, /id === templateId/);
   assert.match(renderer, /return 'gallery-three'/);
   assert.match(renderer, /return 'duo-split'/);
@@ -167,7 +167,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /content\.brand\.email/);
   assert.match(renderer, /content\.brand\.website/);
   assert.match(renderer, /function drawCameraIcon/);
-  assert.match(renderer, /Main equipment photo/);
+  assert.match(renderer, /Main photo/);
   assert.match(renderer, /function drawBrandHeader/);
   assert.match(renderer, /const plateWidth = Math\.min\(options\.logoWidth \?\? 196, rect\.width \* \.43\)/);
   assert.match(renderer, /const plateHeight = Math\.min\(92, rect\.height - 4\)/);
@@ -202,8 +202,8 @@ test('Advert Studio uses centered upload buttons and local-only sample photo ord
   assert.match(client, /<button className=\{styles\.logoUpload\} type="button" onClick=\{\(\) => logoInputRef\.current\?\.click\(\)\}/);
   assert.match(client, /draft\.logoUrl \? 'Replace logo' : 'Add logo'/);
   assert.match(client, /<fieldset className=\{styles\.stepFieldset\} disabled=\{!canManage \|\| saving\}/);
-  assert.match(client, /onClick=\{\(\) => previewPhotoInputRef\.current\?\.click\(\)\}/);
-  assert.match(client, /Upload photos/);
+  assert.match(client, /onClick=\{requestPreviewPhotos\}/);
+  assert.match(client, /Add photo/);
   assert.match(client, /const MAX_PREVIEW_PHOTOS = 4/);
   assert.match(client, /const MAX_PREVIEW_PHOTO_BYTES = 10_000_000/);
   assert.match(client, /const imageFiles = files\.filter\(\(file\) => SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
@@ -238,15 +238,15 @@ test('Advert Studio is limited to dealer accounts and uses a four-step guided se
   assert.match(desktopPage, /<AdStudioClient/);
   assert.match(dealerPage, /dealerAppMode/);
   assert.match(dealerPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
-  assert.match(client, /Save (?:brand kit|advert style)/);
+  assert.match(client, /Save (?:brand kit|advert template)/);
   assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /Details.*Layout.*Style.*Review/s);
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
-  assert.match(client, /(?:Brand kits|advert styles)/i);
-  assert.match(client, /studioMode === 'creator' \? 'CREATE ADVERT' : 'ADVERT STUDIO'/);
+  assert.match(client, /(?:Brand kits|advert templates)/i);
+  assert.match(client, /studioMode === 'creator' \? 'CREATE ADVERT' : 'ADVERT TEMPLATE'/);
   assert.match(client, /registerStyles\.registerChangeButton/);
-  assert.match(client, /data-tooltip=\{studioMode === 'creator' \? 'Switch to Advert Studio' : 'Switch to Create Advert'\}/);
+  assert.match(client, /data-tooltip=\{studioMode === 'creator' \? 'Switch to Advert Template' : 'Switch to Create Advert'\}/);
   assert.doesNotMatch(client, /Back to Advert Studio/);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);

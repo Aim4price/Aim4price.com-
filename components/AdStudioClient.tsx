@@ -94,7 +94,7 @@ const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
 
 const EMPTY_KIT: EditableBrandKit = {
   id: '',
-  name: 'My advert style',
+  name: 'My advert template',
   templateId: 'showcase',
   logoUrl: '',
   primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
@@ -170,6 +170,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
   const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
   const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
+  const photoHelpSeen = useRef(false);
+  const photoHelpDialogRef = useRef<HTMLDialogElement | null>(null);
   const editorRef = useRef<HTMLFormElement | null>(null);
   const previewDialogRef = useRef<HTMLDialogElement | null>(null);
   const enlargedCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -184,11 +186,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     [draft.templateId],
   );
   const previewContent = useMemo<MarketplaceAdContent>(() => ({
-    title: '2019 Example 110 Tractor',
+    title: '2019 Example Asset',
     year: '2019',
     usage: '3 450 hours',
     condition: 'Good',
-    familyLabel: 'Tractors',
+    familyLabel: 'Assets',
     askingPriceExVat: 685_000,
     aim4priceValueExVat: 700_000,
     dealRating: 'fair',
@@ -258,7 +260,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     try {
       const response = await fetch(brandKitsEndpoint, { cache: 'no-store' });
       const payload = (await response.json().catch(() => null)) as BrandKitResponse | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert styles could not be loaded.');
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert templates could not be loaded.');
 
       const nextKits = payload.kits ?? [];
       const nextDefaults = payload.profileDefaults ?? {};
@@ -270,7 +272,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       setCanManage(payload.canManage !== false);
       setDraft(selected ? editableKit(selected) : kitFromDefaults(nextDefaults));
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Advert styles could not be loaded.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert templates could not be loaded.');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -331,9 +333,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   function startNewKit() {
-    setDraft({ ...kitFromDefaults(profileDefaults), name: `Advert style ${kits.length + 1}`, isDefault: kits.length === 0 });
+    setDraft({ ...kitFromDefaults(profileDefaults), name: `Advert template ${kits.length + 1}`, isDefault: kits.length === 0 });
     setActiveStep(1);
-    setFeedback('New advert style ready to customise.');
+    setFeedback('New advert template ready to customise.');
     setError('');
     revealEditor();
   }
@@ -341,7 +343,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   function moveToStep(step: StudioStep) {
     if (step > 1 && !draft.name.trim()) {
       setActiveStep(1);
-      setError('Give this advert style a name before continuing.');
+      setError('Give this advert template a name before continuing.');
       return;
     }
 
@@ -366,7 +368,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     const reader = new FileReader();
     reader.onload = () => {
       update('logoUrl', typeof reader.result === 'string' ? reader.result : '');
-      setFeedback('Logo ready. It will be saved with this advert style.');
+      setFeedback('Logo ready. It will be saved with this advert template.');
     };
     reader.onerror = () => setError('The logo could not be read.');
     reader.readAsDataURL(file);
@@ -409,6 +411,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setFeedback(imageFiles.length > available
       ? `Added ${accepted.length} sample photos. The preview uses a maximum of ${MAX_PREVIEW_PHOTOS}.`
       : 'Sample photos added to the live preview.');
+  }
+
+  function requestPreviewPhotos() {
+    if (photoHelpSeen.current) previewPhotoInputRef.current?.click();
+    else photoHelpDialogRef.current?.showModal();
   }
 
   function handlePreviewPhotoChange(event: ChangeEvent<HTMLInputElement>) {
@@ -459,7 +466,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     event.preventDefault();
     if (!canManage || saving) return;
     if (!draft.name.trim()) {
-      setError('Give this advert style a name.');
+      setError('Give this advert template a name.');
       return;
     }
 
@@ -474,11 +481,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         body: JSON.stringify(draft),
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
-      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'Advert style could not be saved.');
-      setFeedback('Advert style saved. It is now available when you create an advert from a valuation.');
+      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'Advert template could not be saved.');
+      setFeedback('Advert template saved. It is now available in Create Advert.');
       await loadBrandKits(payload.kit.id, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Advert style could not be saved.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert template could not be saved.');
     } finally {
       setSaving(false);
     }
@@ -496,11 +503,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         method: 'DELETE',
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert style could not be removed.');
-      setFeedback('Advert style removed.');
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Advert template could not be removed.');
+      setFeedback('Advert template removed.');
       await loadBrandKits(undefined, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'Advert style could not be removed.');
+      setError(nextError instanceof Error ? nextError.message : 'Advert template could not be removed.');
     } finally {
       setSaving(false);
     }
@@ -519,11 +526,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         body: JSON.stringify({ ...editableKit(kit), isDefault: true }),
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
-      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'The default advert style could not be changed.');
-      setFeedback(`“${kit.name}” is now the default advert style.`);
+      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'The default advert template could not be changed.');
+      setFeedback(`“${kit.name}” is now the default advert template.`);
       await loadBrandKits(payload.kit.id, false);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : 'The default advert style could not be changed.');
+      setError(nextError instanceof Error ? nextError.message : 'The default advert template could not be changed.');
     } finally {
       setSaving(false);
     }
@@ -534,13 +541,13 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       {studioMode !== 'home' ? <div className={styles.titlePanel}>
         <section className={registerStyles.businessRegisterTitleBlock}>
           <div className={registerStyles.businessRegisterTitleCard}>
-            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'ADVERT STUDIO'}</h1>
+            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'ADVERT TEMPLATE'}</h1>
             <button
               type="button"
               className={`${registerStyles.registerChangeButton} ${registerStyles.controlTooltip}`}
               disabled={loading}
-              aria-label={studioMode === 'creator' ? 'Switch to Advert Studio' : 'Switch to Create Advert'}
-              data-tooltip={studioMode === 'creator' ? 'Switch to Advert Studio' : 'Switch to Create Advert'}
+              aria-label={studioMode === 'creator' ? 'Switch to Advert Template' : 'Switch to Create Advert'}
+              data-tooltip={studioMode === 'creator' ? 'Switch to Advert Template' : 'Switch to Create Advert'}
               onClick={() => {
                 if (studioMode === 'creator') setStudioMode('style');
                 else { setCreatorStarted(true); setStudioMode('creator'); }
@@ -555,11 +562,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         </section>
       </div> : null}
 
-      {loading ? <div className={styles.notice}>Loading your advert styles…</div> : null}
+      {loading ? <div className={styles.notice}>Loading your advert templates…</div> : null}
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
       {feedback ? <div className={`${styles.notice} ${styles.success}`} role="status">{feedback}</div> : null}
       {!canManage && !loading ? (
-        <div className={styles.notice}>Your Dealer login does not have permission to edit advert styles.</div>
+        <div className={styles.notice}>Your Dealer login does not have permission to edit advert templates.</div>
       ) : null}
 
       {!loading && studioMode === 'home' ? (
@@ -570,14 +577,14 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                   <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
                     <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Advert Studio</h1>
-                    <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>Create your advert style or design an advert to share.</p>
+                    <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>Create your advert template or design an advert to share.</p>
                   </div>
                   <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Advert Studio options">
                     <button type="button" className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`} onClick={() => setStudioMode('style')}>
                       <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
-                          <strong className={valuationStyles.sectorLabel}>Advert Style</strong>
+                          <strong className={valuationStyles.sectorLabel}>Advert Template</strong>
                           <span className={valuationStyles.sectorCardHint}>Set your branding and default layout.</span>
                         </span>
                       </span>
@@ -586,7 +593,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
-                          <strong className={valuationStyles.sectorLabel}>Advert Creator</strong>
+                          <strong className={valuationStyles.sectorLabel}>Create Advert</strong>
                           <span className={valuationStyles.sectorCardHint}>Create, preview and share your advert.</span>
                         </span>
                       </span>
@@ -607,10 +614,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
               <div className={styles.sectionHeader}>
                 <div>
-                  <h2 id="brand-kit-library-title">Saved advert styles</h2>
+                  <h2 id="brand-kit-library-title">Saved advert templates</h2>
                   <p>Choose a style to edit or make your default.</p>
                 </div>
-                {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>New advert style</button> : null}
+                {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>New advert template</button> : null}
               </div>
 
               <div className={styles.kitGrid}>
@@ -658,7 +665,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
 
           <div className={styles.workspace} id="ad-studio-workspace">
           <form className={styles.formPanel} onSubmit={saveKit} ref={editorRef}>
-            <nav className={styles.stepper} aria-label="Advert style setup steps">
+            <nav className={styles.stepper} aria-label="Advert template setup steps">
               {STUDIO_STEPS.map((step) => (
                 <button
                   key={step.id}
@@ -685,7 +692,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <legend className={styles.srOnly}>Business and contact details</legend>
                     <div className={styles.fieldGrid}>
                       <label>
-                        Advert style name
+                        Advert template name
                         <span className={styles.settingsInput}>
                           <SettingsDetailIcon name="listings" />
                           <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required placeholder="e.g. Main dealer style" />
@@ -890,7 +897,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <span>Wording</span>
                       <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(3)} aria-label="Edit wording"><StudioIcon name="edit" /></button>
                       <strong>{draft.language === 'af' ? 'Afrikaans' : 'English'} · {vatPreview(draft.language, draft.vatLabel)}</strong>
-                      <small>{draft.isDefault ? 'Default advert style' : 'Optional advert style'}</small>
+                      <small>{draft.isDefault ? 'Default advert template' : 'Optional advert template'}</small>
                     </article>
                     <article className={styles.reviewColours}>
                       <span>Colours</span>
@@ -918,7 +925,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 ) : (
                   <>
                     {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'}>Start a valuation<StudioIcon name="next" /></Link> : null}
-                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save advert style'}</button> : null}
+                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save advert template'}</button> : null}
                   </>
                 )}
               </div>
@@ -928,10 +935,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
           <aside className={styles.previewPanel}>
             <div className={styles.previewHeading}>
               <div className={styles.previewTitle}>
-                <strong>Advert preview</strong>
+                <strong>Template preview</strong>
               </div>
               <div className={styles.previewTools}>
-                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={() => previewPhotoInputRef.current?.click()}><StudioIcon name="image" />Upload photos</button>
+                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={requestPreviewPhotos}><StudioIcon name="image" />Add photo</button>
+                <button className={styles.photoHelpButton} type="button" aria-label="About template photos" title="About template photos" onClick={() => photoHelpDialogRef.current?.showModal()}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7v1" /></svg></button>
                 {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}><StudioIcon name="delete" />Clear</button> : null}
                 <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
               </div>
@@ -985,29 +993,37 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 </div>
               ) : null}
             </div>
-            <button type="button" className={styles.expandPreview} onClick={openPreview} aria-label="Enlarge advert preview">
+            <button type="button" className={styles.expandPreview} onClick={openPreview} aria-label="Enlarge template preview">
             <canvas
               ref={previewCanvasRef}
               className={styles.adCanvasPreview}
               width="1600"
               height="900"
-              aria-label={`${selectedTemplate.name} advert preview with ${previewRating.label.toLowerCase()} rating`}
+              aria-label={`${selectedTemplate.name} template preview with ${previewRating.label.toLowerCase()} rating`}
             />
             </button>
             <div className={styles.previewNote}>
-              <p>Your downloaded advert will look like this. Click to enlarge.</p>
+              <p>Sample details for testing your template. Click to enlarge.</p>
             </div>
+            <dialog ref={photoHelpDialogRef} className={styles.photoHelpDialog} aria-labelledby="template-photo-help-title" aria-describedby="template-photo-help-description" onClose={() => { photoHelpSeen.current = true; }} onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+              <div className={styles.dialogHeading}>
+                <h2 id="template-photo-help-title">Test your template</h2>
+                <button type="button" data-modal-close="true" aria-label="Close photo guidance" onClick={() => photoHelpDialogRef.current?.close()}>×</button>
+              </div>
+              <p id="template-photo-help-description">Add a sample photo to see how your design looks. Use Create Advert to add your actual listing photos.</p>
+              <button type="button" className={styles.primaryButton} autoFocus onClick={() => { photoHelpSeen.current = true; photoHelpDialogRef.current?.close(); previewPhotoInputRef.current?.click(); }}><StudioIcon name="image" />Choose photo</button>
+            </dialog>
             <dialog ref={previewDialogRef} className={styles.previewDialog} aria-labelledby="studio-large-preview-title" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
-                <h2 id="studio-large-preview-title">Advert preview</h2>
+                <h2 id="studio-large-preview-title">Template preview</h2>
                 <div className={styles.dialogTools}>
                   <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
-                  <button type="button" data-modal-close="true" aria-label="Close advert preview" autoFocus title="Close advert preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
+                  <button type="button" data-modal-close="true" aria-label="Close template preview" autoFocus title="Close template preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
                 </div>
               </div>
               {previewDownloadError ? <p role="alert">{previewDownloadError}</p> : null}
               <div className={styles.previewDialogBody}>
-                <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged advert preview" />
+                <canvas ref={enlargedCanvasRef} width="1600" height="900" aria-label="Enlarged template preview" />
               </div>
             </dialog>
           </aside>
