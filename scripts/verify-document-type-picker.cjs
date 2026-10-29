@@ -41,11 +41,12 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await click('Edit');await page.waitForSelector('#document-type-trigger');
   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
   assert.equal(await page.$$eval('[role=dialog]',nodes=>nodes.length),1);
-  assert.equal(await page.$eval('[aria-label="Search document types"]',e=>e===document.activeElement),true);
+  await page.waitForFunction(()=>document.querySelector('[aria-label="Search document types"]')===document.activeElement);
   await page.type('[aria-label="Search document types"]','licence');
   await page.keyboard.press('Escape');await page.waitForSelector('#document-type-trigger');
   assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
-  assert.equal(await page.$eval('#document-type-trigger',e=>e===document.activeElement),true);
+  // Closing restores focus on the next animation frame, after the parent remounts.
+  await page.waitForFunction(()=>document.querySelector('#document-type-trigger')===document.activeElement);
   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
   await page.type('[aria-label="Search document types"]','licence');await click('Licence disc');
   await page.waitForSelector('#document-type-trigger');

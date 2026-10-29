@@ -1,20 +1,22 @@
-.review { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 24px; align-items: start; color: var(--app-text, #173e30); }
+.review { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; color: var(--app-text, #173e30); }
 .preview, .panel { border: 1px solid var(--app-line, #d4e4da); border-radius: 22px; background: var(--app-surface, #fff); min-width: 0; }
 .preview { overflow: hidden; }
-.photo { display: block; width: 100%; height: 260px; object-fit: contain; background: var(--app-surface-soft, #edf5ef); }
+.photo { display: block; width: 100%; height: 220px; object-fit: contain; background: var(--app-surface-soft, #edf5ef); }
 .noPhoto { display: grid; place-items: center; gap: 12px; padding: 32px; background: var(--app-surface-soft, #edf5ef); }
 .noPhoto svg { width: 40px; height: 40px; }
-.details, .panel { padding: 24px; }
-.review h4 { font-size: 1.2rem; line-height: 1.3; margin: 0; }
+.details, .panel { padding: 20px; }
+.review h4 { font-family: var(--font-heading, "Montserrat"), sans-serif; font-size: clamp(1.18rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.36rem); font-weight: 720; line-height: 1.12; letter-spacing: -.018em; margin: 0; }
 .details h4 { margin: 8px 0 16px; overflow-wrap: anywhere; }
-.review p, .review small { color: var(--app-muted, #65786c); line-height: 1.5; }
+.review { font-family: var(--font-body, "Montserrat"), sans-serif; font-size: .9rem; font-weight: 520; line-height: 1.4; }
+.review p { margin: 12px 0; color: var(--app-info, #64778b); font-size: .9rem; font-weight: 520; line-height: 1.4; }
+.review small { color: var(--app-info, #64778b); font-size: .8rem; font-weight: 520; line-height: 1.4; }
 .price { display: block; font-size: 1.8rem; }
 .price small { font-size: .8rem; font-weight: 500; }
 .rating { display: grid; gap: 4px; margin-top: 16px; padding: 14px; border-radius: 12px; background: var(--app-surface-soft, #edf5ef); border: 1px solid var(--app-line, #d4e4da); }
 .notes { white-space: pre-wrap; overflow-wrap: anywhere; }
 .seller { display: grid; gap: 6px; border-top: 1px solid var(--app-line, #d4e4da); padding-top: 16px; overflow-wrap: anywhere; }
 .options { display: grid; gap: 18px; }
-.heading { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.heading { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 13px; background: #f0eafa; color: #6b4692; }
 .icon svg { width: 24px; height: 24px; }
 .saleIcon { color: #237454; background: #e4f4ec; }
@@ -26,7 +28,12 @@
 .switch:focus-visible { outline: 3px solid var(--app-accent, #237454); outline-offset: 4px; }
 .switch:disabled { opacity: .5; cursor: not-allowed; }
 .private { display: inline-block; padding: 5px 10px; border-radius: 8px; background: var(--app-surface-soft, #edf5ef); }
-.score { display: flex; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
+.score { display: flex; justify-content: space-between; gap: 12px; margin: 14px 0 8px; }
 .panel meter { width: 100%; height: 14px; accent-color: #237454; }
 .help { margin: 0; font-size: .9rem; }
 @media (max-width: 760px) { :global(:where(html:not(:has([data-website-canvas])))) .review { grid-template-columns: minmax(0, 1fr); } }
+
+.calculate { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 46px; margin-top: 18px; padding: 12px 16px; border: 1px solid var(--app-line, #d4c7e5); border-radius: 13px; background: var(--app-surface-soft, #f3eef9); color: var(--app-text, #5d387e); font: 700 .9rem var(--font-body, "Montserrat"), sans-serif; cursor: pointer; }
+.calculate svg { width: 20px; height: 20px; }
+.calculate:hover:not(:disabled), .calculate:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
+.calculate:disabled { opacity: .5; cursor: not-allowed; }

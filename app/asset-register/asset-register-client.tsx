@@ -11813,6 +11813,10 @@ export default function AssetRegisterClient({
 
   function closeSaleabilityDialog() {
     setSaleabilityAsset(null);
+    if (marketplaceAsset && marketplaceReview) {
+      requestAnimationFrame(() => document.getElementById('marketplace-confirm-title')?.focus());
+      return;
+    }
     returnToPricingMenu();
   }
 
@@ -21355,7 +21359,7 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
-      {marketplaceAsset && marketplaceDraft ? (
+      {marketplaceAsset && marketplaceDraft && !saleabilityAsset ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeMarketplaceModal} />
 
@@ -21373,7 +21377,7 @@ export default function AssetRegisterClient({
 
             <div data-marketplace-scroll className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
-                {marketplaceReview ? <MarketplacePublishReview draft={marketplaceDraft} price={parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0} vatIncluded={marketplaceVatIncluded} idealValue={marketplaceAsset.aim4priceValueExVat} assessment={realisticSellingAssessment(marketplaceAsset, savedSaleability[marketplaceAsset.id])} saved={savedSaleability[marketplaceAsset.id]} stale={!!savedSaleability[marketplaceAsset.id] && savedSaleability[marketplaceAsset.id].basis !== saleabilityBasis(marketplaceAsset)} loading={saleabilityLoading} loadError={saleabilityLoadError} busy={isPublishingMarketplace} onRatingChange={showDealRating => setMarketplaceDraft(current => current ? {...current, showDealRating} : current)} /> : <>
+                {marketplaceReview ? <MarketplacePublishReview onCalculate={() => { pricingReturnAssetRef.current = null; setSaleabilityAsset(marketplaceAsset); }} draft={marketplaceDraft} price={parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0} vatIncluded={marketplaceVatIncluded} idealValue={marketplaceAsset.aim4priceValueExVat} assessment={realisticSellingAssessment(marketplaceAsset, savedSaleability[marketplaceAsset.id])} saved={savedSaleability[marketplaceAsset.id]} stale={!!savedSaleability[marketplaceAsset.id] && savedSaleability[marketplaceAsset.id].basis !== saleabilityBasis(marketplaceAsset)} loading={saleabilityLoading} loadError={saleabilityLoadError} busy={isPublishingMarketplace} onRatingChange={showDealRating => setMarketplaceDraft(current => current ? {...current, showDealRating} : current)} /> : <>
                 <section className={styles.marketplaceAssetSummary}>
                   <label className={styles.marketplaceTitlePreview}>
                     <span>Listing title</span>

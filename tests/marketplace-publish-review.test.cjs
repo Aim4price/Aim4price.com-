@@ -13,3 +13,14 @@ test('rating switch controls buyer preview independently of seller-only saleabil
 test('stale or unavailable assessments never show a current score or rating',()=>{for(const state of [{stale:true,assessment:{priceExVat:100000,needsReview:true}},{loading:true},{loadError:true}]){const html=render(state);assert.doesNotMatch(html,/70\/100|Fair value/);assert.match(html,/aria-checked="false"/);}});
 test('ideal-only comparison is explicitly labelled and VAT preview changes display amount',()=>{const html=render({assessment:null,vatIncluded:true});assert.match(html,/Ideal price comparison/);assert.match(html,/115/);assert.match(html,/Incl. VAT/);});
 test('Continue validates and enters review before the publish operation',async()=>{const client=fs.readFileSync('app/asset-register/asset-register-client.tsx','utf8');const start=client.indexOf('    event.preventDefault();',client.indexOf('async function handleConfirmMarketplacePublish'));const end=client.indexOf('    setIsPublishingMarketplace(true);',start);const body=client.slice(start,end)+'\nreturn "publish";';const run=new Function('event','marketplaceAsset','marketplaceDraft','marketplacePhotosBusy','isPublishingMarketplace','parseMoneyInput','setNotice','isMarketplaceEligible','PROPERTY_ASSET_LABEL','marketplaceReview','setMarketplaceReview','requestAnimationFrame',body);let review=false,notice;const args=[{preventDefault(){}},{}, {...draft,askingPriceExVat:'100000'},false,false,Number,n=>notice=n,()=>true,'Property'];assert.equal(run(...args,false,v=>review=v,()=>{}),undefined);assert.equal(review,true);assert.equal(run(...args,true,()=>{},()=>{}),'publish');args[2]={...args[2],sellerPhone:''};review=false;assert.equal(run(...args,false,v=>review=v,()=>{}),undefined);assert.equal(review,false);assert.match(notice.message,/contact name and phone/);});
+test('review offers a non-submit realistic-price action and returns from assessment without opening pricing menu',()=>{
+ assert.match(render({}), /type="button" class="calculate"[^>]*>Calculate realistic price/);
+ const client=fs.readFileSync('app/asset-register/asset-register-client.tsx','utf8');
+ const start=client.indexOf('    setSaleabilityAsset(null);',client.indexOf('function closeSaleabilityDialog'));
+ const end=client.indexOf('\n  }',start);let closed=false,returned=false,focused=false;
+ const close=new Function('setSaleabilityAsset','marketplaceAsset','marketplaceReview','requestAnimationFrame','returnToPricingMenu',client.slice(start,end));
+ close(v=>closed=v===null,{},true,()=>focused=true,()=>returned=true);
+ assert.equal(closed,true);assert.equal(focused,true);assert.equal(returned,false);
+ close(()=>{},null,false,()=>{},()=>returned=true);assert.equal(returned,true);
+ assert.match(client,/marketplaceAsset && marketplaceDraft && !saleabilityAsset/);
+});
