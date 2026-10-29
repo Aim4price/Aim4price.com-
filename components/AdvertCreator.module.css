@@ -231,3 +231,51 @@
 }
 .creator .formFooter { margin-top: .25rem; }
 .creator .formFooter button { min-width: 9rem; }
+
+/* Floating labels and value baselines match the adjacent Marketplace inputs. */
+.creator .fields > .detailsSelect {
+  display: block !important;
+  min-height: 4.55rem !important;
+}
+.creator .detailsSelect > span {
+  position: absolute !important;
+  z-index: 2;
+  top: .72rem !important;
+  left: 1.08rem !important;
+  margin: 0 !important;
+  color: var(--app-info, #607486) !important;
+  font-size: .77rem !important;
+  font-weight: 660 !important;
+  line-height: 1 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  pointer-events: none;
+}
+.creator .detailsSelect > button {
+  box-sizing: border-box;
+  min-height: 3.2rem !important;
+  padding: 1.62rem 1.08rem .68rem !important;
+  border-radius: .92rem !important;
+  border-color: var(--app-info-line, #ccdbe6) !important;
+  background: var(--typing-field-surface, #edf5f0) !important;
+  color: var(--typing-field-text, #173e33) !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  line-height: 1.25 !important;
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16,31,28,.03)) !important;
+  transform: none !important;
+}
+.creator .detailsSelect > button:is(:hover, :focus-visible, [aria-expanded='true']) {
+  background: var(--typing-field-focus, #e3efe8) !important;
+  border-color: var(--app-accent, #23825b) !important;
+  box-shadow: 0 0 0 3px var(--app-line, #c4d9cd) !important;
+}
+.detailsMenu { font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif; }
+.creator .fields > label > input,
+.creator .detailsSelect > button {
+  box-sizing: border-box;
+  height: 3.7rem !important;
+}
+
+.creator .detailsSelect .detailsMenu { top: calc(3.7rem + .4rem) !important; }
