@@ -607,7 +607,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         </div>
       ) : null}
       {!loading && creatorStarted ? <div style={studioMode === 'creator' ? undefined : { display: 'none' }}>
-        <AdvertCreator kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
+        <AdvertCreator middlemanMode={middlemanMode || dealerAppRoot === '/middleman'} assetRegisterHref={dealerAppMode ? '/dealer/inventory?dealerView=dealer' : '/asset-register?dealerView=dealer'} kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
       </div> : null}
       {!loading ? (
         <div style={studioMode === 'style' ? undefined : { display: 'none' }}>
