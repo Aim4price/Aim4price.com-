@@ -364,12 +364,21 @@ test('square, wide and tall logos are centered and contained in every dedicated 
         const logoCall = trace.calls.drawImage.find((call) => call.source === logoCase.source);
         assert.ok(logoCall, `${option.id} should draw ${logoCase.source}`);
         closeTo(logoCall.width / logoCall.height, logoCase.ratio, `${option.id} should preserve ${logoCase.source} aspect ratio`);
-        assert.ok(logoCall.x >= slot.x + 14 - .001, `${option.id} logo should respect horizontal padding`);
-        assert.ok(logoCall.x + logoCall.width <= slot.x + slot.width - 14 + .001, `${option.id} logo should stay within slot width`);
+        assert.ok(logoCall.x >= slot.x + 12 - .001, `${option.id} logo should respect horizontal padding`);
+        assert.ok(logoCall.x + logoCall.width <= slot.x + slot.width - 12 + .001, `${option.id} logo should stay within slot width`);
         assert.ok(logoCall.y >= slot.y + 10 - .001, `${option.id} logo should respect vertical padding`);
         assert.ok(logoCall.y + logoCall.height <= slot.y + slot.height - 10 + .001, `${option.id} logo should stay within slot height`);
-        closeTo(logoCall.x + logoCall.width / 2, slot.x + slot.width / 2, `${option.id} logo should be horizontally centered`);
+        closeTo(logoCall.x + logoCall.width / 2, slot.x + 12 + logoCall.width / 2, `${option.id} logo should sit in a compact plate`);
         closeTo(logoCall.y + logoCall.height / 2, slot.y + slot.height / 2, `${option.id} logo should be vertically centered`);
+        const plate = trace.calls.roundRect.find(call => Math.abs(call.x - slot.x) < .001 && Math.abs(call.y - slot.y) < .001);
+        assert.ok(plate);
+        closeTo(plate.width, logoCall.width + 24, 'plate should hug the logo with 12px padding');
+        const plain = createTraceCanvas();
+        const content = contentFor(option.id, logoCase.source);
+        content.brand.logoBackground = false;
+        await renderMarketplaceAdCanvas(plain.canvas, content, { includeImages: true, useBestPhotoFit: false });
+        assert.ok(!plain.calls.roundRect.some(call => Math.abs(call.x - slot.x) < .001 && Math.abs(call.y - slot.y) < .001), 'disabled background should not draw a plate');
+        assert.deepEqual(plain.calls.drawImage.find(call => call.source === logoCase.source), logoCall, 'toggle should preserve logo geometry');
       }
     }
   });
