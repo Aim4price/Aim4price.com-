@@ -651,11 +651,11 @@
   outline-offset: 3px;
 }
 
-/* Keep the editor controls in view while only long step content scrolls. */
-.formPanel { display: flex; flex-direction: column; position: sticky; top: 110px; max-height: max(440px, calc(var(--website-design-vh, 1vh) * 100 - 140px)); }
+/* Let the editor background grow with each step, including uploaded logos. */
+.formPanel { display: flex; flex-direction: column; position: static; max-height: none; }
 .stepper { flex: 0 0 auto; padding: 10px 16px; }
 .stepButton { min-height: 62px; gap: 4px; }
-.stepContent { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-gutter: stable; scrollbar-color: var(--app-accent, #43836a) var(--app-surface-soft, #edf5f1); padding: 20px 24px; }
+.stepContent { min-height: 0; flex: 0 0 auto; overflow: visible; padding: 20px 24px; }
 .stepIntro { margin-bottom: 18px; }
 .stepIntro h2 { font-size: 1.45rem; }
 .stepIntro p { margin-top: 5px; font-size: .82rem; }
@@ -702,7 +702,6 @@
 .dialogHeading button[data-modal-close] { width: 44px; height: 44px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 12px; background: var(--app-surface-soft, #edf6f2); color: inherit; font-size: 1.5rem; cursor: pointer; }
 .previewDialog canvas { display: block; min-height: 0; width: 100%; height: 100%; object-fit: contain; }
 @media (max-width: 760px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .formPanel { top: 80px; max-height: max(380px, calc(100dvh - 100px)); }
   :global(:where(html:not(:has([data-website-canvas])))) .colourRow { grid-template-columns: minmax(0, 1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .colourControl > div { max-width: 240px; }
   :global(:where(html:not(:has([data-website-canvas])))) .actions { flex-direction: row; padding: 12px; gap: 8px; }
@@ -710,11 +709,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .previewHeading { flex-wrap: wrap; }
 }
 
-/* A wider grip with a quiet track makes longer setup steps easier to scroll. */
-.stepContent::-webkit-scrollbar { width: 14px; }
-.stepContent::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf5f1); border-radius: 12px; margin-block: 8px; }
-.stepContent::-webkit-scrollbar-thumb { min-height: 48px; border: 3px solid var(--app-surface-soft, #edf5f1); border-radius: 12px; background: var(--app-accent, #43836a); }
-.stepContent::-webkit-scrollbar-thumb:hover { background: var(--app-text, #165f49); }
 .logoControls.logoControls { flex-direction: row; justify-content: center; gap: 14px; }
 .logoPreviewCard.logoPreviewCard { width: 112px; height: 88px; flex: 0 0 112px; }
 .logoButtons.logoButtons { width: min(100%, 260px); gap: 8px; }
