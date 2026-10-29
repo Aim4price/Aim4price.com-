@@ -82,10 +82,10 @@ async function fixtures() {
   });
   reports['register-umbrella'] = shared.buildAssetRegisterSummaryReportHtml({
     logoUrl: logo, generatedAt, ownerName: 'Demonstration Farm', ownerMeta: 'George',
-    intro: 'Selected umbrella assets', registerValue: 'R 4 394 500',
+    intro: 'Selected umbrella assets', valueLabel: 'Ideal value', registerValue: 'R 4 394 500',
     stats: [{ label: 'Assets', value: '20' }], rows: Array.from({ length: 20 }, (_, i) => ({
       asset: asset.title + ' ' + (i+1), type: 'Tractor', method: 'Aim4price',
-      detail: 'Umbrella: Farm equipment', value: 'R 219 725', replacementPrice: 'R 650 000',
+      detail: 'Umbrella: Farm equipment', value: 'R 219 725', realisticSellingPrice: i % 3 ? 'R 180 000' : 'N/A', replacementPrice: 'R 650 000',
       status: 'Saved', serial: asset.serialNumber, year: '2021', usage: '6 720 hours', condition: 'Good',
     })),
   });
