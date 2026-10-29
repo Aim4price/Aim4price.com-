@@ -89,6 +89,15 @@ async function fixtures() {
       status: 'Saved', serial: asset.serialNumber, year: '2021', usage: '6 720 hours', condition: 'Good',
     })),
   });
+  reports['register-compact'] = shared.buildAssetRegisterSummaryReportHtml({
+    logoUrl: logo, generatedAt, reportTitle: 'Yellow Machinery — Umbrella Report',
+    ownerName: 'Demonstration Farm Pty Ltd', ownerMeta: 'George', intro: 'Yellow Machinery · 2 grouped assets',
+    ownerRows: [{label:'Business email',value:'owner@example.com'},{label:'Phone',value:'082 000 0000'},{label:'Address',value:'George, Western Cape'}],
+    valueLabel:'Ideal value', registerValue:'R 653 950', realisticSellingPrice:'R 536 000', sellingAssessmentNote:'2 of 2 assets assessed',
+    stats:[{label:'Assets',value:'2'},{label:'Replacement value',value:'R 4 600 000',note:'R 5 290 000 incl. VAT'},{label:'Insured assets',value:'0',note:'R 0 insured value excl. VAT'},{label:'Financed assets',value:'1',note:'R 307 450 asset value excl. VAT'}],
+    rows:[{asset:'1995 Volvo EC 24 OBLC',value:'R 346 500',realisticSellingPrice:'R 284 000',replacementPrice:'R 3 500 000',usage:'14 000 hours',condition:'Good',serial:'EC240V11609',insured:'No',financed:'No',licensed:'N/A'},
+      {asset:'2017 JCB 3DX',value:'R 307 450',realisticSellingPrice:'R 252 000',replacementPrice:'R 1 100 000',usage:'8 853 hours',condition:'Used',serial:'SKB 16',licenseRegistrationNumber:'CAW 67982',insured:'No',financed:'Yes',licensed:'Yes'}].map(row=>({...row,type:'Demonstration Farm',method:'Aim4price',updated:'Updated 29 Oct 2026',photoUrl:photos[0]}))
+  });
   const maintenance = load('lib/asset-maintenance-report.ts');
   const maintenanceOptions = { ...base, reportScopeLabel: 'All maintenance',
     summary: { totalCount: 35, openCount: 0, doneCount: 35, dueSoonCount: 0, dueCount: 0, overdueCount: 0 },
@@ -248,6 +257,12 @@ async function fixtures() {
       });
       await page.setViewport({ width: 1400, height: 1000, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: 'load' });
+      if (name === 'register-compact') {
+        assert.equal(await page.$$eval('.fullRegisterStatCard', nodes=>nodes.length),4);
+        assert.equal(await page.$$eval('.fullRegisterOwnerDetailsPanel', nodes=>nodes.length),0);
+        assert.equal(await page.$eval('.fullRegisterSellingTotal strong', node=>node.textContent),'R 536 000');
+        assert.ok(await page.$eval('.fullRegisterIdentifiers', node=>node.textContent.includes('EC240V11609')));
+      }
       await page.evaluate(async () => { await document.fonts.ready; });
       await page.screenshot({ path: path.join(out,name+'-desktop.png'), fullPage: true });
       // Small synthetic previews can be inspected through CI logs when a local
@@ -283,6 +298,7 @@ async function fixtures() {
       const parsed = await PDFDocument.load(pdf);
       const pages = parsed.getPageCount();
       assert.ok(pages >= 1, name+' empty PDF');
+      if (name === 'register-compact') assert.equal(pages, 1, 'two-asset report and footer fit on one page');
       if (['maintenance','asset-maintenance','ownership','full-register','register-umbrella'].includes(name)) assert.ok(pages > 1, name+' must exercise multiple pages');
       const pdfPath = path.join(out,name+'.pdf');
       fs.writeFileSync(pdfPath,pdf);

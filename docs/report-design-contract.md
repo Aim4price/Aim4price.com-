@@ -93,3 +93,9 @@ The owner requested the fuel-slip export to use the main fuel report design, cli
 Generated report labels use neutral entry wording while retaining the historical issue date, date added, missing-GPS information and original audit data. No database records are rewritten. Relative document links resolve against the request origin; Excel uses native hyperlinks.
 
 Synthetic verification covers multi-page fuel ledger and slip PDFs, actual PDF link annotations, and download dialogs at 390px, 768px and 1280px. Keep the PR in draft for review of the requested slip-report layout; production account downloads have not been exercised.
+
+## 29 October 2026 register report clarity redesign
+
+The owner approved the Yellow Machinery report mockup and requested its implementation. The shared register/umbrella report now has one owner/contact panel, distinct ideal and realistic totals, four summary cards, larger asset photos, and stacked per-asset values. The duplicate owner block is removed. Serial and registration remain visible; missing realistic values still show N/A. Source-register identity replaces combined-view placeholder identity for a single selected business.
+
+This deliberately changes only the shared register report stylesheet fingerprint. Valuation and maintenance designs remain unchanged. Synthetic compact and multi-page register PDFs, plus valuation and maintenance fixtures, are checked for screen overflow, print clipping and page breaks. Keep the PR available for manual review and merge.

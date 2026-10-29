@@ -14947,12 +14947,14 @@ export default function AssetRegisterClient({
     const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes', reportAssetGroups);
     const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes', reportAssetGroups);
     const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes', reportAssetGroups);
+    const sourceRegisterIds = new Set(reportAssets.map(asset=>asset.registerId).filter(Boolean));
+    const sourceRegister = sourceRegisterIds.size === 1 ? assetRegisters.find(register=>register.id === [...sourceRegisterIds][0]) : null;
     const profile = reportProfile ?? (await ensureAccountProfile());
-    const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
-    const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
-    const ownerName = buildOwnerName(profile);
-    const ownerEmail = profile?.marketplaceEmail?.trim() || '—';
-    const ownerPhone = profile?.phone?.trim() || '—';
+    const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(', ');
+    const profileAddress = sourceRegisterIds.size > 1 ? '' : sourceRegister ? sourceRegister.addressLine1 : [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(', ');
+    const ownerName = sourceRegisterIds.size > 1 ? 'Multiple businesses' : sourceRegister?.businessName || buildOwnerName(profile);
+    const ownerEmail = sourceRegisterIds.size > 1 ? '—' : (sourceRegister ? sourceRegister.email : profile?.marketplaceEmail)?.trim() || '—';
+    const ownerPhone = sourceRegisterIds.size > 1 ? '—' : (sourceRegister ? sourceRegister.phone : profile?.phone)?.trim() || '—';
     const [reportLogoUrl, reportPhotoUrlByAssetId] = await Promise.all([
       prepareReportLogo(accountProfile?.logoUrl || profile?.logoUrl, activeRegister),
       buildPrintableAssetThumbnailMap(orderedReportAssets),
@@ -14971,9 +14973,10 @@ export default function AssetRegisterClient({
       emptyStateMessage: reportOption.emptyLabel,
       ownerName,
       ownerMeta: buildOwnerMeta(profile),
-      intro: reportOption.intro,
+      intro: `${reportName} · ${reportAssets.length} selected assets`,
       registerValue: money(reportValue),
-      registerValueNote: `VAT excluded · Realistic selling price: ${sellingAssessments.length ? money(sellingTotal) : 'N/A'} · ${sellingAssessments.length} of ${eligibleSellingAssets.length} counted assets assessed`,
+      realisticSellingPrice: sellingAssessments.length ? money(sellingTotal) : 'N/A',
+      sellingAssessmentNote: `${sellingAssessments.length} of ${eligibleSellingAssets.length} counted assets assessed`,
       ownerRows: [
         { label: 'Name', value: ownerName },
         { label: 'Business email', value: ownerEmail },
@@ -14984,15 +14987,11 @@ export default function AssetRegisterClient({
         {
           label: 'Assets',
           value: String(reportAssets.length),
-          note: isCustomAssetSelection ? 'Selected register items.' : reportKind === 'full' ? 'Saved register items.' : reportOption.description,
+
         },
-        { label: 'Value ex VAT', value: money(reportValue), note: 'Filtered report total excluding VAT.' },
-        { label: 'Value incl VAT', value: money(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
-        { label: 'Replacement value', value: money(reportReplacementValue), note: `${reportReplacementPricedCount} assets · ${money(reportReplacementValueInclVat)} incl. VAT.` },
-        { label: 'Aim4price values', value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
-        { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredValue)} insured value excl. VAT · ${money(reportInsuredValueInclVat)} incl. VAT.` },
-        { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
-        { label: 'Licensed assets', value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
+        { label: 'Replacement value', value: money(reportReplacementValue), note: `${money(reportReplacementValueInclVat)} incl. VAT` },
+        { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredValue)} insured value excl. VAT` },
+        { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} asset value excl. VAT` },
       ],
       notes: reportAssets.flatMap((asset) => buildAssetPartnerNoteRows(asset, true)),
       rows: orderedReportAssets.map((asset) => {
