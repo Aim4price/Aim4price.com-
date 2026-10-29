@@ -415,15 +415,24 @@
 .previewPhotoEmpty small { color: var(--app-muted, #748881); font-size: .7rem; }
 
 .previewPhotoTray { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
-.previewPhotoThumb { position: relative; overflow: hidden; min-width: 0; aspect-ratio: 4 / 3; border: 2px solid var(--app-line, #fff); border-radius: 11px; background: var(--app-surface-soft, #e6efeb); box-shadow: 0 5px 13px var(--app-shadow-colour, rgba(18,45,37,.09)); cursor: grab; transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease; }
+.previewPhotoThumb { position: relative; overflow: visible; min-width: 0; border: 2px solid var(--app-line, #fff); border-radius: 11px; background: var(--app-surface-soft, #e6efeb); box-shadow: 0 5px 13px var(--app-shadow-colour, rgba(18,45,37,.09)); cursor: grab; transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease; }
 .previewPhotoThumb:active { cursor: grabbing; }
 .previewPhotoThumb:first-child { border-color: var(--app-line, #1f8a66); }
-.previewPhotoThumb img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.previewPhotoThumb img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 9px 9px 0 0; pointer-events: none; }
 .previewPhotoThumb > span { position: absolute; top: 5px; left: 5px; border-radius: 7px; padding: 4px 6px; color: #fff; background: rgba(13,51,41,.86); font: 800 .52rem var(--font-heading, "Montserrat", sans-serif); }
 .previewPhotoDragging { transform: scale(.96); opacity: .48; }
-.previewPhotoActions { position: absolute; right: 5px; bottom: 5px; display: flex; gap: 3px; }
-.previewPhotoActions button { display: grid; place-items: center; width: 25px; height: 25px; border: 0; border-radius: 7px; color: #fff; background: rgba(8,35,28,.84); font-size: .67rem; font-weight: 900; cursor: pointer; }
-.previewPhotoActions button:disabled { opacity: .35; cursor: default; }
+.previewPhotoActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 7px; background: var(--app-surface, #fff); border-top: 1px solid var(--app-line, #d3e3db); border-radius: 0 0 9px 9px; cursor: default; }
+.previewPhotoActions button { position: relative; display: grid; place-items: center; min-width: 0; min-height: 40px; padding: 0; border: 1px solid var(--app-line, #c6dbcf); border-radius: 9px; color: var(--app-text, #175440); background: var(--app-surface-soft, #edf6f0); cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.previewPhotoActions button svg { width: 20px; height: 20px; pointer-events: none; }
+.previewPhotoActions button:not(:disabled):hover { border-color: var(--app-accent, #237454); box-shadow: 0 0 0 2px var(--app-accent-soft, #dcefe3); }
+.previewPhotoActions button:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 2px; }
+.previewPhotoActions button.previewPhotoRemove { color: var(--app-danger, #a32b23); background: var(--app-danger-soft, #fff0ee); }
+.previewPhotoActions button:disabled { opacity: .4; cursor: not-allowed; }
+.previewPhotoActions button::after { content: attr(data-photo-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 4; padding: 7px 9px; border-radius: 8px; background: #173e30; color: #fff; font: 600 .72rem/1.3 var(--font-heading, "Montserrat", sans-serif); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; }
+.previewPhotoActions button:first-child::after { left: 0; transform: none; }
+.previewPhotoActions button:last-child::after { left: auto; right: 0; transform: none; }
+.previewPhotoActions button:hover::after, .previewPhotoActions button:focus-visible::after { opacity: 1; visibility: visible; }
+
 
 .adCanvasPreview {
   display: block;
