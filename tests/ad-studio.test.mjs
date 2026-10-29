@@ -979,7 +979,8 @@ test('rating visibility follows the advert through Marketplace, showroom and JPE
   assert.match(route, /showDealRating: body\.showDealRating !== false/);
   assert.match(marketplaceDb, /marketplace_show_deal_rating/);
   assert.match(marketplaceUi, /listing\.showDealRating === false/);
-  assert.match(renderer, /if \(content\.showDealRating === false\) return/);
+  assert.match(renderer, /function hasValueStrip[\s\S]*?return content\.showDealRating !== false && sellingPriceComparison/);
+  assert.match(renderer, /if \(!hasValueStrip\(content\) \|\| !comparison\) return/);
 });
 
 test('Marketplace only applies Brand Kits to dealer listings', async () => {
