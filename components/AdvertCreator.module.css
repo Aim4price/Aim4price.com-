@@ -3,8 +3,8 @@
 .back { margin-bottom: 18px; }
 .steps, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .steps { margin-bottom: 20px; }
-.steps button, .creator button, .creator a { font: inherit; }
-.steps button, .secondary, .primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; min-height: 46px; border-radius: 13px; font-weight: 700 !important; text-decoration: none; cursor: pointer; }
+.steps button, .creator a { font-family: inherit; }
+.steps button, .secondary, .primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; min-height: 46px; border-radius: 13px; font-weight: 700; text-decoration: none; cursor: pointer; }
 .steps button, .secondary { border: 1px solid var(--app-line, #c9dcd3); background: var(--app-surface, #fff); color: var(--app-text, #184c3a); }
 .steps button[aria-current='step'] { background: var(--app-accent-soft, #e5f2eb); border-color: var(--app-accent, #337b5c); }
 .primary { border: 1px solid var(--app-accent, #165f49); background: var(--app-accent, #165f49); color: #fff; }
@@ -15,8 +15,8 @@
 .help { color: var(--app-muted, #657c71); line-height: 1.5; margin: 6px 0 18px; }
 .fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
 .fields label, .field { display: grid; gap: 8px; font-weight: 650; min-width: 0; }
-.creator input:not([type='checkbox']), .creator select, .creator textarea { box-sizing: border-box; width: 100%; min-height: 46px; padding: 12px 14px; border: 1px solid var(--app-line, #c9dcd3); border-radius: 12px; background: var(--app-surface-soft, #eff7f3); color: var(--app-text, #183f31); font: inherit; }
-.creator textarea { min-height: 90px; resize: vertical; }
+.field > input:not([type='checkbox']), .creator select { box-sizing: border-box; width: 100%; min-height: 46px; padding: 12px 14px; border: 1px solid var(--app-line, #c9dcd3); border-radius: 12px; background: var(--app-surface-soft, #eff7f3); color: var(--app-text, #183f31); font: inherit; }
+
 .full { grid-column: 1 / -1; }
 .estimate { margin-top: 20px; padding: 18px; border-radius: 16px; background: var(--app-surface-soft, #eff7f3); border: 1px solid var(--app-line, #d1e4da); }
 .estimate summary { font-weight: 750; cursor: pointer; }
@@ -51,7 +51,7 @@
 }
 
 /* The creator uses normal page flow, without the Marketplace modal scroll body. */
-.sellerPanel { position: static !important; }
+.creator .sellerPanel { position: static !important; }
 
 .optionsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
 .optionCard { min-width: 0; padding: 22px; border: 1px solid var(--app-line, #d1e4da); border-radius: 20px; background: var(--app-surface-soft, #f4f9f6); }
@@ -103,10 +103,10 @@
 .studioStepper button:disabled { opacity: 1; color: var(--app-muted, #71857e); cursor: default; }
 .studioStepper button:disabled:hover { border-color: transparent; box-shadow: none; }
 .creator > .card { border-top: 0; border-radius: 0 0 24px 24px; padding: 24px 26px; }
-.card h2 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.8rem); font-weight: 850; letter-spacing: -.032em; line-height: 1.12; }
-.card > .help { font-size: .9rem; margin: 9px 0 24px; line-height: 1.6; }
+.card h2 { font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif; font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); font-weight: 800; letter-spacing: -.04em; line-height: 1.08; }
+.card > .help { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; margin: 7px 0 24px; line-height: 1.5; }
 .optionCard { background: var(--app-surface, #fff); }
-.creator .studioSelect select { appearance: none; min-height: 54px; padding: 12px 48px 12px 50px; background: var(--app-surface, #fff); font-size: .84rem; font-weight: 750; }
+.creator .studioSelect select { appearance: none; min-height: 54px; padding: 12px 48px 12px 50px; background: var(--app-surface, #fff); font-family: inherit; font-size: 1rem; font-weight: 400; }
 .formFooter { background: transparent; border: 0; border-top: 1px solid var(--app-line, #d9e5df); border-radius: 0; padding: 20px 0 0; }
 .formFooter .primary, .formFooter .secondary { min-height: 48px; }
 .creator .actions svg, .creator .primary > svg, .creator .secondary > svg { width: 20px; height: 20px; flex: none; }
@@ -209,3 +209,25 @@
 @media (max-width: 700px) {
   :global(:where(html:not(:has([data-website-canvas])))) .sourceGridTwo { grid-template-columns: 1fr; }
 }
+
+/* Match the owner Marketplace form; shared controls own their input styles. */
+.creator {
+  font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 1rem;
+}
+.fields { gap: .95rem; align-items: start; }
+.fields > label { color: var(--app-info, #607486); font-size: .77rem; font-weight: 660; line-height: 1.35; }
+.optionHeading { margin-bottom: 0; }
+.optionsGrid { gap: 1.25rem; }
+.creator .studioSelect select {
+  border-color: var(--app-info-line, #ccdbe6);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f7fafb));
+  color: var(--app-text, #17362c);
+  border-radius: .92rem;
+}
+.creator .studioSelect select:focus-visible {
+  outline: 3px solid var(--app-accent, #23825b);
+  outline-offset: 3px;
+}
+.creator .formFooter { margin-top: .25rem; }
+.creator .formFooter button { min-width: 9rem; }
