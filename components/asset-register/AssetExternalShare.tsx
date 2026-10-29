@@ -229,7 +229,7 @@ export default function AssetExternalShare({
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
   const [showRecovery, setShowRecovery] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState('');
+  const [downloadFiles, setDownloadFiles] = useState<{file: File; url: string}[]>([]);
   const cardCache = useRef(new Map<string, Promise<File[]>>());
   const [preparation, setPreparation] = useState<AttachmentPreparation>({
     status: 'idle',
@@ -351,11 +351,12 @@ export default function AssetExternalShare({
   }, [attachmentFileCache, preparationAttempt, selectedSourceSignature]);
 
   useEffect(() => {
-    const file = usePdf && preparation.status === 'ready' ? preparation.files[0] : null;
-    const url = file ? URL.createObjectURL(file) : '';
-    setPdfUrl(url);
-    return () => { if(url) URL.revokeObjectURL(url); };
-  }, [usePdf, preparation]);
+    const downloads = preparation.status === 'ready'
+      ? preparation.files.map(file => ({file, url: URL.createObjectURL(file)}))
+      : [];
+    setDownloadFiles(downloads);
+    return () => { downloads.forEach(({url}) => URL.revokeObjectURL(url)); };
+  }, [preparation]);
 
   function togglePhotos() {
     setIncludePhotos((current) => !current);
@@ -408,7 +409,7 @@ export default function AssetExternalShare({
 
     if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       setShowRecovery(true);
-      setShareStatus(target === 'whatsapp' ? 'This browser cannot share attachments directly.' : 'This browser cannot share attachments. Try another browser or device.');
+      setShareStatus(target === 'whatsapp' ? 'This browser cannot share attachments directly.' : 'Direct file sharing is unavailable. Download the attachments below and attach them in your email app.');
       return;
     }
 
@@ -426,7 +427,7 @@ export default function AssetExternalShare({
     }
     if (!canSharePayload) {
       setShowRecovery(true);
-      setShareStatus(target === 'whatsapp' ? 'This device cannot share these attachments directly.' : 'This device cannot share these attachments and message. Try another browser or device.');
+      setShareStatus(target === 'whatsapp' ? 'This device cannot share these attachments directly.' : 'This device cannot share these attachments and message directly. Download the files below instead.');
       return;
     }
 
@@ -440,7 +441,7 @@ export default function AssetExternalShare({
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
       } else {
         setShowRecovery(true);
-        setShareStatus(target === 'whatsapp' ? 'Attachment sharing was blocked. Your selection is still here.' : 'Attachment sharing was blocked. Your message and attachments are still here. Try again or use another browser.');
+        setShareStatus(target === 'whatsapp' ? 'Attachment sharing was blocked. Your selection is still here.' : 'Attachment sharing was blocked. Download the files below and attach them in your email app.');
       }
     } finally {
       setSendingTarget(null);
@@ -544,9 +545,11 @@ export default function AssetExternalShare({
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
         {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
-        {showRecovery && accepted && pendingShare.key === consentKey && <div className={styles.recovery}>
-          {usePdf && pdfUrl ? <><p>Direct sharing is unavailable on this device. Download the single PDF and attach it in {pendingShare.target === 'email' ? 'your email app' : 'WhatsApp'}.</p><a className={styles.messagePartLink} href={pdfUrl} download={preparation.files[0]?.name}>Download PDF</a></>
-            : <p>Try again or use a browser and app that support file sharing. Your photos have not been replaced with text messages.</p>}
+        {accepted && pendingShare.key === consentKey && !isPreparing && preparation.status === 'ready' && downloadFiles.length > 0 && <div className={styles.recovery}>
+          <p>{showRecovery ? 'Direct sharing is unavailable. ' : 'Prefer to attach files yourself? '}Download {downloadFiles.length === 1 ? 'the file' : 'each file'} below, then open {pendingShare.target === 'email' ? 'your email app' : 'WhatsApp'} and attach {downloadFiles.length === 1 ? 'it' : 'them'} manually.</p>
+          {downloadFiles.map(({file, url}, index) => <a key={url} className={styles.messagePartLink} href={url} download={file.name}>Download {usePdf ? 'PDF' : `${index + 1}: ${file.name}`}</a>)}
+          <a className={styles.messagePartLink} href={pendingShare.target === 'email' ? emailHref : whatsappHref} target={pendingShare.target === 'whatsapp' ? '_blank' : undefined} rel="noopener noreferrer">Open {pendingShare.target === 'email' ? 'email draft' : 'WhatsApp'} · attach downloaded files</a>
+          <p>The message is included. Downloaded files are not attached automatically.</p>
         </div>}
         <div className={disclosureStyles.actions}>
           <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery ? 'Retry sharing with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
