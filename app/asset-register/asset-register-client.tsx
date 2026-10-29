@@ -7,7 +7,7 @@ import AssetPickerDetail from '../../components/AssetPickerDetail';
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../lib/automatic-valuation-status';
 import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
 import AssetMarketDetail from '../../components/asset-register/AssetMarketDetail';
-import { realisticSellingAssessment, sellingPriceComparison } from '../../lib/selling-price';
+import { realisticSellingAssessment, reportSellingAssessment, sellingPriceComparison } from '../../lib/selling-price';
 import { assetSaleabilityInput, saleabilityBasis, type SavedSaleability } from '../../lib/asset-saleability';
 import disposalStyles from '../../components/MarketplaceOutcomeModal.module.css';
 import disposalLayout from '../../components/asset-register/AssetDisposal.module.css';
@@ -13878,8 +13878,8 @@ export default function AssetRegisterClient({
           { label: 'Last Updated', value: assetStatusDateLabel(asset) },
         ];
 
-    const marketAssessment = realisticSellingAssessment(asset,savedSaleability[asset.id]);
-    const marketPrice = marketAssessment && !marketAssessment.needsReview ? money(marketAssessment.priceExVat) : 'N/A';
+    const marketAssessment = reportSellingAssessment(asset,savedSaleability[asset.id]);
+    const marketPrice = marketAssessment ? money(marketAssessment.priceExVat) : 'N/A';
     assetRows.push({label:'Realistic selling price',value:`${marketPrice} excl. VAT${marketAssessment?.needsReview ? ' · Update needed' : ''}`});
     assetRows.push({label:asset.selectedMethod === 'manual' ? 'Manual value' : 'Ideal selling price',value:`${money(asset.value)} excl. VAT`});
 
@@ -13889,9 +13889,9 @@ export default function AssetRegisterClient({
       assetBadge: familyLabel,
       heroTitle: asset.title,
       heroMeta: buildAssetMeta(asset),
-      valueLabel: 'Realistic selling price',
-      value: marketPrice,
-      valueNote: marketAssessment?.needsReview ? 'Update needed · VAT excluded' : 'VAT excluded',
+      valueLabel: asset.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value',
+      value: money(asset.value),
+      valueNote: `VAT excluded · Realistic selling price: ${marketPrice}${marketAssessment?.needsReview ? ' · Update needed' : ''}`,
       statusLabel: assetStatusDateLabel(asset),
       issuerName: 'Aim4price',
       issuerAddress: 'Saved asset register data',
@@ -14959,21 +14959,21 @@ export default function AssetRegisterClient({
     ]);
 
     const eligibleSellingAssets = orderedReportAssets.filter(asset=>assetCountsTowardRegisterTotal(asset.id,reportAssetGroupMemberships));
-    const sellingAssessments = eligibleSellingAssets.map(asset=>realisticSellingAssessment(asset,savedSaleability[asset.id])).filter(item=>item && !item.needsReview);
+    const sellingAssessments = eligibleSellingAssets.map(asset=>reportSellingAssessment(asset,savedSaleability[asset.id])).filter(item=>item && !item.needsReview);
     const sellingTotal = sellingAssessments.reduce((sum,item)=>sum+(item?.priceExVat ?? 0),0);
     const reportPayload: AssetRegisterSummaryPayload = {
       logoUrl: reportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportName} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
-      valueLabel: 'Realistic selling price',
+      valueLabel: 'Ideal value',
       assetSectionTitle: reportOption.sectionTitle,
       emptyStateMessage: reportOption.emptyLabel,
       ownerName,
       ownerMeta: buildOwnerMeta(profile),
       intro: reportOption.intro,
-      registerValue: sellingAssessments.length ? money(sellingTotal) : 'N/A',
-      registerValueNote: `VAT excluded · ${sellingAssessments.length} of ${eligibleSellingAssets.length} counted assets assessed · Register value ${money(reportValue)} excl. VAT`,
+      registerValue: money(reportValue),
+      registerValueNote: `VAT excluded · Realistic selling price: ${sellingAssessments.length ? money(sellingTotal) : 'N/A'} · ${sellingAssessments.length} of ${eligibleSellingAssets.length} counted assets assessed`,
       ownerRows: [
         { label: 'Name', value: ownerName },
         { label: 'Business email', value: ownerEmail },
@@ -15014,7 +15014,7 @@ export default function AssetRegisterClient({
           method: methodLabel(asset.selectedMethod),
           detail: [groupDetail, buildExportDetail(asset)].filter(Boolean).join(' · '),
           value: money(asset.value),
-          realisticSellingPrice: (()=>{const assessment=realisticSellingAssessment(asset,savedSaleability[asset.id]);return assessment && !assessment.needsReview ? money(assessment.priceExVat) : 'N/A';})(),
+          realisticSellingPrice: (()=>{const assessment=reportSellingAssessment(asset,savedSaleability[asset.id]);return assessment ? `${money(assessment.priceExVat)}${assessment.needsReview ? ' · Update needed' : ''}` : 'N/A';})(),
           replacementPrice: readAssetReplacementPriceExVat(asset) !== null ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set',
           status: assetStatusDateLabel(asset),
           brand: isPropertyAsset ? '—' : reportBrandName,

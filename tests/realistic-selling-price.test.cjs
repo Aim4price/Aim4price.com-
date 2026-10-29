@@ -28,3 +28,18 @@ test('batch loader scopes reads by owner and asset and does not expose private a
  assert.deepEqual(params,[['owner'],['a']]);assert.equal(result.realisticSellingAssessment.priceExVat,80000);
  assert.equal(result.realisticSellingAssessment.answers,undefined);
 });
+test('reports retain saved card prices while marketplace still excludes unqualified benchmarks',()=>{
+ const {reportSellingAssessment}=load('lib/selling-price.ts');
+ for(const route of [undefined,'dealer','auction','direct']) {
+  const assessment={...saved,answers:{sellingRoute:route}};
+  assert.equal(reportSellingAssessment(asset,assessment).priceExVat,80000);
+  if(route!=='direct')assert.equal(realisticSellingAssessment(asset,assessment),null);
+ }
+ assert.equal(reportSellingAssessment({...asset,hours:900},saved).needsReview,true);
+});
+test('report batch loads older assessments without relaxing marketplace rules',async()=>{
+ const legacy={...saved,answers:{}};
+ const {withRealisticSellingAssessments}=load('lib/realistic-selling-assessments.ts',{'./db':{getDb:()=>({query:async()=>({rows:[{owner_id:'owner',asset_id:'a',assessment:legacy}]})})}});
+ assert.equal((await withRealisticSellingAssessments([asset],'report'))[0].realisticSellingAssessment.priceExVat,80000);
+ assert.equal((await withRealisticSellingAssessments([asset]))[0].realisticSellingAssessment,null);
+});

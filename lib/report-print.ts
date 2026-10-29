@@ -2631,9 +2631,9 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
               </div>
 
               <div class="fullRegisterAssetValue">
-                <span>Realistic selling price</span>
-                <strong>${escapeHtml(row.realisticSellingPrice || 'N/A')}</strong>
-                <b class="fullRegisterReplacementValue">Register value: ${escapeHtml(value)}</b>
+                <span>${method === 'Manual' ? 'Manual value' : 'Ideal value'}</span>
+                <strong>${escapeHtml(value)}</strong>
+                <b class="fullRegisterReplacementValue">Realistic selling price: ${escapeHtml(row.realisticSellingPrice || 'N/A')}</b>
                 <small>VAT excluded</small>
                 ${replacementPrice !== '-' ? `<b class="fullRegisterReplacementValue">Replacement: ${escapeHtml(replacementPrice)}</b>` : ''}
                 <em>${escapeHtml(method)}</em>

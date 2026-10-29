@@ -8,6 +8,13 @@ export function realisticSellingAssessment(asset: SaleabilityAsset, saved: Saved
   return { priceExVat: saved.priceExVat, assessedAt: saved.assessedAt, needsReview: saved.basis !== saleabilityBasis(asset) };
 }
 
+/** Reports retain the saved asset-card value, including older assessments without a selling route. */
+export function reportSellingAssessment(asset: SaleabilityAsset, saved: SavedSaleability | null | undefined) {
+  if (!saved || !Number.isFinite(saved.priceExVat) || saved.priceExVat <= 0
+    || !Number.isFinite(Date.parse(saved.assessedAt))) return null;
+  return { priceExVat: saved.priceExVat, assessedAt: saved.assessedAt, needsReview: saved.basis !== saleabilityBasis(asset) };
+}
+
 export type SellingBenchmark = { realisticSellingPriceExVat?: number | null; sellingPriceNeedsReview?: boolean; aim4priceValueExVat?: number | null };
 export function sellingPriceComparison(input: SellingBenchmark & { askingPriceExVat: number }) {
   if (input.sellingPriceNeedsReview) return null;

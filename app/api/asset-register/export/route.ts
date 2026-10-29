@@ -1584,7 +1584,8 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
     return [
       { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
       { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
-      {text: `Realistic selling price: ${realisticPrice(item) === null ? 'N/A' : formatPdfMoney(realisticPrice(item))} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
+      {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
+      {text: `Realistic selling price: ${item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
       ...groupLines,
       { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
       { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -1594,7 +1595,8 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
-    {text: `Realistic selling price: ${realisticPrice(item) === null ? 'N/A' : formatPdfMoney(realisticPrice(item))} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
+    {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
+      {text: `Realistic selling price: ${item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
     ...groupLines,
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
     { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -2423,11 +2425,11 @@ async function renderRegisterSummaryReportHtml(
           </div>
 
           <aside class="assetReportValuationCard">
-            <h2>Realistic selling price</h2>
-            <strong class="assetReportValue">${escapeHtml(summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A')}</strong>
+            <h2>Ideal value</h2>
+            <strong class="assetReportValue">${escapeHtml(registerValueExVat)}</strong>
             <span class="assetReportVat">VAT excluded</span>
             <div class="assetReportValueMeta">
-              <div><span>Incl. VAT</span><strong>${escapeHtml(summary.realistic.count ? formatPdfMoney(moneyInclVatTotal(summary.realistic.value)) : 'N/A')}</strong></div>
+              <div><span>Realistic selling price (excl. VAT)</span><strong>${escapeHtml(summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A')}</strong></div>
               <div><span>Assessed (counted assets)</span><strong>${summary.realistic.count} of ${summary.realistic.eligible}</strong></div>
               <div><span>Total assets</span><strong>${escapeHtml(String(summary.totalAssets))}</strong></div>
             </div>
@@ -3309,7 +3311,7 @@ export async function GET(request: NextRequest) {
             }))
             .filter((bundle) => bundle.items.length > 0)
         : scopedRawBundles;
-      const assessedAssets = await withRealisticSellingAssessments(selectedRawBundles.flatMap((bundle) => bundle.items));
+      const assessedAssets = await withRealisticSellingAssessments(selectedRawBundles.flatMap((bundle) => bundle.items), 'report');
       const assessmentById = new Map(assessedAssets.map(item=>[item.id,item]));
       selectedRawBundles.forEach(bundle=>{bundle.items=bundle.items.map(item=>assessmentById.get(item.id) ?? item);});
       const combinedAssets = selectedRawBundles.flatMap((bundle) => bundle.items);
@@ -3451,7 +3453,7 @@ export async function GET(request: NextRequest) {
     const selectedRawItems = assetIdSelection.requested
       ? scopedRawItems.filter((item) => selectedAssetIds.has(item.id))
       : scopedRawItems;
-    const items = decorateAssetsWithGroups(await withRealisticSellingAssessments(selectedRawItems), projectAssetGroupsToAssets(groups, selectedRawItems));
+    const items = decorateAssetsWithGroups(await withRealisticSellingAssessments(selectedRawItems, 'report'), projectAssetGroupsToAssets(groups, selectedRawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
 

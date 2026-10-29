@@ -1,9 +1,9 @@
 import { getDb } from './db';
 import type { AssetRegisterItem } from './asset-register-db';
-import { realisticSellingAssessment } from './selling-price';
+import { realisticSellingAssessment, reportSellingAssessment } from './selling-price';
 
 /** Batch load only assessments belonging to the already authorised asset/owner pairs. */
-export async function withRealisticSellingAssessments(assets: AssetRegisterItem[]): Promise<AssetRegisterItem[]> {
+export async function withRealisticSellingAssessments(assets: AssetRegisterItem[], purpose: 'marketplace' | 'report' = 'marketplace'): Promise<AssetRegisterItem[]> {
   if (!assets.length) return assets;
   let rows;
   try {
@@ -17,5 +17,5 @@ export async function withRealisticSellingAssessments(assets: AssetRegisterItem[
     throw error;
   }
   const saved = new Map(rows.map(row=>[`${row.owner_id}:${row.asset_id}`,row.assessment]));
-  return assets.map(asset=>({...asset,realisticSellingAssessment:realisticSellingAssessment(asset,saved.get(`${asset.userId}:${asset.id}`))}));
+  return assets.map(asset=>({...asset,realisticSellingAssessment:(purpose === 'report' ? reportSellingAssessment : realisticSellingAssessment)(asset,saved.get(`${asset.userId}:${asset.id}`))}));
 }
