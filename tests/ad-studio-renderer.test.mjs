@@ -462,3 +462,14 @@ test('optional value strips show only rating and percentage below photos and col
     assert.ok(vat.calls.fillText.some(call=>call.value==='Good value · 10% below realistic selling price'),'VAT display does not affect comparison');
   });
 });
+
+
+test('canvas export uses same-origin image bytes without changing unrelated image sources', async () => {
+  const { marketplaceAdImageSource } = await loadRenderer();
+  const origin = 'https://www.aim4price.com';
+  assert.equal(marketplaceAdImageSource('/api/asset-register/uploads/bkt-photo', origin), origin + '/api/asset-register/uploads/bkt-photo?share=1');
+  assert.equal(marketplaceAdImageSource(origin + '/api/asset-register/uploads/bkt-photo?size=large&share=0', origin), origin + '/api/asset-register/uploads/bkt-photo?size=large&share=1');
+  for (const source of ['https://other.test/api/asset-register/uploads/photo', '/brand/logo.png', 'blob:https://www.aim4price.com/photo', 'data:image/png;base64,abc']) {
+    assert.equal(marketplaceAdImageSource(source, origin), source);
+  }
+});

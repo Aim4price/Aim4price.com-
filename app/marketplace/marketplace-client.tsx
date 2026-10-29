@@ -2782,8 +2782,11 @@ export default function MarketplaceClient({
       const { blob } = await createSharedMarketplaceAdJpeg(shareListing);
       downloadMarketplaceAd(blob, marketplaceAdFilename(listingDisplayTitle(shareListing)));
       setShareFeedback('Ad downloaded.');
-    } catch {
-      setShareFeedback('Ad could not be created. Please try again.');
+    } catch (error) {
+      console.error('Marketplace advert export failed', error);
+      setShareFeedback(error instanceof Error && error.message.includes('photo could not be loaded')
+        ? 'A listing photo could not be loaded. Please refresh the page and try again.'
+        : 'Ad could not be created. Please refresh the page and try again.');
     } finally {
       setIsCreatingJpegAd(false);
     }
