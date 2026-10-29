@@ -1,3 +1,4 @@
+import loadTs from './helpers/load-ts.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -29,6 +30,7 @@ async function loadRenderer() {
   }).outputText;
   const module = { exports: {} };
   const dependencies = {
+    './selling-price': loadTs('lib/selling-price.ts'),
     './ad-studio': {
       AD_TEMPLATE_OPTIONS: TEMPLATE_OPTIONS,
       DEFAULT_AD_BRAND_COLORS: DEFAULT_COLORS,
@@ -433,5 +435,30 @@ test('JPEG rendering refuses missing equipment photos instead of silently substi
       const content = { ...contentFor('showcase'), design };
       await assert.rejects(renderMarketplaceAdCanvas(createTraceCanvas().canvas, content, { requireImages: true }), /photo could not be loaded/);
     }
+  });
+});
+
+test('optional value strips show only rating and percentage below photos and collapse when off', async () => {
+  const {renderMarketplaceAdCanvas}=await loadRenderer();
+  await withFakeImages(IMAGE_DIMENSIONS,async()=>{
+    for (const template of TEMPLATE_OPTIONS) {
+      const content={...contentFor(template.id),askingPriceExVat:90000,aim4priceValueExVat:120000,realisticSellingPriceExVat:100000,showDealRating:true};
+      const trace=createTraceCanvas();
+      await renderMarketplaceAdCanvas(trace.canvas,content,{includeImages:true,useBestPhotoFit:false});
+      const strip=trace.calls.fillText.find(call=>call.value==='Good value · 10% below realistic selling price');
+      assert.ok(strip,template.id+' shows rating and difference');
+      assert.ok(strip.y>=790,template.id+' places strip below photos');
+      const hidden=createTraceCanvas();
+      await renderMarketplaceAdCanvas(hidden.canvas,{...content,showDealRating:false},{includeImages:true,useBestPhotoFit:false});
+      assert.equal(hidden.canvas.height,900);
+      assert.equal(hidden.calls.fillText.some(call=>call.value.includes('realistic selling price')),false);
+      const ideal=createTraceCanvas();
+      await renderMarketplaceAdCanvas(ideal.canvas,{...content,realisticSellingPriceExVat:null},{includeImages:false,useBestPhotoFit:false});
+      assert.ok(ideal.calls.fillText.some(call=>call.value==='25% below ideal selling price'));
+      assert.equal(ideal.calls.fillText.some(call=>call.value.includes('Good value')),false);
+    }
+    const vat=createTraceCanvas();
+    await renderMarketplaceAdCanvas(vat.canvas,{...contentFor('showcase'),askingPriceExVat:103500,ratingAskingPriceExVat:90000,realisticSellingPriceExVat:100000,showDealRating:true},{includeImages:false,useBestPhotoFit:false});
+    assert.ok(vat.calls.fillText.some(call=>call.value==='Good value · 10% below realistic selling price'),'VAT display does not affect comparison');
   });
 });

@@ -36,6 +36,7 @@ type Asset = {
   lifeRemainingPercent?: number | null;
   financeNote: string; isInsured: boolean; insuredValueExVat: number | null; isLicensed: boolean;
   licenseRegistrationNumber: string; specsJson: Record<string, unknown>; photos: string[]; documents: Document[];
+  marketplaceShowDealRating?: boolean;
   marketplaceStatus: string; marketplacePriceExVat: number | null; marketplaceNotes: string; sellerPhone: string;
   marketplaceSellerName: string; marketplaceSellerCompany: string; marketplaceSellerEmail: string;
   marketplaceProvince: string; marketplaceArea: string; lastScannedAtIso: string | null; lastKnownLat: number | null;
@@ -1904,6 +1905,7 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
 
 function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asset; ownerContext: OwnerContext | null; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
   const [form, setForm] = useState({
+    showDealRating: draft.marketplaceShowDealRating !== false,
     askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes || manualMarketplaceNote(draft.note),
     sellerName: draft.marketplaceSellerName || ownerContext?.contactName || ownerContext?.businessName || 'Aim4price seller', sellerCompany: draft.marketplaceSellerCompany || ownerContext?.businessName || '', sellerPhone: draft.sellerPhone || ownerContext?.phone || '',
     sellerEmail: draft.marketplaceSellerEmail || ownerContext?.email || '', province: draft.marketplaceProvince || ownerContext?.province || '', area: draft.marketplaceArea || ownerContext?.area || '',
@@ -1949,12 +1951,13 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
         </> : <div className={styles.marketplaceNoPhotos}><strong>No photos uploaded</strong><span>Add photos before publishing to show buyers the real asset.</span></div>}
       </section>
 
+      <label className={styles.field}><span><input type="checkbox" checked={form.showDealRating} onChange={event=>setForm(current=>({...current,showDealRating:event.target.checked}))}/> Show value rating</span><small>Uses an existing estimate when available. You can publish without a rating.</small></label>
       <label className={`${styles.field} ${styles.marketplaceDescriptionField}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} placeholder="Add important buyer notes, extras, service history, condition or known issues." /></label>
 
       <section className={styles.marketplaceSellerPanel}>
         <div className={styles.marketplacePanelHeading}><div><span>Seller details</span><small>These details will be shown with the listing.</small></div></div>
         <div className={styles.formGrid}>
-          {Object.entries({ sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
+          {Object.entries({ sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as Exclude<keyof typeof form, 'showDealRating'>]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
         </div>
       </section>
       {formError ? <div className={styles.errorNotice}>{formError}</div> : null}

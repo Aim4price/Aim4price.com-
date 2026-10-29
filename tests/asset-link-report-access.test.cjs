@@ -40,6 +40,7 @@ for(const [file,path,selector] of [
   '../../../../lib/asset-register-db':{getAssetRegisterItemById:async(owner,id)=>{assertOwner(owner);assert.equal(id,A);return item();},listAssetRegisterItems:async(owner,registerId)=>{assertOwner(owner);assert.equal(registerId,'register');return [item(),other];}},
   '../../../../lib/asset-registers':{getAssetRegisterForUser:async(owner,id)=>{assertOwner(owner);assert.equal(id,'register');return {id,name:'Register'};},listAssetRegisters:async owner=>{assertOwner(owner);return [{id:'register',name:'Register'}];}},
   '../../../../lib/asset-groups':{listAssetGroups:async()=>[]},
+  '../../../../lib/realistic-selling-assessments':{withRealisticSellingAssessments:async items=>{assert.deepEqual(items.map(item=>item.id),[A]);return items;}},
   '../../../../lib/asset-tracking':{latestTrackingPositions:async owner=>{assertOwner(owner);return new Map([
    [A,{latitude:-31.123456,longitude:24.654321,captured_at:'2026-10-18T08:00:00Z'}],
    [other.id,{latitude:-29.987654,longitude:25.987654,captured_at:'2026-10-18T08:00:00Z'}],

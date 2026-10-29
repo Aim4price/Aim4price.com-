@@ -194,7 +194,7 @@ async function fixtures() {
   fs.writeFileSync(path.join(out, 'asset-map-gps.xlsx'), gpsWorkbook);
 
   const register = load('app/api/asset-register/export/route.ts', ['renderRegisterSummaryReportHtml', 'renderFullRegisterReportHtml']);
-  const assets = Array.from({ length: 25 }, (_, i) => ({ ...asset, id: 'asset-'+i, publicAssetCode: 'A4P-DEMO-'+i }));
+  const assets = Array.from({ length: 25 }, (_, i) => ({ ...asset, id: 'asset-'+i, publicAssetCode: 'A4P-DEMO-'+i, realisticSellingAssessment: i % 3 === 0 ? null : {priceExVat:180000,assessedAt:'2026-09-14T08:40:00Z',needsReview:i%3===2} }));
   reports.summary = await register.renderRegisterSummaryReportHtml(assets, profile, date, 'https://www.aim4price.com/api/asset-register/export');
   reports['full-register'] = await register.renderFullRegisterReportHtml([{ register: { id: 'register-1', ...profile }, items: assets }], profile, date, 'https://www.aim4price.com/api/asset-register/export');
   const valuation = load('app/api/valuation/report/route.ts', ['normalizePayload', 'renderValuationReportHtml']);

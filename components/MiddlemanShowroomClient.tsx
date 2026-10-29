@@ -1,4 +1,5 @@
 'use client';
+import { sellingPriceComparison } from '../lib/selling-price';
 
 import FacebookAdvertActions from './FacebookAdvertActions';
 import { useDealerAppRoot } from '../lib/use-dealer-app-root';
@@ -50,7 +51,8 @@ function listingRating(listing: MarketplaceListing): { value: MarketplaceDealRat
     high: 'High price',
     none: 'No rating',
   };
-  return { value, label: labels[value] };
+  const comparison=sellingPriceComparison(listing);
+  return comparison ? {value,label:comparison.basis==='realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference} : null;
 }
 
 function listingDetails(listing: MarketplaceListing): string {

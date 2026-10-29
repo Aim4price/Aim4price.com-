@@ -1,3 +1,4 @@
+import { sellingPriceComparison } from './selling-price';
 import {
   listings as prototypeMarketplaceListings,
   tractors,
@@ -23,36 +24,14 @@ export type MarketplaceDealRatingResult = {
 export function calculateMarketplaceDealRating(input: {
   askingPriceExVat: unknown;
   aim4priceValueExVat?: unknown;
+  realisticSellingPriceExVat?: number | null;
+  sellingPriceNeedsReview?: boolean;
   isManualEquipment?: boolean;
 }): MarketplaceDealRatingResult {
   const askingPrice = Number(input.askingPriceExVat);
-  const aim4priceValue = Number(input.aim4priceValueExVat);
-
-  if (
-    input.isManualEquipment ||
-    !Number.isFinite(askingPrice) ||
-    askingPrice <= 0 ||
-    !Number.isFinite(aim4priceValue) ||
-    aim4priceValue <= 0
-  ) {
-    return { rating: 'none', percentDiff: null };
-  }
-
-  const percentDiff = ((askingPrice - aim4priceValue) / aim4priceValue) * 100;
-
-  if (percentDiff <= -10) {
-    return { rating: 'low', percentDiff };
-  }
-
-  if (percentDiff < -5) {
-    return { rating: 'great', percentDiff };
-  }
-
-  if (percentDiff <= 5) {
-    return { rating: 'fair', percentDiff };
-  }
-
-  return { rating: 'high', percentDiff };
+  const comparison = sellingPriceComparison({...input, askingPriceExVat: askingPrice, aim4priceValueExVat: Number(input.aim4priceValueExVat)});
+  if (!comparison || comparison.basis !== 'realistic') return {rating:'none',percentDiff:comparison?.percent ?? null};
+  return {rating:comparison.percent < -5 ? 'great' : comparison.percent <= 5 ? 'fair' : 'high',percentDiff:comparison.percent};
 }
 
 export type MarketplaceListing = {
@@ -91,6 +70,9 @@ export type MarketplaceListing = {
   priceExVat: number;
   price: number;
   aim4priceValueExVat?: number;
+  realisticSellingPriceExVat?: number | null;
+  sellingPriceNeedsReview?: boolean;
+  sellingPriceAssessedAt?: string;
   dealRating?: MarketplaceDealRating;
   dealRatingPercentDiff?: number | null;
   showDealRating?: boolean;
@@ -391,6 +373,8 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     askingPriceExVat,
     aim4priceValueExVat,
     isManualEquipment: normalizedAssetKind === 'manual' || valuationMethod === 'manual',
+    realisticSellingPriceExVat: cleanUnknownNumber(value.realisticSellingPriceExVat, 0),
+    sellingPriceNeedsReview: value.sellingPriceNeedsReview === true,
   });
 
   return {
@@ -442,6 +426,10 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
     dealRating: dealRating.rating,
     dealRatingPercentDiff: dealRating.percentDiff,
+    realisticSellingPriceExVat: cleanUnknownNumber(value.realisticSellingPriceExVat, 0) || undefined,
+    sellingPriceNeedsReview: value.sellingPriceNeedsReview === true,
+    sellingPriceAssessedAt: cleanUnknownText(value.sellingPriceAssessedAt) || undefined,
+    showDealRating: value.showDealRating !== false,
     imageSrc,
     imageUrls: normalizeImageUrls(value.imageUrls, imageSrc),
     assetKind,

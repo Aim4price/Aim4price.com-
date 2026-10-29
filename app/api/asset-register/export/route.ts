@@ -1,3 +1,4 @@
+import { withRealisticSellingAssessments } from '../../../../lib/realistic-selling-assessments';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
@@ -62,6 +63,7 @@ type RegisterSummaryCountValue = {
 type RegisterSummaryAssetTypeKey = 'property' | 'equipment' | 'tools' | 'stock' | 'vehicles';
 
 type RegisterBasicExportSummary = {
+  realistic: {value:number;count:number;eligible:number};
   totalAssets: number;
   currentValueExVat: number;
   replacementValueExVat: number;
@@ -105,7 +107,7 @@ const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const SUMMARY_ROW_COUNT = 10;
+const SUMMARY_ROW_COUNT = 11;
 const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 
@@ -149,6 +151,10 @@ const TABLE_HEADERS = [
   'Group role',
   'Group value handling',
   'Counts in register total',
+  'Realistic selling price ex VAT',
+  'Realistic selling price incl VAT',
+  'Selling estimate status',
+  'Selling estimate date',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -180,6 +186,7 @@ const WORKBOOK_COLUMN_WIDTHS = [
   18,
   34,
   24,
+  26, 26, 26, 24,
 ];
 
 function unauthorized() {
@@ -817,6 +824,20 @@ function getRegisterSummaryAssetType(item: AssetRegisterItem): RegisterSummaryAs
   return 'equipment';
 }
 
+function realisticPrice(item: AssetRegisterItem): number | null {
+  const assessment = item.realisticSellingAssessment;
+  return assessment && !assessment.needsReview ? assessment.priceExVat : null;
+}
+function realisticSummary(items: AssetRegisterItem[]) {
+  const eligible = dedupeAssetItems(items).filter(exportAssetCountsTowardRegisterTotal);
+  const assessed = eligible.filter(item=>realisticPrice(item)!==null);
+  return {value:assessed.reduce((sum,item)=>sum+(realisticPrice(item) ?? 0),0),count:assessed.length,eligible:eligible.length};
+}
+function realisticSummaryLabel(items: AssetRegisterItem[]) {
+  const summary=realisticSummary(items);
+  return `${summary.count ? formatPdfMoney(summary.value) : 'N/A'} excl. VAT · ${summary.count} of ${summary.eligible} assets assessed (counted assets only)`;
+}
+
 function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBasicExportSummary {
   const uniqueItems = dedupeAssetItems(items);
   const assetTypes = createRegisterSummaryAssetTypes();
@@ -893,6 +914,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
   });
 
   return {
+    realistic: realisticSummary(uniqueItems),
     totalAssets: uniqueItems.length,
     currentValueExVat,
     replacementValueExVat,
@@ -918,6 +940,7 @@ function buildRegisterSummaryXlsxSections(summary: RegisterBasicExportSummary): 
     {
       title: 'Register Values',
       rows: [
+        [textCell(`Realistic selling price (${summary.realistic.count} of ${summary.realistic.eligible} counted assets assessed)`, 'metaLabel'), numberCell(summary.realistic.count), summary.realistic.count ? moneyCell(summary.realistic.value) : naCell(), summary.realistic.count ? moneyCell(moneyInclVatTotal(summary.realistic.value)) : naCell()],
         [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets), moneyCell(summary.currentValueExVat), moneyCell(moneyInclVatTotal(summary.currentValueExVat))],
         [textCell('Replacement value', 'metaLabel'), numberCell(summary.replacementPricedAssets), moneyCell(summary.replacementValueExVat), moneyCell(moneyInclVatTotal(summary.replacementValueExVat))],
         [textCell('Insured value', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(summary.insuredAssetsValueExVat), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
@@ -1061,6 +1084,10 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
     group ? textCell(assetGroupValueModeLabel(group)) : naCell(),
     textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
+    moneyCell(realisticPrice(item)),
+    realisticPrice(item) === null ? naCell() : moneyCell(moneyInclVatTotal(realisticPrice(item))),
+    textCell(item.realisticSellingAssessment?.needsReview ? 'Update needed' : realisticPrice(item) === null ? 'Not assessed' : 'Current'),
+    textOrNaCell(item.realisticSellingAssessment?.assessedAt),
   ];
 }
 
@@ -1083,6 +1110,7 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const countsInRegisterTotalRange = buildFormulaRange(COUNTS_IN_REGISTER_TOTAL_COLUMN, items.length);
 
   return [
+    [textCell('Realistic selling price', 'metaLabel'), textCell(realisticSummaryLabel(items))],
     [
       textCell('Total assets', 'metaLabel'),
       items.length > 0 ? formulaCell(`COUNTA(A${DATA_START_ROW}:A${DATA_START_ROW + items.length - 1})`, items.length) : numberCell(0),
@@ -1556,6 +1584,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
     return [
       { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
       { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+      {text: `Realistic selling price: ${realisticPrice(item) === null ? 'N/A' : formatPdfMoney(realisticPrice(item))} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
       ...groupLines,
       { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
       { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -1565,6 +1594,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+    {text: `Realistic selling price: ${realisticPrice(item) === null ? 'N/A' : formatPdfMoney(realisticPrice(item))} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
     ...groupLines,
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
     { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -1717,6 +1747,7 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
     {
       title: 'Register Values',
       rows: [
+        {label:`Realistic selling price (${summary.realistic.count} of ${summary.realistic.eligible} counted assets assessed)`,count:String(summary.realistic.count),valueExVat:summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A',valueInclVat:summary.realistic.count ? formatPdfMoney(moneyInclVatTotal(summary.realistic.value)) : 'N/A'},
         row('Total assets', summary.totalAssets, summary.currentValueExVat),
         row('Replacement value', summary.replacementPricedAssets, summary.replacementValueExVat),
         row('Insured value', summary.assetsInsured, summary.insuredAssetsValueExVat),
@@ -2392,11 +2423,12 @@ async function renderRegisterSummaryReportHtml(
           </div>
 
           <aside class="assetReportValuationCard">
-            <h2>Register Value</h2>
-            <strong class="assetReportValue">${escapeHtml(registerValueExVat)}</strong>
+            <h2>Realistic selling price</h2>
+            <strong class="assetReportValue">${escapeHtml(summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A')}</strong>
             <span class="assetReportVat">VAT excluded</span>
             <div class="assetReportValueMeta">
-              <div><span>Incl. VAT</span><strong>${escapeHtml(registerValueInclVat)}</strong></div>
+              <div><span>Incl. VAT</span><strong>${escapeHtml(summary.realistic.count ? formatPdfMoney(moneyInclVatTotal(summary.realistic.value)) : 'N/A')}</strong></div>
+              <div><span>Assessed (counted assets)</span><strong>${summary.realistic.count} of ${summary.realistic.eligible}</strong></div>
               <div><span>Total assets</span><strong>${escapeHtml(String(summary.totalAssets))}</strong></div>
             </div>
           </aside>
@@ -2715,6 +2747,10 @@ function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[
     group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
     group ? textCell(assetGroupValueModeLabel(group)) : naCell(),
     textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
+    moneyCell(realisticPrice(item)),
+    realisticPrice(item) === null ? naCell() : moneyCell(moneyInclVatTotal(realisticPrice(item))),
+    textCell(item.realisticSellingAssessment?.needsReview ? 'Update needed' : realisticPrice(item) === null ? 'Not assessed' : 'Current'),
+    textOrNaCell(item.realisticSellingAssessment?.assessedAt),
   ];
 }
 
@@ -2769,6 +2805,7 @@ function buildRegisterCollectionSummarySheet(
       [textCell('Owner', 'metaLabel'), textOrNaCell(buildOwnerName(profile), 'metaValue')],
       [textCell('Included registers', 'metaLabel'), numberCell(bundles.length)],
       [textCell('Total assets', 'metaLabel'), numberCell(sourceRows.length)],
+      [textCell('Realistic selling price', 'metaLabel'), textCell(realisticSummaryLabel(allItems))],
       [textCell('Register value ex VAT', 'metaLabel'), moneyCell(registerValue)],
       [textCell('Register value incl VAT', 'metaLabel'), moneyCell(registerValueInclVat)],
       [textCell('Replacement value ex VAT', 'metaLabel'), moneyCell(replacementValue)],
@@ -3272,6 +3309,9 @@ export async function GET(request: NextRequest) {
             }))
             .filter((bundle) => bundle.items.length > 0)
         : scopedRawBundles;
+      const assessedAssets = await withRealisticSellingAssessments(selectedRawBundles.flatMap((bundle) => bundle.items));
+      const assessmentById = new Map(assessedAssets.map(item=>[item.id,item]));
+      selectedRawBundles.forEach(bundle=>{bundle.items=bundle.items.map(item=>assessmentById.get(item.id) ?? item);});
       const combinedAssets = selectedRawBundles.flatMap((bundle) => bundle.items);
       const combinedGroups = scope === 'combined'
         ? projectAssetGroupsToAssets(allGroups, combinedAssets)
@@ -3411,7 +3451,7 @@ export async function GET(request: NextRequest) {
     const selectedRawItems = assetIdSelection.requested
       ? scopedRawItems.filter((item) => selectedAssetIds.has(item.id))
       : scopedRawItems;
-    const items = decorateAssetsWithGroups(selectedRawItems, projectAssetGroupsToAssets(groups, selectedRawItems));
+    const items = decorateAssetsWithGroups(await withRealisticSellingAssessments(selectedRawItems), projectAssetGroupsToAssets(groups, selectedRawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
 

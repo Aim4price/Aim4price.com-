@@ -67,6 +67,9 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     usage: details.usage && details.usageUnit !== 'none' ? `${Number(details.usage).toLocaleString('en-ZA')}${details.usageUnit === 'percent' ? '% worked' : ` ${details.usageUnit}`}` : '',
     condition: details.condition === 'serious' ? 'Needs repairs' : details.condition.charAt(0).toUpperCase() + details.condition.slice(1), familyLabel: 'Equipment',
     askingPriceExVat: pricingVatAmount(Number(details.askingPrice), details.vatLabel === 'vat-included'),
+    ratingAskingPriceExVat: Number(details.askingPrice),
+    realisticSellingPriceExVat: hasEstimate ? estimate?.realisticSellingPriceExVat : null,
+    sellingPriceNeedsReview: hasEstimate ? estimate?.sellingPriceNeedsReview : false,
     dealRating: calculateMarketplaceDealRating({ askingPriceExVat: Number(details.askingPrice), aim4priceValueExVat: hasEstimate ? estimate?.valueExVat : null }).rating,
     aim4priceValueExVat: hasEstimate ? estimate?.valueExVat : null,
     showDealRating: hasEstimate && showRating,
@@ -204,13 +207,13 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         <label>VAT label on advert<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         </div></section>
 <div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section><details className={styles.estimateDisclosure}><summary>Add an Aim4price estimate <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
-        <p id="price-rating-title" className={styles.help}>Link an estimate to add a price rating. Your advert can also be created without one.</p>
+        <p id="price-rating-title" className={styles.help}>Reuse an estimate to show a value comparison. Your advert can also be created without one.</p>
         <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Get an estimate</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
         {estimates.length ? <label className={styles.field}>Use an estimate<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={estimate?.id ?? ''} onChange={e => useEstimate(e.target.value)}><option value="">Without an estimate</option>{estimates.map(item => <option value={item.id} key={item.id}>{item.title} · {item.year || 'Year not specified'} · {new Date(item.createdAt).toLocaleDateString('en-ZA')}</option>)}</select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span><small>Loads the estimated machinery details. Editing those details removes the rating link.</small></label> : null}
       <div className={styles.ratingPanel}>
-      <label className={styles.toggle}><input type="checkbox" role="switch" aria-describedby="price-rating-help" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show price rating</label>
-      <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
+      <label className={styles.toggle}><input type="checkbox" role="switch" aria-describedby="price-rating-help" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show value rating</label>
+      <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating strip is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
       </div></section>
 </details></div></div>
       <div className={styles.formFooter}><span className={styles.help}>Step 1 of 3</span><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>

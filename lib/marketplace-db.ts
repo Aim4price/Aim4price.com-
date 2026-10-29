@@ -1,3 +1,5 @@
+import { getAssetRegisterItemsByRefs } from './asset-register-db';
+import { withRealisticSellingAssessments } from './realistic-selling-assessments';
 import { normalizeMarketplaceTitle } from './marketplace-title';
 import { basicAssetFamily, basicAssetUsage } from './basic-asset-catalogue';
 import { ensureListingAlertSchema } from './listing-alert-schema';
@@ -848,7 +850,10 @@ function buildMarketplaceListing(
           ? 'Motor'
           : 'Agriculture');
   const assetKind = readAssetKind(row);
+  const assessment = row.realistic_selling_assessment as {priceExVat:number;assessedAt:string;needsReview:boolean} | undefined;
   const dealRating = calculateMarketplaceDealRating({
+    realisticSellingPriceExVat: assessment?.priceExVat,
+    sellingPriceNeedsReview: assessment?.needsReview,
     askingPriceExVat,
     aim4priceValueExVat,
     isManualEquipment: isManualAssetRow(row) || assetKind === 'manual',
@@ -905,6 +910,9 @@ function buildMarketplaceListing(
     priceExVat: askingPriceExVat,
     price: askingPriceExVat,
     aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
+    realisticSellingPriceExVat: assessment?.priceExVat,
+    sellingPriceNeedsReview: assessment?.needsReview,
+    sellingPriceAssessedAt: assessment?.assessedAt,
     dealRating: dealRating.rating,
     dealRatingPercentDiff: dealRating.percentDiff,
     showDealRating: pick(row, ['marketplace_show_deal_rating']) !== false,
@@ -998,6 +1006,10 @@ export async function listPublishedMarketplaceAssetListings(options: {
       [options.sellerUserId ?? null],
     ),
   ]);
+
+  const valuedAssets = await withRealisticSellingAssessments(await getAssetRegisterItemsByRefs(assetResult.rows.map(row=>({userId:asText(row.user_id),assetId:asText(row.id)}))));
+  const assessments = new Map(valuedAssets.map(asset=>[asset.id,asset.realisticSellingAssessment]));
+  for (const row of assetResult.rows) row.realistic_selling_assessment = assessments.get(asText(row.id));
 
   return [
     ...assetResult.rows.map((row) => buildMarketplaceListing(row, options)),
@@ -1206,6 +1218,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     equipment_family_valuation_mode: row.equipment_family_valuation_mode,
   };
 
+  const assessed = await withRealisticSellingAssessments(await getAssetRegisterItemsByRefs([{userId:input.userId,assetId:input.assetId}]));
+  listingRow.realistic_selling_assessment = assessed[0]?.realisticSellingAssessment;
   await createMarketplaceListingSnapshot(listingRow);
 
   return buildMarketplaceListing(listingRow, {

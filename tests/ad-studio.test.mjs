@@ -1,3 +1,4 @@
+import loadTs from './helpers/load-ts.cjs';
 import assert from 'node:assert/strict';
 import { readFile } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
@@ -12,6 +13,7 @@ async function loadTypeScriptModule(path, dependencies = {}) {
   }).outputText;
   const module = { exports: {} };
   const loadDependency = (specifier) => {
+    if (specifier === './selling-price') return loadTs('lib/selling-price.ts');
     if (Object.prototype.hasOwnProperty.call(dependencies, specifier)) return dependencies[specifier];
     throw new Error(`Unexpected test dependency: ${specifier}`);
   };
@@ -150,7 +152,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /return 'gallery-three'/);
   assert.match(renderer, /return 'duo-split'/);
   assert.match(renderer, /return 'photo-first'/);
-  for (const label of ['Low price', 'Great price', 'Fair price', 'High price', 'No rating']) {
+  for (const label of ['Low price', 'Good value', 'Fair value', 'Above estimate']) {
     assert.match(renderer, new RegExp(`label: '${label}'`));
     assert.match(marketplace, new RegExp(`label: '${label}'`));
   }
@@ -977,7 +979,8 @@ test('rating visibility follows the advert through Marketplace, showroom and JPE
   assert.match(route, /showDealRating: body\.showDealRating !== false/);
   assert.match(marketplaceDb, /marketplace_show_deal_rating/);
   assert.match(marketplaceUi, /listing\.showDealRating === false/);
-  assert.match(renderer, /if \(content\.showDealRating === false\) return/);
+  assert.match(renderer, /function hasValueStrip[\s\S]*?return content\.showDealRating !== false && sellingPriceComparison/);
+  assert.match(renderer, /if \(!hasValueStrip\(content\) \|\| !comparison\) return/);
 });
 
 test('Marketplace only applies Brand Kits to dealer listings', async () => {

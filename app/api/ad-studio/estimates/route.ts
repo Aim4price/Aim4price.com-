@@ -1,3 +1,5 @@
+import { listAssetRegisterItems } from '../../../../lib/asset-register-db';
+import { withRealisticSellingAssessments } from '../../../../lib/realistic-selling-assessments';
 import { NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
@@ -27,6 +29,8 @@ export async function GET() {
       where user_id = $1 and aim4price_value_ex_vat > 0
       order by created_at desc limit 100
     `, [session.user.id]);
+    const assets = await withRealisticSellingAssessments(await listAssetRegisterItems(session.user.id));
+    const byRun = new Map(assets.filter(asset=>asset.valuationRunId).map(asset=>[String(asset.valuationRunId),asset]));
     const estimates = rows.map((row) => {
       const payload = row.valuation_payload ?? {};
       const input = payload.input ?? {};
@@ -35,7 +39,13 @@ export async function GET() {
       const usage = usageUnit === 'percent'
         ? (payload.selectedLifeWorkedPercent ?? input.lifeWorkedPercent ?? input.life_worked_percent)
         : (input.usageAmount ?? input.usage_amount ?? input.hours ?? row.hours);
+      const asset = byRun.get(String(row.id));
+      const assessment = asset?.realisticSellingAssessment;
+      // Reusing a historical run must not attach a newer asset's market estimate.
+      const matches = asset && asset.yearModel === row.year_model && Number(asset.hours) === Number(row.hours) && asset.condition === row.condition && asset.value === Number(row.aim4price_value_ex_vat);
       return {
+        realisticSellingPriceExVat: matches ? assessment?.priceExVat : undefined,
+        sellingPriceNeedsReview: !!assessment && (!matches || assessment.needsReview),
         id: String(row.id), title: [row.brand_name, row.model_name].filter(Boolean).join(' '),
         year: row.year_model == null ? '' : String(row.year_model),
         usage: usage == null ? '' : String(usage), usageUnit,

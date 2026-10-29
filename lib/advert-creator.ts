@@ -8,6 +8,7 @@ export type AdvertDetails = {
 export type AdvertEstimate = {
   id: string; title: string; year: string; usage: string; usageUnit: AdvertDetails['usageUnit'];
   condition: string; valueExVat: number; createdAt: string;
+  realisticSellingPriceExVat?: number; sellingPriceNeedsReview?: boolean;
 };
 export function estimateMatchesAdvert(estimate: AdvertEstimate | null, details: AdvertDetails): boolean {
   return Boolean(estimate && Number.isFinite(estimate.valueExVat) && estimate.valueExVat > 0
