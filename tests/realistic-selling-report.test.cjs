@@ -29,8 +29,8 @@ test('printed asset cards put ideal value above the saved realistic selling pric
  const report={};
  new Function('require','exports',ts.transpileModule(reportSource,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(()=>new Proxy({},{get:()=>()=>''}),report);
  const html=report.fixtureRows([{asset:'2017 JCB 3DX',value:'R 307 450',realisticSellingPrice:'R 252 000',method:'Aim4price'}]);
- assert.match(html,/Ideal value<\/span>\s*<strong>R 307 450<\/strong>\s*<b[^>]*>Realistic selling price: R 252 000<\/b>/);
+ assert.match(html,/Ideal value<\/span>\s*<strong>R 307 450<\/strong>\s*<span[^>]*>Realistic selling price<\/span>\s*<strong[^>]*>R 252 000<\/strong>/);
  const missing=report.fixtureRows([{asset:'Unassessed',value:'R 307 450',method:'Aim4price'}]);
- assert.match(missing,/Realistic selling price: N\/A/);
+ assert.match(missing,/Realistic selling price<\/span>\s*<strong[^>]*>N\/A/);
  assert.match(missing,/<strong>R 307 450<\/strong>/);
 });

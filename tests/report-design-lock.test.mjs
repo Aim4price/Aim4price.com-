@@ -14,7 +14,7 @@ const APPROVED_REPORT_STYLES = [
     // The final two style blocks are the shared asset sheet and register report.
     // Earlier blocks are legacy builders and are intentionally outside this lock.
     styleIndexes: [2, 3],
-    fingerprints: ['9807:407e3f4858b968d1', '10413:5419b724a0ee04f5'],
+    fingerprints: ['9807:407e3f4858b968d1', '11265:7050599116877ae1'],
   },
   {
     path: '../lib/asset-maintenance-report.ts',

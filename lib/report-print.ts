@@ -104,6 +104,8 @@ export type AssetRegisterSummaryPayload = {
   intro: string;
   registerValue?: string;
   registerValueNote?: string;
+  realisticSellingPrice?: string;
+  sellingAssessmentNote?: string;
   ownerRows?: ReportKeyValue[];
   stats: Array<{
     label: string;
@@ -2608,17 +2610,15 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
                   <span class="fullRegisterAssetType">${escapeHtml(type)}</span>
                   <h3>${escapeHtml(title)}</h3>
                   <div class="fullRegisterAssetMeta">
-                    <span>Brand: <strong>${escapeHtml(brand)}</strong></span>
-                    <span>Model: <strong>${escapeHtml(model)}</strong></span>
-                    <span>Year: <strong>${escapeHtml(year)}</strong></span>
+                    <span>${escapeHtml(usage)} · <strong>${escapeHtml(condition)}</strong></span>
+                    ${year !== '-' && !title.includes(year) ? `<span>Year: ${escapeHtml(year)}</span>` : ''}
+                    ${model !== '-' && !title.toLowerCase().includes(model.toLowerCase()) ? `<span>${escapeHtml(model)}</span>` : ''}
+                  </div>
+                  <div class="fullRegisterIdentifiers">
+                    <div><span>Serial / VIN</span><strong>${escapeHtml(serial)}</strong></div>
+                    ${licenseRegistrationNumber !== '-' ? `<div><span>Registration</span><strong>${escapeHtml(licenseRegistrationNumber)}</strong></div>` : ''}
                   </div>
                 </div>
-              </div>
-
-              <div class="fullRegisterAssetDetails">
-                <div><span>Usage</span><strong>${escapeHtml(usage)}</strong></div>
-                <div><span>Condition</span><strong>${escapeHtml(condition)}</strong></div>
-                <div><span>Serial / VIN</span><strong>${escapeHtml(serial)}</strong></div>
               </div>
 
               <div class="fullRegisterAssetStatus">
@@ -2626,18 +2626,16 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
                 ${insuredValue !== '-' ? `<div><span>Insured value</span><strong>${escapeHtml(insuredValue)}</strong></div>` : ''}
                 <div><span>Financed</span><strong>${escapeHtml(financed)}</strong></div>
                 <div><span>Licensed</span><strong>${escapeHtml(licensed)}</strong></div>
-                ${licenseRegistrationNumber !== '-' ? `<div><span>Registration</span><strong>${escapeHtml(licenseRegistrationNumber)}</strong></div>` : ''}
                 <div><span>Documents</span><strong>${escapeHtml(documents)}</strong></div>
               </div>
 
               <div class="fullRegisterAssetValue">
                 <span>${method === 'Manual' ? 'Manual value' : 'Ideal value'}</span>
                 <strong>${escapeHtml(value)}</strong>
-                <b class="fullRegisterReplacementValue">Realistic selling price: ${escapeHtml(row.realisticSellingPrice || 'N/A')}</b>
-                <small>VAT excluded</small>
-                ${replacementPrice !== '-' ? `<b class="fullRegisterReplacementValue">Replacement: ${escapeHtml(replacementPrice)}</b>` : ''}
-                <em>${escapeHtml(method)}</em>
-                <i>${escapeHtml(updated)}</i>
+                <span class="fullRegisterSellingLabel">Realistic selling price</span>
+                <strong class="fullRegisterSellingValue">${escapeHtml(row.realisticSellingPrice || 'N/A')}</strong>
+                ${replacementPrice !== '-' ? `<b class="fullRegisterReplacementValue">Replacement value: ${escapeHtml(replacementPrice)}</b>` : ''}
+                <small>All values excl. VAT</small>
               </div>
             </article>
           `;
@@ -2782,7 +2780,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 14mm;
-        padding-bottom: 7.5mm;
+        padding-bottom: 3mm;
         border-bottom: 1px solid var(--line-strong);
       }
 
@@ -2794,8 +2792,8 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       }
 
       .fullRegisterLogo {
-        width: 22mm;
-        height: 22mm;
+        width: 17mm;
+        height: 17mm;
         object-fit: contain;
         flex: 0 0 auto;
       }
@@ -2841,7 +2839,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         display: grid;
         grid-template-columns: minmax(0, 1.58fr) minmax(70mm, 0.68fr);
         gap: 5.5mm;
-        margin-top: 5.5mm;
+        margin-top: 4mm;
       }
 
       .fullRegisterPanel,
@@ -2853,7 +2851,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       }
 
       .fullRegisterPanel {
-        padding: 5.6mm;
+        padding: 4mm;
       }
 
       .fullRegisterPanelLabel,
@@ -2873,7 +2871,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       .fullRegisterOwnerName {
         margin: 2mm 0 1.5mm;
         color: var(--strong);
-        font-size: 18pt;
+        font-size: 16pt;
         line-height: 1.04;
         font-weight: 800;
         letter-spacing: -0.055em;
@@ -2899,7 +2897,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
 
       .fullRegisterValuePanel {
         min-height: 34mm;
-        padding: 6mm;
+        padding: 3mm;
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -2909,7 +2907,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         display: block;
         margin: 2mm 0 1mm;
         color: var(--strong);
-        font-size: 24pt;
+        font-size: 20pt;
         line-height: 0.95;
         font-weight: 800;
         letter-spacing: -0.07em;
@@ -2926,12 +2924,12 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4mm;
-        margin-top: 5mm;
+        margin-top: 3mm;
       }
 
       .fullRegisterStatCard {
-        min-height: 27mm;
-        padding: 4.8mm;
+        min-height: 16mm;
+        padding: 3.5mm;
       }
 
       .fullRegisterStatCard strong {
@@ -2954,7 +2952,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       }
 
       .fullRegisterOwnerDetailsPanel {
-        margin-top: 5.5mm;
+        margin-top: 4mm;
         padding: 5.8mm 6.2mm 6.2mm;
       }
 
@@ -2968,7 +2966,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       }
 
       .fullRegisterNotesPanel {
-        margin-top: 5.5mm;
+        margin-top: 4mm;
         padding: 5.8mm 6.2mm 6.2mm;
       }
 
@@ -3038,7 +3036,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       }
 
       .fullRegisterAssetSection {
-        margin-top: 5.5mm;
+        margin-top: 4mm;
       }
 
       .fullRegisterSectionTitle {
@@ -3046,7 +3044,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         align-items: baseline;
         justify-content: space-between;
         gap: 5mm;
-        margin: 0 0 4mm;
+        margin: 0 0 2mm;
       }
 
       .fullRegisterSectionTitle h2 {
@@ -3110,7 +3108,7 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
 
       .fullRegisterAssetCard {
         display: grid;
-        grid-template-columns: minmax(98mm, 1.35fr) minmax(56mm, 0.74fr) minmax(44mm, 0.56fr) minmax(50mm, 0.62fr);
+        grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.65fr) minmax(0, 0.95fr);
         gap: 0;
         min-height: 34mm;
         break-inside: avoid;
@@ -3121,21 +3119,21 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
       .fullRegisterAssetDetails,
       .fullRegisterAssetStatus,
       .fullRegisterAssetValue {
-        padding: 4mm 4.2mm;
+        padding: 3mm 4mm;
         border-left: 1px solid var(--line);
       }
 
       .fullRegisterAssetMain {
         display: grid;
-        grid-template-columns: 21mm minmax(0, 1fr);
+        grid-template-columns: 39mm minmax(0, 1fr);
         gap: 4.2mm;
         border-left: none;
         align-items: center;
       }
 
       .fullRegisterAssetThumb {
-        width: 21mm;
-        height: 21mm;
+        width: 39mm;
+        height: 26mm;
         border: 1px solid var(--line);
         background: var(--soft);
         display: flex;
@@ -3323,6 +3321,19 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         white-space: nowrap;
       }
 
+      .fullRegisterSellingTotal { border-top: 1px solid var(--line); margin-top: 2mm; padding-top: 2mm; }
+      .fullRegisterSellingTotal strong { font-size: 16pt; }
+      .fullRegisterAssetValue { text-align: left; }
+      .fullRegisterAssetValue .fullRegisterSellingLabel { margin-top: 2mm; }
+      .fullRegisterAssetValue .fullRegisterSellingValue { font-size: 12pt; margin-top: 1mm; }
+      .fullRegisterIdentifiers { display: flex; flex-wrap: wrap; gap: 3mm 6mm; border-top: 1px solid var(--line); margin-top: 3mm; padding-top: 2mm; }
+      .fullRegisterIdentifiers span, .fullRegisterIdentifiers strong { display: block; font-size: 7pt; line-height: 1.5; overflow-wrap: anywhere; }
+      .fullRegisterIdentifiers span { color: var(--muted); }
+      .fullRegisterAssetMain, .fullRegisterAssetStatus, .fullRegisterAssetValue { min-width: 0; }
+      .fullRegisterAssetStatus { align-content: center; gap: 2mm; }
+      .fullRegisterAssetSection { padding: 0; border: 0; background: transparent; }
+      .fullRegisterSectionTitle h2 { white-space: normal; }
+
       @media screen and (max-width: 980px) {
         .fullRegisterPage {
           width: calc(100% - 24px);
@@ -3418,25 +3429,22 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
         <div class="fullRegisterPanel">
           <span class="fullRegisterPanelLabel">Asset owner</span>
           <h2 class="fullRegisterOwnerName">${escapeHtml(payload.ownerName)}</h2>
-          <p class="fullRegisterOwnerMeta">${escapeHtml(payload.ownerMeta)}</p>
+          ${ownerRows.filter(row => !['name','account'].includes(row.label.toLowerCase()) && row.value && row.value !== '—').map(row=>`<p class="fullRegisterOwnerMeta">${escapeHtml(row.value)}</p>`).join('')}
           <p class="fullRegisterIntro">${escapeHtml(payload.intro)}</p>
         </div>
 
         <aside class="fullRegisterValuePanel">
           <span>${escapeHtml(valueLabel)}</span>
           <strong>${escapeHtml(registerValue)}</strong>
-          <small>${escapeHtml(payload.registerValueNote || 'Total saved asset value - VAT excluded')}</small>
+          <div class="fullRegisterSellingTotal">
+            <span>Realistic selling price</span>
+            <strong>${escapeHtml(payload.realisticSellingPrice || 'N/A')}</strong>
+          </div>
+          <small>Excl. VAT${payload.sellingAssessmentNote ? ` · ${escapeHtml(payload.sellingAssessmentNote)}` : ''}</small>
         </aside>
       </section>
 
       ${renderFullRegisterStats(payload)}
-
-      <section class="fullRegisterPanel fullRegisterOwnerDetailsPanel">
-        <div class="fullRegisterSectionTitle">
-          <h2>Owner Details</h2>
-        </div>
-        <div class="fullRegisterMetaRows">${renderFullRegisterMetaRows(ownerRows)}</div>
-      </section>
 
       ${renderFullRegisterNotes(noteRows)}
 
