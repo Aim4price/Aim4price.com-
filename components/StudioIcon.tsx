@@ -1,6 +1,7 @@
 import styles from './AdStudioClient.module.css';
 
 export type StudioIconName =
+  | 'box'
   | 'share'
   | 'copy'
   | 'styles'
@@ -41,6 +42,7 @@ export default function StudioIcon({ name }: { name: StudioIconName }) {
 
   return (
     <svg {...svgProps} className={styles.studioIcon}>
+      {name === 'box' ? <path {...strokeProps} d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v9l9 5 9-5V8M12 13v9" /> : null}
       {name === 'styles' ? (
         <>
           <rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" opacity="0.12" />
