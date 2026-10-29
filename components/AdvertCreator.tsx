@@ -38,6 +38,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     email: (defaultKit ?? fallbackBrand).email, businessName: (defaultKit ?? fallbackBrand).businessName,
   }));
   const [step, setStep] = useState(0);
+  const [advertSource, setAdvertSource] = useState<'manual' | 'asset' | 'estimate'>('manual');
   const [source, setSource] = useState<'asset' | 'estimate' | null>(null);
   const [assets, setAssets] = useState<AdvertSourceAsset[]>([]);
   const [sourceLoading, setSourceLoading] = useState(false);
@@ -162,6 +163,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     finally { setSourceLoading(false); }
   }
   function startAdvert(asset?: AdvertSourceAsset, savedEstimate?: AdvertEstimate) {
+    setAdvertSource(asset ? 'asset' : savedEstimate ? 'estimate' : 'manual');
     const chosen = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
     setDetails({ title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
       vatLabel: chosen.vatLabel, location: '', description: '', contactName: chosen.contactName,
@@ -241,7 +243,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
           {search && !(source === 'asset' ? assets.map(item => `${item.details.title} ${item.details.year}`) : estimates.map(item => `${item.title} ${item.year}`)).some(text => text.toLowerCase().includes(search.trim().toLowerCase())) ? <p role="status">No matches. Try another name or start manually.</p> : null}
         </>}
         <p className={styles.help}>Imported details are copied into this advert. Your saved records stay unchanged.</p>
-      </div> : <p className={styles.help}>A valuation is optional. Add one later to show an Aim4price value rating.</p>}
+      </div> : <p className={styles.help}>Choose an asset or saved estimate to include a value comparison.</p>}
       {furthestStep > 0 && details.title ? <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Continue current advert</button> : null}
     </div> : null}
     {step === 1 ? <div className={styles.card}>
@@ -260,7 +262,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         <label>Usage unit<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="details" /></span><select value={details.usageUnit} onChange={e => update('usageUnit',e.target.value as AdvertDetails['usageUnit'])}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percent">Life worked (%)</option><option value="none">Not applicable</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         <label>VAT label on advert<span className={`${studioStyles.selectControl} ${styles.studioSelect}`}><span className={studioStyles.selectLeadingIcon}><StudioIcon name="price" /></span><select value={details.vatLabel} onChange={e => update('vatLabel',e.target.value as AdvertDetails['vatLabel'])}><option value="plus-vat">+ VAT</option><option value="vat-included">VAT included</option><option value="no-vat">No VAT</option></select><span className={studioStyles.selectChevron}><StudioIcon name="chevron" /></span></span></label>
         </div></section>
-<div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section><details className={styles.estimateDisclosure} open={hasEstimate || undefined}><summary>{hasEstimate ? 'Aim4price value rating' : 'Add a valuation'} <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
+<div className={styles.priceColumn}>            <section className={marketplaceStyles.marketplacePricePanel} tabIndex={-1} {...fieldA11y('askingPrice')}><MarketplacePriceInput value={details.askingPrice} onChange={value => update('askingPrice', value)} vatIncluded={details.vatLabel === 'vat-included'} onVatIncludedChange={included => update('vatLabel', included ? 'vat-included' : 'plus-vat')} />{fieldError('askingPrice')}</section>{advertSource !== 'manual' && <details className={styles.estimateDisclosure} open={hasEstimate || undefined}><summary>{hasEstimate ? 'Aim4price value rating' : 'Add a valuation'} <span>— optional</span></summary>      <section className={styles.optionCard} aria-labelledby="price-rating-title">
         <p id="price-rating-title" className={styles.help}>Reuse an estimate to show a value comparison. Your advert can also be created without one.</p>
         <div className={styles.actions}><a className={styles.secondary} href={estimateHref} target="_blank" rel="noreferrer">Value an asset</a><button type="button" className={styles.secondary} disabled={estimateLoading} onClick={loadEstimates}>{estimateLoading ? 'Loading…' : estimates.length ? 'Refresh estimates' : 'Choose saved estimate'}</button></div>
         {estimateStatus ? <p role="status">{estimateStatus}</p> : null}
@@ -269,7 +271,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       <label className={styles.toggle}><input type="checkbox" role="switch" aria-describedby="price-rating-help" checked={hasEstimate && showRating} disabled={!hasEstimate} onChange={e => setShowRating(e.target.checked)} />Show value rating</label>
       <p id="price-rating-help" className={styles.help}>{hasEstimate ? `Aim4price estimate: R ${estimate!.valueExVat.toLocaleString('en-ZA')} excluding VAT · ${new Date(estimate!.createdAt).toLocaleDateString('en-ZA')}. ${showRating ? `Rating: ${rating.label}.` : 'The rating strip is hidden on your advert.'}` : 'Link an estimate above to enable this switch.'}</p>
       </div></section>
-</details></div></div>
+</details>}</div></div>
       <div className={styles.formFooter}><button type="button" className={styles.secondary} onClick={() => { setSource(null); setStep(0); }}>Change source</button><button type="submit" className={styles.primary}>Next: Photos &amp; contact<StudioIcon name="next" /></button></div>
       </form></div> : null}
     {step === 2 ? <div className={styles.card}>
