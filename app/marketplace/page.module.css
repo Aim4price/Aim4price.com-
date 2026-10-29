@@ -3934,7 +3934,7 @@
 /* Owner shortcut sits beside the existing VAT and share actions. */
 .cardShareButton.cardEditButton { right: 6.85rem; }
 
-/* Optional comparison strip sits below the photos and takes no space when hidden. */
+/* Comparison styling shared by the card footer and listing modal. */
 .dealRatingBadge.cardDealRatingBadge,
 .dealRatingBadge.modalDealRatingBadge {
   position: static;
@@ -3953,3 +3953,19 @@
   text-align: left;
   justify-content: flex-start;
 }
+
+/* Shared card rhythm keeps comparison footers aligned across the listing grid. */
+.listingGrid { align-items: stretch; grid-auto-rows: 1fr; }
+.listingCard { display: flex; flex-direction: column; }
+.listingCard .cardImageFrame { flex: 0 0 auto; }
+.listingCard .cardBody { flex: 1; }
+.listingCard .cardBody h3 { min-height: 2.52em; margin-top: .5rem; }
+.listingCard .cardLocation { display: flex; align-items: center; gap: .45rem; margin-top: .45rem; }
+.listingCard .cardLocation svg { width: 1rem; height: 1rem; flex-shrink: 0; color: var(--app-text, #173f31); }
+.listingCard .cardLocation span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.listingCard .cardMeta { min-height: 2.76em; margin-top: .35rem; }
+.cardComparisonFooter { margin: .5rem .08rem 0; padding-top: .65rem; border-top: 1px solid var(--app-line, #dce5e0); }
+.cardComparisonFooter[aria-hidden="true"] { visibility: hidden; min-height: 4.2rem; }
+.cardComparisonFooter .dealRatingBadge.cardDealRatingBadge { min-height: 4.2rem; box-sizing: border-box; margin: 0; padding: .65rem .8rem; gap: .65rem; font-size: .8rem; font-weight: 700; align-items: center; }
+.cardComparisonFooter .cardDealRatingBadge svg { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
+.cardComparisonFooter .dealRatingBadge.cardComparisonUnavailable { background: var(--app-info-soft, #f0f2f5); color: var(--app-muted, #656b76); border-color: var(--app-info-line, #e0e4e9); }
