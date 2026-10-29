@@ -562,7 +562,7 @@ function drawPhoto(
       context.textAlign = 'center';
       context.textBaseline = 'middle';
       context.font = '750 17px Montserrat, Inter, Arial, sans-serif';
-      context.fillText(primary ? 'Main equipment photo' : `Equipment photo ${index + 1}`, rect.x + rect.width / 2, rect.y + rect.height * .74);
+      context.fillText(primary ? 'Main photo' : `Photo ${index + 1}`, rect.x + rect.width / 2, rect.y + rect.height * .74);
       context.restore();
     }
   }
@@ -821,7 +821,7 @@ function drawAim4priceStandardPhoto(
       context.fillStyle = '#60766e';
       context.font = '750 18px Montserrat, Inter, Arial, sans-serif';
       context.textAlign = 'center';
-      context.fillText('Main equipment photo', rect.x + rect.width / 2, rect.y + rect.height * .75);
+      context.fillText('Main photo', rect.x + rect.width / 2, rect.y + rect.height * .75);
       context.restore();
     }
   }
