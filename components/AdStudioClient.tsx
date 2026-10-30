@@ -159,8 +159,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const brandKitsEndpoint = dealerAppMode ? `/api${dealerAppRoot}/ad-studio/brand-kits` : '/api/ad-studio/brand-kits';
   const [studioMode, setStudioMode] = useState<'home' | 'style' | 'creator'>('home');
   const [creatorStarted, setCreatorStarted] = useState(false);
+  const [creatorTemplate, setCreatorTemplate] = useState({ id: '', revision: 0 });
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
+  const savedTemplate = kits.find(kit => kit.id === draft.id);
+  const templateIsSaved = Boolean(savedTemplate && JSON.stringify(editableKit(savedTemplate)) === JSON.stringify(draft));
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>({});
   const [canManage, setCanManage] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -607,7 +610,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         </div>
       ) : null}
       {!loading && creatorStarted ? <div style={studioMode === 'creator' ? undefined : { display: 'none' }}>
-        <AdvertCreator onEditBranding={() => { setCreatorStarted(false); setStudioMode('style'); }} middlemanMode={middlemanMode || dealerAppRoot === '/middleman'} assetRegisterHref={dealerAppMode ? '/dealer/inventory' : '/asset-register'} kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
+        <AdvertCreator key={creatorTemplate.revision} initialBrandId={creatorTemplate.id} onEditBranding={() => { setCreatorStarted(false); setStudioMode('style'); }} middlemanMode={middlemanMode || dealerAppRoot === '/middleman'} assetRegisterHref={dealerAppMode ? '/dealer/inventory' : '/asset-register'} kits={kits} fallbackBrand={kitFromDefaults(profileDefaults)} estimateHref={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'} estimatesEndpoint={dealerAppMode ? `/api${dealerAppRoot}/ad-studio/estimates` : '/api/ad-studio/estimates'} />
       </div> : null}
       {!loading ? (
         <div style={studioMode === 'style' ? undefined : { display: 'none' }}>
@@ -919,20 +922,21 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               ) : null}
             </div>
 
-            <div className={styles.actions}>
-              <div>
-                {activeStep > 1 ? <button className={styles.backButton} type="button" onClick={() => moveToStep((activeStep - 1) as StudioStep)}><StudioIcon name="back" />Back</button> : null}
-                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={() => void deleteKit()} disabled={saving}><StudioIcon name="delete" />Delete style</button> : null}
-              </div>
-              <div>
-                {activeStep < 4 ? (
-                  <button className={styles.primaryButton} type="button" onClick={() => moveToStep((activeStep + 1) as StudioStep)}>Continue<StudioIcon name="next" /></button>
-                ) : (
-                  <>
-                    {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'}>Start a valuation<StudioIcon name="next" /></Link> : null}
-                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save advert template'}</button> : null}
-                  </>
-                )}
+            <div className={`${styles.actions} ${styles.templateFooter}`}>
+              {activeStep === 4 ? <div className={styles.templateFooterStatus}>
+                <span role="status">{saving ? 'Saving template…' : templateIsSaved ? 'Template saved — ready to use' : draft.id ? 'Unsaved changes' : 'Save your template to create an advert'}</span>
+                {draft.id && canManage ? <button className={styles.templateDelete} type="button" title="Delete this advert template" onClick={() => void deleteKit()} disabled={saving}><StudioIcon name="delete" />Delete template</button> : null}
+              </div> : null}
+              <div className={styles.templateFooterButtons}>
+                {activeStep > 1 ? <button className={styles.backButton} type="button" disabled={saving} onClick={() => moveToStep((activeStep - 1) as StudioStep)}>Back</button> : null}
+                {activeStep < 4 ? <button className={styles.primaryButton} type="button" onClick={() => moveToStep((activeStep + 1) as StudioStep)}>Continue</button> : <>
+                  {canManage ? <button className={templateIsSaved ? styles.secondaryButton : styles.primaryButton} type="submit" disabled={saving || templateIsSaved}><StudioIcon name="check" />{saving ? 'Saving…' : templateIsSaved ? 'Saved' : draft.id ? 'Save changes' : 'Save template'}</button> : null}
+                  {templateIsSaved ? <button className={styles.primaryButton} type="button" disabled={saving} title="Create an advert using this template" onClick={() => {
+                    setCreatorTemplate(current => ({ id: draft.id, revision: current.revision + 1 }));
+                    setCreatorStarted(true);
+                    setStudioMode('creator');
+                  }}><StudioIcon name="plus" />Create advert</button> : null}
+                </>}
               </div>
             </div>
           </form>

@@ -28,10 +28,10 @@ const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
 };
 const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
-export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false, onEditBranding }: {
-  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean; onEditBranding?: () => void;
+export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false, initialBrandId, onEditBranding }: {
+  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean; initialBrandId?: string; onEditBranding?: () => void;
 }) {
-  const defaultKit = kits.find(kit => kit.isDefault) ?? kits[0];
+  const defaultKit = kits.find(kit => kit.id === initialBrandId) ?? kits.find(kit => kit.isDefault) ?? kits[0];
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
   const brand = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
   const [template, setTemplate] = useState<AdTemplateId>(defaultKit?.templateId ?? 'showcase');

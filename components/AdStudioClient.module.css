@@ -740,3 +740,15 @@
 .previewTools .studioIcon, .photoHelpDialog .primaryButton .studioIcon { width: 20px; height: 20px; flex-shrink: 0; }
 .photoHelpDialog .dialogHeading { gap: 12px; }
 .photoHelpDialog .dialogHeading button[data-modal-close] { flex-shrink: 0; }
+
+/* Template actions follow the panel width, including on the canonical website canvas. */
+.actions.templateFooter { display: flex; flex-direction: column; gap: 14px; padding: 18px 24px; }
+.templateFooter .templateFooterStatus { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.templateFooterStatus > span { color: var(--app-muted, #60766d); font-size: .8rem; line-height: 1.5; }
+.templateFooter .templateDelete { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 8px 10px; border: 1px solid transparent; border-radius: 10px; color: var(--app-danger, #a32b23); background: transparent; font: 650 .8rem var(--font-heading, "Montserrat"), sans-serif; cursor: pointer; }
+.templateFooter .templateDelete:hover { background: var(--app-danger-soft, #fff0ee); }
+.templateDelete svg { width: 18px; height: 18px; }
+.templateFooter .templateFooterButtons { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
+.templateFooter .templateFooterButtons > button { flex: 1 1 140px; min-height: 48px; margin: 0; padding: 12px 16px; font-size: .85rem; }
+.templateFooter button:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
+.templateFooter button:disabled { cursor: default; opacity: .6; }
