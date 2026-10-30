@@ -6153,19 +6153,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               disabled={!breakdownAccess}
               aria-disabled={!breakdownAccess}
             >
-              <span className={styles.sectorBigCardContent}>
-                <span className={styles.sectorCardTopRow}>
-                  <span className={`${styles.exclusiveBadge} ${compactAppMode ? styles.exclusiveCrown : ''}`} role={compactAppMode ? 'img' : undefined} aria-label={compactAppMode ? 'Aim4price Exclusive' : undefined} title="Aim4price Exclusive">
-                    <svg className={styles.exclusiveBadgeIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                      <path fill="currentColor" d="M3 6.75 7.5 11 12 4l4.5 7L21 6.75 19.4 18H4.6L3 6.75Zm2.2 12.75h13.6V21H5.2v-1.5Z" />
-                    </svg>
-                    {!compactAppMode ? <span>Aim4price Exclusive</span> : null}
-                  </span>
+              <span className={styles.estimateModeBadge}>
+                <span className={styles.exclusiveBadge} title="Aim4price Exclusive">
+                  <svg className={styles.exclusiveBadgeIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M3 6.75 7.5 11 12 4l4.5 7L21 6.75 19.4 18H4.6L3 6.75Zm2.2 12.75h13.6V21H5.2v-1.5Z" />
+                  </svg>
+                  <span>Aim4price Exclusive</span>
                 </span>
+              </span>
+              <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorLabelWrap}>
                   <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('advanced')}</span>
                   <strong className={styles.sectorLabel}>Advanced</strong>
-                  <span className={styles.estimateModeDescription}>Use detailed equipment specifications and review the calculation breakdown. {breakdownAccess ? 'Available on your account.' : 'Available to accounts with Aim4price Exclusive access.'}</span>
+                  <span className={styles.estimateModeDescription}>Exact models and exact replacement prices.</span>
                 </span>
               </span>
             </button>

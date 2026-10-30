@@ -14879,7 +14879,31 @@
 .estimateModeGrid .sectorBigCard:not(:disabled):hover { background: #f2f9f5; border-color: #237454; }
 .estimateModeGrid .sectorBigCard .sectorLabel { color: #173e30; font-size: 1.5rem; }
 .estimateModeGrid .sectorBigCard .estimateModeDescription { color: #63796e; font-size: 1rem; }
-.estimateModeGrid .sectorBigCardContent { min-height: 13rem; padding: 2.8rem 1.5rem 1.5rem; }
+.estimateModeGrid .sectorBigCard .sectorBigCardContent {
+  min-height: 13rem;
+  padding: 3.5rem 1.5rem 1.5rem;
+  justify-content: flex-start;
+  align-content: start;
+}
+/* Anchor the badge to the card, independently of its description height. */
+.estimateModeBadge {
+  position: absolute;
+  top: .85rem;
+  right: 1rem;
+  z-index: 5;
+  pointer-events: none;
+}
+.estimateModeGrid .estimateModeBadge .exclusiveBadge {
+  min-height: 1.8rem;
+  padding: .35rem .7rem;
+  border-color: #c5a456;
+  background: #173e30;
+  color: #f6d77c;
+  box-shadow: none;
+  font-size: .65rem;
+  letter-spacing: .06em;
+}
+.estimateModeGrid .estimateModeBadge .exclusiveBadge * { color: inherit; }
 .estimateModeGrid .sectorLabelWrap {
   display: grid;
   grid-template-columns: 3.2rem minmax(0, 1fr);
@@ -14952,7 +14976,8 @@
 .conditionBasicModal .dealerAssessmentOption:focus-visible { outline: 3px solid #29805c; outline-offset: 3px; }
 @media (max-width: 560px) {
   :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal .dealerAssessmentOptions { grid-template-columns: minmax(0, 1fr); }
-  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeGrid .sectorBigCardContent { padding: 2.8rem 1rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeGrid .sectorBigCard .sectorBigCardContent { padding: 3.5rem 1rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .estimateModeGrid { grid-template-columns: minmax(0, 1fr); }
 }
 .estimateModeGrid .sectorBigCard .estimateChoiceIcon { color: #176a49; }
 .estimateModeGrid .estimateModeAdvancedCard .estimateChoiceIcon { color: #136d63; }
