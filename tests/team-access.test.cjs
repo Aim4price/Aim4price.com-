@@ -125,7 +125,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8'),TEAM_ACCESS_SCHEMA);
+ assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8'),TEAM_ACCESS_SCHEMA);
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -289,5 +289,31 @@ test('owner creation emails existing accounts only and never includes the suppli
  assert.equal(existing.status,200);assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
  const managed=await route.POST({body:{...f.input,email:'new@example.com',action:'save',password:'Initial-password-123',sendInvitation:true}});
  assert.equal(managed.status,200);assert.equal(managed.body.member.managedLogin,true);assert.equal(emails.length,1);assert.ok(!JSON.stringify(managed).includes('Initial-password-123'));
+ }finally{await f.db.close();}
+});
+
+test('removal checks owner and version, ends access, preserves records, and allows a new invitation',async()=>{
+ const f=await setup();try{
+ const grant=await f.active();
+ await assert.rejects(f.service.removeTeamGrant({...owner,id:'other'},grant.id,grant.version));
+ await assert.rejects(f.service.removeTeamGrant(owner,grant.id,grant.version-1));
+ await f.service.removeTeamGrant(owner,grant.id,grant.version);
+ await assert.rejects(f.service.loadTeamScope(grant.id));
+ assert.equal((await f.db.query('SELECT * FROM team_access')).rows.length,0);
+ assert.equal((await f.db.query('SELECT * FROM "user" WHERE id=$1',[member.id])).rows.length,1);
+ assert.equal((await f.db.query('SELECT * FROM asset_register_items')).rows.length,3);
+ const activity=(await f.db.query('SELECT * FROM team_access_activity')).rows;
+ assert.ok(activity.length>=3);assert.ok(activity.every(a=>a.membership_id===null));
+ assert.ok(activity.some(a=>a.action==='Desktop user removed'));
+ assert.notEqual((await f.invite()).id,grant.id);
+ }finally{await f.db.close();}
+});
+test('removing a managed desktop login deletes its credentials and sessions',async()=>{
+ const f=await setup();try{
+ const grant=await f.invite({email:'new@example.com',password:'Initial-password-123'});
+ await f.db.query("INSERT INTO team_access_sessions VALUES($1,$2,now()+interval '1 day')",['test-token',grant.id]);
+ await f.service.removeTeamGrant(owner,grant.id,grant.version);
+ assert.equal((await f.db.query('SELECT * FROM team_access_logins')).rows.length,0);
+ assert.equal((await f.db.query('SELECT * FROM team_access_sessions')).rows.length,0);
  }finally{await f.db.close();}
 });
