@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
@@ -26,6 +27,7 @@ export default async function DealerMarketplacePage() {
       <MarketplaceClient
         isSignedIn
         accountType="dealer"
+        middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)}
         dealerAppMode
         initialFilters={{ brand: '', model: '', drive: '', type: '' }}
       />

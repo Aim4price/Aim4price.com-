@@ -10079,7 +10079,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <span className={styles.marketplaceIntroKicker}>Marketplace listing path</span>
             <h2 data-estimate-modal-title id="marketplace-intro-title">Get an Aim4price value before the listing goes live.</h2>
             <p>
-              The marketplace only accepts listings that start with an Aim4price estimate. Run the estimate first, then use
+              A valuation can help you set your asking price. Complete the estimate, then use
               Create Ad on the result screen to confirm the asking price, photos, Brand Kit and seller details.
             </p>
             <div className={styles.marketplaceIntroNote}>
@@ -10093,12 +10093,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               ) : isDealerAccount ? (
                 <>
                   <strong>Dealer and auctioneer account.</strong>
-                  <span>Publish marketplace listings through Value My Asset after the value has been calculated.</span>
+                  <span>Continue from your valuation to preview and publish your listing.</span>
                 </>
               ) : (
                 <>
                   <strong>Owner account.</strong>
-                  <span>You can publish from this estimate path or from assets already saved in the Asset Register.</span>
+                  <span>Continue from this valuation, or start manually or from your Asset Register in Marketplace.</span>
                 </>
               )}
             </div>

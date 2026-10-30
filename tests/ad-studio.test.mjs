@@ -920,7 +920,8 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.doesNotMatch(middlemanHeader, /label: 'Account'/);
   assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
   assert.match(dealerHome, /'discovery', 'marketplace', 'ad_studio', 'showroom'/);
-  assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
+  assert.match(dealerMarketplace, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
+  assert.doesNotMatch(dealerMarketplace, /if \(isMiddlemanAccountSubtype[^\n]*redirect/);
   assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   assert.match(accessClient, /Middleman App Access/);

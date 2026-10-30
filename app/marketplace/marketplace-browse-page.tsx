@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -180,6 +181,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
   await redirectAdminToAdmin();
 
   const session = await getServerSession();
+  let middlemanMode = false;
   let accountType = session?.user?.id ? 'owner' : 'public';
 
   if (session?.user?.id) {
@@ -190,6 +192,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     });
 
     accountType = profile.accountType;
+    middlemanMode = isMiddlemanAccountSubtype(profile.accountSubtype);
 
     if (profile.accountType !== 'owner' && profile.accountType !== 'dealer') {
       redirect('/leads');
@@ -200,6 +203,7 @@ export default async function MarketplacePage({ searchParams }: MarketplacePageP
     <MarketplaceClient
       isSignedIn={Boolean(session?.user?.id)}
       accountType={accountType}
+      middlemanMode={middlemanMode}
       initialFilters={{
         brand: pick(searchParams?.brand) || pick(searchParams?.query),
         model: pick(searchParams?.model),

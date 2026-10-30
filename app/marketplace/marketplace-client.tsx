@@ -1,4 +1,5 @@
 'use client';
+import StudioIcon from '../../components/StudioIcon';
 import { sellingPriceComparison } from '../../lib/selling-price';
 
 import FacebookAdvertActions, { WhatsAppAdvertActions } from '../../components/FacebookAdvertActions';
@@ -57,6 +58,7 @@ type MarketplaceClientProps = {
   initialFilters: MarketplaceFilters;
   isSignedIn: boolean;
   accountType?: MarketplaceAccountType | null;
+  middlemanMode?: boolean;
   initialListings?: MarketplaceListing[];
   embeddedMode?: boolean;
   showroomMode?: boolean;
@@ -2106,6 +2108,7 @@ export default function MarketplaceClient({
   initialFilters,
   isSignedIn,
   accountType = 'public',
+  middlemanMode = false,
   initialListings,
   embeddedMode = false,
   showroomMode = false,
@@ -2123,6 +2126,9 @@ export default function MarketplaceClient({
   const normalizedAccountType = normalize(accountType || (isSignedIn ? 'owner' : 'public'));
   const isOwnerAccount = normalizedAccountType === 'owner';
   const isDealerAccount = normalizedAccountType === 'dealer';
+  const isMiddleman = middlemanMode || (dealerAppMode && dealerAppRoot === '/middleman');
+  const manualListingPath = ownerAppMode ? '/owner-app/marketplace/create' : dealerAppMode ? `${dealerAppRoot}/marketplace/create` : '/marketplace/create';
+  const registerPath = ownerAppMode ? '/owner-app/assets' : dealerAppMode ? '/dealer/inventory' : '/asset-register';
   const compactAppMode = dealerAppMode || ownerAppMode;
   const canExposeSellerContact = isSignedIn || exposeSellerContact;
   const valuationPath = ownerAppMode ? '/owner-app/valuation' : dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation';
@@ -2675,23 +2681,15 @@ export default function MarketplaceClient({
   }
 
   function handleCreateListingClick() {
-    if (!isSignedIn) {
-      setCreateListingModalOpen(true);
-      return;
-    }
-
-    if (isDealerAccount) {
-      goToMarketplaceEstimate();
-      return;
-    }
-
-    if (isOwnerAccount) {
-      setCreateListingModalOpen(true);
-      return;
-    }
-
-    goToMarketplaceEstimate();
+    setCreateListingModalOpen(true);
   }
+
+  useEffect(() => {
+    if (!createListingModalOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setCreateListingModalOpen(false); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [createListingModalOpen]);
 
   function openListing(listing: MarketplaceListing) {
     deepLinkViewRef.current = listing.id;
@@ -3458,11 +3456,16 @@ export default function MarketplaceClient({
             ) : (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create marketplace advert</h2>
+                  <h2 id="create-listing-title">How would you like to start?</h2>
+                  <p>{isMiddleman ? 'Add the details yourself, or value an asset first.' : 'Add details yourself, use a saved asset, or value an asset first.'}</p>
                 </div>
 
                 <div className={styles.createListingChoiceGrid}>
-                  <a href={ownerAppMode ? '/owner-app/assets' : '/asset-register'} className={styles.createListingChoiceCard}>
+                  <a href={manualListingPath} className={styles.createListingChoiceCard}>
+                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true"><StudioIcon name="edit" /></span>
+                    <span className={styles.createListingChoiceCopy}><strong>Manual</strong><small>Add details and photos. No valuation needed.</small></span>
+                  </a>
+                  {!isMiddleman ? <a href={registerPath} className={styles.createListingChoiceCard}>
                     <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true">
                       <IconAssetRegister />
                     </span>
@@ -3470,17 +3473,15 @@ export default function MarketplaceClient({
                       <strong>Asset Register</strong>
                       <small>Create an advert for an asset you have saved.</small>
                     </span>
-                    <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
-                  </a>
+                  </a> : null}
                   <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
                     <span className={`${styles.createListingChoiceIcon} ${styles.createListingValueIcon}`} aria-hidden="true">
                       <IconAssetValue />
                     </span>
                     <span className={styles.createListingChoiceCopy}>
-                      <strong>Aim4price Value</strong>
+                      <strong>Value Asset</strong>
                       <small>Value your asset, then create your advert.</small>
                     </span>
-                    <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
                   </button>
                 </div>
               </>
