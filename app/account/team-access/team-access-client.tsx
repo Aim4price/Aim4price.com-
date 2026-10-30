@@ -89,7 +89,7 @@ export default function TeamAccessClient() {
         return; setDraft({ ...draft, [key]: draft[key].includes(id) ? draft[key].filter(v => v !== id) : [...draft[key], id] }); }
     const allowedDocs = data?.documents.filter(d => d.assetIds.every(id => data.assets.some(a => a.id === id && draft && teamCanAccessAsset(draft, a)))) || [];
     return <main className={baseStyles.shell}>
-    <Link className={baseStyles.backButton} href="/account">← Back to account</Link>
+    <Link className={baseStyles.backButton} href="/account">Back to account</Link>
     <section className={accessStyles.launcher} aria-labelledby="desktop-users-title">
       <div className={accessStyles.launcherIntro}><h1 id="desktop-users-title">Desktop users</h1><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p></div>
       <div className={accessStyles.actionGrid}>

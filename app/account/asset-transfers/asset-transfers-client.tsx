@@ -720,7 +720,7 @@ export default function AssetTransfersClient({
     <main className={styles.page}>
       {!isDealerContext ? <AppHeader active="none" /> : null}
       <section className={styles.shell}>
-        <Link className={styles.backButton} href={isDealerContext ? '/dealer/inventory' : '/account'}>← {isDealerContext ? 'Back to inventory' : 'Back to account'}</Link>
+        <Link className={styles.backButton} href={isDealerContext ? '/dealer/inventory' : '/account'}>{isDealerContext ? '← Back to inventory' : 'Back to account'}</Link>
 
         <section className={`${launcherStyles.launcher} ${styles.transferLauncher}`} aria-labelledby="asset-transfers-title">
           <div className={launcherStyles.launcherIntro}>
