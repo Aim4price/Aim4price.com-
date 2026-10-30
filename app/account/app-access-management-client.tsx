@@ -169,7 +169,7 @@ function ownerRoleLabel(value: unknown): string {
 const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   dealer: {
     title: 'Dealer App Staff',
-    description: 'Give your dealership team app access to stock and client work. Choose a role and the assets each login can use.',
+    description: 'Create team logins and choose what each person can do in the Dealer App.',
     newDescription: 'Create a separate app login.',
     manageDescription: 'Review permissions or deactivate a login.',
     loginLinkLabel: 'Dealer App staff login link',
@@ -181,9 +181,9 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     itemEndpoint: (id) => `/api/dealer/staff/${encodeURIComponent(id)}`,
     listKey: 'staff',
     itemKey: 'staff',
-    itemLabel: 'Dealer App staff member',
-    itemPlural: 'Dealer App staff logins',
-    displayNameLabel: 'Staff member name',
+    itemLabel: 'Dealer App user',
+    itemPlural: 'Dealer App users',
+    displayNameLabel: 'Display name',
     displayNamePlaceholder: 'Example: Sales Manager',
     usernamePlaceholder: 'example: sales.manager',
     passwordLabel: 'Password',
@@ -642,6 +642,7 @@ function AppAccessManagement({ kind, configOverride }: {
     () => ({ ...DIRECTORY_CONFIGS[kind], ...configOverride }),
     [configOverride, kind],
   );
+  const dealerPolish = kind === 'dealer' && config.qrApp === 'dealer';
   const [records, setRecords] = useState<AccessRecord[]>([]);
   const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
   const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
@@ -920,7 +921,7 @@ function AppAccessManagement({ kind, configOverride }: {
         value={value}
         options={config.roleOptions}
         onChange={onChange}
-        className={refinementStyles.roleSelect}
+        className={`${refinementStyles.roleSelect} ${dealerPolish ? styles.dealerRoleSelect : ''}`}
       />
     );
   }
@@ -985,7 +986,7 @@ function AppAccessManagement({ kind, configOverride }: {
         closeDisabled={creating || namespaceBusy}
         onClose={closeFlow}
       >
-        <div className={styles.newUserSetup}>
+        <div className={`${styles.newUserSetup} ${dealerPolish ? styles.dealerSetup : ''}`}>
         <InlineNotice notice={notice} />
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
@@ -1090,6 +1091,7 @@ function AppAccessManagement({ kind, configOverride }: {
             ) : null}
           </section>
         ) : <OwnerLoginSections
+          dealerPolish={dealerPolish}
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
           accountName={accountName} passwordMinimum={config.passwordMinimum} passwordMaximum={config.passwordMaximum}
           onDirtyChange={setOwnerDirty} hasUnsavedChanges={ownerDirty}

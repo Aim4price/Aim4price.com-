@@ -129,7 +129,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('‹ All logins');
    await click('Manage Alex');await heading('Manage access');
    await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-overview.png'});
-   await card('Login details');await fill('Display name','Alex Updated');await click('Save changes');await heading('Manage access');
+   await card('Login details');
+   if(kind==='dealer') {
+     assert(await page.$$eval('label input',inputs=>inputs.every(input=>{const icon=input.parentElement.querySelector('svg');return !icon||parseFloat(getComputedStyle(input).paddingLeft)>icon.getBoundingClientRect().right-input.getBoundingClientRect().left+6;})), 'Input text must clear the leading icon');
+     await page.screenshot({path:'.next/owner-login-validation/dealer-details.png'});
+   }
+   await fill('Display name','Alex Updated');await click('Save changes');await heading('Manage access');
    assert.deepEqual(await patch(),{displayName:'Alex Updated',username:'alex@skb'});
    await card('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'new-secret-123'});
    await card('Permissions');
@@ -143,10 +148,15 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await card('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');await click('‹ Back');
    } else {
      assert.equal(await page.$$eval('input[type="radio"]',els=>els.length),kind==='dealer'?4:2);
+     if(kind==='dealer') {
+       assert(await page.$$eval('input[type="radio"]',els=>els[0].closest('label').getBoundingClientRect().top===els[1].closest('label').getBoundingClientRect().top), 'Dealer roles should use two columns');
+       assert(await page.$eval('button[type="submit"]',el=>el.getBoundingClientRect().bottom<=innerHeight), 'Save action should fit on screen');
+       await page.screenshot({path:'.next/owner-login-validation/dealer-permissions.png'});
+     }
      await page.click('input[value="owner"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{role:'owner'});
    }
    await page.setViewport({width:390,height:844});assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-mobile.png'});await page.setViewport({width:1280,height:900});
-   await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
+   if(kind==='dealer') await card('Login status'); else await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
    await page.evaluate(()=>ReactDOM.unmountComponentAtNode(document.getElementById('other-app')));
  }
  assert.deepEqual(errors,[]);console.log('PASS: section navigation, role/asset access, scoped saves, duplicate errors, unsaved edits, status actions and mobile layout');

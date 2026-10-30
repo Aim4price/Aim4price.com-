@@ -1368,3 +1368,7 @@
 }
 
 .passwordEye svg { display:block; width:1.25rem; height:1.25rem; opacity:.65; }
+
+.dealerSetup .dealerRoleSelect > span { font-size:.9rem; font-weight:650; letter-spacing:0; text-transform:none; color:var(--app-muted,#65796f); }
+.dealerSetup .passwordEye { background:transparent; border:0; box-shadow:none; min-width:2.75rem; }
+.dealerSetup .formActions button { min-width:8rem; }
