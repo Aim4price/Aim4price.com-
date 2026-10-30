@@ -3,14 +3,18 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import styles from './owner-login-sections.module.css';
 
-type Section = 'overview' | 'details' | 'permissions' | 'assets' | 'passcode' | 'status';
+type Section = 'overview' | 'details' | 'permissions' | 'assets' | 'passcode' | 'status' | 'fuel';
 type RecordInfo = { id: string; displayName: string; username: string; accessRole?: string; isActive: boolean; lastLoginAtIso: string | null; updatedAtIso: string };
 type Props = {
   record: RecordInfo; busy: boolean; accountName: string | null; passwordMinimum: number; passwordMaximum: number;
   onSave: (changes: Record<string, unknown>, message: string) => Promise<boolean>;
   onToggle: () => void; onDelete: () => void; onBack: () => void;
   onDirtyChange: (dirty: boolean) => void; hasUnsavedChanges: boolean;
-  renderAssetAccess: (onSaved: () => void) => ReactNode;
+  renderAssetAccess?: (onSaved: () => void) => ReactNode;
+  renderPermissions?: (onSaved: () => void) => ReactNode;
+  renderFuelAccess?: (onSaved: () => void) => ReactNode;
+  roleOptions?: { value: string; label: string; text: string }[];
+  roleField?: 'role' | 'accessRole'; currentRole?: string; passwordLabel?: string;
 };
 const roles = [
   { value: 'view_only', label: 'View only', text: 'View assets and records.' },
@@ -23,20 +27,23 @@ export function AccessSectionIcon({ name }: { name: string }) {
 function date(value: string | null) { return value ? new Date(value).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'; }
 export default function OwnerLoginSections(props: Props) {
   const { record, busy } = props;
+  const roleOptions = props.roleOptions ?? roles;
+  const currentRole = props.currentRole ?? record.accessRole;
+  const passwordLabel = props.passwordLabel ?? 'Passcode';
   const [section, setSection] = useState<Section>('overview');
   const [name, setName] = useState(record.displayName);
   const [username, setUsername] = useState(record.username);
-  const [role, setRole] = useState(record.accessRole || 'operations');
+  const [role, setRole] = useState(currentRole || roleOptions[0]?.value || '');
   const [passcode, setPasscode] = useState('');
   const [showPasscode, setShowPasscode] = useState(false);
   const [error, setError] = useState('');
   const heading = useRef<HTMLHeadingElement>(null);
-  const dirty = section === 'details' ? name !== record.displayName || username !== record.username : section === 'permissions' ? role !== record.accessRole : section === 'passcode' ? !!passcode : false;
-  useEffect(() => { if (section !== 'assets') props.onDirtyChange(dirty); }, [dirty, section, props.onDirtyChange]);
+  const dirty = section === 'details' ? name !== record.displayName || username !== record.username : section === 'permissions' ? role !== currentRole : section === 'passcode' ? !!passcode : false;
+  useEffect(() => { if (section !== 'assets' && section !== 'fuel' && !(section === 'permissions' && props.renderPermissions)) props.onDirtyChange(dirty); }, [dirty, section, props.onDirtyChange]);
   useEffect(() => { heading.current?.focus(); }, [section]);
   function open(next: Section) {
     if (busy) return;
-    setName(record.displayName); setUsername(record.username); setRole(record.accessRole || 'operations');
+    setName(record.displayName); setUsername(record.username); setRole(currentRole || roleOptions[0]?.value || '');
     setPasscode(''); setShowPasscode(false); setError(''); props.onDirtyChange(false); setSection(next);
   }
   function back() {
@@ -50,18 +57,19 @@ export default function OwnerLoginSections(props: Props) {
     if (section === 'details') {
       if (!name.trim() || username.trim().length < 3) { setError('Enter a name and a username of at least 3 characters.'); return; }
       changes = { displayName: name.trim(), username: username.trim().toLowerCase() };
-    } else if (section === 'permissions') changes = { accessRole: role };
+    } else if (section === 'permissions') changes = { [props.roleField ?? 'accessRole']: role };
     else {
       if (passcode.length < props.passwordMinimum) { setError(`Use at least ${props.passwordMinimum} characters.`); return; }
       changes = { password: passcode };
     }
-    if (await props.onSave(changes, section === 'passcode' ? 'Passcode updated.' : 'Changes saved.')) open('overview');
+    if (await props.onSave(changes, section === 'passcode' ? `${passwordLabel} updated.` : 'Changes saved.')) open('overview');
   }
   const cards: { id: Section; title: string; text: string; value: string }[] = [
     { id: 'details', title: 'Login details', text: 'Change their name or username.', value: record.username },
-    { id: 'permissions', title: 'Permissions', text: 'Choose what they can do.', value: roles.find(r => r.value === record.accessRole)?.label || 'Operations' },
-    { id: 'assets', title: 'Asset access', text: 'Choose which assets they can access.', value: record.accessRole === 'admin' ? 'All assets' : 'Manage asset selection' },
-    { id: 'passcode', title: 'Passcode', text: 'Set a new login passcode.', value: 'Change passcode' },
+    { id: 'permissions', title: 'Permissions', text: 'Choose what they can do.', value: roleOptions.find(r => r.value === currentRole)?.label || 'Manage permissions' },
+    ...(props.renderAssetAccess ? [{ id: 'assets' as Section, title: 'Asset access', text: 'Choose which assets they can access.', value: currentRole === 'admin' ? 'All assets' : 'Manage asset selection' }] : []),
+    ...(props.renderFuelAccess ? [{ id: 'fuel' as Section, title: 'Fuel tank access', text: 'Choose which fuel tanks they can use.', value: 'Manage fuel selection' }] : []),
+    { id: 'passcode', title: passwordLabel, text: `Set a new login ${passwordLabel.toLowerCase()}.`, value: `Change ${passwordLabel.toLowerCase()}` },
   ];
   const title = section === 'status' ? 'Manage login status' : cards.find(c => c.id === section)?.title;
   return <div className={`${styles.manager} ${styles.ownerManager}`}>
@@ -71,13 +79,13 @@ export default function OwnerLoginSections(props: Props) {
     </div>
     {section === 'overview' ? <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>Manage access</h3>
-      <div className={styles.grid}>{cards.map(card => <button key={card.id} type="button" className={styles.card} onClick={() => open(card.id)}>
-        <span className={styles.icon}><AccessSectionIcon name={card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
+      <div className={styles.grid}>{cards.map(card => <button key={card.id} type="button" className={styles.card} disabled={busy} onClick={() => open(card.id)}>
+        <span className={styles.icon}><AccessSectionIcon name={card.id === 'fuel' ? 'box' : card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
       </button>)}</div>
       <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button>
     </> : <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{title}</h3>
-      {section === 'assets' ? record.accessRole === 'admin' ? <div className={`${styles.info} ${styles.fullAccess}`}><strong>Full access to all assets</strong><button type="button" onClick={() => open('permissions')}>Change permissions</button></div> : props.renderAssetAccess(() => open('overview')) : section === 'status' ? <>
+      {section === 'fuel' ? props.renderFuelAccess?.(() => open('overview')) : section === 'permissions' && props.renderPermissions ? props.renderPermissions(() => open('overview')) : section === 'assets' ? currentRole === 'admin' ? <div className={`${styles.info} ${styles.fullAccess}`}><strong>Full access to all assets</strong><button type="button" onClick={() => open('permissions')}>Change permissions</button></div> : props.renderAssetAccess?.(() => open('overview')) : section === 'status' ? <>
         <dl className={styles.history}><div><dt><AccessSectionIcon name="clock"/>Last login</dt><dd>{date(record.lastLoginAtIso)}</dd></div><div><dt><AccessSectionIcon name="clock"/>Last updated</dt><dd>{date(record.updatedAtIso)}</dd></div></dl>
         <div className={styles.statusAction}><div><strong>{record.isActive ? 'Deactivate login' : 'Activate login'}</strong><p>{record.isActive ? 'Stop sign-in access. You can activate it again later.' : 'Allow this person to sign in again.'}</p></div><button type="button" disabled={busy} onClick={props.onToggle}><AccessSectionIcon name="power"/>{record.isActive ? 'Deactivate' : 'Activate'}</button></div>
         <div className={styles.statusAction}><div><strong>Delete login</strong><p>Permanently remove this login.</p></div><button type="button" className={styles.danger} disabled={busy} onClick={props.onDelete}><AccessSectionIcon name="delete"/>Delete</button></div>
@@ -88,9 +96,9 @@ export default function OwnerLoginSections(props: Props) {
             <label>Username<span className={styles.inputIcon}><AccessSectionIcon name="login"/><input value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required minLength={3} autoCapitalize="none" autoComplete="off" spellCheck={false}/></span></label>
             <p className={styles.hint}>This is an app username, not an email address.</p>
             {props.accountName && !username.endsWith(`@${props.accountName}`) ? <button type="button" onClick={() => setUsername(`${username.split('@')[0]}@${props.accountName}`)}>Use business username</button> : null}
-          </> : section === 'permissions' ? <div className={styles.choices}>{roles.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
-            <label>New passcode<div className={`${styles.password} ${styles.inputIcon}`}><AccessSectionIcon name="passcode"/><input type={showPasscode ? 'text' : 'password'} value={passcode} onChange={e => setPasscode(e.target.value)} required minLength={props.passwordMinimum} maxLength={props.passwordMaximum} autoComplete="new-password"/><button type="button" aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'} aria-pressed={showPasscode} onClick={() => setShowPasscode(!showPasscode)}><AccessSectionIcon name="eye"/></button></div></label>
-            <p className={styles.hint}>Use at least {props.passwordMinimum} characters. Share the new passcode with this person.</p>
+          </> : section === 'permissions' ? <div className={styles.choices}>{roleOptions.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
+            <label>New {passwordLabel.toLowerCase()}<div className={`${styles.password} ${styles.inputIcon}`}><AccessSectionIcon name="passcode"/><input type={showPasscode ? 'text' : 'password'} value={passcode} onChange={e => setPasscode(e.target.value)} required minLength={props.passwordMinimum} maxLength={props.passwordMaximum} autoComplete="new-password"/><button type="button" aria-label={`${showPasscode ? 'Hide' : 'Show'} ${passwordLabel.toLowerCase()}`} aria-pressed={showPasscode} onClick={() => setShowPasscode(!showPasscode)}><AccessSectionIcon name="eye"/></button></div></label>
+            <p className={styles.hint}>Use at least {props.passwordMinimum} characters. Share the new {passwordLabel.toLowerCase()} with this person.</p>
           </>}
         </fieldset>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}

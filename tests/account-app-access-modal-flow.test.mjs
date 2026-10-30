@@ -37,10 +37,11 @@ test('shared access flows preserve each app login type and its existing controls
   assert.match(shared, /Owner \/ Manager/);
   assert.match(shared, /Operations/);
   assert.match(shared, /FieldManagerAccessPanel/);
-  assert.match(shared, /Save access/);
-  assert.match(shared, /Deactivate/);
-  assert.match(shared, /Activate/);
-  assert.match(shared, /Delete/);
+  assert.match(shared, /Save changes/);
+  const sections = await read('app/account/owner-login-sections.tsx');
+  assert.match(sections, /Deactivate/);
+  assert.match(sections, /Activate/);
+  assert.match(sections, /Delete/);
   assert.match(shared, /Copy link/);
   assert.match(shared, /Share link/);
 });

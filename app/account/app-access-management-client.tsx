@@ -4,7 +4,6 @@ import OwnerAccessPicker from './owner-access-picker';
 import { AccessSectionIcon } from './owner-login-sections';
 import OwnerLoginSections from './owner-login-sections';
 import ownerStyles from './owner-login-sections.module.css';
-import AssetPickerDetail from '../../components/AssetPickerDetail';
 import {
   useEffect,
   useId,
@@ -403,13 +402,6 @@ function sortAccessOptions<T>(options: T[], readLabel: (option: T) => unknown): 
   return [...options].sort((left, right) => compareAccessDirectoryText(readLabel(left), readLabel(right)));
 }
 
-function formatDateTime(value: string | null): string {
-  if (!value) return 'Not yet';
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Not yet';
-  return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
-}
-
 function readRecordList(payload: ApiPayload | null, key: string): AccessRecord[] {
   const value = payload?.[key];
   return Array.isArray(value) ? value as AccessRecord[] : [];
@@ -430,15 +422,6 @@ function emptyDraft(config: DirectoryConfig): AccessDraft {
     username: '',
     password: '',
     role: config.defaultRole,
-  };
-}
-
-function draftFromRecord(record: AccessRecord, config: DirectoryConfig): AccessDraft {
-  return {
-    displayName: record.displayName,
-    username: record.username,
-    password: '',
-    role: config.roleValue(record),
   };
 }
 
@@ -661,7 +644,6 @@ function AppAccessManagement({ kind, configOverride }: {
   );
   const [records, setRecords] = useState<AccessRecord[]>([]);
   const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
-  const [editDrafts, setEditDrafts] = useState<Record<string, AccessDraft>>({});
   const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
   const [ownerDirty, setOwnerDirty] = useState(false);
   const [ownerAccessBusy, setOwnerAccessBusy] = useState(false);
@@ -672,10 +654,8 @@ function AppAccessManagement({ kind, configOverride }: {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
-  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [createUsernameError, setCreateUsernameError] = useState('');
-  const [editUsernameErrors, setEditUsernameErrors] = useState<Record<string, string>>({});
   const [loginLink, setLoginLink] = useState(config.loginPath);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [accountNameDraft, setAccountNameDraft] = useState('');
@@ -716,12 +696,12 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function renderAccountNameSetup() {
-    if (accountName) return kind !== 'dealer' && businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
+    if (accountName) return businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
     const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
           <span>Business login ID</span>
-          <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="business" /> : null}<input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
+          <span className={styles.setupInputIcon}><SettingsDetailIcon name="business" /><input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
             autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} /></span>
         </label>
         <p className={styles.loginExample} aria-live="polite">App login example: <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong></p>
@@ -733,7 +713,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </details>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
         <div className={styles.loginSetupActions}>
-          {kind !== 'dealer' && (activeFlow === 'new' || businessSettingsOpen) ? <button type="button" className={styles.cancelButton} onClick={businessSettingsOpen ? () => setBusinessSettingsOpen(false) : closeFlow} disabled={namespaceBusy}>Cancel</button> : null}
+          {(activeFlow === 'new' || businessSettingsOpen) ? <button type="button" className={styles.cancelButton} onClick={businessSettingsOpen ? () => setBusinessSettingsOpen(false) : closeFlow} disabled={namespaceBusy}>Cancel</button> : null}
           <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
             {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
           </button>
@@ -741,12 +721,6 @@ function AppAccessManagement({ kind, configOverride }: {
         </div>
       </form>
     </section>;
-    if (kind === 'dealer' && activeFlow === 'manage' && records.length > 0) {
-      return <details className={styles.loginSetupDisclosure}>
-        <summary>Set up a business login ID <span>Existing logins still work</span></summary>
-        {setup}
-      </details>;
-    }
     return setup;
   }
 
@@ -783,7 +757,6 @@ function AppAccessManagement({ kind, configOverride }: {
       if (!response.ok || !payload?.ok) throw new Error(extractError(payload, `Failed to load ${config.itemPlural}.`));
       const nextRecords = sortAccessRecords(readRecordList(payload, config.listKey));
       setRecords(nextRecords);
-      setEditDrafts(Object.fromEntries(nextRecords.map((record) => [record.id, draftFromRecord(record, config)])));
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : `Failed to load ${config.itemPlural}.` });
     } finally {
@@ -806,13 +779,6 @@ function AppAccessManagement({ kind, configOverride }: {
     setBusinessSettingsOpen(false);
     setActiveFlow(null);
     setSelectedId(null);
-  }
-
-  function updateEditDraft(id: string, changes: Partial<AccessDraft>) {
-    setEditDrafts((current) => ({
-      ...current,
-      [id]: { ...(current[id] ?? emptyDraft(config)), ...changes },
-    }));
   }
 
   async function createRecord(event: FormEvent<HTMLFormElement>) {
@@ -859,7 +825,6 @@ function AppAccessManagement({ kind, configOverride }: {
       if (!response.ok || !payload?.ok || !created) throw new Error(extractError(payload, `Failed to create ${config.itemLabel}.`));
 
       setRecords((current) => sortAccessRecords([...current, created]));
-      setEditDrafts((current) => ({ ...current, [created.id]: draftFromRecord(created, config) }));
       setDraft(emptyDraft(config));
       setShowCreatePassword(false);
       setCreateUsernameError('');
@@ -879,7 +844,6 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   async function patchRecord(record: AccessRecord, changes: Record<string, unknown>, successMessage: string) {
-    setEditUsernameErrors((current) => ({ ...current, [record.id]: '' }));
     setBusyId(record.id);
     try {
       const response = await fetch(config.itemEndpoint(record.id), {
@@ -893,49 +857,15 @@ function AppAccessManagement({ kind, configOverride }: {
       if (!response.ok || !payload?.ok || !updated) throw new Error(extractError(payload, `Failed to update ${config.itemLabel}.`));
 
       setRecords((current) => sortAccessRecords(current.map((entry) => entry.id === updated.id ? updated : entry)));
-      setEditDrafts((current) => ({ ...current, [updated.id]: draftFromRecord(updated, config) }));
-      setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
-      setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
       setNotice({ tone: 'success', message: successMessage });
       return true;
     } catch (error) {
       const message = error instanceof Error ? error.message : `Failed to update ${config.itemLabel}.`;
-      if (kind !== 'owner' && /username is already in use/i.test(message)) {
-        setEditUsernameErrors((current) => ({ ...current, [record.id]: message }));
-        setNotice(null);
-      } else {
-        setNotice({ tone: 'error', message });
-      }
+      setNotice({ tone: 'error', message });
       return false;
     } finally {
       setBusyId(null);
     }
-  }
-
-  async function saveRecord(event: FormEvent<HTMLFormElement>, record: AccessRecord) {
-    event.preventDefault();
-    const edit = editDrafts[record.id];
-    if (!edit) return;
-    const username = normalizeUsername(edit.username);
-    if (!edit.displayName.trim() || username.length < 3) {
-      setNotice({ tone: 'error', message: 'Enter a display name and a username with at least 3 characters.' });
-      return;
-    }
-
-    const changes: Record<string, unknown> = {
-      displayName: edit.displayName.trim(),
-      username,
-    };
-    if (config.roleField) changes[config.roleField] = edit.role;
-    if (edit.password) {
-      if (edit.password.length < config.passwordMinimum) {
-        setNotice({ tone: 'error', message: `The new ${config.passwordLabel.toLowerCase()} must contain at least ${config.passwordMinimum} characters.` });
-        return;
-      }
-      changes.password = edit.password;
-    }
-
-    await patchRecord(record, changes, edit.password ? config.updatePasswordSuccess : config.updateSuccess);
   }
 
   async function toggleRecord(record: AccessRecord) {
@@ -952,11 +882,6 @@ function AppAccessManagement({ kind, configOverride }: {
       const payload = await response.json().catch(() => null) as ApiPayload | null;
       if (!response.ok || !payload?.ok) throw new Error(extractError(payload, `Failed to delete ${config.itemLabel}.`));
       setRecords((current) => current.filter((entry) => entry.id !== record.id));
-      setEditDrafts((current) => {
-        const next = { ...current };
-        delete next[record.id];
-        return next;
-      });
       setSelectedId(null);
       setNotice({ tone: 'success', message: config.deleteSuccess });
     } catch (error) {
@@ -1003,12 +928,12 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
     const roleSummary = config.roleSummary(record);
     return (
-      <div className={`${styles.loginSummary} ${kind === 'owner' ? ownerStyles.userRow : ''}`}>
+      <div className={`${styles.loginSummary} ${ownerStyles.userRow}`}>
         <div className={styles.loginIdentity}>
           <LoginDetailIcon kind="person" />
           <div><strong>{record.displayName}</strong><span>{record.username}</span></div>
         </div>
-        {kind === 'owner' ? <span className={ownerStyles.rowRole}>{roleSummary}</span> : null}
+        {roleSummary ? <span className={ownerStyles.rowRole}>{roleSummary}</span> : null}
         <div className={styles.loginActions}>
           <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
             {record.isActive ? 'Active' : 'Inactive'}
@@ -1019,16 +944,11 @@ function AppAccessManagement({ kind, configOverride }: {
             </button>
           ) : null}
         </div>
-        {kind === 'dealer' ? <div className={styles.loginDetails} aria-label={`${config.itemLabel} details`}>
-          {roleSummary ? <span><LoginDetailIcon kind="shield" />{roleSummary}</span> : null}
-          <span><LoginDetailIcon kind="clock" /><span>Last login <span>{formatDateTime(record.lastLoginAtIso)}</span></span></span>
-          {!includeManageButton ? <span><LoginDetailIcon kind="clock" /><span>Updated <span>{formatDateTime(record.updatedAtIso)}</span></span></span> : null}
-        </div> : null}
+
       </div>
     );
   }
 
-  const selectedEdit = selectedRecord ? editDrafts[selectedRecord.id] ?? draftFromRecord(selectedRecord, config) : null;
   const isSelectedBusy = selectedRecord ? busyId === selectedRecord.id || deletingId === selectedRecord.id : false;
 
   return (
@@ -1059,21 +979,21 @@ function AppAccessManagement({ kind, configOverride }: {
 
       <AppAccessModal
         open={activeFlow === 'new'}
-        notificationStyle={kind === 'owner' || kind === 'field'}
+        notificationStyle
         title={`New ${config.itemLabel}`}
         description="Enter the login details."
         closeDisabled={creating || namespaceBusy}
         onClose={closeFlow}
       >
-        <div className={kind === 'owner' || kind === 'field' ? styles.newUserSetup : undefined}>
+        <div className={styles.newUserSetup}>
         <InlineNotice notice={notice} />
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
-          {kind !== 'dealer' ? <h3 className={styles.setupTitle}>Login details</h3> : null}
+          <h3 className={styles.setupTitle}>Login details</h3>
           <form className={`${baseStyles.form} ${styles.setupForm}`} onSubmit={createRecord}>
             <label className={`${baseStyles.field} ${styles.field}`}>
               <span>{config.displayNameLabel}</span>
-              <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="person" /> : null}<input
+              <span className={styles.setupInputIcon}><SettingsDetailIcon name="person" /><input
                 value={draft.displayName}
                 onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
                 placeholder={config.displayNamePlaceholder}
@@ -1082,7 +1002,7 @@ function AppAccessManagement({ kind, configOverride }: {
             </label>
             <label className={`${baseStyles.field} ${styles.field}`}>
               <span>Person’s username</span>
-              <span className={styles.setupInputIcon}>{kind !== 'dealer' ? <SettingsDetailIcon name="email" /> : null}<input
+              <span className={styles.setupInputIcon}><SettingsDetailIcon name="email" /><input
                 value={draft.username}
                 onChange={(event) => {
                   setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }));
@@ -1100,7 +1020,7 @@ function AppAccessManagement({ kind, configOverride }: {
             {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
             <div className={`${baseStyles.field} ${styles.field}`}>
               <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-create-password`}>{config.passwordLabel}</label>
-              <div className={`${baseStyles.passwordInputWrap} ${styles.setupInputIcon}`}>{kind !== 'dealer' ? <SettingsDetailIcon name="lock" /> : null}
+              <div className={`${baseStyles.passwordInputWrap} ${styles.setupInputIcon}`}><SettingsDetailIcon name="lock" />
                 <input
                   id={`${kind}-create-password`}
                   type={showCreatePassword ? 'text' : 'password'}
@@ -1111,13 +1031,13 @@ function AppAccessManagement({ kind, configOverride }: {
                   maxLength={config.passwordMaximum}
                   autoComplete="new-password"
                 />
-                <button type="button" className={baseStyles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>
-                  {showCreatePassword ? 'Hide' : 'Show'}
+                <button type="button" className={`${baseStyles.passwordToggleButton} ${styles.passwordEye}`} aria-label={`${showCreatePassword ? 'Hide' : 'Show'} ${config.passwordLabel.toLowerCase()}`} aria-pressed={showCreatePassword} onClick={() => setShowCreatePassword((current) => !current)}>
+                  <AccessSectionIcon name="eye"/>
                 </button>
               </div>
             </div>
-            <div className={kind !== 'dealer' ? styles.formActions : undefined}>
-              {kind !== 'dealer' ? <button type="button" className={styles.cancelButton} onClick={closeFlow} disabled={creating}>Cancel</button> : null}
+            <div className={styles.formActions}>
+              <button type="button" className={styles.cancelButton} onClick={closeFlow} disabled={creating}>Cancel</button>
               <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={creating}>
                 {creating ? 'Creating…' : 'Create login'}
               </button>
@@ -1129,34 +1049,16 @@ function AppAccessManagement({ kind, configOverride }: {
 
       <AppAccessModal
         open={activeFlow === 'manage'}
-        notificationStyle={kind === 'owner' || kind === 'field'}
+        notificationStyle
         title={businessSettingsOpen ? 'Business login settings' : selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
-        description={businessSettingsOpen ? 'One business ID for your app logins.' : selectedRecord ? (kind === 'owner' ? selectedRecord.username : '') : 'Choose a person to manage.'}
+        description={businessSettingsOpen ? 'One business ID for your app logins.' : selectedRecord ? selectedRecord.username : 'Choose a person to manage.'}
         compact={Boolean(selectedRecord)}
-        footer={kind !== 'owner' && selectedRecord && selectedEdit ? (
-                  <div className={`${baseStyles.managerActions} ${styles.managerActions} ${styles.editorFooterActions}`}>
-                    <button type="submit" form="login-edit-form" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
-                      {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
-                    </button>
-                    <button
-                      type="button"
-                      className={selectedRecord.isActive ? styles.deactivateLoginButton : baseStyles.primaryButton}
-                      disabled={isSelectedBusy}
-                      onClick={() => void toggleRecord(selectedRecord)}
-                    >
-                      {selectedRecord.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    <button type="button" className={baseStyles.deleteButton} disabled={isSelectedBusy} onClick={() => void deleteRecord(selectedRecord)}>
-                      {deletingId === selectedRecord.id ? 'Deleting…' : 'Delete'}
-                    </button>
-                  </div>
-        ) : null}
+
         wide
         closeDisabled={Boolean(busyId || deletingId || namespaceBusy || ownerAccessBusy)}
         onClose={closeFlow}
       >
         <InlineNotice notice={notice} />
-        {kind === 'dealer' ? renderAccountNameSetup() : null}
         {businessSettingsOpen ? <div className={styles.newUserSetup}>
           <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>‹ All logins</button>
           {renderAccountNameSetup()}
@@ -1164,10 +1066,10 @@ function AppAccessManagement({ kind, configOverride }: {
           <section className={`${baseStyles.card} ${styles.surface}`}>
             <div className={styles.directoryHeader}>
               <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
-              {kind !== 'dealer' ? <div className={ownerStyles.listActions}>
+              <div className={ownerStyles.listActions}>
                 <button type="button" onClick={() => setBusinessSettingsOpen(true)}>Business login settings</button>
                 <button type="button" className={ownerStyles.primary} onClick={() => openFlow('new')}>Add user</button>
-              </div> : <span>Select one person to continue.</span>}
+              </div>
             </div>
             {loading ? <div className={styles.emptyState}><p>Loading access details…</p></div> : null}
             {!loading && !records.length ? (
@@ -1180,97 +1082,35 @@ function AppAccessManagement({ kind, configOverride }: {
             {!loading && records.length ? (
               <div className={`${baseStyles.managerList} ${styles.directoryList}`}>
                 {records.map((record) => (
-                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard} ${kind !== 'dealer' ? ownerStyles.directoryRow : ''}`}>
+                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard} ${ownerStyles.directoryRow}`}>
                     {renderRecordSummary(record, true)}
                   </article>
                 ))}
               </div>
             ) : null}
           </section>
-        ) : kind === 'owner' ? <OwnerLoginSections
+        ) : <OwnerLoginSections
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
           accountName={accountName} passwordMinimum={config.passwordMinimum} passwordMaximum={config.passwordMaximum}
           onDirtyChange={setOwnerDirty} hasUnsavedChanges={ownerDirty}
           onSave={(changes, message) => patchRecord(selectedRecord, changes, message)}
           onToggle={() => void toggleRecord(selectedRecord)} onDelete={() => void deleteRecord(selectedRecord)}
           onBack={() => { if (!ownerDirty || window.confirm('Discard unsaved changes?')) { setOwnerDirty(false); setSelectedId(null); } }}
-          renderAssetAccess={(onSaved) => <OwnerAppAssetAccessPanel userId={selectedRecord.id} onSaved={() => { setOwnerDirty(false); setNotice({ tone: 'success', message: 'Asset access saved.' }); onSaved(); }} onBusyChange={setOwnerAccessBusy} onDirtyChange={setOwnerDirty} />}
-        /> : selectedEdit ? (
-          <>
-            <div className={styles.editorToolbar}>
-            <button type="button" className={styles.modalBackButton} onClick={() => setSelectedId(null)} disabled={isSelectedBusy}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg> All logins
-            </button>
-            <span className={`${baseStyles.statusText} ${selectedRecord.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>{selectedRecord.isActive ? 'Active' : 'Inactive'}</span>
-            </div>
-            <article className={`${baseStyles.managerCard} ${baseStyles.managerCardExpanded} ${styles.editorCard}`}>
-              <div className={baseStyles.managerDropdown}>
-                <form id="login-edit-form" className={`${baseStyles.inlineForm} ${styles.loginEditForm}`} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
-                  <label className={`${baseStyles.compactField} ${styles.compactField}`}>
-                    <span>{config.displayNameLabel}</span>
-                    <span className={styles.loginInputIcon}><SettingsDetailIcon name="person" /><input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} /></span>
-                  </label>
-                  <label className={`${baseStyles.compactField} ${styles.compactField}`}>
-                    <span>Person’s username</span>
-                    <span className={styles.loginInputIcon}><SettingsDetailIcon name="email" />
-                    <input
-                      value={selectedEdit.username}
-                      onChange={(event) => {
-                        updateEditDraft(selectedRecord.id, { username: normalizeUsername(event.target.value) });
-                        setEditUsernameErrors((current) => ({ ...current, [selectedRecord.id]: '' }));
-                      }}
-                      aria-invalid={Boolean(editUsernameErrors[selectedRecord.id])}
-                    />
-                    </span>
-                    {selectedEdit.username !== selectedRecord.username ? <small className={styles.usernamePreview}>New login: {usernamePreview(selectedEdit.username)}</small> : null}
-                    {editUsernameErrors[selectedRecord.id] ? <small className={baseStyles.fieldError} role="alert">{editUsernameErrors[selectedRecord.id]}</small> : null}
-                  </label>
-                  {accountName && !selectedRecord.username.endsWith(`@${accountName}`) ? (
-                    <button type="button" className={styles.emptyAction} onClick={() => updateEditDraft(selectedRecord.id, {
-                      username: `${selectedRecord.username.split('@')[0]}@${accountName}`,
-                    })}>Use business username</button>
-                  ) : null}
-                  <div className={styles.loginEditFull}>{renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}</div>
-                  <details key={selectedRecord.id} className={`${styles.passcodeDisclosure} ${styles.loginEditFull}`}>
-                    <summary><SettingsDetailIcon name="lock" />Change {config.passwordLabel.toLowerCase()}<span aria-hidden="true">+</span></summary>
-                  <div className={`${baseStyles.compactField} ${styles.compactField}`}>
-                    <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
-                    <div className={`${baseStyles.passwordInputWrap} ${styles.loginInputIcon}`}>
-                      <SettingsDetailIcon name="lock" />
-                      <input
-                        id={`${kind}-password-${selectedRecord.id}`}
-                        onInvalid={(event) => { const disclosure = event.currentTarget.closest('details'); if (disclosure) disclosure.open = true; }}
-                        type={visiblePasswords[selectedRecord.id] ? 'text' : 'password'}
-                        value={selectedEdit.password}
-                        onChange={(event) => updateEditDraft(selectedRecord.id, { password: event.target.value.slice(0, config.passwordMaximum) })}
-                        placeholder={`Enter a new ${config.passwordLabel.toLowerCase()}`}
-                        minLength={config.passwordMinimum}
-                        maxLength={config.passwordMaximum}
-                        autoComplete="new-password"
-                      />
-                      <button type="button" aria-pressed={Boolean(visiblePasswords[selectedRecord.id])} aria-label={`${visiblePasswords[selectedRecord.id] ? 'Hide' : 'Show'} new ${config.passwordLabel.toLowerCase()}`} className={baseStyles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [selectedRecord.id]: !current[selectedRecord.id] }))}>
-                        {visiblePasswords[selectedRecord.id] ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                    <p className={baseStyles.fieldHint}>Leave blank to keep the current {config.passwordLabel.toLowerCase()}.</p>
-                  </div>
-                  </details>
-                </form>
-                {kind === 'field' ? <FieldManagerAccessPanel managerId={selectedRecord.id} /> : null}
-                <div className={styles.editorDates}>
-                  <span><LoginDetailIcon kind="clock" />Last login {formatDateTime(selectedRecord.lastLoginAtIso)}</span>
-                  <span>Updated {formatDateTime(selectedRecord.updatedAtIso)}</span>
-                </div>
-              </div>
-            </article>
-          </>
-        ) : null}
+          passwordLabel={config.passwordLabel}
+          roleField={config.roleField ?? undefined} currentRole={config.roleValue(selectedRecord)}
+          roleOptions={kind === 'owner' ? undefined : config.roleOptions.map(option => ({ value: option.value, label: option.label, text: option.description ?? '' }))}
+          renderPermissions={kind === 'field' ? onSaved => <FieldManagerAccessPanel managerId={selectedRecord.id} section="permissions" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : undefined}
+          renderFuelAccess={kind === 'field' ? onSaved => <FieldManagerAccessPanel managerId={selectedRecord.id} section="fuel" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : undefined}
+          renderAssetAccess={kind === 'dealer' ? undefined : kind === 'field' ? onSaved => <FieldManagerAccessPanel managerId={selectedRecord.id} section="assets" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : (onSaved) => <OwnerAppAssetAccessPanel userId={selectedRecord.id} onSaved={() => { setOwnerDirty(false); setNotice({ tone: 'success', message: 'Asset access saved.' }); onSaved(); }} onBusyChange={setOwnerAccessBusy} onDirtyChange={setOwnerDirty} />}
+        />}
       </AppAccessModal>
     </main>
   );
 }
 
-function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
+function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, onBusyChange }: { managerId: string; section: 'permissions' | 'assets' | 'fuel'; onSaved: () => void; onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void }) {
+  const savedSettings = useRef('');
+  const [picker, setPicker] = useState<'groupIds' | 'assetIds' | 'fuelStorageIds' | null>(null);
   const [settings, setSettings] = useState<ManagerAccessSettings | null>(null);
   const [assets, setAssets] = useState<NonNullable<ManagerAccessResponse['assets']>>([]);
   const [groups, setGroups] = useState<NonNullable<ManagerAccessResponse['groups']>>([]);
@@ -1286,6 +1126,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
       .then(({ response, payload }) => {
         if (!active) return;
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
+        savedSettings.current = JSON.stringify(payload.settings);
         setSettings(payload.settings);
         setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
         setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
@@ -1296,12 +1137,8 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
     return () => { active = false; };
   }, [managerId]);
 
-  function toggleId(key: 'assetIds' | 'groupIds' | 'fuelStorageIds', id: string) {
-    setSettings((current) => current ? {
-      ...current,
-      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
-    } : current);
-  }
+  useEffect(() => { onDirtyChange(!!settings && JSON.stringify(settings) !== savedSettings.current); }, [settings, onDirtyChange]);
+  useEffect(() => { onBusyChange(loading || saving); return () => onBusyChange(false); }, [loading, saving, onBusyChange]);
 
   async function saveAccess() {
     if (!settings) return;
@@ -1317,7 +1154,9 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
       const payload = await response.json().catch(() => null) as ManagerAccessResponse | null;
       if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
       setSettings(payload.settings);
-      setMessage('Access saved.');
+      savedSettings.current = JSON.stringify(payload.settings);
+      onDirtyChange(false);
+      onSaved();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save access.');
     } finally {
@@ -1328,107 +1167,37 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
   if (loading) return <div className={styles.accessPanel}><p className={styles.accessMessage}>Loading app access…</p></div>;
   if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
 
-  return (
-    <section className={styles.accessPanel} aria-label="Field Manager permissions">
-      <div className={refinementStyles.sectionHeading}>
-
-        <div className={refinementStyles.sectionHeadingCopy}>
-          <h3>App access</h3>
-          <p>Choose what this manager can do and which assets or fuel tanks they may use.</p>
-        </div>
-      </div>
-
-      <div className={styles.permissionGrid}>
-        {([
-          ['canRecordWork', 'Check, service and repair'],
-          ['canScheduleMaintenance', 'Schedule maintenance'],
-          ['canRecordFuel', 'Fuel assets'],
-          ['canRefillFuel', 'Refill fuel tanks'],
-        ] as const).map(([key, label]) => (
-          <label className={styles.permissionChoice} key={key}>
-            <input type="checkbox" checked={settings[key]} onChange={(event) => setSettings((current) => current ? { ...current, [key]: event.target.checked } : current)} />
-            <span>{label}</span>
-            <span className={styles.permissionSwitch} aria-hidden="true">{settings[key] ? 'On' : 'Off'}</span>
-          </label>
-        ))}
-      </div>
-
-      <div className={styles.accessColumns}>
-        <div className={styles.accessColumn}>
-          <FriendlySelect
-            label="Assets"
-            value={settings.assetScope}
-            options={ASSET_SCOPE_OPTIONS}
-            onChange={(assetScope) => setSettings((current) => current ? { ...current, assetScope } : current)}
-            className={refinementStyles.accessSelect}
-          />
-          {settings.assetScope === 'selected' ? (
-            <div className={styles.assetAccessChoices} data-asset-choice-surface="true">
-              {groups.length ? (
-                <div className={styles.accessChoiceGroup}>
-                  <strong>Umbrellas</strong>
-                  <small data-asset-choice-secondary="true">Choosing an umbrella includes its current and future linked assets.</small>
-                  <div className={styles.accessChecklist} data-asset-choice-list="true">
-                    {groups.map((group) => (
-                      <label
-                        key={group.id}
-                        data-asset-choice-row="true"
-                        data-asset-choice-selected={settings.groupIds.includes(group.id) ? 'true' : undefined}
-                      >
-                        <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
-                        <span data-asset-choice-copy="true"><strong>{group.name}</strong><small data-asset-choice-meta="true">{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <div className={styles.accessChoiceGroup}>
-                <strong>Individual assets</strong>
-                <small data-asset-choice-secondary="true">Use these for exceptions or assets outside an umbrella.</small>
-                <div className={styles.accessChecklist} data-asset-choice-list="true">
-                  {assets.length ? assets.map((asset) => (
-                    <label
-                      key={asset.id}
-                      data-asset-choice-row="true"
-                      data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
-                    >
-                      <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                      <span data-asset-choice-copy="true"><strong>{asset.title}</strong><AssetPickerDetail>{asset.kind}</AssetPickerDetail></span>
-                    </label>
-                  )) : <p className={styles.accessMessage}>No assets available.</p>}
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className={styles.accessColumn}>
-          <FriendlySelect
-            label="Fuel tanks"
-            value={settings.fuelScope}
-            options={FUEL_SCOPE_OPTIONS}
-            onChange={(fuelScope) => setSettings((current) => current ? { ...current, fuelScope } : current)}
-            className={refinementStyles.accessSelect}
-          />
-          {settings.fuelScope === 'selected' ? (
-            <div className={styles.accessChecklist}>
-              {storages.length ? storages.map((storage) => (
-                <label key={storage.id}>
-                  <input type="checkbox" checked={settings.fuelStorageIds.includes(storage.id)} onChange={() => toggleId('fuelStorageIds', storage.id)} />
-                  <span><strong>{storage.name}</strong><small>{storage.locationLabel || 'No location saved'}</small></span>
-                </label>
-              )) : <p className={styles.accessMessage}>No fuel tanks available.</p>}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <button type="button" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} onClick={() => void saveAccess()} disabled={saving}>
-        {saving ? 'Saving access…' : 'Save access'}
-      </button>
-    </section>
-  );
+  const choices = section === 'fuel' ? FUEL_SCOPE_OPTIONS : ASSET_SCOPE_OPTIONS;
+  const scopeKey = section === 'fuel' ? 'fuelScope' : 'assetScope';
+  return <section className={ownerStyles.assetPanel} aria-label={`Field Manager ${section}`}>
+    <fieldset className={ownerStyles.fields} disabled={saving}>
+      {section === 'permissions' ? <div className={ownerStyles.choices}>{([
+        ['canRecordWork', 'Check, service and repair', 'tools'],
+        ['canScheduleMaintenance', 'Schedule maintenance', 'clock'],
+        ['canRecordFuel', 'Fuel assets', 'box'],
+        ['canRefillFuel', 'Refill fuel tanks', 'box'],
+      ] as const).map(([key, label, icon]) => <label key={key} className={ownerStyles.choice} data-selected={settings[key]}>
+        <input type="checkbox" checked={settings[key]} onChange={event => setSettings(current => current ? { ...current, [key]: event.target.checked } : current)}/>
+        <span className={ownerStyles.roleIcon}><AccessSectionIcon name={icon}/></span><strong>{label}</strong>
+      </label>)}</div> : <>
+        <div className={ownerStyles.choices}>{choices.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings[scopeKey] === option.value}>
+          <input type="radio" name={`field-${section}-scope`} checked={settings[scopeKey] === option.value} onChange={() => setSettings(current => current ? { ...current, [scopeKey]: option.value } : current)}/>
+          <span><strong>{option.label}</strong><small>{option.description}</small></span>
+        </label>)}</div>
+        {settings[scopeKey] === 'selected' ? <div className={ownerStyles.grid}>{(section === 'fuel' ? [
+          { key: 'fuelStorageIds' as const, title: 'Choose fuel tanks', icon: 'box' },
+        ] : [
+          { key: 'groupIds' as const, title: 'Umbrellas', icon: 'umbrella' },
+          { key: 'assetIds' as const, title: 'Choose assets', icon: 'assets' },
+        ]).map(choice => <button key={choice.key} type="button" className={ownerStyles.card} onClick={() => setPicker(choice.key)}>
+          <span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><small>{settings[choice.key].length} selected</small></span>
+        </button>)}</div> : null}
+      </>}
+    </fieldset>
+    {picker ? <OwnerAccessPicker title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'assetIds' ? 'Choose assets' : 'Choose fuel tanks'} description={picker === 'groupIds' ? 'Includes current and future linked assets.' : 'Choose access for this login.'} selected={settings[picker]} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'assetIds' ? assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind })) : storages.map(storage => ({ id: storage.id, title: storage.name, detail: storage.locationLabel }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/> : null}
+    {message ? <p role="status" className={styles.accessMessage}>{message}</p> : null}
+    <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} disabled={saving || JSON.stringify(settings) === savedSettings.current} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save changes'}</button></footer>
+  </section>;
 }
 
 function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange }: { userId: string; onSaved?: () => void; onBusyChange?: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void }) {

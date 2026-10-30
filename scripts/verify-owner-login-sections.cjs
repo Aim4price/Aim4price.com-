@@ -67,8 +67,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  return {ok,json:async()=>data};};
  ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('app/account/app-access-management-client').OwnerAppAccessManagement));`});
  async function click(text){await page.waitForFunction(text=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()===text||b.getAttribute('aria-label')===text),{},text);await page.evaluate(text=>{const b=Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()===text||b.getAttribute('aria-label')===text);b.click();},text);}
- async function card(title){await page.evaluate(title=>Array.from(document.querySelectorAll('button')).find(b=>b.querySelector('strong')?.textContent===title).click(),title);}
- async function heading(title){await page.waitForFunction(title=>Array.from(document.querySelectorAll('h3')).some(h=>h.textContent===title),{},title);}
+ async function card(title){await page.waitForFunction(title=>Array.from(document.querySelectorAll('button')).some(b=>b.querySelector('strong')?.textContent===title&&!b.disabled),{},title);await page.evaluate(title=>Array.from(document.querySelectorAll('button')).find(b=>b.querySelector('strong')?.textContent===title).click(),title);}
+ async function heading(title){console.log('Checking screen:',title);await page.waitForFunction(title=>Array.from(document.querySelectorAll('h3')).some(h=>h.textContent===title),{},title);}
  async function fill(label,value){const input=await page.evaluateHandle(label=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.startsWith(label))?.querySelector('input'),label);await input.click({clickCount:3});await input.press('Backspace');await input.type(value);}
  async function patch(){return page.evaluate(()=>window.requests.filter(r=>r.method==='PATCH').at(-1).body);}
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('Manage logins')));
@@ -103,6 +103,52 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await card('Login details');await fill('Display name','Unsaved');confirm=false;await click('‹ Back');await heading('Login details');confirm=true;await click('‹ Back');await heading('Manage access');
  await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
  confirm=false;await click('Delete');assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='DELETE').length),0);confirm=true;await click('Delete');await page.waitForFunction(()=>!document.body.textContent.includes('Manage George Junior'));
+ await page.evaluate(()=>{document.getElementById('app').remove();const host=document.createElement('div');host.id='other-app';document.body.append(host);});
+ // Exercise every app against the same section flow, using its existing API contract.
+ for (const kind of ['field','dealer','middleman']) {
+   console.log('Checking app:',kind);
+   await page.evaluate(kind => {
+     window.requests=[];
+     window.appUser={id:'staff-one',displayName:'Alex',username:'alex@skb',role:'sales',isActive:true,lastLoginAtIso:null,updatedAtIso:'2026-10-08T08:26:00Z'};
+     window.appSettings={assetScope:'selected',fuelScope:'selected',canRecordWork:true,canScheduleMaintenance:true,canRecordFuel:true,canRefillFuel:false,assetIds:[],groupIds:[],fuelStorageIds:['tank']};
+     window.fetch=async(url,options={})=>{
+       const method=options.method||'GET',body=options.body?JSON.parse(options.body):null;
+       window.requests.push({url,method,body});
+       let data={ok:true};
+       if(url==='/api/account/app-login-name')data={ok:true,accountName:'skb'};
+       else if(url.endsWith('/access')) {if(method==='PUT')window.appSettings=body;data={ok:true,settings:window.appSettings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor'}],groups:[{id:'farm',name:'Farm',memberCount:1,memberAssetIds:['tractor']}],storages:[{id:'tank',name:'Diesel tank',locationLabel:'Yard'}]};}
+       else if(method==='PATCH'){window.appUser={...window.appUser,...body};data={ok:true,[kind==='field'?'manager':'staff']:window.appUser};}
+       else data={ok:true,[kind==='field'?'managers':'staff']:[window.appUser]};
+       return {ok:true,json:async()=>data};
+     };
+     const exports=require('app/account/app-access-management-client');
+     ReactDOM.render(React.createElement(kind==='field'?exports.FieldManagerAppAccessManagement:exports.DealerAppAccessManagement,{key:kind,middlemanMode:kind==='middleman'}),document.getElementById('other-app'));
+   },kind);
+   await page.waitForFunction(()=>document.body.textContent.includes('Manage logins'));
+   await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
+   await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('‹ All logins');
+   await click('Manage Alex');await heading('Manage access');
+   await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-overview.png'});
+   await card('Login details');await fill('Display name','Alex Updated');await click('Save changes');await heading('Manage access');
+   assert.deepEqual(await patch(),{displayName:'Alex Updated',username:'alex@skb'});
+   await card('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'new-secret-123'});
+   await card('Permissions');
+   if(kind==='field') {
+     await page.waitForSelector('input[type="checkbox"]');await page.click('input[type="checkbox"]');await click('Save changes');await heading('Manage access');
+     assert.equal(await page.evaluate(()=>window.appSettings.canRecordWork),false);
+     assert.deepEqual(await page.evaluate(()=>window.appSettings.fuelStorageIds),['tank']);
+     await card('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('Umbrellas'));await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
+     await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
+     await click('Save changes');await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
+     await card('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');await click('‹ Back');
+   } else {
+     assert.equal(await page.$$eval('input[type="radio"]',els=>els.length),kind==='dealer'?4:2);
+     await page.click('input[value="owner"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{role:'owner'});
+   }
+   await page.setViewport({width:390,height:844});assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-mobile.png'});await page.setViewport({width:1280,height:900});
+   await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
+   await page.evaluate(()=>ReactDOM.unmountComponentAtNode(document.getElementById('other-app')));
+ }
  assert.deepEqual(errors,[]);console.log('PASS: section navigation, role/asset access, scoped saves, duplicate errors, unsaved edits, status actions and mobile layout');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
