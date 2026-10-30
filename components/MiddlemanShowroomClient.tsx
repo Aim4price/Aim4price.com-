@@ -59,8 +59,14 @@ function ShowroomDialog({ title, children, onClose, wide = false }: { title: str
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     ref.current?.showModal();
-    return () => { ref.current?.close(); trigger?.focus(); };
+    return () => {
+      ref.current?.close();
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus({ preventScroll: true });
+    };
   }, []);
   return <dialog ref={ref} className={`${styles.nativeDialog} ${wide ? styles.wideDialog : ''} ${dialogStyles.surface}`} aria-label={title} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <header className={dialogStyles.header}><h2>{title}</h2><button type="button" className={dialogStyles.close} data-modal-close="true" aria-label={`Close ${title.toLowerCase()}`} onClick={onClose}>×</button></header>
@@ -451,7 +457,7 @@ export function MiddlemanShowroomManager({
           </div>
           {listings.length ? <div className={styles.inventoryTools}>
             <label><span>Search adverts</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search by asset or details" /></label>
-            <AssetModalSelect label="Sort adverts" value={sort} onChange={setSort} usePortal={false} options={[{ value: 'newest', label: 'Newest first' }, { value: 'price-low', label: 'Price: low to high' }, { value: 'price-high', label: 'Price: high to low' }]} />
+            <AssetModalSelect className={styles.inventorySort} label="Sort adverts" value={sort} onChange={setSort} usePortal={false} options={[{ value: 'newest', label: 'Newest first' }, { value: 'price-low', label: 'Price: low to high' }, { value: 'price-high', label: 'Price: high to low' }]} />
           </div> : null}
           {listings.length > 0 && !visibleListings.length ? <div className={styles.emptyStock}><h3>No matching adverts</h3><button type="button" className={styles.secondaryButton} onClick={() => setQuery('')}>Clear search</button></div> : null}
           {listings.length ? (
@@ -533,10 +539,10 @@ export function MiddlemanShowroomManager({
               <strong>Showroom logo</strong>
               <span>
                 {showroomLogoUrl
-                  ? 'This custom logo appears only on your public showroom.'
+                  ? 'Custom showroom logo.'
                   : showroom.inheritedLogoUrl
-                    ? 'Using your saved brand logo. Drop a different logo here if needed.'
-                    : 'Add a logo to personalise your public showroom.'}
+                    ? 'Using your saved brand logo.'
+                    : 'Add your showroom logo.'}
               </span>
               <small id="showroom-logo-help">PNG, JPEG or WebP · Maximum 2 MB</small>
               {showroomLogoUrl ? (
@@ -630,13 +636,13 @@ export function MiddlemanShowroomManager({
               </button>
             </div>
           </div>
-          <label>
+          <label className={styles.introductionField}>
             <span>Short introduction</span>
             <textarea
               value={bio}
               onChange={(event) => setBio(event.target.value)}
               maxLength={500}
-              rows={4}
+              rows={3}
               placeholder="Tell customers which machinery, regions or services you specialise in."
             />
             <small>{bio.length} of 500 characters</small>

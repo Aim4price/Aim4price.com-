@@ -849,9 +849,9 @@ test('showroom logos inherit Advert Studio branding and allow a compact showroom
   assert.match(manager, /image\.naturalWidth > MAX_SHOWROOM_LOGO_DIMENSION/);
   assert.match(manager, /function handleShowroomLogoDrop/);
   assert.match(manager, /if \(readingLogo\) return/);
-  assert.match(manager, /Add a logo to personalise your public showroom\./);
-  assert.match(manager, /Using your saved brand logo\. Drop a different logo here if needed\./);
-  assert.match(manager, /This custom logo appears only on your public showroom\./);
+  assert.match(manager, /Add your showroom logo\./);
+  assert.match(manager, /Using your saved brand logo\./);
+  assert.match(manager, /Custom showroom logo\./);
   assert.match(manager, /PNG, JPEG or WebP · Maximum 2 MB/);
   assert.match(manager, /Use saved brand logo/);
   assert.match(manager, /Remove logo/);

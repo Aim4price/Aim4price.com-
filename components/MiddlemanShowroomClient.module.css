@@ -536,3 +536,31 @@
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsCard { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Compact rows fit the editor without concealing overflow on smaller screens. */
+.nativeDialog.nativeDialog.nativeDialog.nativeDialog.nativeDialog { --account-dialog-padding: 1rem 1.5rem; }
+.nativeDialog .settingsCard { align-items: start; gap: .85rem 1.25rem; padding: 1rem 1.5rem; }
+.nativeDialog .settingsCard .showroomLogoField { margin: 0; padding: .8rem; gap: .55rem .85rem; grid-template-columns: 3.5rem minmax(0, 1fr); }
+.nativeDialog .showroomLogoPreview { width: 3.5rem; height: 3.5rem; grid-row: 1 / 3; }
+.nativeDialog .showroomLogoCopy { gap: .2rem; }
+.nativeDialog .showroomLogoActions { grid-column: 2; }
+.nativeDialog .showroomLogoButton { min-height: 2.5rem; padding: .55rem .85rem; }
+.nativeDialog .settingsCard .advertDesignField { margin: 0; padding: .8rem; gap: .65rem; }
+.nativeDialog .settingsCard .publicLinkField { gap: .45rem; }
+.nativeDialog .slugPrefix { padding: .55rem .85rem .15rem; }
+.nativeDialog .slugField input { min-height: 2.75rem; }
+.nativeDialog .settingsCard .introductionField { display: grid; gap: .45rem; margin: 0; min-width: 0; }
+.introductionField > span { font-size: .9rem; font-weight: 800; }
+.nativeDialog .settingsCard textarea { min-height: 5rem; height: 5rem; padding: .6rem .85rem; }
+.nativeDialog .settingsCard .switchRow { margin: 0; padding: .7rem .85rem; }
+.nativeDialog .settingsCard > .settingsActions { grid-column: auto; align-self: center; margin: 0; }
+.nativeDialog .settingsActions > button { min-height: 3rem; }
+.nativeDialog .settingsCard .dangerZone { margin: 0; padding-top: .75rem; gap: 1rem; }
+.nativeDialog .dangerZone button { min-height: 2.5rem; padding: .55rem .85rem; }
+.inventoryTools .inventorySort { gap: .5rem; }
+.inventoryTools .inventorySort > span { font-size: .85rem; font-weight: 700; line-height: 1.5; }
+.inventoryTools > label { line-height: 1.5; }
+.inventoryTools input, .inventoryTools .inventorySort > button { height: 3.25rem; min-height: 3.25rem; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsActions > button { flex: 1; }
+}
