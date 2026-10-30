@@ -6,7 +6,7 @@ import styles from './owner-login-sections.module.css';
 type Section = 'overview' | 'details' | 'permissions' | 'assets' | 'passcode' | 'status' | 'fuel';
 type RecordInfo = { id: string; displayName: string; username: string; accessRole?: string; isActive: boolean; lastLoginAtIso: string | null; updatedAtIso: string };
 type Props = {
-  dealerPolish?: boolean;
+  businessLoginLayout?: boolean;
   record: RecordInfo; busy: boolean; accountName: string | null; passwordMinimum: number; passwordMaximum: number;
   onSave: (changes: Record<string, unknown>, message: string) => Promise<boolean>;
   onToggle: () => void; onDelete: () => void; onBack: () => void;
@@ -72,9 +72,9 @@ export default function OwnerLoginSections(props: Props) {
     ...(props.renderFuelAccess ? [{ id: 'fuel' as Section, title: 'Fuel tank access', text: 'Choose which fuel tanks they can use.', value: 'Manage fuel selection' }] : []),
     { id: 'passcode', title: passwordLabel, text: `Set a new login ${passwordLabel.toLowerCase()}.`, value: `Change ${passwordLabel.toLowerCase()}` },
   ];
-  if (props.dealerPolish) cards.push({ id: 'status', title: 'Login status', text: 'Activate, deactivate or remove this login.', value: record.isActive ? 'Active' : 'Inactive' });
+  if (props.businessLoginLayout) cards.push({ id: 'status', title: 'Login status', text: 'Activate, deactivate or remove this login.', value: record.isActive ? 'Active' : 'Inactive' });
   const title = section === 'status' ? 'Manage login status' : cards.find(c => c.id === section)?.title;
-  return <div className={`${styles.manager} ${styles.ownerManager} ${props.dealerPolish ? styles.dealerManager : ''}`}>
+  return <div className={`${styles.manager} ${styles.ownerManager} ${props.businessLoginLayout ? styles.dealerManager : ''}`}>
     <div className={styles.toolbar}>
       {section === 'overview' ? <button type="button" onClick={back} disabled={busy}>‹ All logins</button> : <button type="button" disabled={busy} onClick={() => { if (!(dirty || props.hasUnsavedChanges) || window.confirm('Discard unsaved changes?')) open('overview'); }}>‹ Back</button>}
       <span className={styles.status} data-active={record.isActive}>{record.isActive ? 'Active' : 'Inactive'}</span>
@@ -84,7 +84,7 @@ export default function OwnerLoginSections(props: Props) {
       <div className={styles.grid}>{cards.map(card => <button key={card.id} type="button" className={styles.card} disabled={busy} onClick={() => open(card.id)}>
         <span className={styles.icon}><AccessSectionIcon name={card.id === 'fuel' ? 'box' : card.id === 'status' ? 'power' : card.id}/></span><span className={styles.copy}><strong>{card.title}</strong><span>{card.text}</span><small>{card.value}</small></span>
       </button>)}</div>
-      {!props.dealerPolish ? <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button> : null}
+      {!props.businessLoginLayout ? <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button> : null}
     </> : <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{title}</h3>
       {section === 'fuel' ? props.renderFuelAccess?.(() => open('overview')) : section === 'permissions' && props.renderPermissions ? props.renderPermissions(() => open('overview')) : section === 'assets' ? currentRole === 'admin' ? <div className={`${styles.info} ${styles.fullAccess}`}><strong>Full access to all assets</strong><button type="button" onClick={() => open('permissions')}>Change permissions</button></div> : props.renderAssetAccess?.(() => open('overview')) : section === 'status' ? <>
@@ -98,13 +98,13 @@ export default function OwnerLoginSections(props: Props) {
             <label>Username<span className={styles.inputIcon}><AccessSectionIcon name="login"/><input value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required minLength={3} autoCapitalize="none" autoComplete="off" spellCheck={false}/></span></label>
             <p className={styles.hint}>This is an app username, not an email address.</p>
             {props.accountName && !username.endsWith(`@${props.accountName}`) ? <button type="button" onClick={() => setUsername(`${username.split('@')[0]}@${props.accountName}`)}>Use business username</button> : null}
-          </> : section === 'permissions' ? <div className={`${styles.choices} ${props.dealerPolish ? styles.dealerRoles : ''}`}>{roleOptions.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={props.dealerPolish && option.value === 'sales' ? 'sales' : props.dealerPolish && option.value === 'parts' ? 'box' : props.dealerPolish && option.value === 'technician' ? 'tools' : option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
+          </> : section === 'permissions' ? <div className={`${styles.choices} ${props.businessLoginLayout ? styles.dealerRoles : ''}`}>{roleOptions.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={props.businessLoginLayout && option.value === 'sales' ? 'sales' : props.businessLoginLayout && option.value === 'parts' ? 'box' : props.businessLoginLayout && option.value === 'technician' ? 'tools' : option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
             <label>New {passwordLabel.toLowerCase()}<div className={`${styles.password} ${styles.inputIcon}`}><AccessSectionIcon name="passcode"/><input type={showPasscode ? 'text' : 'password'} value={passcode} onChange={e => setPasscode(e.target.value)} required minLength={props.passwordMinimum} maxLength={props.passwordMaximum} autoComplete="new-password"/><button type="button" aria-label={`${showPasscode ? 'Hide' : 'Show'} ${passwordLabel.toLowerCase()}`} aria-pressed={showPasscode} onClick={() => setShowPasscode(!showPasscode)}><AccessSectionIcon name="eye"/></button></div></label>
             <p className={styles.hint}>Use at least {props.passwordMinimum} characters. Share the new {passwordLabel.toLowerCase()} with this person.</p>
           </>}
         </fieldset>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-        <footer className={styles.footer}><button type="submit" className={styles.primary} disabled={busy || !dirty || (props.dealerPolish && section === 'passcode' && passcode.length < props.passwordMinimum)}>{busy ? 'Saving…' : 'Save changes'}</button></footer>
+        <footer className={styles.footer}><button type="submit" className={styles.primary} disabled={busy || !dirty || (props.businessLoginLayout && section === 'passcode' && passcode.length < props.passwordMinimum)}>{busy ? 'Saving…' : 'Save changes'}</button></footer>
       </form>}
     </>}
   </div>;
