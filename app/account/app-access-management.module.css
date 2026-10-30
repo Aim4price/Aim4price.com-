@@ -1366,3 +1366,5 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .newUserSetup .setupForm { grid-template-columns:1fr; }
 }
+
+.passwordEye svg { display:block; width:1.25rem; height:1.25rem; opacity:.65; }
