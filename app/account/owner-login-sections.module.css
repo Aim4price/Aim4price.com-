@@ -88,8 +88,8 @@
 .detailsGrid > p,.detailsGrid > button { grid-column:1 / -1; }
 .inputIcon { position:relative; display:block; }
 .inputIcon > svg { position:absolute; left:1rem; top:50%; transform:translateY(-50%); width:1.2rem; height:1.2rem; opacity:.55; pointer-events:none; }
-.fields .inputIcon input { padding-left:2.9rem; }
-.password.inputIcon input { padding-right:3.7rem; }
+.manager .fields .inputIcon input { padding-left:2.9rem; }
+.manager .fields .password.inputIcon input { padding-right:3.7rem; }
 .password.inputIcon button { position:absolute; right:.3rem; top:50%; transform:translateY(-50%); border:0; background:transparent; padding:.5rem; }
 .password button svg,.statusAction button svg,.history svg,.roleIcon svg { width:1.25rem; height:1.25rem; flex-shrink:0; }
 .roleIcon { opacity:.6; }
@@ -116,3 +116,12 @@
 }
 
 .picker input[type=checkbox] { accent-color:var(--app-accent,#267254); }
+
+/* Dealer roles fit alongside one another so the save action remains visible. */
+.dealerRoles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.dealerRoles .choice { align-items:flex-start; padding:1rem; gap:.8rem; }
+.dealerRoles .choice input,.dealerRoles .roleIcon { margin-top:.15rem; }
+.dealerManager .copy small { overflow-wrap:anywhere; }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerRoles { grid-template-columns:1fr; }
+}
