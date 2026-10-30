@@ -309,3 +309,34 @@
 .brandingDialog .dialogHeader h2 { font-size: 1.35rem; }
 .brandingDialog .actions { justify-content: flex-end; margin-top: 8px; }
 .brandingDialog .actions > button { flex: 1 1 180px; }
+
+/* Compact preview workspace: one page flow and one set of actions. */
+.creator .brandingPanel p { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .5rem; padding: .75rem 0; border: 0; border-radius: 0; background: transparent; }
+.brandingPanel p strong, .brandingPanel p span { font-size: .85rem; overflow-wrap: anywhere; }
+.creator .layoutGrid { gap: .65rem; margin-top: .75rem; }
+.creator .layoutGrid .layoutChoice { box-shadow: none; transform: none; }
+.creator .layoutGrid .layoutChoice:hover:not(:disabled) { border-color: var(--app-accent, #165f49); background: var(--app-surface-soft, #f2f8f4); box-shadow: none; transform: none; }
+.creator .layoutGrid .layoutChoice[aria-pressed='true'] { border-color: var(--app-accent, #165f49); background: var(--app-accent-soft, #e5f2eb); box-shadow: inset 0 0 0 1px var(--app-accent, #165f49); }
+.creator .layoutGrid .layoutChoice:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+.layoutSelected { position: absolute; top: .35rem; right: .35rem; display: grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; color: #fff; background: var(--app-accent, #165f49); }
+.layoutSelected svg { width: 1rem; height: 1rem; }
+.moreLayouts { margin-top: 1rem; border-top: 1px solid var(--app-line, #d6e4de); padding-top: .8rem; }
+.moreLayouts summary { cursor: pointer; font-size: .85rem; font-weight: 700; color: var(--app-text, #17362c); }
+.moreLayouts summary:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 4px; border-radius: .25rem; }
+.moreLayouts summary span { color: var(--app-muted, #657c71); font-weight: 500; }
+.moreLayouts p { font-size: .82rem; color: var(--app-muted, #657c71); line-height: 1.5; }
+.moreLayouts > button { margin-top: .75rem; }
+.creator .previewPanel { padding: 16px; }
+.creator .previewToolbar h3 { margin: 0; }
+.creator .preview .canvasButton { display: flex; justify-content: center; }
+.creator .preview .canvas { width: 100%; max-height: 420px; object-fit: contain; }
+.previewStatus { margin: .75rem 0 0; color: var(--app-muted, #657c71); font-size: .85rem; }
+.creator .previewFooter { margin-top: 1.5rem; gap: .75rem 1rem; padding-top: 1rem; }
+.previewFooterActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; flex: 1 1 32rem; }
+.previewFooterActions > button { flex: 1 1 10rem; max-width: 15rem; }
+.previewFooter .publishHint { flex-basis: 100%; text-align: right; font-size: .82rem; margin: 0; }
+.publishSuccess { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; margin-top: 1rem; padding: 1rem; border: 1px solid var(--app-line, #c9dcd3); border-radius: 14px; background: var(--app-accent-soft, #e5f2eb); }
+.publishSuccess > div { flex: 1 1 16rem; }
+.publishSuccess strong { display: flex; align-items: center; gap: .5rem; }
+.publishSuccess strong svg { width: 1.2rem; height: 1.2rem; }
+.publishSuccess p { margin: .4rem 0 0; color: var(--app-muted, #657c71); font-size: .85rem; line-height: 1.5; }
