@@ -497,3 +497,42 @@
   :global(:where(html:not(:has([data-website-canvas])))) .publicPage .publicContactActions { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .footerBrand { flex-wrap: wrap; }
 }
+
+/* The management workspace puts live adverts first; settings open on demand. */
+.managerGrid { grid-template-columns: minmax(0, 1fr); }
+.showroomSummary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; border: 1px solid var(--app-line, #d6e4de); border-radius: 20px; background: var(--app-surface, #fff); }
+.summaryIdentity { display: flex; align-items: center; gap: 1rem; flex: 1 1 20rem; min-width: 0; }
+.summaryIdentity > img, .summaryPlaceholder { width: 64px; height: 64px; flex: none; object-fit: contain; border: 1px solid var(--app-line, #d6e4de); border-radius: 14px; padding: .5rem; background: var(--app-surface-soft, #edf6f2); }
+.summaryPlaceholder { display: grid; place-items: center; }
+.summaryPlaceholder svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.summaryIdentity h2 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
+.summaryIdentity p { margin: .35rem 0 0; font-size: .85rem; color: var(--app-muted, #677b74); line-height: 1.5; overflow-wrap: anywhere; }
+.showroomSummary button svg, .heroActions svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.inventoryTools { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1rem; }
+.inventoryTools > label { display: grid; gap: .5rem; flex: 1 1 20rem; font-size: .85rem; font-weight: 700; }
+.inventoryTools > div { flex: 0 1 16rem; min-width: 14rem; }
+.inventoryTools input, .shareAddress input { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--app-line, #cddbd5); border-radius: 12px; padding: .8rem 1rem; font: inherit; color: var(--app-text, #17362c); background: var(--app-surface-soft, #edf6f2); }
+.inventoryTools input:focus-visible, .shareAddress input:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+.managerListing { min-height: 124px; }
+.listingTitleRow { display: grid; justify-items: start; gap: .4rem; }
+.emptyStock { min-height: 200px; padding: 2rem 1rem; }
+.nativeDialog { width: min(700px, calc(100% - 2rem)); max-width: calc(100% - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); padding: 0; border: 1px solid var(--app-line, #d6e4de); border-radius: 24px; background: var(--app-surface, #fff); color: var(--app-text, #17362c); font-family: 'Montserrat', sans-serif; }
+.nativeDialog::backdrop { background: var(--modal-backdrop-color, rgba(9,23,19,.65)); backdrop-filter: blur(8px); }
+.wideDialog { width: min(1040px, calc(100% - 2rem)); }
+.nativeDialog .settingsCard { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; border: 0; box-shadow: none; border-radius: 0; }
+.nativeDialog .settingsCard > .sectionHeading { display: none; }
+.nativeDialog .settingsCard > .settingsActions, .nativeDialog .settingsCard > .dangerZone, .nativeDialog .settingsCard > .feedback { grid-column: 1 / -1; }
+.nativeDialog .settingsCard > label, .nativeDialog .settingsCard > .publicLinkField { margin-top: 0; }
+.nativeDialog .settingsCard > .advertDesignField { align-self: start; flex-wrap: wrap; }
+.nativeDialog .settingsActions { justify-content: flex-end; }
+.nativeDialog .settingsActions > button { flex: 0 1 16rem; }
+.dialogContent { padding: 1.5rem; display: grid; gap: 1rem; }
+.dialogContent p { margin: 0; color: var(--app-muted, #677b74); line-height: 1.5; }
+.shareAddress { display: grid; gap: .5rem; font-size: .85rem; font-weight: 650; }
+.advertPreviewImage { display: block; width: 100%; max-height: calc(var(--website-visible-height, 100dvh) - 16rem); object-fit: contain; border-radius: 14px; }
+.removeActions { grid-template-columns: minmax(0, 1fr); padding-top: 1rem; border-top: 1px solid var(--app-line, #d6e4de); }
+.removeActions > button { min-height: 4rem; }
+.showroomSummary .secondaryButton:hover, .heroActions .secondaryButton:hover { border-color: var(--app-accent, #43836a); box-shadow: 0 0 0 3px var(--app-accent-soft, #e5f2eb); }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsCard { grid-template-columns: minmax(0, 1fr); }
+}

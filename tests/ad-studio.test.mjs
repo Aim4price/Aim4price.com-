@@ -390,7 +390,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
   assert.match(publicPage, /cache\(getPublicMiddlemanShowroomBySlug\)/);
   assert.equal(publicPage.match(/getCachedPublicShowroom\(slug\)/g)?.length, 2);
-  assert.match(manager, /Value and create advert/);
+  assert.match(manager, /Create advert/);
   assert.match(manager, /<MarketplaceClient/);
   assert.match(manager, /initialListings=\{listings\}/);
   assert.match(manager, /embeddedMode/);
@@ -398,7 +398,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(marketplaceUi, /initialListings\?: MarketplaceListing\[\]/);
   assert.match(marketplaceUi, /if \(showroomMode\)/);
   assert.match(marketplaceUi, /!showroomMode \? \(/);
-  assert.match(manager, /Download JPEG/);
+  assert.match(manager, /Download PNG/);
   assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
@@ -569,7 +569,7 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(manager, /className=\{styles\.copyLinkButton\}/);
   assert.match(manager, /Showroom visible to the public/);
   assert.match(manager, /Save changes/);
-  assert.match(manager, /Your showroom is ready/);
+  assert.match(manager, /No adverts yet/);
   assert.match(manager, /Create your first advert and it will appear here automatically\./);
   assert.doesNotMatch(managerCss, /\.eyebrow\s*\{/);
   assert.doesNotMatch(managerCss, /\.sectionIcon(?:\s|,|\{)/);
@@ -640,7 +640,7 @@ test('private showroom advert manager matches the accessible Aim4price modal pat
   assert.ok(lengthInPixels(actionRule, 'border-radius') >= 14);
   assert.match(css, /\.listingManagerClose:focus-visible/);
 
-  for (const action of ['Edit advert', 'Download JPEG', 'Open in Marketplace', 'Remove advert']) {
+  for (const action of ['Edit advert', 'Preview &amp; download', 'Share advert', 'Open in Marketplace', 'Remove advert']) {
     assert.match(modal, new RegExp(action));
   }
 });
@@ -658,8 +658,8 @@ test('private showroom exposes advert design only when the server grants Brand K
   const ownerNav = header.match(/const OWNER_NAV_ITEMS: NavItem\[\] = \[[\s\S]*?\n\];/)?.[0] ?? '';
 
   assert.match(manager, /advertDesignHref\?: string \| null/);
-  assert.match(manager, /\{advertDesignHref \? \([\s\S]*?<Link className=\{styles\.advertDesignButton\} href=\{advertDesignHref\}>Edit advert design<\/Link>[\s\S]*?\) : null\}/);
-  assert.doesNotMatch(manager, /dealerAppMode\s*\?[^:]*Edit advert design/);
+  assert.match(manager, /\{advertDesignHref \? \([\s\S]*?<Link className=\{styles\.advertDesignButton\} href=\{advertDesignHref\}>Edit advert template<\/Link>[\s\S]*?\) : null\}/);
+  assert.doesNotMatch(manager, /dealerAppMode\s*\?[^:]*Edit advert template/);
   assert.match(myShowroomPage, /advertDesign=\{profile\.accountType === 'dealer' \? 'saved-brand' : 'aim4price-marketplace'\}/);
   assert.match(myShowroomPage, /advertDesignHref=\{profile\.accountType === 'dealer' \? '\/ad-studio' : null\}/);
   assert.match(dealerShowroomPage, /advertDesign="saved-brand"/);
