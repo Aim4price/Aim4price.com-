@@ -308,4 +308,4 @@
 .brandingDialog p { margin: 0; color: var(--app-muted, #64746a); line-height: 1.6; }
 .brandingDialog .dialogHeader h2 { font-size: 1.35rem; }
 .brandingDialog .actions { justify-content: flex-end; margin-top: 8px; }
-@media (max-width: 480px) { .brandingDialog .actions > button { width: 100%; } }
+.brandingDialog .actions > button { flex: 1 1 180px; }
