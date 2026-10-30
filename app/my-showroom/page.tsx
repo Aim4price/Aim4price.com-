@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { MiddlemanShowroomManager } from '../../components/MiddlemanShowroomClient';
@@ -33,6 +34,7 @@ export default async function MyShowroomPage() {
     <main>
       <AppHeader active={profile.accountType === 'owner' ? 'account' : 'showroom'} />
       <MiddlemanShowroomManager
+        middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)}
         ownerAccount={profile.accountType === 'owner'}
         initialShowroom={showroom}
         initialListings={listings}

@@ -13,6 +13,9 @@ on:
       - 'tests/marketplace-manual.test.cjs'
       - 'lib/marketplace-db.ts'
       - 'app/api/ad-studio/publish/**'
+      - 'components/MiddlemanShowroomClient*'
+      - 'lib/showroom-presentation.ts'
+      - 'tests/showroom-presentation.test.mjs'
       - 'components/AdvertCreator*'
       - 'components/AdvertShareSheet*'
       - 'components/FacebookAdvertActions*'
@@ -44,5 +47,5 @@ jobs:
       - name: Photo handoff, PDF and JPEG regression tests
         run: node --experimental-strip-types --test tests/estimate-ad-handoff.test.mjs tests/estimate-report-enhancement.test.mjs tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs
       - name: Advert creation and publication regression tests
-        run: node --experimental-strip-types --test tests/advert-creator.test.mjs tests/advert-publication.test.cjs tests/marketplace-manual.test.cjs
+        run: node --experimental-strip-types --test tests/advert-creator.test.mjs tests/advert-publication.test.cjs tests/marketplace-manual.test.cjs tests/showroom-presentation.test.mjs
       - run: npm run typecheck

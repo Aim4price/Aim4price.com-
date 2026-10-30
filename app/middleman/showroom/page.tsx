@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 import { redirect } from 'next/navigation';
 import { MiddlemanShowroomManager } from '../../../components/MiddlemanShowroomClient';
 import { getAccountProfile } from '../../../lib/account-profile';
@@ -33,6 +34,7 @@ export default async function DealerShowroomPage() {
   return (
     <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <MiddlemanShowroomManager
+        middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)}
         initialShowroom={showroom}
         initialListings={listings}
         dealerAppMode
