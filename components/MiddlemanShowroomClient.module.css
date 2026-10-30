@@ -508,7 +508,7 @@
 .summaryIdentity h2 { margin: 0; font-size: 1.2rem; overflow-wrap: anywhere; }
 .summaryIdentity p { margin: .35rem 0 0; font-size: .85rem; color: var(--app-muted, #677b74); line-height: 1.5; overflow-wrap: anywhere; }
 .showroomSummary button svg, .heroActions svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; }
-.inventoryTools { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; margin-bottom: 1rem; }
+.inventoryTools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; margin-bottom: 1rem; }
 .inventoryTools > label { display: grid; gap: .5rem; flex: 1 1 20rem; font-size: .85rem; font-weight: 700; }
 .inventoryTools > div { flex: 0 1 16rem; min-width: 14rem; }
 .inventoryTools input, .shareAddress input { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--app-line, #cddbd5); border-radius: 12px; padding: .8rem 1rem; font: inherit; color: var(--app-text, #17362c); background: var(--app-surface-soft, #edf6f2); }
@@ -563,4 +563,30 @@
 .inventoryTools input, .inventoryTools .inventorySort > button { height: 3.25rem; min-height: 3.25rem; }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsActions > button { flex: 1; }
+}
+
+/* Showroom review: aligned controls, unclipped link actions and a clear footer. */
+.inventoryTools input, .inventoryTools .inventorySort > button { box-sizing: border-box; height: 3.75rem; min-height: 3.75rem; }
+.inventoryTools > label { font-size: 1rem; }
+.inventoryTools .inventorySort > span { font-size: 1rem; }
+.inventoryTools input { font-size: 1rem; font-weight: 500; border-radius: 1.08rem; }
+.nativeDialog .slugField { overflow: visible; padding: .45rem; gap: .25rem .5rem; }
+.nativeDialog .slugPrefix { padding: .15rem .4rem; }
+.nativeDialog .slugField input { padding-inline: .4rem; border-radius: .5rem; }
+.nativeDialog .copyLinkButton { margin: 0; min-height: 2.5rem; }
+.nativeDialog .settingsCard > .switchRow { grid-column: 1 / -1; }
+.nativeDialog .settingsFooter { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #d6e4de); }
+.nativeDialog .settingsFooter .dangerZone { flex: 1 1 24rem; border: 0; padding: 0; margin: 0; justify-content: flex-start; }
+.nativeDialog .settingsFooter .dangerZone > div { flex: 1; }
+.nativeDialog .settingsFooter .settingsActions { flex: 0 1 16rem; margin: 0; }
+.nativeDialog .settingsFooter .settingsActions > button { width: 100%; min-height: 3.25rem; }
+.compactAdvertDialog.compactAdvertDialog.compactAdvertDialog.compactAdvertDialog.compactAdvertDialog { --account-dialog-padding: 1.15rem; }
+.compactAdvertDialog .listingManagerSummary { margin: 1rem var(--account-dialog-padding); padding: .8rem 1rem; }
+.compactAdvertDialog .listingManagerActions { gap: .8rem; padding-bottom: 1rem; }
+.compactAdvertDialog .listingManagerActions > :is(a, button) { min-height: 5rem; padding: .75rem 1rem; }
+.compactAdvertDialog .removeActions { padding-top: .8rem; padding-bottom: .9rem; }
+.compactAdvertDialog .removeActions > button { min-height: 4rem; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsFooter .settingsActions { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsFooter .dangerZone { flex-wrap: wrap; }
 }

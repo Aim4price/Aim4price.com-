@@ -654,24 +654,26 @@ export function MiddlemanShowroomManager({
               <span aria-hidden="true" />
             </span>
           </label>
-          <div className={styles.settingsActions}>
-            <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving || readingLogo || !hasUnsavedShowroomChanges}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
-          </div>
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
-          <div className={styles.dangerZone}>
-            <div>
-              <strong>Delete showroom</strong>
-              <small>{listings.length ? 'Remove each live advert and record its outcome first.' : 'Advert history, valuations and assets stay saved.'}</small>
+          <footer className={styles.settingsFooter}>
+            <div className={styles.dangerZone}>
+              <div>
+                <strong>Delete showroom</strong>
+                <small>{listings.length ? 'Remove each live advert and record its outcome first.' : 'Advert history, valuations and assets stay saved.'}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSettingsOpen(false); setDeleteConfirmation(''); setDeleteDialogOpen(true); }}
+                disabled={listings.length > 0}
+                title={listings.length ? 'Remove each live advert first.' : 'Delete showroom'}
+              >
+                Delete showroom
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => { setSettingsOpen(false); setDeleteConfirmation(''); setDeleteDialogOpen(true); }}
-              disabled={listings.length > 0}
-              title={listings.length ? 'Remove each live advert first.' : 'Delete showroom'}
-            >
-              Delete showroom
-            </button>
-          </div>
+            <div className={styles.settingsActions}>
+              <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving || readingLogo || !hasUnsavedShowroomChanges}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
+            </div>
+          </footer>
         </section>
 
       </ShowroomDialog> : null}
@@ -755,7 +757,7 @@ ${window.location.origin}${publicHref(showroom.slug)}`)}`} target="_blank" rel="
         >
           <section
             ref={manageDialogRef}
-            className={`${styles.listingManagerDialog} ${dialogStyles.surface}`}
+            className={`${styles.listingManagerDialog} ${styles.compactAdvertDialog} ${dialogStyles.surface}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="showroom-listing-manager-title"
