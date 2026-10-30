@@ -33,8 +33,9 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
 }) {
   const defaultKit = kits.find(kit => kit.id === initialBrandId) ?? kits.find(kit => kit.isDefault) ?? kits[0];
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
-  const brand = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
-  const [template, setTemplate] = useState<AdTemplateId>(defaultKit?.templateId ?? 'showcase');
+  const selectedKit = kits.find(kit => kit.id === brandId) ?? defaultKit;
+  const brand = selectedKit ?? fallbackBrand;
+  const [template, setTemplate] = useState<AdTemplateId>(defaultKit?.templateId ?? fallbackBrand.templateId);
   const [details, setDetails] = useState<AdvertDetails>(() => ({
     title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
     vatLabel: (defaultKit ?? fallbackBrand).vatLabel, location: '', description: '',
@@ -116,8 +117,9 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     if (['title', 'year', 'usage', 'usageUnit', 'condition'].includes(key)) { setEstimate(null); setShowRating(false); }
   }
   function chooseStyle(id: string) {
-    setBrandId(id);
-    const chosen = kits.find(kit => kit.id === id) ?? fallbackBrand;
+    const chosen = kits.find(kit => kit.id === id);
+    if (!chosen) return;
+    setBrandId(chosen.id);
     setDetails(current => ({ ...current, contactName: chosen.contactName, phone: chosen.phone, email: chosen.email, businessName: chosen.businessName, vatLabel: chosen.vatLabel }));
     setTemplate(AD_TEMPLATE_OPTIONS.find(item => item.id === chosen.templateId)!.photoCount <= photos.length ? chosen.templateId : 'photo-first');
   }
@@ -159,7 +161,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     if (publishLock.current) return;
     publicationId.current = ''; setPublished(null);
     setAdvertSource(asset ? 'asset' : savedEstimate ? 'estimate' : 'manual');
-    const chosen = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
+    const chosen = brand;
     setDetails({ title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
       vatLabel: chosen.vatLabel, location: '', description: '', contactName: chosen.contactName,
       phone: chosen.phone, email: chosen.email, businessName: chosen.businessName,
@@ -330,14 +332,14 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     {step === 3 ? <div className={styles.card}>
       <h2 ref={headingRef} tabIndex={-1}>Preview &amp; share</h2><p className={styles.help}>{includeShowroom ? 'Choose your layout, then share or publish to Marketplace and your showroom.' : 'Choose your layout, then share or publish to Marketplace.'}</p>
       <div className={styles.preview}><div>
-        <section className={styles.brandingPanel}>
-          {kits.length ? <AssetModalSelect label="Branding" buttonLabel="Branding" value={brandId} onChange={chooseStyle} options={[{value:'',label:'Use account branding'},...kits.map(kit=>({value:kit.id,label:kit.name}))]} usePortal={false} showDescriptions={false} /> : <p><strong>Branding</strong><span>Using your account branding</span></p>}
+        {kits.length > 0 || onEditBranding ? <section className={styles.brandingPanel}>
+          {kits.length > 1 ? <AssetModalSelect label="Advert template" buttonLabel="Advert template" value={selectedKit?.id ?? ''} onChange={chooseStyle} options={kits.map(kit=>({value:kit.id,label:kit.name}))} usePortal={false} showDescriptions={false} /> : selectedKit ? <p><strong>Advert template</strong><span>{selectedKit.name}</span></p> : null}
           {onEditBranding ? <button type="button" className={styles.secondary} disabled={publishing} onClick={() => {
             if (publishLock.current) return;
             brandingDialogRef.current?.showModal();
             brandingDialogRef.current?.querySelector<HTMLButtonElement>('[data-stay-in-creator]')?.focus();
           }}><StudioIcon name="edit" />Edit branding</button> : null}
-        </section>
+        </section> : null}
         <h3 className={styles.layoutHeading}>Layout</h3>
         <div className={styles.layoutGrid} aria-label="Advert layouts">{AD_TEMPLATE_OPTIONS.map(item => <button type="button" key={item.id} className={`${studioStyles.templateChoice} ${styles.layoutChoice} ${template === item.id ? studioStyles.templateChoiceActive : ''}`} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)} style={{ '--brand-primary': brand.primaryColor, '--brand-secondary': brand.secondaryColor, '--brand-accent': brand.accentColor } as CSSProperties}><span className={`${studioStyles.miniTemplate} ${TEMPLATE_CLASSES[item.id]}`} aria-hidden="true"><i /><b /><em /><u /></span><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Needs ${item.photoCount} photos` : `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`}</small></button>)}</div>
         <p className={styles.layoutHelp}>{AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.description}</p>
