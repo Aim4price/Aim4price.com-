@@ -642,7 +642,7 @@ function AppAccessManagement({ kind, configOverride }: {
     () => ({ ...DIRECTORY_CONFIGS[kind], ...configOverride }),
     [configOverride, kind],
   );
-  const dealerPolish = kind === 'dealer' && config.qrApp === 'dealer';
+  const businessLoginLayout = kind === 'dealer';
   const [records, setRecords] = useState<AccessRecord[]>([]);
   const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
   const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
@@ -921,7 +921,7 @@ function AppAccessManagement({ kind, configOverride }: {
         value={value}
         options={config.roleOptions}
         onChange={onChange}
-        className={`${refinementStyles.roleSelect} ${dealerPolish ? styles.dealerRoleSelect : ''}`}
+        className={`${refinementStyles.roleSelect} ${businessLoginLayout ? styles.dealerRoleSelect : ''}`}
       />
     );
   }
@@ -986,7 +986,7 @@ function AppAccessManagement({ kind, configOverride }: {
         closeDisabled={creating || namespaceBusy}
         onClose={closeFlow}
       >
-        <div className={`${styles.newUserSetup} ${dealerPolish ? styles.dealerSetup : ''}`}>
+        <div className={`${styles.newUserSetup} ${businessLoginLayout ? styles.dealerSetup : ''}`}>
         <InlineNotice notice={notice} />
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
@@ -1091,7 +1091,7 @@ function AppAccessManagement({ kind, configOverride }: {
             ) : null}
           </section>
         ) : <OwnerLoginSections
-          dealerPolish={dealerPolish}
+          businessLoginLayout={businessLoginLayout}
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
           accountName={accountName} passwordMinimum={config.passwordMinimum} passwordMaximum={config.passwordMaximum}
           onDirtyChange={setOwnerDirty} hasUnsavedChanges={ownerDirty}
@@ -1295,18 +1295,18 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
 
 export function DealerAppAccessManagement({ middlemanMode = false }: { middlemanMode?: boolean }) {
   const middlemanConfig = useMemo<Partial<DirectoryConfig> | undefined>(() => middlemanMode ? {
-    title: 'Middleman App Access',
+    title: 'Middleman App Users',
     loginPath: '/middleman/login',
     qrApp: 'middleman',
-    description: 'Create and manage secure logins for your Middleman workspace.',
-    newDescription: 'Create a Middleman App login.',
-    manageDescription: 'Edit access, change passwords or remove a login.',
+    description: 'Create team logins and choose what each person can do in the Middleman App.',
+    newDescription: 'Create a separate app login.',
+    manageDescription: 'Review permissions or deactivate a login.',
     loginLinkLabel: 'Middleman App login link',
     shareTitle: 'Aim4price Middleman App',
     shareText: 'Open the Aim4price Middleman App here:',
     itemLabel: 'Middleman App user',
     itemPlural: 'Middleman App users',
-    displayNameLabel: 'User name',
+    displayNameLabel: 'Display name',
     displayNamePlaceholder: 'Example: Sales agent',
     defaultRole: 'sales',
     roleOptions: MIDDLEMAN_ROLE_OPTIONS,
