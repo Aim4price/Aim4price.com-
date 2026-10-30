@@ -28,10 +28,10 @@ const TEMPLATE_CLASSES: Record<AdTemplateId, string> = {
 };
 const STEP_ICONS: StudioIconName[] = ['details', 'image', 'review'];
 
-export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false, onEditBranding }: {
-  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean; onEditBranding?: () => void;
+export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estimatesEndpoint, assetRegisterHref = '/asset-register', middlemanMode = false, initialBrandId, onEditBranding }: {
+  kits: AdBrandKit[]; fallbackBrand: AdBrandSnapshot; estimateHref: string; estimatesEndpoint: string; assetRegisterHref?: string; middlemanMode?: boolean; initialBrandId?: string; onEditBranding?: () => void;
 }) {
-  const defaultKit = kits.find(kit => kit.isDefault) ?? kits[0];
+  const defaultKit = kits.find(kit => kit.id === initialBrandId) ?? kits.find(kit => kit.isDefault) ?? kits[0];
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
   const brand = kits.find(kit => kit.id === brandId) ?? fallbackBrand;
   const [template, setTemplate] = useState<AdTemplateId>(defaultKit?.templateId ?? 'showcase');
@@ -64,6 +64,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const largeCanvasRef = useRef<HTMLCanvasElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const brandingDialogRef = useRef<HTMLDialogElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [published, setPublished] = useState<{listing: MarketplaceListing; showroomUrl: string; showroomPublic: boolean} | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -331,7 +332,11 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       <div className={styles.preview}><div>
         <section className={styles.brandingPanel}>
           {kits.length ? <AssetModalSelect label="Branding" buttonLabel="Branding" value={brandId} onChange={chooseStyle} options={[{value:'',label:'Use account branding'},...kits.map(kit=>({value:kit.id,label:kit.name}))]} usePortal={false} showDescriptions={false} /> : <p><strong>Branding</strong><span>Using your account branding</span></p>}
-          {onEditBranding ? <button type="button" className={styles.secondary} onClick={onEditBranding}><StudioIcon name="edit" />Edit branding</button> : null}
+          {onEditBranding ? <button type="button" className={styles.secondary} disabled={publishing} onClick={() => {
+            if (publishLock.current) return;
+            brandingDialogRef.current?.showModal();
+            brandingDialogRef.current?.querySelector<HTMLButtonElement>('[data-stay-in-creator]')?.focus();
+          }}><StudioIcon name="edit" />Edit branding</button> : null}
         </section>
         <h3 className={styles.layoutHeading}>Layout</h3>
         <div className={styles.layoutGrid} aria-label="Advert layouts">{AD_TEMPLATE_OPTIONS.map(item => <button type="button" key={item.id} className={`${studioStyles.templateChoice} ${styles.layoutChoice} ${template === item.id ? studioStyles.templateChoiceActive : ''}`} aria-pressed={template === item.id} disabled={item.photoCount > photos.length} onClick={() => setTemplate(item.id)} style={{ '--brand-primary': brand.primaryColor, '--brand-secondary': brand.secondaryColor, '--brand-accent': brand.accentColor } as CSSProperties}><span className={`${studioStyles.miniTemplate} ${TEMPLATE_CLASSES[item.id]}`} aria-hidden="true"><i /><b /><em /><u /></span><strong>{item.name}</strong><small>{item.photoCount > photos.length ? `Needs ${item.photoCount} photos` : `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`}</small></button>)}</div>
@@ -341,6 +346,21 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         <div className={styles.actions}><button className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={busy || rendering} onClick={() => exportPng()}><StudioIcon name="download" />{busy ? 'Preparing…' : 'Download PNG'}</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} disabled={busy || rendering} onClick={() => setShareOpen(true)}><StudioIcon name="share" />Share advert</button><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={async () => { try { await navigator.clipboard.writeText(shareText); setStatus('Advert text copied.'); } catch { setError('Clipboard access is unavailable. Download the PNG to share your advert.'); } }}><StudioIcon name="copy" />Copy advert text</button></div>
       </div></div><div className={`${styles.formFooter} ${marketplaceStyles.marketplaceActions}`}><button className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={() => goTo(2)}>Back</button><div className={styles.publishActions}><p className={styles.help}>{published ? (published.showroomPublic ? 'Live in Marketplace and your showroom.' : 'Live in Marketplace. Your showroom is currently private.') : 'One advert, shown in Marketplace and your showroom.'}</p><button type="button" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={publishing || rendering || uploading} onClick={() => void publishAdvert()}><StudioIcon name="check" />{publishing ? 'Publishing…' : published ? 'Update published advert' : 'Publish to Marketplace & showroom'}</button>{published ? <a href={`/marketplace/browse?listing=${published.listing.id}&preview=photo`} target="_blank" rel="noreferrer">View listing</a> : null}</div></div>
       {shareOpen ? <AdvertShareSheet listing={shareListing} shareUrl={published ? `${window.location.origin}/marketplace/browse?listing=${published.listing.id}&preview=photo` : ''} caption={shareText} prepareAdvert={prepareAdvertFile} onClose={()=>setShareOpen(false)} /> : null}
+      <dialog ref={brandingDialogRef} className={`${styles.dialog} ${styles.brandingDialog}`} aria-labelledby="edit-branding-title" aria-describedby="edit-branding-description" onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+        <div className={styles.dialogHeader}>
+          <h2 id="edit-branding-title">Leave this advert?</h2>
+          <button type="button" data-modal-close="true" aria-label="Close edit branding confirmation" onClick={() => brandingDialogRef.current?.close()}>×</button>
+        </div>
+        <p id="edit-branding-description">You’ll go to the Advert Template page to edit your branding. Your unsaved advert work will be lost. Published adverts won’t be affected.</p>
+        <div className={styles.actions}>
+          <button type="button" data-stay-in-creator className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} onClick={() => brandingDialogRef.current?.close()}>Stay here</button>
+          <button type="button" className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={publishing} onClick={() => {
+            if (publishLock.current) return;
+            brandingDialogRef.current?.close();
+            onEditBranding?.();
+          }}>Leave & edit branding</button>
+        </div>
+      </dialog>
       <dialog ref={dialogRef} className={styles.dialog} aria-labelledby="creator-preview-title" onClick={e => { if (e.target === e.currentTarget) e.currentTarget.close(); }}>
         <div className={styles.dialogHeader}><h2 id="creator-preview-title">Advert preview</h2><div className={styles.actions}><button className={`${styles.primary} ${marketplaceStyles.primaryButton}`} disabled={busy} onClick={() => exportPng()}>Download PNG</button><button data-modal-close="true" aria-label="Close advert preview" onClick={() => dialogRef.current?.close()}>×</button></div></div>
         {error ? <p role="alert">{error}</p> : null}{status ? <p role="status">{status}</p> : null}

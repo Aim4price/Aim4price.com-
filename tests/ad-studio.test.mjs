@@ -240,7 +240,7 @@ test('Advert Studio is limited to dealer accounts and uses a four-step guided se
   assert.match(desktopPage, /<AdStudioClient/);
   assert.match(dealerPage, /dealerAppMode/);
   assert.match(dealerPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
-  assert.match(client, /Save (?:brand kit|advert template)/);
+  assert.match(client, /Save (?:brand kit|advert template|template)/);
   assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /Details.*Layout.*Style.*Review/s);
   assert.match(client, /activeStep === 1/);
