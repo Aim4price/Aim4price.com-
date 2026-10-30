@@ -287,3 +287,19 @@
 .publishActions {display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:.85rem;max-width:100%;}
 .publishActions p {flex-basis:100%;text-align:right;}
 .publishActions a {color:var(--app-text,#17362c);font-size:.85rem;}
+
+/* Keep the chosen unit visible beside the reading without obscuring long values. */
+.creator .usageField input { padding-right: 4.8rem !important; }
+.creator .usageField input:disabled { padding-right: 1.08rem !important; }
+.usageUnitBadge {
+  position: absolute;
+  right: 1.08rem;
+  top: 1.62rem;
+  z-index: 2;
+  color: var(--app-muted, #64746a);
+  font-size: .85rem;
+  font-weight: 650;
+  font-style: normal;
+  line-height: 1.25;
+  pointer-events: none;
+}
