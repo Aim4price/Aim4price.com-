@@ -3469,35 +3469,7 @@ export default function MarketplaceClient({
               </>
             ) : (
               <>
-                <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">How would you like to start?</h2>
-                  <p>{isMiddleman ? 'Add the details yourself, or value an asset first.' : 'Add details yourself, use a saved asset, or value an asset first.'}</p>
-                </div>
-
-                <div className={styles.createListingChoiceGrid}>
-                  <a href={manualListingPath} className={styles.createListingChoiceCard}>
-                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true"><StudioIcon name="edit" /></span>
-                    <span className={styles.createListingChoiceCopy}><strong>Manual</strong><small>Add details and photos. No valuation needed.</small></span>
-                  </a>
-                  {!isMiddleman ? <a href={registerPath} className={styles.createListingChoiceCard}>
-                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true">
-                      <IconAssetRegister />
-                    </span>
-                    <span className={styles.createListingChoiceCopy}>
-                      <strong>Asset Register</strong>
-                      <small>Create an advert for an asset you have saved.</small>
-                    </span>
-                  </a> : null}
-                  <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
-                    <span className={`${styles.createListingChoiceIcon} ${styles.createListingValueIcon}`} aria-hidden="true">
-                      <IconAssetValue />
-                    </span>
-                    <span className={styles.createListingChoiceCopy}>
-                      <strong>Value Asset</strong>
-                      <small>Value your asset, then create your advert.</small>
-                    </span>
-                  </button>
-                </div>
+                <CreateAdvertChoices titleId="create-listing-title" middlemanMode={isMiddleman} manualHref={manualListingPath} registerHref={registerPath} onValueAsset={goToMarketplaceEstimate} />
               </>
             )}
             {isSignedIn ? (
@@ -3999,3 +3971,45 @@ export default function MarketplaceClient({
   );
 }
 
+
+function CreateAdvertChoices({ titleId, middlemanMode, manualHref, registerHref, onValueAsset }: {
+  titleId: string;
+  middlemanMode: boolean;
+  manualHref: string;
+  registerHref: string;
+  onValueAsset: () => void;
+}) {
+  return <>
+    <div className={styles.createListingHeader}>
+      <h2 id={titleId}>How would you like to start?</h2>
+      <p>{middlemanMode ? 'Add the details yourself, or value an asset first.' : 'Add details yourself, use a saved asset, or value an asset first.'}</p>
+    </div>
+
+    <div className={styles.createListingChoiceGrid}>
+      <a href={manualHref} className={styles.createListingChoiceCard}>
+        <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true"><StudioIcon name="edit" /></span>
+        <span className={styles.createListingChoiceCopy}><strong>Manual</strong><small>Add details and photos. No valuation needed.</small></span>
+      </a>
+      {!middlemanMode ? <a href={registerHref} className={styles.createListingChoiceCard}>
+        <span className={`${styles.createListingChoiceIcon} ${styles.createListingRegisterIcon}`} aria-hidden="true">
+          <IconAssetRegister />
+        </span>
+        <span className={styles.createListingChoiceCopy}>
+          <strong>Asset Register</strong>
+          <small>Create an advert for an asset you have saved.</small>
+        </span>
+      </a> : null}
+      <button type="button" className={styles.createListingChoiceCard} onClick={onValueAsset}>
+        <span className={`${styles.createListingChoiceIcon} ${styles.createListingValueIcon}`} aria-hidden="true">
+          <IconAssetValue />
+        </span>
+        <span className={styles.createListingChoiceCopy}>
+          <strong>Value Asset</strong>
+          <small>Value your asset, then create your advert.</small>
+        </span>
+      </button>
+    </div>
+  </>;
+}
+
+export { CreateAdvertChoices };
