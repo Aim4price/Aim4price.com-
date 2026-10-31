@@ -8,7 +8,8 @@ import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import MarketplaceClient from '../app/marketplace/marketplace-client';
+import MarketplaceClient, { DealRatingBadge } from '../app/marketplace/marketplace-client';
+import marketplaceStyles from '../app/marketplace/page.module.css';
 import MarketplaceOutcomeModal from './MarketplaceOutcomeModal';
 import type { MarketplaceListing } from '../lib/marketplace';
 import {
@@ -479,9 +480,7 @@ export function MiddlemanShowroomManager({
                     <div>
                       <div className={styles.listingTitleRow}>
                         <strong>{showroomListingTitle(listing)}</strong>
-                        {rating ? <span className={`${styles.rating} ${styles[`rating_${rating.rating}`]}`}>{rating.label}</span> : null}
                       </div>
-                      {rating ? <small>{rating.difference}</small> : null}
                       <small>{showroomListingDetails(listing)}</small>
                       <b>{money(listing.askingPriceExVat)} excl. VAT</b>
                     </div>
@@ -497,6 +496,7 @@ export function MiddlemanShowroomManager({
                         Manage advert
                       </button>
                     </div>
+                    {rating ? <div className={`${marketplaceStyles.cardComparisonFooter} ${styles.listingRatingPanel}`}><DealRatingBadge listing={listing} /></div> : null}
                   </article>
                 );
               })}

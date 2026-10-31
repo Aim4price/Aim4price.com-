@@ -804,6 +804,8 @@ function DealRatingBadge({
   );
 }
 
+export { DealRatingBadge };
+
 function buildListingSpecLine(listing: MarketplaceListing): string {
   const familyLabel = getListingPrimaryFamilyLabel(listing);
   const powerKw = Number(listing.powerKw || 0);

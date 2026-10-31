@@ -159,8 +159,7 @@
 .listingActions .dangerButton { border-color: var(--app-danger-line, #ead0cc); color: var(--app-danger, #9d3027); }
 .listingActions .dangerButton:hover { border-color: var(--app-danger-line, #dfaca5); background: var(--app-danger-soft, #fff7f5); }
 .listingActions button:disabled { opacity: .45; cursor: not-allowed; }
-.rating { flex: 0 0 auto; border-radius: 999px; padding: .34rem .52rem; color: #fff; font-family: 'Montserrat', sans-serif; font-size: .59rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
-.rating_low { background: #f97316; } .rating_great { background: #239b50; } .rating_fair { background: #208aa0; } .rating_high { background: #ef4444; } .rating_none { background: var(--app-surface-soft, #74847e); }
+
 
 .emptyStock { display: grid; align-content: center; justify-items: center; min-height: 340px; padding: clamp(2rem,calc(var(--website-design-vw, 1vw) * 4),3.25rem) 1.2rem; border: 1px dashed var(--app-line, #cbded6); border-radius: 18px; background: var(--app-surface, #fcfefd); text-align: center; }
 .emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 2),1.45rem); font-weight: 850; letter-spacing: -.025em; }
@@ -629,3 +628,45 @@
 
 /* Announce panel changes without an input-like heading border. */
 .nativeDialog h2[tabindex="-1"]:focus { outline: none; }
+
+/* Match Marketplace's soft create action and outlined secondary actions. */
+.managerPage .heroActions > :is(.primaryButton, .secondaryButton),
+.managerPage .showroomSummary .secondaryButton,
+.managerPage .listingActions button {
+  min-height: 2.85rem;
+  border-radius: .78rem;
+  padding: .65rem 1.1rem;
+  gap: .55rem;
+  font-size: .98rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--app-text, #165340);
+  border: 1px solid var(--app-line, #cddbd5);
+  background: var(--app-surface, #fff);
+  box-shadow: none;
+}
+.managerPage .heroActions > .primaryButton {
+  border-color: transparent;
+  background: var(--app-surface-soft, #edf6f1);
+}
+.managerPage .heroActions > .primaryButton:hover:not(:disabled) {
+  background: var(--app-surface-soft, #dceee4);
+}
+.managerPage .heroActions > :is(.primaryButton, .secondaryButton):focus-visible,
+.managerPage .showroomSummary .secondaryButton:focus-visible,
+.managerPage .listingActions button:focus-visible {
+  outline: 3px solid var(--app-accent, #43836a);
+  outline-offset: 3px;
+}
+.managerPage .listingActions button:hover:not(:disabled) {
+  border-color: var(--app-accent, #43836a);
+  background: var(--app-surface-soft, #edf6f1);
+  box-shadow: 0 0 0 3px var(--app-accent-soft, #e5f2eb);
+}
+/* Shared rating component and palette keep the showroom identical to Marketplace. */
+.managerListing .listingRatingPanel {
+  grid-column: 1 / -1;
+  display: block;
+  margin: 0;
+  padding-top: .65rem;
+}
