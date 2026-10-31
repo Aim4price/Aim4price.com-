@@ -1,0 +1,5 @@
+.search { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; }
+.search svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; color: var(--app-muted, #64746a); }
+.search input { flex: 1; width: 100%; padding: 0; color: inherit; font: inherit; outline: none; }
+.search:focus-within { border-color: var(--app-accent, #147052) !important; box-shadow: 0 0 0 3px var(--app-accent-soft, #e5f2eb); }
+.search input:focus, .search input:focus-visible { outline: none !important; box-shadow: none !important; border: 0 !important; }
