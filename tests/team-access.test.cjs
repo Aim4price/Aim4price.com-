@@ -280,7 +280,7 @@ test('owner creation emails existing accounts only and never includes the suppli
  const route=load('app/api/team-access/route.ts',{
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
   '../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},'../../../lib/team-access-policy':policy,
-  '../../../lib/asset-registers':{},'../../../lib/account-documents':{},
+  '../../../lib/asset-groups':{},'../../../lib/app-asset-directory':{},'../../../lib/asset-registers':{},'../../../lib/account-documents':{},
   '../../../lib/business-network-api':{requireBusinessOrigin:()=>{},businessBody:async r=>r.body},
   '../../../lib/business-network':{limitBusinessAction:async()=>{}},
   '../../../lib/email':{getSiteOrigin:()=> 'https://aim4price.example',sendAim4priceEmail:async e=>emails.push(e)},
@@ -315,5 +315,24 @@ test('removing a managed desktop login deletes its credentials and sessions',asy
  await f.service.removeTeamGrant(owner,grant.id,grant.version);
  assert.equal((await f.db.query('SELECT * FROM team_access_logins')).rows.length,0);
  assert.equal((await f.db.query('SELECT * FROM team_access_sessions')).rows.length,0);
+ }finally{await f.db.close();}
+});
+
+test('desktop directory returns only owned umbrella assets and names the affected user in activity',async()=>{
+ const f=await setup();try{
+ f.setSession({user:owner});await f.invite();
+ const route=load('app/api/team-access/route.ts',{
+  'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
+  '../../../lib/team-access-http':{teamJson:body=>({body,status:200}),teamError:e=>({body:{error:e.message},status:e.status||500})},'../../../lib/team-access-policy':policy,
+  '../../../lib/asset-registers':{listAssetRegisters:async()=>[{id:reg1,businessName:'Farm A'}]},'../../../lib/account-documents':{listAccountDocuments:async()=>f.docs},
+  '../../../lib/asset-groups':{listAssetGroups:async id=>{assert.equal(id,owner.id);return [{id:'group-a',name:'Fleet',members:[{assetId:aId,role:'primary'},{assetId:otherId,role:'member'}]},{id:'foreign',name:'Hidden',members:[{assetId:otherId,role:'primary'}]}]}},
+  '../../../lib/app-asset-directory':load('lib/app-asset-directory.ts'),
+  '../../../lib/business-network-api':{},'../../../lib/business-network':{},'../../../lib/email':{},
+ });
+ const result=await route.GET();assert.equal(result.status,200);
+ assert.equal(result.body.groups.length,1);assert.deepEqual(result.body.groups[0].memberAssetIds,[aId]);
+ assert.equal(result.body.activity[0].details.targetEmail,member.email);
+ assert.equal(result.body.activity[0].details.targetName,'Workshop staff');
+ assert.equal(result.body.activity[0].actor_email,owner.email);
  }finally{await f.db.close();}
 });
