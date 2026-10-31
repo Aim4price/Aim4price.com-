@@ -58,6 +58,8 @@ function listingRating(listing: MarketplaceListing): { value: MarketplaceDealRat
 
 function ShowroomDialog({ title, subtitle, children, onClose, wide = false }: { title: string; subtitle?: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [title]);
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
@@ -70,7 +72,7 @@ function ShowroomDialog({ title, subtitle, children, onClose, wide = false }: { 
     };
   }, []);
   return <dialog ref={ref} className={`${styles.nativeDialog} ${wide ? styles.wideDialog : ''} ${dialogStyles.surface}`} aria-label={title} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <header className={dialogStyles.header}><div><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={dialogStyles.close} data-modal-close="true" aria-label={`Close ${title.toLowerCase()}`} onClick={onClose}>×</button></header>
+    <header className={dialogStyles.header}><div><h2 ref={headingRef} tabIndex={-1}>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={dialogStyles.close} data-modal-close="true" aria-label={`Close ${title.toLowerCase()}`} onClick={onClose}>×</button></header>
     {children}
   </dialog>;
 }
@@ -180,7 +182,7 @@ export function MiddlemanShowroomManager({
   const dealerAppRoot = useDealerAppRoot();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsSection, setSettingsSection] = useState<'overview' | 'details' | 'link' | 'template' | 'visibility'>('overview');
-  const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
+
   const [shareShowroomOpen, setShareShowroomOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<MarketplaceListing | null>(null);
   const [previewTarget, setPreviewTarget] = useState<MarketplaceListing | null>(null);
@@ -226,7 +228,7 @@ export function MiddlemanShowroomManager({
   const linkChanged = slug !== showroom.slug;
   const visibilityChanged = isPublic !== showroom.isPublic;
   const sectionChanged = settingsSection === 'details' ? detailsChanged : settingsSection === 'link' ? linkChanged : settingsSection === 'visibility' && visibilityChanged;
-  useEffect(() => { if (settingsOpen) settingsHeadingRef.current?.focus({ preventScroll: true }); }, [settingsOpen, settingsSection]);
+
 
   useEffect(() => {
     if ((!manageListingTarget && !createDialogOpen && !showroomIntroOpen) || typeof window === 'undefined') return undefined;
@@ -517,13 +519,12 @@ export function MiddlemanShowroomManager({
         </section>
       </div>
 
-      {settingsOpen ? <ShowroomDialog title="Manage showroom" subtitle={showroom.name} wide onClose={() => setSettingsOpen(false)}>
+      {settingsOpen ? <ShowroomDialog title={({ overview: 'Manage showroom', details: 'Showroom details', link: 'Public link', template: 'Advert template', visibility: 'Visibility' })[settingsSection]} subtitle={showroom.name} wide={settingsSection === 'overview' || settingsSection === 'details'} onClose={() => setSettingsOpen(false)}>
         <section className={`${styles.settingsCard} ${styles.settingsManager} ${managementStyles.manager} ${managementStyles.ownerManager}`}>
-          <div className={managementStyles.toolbar}>
-            {settingsSection !== 'overview' ? <button type="button" disabled={saving || readingLogo} onClick={() => { setMessage(''); setSettingsSection('overview'); }}>Back</button> : <span />}
+          <div className={styles.settingsToolbar}>
+            {settingsSection !== 'overview' ? <button type="button" disabled={saving || readingLogo} onClick={() => { setMessage(''); setSettingsSection('overview'); }}>Back</button> : <p>Choose what you would like to update.</p>}
             <span className={managementStyles.status} data-active={showroom.isPublic}>{showroom.isPublic ? 'Public' : 'Private'}</span>
           </div>
-          <h3 ref={settingsHeadingRef} tabIndex={-1} className={managementStyles.sectionTitle}>{({ overview: 'Manage your showroom', details: 'Showroom details', link: 'Public link', template: 'Advert template', visibility: 'Visibility' })[settingsSection]}</h3>
           {settingsSection === 'overview' ? <>
             <div className={managementStyles.grid}>
               {([
@@ -552,7 +553,7 @@ export function MiddlemanShowroomManager({
             </div>
 
           </> : <>
-            <div className={styles.settingsEditor}>
+            <div className={`${styles.settingsEditor} ${settingsSection === 'details' ? styles.detailsEditor : ''}`}>
               {settingsSection === 'details' ? <>
           <div
             className={`${styles.showroomLogoField} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
@@ -654,7 +655,7 @@ export function MiddlemanShowroomManager({
               </> : null}
               {settingsSection === 'link' ? <>
           <div className={styles.publicLinkField}>
-            <label htmlFor="showroom-public-link">Public link</label>
+            <label htmlFor="showroom-public-link">Showroom address</label>
             <div className={styles.slugField}>
               <span className={styles.slugPrefix}>aim4price.com/showroom/</span>
               <input
@@ -662,6 +663,7 @@ export function MiddlemanShowroomManager({
                 value={slug}
                 onChange={(event) => setSlug(event.target.value)}
                 maxLength={60}
+                spellCheck={false}
                 autoCapitalize="none"
                 aria-label="Public showroom address"
               />
@@ -682,15 +684,17 @@ export function MiddlemanShowroomManager({
           </div>
               </> : null}
               {settingsSection === 'template' ? <>
+          <p className={styles.editorHint}>The design used when you download your adverts.</p>
           <div className={styles.advertDesignField}>
             <div>
-              <strong>Advert design</strong>
+              <strong>{usesSavedBrandDesign ? 'My advert template' : 'Aim4price Marketplace'}</strong>
               <span>
                 {usesSavedBrandDesign
-                  ? 'Downloads use your advert template.'
-                  : 'Downloads use the Aim4price Marketplace design.'}
+                  ? 'Your saved colours, logo and advert styling.'
+                  : 'Your adverts use the standard Aim4price design.'}
               </span>
             </div>
+            <span className={styles.designBadge}>Current design</span>
             {advertDesignHref ? (
               <Link className={styles.advertDesignButton} href={advertDesignHref}>Edit advert template</Link>
             ) : null}
@@ -699,7 +703,7 @@ export function MiddlemanShowroomManager({
               </> : null}
               {settingsSection === 'visibility' ? <>
           <label className={styles.switchRow}>
-            <span><strong>Showroom visible to the public</strong><small>Anyone with the link can view your live adverts and contact details.</small></span>
+            <span><strong>Showroom visible to the public</strong><small>{isPublic ? 'Anyone with the link can view your live adverts and contact details.' : 'Your public showroom is hidden. You can still manage your adverts here.'}</small></span>
             <span className={styles.switchControl}>
               <input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />
               <span aria-hidden="true" />
@@ -707,7 +711,8 @@ export function MiddlemanShowroomManager({
           </label>
               </> : null}
             </div>
-            {settingsSection !== 'template' ? <footer className={styles.settingsActions}>
+            {settingsSection !== 'template' ? <footer className={`${styles.settingsActions} ${styles.editorActions}`}>
+              <span className={styles.saveHint}>{sectionChanged ? 'Unsaved changes' : 'No changes to save'}</span>
               <button className={`${styles.primaryButton} ${managementStyles.primary}`} type="button" onClick={saveShowroom} disabled={saving || readingLogo || !sectionChanged}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
             </footer> : null}
           </>}

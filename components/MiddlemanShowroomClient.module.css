@@ -603,3 +603,29 @@
 .settingsManager .dangerZone button:disabled { cursor: not-allowed; }
 .settingsManager svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .settingsManager .feedback { margin: 1rem 0 0; }
+
+/* Keep the management hub familiar; size each editor to its task. */
+.settingsToolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.1rem; }
+.settingsToolbar p { margin: 0; color: var(--app-muted, #677b74); font-size: .9rem; line-height: 1.5; }
+.settingsToolbar > span { flex-shrink: 0; }
+.settingsManager .detailsEditor { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: start; gap: 1.25rem; }
+.nativeDialog .detailsEditor .showroomLogoField { align-self: stretch; align-content: center; }
+.nativeDialog .detailsEditor textarea { height: 8rem; min-height: 8rem; }
+.nativeDialog .settingsManager .switchRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1.25rem; padding: 1.1rem; }
+.settingsManager .switchControl { flex-shrink: 0; }
+.settingsManager .editorActions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.saveHint, .editorHint { color: var(--app-muted, #677b74); font-size: .85rem; line-height: 1.5; }
+.editorHint { margin: 0; }
+.nativeDialog .settingsManager .advertDesignField { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; padding: 1.2rem; }
+.settingsManager .advertDesignField > div { flex: 1 1 16rem; }
+.designBadge { padding: .35rem .65rem; border-radius: 999px; background: var(--app-accent-soft, #e5f2eb); color: var(--app-accent, #21694f); font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.settingsManager .advertDesignButton { flex-basis: 100%; text-align: center; }
+.settingsManager .settingsToolbar button:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsManager .detailsEditor { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsManager .editorActions { flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsManager .editorActions > button { flex-basis: 100%; }
+}
+
+/* Announce panel changes without an input-like heading border. */
+.nativeDialog h2[tabindex="-1"]:focus { outline: none; }
