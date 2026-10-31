@@ -21,6 +21,7 @@ import {
 import type { MiddlemanShowroom, PublicMiddlemanShowroomData } from '../lib/middleman-showroom-db';
 import styles from './MiddlemanShowroomClient.module.css';
 import dialogStyles from './AccountDialog.module.css';
+import managementStyles from '../app/account/owner-login-sections.module.css';
 import { WorkspaceTitlePanel } from './WorkspacePrimitives';
 
 type ManagerProps = {
@@ -55,7 +56,7 @@ function listingRating(listing: MarketplaceListing): { value: MarketplaceDealRat
   return comparison ? {value,label:comparison.basis==='realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference} : null;
 }
 
-function ShowroomDialog({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+function ShowroomDialog({ title, subtitle, children, onClose, wide = false }: { title: string; subtitle?: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const trigger = document.activeElement as HTMLElement | null;
@@ -69,7 +70,7 @@ function ShowroomDialog({ title, children, onClose, wide = false }: { title: str
     };
   }, []);
   return <dialog ref={ref} className={`${styles.nativeDialog} ${wide ? styles.wideDialog : ''} ${dialogStyles.surface}`} aria-label={title} onCancel={onClose} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <header className={dialogStyles.header}><h2>{title}</h2><button type="button" className={dialogStyles.close} data-modal-close="true" aria-label={`Close ${title.toLowerCase()}`} onClick={onClose}>×</button></header>
+    <header className={dialogStyles.header}><div><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={dialogStyles.close} data-modal-close="true" aria-label={`Close ${title.toLowerCase()}`} onClick={onClose}>×</button></header>
     {children}
   </dialog>;
 }
@@ -178,6 +179,8 @@ export function MiddlemanShowroomManager({
 }: ManagerProps) {
   const dealerAppRoot = useDealerAppRoot();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<'overview' | 'details' | 'link' | 'template' | 'visibility'>('overview');
+  const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
   const [shareShowroomOpen, setShareShowroomOpen] = useState(false);
   const [shareTarget, setShareTarget] = useState<MarketplaceListing | null>(null);
   const [previewTarget, setPreviewTarget] = useState<MarketplaceListing | null>(null);
@@ -218,6 +221,12 @@ export function MiddlemanShowroomManager({
     || bio !== showroom.bio
     || isPublic !== showroom.isPublic
     || showroomLogoUrl !== showroom.showroomLogoUrl;
+
+  const detailsChanged = bio !== showroom.bio || showroomLogoUrl !== showroom.showroomLogoUrl;
+  const linkChanged = slug !== showroom.slug;
+  const visibilityChanged = isPublic !== showroom.isPublic;
+  const sectionChanged = settingsSection === 'details' ? detailsChanged : settingsSection === 'link' ? linkChanged : settingsSection === 'visibility' && visibilityChanged;
+  useEffect(() => { if (settingsOpen) settingsHeadingRef.current?.focus({ preventScroll: true }); }, [settingsOpen, settingsSection]);
 
   useEffect(() => {
     if ((!manageListingTarget && !createDialogOpen && !showroomIntroOpen) || typeof window === 'undefined') return undefined;
@@ -330,17 +339,24 @@ export function MiddlemanShowroomManager({
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, bio, isPublic, logoUrl: showroomLogoUrl }),
+        body: JSON.stringify({
+          slug: settingsSection === 'link' ? slug : showroom.slug,
+          bio: settingsSection === 'details' ? bio : showroom.bio,
+          isPublic: settingsSection === 'visibility' ? isPublic : showroom.isPublic,
+          logoUrl: settingsSection === 'details' ? showroomLogoUrl : showroom.showroomLogoUrl,
+        }),
       });
       const data = await response.json() as { ok?: boolean; showroom?: MiddlemanShowroom; error?: string };
       if (!response.ok || !data.ok || !data.showroom) throw new Error(data.error || 'Failed to save your showroom.');
       setShowroom(data.showroom);
-      setSlug(data.showroom.slug);
-      setBio(data.showroom.bio);
-      setIsPublic(data.showroom.isPublic);
-      setShowroomLogoUrl(data.showroom.showroomLogoUrl);
-      setMessage('Showroom saved.');
-      setSettingsOpen(false);
+      if (settingsSection === 'link') setSlug(data.showroom.slug);
+      if (settingsSection === 'visibility') setIsPublic(data.showroom.isPublic);
+      if (settingsSection === 'details') {
+        setBio(data.showroom.bio);
+        setShowroomLogoUrl(data.showroom.showroomLogoUrl);
+      }
+      setMessage('Changes saved.');
+      setSettingsSection('overview');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save your showroom.');
     } finally {
@@ -443,7 +459,7 @@ export function MiddlemanShowroomManager({
             {(showroom.showroomLogoUrl || showroom.inheritedLogoUrl) ? <img src={showroom.showroomLogoUrl || showroom.inheritedLogoUrl} alt="Showroom logo" /> : <span className={styles.summaryPlaceholder}><ShowroomManageActionIcon name="marketplace" /></span>}
             <div><h2>{showroom.name}</h2><p>{listings.length} {listings.length === 1 ? 'advert' : 'adverts'} · {showroom.isPublic ? 'Public' : 'Private'}</p>{showroom.bio ? <p>{showroom.bio}</p> : null}</div>
           </div>
-          <button type="button" className={styles.secondaryButton} onClick={() => { setMessage(''); setSettingsOpen(true); }}><ShowroomManageActionIcon name="controls" />Edit showroom{hasUnsavedShowroomChanges ? ' · Unsaved' : ''}</button>
+          <button type="button" className={styles.secondaryButton} onClick={() => { setMessage(''); setSettingsSection('overview'); setSettingsOpen(true); }}><ShowroomManageActionIcon name="controls" />Manage showroom{hasUnsavedShowroomChanges ? ' · Unsaved' : ''}</button>
         </section>
         {message ? <p className={styles.feedback} role="status">{message}</p> : null}
 
@@ -501,15 +517,43 @@ export function MiddlemanShowroomManager({
         </section>
       </div>
 
-      {settingsOpen ? <ShowroomDialog title="Edit showroom" wide onClose={() => setSettingsOpen(false)}>
-        <section className={styles.settingsCard}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <h3>Showroom details</h3>
-              <p>Choose how customers see and find your showroom.</p>
-            </div>
-            <span className={`${styles.statusText} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Public' : 'Private'}</span>
+      {settingsOpen ? <ShowroomDialog title="Manage showroom" subtitle={showroom.name} wide onClose={() => setSettingsOpen(false)}>
+        <section className={`${styles.settingsCard} ${styles.settingsManager} ${managementStyles.manager} ${managementStyles.ownerManager}`}>
+          <div className={managementStyles.toolbar}>
+            {settingsSection !== 'overview' ? <button type="button" disabled={saving || readingLogo} onClick={() => { setMessage(''); setSettingsSection('overview'); }}>Back</button> : <span />}
+            <span className={managementStyles.status} data-active={showroom.isPublic}>{showroom.isPublic ? 'Public' : 'Private'}</span>
           </div>
+          <h3 ref={settingsHeadingRef} tabIndex={-1} className={managementStyles.sectionTitle}>{({ overview: 'Manage your showroom', details: 'Showroom details', link: 'Public link', template: 'Advert template', visibility: 'Visibility' })[settingsSection]}</h3>
+          {settingsSection === 'overview' ? <>
+            <div className={managementStyles.grid}>
+              {([
+                { key: 'details', icon: 'marketplace', title: 'Showroom details', text: 'Update your logo and introduction.', value: detailsChanged ? 'Unsaved changes' : showroom.showroomLogoUrl ? 'Custom logo' : showroom.inheritedLogoUrl ? 'Saved brand logo' : 'Add your logo' },
+                { key: 'link', icon: 'link', title: 'Public link', text: 'Edit your address or copy the link.', value: linkChanged ? 'Unsaved changes' : showroom.slug },
+                { key: 'template', icon: 'edit', title: 'Advert template', text: 'View the design used for your adverts.', value: usesSavedBrandDesign ? 'My advert template' : 'Aim4price Marketplace' },
+                { key: 'visibility', icon: 'controls', title: 'Visibility', text: 'Choose who can see your showroom.', value: visibilityChanged ? 'Unsaved changes' : showroom.isPublic ? 'Public' : 'Private' },
+              ] as const).map(item => <button type="button" key={item.key} className={managementStyles.card} onClick={() => { setMessage(''); setSettingsSection(item.key); }}>
+                <span className={managementStyles.icon}><ShowroomManageActionIcon name={item.icon} /></span>
+                <span className={managementStyles.copy}><strong>{item.title}</strong><span>{item.text}</span><small>{item.value}</small></span>
+              </button>)}
+            </div>
+            <div className={styles.dangerZone}>
+              <div>
+                <strong>Delete showroom</strong>
+                <small>{listings.length ? 'Remove each live advert and record its outcome first.' : 'Advert history, valuations and assets stay saved.'}</small>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSettingsOpen(false); setDeleteConfirmation(''); setDeleteDialogOpen(true); }}
+                disabled={listings.length > 0}
+                title={listings.length ? 'Remove each live advert first.' : 'Delete showroom'}
+              >
+                Delete showroom
+              </button>
+            </div>
+
+          </> : <>
+            <div className={styles.settingsEditor}>
+              {settingsSection === 'details' ? <>
           <div
             className={`${styles.showroomLogoField} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
             onDragEnter={(event) => {
@@ -596,19 +640,19 @@ export function MiddlemanShowroomManager({
               />
             </div>
           </div>
-          <div className={styles.advertDesignField}>
-            <div>
-              <strong>Advert design</strong>
-              <span>
-                {usesSavedBrandDesign
-                  ? 'Downloads use your advert template.'
-                  : 'Downloads use the Aim4price Marketplace design.'}
-              </span>
-            </div>
-            {advertDesignHref ? (
-              <Link className={styles.advertDesignButton} href={advertDesignHref}>Edit advert template</Link>
-            ) : null}
-          </div>
+          <label className={styles.introductionField}>
+            <span>Short introduction</span>
+            <textarea
+              value={bio}
+              onChange={(event) => setBio(event.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Tell customers which machinery, regions or services you specialise in."
+            />
+            <small>{bio.length} of 500 characters</small>
+          </label>
+              </> : null}
+              {settingsSection === 'link' ? <>
           <div className={styles.publicLinkField}>
             <label htmlFor="showroom-public-link">Public link</label>
             <div className={styles.slugField}>
@@ -625,8 +669,8 @@ export function MiddlemanShowroomManager({
                 className={styles.copyLinkButton}
                 type="button"
                 onClick={copyPublicLink}
-                disabled={!showroom.isPublic || hasUnsavedShowroomChanges || saving}
-                title={hasUnsavedShowroomChanges ? 'Save your changes before copying the public link.' : undefined}
+                disabled={!showroom.isPublic || linkChanged || saving}
+                title={linkChanged ? 'Save your changes before copying the public link.' : undefined}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <rect x="8" y="8" width="11" height="11" rx="2" />
@@ -636,17 +680,24 @@ export function MiddlemanShowroomManager({
               </button>
             </div>
           </div>
-          <label className={styles.introductionField}>
-            <span>Short introduction</span>
-            <textarea
-              value={bio}
-              onChange={(event) => setBio(event.target.value)}
-              maxLength={500}
-              rows={3}
-              placeholder="Tell customers which machinery, regions or services you specialise in."
-            />
-            <small>{bio.length} of 500 characters</small>
-          </label>
+              </> : null}
+              {settingsSection === 'template' ? <>
+          <div className={styles.advertDesignField}>
+            <div>
+              <strong>Advert design</strong>
+              <span>
+                {usesSavedBrandDesign
+                  ? 'Downloads use your advert template.'
+                  : 'Downloads use the Aim4price Marketplace design.'}
+              </span>
+            </div>
+            {advertDesignHref ? (
+              <Link className={styles.advertDesignButton} href={advertDesignHref}>Edit advert template</Link>
+            ) : null}
+          </div>
+                {advertDesignHref ? <p className={managementStyles.hint}>Opens Advert Studio on a different page. Save any showroom changes before leaving.</p> : null}
+              </> : null}
+              {settingsSection === 'visibility' ? <>
           <label className={styles.switchRow}>
             <span><strong>Showroom visible to the public</strong><small>Anyone with the link can view your live adverts and contact details.</small></span>
             <span className={styles.switchControl}>
@@ -654,28 +705,14 @@ export function MiddlemanShowroomManager({
               <span aria-hidden="true" />
             </span>
           </label>
+              </> : null}
+            </div>
+            {settingsSection !== 'template' ? <footer className={styles.settingsActions}>
+              <button className={`${styles.primaryButton} ${managementStyles.primary}`} type="button" onClick={saveShowroom} disabled={saving || readingLogo || !sectionChanged}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
+            </footer> : null}
+          </>}
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
-          <footer className={styles.settingsFooter}>
-            <div className={styles.dangerZone}>
-              <div>
-                <strong>Delete showroom</strong>
-                <small>{listings.length ? 'Remove each live advert and record its outcome first.' : 'Advert history, valuations and assets stay saved.'}</small>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setSettingsOpen(false); setDeleteConfirmation(''); setDeleteDialogOpen(true); }}
-                disabled={listings.length > 0}
-                title={listings.length ? 'Remove each live advert first.' : 'Delete showroom'}
-              >
-                Delete showroom
-              </button>
-            </div>
-            <div className={styles.settingsActions}>
-              <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving || readingLogo || !hasUnsavedShowroomChanges}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
-            </div>
-          </footer>
         </section>
-
       </ShowroomDialog> : null}
       {shareShowroomOpen ? <ShowroomDialog title="Share showroom" onClose={() => setShareShowroomOpen(false)}>
         <div className={styles.dialogContent}>
