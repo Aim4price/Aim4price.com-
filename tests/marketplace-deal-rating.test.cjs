@@ -63,8 +63,8 @@ test('visible badges and filter ratings agree; hidden ratings stay unclassified'
     const listing = { askingPriceExVat: price, aim4priceValueExVat: 100000, dealRating: 'none' };
     const html = render(listing);
     assert.equal(ui.getListingDealRating(listing), rating);
-    assert.match(html, new RegExp(`ratingFilterPill dealRatingBadge${tone}`));
-    assert.match(html, new RegExp(label));
+    assert.match(html, new RegExp(`dealRatingBadge dealRatingBadge${tone}`));
+    assert.match(html, new RegExp(`<strong class="dealRatingTitle">${label}</strong>`));
     assert.match(html, /ideal selling price/);
     assert.equal(render({ ...listing, showDealRating: false }), '');
     assert.equal(ui.getListingDealRating({ ...listing, showDealRating: false }), 'none');

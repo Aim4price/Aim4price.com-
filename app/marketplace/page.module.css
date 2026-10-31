@@ -3942,10 +3942,10 @@
   width: auto;
   margin: .65rem .85rem;
   padding: .7rem .85rem;
-  border: 1px solid var(--app-line, #d5e1db);
+  border: 1px solid var(--rating-line, #dce2e7);
   border-radius: .65rem;
-  background: var(--app-surface-soft, #edf3f0);
-  color: var(--app-text, #173f31);
+  background: var(--rating-surface, #f3f5f7);
+  color: var(--rating-ink, #52616e);
   box-shadow: none;
   white-space: normal;
   line-height: 1.4;
@@ -3970,5 +3970,45 @@
 .cardComparisonFooter .cardDealRatingBadge svg { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
 .cardComparisonFooter .dealRatingBadge.cardComparisonUnavailable { background: var(--app-info-soft, #f0f2f5); color: var(--app-muted, #656b76); border-color: var(--app-info-line, #e0e4e9); }
 
-.dealRatingContent { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; min-width: 0; }
-.dealRatingExplanation { font-size: .78rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+/* Keep the original rating hues, with the colour carried by the whole panel. */
+.dealRatingBadgeLow {
+  --rating-surface: #fff4e9;
+  --rating-line: #f2dac3;
+  --rating-ink: #97430f;
+  --rating-detail: #785c48;
+}
+.dealRatingBadgeGreat {
+  --rating-surface: #edf8ef;
+  --rating-line: #cce7d2;
+  --rating-ink: #21733b;
+  --rating-detail: #496953;
+}
+.dealRatingBadgeFair {
+  --rating-surface: #edf9fb;
+  --rating-line: #cee9ed;
+  --rating-ink: #09687a;
+  --rating-detail: #4d6870;
+}
+.dealRatingBadgeHigh {
+  --rating-surface: #fff1f1;
+  --rating-line: #f0d3d3;
+  --rating-ink: #b33333;
+  --rating-detail: #805858;
+}
+.dealRatingContent { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; min-width: 0; }
+.dealRatingTitle { color: inherit; font-size: .95rem; font-weight: 800; line-height: 1.3; }
+.dealRatingExplanation { color: var(--rating-detail, inherit); font-size: .78rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+
+/* App surfaces use the same hues with enough contrast in dark mode. */
+:global(html[data-app-theme='dark']) .dealRatingBadgeLow {
+  --rating-surface: #30251e; --rating-line: #62432d; --rating-ink: #ffb779; --rating-detail: #ddc2aa;
+}
+:global(html[data-app-theme='dark']) .dealRatingBadgeGreat {
+  --rating-surface: #192d23; --rating-line: #315a40; --rating-ink: #82d99a; --rating-detail: #b3cdbb;
+}
+:global(html[data-app-theme='dark']) .dealRatingBadgeFair {
+  --rating-surface: #182c32; --rating-line: #30545e; --rating-ink: #7ed5e5; --rating-detail: #b2cbd1;
+}
+:global(html[data-app-theme='dark']) .dealRatingBadgeHigh {
+  --rating-surface: #322123; --rating-line: #63373b; --rating-ink: #ffa3a3; --rating-detail: #dbb9bc;
+}

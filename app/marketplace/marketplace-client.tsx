@@ -797,7 +797,7 @@ function DealRatingBadge({
     >
       {variant === 'card' ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20V13h5v7M9 20V8h5v12M14 20V3h5v17M3 20h18" /></svg> : null}
       <span className={styles.dealRatingContent}>
-        <strong className={`${styles.ratingFilterPill} ${getDealRatingToneClass(rating)}`}>{comparison?.label ?? 'No rating'}</strong>
+        <strong className={styles.dealRatingTitle}>{comparison?.label ?? 'No rating'}</strong>
         <span className={styles.dealRatingExplanation}>{comparison?.difference ?? 'Price comparison unavailable'}</span>
       </span>
     </span>
