@@ -804,7 +804,7 @@ function DealRatingBadge({
   );
 }
 
-export { DealRatingBadge };
+export { DealRatingBadge, getDealRatingToneClass };
 
 function buildListingSpecLine(listing: MarketplaceListing): string {
   const familyLabel = getListingPrimaryFamilyLabel(listing);

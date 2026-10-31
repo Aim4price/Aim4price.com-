@@ -8,7 +8,7 @@ import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import MarketplaceClient, { DealRatingBadge } from '../app/marketplace/marketplace-client';
+import MarketplaceClient, { DealRatingBadge, getDealRatingToneClass } from '../app/marketplace/marketplace-client';
 import marketplaceStyles from '../app/marketplace/page.module.css';
 import MarketplaceOutcomeModal from './MarketplaceOutcomeModal';
 import type { MarketplaceListing } from '../lib/marketplace';
@@ -475,7 +475,7 @@ export function MiddlemanShowroomManager({
               {visibleListings.map((listing) => {
                 const rating = listingRating(listing);
                 return (
-                  <article className={styles.managerListing} key={listing.id}>
+                  <article className={`${styles.managerListing} ${rating ? `${styles.ratedListing} ${getDealRatingToneClass(rating.rating)}` : ''}`} key={listing.id}>
                     <img src={listing.imageSrc || '/brand/Tractor.png'} alt="" />
                     <div>
                       <div className={styles.listingTitleRow}>
