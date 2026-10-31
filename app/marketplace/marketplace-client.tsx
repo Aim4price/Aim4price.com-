@@ -1,6 +1,6 @@
 'use client';
 import StudioIcon from '../../components/StudioIcon';
-import { sellingPriceComparison } from '../../lib/selling-price';
+import { marketplaceDealComparison } from '../../lib/selling-price';
 
 import FacebookAdvertActions, { WhatsAppAdvertActions } from '../../components/FacebookAdvertActions';
 import ListPagination from '../../components/ListPagination';
@@ -786,9 +786,8 @@ function DealRatingBadge({
   if (listing.showDealRating === false) return null;
 
   const rating = getListingDealRating(listing);
-  const comparison = sellingPriceComparison(listing);
+  const comparison = marketplaceDealComparison(listing);
   if (!comparison && variant === 'modal') return null;
-  const label = !comparison ? 'Price comparison unavailable' : comparison.basis === 'realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference;
 
   return (
     <span
@@ -797,7 +796,10 @@ function DealRatingBadge({
       } ${!comparison ? styles.cardComparisonUnavailable : ''}`}
     >
       {variant === 'card' ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20V13h5v7M9 20V8h5v12M14 20V3h5v17M3 20h18" /></svg> : null}
-      <span>{label}</span>
+      <span className={styles.dealRatingContent}>
+        <strong className={`${styles.ratingFilterPill} ${getDealRatingToneClass(rating)}`}>{comparison?.label ?? 'No rating'}</strong>
+        <span className={styles.dealRatingExplanation}>{comparison?.difference ?? 'Price comparison unavailable'}</span>
+      </span>
     </span>
   );
 }

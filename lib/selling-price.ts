@@ -28,3 +28,16 @@ export function sellingPriceComparison(input: SellingBenchmark & { askingPriceEx
   const difference = rounded === 0 ? `At ${basis} selling price` : `${rounded}% ${percent < 0 ? 'below' : 'above'} ${basis} selling price`;
   return { basis, percent, difference, label: basis === 'ideal' ? 'Ideal price comparison' : percent < -5 ? 'Good value' : percent <= 5 ? 'Fair value' : 'Above estimate' };
 }
+
+/** Public listings use the current realistic benchmark, falling back to ideal. */
+export function marketplaceDealComparison(input: SellingBenchmark & { askingPriceExVat: number }) {
+  const comparison = sellingPriceComparison({
+    ...input,
+    realisticSellingPriceExVat: input.sellingPriceNeedsReview ? null : input.realisticSellingPriceExVat,
+    sellingPriceNeedsReview: false,
+  });
+  if (!comparison) return null;
+  const rating = comparison.percent < -20 ? 'low' : comparison.percent < -5 ? 'great' : comparison.percent <= 5 ? 'fair' : 'high';
+  const labels = { low: 'Low price', great: 'Good value', fair: 'Fair value', high: 'Above estimate' };
+  return { ...comparison, rating, label: labels[rating] } as const;
+}

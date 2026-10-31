@@ -1,7 +1,7 @@
 'use client';
 
 import { saleabilityEaseLabel, validSaleabilityEase, type SavedSaleability } from '../lib/asset-saleability';
-import { sellingPriceComparison } from '../lib/selling-price';
+import { marketplaceDealComparison } from '../lib/selling-price';
 import StudioIcon from './StudioIcon';
 import styles from './MarketplacePublishReview.module.css';
 
@@ -12,7 +12,7 @@ export default function MarketplacePublishReview({ draft, price, vatIncluded, id
   saved?: SavedSaleability; stale: boolean; loading: boolean; loadError: boolean; busy: boolean;
   onRatingChange: (show: boolean) => void; onCalculate: () => void;
 }) {
-  const comparison = loading || loadError ? null : sellingPriceComparison({ askingPriceExVat: price, aim4priceValueExVat: idealValue, realisticSellingPriceExVat: assessment?.priceExVat, sellingPriceNeedsReview: assessment?.needsReview });
+  const comparison = loading || loadError ? null : marketplaceDealComparison({ askingPriceExVat: price, aim4priceValueExVat: idealValue, realisticSellingPriceExVat: assessment?.priceExVat, sellingPriceNeedsReview: assessment?.needsReview });
   const ease = !loading && !loadError && !stale && validSaleabilityEase(saved?.ease) ? saved!.ease! : null;
   const answers = saved?.answers;
   const demand = {strong:'Strong demand',normal:'Normal demand',weak:'Weak demand',unknown:'Demand not confirmed'};
@@ -32,7 +32,7 @@ export default function MarketplacePublishReview({ draft, price, vatIncluded, id
       <section className={styles.panel} aria-labelledby="marketplace-rating-heading">
         <div className={styles.heading}><span className={styles.icon}><StudioIcon name="price" /></span><h4 id="marketplace-rating-heading">Value rating</h4></div>
         <div className={styles.switchRow}><span id="marketplace-rating-label">Show value rating</span><button type="button" role="switch" aria-labelledby="marketplace-rating-label" aria-describedby="marketplace-rating-help" aria-checked={draft.showDealRating && !!comparison} disabled={busy || !comparison} className={styles.switch} onClick={() => onRatingChange(!draft.showDealRating)}><span /></button></div>
-        <p id="marketplace-rating-help">{loading ? 'Loading your saved assessment…' : loadError ? 'Assessment unavailable. You can publish without a rating.' : assessment?.needsReview ? 'Calculate a current realistic price to enable its rating.' : comparison ? 'Compare your asking price with the estimate.' : 'No current estimate. Publish without a rating.'}</p>
+        <p id="marketplace-rating-help">{loading ? 'Loading your saved assessment…' : loadError ? 'Assessment unavailable. You can publish without a rating.' : comparison ? 'Compare your asking price with the estimate.' : 'No current estimate. Publish without a rating.'}</p>
         {comparison ? <small>{comparison.basis === 'realistic' ? 'Based on your saved realistic selling price.' : 'Based on the ideal selling price, not a market assessment.'}</small> : null}
       </section>
       <section className={styles.panel} aria-labelledby="marketplace-saleability-heading">

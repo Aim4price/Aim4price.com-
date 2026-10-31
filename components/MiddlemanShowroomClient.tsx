@@ -1,5 +1,5 @@
 'use client';
-import { sellingPriceComparison } from '../lib/selling-price';
+import { marketplaceDealComparison } from '../lib/selling-price';
 
 import AdvertShareSheet from './AdvertShareSheet';
 import AssetModalSelect from './AssetModalSelect';
@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
 import MarketplaceClient from '../app/marketplace/marketplace-client';
 import MarketplaceOutcomeModal from './MarketplaceOutcomeModal';
-import type { MarketplaceDealRating, MarketplaceListing } from '../lib/marketplace';
+import type { MarketplaceListing } from '../lib/marketplace';
 import {
   marketplaceListingToAdContent,
   renderMarketplaceAdCanvas,
@@ -42,18 +42,9 @@ function money(value: number): string {
   return `R ${Math.round(Number.isFinite(value) ? value : 0).toLocaleString('en-US').replace(/,/g, ' ')}`;
 }
 
-function listingRating(listing: MarketplaceListing): { value: MarketplaceDealRating; label: string } | null {
+function listingRating(listing: MarketplaceListing) {
   if (listing.showDealRating === false) return null;
-  const value = listing.dealRating ?? 'none';
-  const labels: Record<MarketplaceDealRating, string> = {
-    low: 'Low price',
-    great: 'Great price',
-    fair: 'Fair price',
-    high: 'High price',
-    none: 'No rating',
-  };
-  const comparison=sellingPriceComparison(listing);
-  return comparison ? {value,label:comparison.basis==='realistic' ? `${comparison.label} · ${comparison.difference}` : comparison.difference} : null;
+  return marketplaceDealComparison(listing);
 }
 
 function ShowroomDialog({ title, subtitle, children, onClose, wide = false }: { title: string; subtitle?: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
@@ -488,8 +479,9 @@ export function MiddlemanShowroomManager({
                     <div>
                       <div className={styles.listingTitleRow}>
                         <strong>{showroomListingTitle(listing)}</strong>
-                        {rating ? <span className={`${styles.rating} ${styles[`rating_${rating.value}`]}`}>{rating.label}</span> : null}
+                        {rating ? <span className={`${styles.rating} ${styles[`rating_${rating.rating}`]}`}>{rating.label}</span> : null}
                       </div>
+                      {rating ? <small>{rating.difference}</small> : null}
                       <small>{showroomListingDetails(listing)}</small>
                       <b>{money(listing.askingPriceExVat)} excl. VAT</b>
                     </div>
