@@ -5875,7 +5875,7 @@
   gap: .75rem;
 }
 :is(.dealerDesktopLeads, .dealerAppLeads, .leadsPage) .leadAssetBody.leadAssetBody [data-shared-asset-facts] {
-  grid-template-columns: minmax(0, 1fr) 10.5rem !important;
+  grid-template-columns: minmax(0, 1fr) 14rem !important;
   gap: .8rem;
   align-items: start;
 }

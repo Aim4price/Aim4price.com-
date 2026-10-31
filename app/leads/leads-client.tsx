@@ -3234,8 +3234,8 @@ export default function LeadsClient({
             ) : null}
           </div>
 
-          <div className={styles.fullRegisterAssetInformation}>
-            <div className={assetStyles.assetDetailsGrid}>
+          <div className={`${styles.fullRegisterAssetInformation} ${assetStyles.assetDetailsPanel}`}>
+            <div className={`${assetStyles.assetDetailsGrid} ${cardLayout.statusFacts}`}>
               <div className={assetStyles.assetPrimaryDetails}>
                 <div className={assetStyles.assetDetailRow}>
                   <span className={cardLayout.detailLabel}><AssetDetailIcon kind="serial"/>Serial / VIN</span>
@@ -3257,15 +3257,15 @@ export default function LeadsClient({
 
               <div className={assetStyles.assetStatusDetails}>
                 <div className={assetStyles.assetStatusRow}>
-                  <span>Financed</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="finance"/>Financed</span>
                   {renderLeadAssetStatusMark(snapshotFinanceStatusChoice(asset))}
                 </div>
                 <div className={assetStyles.assetStatusRow}>
-                  <span>Insured</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="insurance"/>Insured</span>
                   {renderLeadAssetStatusMark(snapshotInsuranceStatusChoice(asset))}
                 </div>
                 <div className={assetStyles.assetStatusRow}>
-                  <span>Licensed</span>
+                  <span className={cardLayout.detailLabel}><AssetDetailIcon kind="license"/>Licensed</span>
                   {renderLeadAssetStatusMark(licenseStatus)}
                 </div>
                 {licenseStatus === 'yes' && registrationNumber ? (

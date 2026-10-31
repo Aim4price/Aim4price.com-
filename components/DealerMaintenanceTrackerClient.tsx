@@ -1,4 +1,6 @@
 'use client';
+import AssetDetailIcon from './asset-register/AssetDetailIcon';
+import cardLayout from './asset-register/AssetCardDetails.module.css';
 import MaintenanceDetailsCard from './MaintenanceDetailsCard';
 import { maintenanceLabel } from '../lib/maintenance-presentation';
 import AppMaintenanceActions from './AppMaintenanceActions';
@@ -1427,21 +1429,21 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         <div className={`${assetStyles.assetDetailsPanel} ${styles.trackerDetailsPanel}`}>
                           <div className={`${assetStyles.assetDetailsGrid} ${styles.trackerDetailsGrid}`}>
                             <div className={assetStyles.assetPrimaryDetails}>
-                              <div className={assetStyles.assetDetailRow}><span>Serial / VIN</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Registration</span><strong>{asset.registrationNumber || 'Not saved'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Year</span><strong>{asset.yearModel || 'Not saved'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Status</span><strong>{asset.statusLabel}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="serial"/>Serial / VIN</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="registration"/>Registration</span><strong>{asset.registrationNumber || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>Year</span><strong>{asset.yearModel || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="status"/>Status</span><strong>{asset.statusLabel}</strong></div>
                             </div>
 
                             <div className={assetStyles.assetPrimaryDetails}>
                               {dealerAppMode && <AppMaintenanceActions apiBase={`/api/dealer/maintenance/${asset.accessId}`} assetTitle={asset.assetTitle} scheduleLabel={asset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : asset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={asset.permissions.canAddMaintenance || asset.permissions.canViewMaintenanceReports || asset.permissions.canCreateMaintenanceSchedules} canParts={asset.permissions.canViewParts || asset.permissions.canAddParts} onRecord={asset.permissions.canAddMaintenance ? () => setWorkChoiceAsset(asset) : undefined} onSchedule={asset.permissions.canCreateMaintenanceSchedules ? () => setScheduleAccessId(asset.accessId) : undefined} />}
-                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed work' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Usage at completion' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="maintenance"/>{isCompletedCard ? 'Completed work' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>{isCompletedCard ? 'Completed' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>{isCompletedCard ? 'Usage at completion' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="sharedBy"/>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                               {asset.nextMaintenance?.recurringEnabled ? (
-                                <div className={assetStyles.assetDetailRow}><span>Recurring</span><strong>{recurringLabel(asset.nextMaintenance)}</strong></div>
+                                <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="recurring"/>Recurring</span><strong>{recurringLabel(asset.nextMaintenance)}</strong></div>
                               ) : null}
                             </div>
                           </div>

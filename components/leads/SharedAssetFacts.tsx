@@ -33,13 +33,13 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
  const close=()=>setField(null);
  function row(key:FactField,label:string,value:ReactNode,status=false){
   const classes=status?styles.assetStatusRow:styles.assetDetailRow;
-  const contents=<><span className={!status?cardLayout.detailLabel:undefined}>{!status&&<AssetDetailIcon kind={key}/ >}{label}</span>{status?value:<strong>{value}</strong>}</>;
+  const contents=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind={key}/ >{label}</span>{status?value:<strong>{value}</strong>}</>;
   return permissions[key] ? <button key={key} type="button" className={`${classes} ${status?styles.assetStatusRowButton:styles.assetDetailRowButton}`} aria-label={`Edit ${label.toLowerCase()} for ${assetTitle}`} onClick={()=>setField(key)}>{contents}</button> : <div key={key} className={classes}>{contents}</div>;
  }
  const price=<><span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
  return <>
   {readError&&<p role="alert">{readError}</p>}
-  <div className={styles.assetDetailsGrid} data-shared-asset-facts>
+  <div className={`${styles.assetDetailsGrid} ${cardLayout.statusFacts}`} data-shared-asset-facts>
    <div className={styles.assetPrimaryDetails}>{row('serial','Serial / VIN',serial||'Not saved')}{row('year','Year',year||'Not saved')}{row('usage','Usage',usage||'Not saved')}{row('condition','Condition',condition||'Not saved')}</div>
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
