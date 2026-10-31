@@ -3969,3 +3969,6 @@
 .cardComparisonFooter .dealRatingBadge.cardDealRatingBadge { min-height: 4.2rem; box-sizing: border-box; margin: 0; padding: .65rem .8rem; gap: .65rem; font-size: .8rem; font-weight: 700; align-items: center; }
 .cardComparisonFooter .cardDealRatingBadge svg { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
 .cardComparisonFooter .dealRatingBadge.cardComparisonUnavailable { background: var(--app-info-soft, #f0f2f5); color: var(--app-muted, #656b76); border-color: var(--app-info-line, #e0e4e9); }
+
+.dealRatingContent { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; min-width: 0; }
+.dealRatingExplanation { font-size: .78rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
