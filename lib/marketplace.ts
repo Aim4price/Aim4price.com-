@@ -1,4 +1,4 @@
-import { sellingPriceComparison } from './selling-price';
+import { marketplaceDealComparison } from './selling-price';
 import {
   listings as prototypeMarketplaceListings,
   tractors,
@@ -29,9 +29,9 @@ export function calculateMarketplaceDealRating(input: {
   isManualEquipment?: boolean;
 }): MarketplaceDealRatingResult {
   const askingPrice = Number(input.askingPriceExVat);
-  const comparison = sellingPriceComparison({...input, askingPriceExVat: askingPrice, aim4priceValueExVat: Number(input.aim4priceValueExVat)});
-  if (!comparison || comparison.basis !== 'realistic') return {rating:'none',percentDiff:comparison?.percent ?? null};
-  return {rating:comparison.percent < -5 ? 'great' : comparison.percent <= 5 ? 'fair' : 'high',percentDiff:comparison.percent};
+  const comparison = marketplaceDealComparison({...input, askingPriceExVat: askingPrice, aim4priceValueExVat: Number(input.aim4priceValueExVat)});
+  if (!comparison) return { rating: 'none', percentDiff: null };
+  return { rating: comparison.rating, percentDiff: comparison.percent };
 }
 
 export type MarketplaceListing = {
