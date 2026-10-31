@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '../../../lib/db';
-import { requireTeamOwner, mapTeamGrant, saveTeamGrant, setTeamGrantStatus, listTeamOwnerAssets } from '../../../lib/team-access';
+import { requireTeamOwner, mapTeamGrant, saveTeamGrant, setTeamGrantStatus, removeTeamGrant, listTeamOwnerAssets } from '../../../lib/team-access';
 import { teamJson, teamError } from '../../../lib/team-access-http';
 import { TeamAccessError } from '../../../lib/team-access-policy';
 import { listAssetRegisters } from '../../../lib/asset-registers';
@@ -30,6 +30,10 @@ export async function POST(request: NextRequest) {
         const { actor, profile } = await requireTeamOwner();
         await limitBusinessAction('team-invite:' + actor.id, 30);
         const body = await businessBody(request);
+        if (body.action === 'remove') {
+            await removeTeamGrant(actor, String(body.id || ''), Number(body.version));
+            return teamJson({ ok: true, warning: 'Desktop user removed. Their access to this business has ended.' });
+        }
         let grant;
         if (body.action === 'revoke' || body.action === 'reinvite') {
             grant = await setTeamGrantStatus(actor, String(body.id || ''), Number(body.version), body.action === 'revoke' ? 'revoked' : 'pending');

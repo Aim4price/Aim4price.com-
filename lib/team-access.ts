@@ -236,3 +236,22 @@ export async function acceptTeamGrant(actor: TeamActor, id: string) {
         client.release();
     }
 }
+
+/** Remove only this business membership; retain the account and audit history. */
+export async function removeTeamGrant(actor: TeamActor, id: string, version: number) {
+    const client = await getDb().connect();
+    try {
+        await client.query('BEGIN');
+        const row = (await client.query('SELECT * FROM team_access WHERE id::text=$1 AND owner_id=$2 AND version=$3 FOR UPDATE', [id, actor.id, version])).rows[0];
+        if (!row) throw new TeamAccessError('Access changed or is unavailable. Refresh and try again.', 409);
+        await auditTeam(client, actor, mapTeamGrant(row), 'Desktop user removed', null, { email: row.email, displayName: row.display_name });
+        // Credentials and sessions cascade; activity is retained with a nullable membership link.
+        await client.query('DELETE FROM team_access WHERE id=$1 AND owner_id=$2', [row.id, actor.id]);
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+}
