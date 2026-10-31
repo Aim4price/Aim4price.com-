@@ -3131,6 +3131,16 @@ export default function MarketplaceClient({
                   Create new listing
                 </button>
               ) : null}
+              {!showroomMode && isSignedIn ? (
+                <a href="/my-showroom" className={`${styles.createButton} ${styles.showroomButton}`}>
+                  <span className={styles.createIcon} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 10v10h16V10M3 7l2-4h14l2 4v3a3 3 0 0 1-4.5 2.6A3 3 0 0 1 12 12a3 3 0 0 1-4.5.6A3 3 0 0 1 3 10V7ZM3 7h18M9 20v-6h6v6" />
+                    </svg>
+                  </span>
+                  My showroom
+                </a>
+              ) : null}
               <div className={styles.sidebarDivider} />
             </>
           ) : null}
