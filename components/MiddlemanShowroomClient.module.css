@@ -368,7 +368,7 @@
 .managerPage .primaryButton, .managerPage .secondaryButton { font-size: .9rem; }
 .sectionHeading p { font-size: .84rem; }
 .statusText, .stockCount { border: 1px solid var(--app-line, #d6e5de); border-radius: 999px; padding: .45rem .7rem; background: var(--app-surface-soft, #edf6f2); font-size: .78rem; }
-.managerListings { gap: .8rem; }
+.managerListings { gap: 1.25rem; }
 .managerListing { padding: .85rem; gap: 1rem; }
 .listingTitleRow { flex-wrap: wrap; }
 .listingTitleRow > strong { white-space: normal; font-size: .95rem; line-height: 1.35; }
@@ -415,7 +415,13 @@
 
 /* A quieter card hierarchy keeps long advert names and actions easy to scan. */
 .settingsCard, .stockCard { min-width: 0; }
-.managerListing { background: var(--app-surface, #fff); }
+/* Give every advert a visible edge and gentle depth, including unrated cards. */
+.managerListing {
+  --listing-edge: color-mix(in srgb, var(--app-line, #d6e4de) 80%, var(--app-text, #173e32));
+  background: var(--app-surface, #fff);
+  border-color: var(--listing-edge);
+  box-shadow: 0 2px 4px rgba(20, 45, 36, .04), 0 6px 16px rgba(20, 45, 36, .08);
+}
 .listingTitleRow > strong { overflow-wrap: anywhere; }
 .managerListing:focus-within { border-color: var(--app-accent, #43836a); }
 .managerPage .listingActions button { min-height: 44px; }
@@ -674,7 +680,8 @@
 /* The rating tint belongs to the whole advert card, not a nested badge. */
 .managerListing.ratedListing {
   background: var(--rating-surface);
-  border-color: var(--rating-line);
+  --listing-edge: color-mix(in srgb, var(--rating-line) 75%, var(--rating-ink));
+  border-color: var(--listing-edge);
 }
 .managerListing.ratedListing .listingRatingPanel {
   border-color: var(--rating-line);
@@ -685,4 +692,13 @@
   border-radius: 0;
   padding: 0;
   min-height: 0;
+}
+
+/* Keep hover and keyboard focus clear on both neutral and tinted adverts. */
+.managerListing:is(:hover, :focus-within) {
+  border-color: color-mix(in srgb, var(--listing-edge) 65%, var(--app-accent, #43836a));
+  box-shadow: 0 3px 6px rgba(20, 45, 36, .05), 0 10px 24px rgba(20, 45, 36, .12);
+}
+@media (prefers-reduced-motion: reduce) {
+  .managerListing:hover { transform: none; }
 }
