@@ -160,7 +160,7 @@
 .listingActions .dangerButton:hover { border-color: var(--app-danger-line, #dfaca5); background: var(--app-danger-soft, #fff7f5); }
 .listingActions button:disabled { opacity: .45; cursor: not-allowed; }
 .rating { flex: 0 0 auto; border-radius: 999px; padding: .34rem .52rem; color: #fff; font-family: 'Montserrat', sans-serif; font-size: .59rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
-.rating_low { background: var(--app-danger-soft, #f0782c); } .rating_great { background: #239b50; } .rating_fair { background: #208aa0; } .rating_high { background: var(--app-danger-soft, #df4c44); } .rating_none { background: var(--app-surface-soft, #74847e); }
+.rating_low { background: #f97316; } .rating_great { background: #239b50; } .rating_fair { background: #208aa0; } .rating_high { background: #ef4444; } .rating_none { background: var(--app-surface-soft, #74847e); }
 
 .emptyStock { display: grid; align-content: center; justify-items: center; min-height: 340px; padding: clamp(2rem,calc(var(--website-design-vw, 1vw) * 4),3.25rem) 1.2rem; border: 1px dashed var(--app-line, #cbded6); border-radius: 18px; background: var(--app-surface, #fcfefd); text-align: center; }
 .emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 2),1.45rem); font-weight: 850; letter-spacing: -.025em; }
