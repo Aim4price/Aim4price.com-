@@ -924,8 +924,16 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.doesNotMatch(dealerMarketplace, /if \(isMiddlemanAccountSubtype[^\n]*redirect/);
   assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
-  assert.match(accessClient, /Middleman App Access/);
-  assert.match(accessClient, /change passwords or remove a login/);
+  // Scope these checks to the Middleman override, not shared Dealer/Owner copy.
+  const middlemanAccess = accessClient.match(/export function DealerAppAccessManagement[\s\S]*?return <AppAccessManagement[^;]+;/)?.[0] ?? '';
+  assert.match(middlemanAccess, /middlemanMode \? \{/);
+  assert.match(middlemanAccess, /title: 'Middleman App Users'/);
+  assert.match(middlemanAccess, /manageDescription: 'Review permissions or deactivate a login\.'/);
+  assert.match(middlemanAccess, /loginPath: '\/middleman\/login'/);
+  assert.match(middlemanAccess, /qrApp: 'middleman'/);
+  assert.match(middlemanAccess, /defaultRole: 'sales'/);
+  assert.match(middlemanAccess, /roleOptions: MIDDLEMAN_ROLE_OPTIONS/);
+  assert.match(middlemanAccess, /configOverride=\{middlemanConfig\}/);
   assert.match(leadsPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
   assert.match(discoveryPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
 });
