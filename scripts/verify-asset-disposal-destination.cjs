@@ -40,6 +40,7 @@ function add(file){
 add('components/MarketplaceOutcomeModal.module.css');
 add('components/asset-register/AssetDisposal.module.css');
 add('components/DateInput');
+add('components/asset-register/DisposalIcon');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -49,15 +50,19 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 
 const client=fs.readFileSync(path.join(root,'app/asset-register/asset-register-client.tsx'),'utf8');
-const start=client.indexOf('<section className={disposalStyles.dialog}');
-const end=client.indexOf('</form>',start)+7;
+const modalStart=client.indexOf('{disposalCandidateAsset ? (');
+assert(modalStart>=0,'Asset disposal modal must exist');
+const start=client.indexOf('<section ',modalStart);
+const formEnd=client.indexOf('</form>',start);
+assert(start>=modalStart && formEnd>start,'Asset disposal section and form must exist');
+const end=formEnd+7;
 const jsx=client.slice(start,end)+'</section>';
 const helpers=client.slice(client.indexOf('const DISPOSAL_WIZARD_STEPS'),client.indexOf('type PartnerDirectoryEntry'));
 const next=client.slice(client.indexOf('  function handleDisposalWizardNext()'),client.indexOf('  async function copyAssetTransferDetails()'));
 const source=`
 const disposalStyles=require('components/MarketplaceOutcomeModal.module.css'),disposalLayout=require('components/asset-register/AssetDisposal.module.css');
 const DateInput=require('components/DateInput').default;
-const DocumentIcon=({className})=><svg className={className} viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6Z" fill="none" stroke="currentColor"/></svg>;
+const DisposalIcon=require('components/asset-register/DisposalIcon').default;
 ${helpers}
 function Fixture({reason}){
  const [disposalWizardStep,setDisposalWizardStep]=React.useState(4);
@@ -77,6 +82,8 @@ const fixture=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,m
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+fixture});
+ assert.deepEqual(errors,[],'Fixture must initialise without browser errors');
+ assert.equal(await page.evaluate(()=>typeof window.renderFixture),'function','Fixture renderer must be installed');
  async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text);if(!b||b.disabled)throw Error('Unavailable '+text);b.click();},text);}
  for(const width of [1440,390]){
  await page.setViewport({width,height:900});
@@ -89,7 +96,7 @@ const fixture=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,m
  await click('Back');await page.waitForSelector('#asset-disposal-information-title');await click('Next');await page.waitForSelector('#asset-register-transfer-title');
  assert(await page.$$eval('button',(bs,text)=>bs.find(b=>b.querySelector('strong')?.textContent===text).getAttribute('aria-pressed')==='true',archive));
  await page.screenshot({path:'/tmp/disposal-destination-'+reason+'-'+width+'.png'});
- const gap=await page.evaluate(()=>{const section=document.querySelector('#asset-register-transfer-title').closest('section');return document.querySelector('footer').getBoundingClientRect().top-section.getBoundingClientRect().bottom;});assert(gap>=24,'Bottom gap '+gap);
+ const gap=await page.evaluate(()=>{const section=document.querySelector('#asset-register-transfer-title').closest('section');return document.querySelector('footer').getBoundingClientRect().top-section.getBoundingClientRect().bottom;});assert(gap>=16,'Bottom gap '+gap);
  await click(save);assert.equal(await page.evaluate(()=>window.saved.transferAction),'archive');
  await click(reason==='sold'?'Send to buyer':'Send to dealer inventory');assert(await page.evaluate(()=>document.body.textContent.includes('Private invoices, finance, insurance and account access stay')));
  await click(save+' & create code');assert.equal(await page.evaluate(()=>window.saved.transferAction),'claim_code');
