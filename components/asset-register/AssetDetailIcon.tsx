@@ -3,6 +3,14 @@ import styles from './AssetCardDetails.module.css';
 
 // A shared 24px grid keeps the symbols optically aligned at card size.
 const symbols: Record<string, ReactNode> = {
+  finance: <><rect x="2" y="5" width="20" height="14" rx="3"/><circle cx="12" cy="12" r="3"/><path d="M5 9h1m12 6h1"/></>,
+  insurance: <><path d="m12 3 8 3.5V12c0 4.3-4.6 7.4-8 9-3.4-1.6-8-4.7-8-9V6.5L12 3Z"/><path d="m8.5 12 2.4 2.4 4.6-4.8"/></>,
+  license: <><rect x="2" y="4" width="20" height="16" rx="3"/><circle cx="8" cy="10" r="2"/><path d="M5 16c0-4 6-4 6 0ZM15 9h4m-4 4h4m-4 3h3"/></>,
+  location: <><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>,
+  status: <><circle cx="12" cy="12" r="9"/><path d="m7.5 12 3 3 6-6"/></>,
+  maintenance: <><path d="M14 5a5 5 0 0 0-6 6l-5 5a3 3 0 0 0 4 4l5-5a5 5 0 0 0 6-6l-3 3-3-3 3-3Z"/></>,
+  sharedBy: <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v2"/></>,
+  recurring: <><path d="M20 8a8 8 0 0 0-14-3L3 8m0-5v5h5M4 16a8 8 0 0 0 14 3l3-3m0 5v-5h-5"/></>,
   serial: <><path d="M7 3H4a1 1 0 0 0-1 1v3m14-4h3a1 1 0 0 1 1 1v3M3 17v3a1 1 0 0 0 1 1h3m10 0h3a1 1 0 0 0 1-1v-3"/><path d="M7 8v8m3-8v8m4-8v8m3-8v8"/></>,
   registration: <><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M6 10h4m4 0h4M6 14h12"/></>,
   year: <><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18"/><path d="M7 14h2m4 0h4m-10 3h2m4 0h2"/></>,

@@ -80,3 +80,9 @@
 @media (max-width: 620px) {
   :global(:where(html:not(:has([data-website-canvas])))) .documentActions > * { flex: 1 1 100%; }
 }
+
+/* Shared lead status labels use the owner icons without crowding the status marks. */
+.statusFacts.statusFacts.statusFacts { grid-template-columns: minmax(0, 1fr) 14rem; }
+@media (max-width: 1100px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .statusFacts.statusFacts.statusFacts { grid-template-columns: minmax(0, 1fr); }
+}
