@@ -19,5 +19,5 @@ export default async function Page() {
         }
         if (!message) return <><AppHeader active="none"/><TeamAccessClient /></>;
     }
-    return <><AppHeader active="none"/><main className={styles.page}><Link className={styles.button} href="/account">← Back to account</Link><h1>Desktop users</h1>{!session?.user?.id ? <><p>Sign in to manage desktop access for your business.</p><Link className={styles.primary} href="/auth?returnTo=/account/team-access">Sign in</Link></> : <div className={styles.notice}><p>{message}</p><Link className={styles.button} href="/team">Open my invited desktop access</Link></div>}</main></>;
+    return <><AppHeader active="none"/><main className={styles.page}><Link className={styles.button} href="/account">Back to account</Link><h1>Desktop users</h1>{!session?.user?.id ? <><p>Sign in to manage desktop access for your business.</p><Link className={styles.primary} href="/auth?returnTo=/account/team-access">Sign in</Link></> : <div className={styles.notice}><p>{message}</p><Link className={styles.button} href="/team">Open my invited desktop access</Link></div>}</main></>;
 }

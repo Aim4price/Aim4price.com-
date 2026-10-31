@@ -957,7 +957,7 @@ function AppAccessManagement({ kind, configOverride }: {
       <AppHeader active="none" />
       <section className={baseStyles.shell}>
         <button type="button" className={baseStyles.backButton} onClick={() => window.location.assign('/account')}>
-          ← Back to account
+          Back to account
         </button>
 
         <AccessLauncher
