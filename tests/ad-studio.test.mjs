@@ -857,7 +857,10 @@ test('showroom logos inherit Advert Studio branding and allow a compact showroom
   assert.match(manager, /Remove logo/);
   assert.match(manager, /id="showroom-logo-feedback"/);
   assert.match(manager, /aria-describedby=\{logoFeedback/);
-  assert.match(manager, /body: JSON\.stringify\(\{ slug, bio, isPublic, logoUrl: showroomLogoUrl \}\)/);
+  assert.match(manager, /slug: settingsSection === 'link' \? slug : showroom\.slug/);
+  assert.match(manager, /bio: settingsSection === 'details' \? bio : showroom\.bio/);
+  assert.match(manager, /isPublic: settingsSection === 'visibility' \? isPublic : showroom\.isPublic/);
+  assert.match(manager, /logoUrl: settingsSection === 'details' \? showroomLogoUrl : showroom\.showroomLogoUrl/);
   assert.match(manager, /showroom\.logoUrl \? <img src=\{showroom\.logoUrl\}/);
   assert.match(managerCss, /\.showroomLogoField\s*\{[^}]*grid-template-columns:\s*4\.25rem minmax\(0,1fr\) auto/);
   assert.match(managerCss, /\.showroomLogoPreview\s*\{[^}]*width:\s*4\.25rem;[^}]*height:\s*3\.5rem/);

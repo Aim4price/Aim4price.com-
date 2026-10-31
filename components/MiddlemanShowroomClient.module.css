@@ -590,3 +590,16 @@
   :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsFooter .settingsActions { flex-basis: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .nativeDialog .settingsFooter .dangerZone { flex-wrap: wrap; }
 }
+
+/* Reuse the app-management overview, with one compact editor at a time. */
+.nativeDialog .settingsCard.settingsManager { display: block; padding: 1.25rem 1.5rem; }
+.settingsManager .settingsEditor { display: grid; gap: 1.1rem; }
+.settingsManager .settingsEditor .introductionField { margin-top: 0; }
+.settingsManager .settingsEditor textarea { min-height: 6rem; }
+.settingsManager .settingsEditor .advertDesignField { margin: 0; }
+.nativeDialog .settingsManager > .settingsActions { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #d6e4de); }
+.nativeDialog .settingsManager .dangerZone { margin-top: 1.25rem; padding-top: 1rem; }
+.settingsManager .dangerZone button { color: var(--app-danger, #a83434); background: var(--app-danger-soft, #fff5f3); }
+.settingsManager .dangerZone button:disabled { cursor: not-allowed; }
+.settingsManager svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.settingsManager .feedback { margin: 1rem 0 0; }
