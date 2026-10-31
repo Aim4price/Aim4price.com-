@@ -8,8 +8,9 @@ import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
 import { type DragEvent, type ReactNode, useEffect, useRef, useState } from 'react';
-import MarketplaceClient, { DealRatingBadge, getDealRatingToneClass } from '../app/marketplace/marketplace-client';
+import MarketplaceClient, { DealRatingBadge, getDealRatingToneClass, CreateAdvertChoices } from '../app/marketplace/marketplace-client';
 import marketplaceStyles from '../app/marketplace/page.module.css';
+import accountStyles from '../app/account/page.module.css';
 import MarketplaceOutcomeModal from './MarketplaceOutcomeModal';
 import type { MarketplaceListing } from '../lib/marketplace';
 import {
@@ -761,22 +762,12 @@ ${window.location.origin}${publicHref(showroom.slug)}`)}`} target="_blank" rel="
       ) : null}
 
       {createDialogOpen ? (
-        <div className={styles.listingManagerBackdrop} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setCreateDialogOpen(false); }}>
-          <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="create-advert-title" tabIndex={-1}>
-            <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
-              <div><h2 id="create-advert-title">Create advert</h2><p>Choose where to start.</p></div>
-              <button type="button" className={dialogStyles.close} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)} data-modal-close="true">×</button>
-            </header>
-            <div className={`${styles.listingManagerActions} ${styles.createAdvertActions}`}>
-              <Link href={manualHref}><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span><span className={styles.listingManagerActionCopy}><strong>Manual</strong><small>Add details and photos. No valuation needed.</small></span></Link>
-              <Link href={`${valuationHref}?marketplace=1`}>
-                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="calculator" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Value Asset</strong><small>Value an asset and create an advert.</small></span>
-              </Link>
-              {!middlemanMode ? <Link href={registerHref}>
-                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="assets" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Asset Register</strong><small>Choose a saved asset.</small></span>
-              </Link> : null}
+        <div className={marketplaceStyles.createListingOverlay} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setCreateDialogOpen(false); }}>
+          <section ref={manageDialogRef} className={`${marketplaceStyles.createListingDialog} ${marketplaceStyles.accountCreateListingDialog} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="create-advert-title" tabIndex={-1}>
+            <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${marketplaceStyles.accountCreateListingClose}`} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)} data-modal-close="true"><span aria-hidden="true">×</span></button>
+            <CreateAdvertChoices titleId="create-advert-title" middlemanMode={middlemanMode} manualHref={manualHref} registerHref={registerHref} onValueAsset={() => { window.location.href = `${valuationHref}?marketplace=1`; }} />
+            <div className={marketplaceStyles.createListingFooter}>
+              <button type="button" className={accountStyles.ghostButton} onClick={() => setCreateDialogOpen(false)}>Cancel</button>
             </div>
           </section>
         </div>
