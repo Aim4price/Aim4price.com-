@@ -712,7 +712,8 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   }
   assert.match(disposalModal, /className=\{disposalLayout\.form\}/);
   assert.match(disposalModal, /<h2 id="disposal-title">Sell or remove this asset<\/h2>/);
-  assert.match(disposalModal, /<span>\{isComplete \? '✓' : item\.step\}<\/span>/);
+  assert.match(disposalModal, /<DisposalIcon name=\{isComplete \? 'check'/);
+  assert.doesNotMatch(disposalModal, /: item\.step\}<\/span>/);
   assert.ok(disposalModal.indexOf('disposalStyles.progress') < disposalModal.indexOf('disposalStyles.wizardBody'));
   assert.doesNotMatch(disposalModal, /groupModalStyles\.(stepNumber|intro|wizardProgress)/);
 

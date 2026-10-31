@@ -39,3 +39,60 @@
   :global(:where(html:not(:has([data-website-canvas])))) .body.body { padding: 1rem 1rem 1.5rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .footer.footer { padding-inline: 1rem; }
 }
+
+/* Compact register-only shell: leave the marketplace outcome dialog unchanged. */
+.dialog.dialog {
+  width: min(60rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem));
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem);
+  border-radius: 1.4rem;
+  font-size: .9375rem;
+  font-weight: 500;
+}
+.dialog .header { padding: 1.15rem 1.5rem; align-items: center; }
+.dialog .header h2 { font-size: 1.6rem; font-weight: 700; line-height: 1.2; letter-spacing: -.025em; }
+.dialog .header p { font-size: .9375rem; font-weight: 500; line-height: 1.4; }
+.dialog .progress { padding: .75rem 1.5rem; gap: .6rem; }
+.dialog .progress li { min-height: 2.9rem; padding: .5rem .65rem; gap: .5rem; border-radius: .75rem; }
+.dialog .progress li > span { flex-basis: 1.8rem; width: 1.8rem; height: 1.8rem; }
+.dialog .progress li > small { font-size: .8125rem; font-weight: 600; }
+.dialog .body { padding: 1.15rem 1.5rem 1.4rem; background: var(--app-surface, #fff); }
+.dialog .step, .dialog .destination { gap: 1rem; padding: 0; }
+.dialog .stepHeader { gap: .35rem; }
+.dialog .stepHeader strong { font-size: 1.125rem; font-weight: 600; line-height: 1.35; }
+.dialog .stepHeader small { max-width: none; font-size: .9375rem; font-weight: 500; line-height: 1.45; }
+.dialog .reasonGrid { gap: .65rem; }
+.dialog .option { min-height: 3.65rem; padding: .75rem 1rem; gap: .75rem; border-color: var(--app-line, #cfddd7); background: var(--app-surface, #fff); }
+.dialog .option[aria-pressed='true'] { background: var(--app-surface-soft, #eaf5ef); border-color: var(--app-accent, #197454); }
+.dialog .option strong, .dialog .choiceCopy strong, .dialog .transferNote strong { font-size: .9375rem; font-weight: 600; }
+.outcomeIcon { width: 1.4rem; height: 1.4rem; flex: 0 0 1.4rem; color: var(--app-accent, #197454); }
+.dialog .fields { padding: 0; gap: .85rem 1rem; border: 0; background: transparent; }
+.dialog .fields label { gap: .4rem; }
+.dialog .fields label > span { font-size: .9375rem; font-weight: 600; }
+.dialog .fields label small { font-size: .8125rem; font-weight: 500; }
+.dialog .fields input, .dialog .fields textarea { font-size: .9375rem; font-weight: 500; line-height: 1.4; padding: .65rem .85rem; border-radius: .75rem; }
+.dialog .fields input { min-height: 2.8rem; }
+.dialog .fields textarea { min-height: 4.5rem; height: 4.5rem; resize: vertical; }
+.dialog .answers button { min-height: 3rem; font-size: .9375rem; font-weight: 600; }
+.dialog .summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin: 0; }
+.dialog .summary > div { padding: .85rem; border-radius: .75rem; }
+.dialog .summary dt { font-size: .8125rem; font-weight: 500; text-transform: none; letter-spacing: normal; }
+.dialog .summary dd { margin: .35rem 0 0; font-size: .9375rem; font-weight: 600; overflow-wrap: anywhere; }
+.dialog .destination .transferOption { min-height: 7rem; grid-template-columns: 2.75rem minmax(0, 1fr); gap: .75rem; padding: 1rem 2rem 1rem 1rem; }
+.dialog .choiceIcon { width: 2.75rem; height: 2.75rem; border-radius: .75rem; }
+.dialog .choiceIcon svg { width: 1.4rem; height: 1.4rem; }
+.dialog .choiceCopy small, .dialog .transferNote small, .dialog .reviewHint, .dialog .notice { font-size: .875rem; font-weight: 500; line-height: 1.45; }
+.dialog .transferNote { padding: .85rem 1rem; gap: .25rem; }
+.dialog .footer { flex: 0 0 auto; padding: .9rem 1.5rem max(.9rem, env(safe-area-inset-bottom)); gap: .75rem; }
+.dialog .footer button { min-height: 2.9rem; border-radius: .8rem; font-size: .9375rem; font-weight: 600; box-shadow: none; }
+@media (max-width: 720px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .body,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer { padding-inline: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .progress { padding: .65rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header h2 { font-size: 1.35rem; }
+}
+@media (max-width: 420px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .reasonGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .option { gap: .5rem; padding: .7rem; }
+}
