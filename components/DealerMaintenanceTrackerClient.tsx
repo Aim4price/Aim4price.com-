@@ -1347,8 +1347,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       </div>
 
                       <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.trackerAssetBody}`}>
-                        <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
-                          <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage}`}>
+                        <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap} ${styles.trackerPhotoWrap}`}>
+                          <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.trackerPhotoStage}`}>
                             {activePhotoUrl ? (
                               <>
                                 <button
@@ -1362,7 +1362,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                     alt={`${asset.assetTitle} photo ${photoIndex + 1}`}
                                     className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
                                   />
-                                  <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
+                                  <span className={`${leadStyles.leadPreviewOpenLabel} ${styles.trackerPhotoLabel}`}>Open photo</span>
                                 </button>
 
                                 {hasMultiplePhotos ? (
@@ -1429,18 +1429,24 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         <div className={`${assetStyles.assetDetailsPanel} ${styles.trackerDetailsPanel}`}>
                           <div className={`${assetStyles.assetDetailsGrid} ${styles.trackerDetailsGrid}`}>
                             <div className={assetStyles.assetPrimaryDetails}>
+                              <div className={styles.detailGroupHeader}><h3>Asset details</h3></div>
                               <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="serial"/>Serial / VIN</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="registration"/>Registration</span><strong>{asset.registrationNumber || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>Year</span><strong>{asset.yearModel || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="status"/>Status</span><strong>{asset.statusLabel}</strong></div>
                             </div>
 
                             <div className={assetStyles.assetPrimaryDetails}>
+                              <div className={styles.detailGroupHeader}>
+                                <h3>Maintenance details</h3>
+                                <span className={`${styles.detailStatus} ${isCompletedCard ? styles.detailStatusComplete : ''}`}>
+                                  <AssetDetailIcon kind="status" />{isCompletedCard ? 'Completed' : asset.statusLabel}
+                                </span>
+                              </div>
                               {dealerAppMode && <AppMaintenanceActions apiBase={`/api/dealer/maintenance/${asset.accessId}`} assetTitle={asset.assetTitle} scheduleLabel={asset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : asset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={asset.permissions.canAddMaintenance || asset.permissions.canViewMaintenanceReports || asset.permissions.canCreateMaintenanceSchedules} canParts={asset.permissions.canViewParts || asset.permissions.canAddParts} onRecord={asset.permissions.canAddMaintenance ? () => setWorkChoiceAsset(asset) : undefined} onSchedule={asset.permissions.canCreateMaintenanceSchedules ? () => setScheduleAccessId(asset.accessId) : undefined} />}
-                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="maintenance"/>{isCompletedCard ? 'Completed work' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>{isCompletedCard ? 'Completed' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>{isCompletedCard ? 'Usage at completion' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="maintenance"/>{isCompletedCard ? 'Work type' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="year"/>{isCompletedCard ? 'Completed on' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="usage"/>{isCompletedCard ? 'Recorded usage' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="sharedBy"/>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                               {asset.nextMaintenance?.recurringEnabled ? (
                                 <div className={assetStyles.assetDetailRow}><span className={cardLayout.detailLabel}><AssetDetailIcon kind="recurring"/>Recurring</span><strong>{recurringLabel(asset.nextMaintenance)}</strong></div>
@@ -1452,9 +1458,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
                       <div className={styles.trackerSections}>
                         <header className={styles.trackerSectionsIntro}>
-                          <h3>{isCompletedCard ? 'Completed maintenance' : 'What needs attention?'}</h3>
-                          <p>{isCompletedCard ? 'This saved card keeps the completed recurring maintenance on record.' : 'Open one section to see only the information you need.'}</p>
+                          <h3>{isCompletedCard ? 'Work completed' : 'What needs attention?'}</h3>
+                          <p>{isCompletedCard ? 'Completed work is saved in the asset’s maintenance history.' : 'Open one section to see only the information you need.'}</p>
                         </header>
+
+                        {isCompletedCard && asset.nextMaintenance && asset.permissions.canViewMaintenanceReports ? (
+                          <div className={styles.completionSummary}>
+                            <p>{asset.nextMaintenance.completedNotes || asset.nextMaintenance.notes || 'No completion notes were added.'}</p>
+                            {asset.nextMaintenance.completedBy ? <small>Completed by {asset.nextMaintenance.completedBy}</small> : null}
+                          </div>
+                        ) : null}
 
                         {asset.permissions.canViewLoggedProblems ? (
                           <details className={styles.section}>

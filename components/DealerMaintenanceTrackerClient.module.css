@@ -50,6 +50,80 @@
   gap: 1rem;
 }
 
+/* A compact photo and labelled fact groups keep the expanded card easy to scan. */
+.trackerPage .trackerDetailsPanel.trackerDetailsPanel {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+.detailGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .4rem .6rem;
+  min-height: 2rem;
+  margin-bottom: .15rem;
+}
+.detailGroupHeader h3 {
+  margin: 0;
+  color: var(--app-muted, #60746c);
+  font-family: inherit;
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.detailStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  background: var(--app-surface-soft, #eef3f6);
+  color: var(--app-text, #173f35);
+  font-size: .75rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.detailStatusComplete {
+  color: var(--app-success, #197652);
+  background: var(--app-success-soft, #e8f5ee);
+}
+.detailStatus > span {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  padding: 0;
+  background: transparent;
+}
+.detailStatus svg { width: 1rem; height: 1rem; }
+.trackerPage .trackerPhotoWrap.trackerPhotoWrap { align-self: start; }
+.trackerPage .trackerPhotoStage.trackerPhotoStage {
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+}
+.trackerPage .trackerPhotoLabel.trackerPhotoLabel { left: .7rem; right: auto; }
+.completionSummary {
+  padding: .85rem 1rem;
+  border: 1px solid var(--app-line, #d8e5df);
+  border-radius: .85rem;
+  background: var(--app-surface, #fff);
+}
+.completionSummary p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: .88rem;
+  line-height: 1.5;
+}
+.completionSummary small {
+  display: block;
+  margin-top: .5rem;
+  color: var(--app-muted, #60746c);
+  font-size: .8rem;
+}
+
 .trackerStatusValue {
   max-width: 24rem;
 }
