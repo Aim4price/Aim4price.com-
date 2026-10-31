@@ -512,8 +512,8 @@ export function MiddlemanShowroomManager({
         </section>
       </div>
 
-      {settingsOpen ? <ShowroomDialog title={({ overview: 'Manage showroom', details: 'Showroom details', link: 'Public link', template: 'Advert template', visibility: 'Visibility' })[settingsSection]} subtitle={showroom.name} wide={settingsSection === 'overview' || settingsSection === 'details'} onClose={() => setSettingsOpen(false)}>
-        <section className={`${styles.settingsCard} ${styles.settingsManager} ${managementStyles.manager} ${managementStyles.ownerManager}`}>
+      {settingsOpen ? <ShowroomDialog title={({ overview: 'Manage showroom', details: 'Showroom details', link: 'Public link', template: 'Advert template', visibility: 'Visibility' })[settingsSection]} subtitle={showroom.name} wide={settingsSection === 'overview' || settingsSection === 'details' || settingsSection === 'template'} onClose={() => setSettingsOpen(false)}>
+        <section data-editor={settingsSection} className={`${styles.settingsCard} ${styles.settingsManager} ${managementStyles.manager} ${managementStyles.ownerManager}`}>
           <div className={styles.settingsToolbar}>
             {settingsSection !== 'overview' ? <button type="button" disabled={saving || readingLogo} onClick={() => { setMessage(''); setSettingsSection('overview'); }}>Back</button> : <p>Choose what you would like to update.</p>}
             <span className={managementStyles.status} data-active={showroom.isPublic}>{showroom.isPublic ? 'Public' : 'Private'}</span>
@@ -679,6 +679,7 @@ export function MiddlemanShowroomManager({
               {settingsSection === 'template' ? <>
           <p className={styles.editorHint}>The design used when you download your adverts.</p>
           <div className={styles.advertDesignField}>
+            <span className={styles.templateIcon} aria-hidden="true"><ShowroomManageActionIcon name="edit" /></span>
             <div>
               <strong>{usesSavedBrandDesign ? 'My advert template' : 'Aim4price Marketplace'}</strong>
               <span>
@@ -688,11 +689,13 @@ export function MiddlemanShowroomManager({
               </span>
             </div>
             <span className={styles.designBadge}>Current design</span>
+          </div>
+          {advertDesignHref ? <div className={styles.templateActions}>
+            <p className={styles.editorHint}>Opens Advert Studio. Save any showroom changes before leaving.</p>
             {advertDesignHref ? (
               <Link className={styles.advertDesignButton} href={advertDesignHref}>Edit advert template</Link>
             ) : null}
-          </div>
-                {advertDesignHref ? <p className={managementStyles.hint}>Opens Advert Studio on a different page. Save any showroom changes before leaving.</p> : null}
+          </div> : null}
               </> : null}
               {settingsSection === 'visibility' ? <>
           <label className={styles.switchRow}>
