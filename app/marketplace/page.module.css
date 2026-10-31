@@ -172,6 +172,27 @@
   background: var(--app-surface-soft, #dceee4);
 }
 
+.createButton.showroomButton {
+  box-sizing: border-box;
+  border: 1px solid var(--app-line, #cddbd5);
+  background: var(--app-surface, #fff);
+}
+
+.createButton.showroomButton:hover {
+  border-color: var(--app-accent, #165340);
+  background: var(--app-surface-soft, #edf6f1);
+}
+
+.createButton.showroomButton:focus-visible {
+  outline: 2px solid var(--app-accent, #165340);
+  outline-offset: 3px;
+}
+
+.showroomButton .createIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .createIcon {
   width: 1.35rem;
   height: 1.35rem;
