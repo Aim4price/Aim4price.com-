@@ -159,10 +159,10 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
         else {
             const count = (await client.query('SELECT count(*)::int AS count FROM team_access WHERE owner_id=$1', [actor.id])).rows[0].count;
             if (count >= 500)
-                throw new TeamAccessError('This account has reached its team invitation limit.', 400);
+                throw new TeamAccessError('This account has reached its desktop user limit.', 400);
             const existing = (await client.query('SELECT id FROM team_access WHERE owner_id=$1 AND email=$2', [actor.id, email])).rows[0];
             if (existing)
-                throw new TeamAccessError('This email already has an invitation. Edit or reactivate that entry.', 409);
+                throw new TeamAccessError('This email already has desktop access. Edit or reactivate that entry.', 409);
             row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9) RETURNING *`, [actor.id, email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt])).rows[0];
         }
         const existingLogin = (await client.query('SELECT id FROM "user" WHERE lower(email)=$1 ORDER BY id LIMIT 1', [email])).rows[0];
@@ -174,14 +174,14 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             }
             row = (await client.query("UPDATE team_access SET managed_login=true,status=CASE WHEN status='pending' THEN 'active' ELSE status END,member_user_id=NULL WHERE id=$1 RETURNING *", [row.id])).rows[0];
         } else if (row.status === 'pending' && existingLogin) {
-            row = (await client.query('UPDATE team_access SET member_user_id=$2 WHERE id=$1 RETURNING *', [row.id, existingLogin.id])).rows[0];
+            row = (await client.query("UPDATE team_access SET member_user_id=$2,status='active' WHERE id=$1 RETURNING *", [row.id, existingLogin.id])).rows[0];
         } else if (body.id && !existingLogin && !row.member_user_id && passwordHash) {
             await client.query('INSERT INTO team_access_logins(grant_id,password_hash) VALUES($1,$2)', [row.id,passwordHash]);
             row = (await client.query("UPDATE team_access SET managed_login=true,status=CASE WHEN status='pending' THEN 'active' ELSE status END WHERE id=$1 RETURNING *", [row.id])).rows[0];
         }
         const grant = mapTeamGrant(row);
         if (grant.managedLogin && passwordHash) await auditTeam(client, actor, grant, body.id ? 'Desktop password reset' : 'Desktop login created');
-        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Person invited', null, { permissions, scope, registerIds, assetIds, documentIds, expiresAt });
+        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Desktop user added', null, { permissions, scope, registerIds, assetIds, documentIds, expiresAt });
         await client.query('COMMIT');
         return grant;
     }
@@ -197,12 +197,12 @@ export async function setTeamGrantStatus(actor: TeamActor, id: string, version: 
     const client = await getDb().connect();
     try {
         await client.query('BEGIN');
-        const row = (await client.query(`UPDATE team_access SET status=CASE WHEN $4='pending' AND managed_login THEN 'active' ELSE $4 END,accepted_at=NULL,version=version+1,updated_at=now() WHERE id::text=$1 AND owner_id=$2 AND version=$3 AND ($4='revoked' OR expires_at IS NULL OR expires_at>now()) RETURNING *`, [id, actor.id, version, status])).rows[0];
+        const row = (await client.query(`UPDATE team_access SET status=CASE WHEN $4='pending' AND ((managed_login AND EXISTS (SELECT 1 FROM team_access_logins l WHERE l.grant_id=team_access.id)) OR (NOT managed_login AND EXISTS (SELECT 1 FROM "user" u WHERE u.id=team_access.member_user_id AND lower(u.email)=team_access.email))) THEN 'active' ELSE $4 END,accepted_at=NULL,version=version+1,updated_at=now() WHERE id::text=$1 AND owner_id=$2 AND version=$3 AND ($4='revoked' OR expires_at IS NULL OR expires_at>now()) RETURNING *`, [id, actor.id, version, status])).rows[0];
         if (!row)
             throw new TeamAccessError('Access changed or is unavailable. Refresh and try again.', 409);
         await client.query('DELETE FROM team_access_sessions WHERE grant_id=$1', [row.id]);
         const grant = mapTeamGrant(row);
-        await auditTeam(client, actor, grant, status === 'revoked' ? 'Access revoked' : 'Invitation renewed');
+        await auditTeam(client, actor, grant, status === 'revoked' ? 'Access revoked' : 'Access reactivated');
         await client.query('COMMIT');
         return grant;
     }
@@ -214,6 +214,13 @@ export async function setTeamGrantStatus(actor: TeamActor, id: string, version: 
         client.release();
     }
 }
+export async function prepareTeamAccessEmail(actor: TeamActor, id: string, version: number) {
+    const row = (await getDb().query(`UPDATE team_access SET version=version+1,updated_at=now()
+        WHERE id::text=$1 AND owner_id=$2 AND version=$3 AND status='active' AND managed_login=false
+        AND member_user_id IS NOT NULL AND (expires_at IS NULL OR expires_at>now()) RETURNING *`, [id, actor.id, version])).rows[0];
+    if (!row) throw new TeamAccessError('Access changed or is unavailable. Refresh and try again.', 409);
+    return mapTeamGrant(row);
+}
 export async function acceptTeamGrant(actor: TeamActor, id: string) {
     if (actor.managedGrantId) throw new TeamAccessError('This desktop login already has its assigned access.');
     const client = await getDb().connect();
@@ -222,9 +229,9 @@ export async function acceptTeamGrant(actor: TeamActor, id: string) {
         const row = (await client.query(`UPDATE team_access SET status='active',member_user_id=$3,accepted_at=now(),version=version+1,updated_at=now()
       WHERE id::text=$1 AND email=$2 AND status='pending' AND managed_login=false AND (member_user_id=$3 OR (member_user_id IS NULL AND $4=true)) AND (expires_at IS NULL OR expires_at>now()) RETURNING *`, [id, actor.email, actor.id, actor.emailVerified])).rows[0];
         if (!row)
-            throw new TeamAccessError('This invitation is unavailable or belongs to another email address.');
+            throw new TeamAccessError('This access is unavailable or belongs to another email address.');
         const grant = mapTeamGrant(row);
-        await auditTeam(client, actor, grant, 'Invitation accepted');
+        await auditTeam(client, actor, grant, 'Workspace opened');
         await client.query('COMMIT');
         return grant;
     }

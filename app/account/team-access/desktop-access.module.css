@@ -76,7 +76,7 @@
 .body .statusPill { display:inline-flex; align-items:center; flex:none; gap:.4rem; border-radius:999px; padding:.35rem .65rem; background:var(--app-surface-soft,#edf3f0); color:var(--app-muted,#65796f); font-size:.8rem; font-weight:750; }
 .statusPill::before { content:''; width:.4rem; height:.4rem; border-radius:50%; background:currentColor; }
 .body .statusPill[data-status=Active] { color:var(--app-accent,#195440); background:var(--app-success-soft,#edf7f1); }
-.body .statusPill[data-status="Invitation pending"] { color:var(--app-warning-text,#88601c); background:var(--app-warning-soft,#fff5de); }
+.body .statusPill[data-status="Login setup needed"] { color:var(--app-warning-text,#88601c); background:var(--app-warning-soft,#fff5de); }
 .body .activityButton { display:flex; align-items:center; gap:.6rem; margin-top:1.25rem; border:1px solid var(--app-line,#d8e5dd); border-radius:.8rem; background:var(--app-surface,#fff); color:var(--app-muted,#65796f); padding:.7rem 1rem; font:inherit; font-weight:650; cursor:pointer; }
 .activity { margin:0; }
 .activity article { flex-wrap:nowrap; padding:1rem 0; align-items:flex-start; }

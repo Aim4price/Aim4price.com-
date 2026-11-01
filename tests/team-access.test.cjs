@@ -39,7 +39,7 @@ async function setup() {
  });
  const input={email:member.email,displayName:'Workshop staff',scope:'selected',registerIds:[reg1],assetIds:[],documentIds:[],permissions:{},expiresAt:null};
  async function invite(extra={}){return service.saveTeamGrant(owner,{...input,...extra});}
- async function active(extra={}){const grant=await invite(extra);return service.acceptTeamGrant(member,grant.id);}
+ async function active(extra={}){return invite(extra);}
  return {db,pool,client,assets,docs,service,login,getSession:()=>session,setCookie:t=>cookieToken=t,input,invite,active,setSession:s=>session=s,setOwnerActive:s=>ownerActive=s};
 }
 test('permissions fail closed, dependencies are enforced, templates hide values',()=>{
@@ -63,15 +63,15 @@ test('asset edit allowlist rejects values, owner IDs, nested specifications and 
  assert.deepEqual(policy.validateTeamPatch({usage:900},grant),{usage:900});
  assert.throws(()=>policy.validateTeamPatch({usage:900,title:'changed'},grant));
 });
-test('existing invited account can accept without verification; binding prevents another identity accepting',async()=>{
+test('existing account gets immediate access; binding prevents another identity using it',async()=>{
  const f=await setup();try{
- const invite=await f.invite();await assert.rejects(f.service.loadTeamScope(invite.id));
+ const invite=await f.invite();assert.equal(invite.status,'active');
  assert.equal(invite.memberUserId,'member');
  await assert.rejects(f.service.acceptTeamGrant({...member,id:'other',email:'other@example.com'},invite.id));
- const accepted=await f.service.acceptTeamGrant({...member,emailVerified:false},invite.id);assert.equal(accepted.memberUserId,'member');
+ f.setSession({user:{...member,emailVerified:false}});
  const scope=await f.service.loadTeamScope(invite.id);assert.equal(scope.grant.ownerId,'owner');assert.equal(scope.actor.id,'member');
  f.setSession({user:{...member,id:'other'}});await assert.rejects(f.service.loadTeamScope(invite.id));
- assert.equal((await f.db.query("SELECT count(*)::int AS n FROM team_access_activity WHERE actor_id='member' AND action='Invitation accepted'")).rows[0].n,1);
+ assert.equal((await f.db.query("SELECT count(*)::int AS n FROM team_access_activity WHERE actor_id='member' AND action='Invitation accepted'")).rows[0].n,0);
  }finally{await f.db.close();}
 });
 test('scope applies to list, guessed IDs, register moves and cross-owner assets',async()=>{
@@ -125,7 +125,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8'),TEAM_ACCESS_SCHEMA);
+ assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8'),TEAM_ACCESS_SCHEMA);
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -199,7 +199,7 @@ test('deleting an employee login removes its access without deleting the busines
  await f.db.query('DELETE FROM "user" WHERE id=$1',['member']);
  const stored=(await f.db.query('SELECT member_user_id FROM team_access WHERE id=$1',[grant.id])).rows[0];
  assert.equal(stored.member_user_id,null);
- assert.ok((await f.db.query('SELECT id FROM team_access_activity WHERE membership_id=$1',[grant.id])).rows.length>=2);
+ assert.ok((await f.db.query('SELECT id FROM team_access_activity WHERE membership_id=$1',[grant.id])).rows.length>=1);
  await assert.rejects(f.service.loadTeamScope(grant.id));
  }finally{await f.db.close();}
 });
@@ -236,14 +236,13 @@ test('password reset and revoke invalidate managed sessions; permission edits pr
  await f.login.authenticateTeamLogin('owner','new@example.com','Replacement-password-123');
  }finally{await f.db.close();}
 });
-test('existing personal account is invited by user ID; owner password never creates or replaces its credentials',async()=>{
+test('existing personal account is activated by user ID; owner password never creates or replaces its credentials',async()=>{
  const f=await setup();try{
  const grant=await f.invite({password:'Must-never-be-used'});
- assert.equal(grant.managedLogin,false);assert.equal(grant.memberUserId,member.id);assert.equal(grant.status,'pending');
+ assert.equal(grant.managedLogin,false);assert.equal(grant.memberUserId,member.id);assert.equal(grant.status,'active');
  assert.equal((await f.db.query('SELECT count(*)::int AS n FROM team_access_logins')).rows[0].n,0);
  await assert.rejects(f.login.authenticateTeamLogin('owner',member.email,'Must-never-be-used'));
  f.setSession({user:{...owner,emailVerified:false}});await f.service.requireTeamOwner();
- await f.service.acceptTeamGrant({...member,emailVerified:false},grant.id);
  f.setSession({user:{...member,emailVerified:false}});await f.service.loadTeamScope(grant.id);
  }finally{await f.db.close();}
 });
@@ -286,14 +285,14 @@ test('desktop creation and reactivation stay silent; only manual invitation send
   '../../../lib/email':{getSiteOrigin:()=> 'https://aim4price.example',sendAim4priceEmail:async e=>emails.push(e)},
  });
  const existing=await route.POST({body:{...f.input,action:'save',password:'Do-not-email-this-password',sendInvitation:true}});
- assert.equal(existing.status,200);assert.equal(emails.length,0);assert.equal(existing.body.member.status,'pending');
+ assert.equal(existing.status,200);assert.equal(emails.length,0);assert.equal(existing.body.member.status,'active');
  const edited=await route.POST({body:{...f.input,id:existing.body.member.id,version:existing.body.member.version,action:'save',sendInvitation:true}});
  assert.equal(edited.status,200);assert.equal(emails.length,0);
  const revoked=await route.POST({body:{id:edited.body.member.id,version:edited.body.member.version,action:'revoke'}});
  const reactivated=await route.POST({body:{id:revoked.body.member.id,version:revoked.body.member.version,action:'reinvite',sendInvitation:true}});
- assert.equal(reactivated.status,200);assert.equal(emails.length,0);
+ assert.equal(reactivated.status,200);assert.equal(reactivated.body.member.status,'active');assert.equal(emails.length,0);
  const manual=await route.POST({body:{id:reactivated.body.member.id,version:reactivated.body.member.version,action:'send-invitation'}});
- assert.equal(manual.status,200);assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
+ assert.equal(manual.status,200);assert.equal(manual.body.member.status,'active');assert.ok(!emails[0].text.includes('accept'));assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
  const stale=await route.POST({body:{id:reactivated.body.member.id,version:reactivated.body.member.version,action:'send-invitation'}});
  assert.equal(stale.status,409);assert.equal(emails.length,1);
  const managed=await route.POST({body:{...f.input,email:'new@example.com',action:'save',password:'Initial-password-123',sendInvitation:true}});
@@ -312,7 +311,7 @@ test('removal checks owner and version, ends access, preserves records, and allo
  assert.equal((await f.db.query('SELECT * FROM "user" WHERE id=$1',[member.id])).rows.length,1);
  assert.equal((await f.db.query('SELECT * FROM asset_register_items')).rows.length,3);
  const activity=(await f.db.query('SELECT * FROM team_access_activity')).rows;
- assert.ok(activity.length>=3);assert.ok(activity.every(a=>a.membership_id===null));
+ assert.ok(activity.length>=2);assert.ok(activity.every(a=>a.membership_id===null));
  assert.ok(activity.some(a=>a.action==='Desktop user removed'));
  assert.notEqual((await f.invite()).id,grant.id);
  }finally{await f.db.close();}
@@ -345,3 +344,26 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  assert.equal(result.body.activity[0].actor_email,owner.email);
  }finally{await f.db.close();}
 });
+
+ test('legacy ready logins activate once; revoked, expired and missing logins stay unchanged',async()=>{
+ const f=await setup();try{
+ const ready=await f.invite();
+ const managed=await f.invite({email:'managed@example.com',password:'Initial-password-123'});
+ const revoked=await f.invite({email:'revoked@example.com',password:'Initial-password-123'});
+ const expired=await f.invite({email:'expired@example.com',password:'Initial-password-123'});
+ await f.db.query("UPDATE team_access SET status='pending' WHERE id=ANY($1::uuid[])",[[ready.id,managed.id,expired.id]]);
+ await f.db.query("UPDATE team_access SET status='revoked' WHERE id=$1",[revoked.id]);
+ await f.db.query("UPDATE team_access SET expires_at=now()-interval '1 day' WHERE id=$1",[expired.id]);
+ const missing=(await f.db.query("INSERT INTO team_access(owner_id,email,display_name) VALUES('owner','missing@example.com','Missing') RETURNING id")).rows[0].id;
+ await f.db.exec(TEAM_ACCESS_SCHEMA);
+ const rows=(await f.db.query('SELECT id,status,version,member_user_id FROM team_access')).rows;
+ const byId=id=>rows.find(r=>r.id===id);
+ assert.equal(byId(ready.id).status,'active');assert.equal(byId(ready.id).member_user_id,member.id);
+ assert.equal(byId(managed.id).status,'active');assert.equal(byId(revoked.id).status,'revoked');
+ assert.equal(byId(expired.id).status,'pending');assert.equal(byId(missing).status,'pending');
+ assert.equal(byId(ready.id).version,ready.version+1);
+ await f.db.exec(TEAM_ACCESS_SCHEMA);
+ assert.equal((await f.db.query('SELECT version FROM team_access WHERE id=$1',[ready.id])).rows[0].version,ready.version+1);
+ await f.service.loadTeamScope(ready.id);
+ }finally{await f.db.close();}
+ });
