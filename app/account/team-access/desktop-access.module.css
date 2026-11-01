@@ -131,3 +131,36 @@
 .assetAccess .templates .assetCardIcon { flex-basis:2.5rem; width:2.5rem; height:2.5rem; }
 .assetAccess .templates .assetCard strong,
 .assetAccess .templates .assetCard small { white-space:nowrap; }
+
+/* Desktop user management: consistent action cards and a separate account-action row. */
+.body .manageButton { gap:.6rem; }
+.body .manageButton .smallIcon { width:1.2rem; height:1.2rem; color:var(--app-accent,#267254); }
+.manageOverview { display:grid; gap:1rem; }
+.manageOverview > h3 { margin:0; }
+.manager .manageCard {
+  align-items:flex-start; gap:1rem; padding:1.2rem; border-radius:1rem;
+  background:linear-gradient(120deg,var(--app-surface-soft,#f3f8f5),var(--app-surface,#fff));
+  transition:background 150ms ease,border-color 150ms ease,box-shadow 150ms ease;
+}
+.manager .manageCard > span:last-child { flex:1; gap:.45rem; }
+.manager .manageCard strong { font-weight:750; }
+.manager .manageCard small {
+  margin-top:.35rem; padding-top:.65rem; border-top:1px solid var(--app-line,#d8e5dd);
+  color:var(--app-accent,#267254); font-size:.85rem; line-height:1.45;
+}
+.manager .manageCardIcon {
+  display:grid; place-items:center; flex:0 0 2.6rem; width:2.6rem; height:2.6rem;
+  margin:0; border:1px solid var(--app-line,#d8e5dd); border-radius:.8rem;
+  background:var(--app-surface,#fff); color:var(--app-accent,#267254); opacity:1;
+}
+.manageCardIcon svg { width:1.35rem; height:1.35rem; }
+.manager .manageCard:hover:not(:disabled) { border-color:var(--app-accent,#28815f); box-shadow:inset 0 0 0 1px var(--app-accent,#28815f); }
+.manageActions {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem;
+  margin-top:.25rem; padding-top:1.25rem; border-top:1px solid var(--app-line,#d8e5dd);
+}
+.manageActions button { display:inline-flex; align-items:center; justify-content:center; gap:.65rem; }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .manager .manageCard { padding:1rem; gap:.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .manageActions button { flex:1 1 100%; }
+}
