@@ -145,6 +145,7 @@ before(async () => {
     ),
   );
   await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/137-ai-provider-admin-reporting.sql'), 'utf8'));
+  await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/148-ongoing-owner-ai-connections.sql'), 'utf8'));
   for (const id of config.allowedUserIds) {
     await db.query('INSERT INTO "user" VALUES($1,$2,$3)', [
       id,
@@ -1001,4 +1002,38 @@ test('admin sign-in preserves only a local AI consent continuation',()=>{
   for(const value of ['//evil.test/admin/ai-connect','https://evil.test/admin/ai-connect','/admin/ai-connect/../../evil','/admin/ai-connect#bad','/admin/ai-connect-extra','/admin/other',null])assert.equal(adminAiReturnTo(value),null);
   const source=fs.readFileSync(path.join(__dirname,'../app/auth/auth-client.tsx'),'utf8');
   assert.ok(source.includes('adminAiReturnTo(preferredPath ?? getSafeReturnTo())'));
+});
+
+test('ongoing owner approval renews beyond 30 days with short-lived tokens', async () => {
+  const { tokens } = await createGrant();
+  const hash = security.digest(tokens.access_token);
+  const grant = (await db.query('SELECT expires_at FROM ai_connections WHERE access_hash=$1', [hash])).rows[0];
+  assert.equal(grant.expires_at, null);
+  assert.equal(tokens.expires_in, 3600);
+  await db.query("UPDATE ai_connections SET created_at=now()-interval '365 days',access_expires_at=now()-interval '1 second' WHERE access_hash=$1", [hash]);
+  assert.equal((await rpc('tools/list', {}, tokens.access_token)).status, 401);
+  const renewed = await store.exchangeToken(pool, new URLSearchParams({
+    grant_type: 'refresh_token', refresh_token: tokens.refresh_token, resource: config.resource,
+  }), config);
+  assert.equal(renewed.expires_in, 3600);
+  assert.notEqual(renewed.refresh_token, tokens.refresh_token);
+  assert.equal((await rpc('tools/list', {}, renewed.access_token)).status, 200);
+  assert.equal((await db.query('SELECT expires_at FROM ai_connections WHERE access_hash=$1', [security.digest(renewed.access_token)])).rows[0].expires_at, null);
+});
+
+test('legacy fixed-term approvals retain expiry on renewal and cannot renew after expiry', async () => {
+  const { tokens } = await createGrant();
+  await db.query("UPDATE ai_connections SET expires_at=now()+interval '20 minutes' WHERE access_hash=$1", [security.digest(tokens.access_token)]);
+  const before = (await db.query('SELECT expires_at FROM ai_connections WHERE access_hash=$1', [security.digest(tokens.access_token)])).rows[0].expires_at;
+  const renewed = await store.exchangeToken(pool, new URLSearchParams({
+    grant_type: 'refresh_token', refresh_token: tokens.refresh_token, resource: config.resource,
+  }), config);
+  assert.ok(renewed.expires_in > 0 && renewed.expires_in <= 1200);
+  const after = (await db.query('SELECT expires_at FROM ai_connections WHERE access_hash=$1', [security.digest(renewed.access_token)])).rows[0].expires_at;
+  assert.equal(new Date(before).getTime(), new Date(after).getTime());
+  await db.query("UPDATE ai_connections SET expires_at=now()-interval '1 second' WHERE access_hash=$1", [security.digest(renewed.access_token)]);
+  assert.equal((await rpc('tools/list', {}, renewed.access_token)).status, 401);
+  await assert.rejects(store.exchangeToken(pool, new URLSearchParams({
+    grant_type: 'refresh_token', refresh_token: renewed.refresh_token, resource: config.resource,
+  }), config), /expired or was disconnected/);
 });

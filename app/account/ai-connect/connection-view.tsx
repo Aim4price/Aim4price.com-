@@ -9,7 +9,7 @@ import pageStyles from '../dealer-app/page.module.css';
 import styles from './page.module.css';
 import { providerLogos } from './provider-logos';
 
-type Connection = { id: string; provider?: string; disabled?: boolean; created_at: string; expires_at: string };
+type Connection = { id: string; provider?: string; disabled?: boolean; created_at: string; expires_at: string | null };
 export type ConnectionViewProps = {
   audience?: 'owner' | 'admin';
   providerName?: string;
@@ -76,7 +76,7 @@ function SharedInformation({ examples = false, admin = false }: { examples?: boo
 
 export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [], chatGptListingUrl }: ConnectionViewProps) {
   const admin = audience === 'admin';
-  const duration = admin ? '24 hours' : '30 days';
+  const accessDuration = admin ? 'Access lasts 24 hours.' : 'Your assistant stays connected until you disconnect it.';
   const makeSetup = (selectedProvider?: string) => <>
     {selectedProvider && !signInHref && !providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? <div className={styles.empty}>
       <h3>{selectedProvider} connection is not available yet</h3>
@@ -138,7 +138,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <span className={styles.connectionIcon}><Icon /></span>
         <div className={styles.connectionCopy}>
           <h3>{c.provider || 'AI connection'}</h3>
-          <p>Connected {date(c.created_at)} · Expires {date(c.expires_at)}</p>
+          <p>Connected {date(c.created_at)} · {c.expires_at ? `Expires ${date(c.expires_at)}` : 'No scheduled expiry'}</p>
         </div>
         <span className={styles.active}>{c.disabled ? 'Provider disabled' : 'Connected'}</span>
         <DisconnectButton id={c.id} audience={audience} />
@@ -149,7 +149,8 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <p>{connections ? 'Connect your assistant to ask about your records.' : signInHref ? 'Sign in to view and manage your connections.' : 'Your connections will appear here once your account is ready.'}</p>
       {signInHref && <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>}
     </div>}
-    <p className={styles.note}>Access lasts {duration}. Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
+    {!admin && connections?.some(c => c.expires_at) && <p className={styles.note}>Earlier approvals keep the expiry date shown above. Reconnect once to approve ongoing access.</p>}
+    <p className={styles.note}>{accessDuration} Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
   </>;
 
   return (
@@ -171,7 +172,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
               <input type="hidden" name="authorization" value={authorization || ''} />
               <input type="hidden" name="proof" value={proof} />
               <label className={styles.consent}><input type="checkbox" name="terms" value="accepted" required /><span>I accept the Aim4price <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and acknowledge the <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>. I authorise read-only access and understand that requested information is shared with my AI provider.</span></label>
-              <p className={styles.note}>Access lasts {duration}. You can disconnect from this page at any time. Information already shared may remain in your AI conversations.</p>
+              <p className={styles.note}>{accessDuration} You can disconnect from this page at any time. Information already shared may remain in your AI conversations.</p>
               <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
             </form>
           </section> : <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} />}
