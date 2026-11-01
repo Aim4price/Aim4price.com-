@@ -3,10 +3,11 @@ import VerifyAdminEmail from './verify-admin-email';
 import CopyQuestion from './copy-question';
 import DisconnectButton from './disconnect-button';
 import AccountSetup from './account-setup';
-import ConnectionActions, { ServerAddress } from './connection-actions';
+import ConnectionActions, { ServerAddress, SetupGuide } from './connection-actions';
 import accessStyles from '../app-access-management.module.css';
 import pageStyles from '../dealer-app/page.module.css';
 import styles from './page.module.css';
+import { providerLogos } from './provider-logos';
 
 type Connection = { id: string; provider?: string; disabled?: boolean; created_at: string; expires_at: string };
 export type ConnectionViewProps = {
@@ -83,28 +84,27 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
     </div> : resource ? <>
+      <SetupGuide manual={<>
+        <p>In your assistant’s connection settings, paste this into the MCP server URL field. Choose OAuth, then sign in to Aim4price and approve access.</p>
+        <ServerAddress resource={resource} />
+        {admin && <><p>OAuth client ID: <code>{clientId}</code></p><p>Scope: <code>aim4price:admin:read</code>. Use the separate admin client secret from Railway’s secure variable settings when configuring the private assistant connection.</p></>}
+        <p className={styles.note}>Use a provider registered by Aim4price. This address is not a sign-in link. No personal API key is needed; never share passwords or connection secrets in chat.</p>
+      </>}>
       <div className={styles.setupLayout}>
       <div className={styles.providerGrid}>
         {providers.filter(provider => !selectedProvider || provider.name.toLowerCase().includes(selectedProvider.toLowerCase())).map(provider => <div className={styles.permission} key={provider.name}>
-          <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind="chat" /></span><h3>{provider.name}</h3></div>
-          <p>{admin ? 'Private admin reporting with read-only access.' : 'Ask about your Aim4price records with read-only access.'}</p>
+          <div className={styles.cardHeading}><span className={styles.permissionIcon}>{selectedProvider && providerLogos[selectedProvider] ? <img src={providerLogos[selectedProvider]} alt="" width="28" height="28" /> : <Icon kind="chat" />}</span><h3>{provider.name}</h3></div>
+          <p>{admin ? 'Private admin reporting with read-only access.' : 'Continue in your assistant to approve access.'}</p>
           {provider.launchUrl && <a className={styles.primary} href={provider.launchUrl} target="_blank" rel="noopener noreferrer">Open {provider.name}</a>}
         </div>)}
       </div>
       <ul className={styles.steps}>
-        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Open {selectedProvider || 'your assistant'} and add its Aim4price connection. Opening it alone does not connect it.</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Sign in to Aim4price and review the account and read-only access.</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Return to {selectedProvider || 'your assistant'} and select Aim4price in your conversation.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Add the Aim4price connection in {selectedProvider || 'your assistant'}. Opening the app alone does not connect it.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Use your Aim4price account and approve read-only access.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Select Aim4price in your conversation and ask about your records.</p></div></li>
       </ul>
       </div>
-      <details className={styles.setup}>
-        <summary>Manual setup & connection address</summary>
-        <p>Copy this address into the assistant’s MCP server URL field. It is not a browser sign-in link. Custom connections must use a provider registered by Aim4price.</p>
-        <ServerAddress resource={resource} />
-        {admin && <><p>OAuth client ID: <code>{clientId}</code></p><p>Scope: <code>aim4price:admin:read</code>. Use the separate admin client secret from Railway’s secure variable settings when configuring the private assistant connection.</p></>}
-        <p className={styles.note}>Use OAuth sign-in. No personal API key is needed. Never paste passwords or connection secrets into a chat.</p>
-      </details>
-
+      </SetupGuide>
     </> : <>
       <p className={styles.description}>{disabled ? 'AI connections are not enabled here yet.' : 'Check your account to help with connection setup.'}</p>
       {!admin && <AccountSetup />}

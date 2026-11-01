@@ -39,6 +39,8 @@ export default function ConnectionActions({ setup, management, count, assistantO
     if (!flow) return;
     const trigger = flow === 'connect' ? connectButton.current : manageButton.current;
     const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus();
 
@@ -87,6 +89,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
     document.addEventListener('focusin', keepFocus);
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
       document.removeEventListener('keydown', keyDown);
       document.removeEventListener('focusin', keepFocus);
       trigger?.focus({ preventScroll: true });
@@ -131,7 +134,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
           <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Choose where you want to ask about your Aim4price records.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
-        <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : ''}`}>
+        <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : styles.connectPanel}`}>
           {flow === 'connect' ? admin ? setup : choosingAssistant ? <div className={styles.assistantChoices}>
             {assistantOptions.map(option => <button type="button" key={option.name} className={styles.assistantChoice}
               onClick={() => { setSelectedAssistant(option.name); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>
@@ -139,15 +142,13 @@ export default function ConnectionActions({ setup, management, count, assistantO
               <strong>{option.name}</strong>
               <span>{option.available ? 'Set up connection' : 'Not available yet'}</span>
             </button>)}
-          </div> : <>
-            <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>
-            {assistant?.setup}
-          </> : management}
+          </div> : assistant?.setup : management}
 
         </div>
         <footer className={styles.dialogFooter}>
           <p role="status">{checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : 'Access appears here after approval in your assistant.'}</p>
           <div className={styles.footerActions}>
+          {flow === 'connect' && assistant && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
           {(flow === 'manage' || !choosingAssistant) && <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>}
           {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => { setSelectedAssistant(null); setFlow('connect'); }}>Connect assistant</button>}
           </div>
@@ -170,5 +171,25 @@ export function ServerAddress({ resource }: { resource: string }) {
       }
     }}>Copy address</button>
     {message && <p role="status">{message}</p>}
+  </div>;
+}
+
+/** Keep advanced instructions in the same dialog without expanding its height. */
+export function SetupGuide({ children, manual }: { children: ReactNode; manual: ReactNode }) {
+  const [showManual, setShowManual] = useState(false);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const toggle = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (showManual) heading.current?.focus();
+  }, [showManual]);
+  return <div className={styles.setupGuide}>
+    {showManual ? <section className={styles.manualView} aria-labelledby="ai-manual-title">
+      <h3 id="ai-manual-title" ref={heading} tabIndex={-1}>Manual connection setup</h3>
+      {manual}
+    </section> : children}
+    <button ref={toggle} type="button" className={styles.setupHelp} onClick={() => {
+      setShowManual(!showManual);
+      if (showManual) toggle.current?.focus();
+    }}>{showManual ? 'Back to connection guide' : 'Manual setup & connection address'}</button>
   </div>;
 }

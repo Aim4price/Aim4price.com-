@@ -253,3 +253,33 @@
 .sharingDetails h3 { font-size: .95rem; letter-spacing: -.02em; }
 .sharingDetails p { grid-column: 1 / -1; margin: 0; font-size: .85rem; line-height: 1.6; }
 .sharingNote { font-size: .82rem; line-height: 1.6; padding: .85rem 1rem; }
+
+/* Setup fits on a short desktop; manual help replaces rather than expands it. */
+.connectionModal .connectPanel { padding-top: 1.1rem; padding-bottom: 1.1rem; scrollbar-gutter: auto; }
+.connectPanel .setupLayout { gap: 1.5rem; align-items: stretch; }
+.connectPanel .setupLayout .permission { padding: 1rem; gap: .8rem; }
+.connectPanel .setupLayout .permission p { margin: 0; font-size: .88rem; line-height: 1.5; }
+.connectPanel .setupLayout .steps { gap: .85rem; }
+.connectPanel .steps li { gap: .75rem; }
+.connectPanel .steps h3 { font-size: 1rem; }
+.connectPanel .steps p { margin-top: .2rem; font-size: .85rem; line-height: 1.5; }
+.connectPanel .stepIcon { flex-basis: 2.25rem; height: 2.25rem; }
+.setupGuide { display: grid; gap: .85rem; }
+.flowPanel .setupHelp { justify-self: start; padding: .4rem 0; min-height: 44px; border: 0; border-radius: .3rem; background: transparent; font-size: .85rem; text-decoration: underline; text-underline-offset: .25rem; }
+.manualView { padding: 1rem; border: 1px solid var(--app-line, #dce7e2); border-radius: 1rem; background: var(--app-surface-soft, #f3f8f5); }
+.manualView > p { margin: .75rem 0; font-size: .88rem; line-height: 1.5; }
+.manualView > .note { margin-bottom: 0; font-size: .8rem; }
+.dialogFooter .changeAssistant { background: transparent; }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .setupLayout { gap: 1rem; }
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .setupLayout .permission { display: grid; grid-template-columns: 1fr auto; gap: .65rem; align-items: center; }
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .permission > p { grid-column: 1 / -1; grid-row: 2; }
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .permission > a { margin: 0; padding: .6rem .75rem; font-size: .8rem; }
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .permissionIcon { width: 2.25rem; height: 2.25rem; }
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .permissionIcon img { width: 1.5rem; height: 1.5rem; }
+}
+
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .manualView .serverAddress { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
+  :global(body:not(:has([data-website-canvas]))) .manualView .serverAddress button { justify-self: start; }
+}
