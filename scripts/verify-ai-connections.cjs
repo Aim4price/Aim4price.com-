@@ -69,7 +69,13 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.waitForSelector('#ai-connect-panel');
   assert.equal(await page.evaluate(()=>document.activeElement.hasAttribute('data-dialog-close')),true);
   await page.click('#ai-connect-panel footer button');
-  assert.ok((await page.$eval('#ai-connect-panel [role="status"]',e=>e.textContent)).includes('No approved connections yet'));
+  // React's transition can still show "Checking…" after the click resolves.
+  // Wait for the completed UI state instead of racing the next render on CI.
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('#ai-connect-panel');
+    return panel?.querySelector('[role="status"]')?.textContent.includes('No approved connections yet')
+      && panel.querySelector('footer button')?.disabled === false;
+  });
   await page.keyboard.press('Escape');
   await render({...base,providers:base.providers.slice(0,1)},false);
   await page.screenshot({path:path.join(evidence,'owner-overview.png'),fullPage:true});
