@@ -1,3 +1,4 @@
+import {installMaintenanceAssetLifecycle} from './maintenance-asset-lifecycle';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { getDb } from './db';
@@ -959,7 +960,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
 
 export async function ensureAssetMaintenanceTables(): Promise<void> {
   if (!assetMaintenanceTablesPromise) {
-    assetMaintenanceTablesPromise = ensureAssetMaintenanceTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
+    assetMaintenanceTablesPromise = ensureAssetMaintenanceTablesOnce().then(installAssetHistoryTriggers).then(installMaintenanceAssetLifecycle).catch((error) => {
       assetMaintenanceTablesPromise = null;
       throw error;
     });
@@ -1112,6 +1113,7 @@ function maintenanceSelectSql(whereClause: string): string {
     join public.asset_register_items ai
       on ai.id = m.asset_register_item_id
      and ai.user_id = m.user_id
+     and (coalesce(m.status, 'upcoming') <> 'upcoming' or coalesce(to_jsonb(ai)->>'lifecycle_state', 'active') = 'active')
     left join public.valuation_runs vr
       on vr.id::text = nullif(to_jsonb(ai)->>'valuation_run_id', '')
     left join public.equipment_models em
@@ -2356,3 +2358,4 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
     maintenanceAlerts: (allAlertsByAssetId.get(asset.id) ?? []).sort((a, b) => alertPriority(a) - alertPriority(b)),
   }));
 }
+
