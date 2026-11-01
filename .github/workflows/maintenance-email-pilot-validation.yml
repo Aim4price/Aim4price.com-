@@ -1,0 +1,33 @@
+name: Maintenance email pilot validation
+on:
+  pull_request:
+    paths:
+      - 'lib/maintenance-reminder*.ts'
+      - 'lib/maintenance-email-preferences.ts'
+      - 'lib/maintenance-asset-lifecycle.ts'
+      - 'lib/email*.ts'
+      - 'instrumentation.ts'
+      - 'app/maintenance-email-preferences/**'
+      - 'tests/maintenance-email-pilot.test.cjs'
+      - 'tests/maintenance-reminder*.cjs'
+      - 'tests/owner-maintenance-email.test.mjs'
+      - '.github/workflows/maintenance-email-pilot-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: maintenance-email-pilot-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/owner-maintenance-email.test.mjs tests/maintenance-reminders.test.cjs tests/maintenance-email-pilot.test.cjs tests/maintenance-reminder-runtime.test.cjs
