@@ -125,3 +125,9 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .body .assetCard { min-height:0; padding:1rem; }
 }
+
+/* Leave room for single-line copy in the three asset-access choices. */
+.assetAccess .templates .assetCard { padding:1rem; gap:.75rem; }
+.assetAccess .templates .assetCardIcon { flex-basis:2.5rem; width:2.5rem; height:2.5rem; }
+.assetAccess .templates .assetCard strong,
+.assetAccess .templates .assetCard small { white-space:nowrap; }
