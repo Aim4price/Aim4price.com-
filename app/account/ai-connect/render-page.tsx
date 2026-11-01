@@ -34,7 +34,7 @@ export async function renderAiConnectionPage(
     const owner = await connectionOwner(config);
     const connections = (
       await getDb().query(
-        `SELECT id,client_id,created_at,expires_at FROM public.ai_connections WHERE user_id=$1 AND resource=$2 AND revoked_at IS NULL AND expires_at>now() ORDER BY created_at DESC`,
+        `SELECT id,client_id,created_at,expires_at FROM public.ai_connections WHERE user_id=$1 AND resource=$2 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>now()) ORDER BY created_at DESC`,
         [owner.account.id, config.resource],
       )
     ).rows.map((c) => ({
@@ -44,7 +44,7 @@ export async function renderAiConnectionPage(
         "AI provider",
       disabled: !config.clients?.some((client) => client.id === c.client_id),
       created_at: new Date(c.created_at).toISOString(),
-      expires_at: new Date(c.expires_at).toISOString(),
+      expires_at: c.expires_at === null ? null : new Date(c.expires_at).toISOString(),
     }));
     return (
       <ConnectionView

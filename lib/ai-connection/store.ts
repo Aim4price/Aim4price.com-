@@ -247,7 +247,7 @@ export async function exchangeToken(
           connectionScope(config),
           digest(access),
           digest(refresh),
-          config.audience === "admin" ? 1 : 30,
+          config.audience === "admin" ? 1 : null,
         ],
       );
       await db.query(
@@ -257,7 +257,7 @@ export async function exchangeToken(
     } else {
       const grant = (
         await db.query(
-          `SELECT g.*,h.used_at FROM public.ai_connection_refresh_tokens h JOIN public.ai_connections g ON g.id=h.connection_id WHERE h.token_hash=$1 AND g.client_id=$2 AND g.resource=$3 AND g.scope=$4 AND g.revoked_at IS NULL AND g.expires_at>now() FOR UPDATE OF g,h`,
+          `SELECT g.*,h.used_at FROM public.ai_connection_refresh_tokens h JOIN public.ai_connections g ON g.id=h.connection_id WHERE h.token_hash=$1 AND g.client_id=$2 AND g.resource=$3 AND g.scope=$4 AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>now()) FOR UPDATE OF g,h`,
           [
             digest(form.get("refresh_token") || ""),
             config.clientId,
@@ -289,7 +289,7 @@ export async function exchangeToken(
         );
       }
       await eligibleAccount(db, grant.user_id, config);
-      expiresIn = Math.max(
+      expiresIn = grant.expires_at === null ? 3600 : Math.max(
         0,
         Math.min(
           3600,
@@ -340,7 +340,7 @@ export async function authenticateToken(
     );
   const grant = (
     await db.query(
-      `SELECT id,user_id,client_id FROM public.ai_connections WHERE access_hash=$1 AND resource=$2 AND scope=$3 AND revoked_at IS NULL AND access_expires_at>now() AND expires_at>now()`,
+      `SELECT id,user_id,client_id FROM public.ai_connections WHERE access_hash=$1 AND resource=$2 AND scope=$3 AND revoked_at IS NULL AND access_expires_at>now() AND (expires_at IS NULL OR expires_at>now())`,
       [digest(bearer.slice(7)), config.resource, connectionScope(config)],
     )
   ).rows[0];

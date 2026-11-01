@@ -42,6 +42,7 @@ try {
   for (const filename of [
     "135-read-only-ai-connections.sql",
     "137-ai-provider-admin-reporting.sql",
+    "148-ongoing-owner-ai-connections.sql",
   ]) {
     if (
       (

@@ -8,7 +8,7 @@ An Owner can connect their own account to an AI assistant and ask about saved as
 
 - Stateless MCP Streamable HTTP endpoint: `https://aim4price.com/api/ai/mcp`.
 - Nine tools: `account_profile`, `list_assets`, `read_costs`, `read_fuel_slips`, `read_fuel_issues`, `read_budgets`, `read_maintenance`, `read_maintenance_activity`, `read_problems`.
-- OAuth authorization code flow using the existing Aim4price website sign-in, explicit consent, exact registered callback matching, S256 PKCE, single-use five-minute codes, one-hour opaque access tokens and rotating refresh tokens with connection revocation on replay. Connections expire after 30 days.
+- OAuth authorization code flow using the existing Aim4price website sign-in, explicit consent, exact registered callback matching, S256 PKCE, single-use five-minute codes, one-hour opaque access tokens and rotating refresh tokens with connection revocation on replay. New owner approvals remain connected until revoked, with automatic token renewal. Existing fixed-term approvals keep their expiry and require one new approval to become ongoing. Admin approvals still expire after 24 hours.
 - Account → AI connections is a dedicated page with assistant availability, readable-data categories, account identity, connection expiry and disconnect controls. The disabled pilot still shows an informative overview without claiming that connection records have been loaded.
 - Approval requires explicit acceptance of the Terms of Service and acknowledgement of the Privacy Policy/data-sharing notice, enforced on the server before issuing an authorization code. Cancel remains available without accepting terms. Provider cards do not imply a public app listing or working integration before setup and compatibility testing.
 - The connection is always bound to the real signed-in Owner. Admin support cookies, delegated app identities, free accounts and other account types cannot create connections.
@@ -21,7 +21,7 @@ The AI provider answers the question using these tools; Aim4price does not run a
 
 Do not enable the endpoint until its migration and the normal account/ledger migrations are applied. No business schema is created lazily through AI requests.
 
-1. Apply `database/migrations/135-read-only-ai-connections.sql` through the normal reviewed database deployment process. This creates only connection/code metadata tables. It does not alter asset, invoice or fuel records.
+1. Apply the reviewed AI migrations through `scripts/migrate-ai-connections.mjs` (including `148-ongoing-owner-ai-connections.sql`). These migrations change only connection/code metadata tables. It does not alter asset, invoice or fuel records.
 2. In the AI platform, create a private MCP connection using the server URL above and OAuth with predefined client credentials. Obtain its exact redirect URI from that platform's setup screen. Do not guess or use wildcard redirects.
 3. Set these environment variables on the Aim4price deployment:
 

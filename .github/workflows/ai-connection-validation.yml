@@ -16,6 +16,7 @@ on:
       - 'scripts/migrate-ai-connections.mjs'
       - 'scripts/verify-ai-connections.cjs'
       - 'database/migrations/137-ai-provider-admin-reporting.sql'
+      - 'database/migrations/148-ongoing-owner-ai-connections.sql'
       - 'app/.well-known/**'
       - 'lib/external-share-permissions.ts'
       - 'lib/account-constants.ts'
