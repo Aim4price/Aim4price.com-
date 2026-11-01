@@ -5457,8 +5457,8 @@
   box-shadow: inset 0 0 0 1px var(--app-accent, #338461);
 }
 @media (max-width: 480px) {
-  .simpleScheduleDialog .scheduleQuestion .scheduleRepeat > div { gap: .6rem; }
-  .simpleScheduleDialog .scheduleQuestion .scheduleRepeat button { flex-direction: column; gap: .45rem; padding: .85rem .5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .simpleScheduleDialog .scheduleQuestion .scheduleRepeat > div { gap: .6rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .simpleScheduleDialog .scheduleQuestion .scheduleRepeat button { flex-direction: column; gap: .45rem; padding: .85rem .5rem; }
 }
 
 /* Usage reminders and repeat intervals match the date scheduling fields. */
@@ -5498,7 +5498,7 @@
   font-weight: 550;
 }
 @media (max-width: 480px) {
-  .simpleScheduleDialog .scheduleQuestion .maintenanceInlineFields {
+  :global(:where(html:not(:has([data-website-canvas])))) .simpleScheduleDialog .scheduleQuestion .maintenanceInlineFields {
     grid-template-columns: minmax(0, 1fr);
   }
 }
