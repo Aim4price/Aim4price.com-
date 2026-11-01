@@ -37,7 +37,7 @@ export default function LeadNoteDialog({assetTitle,noteDraft,setNoteDraft,noteAt
                   className={assetStyles.sharedNoteTextarea}
                   value={noteDraft}
                   onChange={(event) => setNoteDraft(event.target.value)}
-                  placeholder="Example: Please find the attached quote PDF for this asset."
+                  placeholder="Write a note to the asset owner…"
                   autoFocus
                 />
               </label>
@@ -57,15 +57,15 @@ export default function LeadNoteDialog({assetTitle,noteDraft,setNoteDraft,noteAt
               >
                 <input
                   className={styles.leadNoteAttachmentInput}
+                  aria-label="Attach a quote PDF (optional)"
                   type="file"
                   accept="application/pdf,.pdf"
                   onChange={handleLeadNoteAttachmentChange}
                   disabled={isSavingNote}
                 />
                 <PdfIcon className={styles.leadNoteAttachmentIcon} />
-                <span className={styles.leadNoteAttachmentEyebrow}>Attach quote PDF — optional</span>
-                <strong>Drop quote PDF here or click to upload</strong>
-                <small>PDF only · maximum {formatByteSize(12 * 1024 * 1024)}.</small>
+                <strong>Attach a quote <span className={styles.leadNoteAttachmentOptional}>(optional)</span></strong>
+                <small>Click to upload or drop a PDF here · Up to {formatByteSize(12 * 1024 * 1024)}</small>
               </label>
 
               {noteAttachmentFile ? (
