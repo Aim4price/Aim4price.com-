@@ -136,6 +136,11 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.waitForSelector('#ai-connect-panel');
   await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
+  assert.ok(await page.$$eval('#ai-connect-panel li h3, #ai-connect-panel li p', elements => elements.every(element => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return range.getClientRects().length === 1;
+  })), 'Desktop ChatGPT instructions must fit on single lines');
   await page.screenshot({path:path.join(evidence,'owner-connect-desktop.png')});
   assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', e=>e.href),'https://chatgpt.com/plugins?search=Aim4price');
   assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Manual setup'));

@@ -302,3 +302,16 @@
 @media (prefers-reduced-motion: reduce) {
   .disclosureChevron svg, .exampleChevron svg { transition: none; }
 }
+
+/* Give the ChatGPT handoff balanced columns and short, readable instruction rows. */
+.connectPanel .chatGptSetup { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 2rem; align-items: center; }
+.connectPanel .chatGptSetup .permission { padding: 1.25rem; gap: 1rem; }
+.connectPanel .chatGptSetup .steps { gap: 1.35rem; }
+.connectPanel .chatGptSetup .steps li { align-items: center; gap: .85rem; }
+.connectPanel .chatGptSetup .steps li > div { min-width: 0; }
+.connectPanel .chatGptSetup .steps p { margin-top: .35rem; }
+.availabilityHint { color: var(--app-muted, #60746d); font-size: .75rem; line-height: 1.5; }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .connectPanel .chatGptSetup { grid-template-columns: 1fr; gap: 1.25rem; }
+  :global(body:not(:has([data-website-canvas]))) .chatGptSetup .availabilityHint { grid-column: 1 / -1; }
+}
