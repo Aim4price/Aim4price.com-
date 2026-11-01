@@ -165,7 +165,8 @@ export default function ConnectionView({ account, connections, resource, proof, 
           </div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
-            <h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2>
+            <div className={styles.approvalHeading}><span className={styles.approvalIcon}><Icon kind="link" /></span><div><span className={styles.eyebrow}>Review your connection</span><h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2></div></div>
+            <div className={styles.approvalSafety}><Icon kind="shield" /><span>Your assistant can read records. It cannot add, edit or delete them.</span></div>
             {account && <div className={styles.identity}><span>Account being connected</span><strong>{account.name}</strong><span>{account.email}</span></div>}
             <p>{admin ? 'This is cross-account administrator access. Asset records from all accounts can be returned to this AI provider. Queries are audited. No business records can be changed.' : 'This connection can read the following information from this Owner account only.'}</p>
             <SharedInformation admin={admin} />
@@ -177,7 +178,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
               <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
             </form>
           </section> : <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} />}
-          <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
+          <div className={styles.safety} hidden={!!proof}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
         </section>
         {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>

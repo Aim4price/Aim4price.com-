@@ -182,6 +182,14 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   assert.equal(form.action,'/api/ai/oauth/authorize');assert.equal(form.terms,true);assert.ok(form.text.includes('24 hours'));
   const text=await page.$eval('main',e=>e.textContent);assert.ok(text.includes('cross-account administrator access'));assert.ok(!text.includes('Costs & budgets'));assert.ok(!text.includes('Fuel purchases'));
   await page.screenshot({path:path.join(evidence,'admin-consent.png'),fullPage:true});
+  for (const width of [1280, 390]) {
+    await page.setViewport({width,height:900});
+    await render({...base,providerName:'ChatGPT',proof:'synthetic-proof',authorization:'synthetic-request'},false);
+    const consent=await page.$eval('form',form=>({checked:form.querySelector('[name="terms"]').checked,required:form.querySelector('[name="terms"]').required,denyBypasses:form.querySelector('[value="deny"]').formNoValidate}));
+    assert.deepEqual(consent,{checked:false,required:true,denyBypasses:true});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+    await page.screenshot({path:path.join(evidence,`owner-consent-${width}.png`),fullPage:true});
+  }
   await page.setViewport({width:390,height:844});await render(base,false);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
   await page.screenshot({path:path.join(evidence,'owner-overview-mobile.png'),fullPage:true});

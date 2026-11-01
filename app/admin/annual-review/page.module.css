@@ -34,3 +34,75 @@
 .wish { font-weight: 650; }
 
 .dialog h2:focus { outline: none; }
+
+/* The review keeps its navigation and actions outside the one scrolling body. */
+.dialog { width: min(1120px, calc(100vw - 2rem)); height: min(820px, calc(100dvh - 2rem)); }
+.dialog .body { flex: 1; }
+.dialog p { font-size: .9rem; line-height: 1.55; margin: .65rem 0 1rem; }
+.dialog h3 { font-size: 1.12rem; font-weight: 750; letter-spacing: -.02em; }
+.dialog h3 svg { padding: .4rem; box-sizing: content-box; border-radius: .7rem; background: var(--app-surface-soft, #edf5f1); color: var(--app-accent, #176b50); }
+.page button, .footer a { font-size: .88rem; min-height: 44px; transition: background .15s, border-color .15s; }
+.page :is(button, input, summary, a):focus-visible { outline: 3px solid var(--app-accent, #25805f); outline-offset: 3px; }
+.previewLabel { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; padding: .55rem var(--account-dialog-padding); font-size: .75rem; }
+.previewLabel svg { width: 1rem; height: 1rem; }
+.previewLabel > span { margin-left: auto; white-space: nowrap; font-weight: 600; }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex-shrink: 0; gap: .5rem; margin: 0; padding: .85rem var(--account-dialog-padding); border-bottom: 1px solid var(--app-line, #d6e4dd); }
+.steps > span { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .55rem; border-radius: .7rem; font-size: .75rem; line-height: 1.35; }
+.steps b { display: grid; place-items: center; flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--app-surface-soft, #eef4f1); font-size: .75rem; }
+.steps [aria-current] { border: 0; padding-bottom: .55rem; background: var(--app-surface-soft, #eaf5ef); }
+.steps [aria-current] b { background: var(--app-accent, #176b50); color: #fff; }
+.steps [data-complete=true] b { color: var(--app-accent, #176b50); }
+.cards { gap: .5rem; margin: .65rem 0; }
+.card, .choice { border-radius: .85rem; padding: .85rem 1rem; }
+.selectionGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); }
+.page .choice { cursor: pointer; min-width: 0; align-items: center; font-size: .85rem; }
+.choice:has(input:checked) { background: var(--app-surface-soft, #f0f8f4); border-color: var(--app-accent, #6ca88f); }
+.choice:has(input:disabled) { cursor: default; }
+.choice strong { font-weight: 700; overflow-wrap: anywhere; }
+.choice small { font-size: .75rem; font-weight: 500; }
+.selectionHeading { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; margin-top: 1rem; font-size: .8rem; }
+.selectionHeading > span { color: var(--app-muted, #64766e); }
+.listTools { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin: .75rem 0; font-size: .75rem; color: var(--app-muted, #64766e); }
+.page .search { flex: 1 1 220px; font-size: .75rem; }
+.page input:not([type=checkbox]) { border-radius: .65rem; padding: .65rem .8rem; min-height: 44px; }
+.pagination { display: flex; align-items: center; gap: .5rem; }
+.pagination button { padding: .25rem .7rem; }
+.exclusions { margin-top: .85rem; padding: .85rem 1rem; border: 1px solid var(--app-line, #d6e4dd); border-radius: .85rem; font-size: .8rem; }
+.exclusions summary { cursor: pointer; font-weight: 650; }
+.exclusions summary span { margin-left: .5rem; font-weight: 500; color: var(--app-muted, #64766e); }
+.exclusions .choice { margin-top: .65rem; }
+.assetName { display: flex; align-items: center; gap: .6rem; font-size: .85rem; }
+.assetName svg { width: 1.2rem; height: 1.2rem; color: var(--app-accent, #176b50); flex-shrink: 0; }
+.values { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: .5rem 1rem; }
+.values span { font-size: .72rem; }
+.values b { font-size: .95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.values .arrow { font-size: 1.2rem; }
+.values .change { grid-column: 3; color: var(--app-accent, #176b50); font-weight: 650; }
+.total { margin-left: auto; display: grid; gap: .25rem; padding: .8rem 1rem; border-radius: .85rem; background: var(--app-surface-soft, #eaf5ef); }
+.total span, .total small { font-size: .72rem; color: var(--app-muted, #64766e); }
+.total strong { font-size: 1.25rem; letter-spacing: -.03em; }
+.optionGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: .75rem; margin-top: 1.25rem; }
+.page .optionGrid button { display: grid; justify-items: start; text-align: left; gap: .75rem; padding: 1.2rem; border-radius: 1rem; }
+.optionGrid svg { width: 1.6rem; height: 1.6rem; }
+.optionGrid small { font-size: .78rem; line-height: 1.5; font-weight: 500; }
+.page .optionGrid button[aria-pressed=true] { background: var(--app-surface-soft, #eaf5ef); color: var(--app-text, #153d31); border: 2px solid var(--app-accent, #176b50); padding: calc(1.2rem - 1px); }
+.summary { gap: .65rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.summary span { border: 1px solid var(--app-line, #d6e4dd); font-size: .75rem; padding: 1rem; }
+.summary b { margin-bottom: .4rem; font-size: 2rem; }
+.wish { display: flex; align-items: center; gap: .85rem; margin-top: 1rem; padding: 1rem; border-radius: .85rem; background: var(--app-surface-soft, #eaf5ef); }
+.wish svg { width: 1.8rem; height: 1.8rem; flex-shrink: 0; }
+.wish p { margin: 0; }
+.wish small { display: block; font-size: .75rem; font-weight: 500; margin-top: .25rem; }
+.footer { align-items: center; }
+.footer .closeAction { margin-right: auto; }
+.empty { padding: 1rem; text-align: center; background: var(--app-surface-soft, #f3f8f5); border-radius: .8rem; }
+
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .steps { padding-block: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps > span { justify-content: center; padding: .35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps > span > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer .closeAction { margin-right: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer a { text-align: center; }
+  :global(:where(html:not(:has([data-website-canvas])))) .total { margin-left: 0; width: 100%; }
+}
