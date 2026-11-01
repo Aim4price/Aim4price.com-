@@ -56,9 +56,9 @@ test('history opens as a focused timeline instead of extending the asset card', 
   assert.match(tracker, />Asset history<\/h3>/);
   assert.match(tracker, /historyRecordDetails/);
   assert.match(tracker, /historyTypeTabs/);
-  assert.match(tracker, /historyTimelineFilters/);
+  assert.match(tracker, /historyToolbar/);
   assert.match(tracker, /historyTimeline/);
-  assert.match(tracker, /Newest records first/);
+  assert.match(tracker, /Newest first/);
   assert.match(trackerStyles, /\.historyModal\.historyModal/);
   assert.match(trackerStyles, /\.historyTimelineItem/);
   assert.doesNotMatch(tracker, /id=\{`maintenance-view-/);
@@ -78,10 +78,10 @@ test('history presents records directly with type and optional date filters', ()
 
 test('history adds restrained visual guidance without adding another decision', () => {
   assert.match(tracker, /function HistoryRecordIcon/);
-  assert.match(tracker, /function HistoryTimelineChoiceIcon/);
+  assert.match(tracker, /aria-label="History date range"/);
   assert.doesNotMatch(tracker, /className=\{styles\.historyProgress\}/);
   assert.match(tracker, /className=\{styles\.historyChoiceIcon\}/);
-  assert.match(tracker, /className=\{styles\.historyChoiceArrow\}/);
+  assert.match(tracker, /className=\{styles\.historyExpandLabel\}/);
   assert.match(trackerStyles, /\.historyProgress/);
   assert.match(trackerStyles, /\.historyChoiceIcon/);
   assert.match(trackerStyles, /radial-gradient\(circle at 8% 0%/);

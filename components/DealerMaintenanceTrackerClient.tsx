@@ -197,13 +197,6 @@ function HistoryRecordIcon({ type, className = '' }: { type: HistoryRecordType; 
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h11M8 12h11M8 18h11" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><circle cx="4.5" cy="6" r="1.25" fill="currentColor" /><circle cx="4.5" cy="12" r="1.25" fill="currentColor" /><circle cx="4.5" cy="18" r="1.25" fill="currentColor" /></svg>;
 }
 
-function HistoryTimelineChoiceIcon({ type, className = '' }: { type: HistoryTimelineFilter; className?: string }) {
-  if (type === 'all') {
-    return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.9" /><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-  }
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M5 8h14M5 5h14v15H5V5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />{type === 'custom' ? <path d="M12 11v6m-3-3h6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /> : <path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />}</svg>;
-}
-
 function formatUsage(value: number | null, metric: string | null): string {
   if (value === null || !Number.isFinite(value)) return 'Not recorded';
   if (metric === 'percentage') return `${value.toLocaleString('en-US', { maximumFractionDigits: 1 }).replaceAll(',', ' ')}%`;
@@ -880,6 +873,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   }, [historyAsset, historyFromDate, historyRecordType, historyToDate, maintenanceSearch, historyOpenProblemsOnly]);
   const totalHistoryCount = historyAsset
     ? historyAsset.completedMaintenanceRecords.length + historyAsset.loggedProblems.length
+    : 0;
+  const historyCategoryCount = historyAsset
+    ? historyRecordType === 'notes' ? historyAsset.loggedProblems.length
+      : historyRecordType === 'maintenance' ? historyAsset.completedMaintenanceRecords.length : totalHistoryCount
     : 0;
   const historyFiltersActive = Boolean(
     maintenanceSearch
@@ -1569,7 +1566,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <header className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header} ${styles.historyModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="maintenance-history-title">Asset history</h3>
-                <p>{historyAsset.assetTitle} · Newest records first.</p>
+                <p>{historyAsset.assetTitle} · Maintenance, problems and notes.</p>
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={closeHistory} aria-label="Close maintenance history" data-modal-close="true">
                 <CloseIcon className={assetStyles.buttonIcon} />
@@ -1608,33 +1605,22 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                 </div>
                 </section>
 
-                <section className={`${styles.historyStep} ${styles.historyChoiceStep}`} aria-label="Choose maintenance history timeline">
-                    <div className={styles.historyTimelineFilters} aria-label="Filter maintenance history by timeline">
-                    {historyTimelineOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={option.value === historyTimelineFilter ? styles.historyTimelineFilterActive : ''}
-                        aria-pressed={historyTimelineFilter === option.value}
-                        onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
-                      >
-                        <span className={styles.historyChoiceIcon}>
-                          <HistoryTimelineChoiceIcon type={option.value as HistoryTimelineFilter} />
-                        </span>
-                        <span className={styles.historyTimelineCopy}>
-                          <strong>{option.label}</strong>
-                          <small>{option.value === 'all'
-                            ? 'Full history'
-                            : option.value === '12months'
-                              ? 'Previous year'
-                              : option.value === '90days'
-                                ? 'Past 90 days'
-                                : 'Choose dates'}</small>
-                        </span>
-                        <ChevronRightIcon className={styles.historyChoiceArrow} />
-                      </button>
-                    ))}
-                  </div>
+                <div className={styles.historyToolbar}>
+                  <label className={styles.maintenanceSearchField}>
+                    <SearchIcon className={styles.maintenanceSearchIcon} />
+                    <input type="search" value={maintenanceSearch}
+                      onChange={(event) => setMaintenanceSearch(event.target.value)}
+                      placeholder="Search work, notes or names"
+                      aria-label={`Search maintenance history for ${historyAsset.assetTitle}`} />
+                    {maintenanceSearch ? <button type="button" onClick={() => setMaintenanceSearch('')} aria-label="Clear history search"><CloseIcon className={assetStyles.buttonIcon} /></button> : null}
+                  </label>
+                  <label className={styles.historyPeriod}>
+                    <span>Date range</span>
+                    <select value={historyTimelineFilter} onChange={(event) => chooseHistoryTimeline(event.target.value as HistoryTimelineFilter)} aria-label="History date range">
+                      {historyTimelineOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                </div>
                 {historyTimelineFilter === 'custom' ? (
                   <div className={styles.historyDateRange}>
                     <label className={styles.historyDateField}>
@@ -1668,35 +1654,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </button>
                   </div>
                 ) : null}
-                </section>
+
 
                 <section className={`${styles.historyStep} ${styles.historyRecordsStep}`} aria-label="Maintenance history records">
-                <div className={styles.historyResultsHeader}>
-                  <div>
-                    <strong>{historyRecordType === 'all' ? 'All history' : historyRecordType === 'maintenance' ? 'Maintenance' : historyOpenProblemsOnly ? 'Open problems' : 'Problems & notes'}</strong>
-                    <span>{historyTimelineOptions.find((option) => option.value === historyTimelineFilter)?.label || 'All time'}</span>
-                  </div>
-                  <div className={styles.historyResultTotal}>
-                    <strong>{historyItems.length}</strong>
-                    <span>{historyItems.length === 1 ? 'record' : 'records'}</span>
-                  </div>
+                <div className={styles.historyListHeading}>
+                  <span role="status">{historyOpenProblemsOnly ? 'Open problems · ' : ''}{historyItems.length} {historyItems.length === 1 ? 'record' : 'records'} · Newest first</span>
+                  {historyFiltersActive ? <button type="button" className={styles.historyClearAllButton} onClick={showAllHistory}>Reset filters</button> : null}
                 </div>
-
-                <label className={styles.maintenanceSearchField}>
-                  <SearchIcon className={styles.maintenanceSearchIcon} />
-                  <input
-                    type="search"
-                    value={maintenanceSearch}
-                    onChange={(event) => setMaintenanceSearch(event.target.value)}
-                    placeholder="Search the selected history"
-                    aria-label={`Search maintenance history for ${historyAsset.assetTitle}`}
-                  />
-                  {maintenanceSearch ? (
-                    <button type="button" onClick={() => setMaintenanceSearch('')} aria-label="Clear history search">
-                      <CloseIcon className={assetStyles.buttonIcon} />
-                    </button>
-                  ) : null}
-                </label>
 
                 {historyItems.length ? (
                   <div className={styles.historyTimeline}>
@@ -1704,14 +1668,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <div key={`${item.kind}-${item.id}`} className={styles.historyTimelineItem}>
                         <div className={styles.historyTimelineRail} aria-hidden="true"><span /></div>
                         <div className={styles.historyTimelineEntry}>
-                          <div className={styles.historyTimelineMeta}>
-                            <span className={item.kind === 'maintenance' ? styles.historyMaintenanceTag : styles.historyIssueTag}>
-                              {item.kind === 'maintenance' ? 'Maintenance' : 'Note'}
-                            </span>
-                            <time dateTime={item.dateIso}>{formatDate(item.dateIso, true)}</time>
-                          </div>
                           <details className={styles.historyRecordDetails}>
-                            <summary>{item.kind === 'maintenance' ? item.record.title : item.problem.summary || 'Problem or note'}</summary>
+                            <summary>
+                              <span className={styles.historyRecordIcon} aria-hidden="true"><HistoryRecordIcon type={item.kind === 'maintenance' ? 'maintenance' : 'notes'} /></span>
+                              <span className={styles.historyRecordHeading}>
+                                <strong>{item.kind === 'maintenance' ? item.record.title : item.problem.summary || 'Problem or note'}</strong>
+                                <span>{item.kind === 'maintenance' ? 'Maintenance completed' : item.problem.notedAtIso ? 'Resolved problem / note' : 'Open problem / note'} · <time dateTime={item.dateIso}>{formatDate(item.dateIso, true)}</time></span>
+                              </span>
+                              <span className={styles.historyExpandLabel}><span className={styles.historyShowLabel}>View details</span><span className={styles.historyHideLabel}>Hide details</span><span className={styles.historyExpandMark} aria-hidden="true" /></span>
+                            </summary>
                           {item.kind === 'maintenance'
                             ? <RecordCard record={item.record} asset={historyAsset} />
                             : <ProblemCard problem={item.problem} historical />}
@@ -1722,18 +1687,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   </div>
                 ) : (
                   <div className={`${styles.sectionEmpty} ${styles.historyEmptyState}`}>
-                    <strong>{historyFiltersActive ? 'No matching records' : 'No history saved yet'}</strong>
-                    <span>{historyFiltersActive
-                      ? dealerAppMode
-                        ? 'Adjust the date range or clear the search.'
-                        : 'Choose a wider timeline or clear the search.'
-                      : 'Completed maintenance and saved notes will appear here in date order.'}</span>
+                    <strong>{!totalHistoryCount ? 'No history saved yet' : !historyCategoryCount ? historyRecordType === 'notes' ? 'No problems or notes yet' : 'No completed maintenance yet' : 'No matching records'}</strong>
+                    <span>{!totalHistoryCount ? 'Completed maintenance and saved notes will appear here.' : !historyCategoryCount ? historyRecordType === 'notes' ? 'Problems and notes reported for this asset will appear here.' : 'Completed services, checks and repairs will appear here.' : 'Try another search or reset the filters to see all history.'}</span>
                   </div>
                 )}
 
-                {historyFiltersActive ? (
-                  <button type="button" className={styles.historyClearAllButton} onClick={showAllHistory}>Show all history</button>
-                ) : null}
                 </section>
             </div>
 
