@@ -5460,3 +5460,45 @@
   .simpleScheduleDialog .scheduleQuestion .scheduleRepeat > div { gap: .6rem; }
   .simpleScheduleDialog .scheduleQuestion .scheduleRepeat button { flex-direction: column; gap: .45rem; padding: .85rem .5rem; }
 }
+
+/* Usage reminders and repeat intervals match the date scheduling fields. */
+.simpleScheduleDialog .scheduleQuestion .maintenanceInlineFields {
+  align-items: stretch;
+}
+.simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 0;
+  min-height: 3.5rem;
+  padding: .95rem 1rem;
+  border: 1px solid var(--app-line, #c9dcd2);
+  border-radius: .85rem;
+  background: var(--app-surface-soft, #f1f7f4);
+  font-family: inherit;
+}
+.simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage span {
+  color: var(--app-text, #173c32);
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage strong {
+  color: var(--app-text, #173c32);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.simpleScheduleDialog .scheduleQuestion small {
+  color: var(--app-text, #173c32);
+  font-weight: 550;
+}
+@media (max-width: 480px) {
+  .simpleScheduleDialog .scheduleQuestion .maintenanceInlineFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
