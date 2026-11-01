@@ -144,3 +144,20 @@
   .totals dl div:last-child dd { font-size: 1.7rem; }
 }
 @media (prefers-reduced-motion: reduce) { .page .options button { transition: none; } }
+
+/* Keep the review focused on one decision per screen. */
+.welcomeTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 2rem; }
+.welcomeTitle { margin: 0; text-align: center; color: #fff; font-size: 1.65rem; font-weight: 750; line-height: 1.25; letter-spacing: -.03em; }
+.welcomeTitle .year { margin-top: .5rem; }
+.welcomeFacts svg { grid-row: auto; }
+.calculationDetails { margin-top: 1rem; color: var(--app-muted, #64766e); font-size: .85rem; }
+.calculationDetails summary { cursor: pointer; padding: .5rem 0; min-height: 24px; }
+.calculationDetails summary:focus-visible { outline: 3px solid var(--app-accent, #25805f); outline-offset: 3px; }
+.dialog .note, .previewLabel, .resultIntro p { font-size: .85rem; }
+.confirmTotals > span { font-size: .9rem; }
+@media (max-width: 600px) {
+  .welcomeTop { padding: .8rem 1.25rem; }
+  .welcomeTop .previewLabel { font-size: .75rem; }
+  .yearPanel { min-height: 190px; }
+  .welcomeTitle { font-size: 1.45rem; }
+}
