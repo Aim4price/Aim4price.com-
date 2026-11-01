@@ -1,3 +1,4 @@
+import {maintenanceEmailsAllowed,maintenancePreferenceLink} from './maintenance-email-preferences';
 import {maintenanceAssetAvailable} from './maintenance-asset-lifecycle';
 import {AIM4PRICE_EMAIL_FONT_STACK,AIM4PRICE_EMAIL_LOGO_PATH,buildEmailBrandHeader} from './email-brand';
 import {getAccountProfile} from './account-profile';
@@ -37,7 +38,7 @@ export async function schedulerPermission(source:MaintenanceSource,user:{id:stri
 }
 export async function reminderRecord(id:string){await ensureAssetMaintenanceTables();if(!/^[0-9a-f-]{36}$/i.test(id))return null;const row=(await getDb().query('SELECT user_id FROM asset_maintenance_records WHERE id=$1::uuid',[id])).rows[0];return row?getAssetMaintenanceRecordById(row.user_id,id):null;}
 const escape=(v:string)=>v.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export function maintenanceReminderEmail(r:AssetMaintenanceRecord,serial:string,scheduler:string,url:string){
+export function maintenanceReminderEmail(r:AssetMaintenanceRecord,serial:string,scheduler:string,url:string,preferences?:{asset:string;account:string}){
  const status=r.computedStatus==='overdue'?'Maintenance overdue':reminderStage(r)==='soon'?'Maintenance almost due':'Maintenance due';
  const unit=r.usageMetric==='percentage'?'%':r.usageMetric||r.assetUsageMetric;
  const rows:[string,string][]=[['Asset',r.assetTitle],['Work required',r.title],['Due',maintenanceDueLabel(r).replace(/^Due(?: at)? /,'')]];
@@ -48,49 +49,65 @@ export function maintenanceReminderEmail(r:AssetMaintenanceRecord,serial:string,
  if(scheduler)rows.push(['Scheduled by',scheduler]);
  const guidance=r.triggerType==='usage'?'This reminder uses your last recorded usage. Update the reading in Aim4price if it has changed.':'Review the scheduled work and record it once completed.';
  const subject=`${status}: ${r.assetTitle}`;
- const text=`${status}\n\n${rows.map(([label,value])=>label+': '+value).join('\n')}\n\n${guidance}\n\nManage maintenance: ${url}\n\nSign in to view the latest status. If this work is already completed, record it in Aim4price to stop reminders.`;
+ const preferenceText=preferences?`\n\nStop reminders for this asset: ${preferences.asset}\nStop all maintenance emails for this account: ${preferences.account}\nYour schedules stay saved. These links also let you turn reminders back on.`:'';
+ const preferenceHtml=preferences?`<p style="margin:24px 0 8px;padding-top:20px;border-top:1px solid #e2ebe5;font-size:13px;line-height:1.6"><a href="${escape(preferences.asset)}" style="color:#1a654d">Stop reminders for this asset</a></p><p style="margin:0 0 8px;font-size:13px;line-height:1.6"><a href="${escape(preferences.account)}" style="color:#1a654d">Stop all maintenance emails for this account</a></p><p style="margin:0;color:#64786f;font-size:12px;line-height:1.6">Your schedules stay saved. You can turn reminders back on using these links.</p>`:'';
+ const text=`${status}\n\n${rows.map(([label,value])=>label+': '+value).join('\n')}\n\n${guidance}\n\nManage maintenance: ${url}\n\nSign in to view the latest status. If this work is already completed, record it in Aim4price to stop reminders.${preferenceText}`;
  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
  <body style="margin:0;background:#f2f6f3;font-family:${AIM4PRICE_EMAIL_FONT_STACK};color:#173c32">
  <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px">
  <!--[if mso]><table role="presentation" width="600"><tr><td><![endif]-->
  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:white;border:1px solid #d7e5dc;border-radius:12px">
  ${buildEmailBrandHeader(new URL(AIM4PRICE_EMAIL_LOGO_PATH,getSiteOrigin()).toString())}
- <tr><td style="padding:28px 24px">
- <p style="margin:0 0 12px;color:#a65315;font-size:12px;font-weight:bold;letter-spacing:1px">MAINTENANCE</p>
+ <tr><td style="padding:30px">
  <h1 style="margin:0 0 12px;font-size:25px;line-height:1.3">${escape(status)}</h1>
  <p style="margin:0 0 24px;color:#64786f;font-size:14px;line-height:1.6">${escape(guidance)}</p>
  <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
  ${rows.map(([label,value])=>`<tr><th scope="row" align="left" valign="top" style="padding:12px 12px 12px 0;border-bottom:1px solid #e2ebe5;font-size:13px;color:#64786f;font-weight:normal;width:35%">${escape(label)}</th><td style="padding:12px 0;border-bottom:1px solid #e2ebe5;font-size:14px;line-height:1.5;overflow-wrap:anywhere">${escape(value)}</td></tr>`).join('')}
  </table>
- <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0"><tr><td bgcolor="#176f51" style="border-radius:8px;mso-padding-alt:14px 22px"><a href="${escape(url)}" style="display:inline-block;padding:14px 22px;color:white;text-decoration:none;font-size:14px;font-weight:bold">Manage maintenance</a></td></tr></table>
+ <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0"><tr><td bgcolor="#1a654d" style="border-radius:6px;mso-padding-alt:15px 24px"><a href="${escape(url)}" style="display:inline-block;padding:15px 24px;color:white;text-decoration:none;font-size:14px;font-weight:bold">Manage maintenance</a></td></tr></table>
  <p style="margin:0;color:#64786f;font-size:12px;line-height:1.6">Sign in to view the latest status. If this work is already completed, record it in Aim4price to stop reminders.</p>
- <p style="margin:16px 0 0;color:#64786f;font-size:12px;line-height:1.6">Button not working? <a href="${escape(url)}" style="color:#176f51">Open maintenance in Aim4price</a>.</p>
+ <p style="margin:16px 0 0;color:#64786f;font-size:12px;line-height:1.6">Button not working? <a href="${escape(url)}" style="color:#1a654d">Open maintenance in Aim4price</a>.</p>
+ ${preferenceHtml}
  </td></tr></table><!--[if mso]></td></tr></table><![endif]-->
  </td></tr></table></body></html>`;
  return {subject,text,html};
 }
 export async function listMaintenanceReminderNotifications(userId:string){await ensureAssetMaintenanceTables();await ensureMaintenanceReminders();const owners=(await getDb().query('SELECT DISTINCT owner_id FROM maintenance_reminder_sources WHERE scheduler_id=$1',[userId])).rows.map(r=>r.owner_id);const user=(await getDb().query('SELECT id,email FROM "user" WHERE id=$1',[userId])).rows[0];if(!user)return [];
  const items=[];for(const owner of new Set([userId,...owners]))for(const r of await listAssetMaintenanceRecords(owner,{status:'upcoming'})){const stage=reminderStage(r);if(!stage||!await maintenanceAssetAvailable(owner,r.assetId))continue;const source=await maintenanceSource(r.id);if(owner!==userId&&(!source||!await schedulerPermission(source,user)))continue;const who=source?(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source.scheduler_id])).rows[0]:null;items.push({id:`maintenance-reminder:${r.id}:${stage}`,category:'maintenance' as const,tone:'warning' as const,title:r.computedStatus==='overdue'?'Maintenance overdue':stage==='soon'?'Maintenance due soon':'Maintenance due now',body:`${r.assetTitle}: ${r.title}. ${maintenanceDueLabel(r)}.${who?` Scheduled by ${who.name||who.email}.`:''}`,href:reminderHref(r.id),createdAtIso:r.updatedAtIso,assetId:r.assetId,actionRequired:true});}return items;}
+export const MAINTENANCE_TEST_EMAIL='kallageldenhuys@gmail.com';
+export function maintenanceReminderTestEnabled(){
+ return process.env.MAINTENANCE_REMINDER_TEST_MODE==='true'&&Number.isFinite(Date.parse(process.env.MAINTENANCE_REMINDER_TEST_SINCE||''));
+}
+function testRecordEligible(r:AssetMaintenanceRecord){
+ return Date.parse(r.updatedAtIso)>=Date.parse(process.env.MAINTENANCE_REMINDER_TEST_SINCE||'');
+}
 /** One bounded batch per run. Scheduler supplies the returned owner cursor until complete. */
 export async function sendMaintenanceReminderBatch(after=''){
  // Explicit rollout switch prevents the first deployment from emailing the backlog.
- if(process.env.MAINTENANCE_REMINDER_ENABLED!=='true')return {sent:0,failed:0,next:null,disabled:true};
+ const testRequested=process.env.MAINTENANCE_REMINDER_TEST_MODE==='true';
+ const testMode=maintenanceReminderTestEnabled();
+ if(testRequested&&!testMode)return {sent:0,failed:0,next:null,disabled:true};
+ if(!testMode&&process.env.MAINTENANCE_REMINDER_ENABLED!=='true')return {sent:0,failed:0,next:null,disabled:true};
  const allowedOwners=(process.env.MAINTENANCE_REMINDER_OWNER_IDS||'').split(',').map(id=>id.trim()).filter(Boolean);
  await ensureAssetMaintenanceTables();await ensureMaintenanceReminders();
- const owners=(await getDb().query(`SELECT DISTINCT user_id FROM asset_maintenance_records WHERE status='upcoming' AND user_id>$1 AND (cardinality($2::text[])=0 OR user_id=ANY($2::text[])) ORDER BY user_id LIMIT 20`,[after,allowedOwners])).rows;
+ const owners=testMode?(await getDb().query('SELECT id AS user_id FROM "user" WHERE lower(trim(email))=$1',[MAINTENANCE_TEST_EMAIL])).rows:(await getDb().query(`SELECT DISTINCT user_id FROM asset_maintenance_records WHERE status='upcoming' AND user_id>$1 AND (cardinality($2::text[])=0 OR user_id=ANY($2::text[])) ORDER BY user_id LIMIT 20`,[after,allowedOwners])).rows;
  let sent=0,failed=0;
  for(const owner of owners)for(const original of await listAssetMaintenanceRecords(owner.user_id,{status:'upcoming'})){
+  if(testMode&&!testRecordEligible(original))continue;
   const stage=reminderStage(original);if(!stage||!await maintenanceAssetAvailable(owner.user_id,original.assetId))continue;const source=await maintenanceSource(original.id);
   const recipients=(await getDb().query('SELECT id,email,name FROM "user" WHERE id=$1',[owner.user_id])).rows;
   const scheduler=source?(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source.scheduler_id])).rows[0]:recipients[0];
   for(const user of recipients){
+   if(testMode&&user.email?.trim().toLowerCase()!==MAINTENANCE_TEST_EMAIL)continue;
+   if(!await maintenanceEmailsAllowed(owner.user_id,original.assetId))continue;
    const r=await getAssetMaintenanceRecordById(owner.user_id,original.id);if(!r||reminderStage(r)!==stage)continue;
    if(user.id!==owner.user_id&&(!source||!await schedulerPermission(source,user)))continue;
    const key=`maintenance:${r.id}:${user.id}:${stage}`;
    const claim=await getDb().query(`INSERT INTO maintenance_reminder_deliveries(event_key,record_id,recipient_id,stage) VALUES($1,$2::uuid,$3,$4) ON CONFLICT(event_key) DO UPDATE SET attempted_at=now(),attempts=maintenance_reminder_deliveries.attempts+1 WHERE maintenance_reminder_deliveries.sent_at IS NULL AND maintenance_reminder_deliveries.attempted_at<now()-interval '15 minutes' AND maintenance_reminder_deliveries.first_attempt_at>now()-interval '23 hours' AND maintenance_reminder_deliveries.attempts<10 RETURNING event_key`,[key,r.id,user.id,stage]);if(!claim.rows.length)continue;
-   try{if(!process.env.RESEND_API_KEY)throw Error('Email service is not configured.');const asset=await getAssetRegisterItemById(owner.user_id,r.assetId);if(!asset||!await maintenanceAssetAvailable(owner.user_id,r.assetId))continue;const latest=await getAssetMaintenanceRecordById(owner.user_id,r.id);if(!latest||reminderStage(latest)!==stage)continue;const message=maintenanceReminderEmail(r,asset?.serialNumber||'',scheduler?.name||scheduler?.email||'The owner',getSiteOrigin()+reminderHref(r.id));await sendAim4priceEmail({to:user.email,...message,idempotencyKey:key,usage:{accountId:owner.user_id,actorId:source?.scheduler_id||owner.user_id,eventKey:key}});await getDb().query('UPDATE maintenance_reminder_deliveries SET sent_at=now(),error=NULL WHERE event_key=$1',[key]);sent++;}catch(e){failed++;await getDb().query('UPDATE maintenance_reminder_deliveries SET error=$2 WHERE event_key=$1',[key,e instanceof Error?e.message:'Delivery failed']);}
+   try{if(!process.env.RESEND_API_KEY)throw Error('Email service is not configured.');const asset=await getAssetRegisterItemById(owner.user_id,r.assetId);if(!asset||!await maintenanceAssetAvailable(owner.user_id,r.assetId))continue;const latest=await getAssetMaintenanceRecordById(owner.user_id,r.id);if(!latest||reminderStage(latest)!==stage)continue;const preferences={asset:await maintenancePreferenceLink(owner.user_id,r.assetId),account:await maintenancePreferenceLink(owner.user_id)};if(!await maintenanceEmailsAllowed(owner.user_id,r.assetId))continue;if(testMode){const identity=(await getDb().query('SELECT email FROM "user" WHERE id=$1',[owner.user_id])).rows[0];if(identity?.email?.trim().toLowerCase()!==MAINTENANCE_TEST_EMAIL||!testRecordEligible(latest))continue;}const message=maintenanceReminderEmail(latest,asset?.serialNumber||'',scheduler?.name||scheduler?.email||'The owner',getSiteOrigin()+reminderHref(r.id),preferences);await sendAim4priceEmail({to:user.email,...message,idempotencyKey:key,usage:{accountId:owner.user_id,actorId:source?.scheduler_id||owner.user_id,eventKey:key}});await getDb().query('UPDATE maintenance_reminder_deliveries SET sent_at=now(),error=NULL WHERE event_key=$1',[key]);sent++;}catch(e){failed++;await getDb().query('UPDATE maintenance_reminder_deliveries SET error=$2 WHERE event_key=$1',[key,e instanceof Error?e.message:'Delivery failed']);}
   }
  }
- return {sent,failed,next:owners.length===20?owners.at(-1).user_id:null};
+ return {sent,failed,next:!testMode&&owners.length===20?owners.at(-1).user_id:null};
 }
+
 

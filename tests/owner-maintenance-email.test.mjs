@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 const source=readFileSync(new URL('../lib/maintenance-reminders.ts',import.meta.url),'utf8');
 const brand=readFileSync(new URL('../lib/email-brand.ts',import.meta.url),'utf8');
 function load(overrides={}){
- const dependencies={maintenanceAssetAvailable:async()=>true,process:{env:{}},getDb:()=>({query:async()=>({rows:[]})}),ensureAssetMaintenanceTables:async()=>{},listAssetMaintenanceRecords:async()=>[],getAssetMaintenanceRecordById:async()=>null,getAssetRegisterItemById:async()=>({serialNumber:'ABC'}),getSiteOrigin:()=> 'https://www.aim4price.com',sendAim4priceEmail:async()=>{},...overrides};
+ const dependencies={maintenanceEmailsAllowed:async()=>true,maintenancePreferenceLink:async()=>'https://example.test/preferences',maintenanceAssetAvailable:async()=>true,process:{env:{}},getDb:()=>({query:async()=>({rows:[]})}),ensureAssetMaintenanceTables:async()=>{},listAssetMaintenanceRecords:async()=>[],getAssetMaintenanceRecordById:async()=>null,getAssetRegisterItemById:async()=>({serialNumber:'ABC'}),getSiteOrigin:()=> 'https://www.aim4price.com',sendAim4priceEmail:async()=>{},...overrides};
  const code=stripTypeScriptTypes(brand+'\n'+source.replace(/^import .*\n/gm,'')).replace(/^export /gm,'');
  return new Function(...Object.keys(dependencies),code+';return {maintenanceReminderEmail,sendMaintenanceReminderBatch,reminderStage};')(...Object.values(dependencies));
 }
@@ -54,4 +54,5 @@ test('asset removed between selection and provider call is not emailed',async()=
  const api=load({process:{env:{MAINTENANCE_REMINDER_ENABLED:'true',RESEND_API_KEY:'test'}},getDb:()=>({query}),maintenanceAssetAvailable:async()=>++checks===1,listAssetMaintenanceRecords:async()=>[record],getAssetMaintenanceRecordById:async()=>record,sendAim4priceEmail:async()=>{sends++;}});
  assert.equal((await api.sendMaintenanceReminderBatch()).sent,0);assert.equal(checks,2);assert.equal(sends,0);
 });
+
 
