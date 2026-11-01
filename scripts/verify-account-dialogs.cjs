@@ -65,6 +65,28 @@ async function main(){
       await visit('correction');await clickText('Update serial number');await capture(`correction-${width}`,'[aria-label="Close correction form"]');
       await visit('schedule');await clickText('Service');await capture(`schedule-trigger-${width}`,'[aria-label="Close maintenance trigger selection"]');
       await clickText('Specific date');await capture(`schedule-form-${width}`,'[aria-label="Close maintenance form"]');
+      await clickText('Next');
+      await page.waitForSelector('input[aria-label="Reminder amount"]');
+      await page.click('button[aria-label="Reminder unit"]');
+      await page.waitForSelector('[role="option"]');
+      await page.click('[role="option"]:nth-child(2)');
+      assert.equal(await page.$eval('button[aria-label="Reminder unit"]',el=>el.textContent.trim()),'weeks');
+      await page.$eval('input[aria-label="Reminder amount"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'-1');el.dispatchEvent(new Event('input',{bubbles:true}));});
+      await clickText('Next');
+      assert.ok(await page.$('input[aria-label="Reminder amount"]'),'Invalid reminder cannot advance');
+      await page.$eval('input[aria-label="Reminder amount"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'7');el.dispatchEvent(new Event('input',{bubbles:true}));});
+      await clickText('Next');await clickText('Repeat');
+      await page.waitForSelector('input[aria-label="Repeat interval"]');
+      await capture(`schedule-repeat-${width}`,'[aria-label="Close maintenance form"]');
+      await clickText('Next');await page.waitForSelector('textarea[aria-label="Notes"]');
+      await capture(`schedule-notes-${width}`,'[aria-label="Close maintenance form"]');
+      await clickText('Back');assert.ok(await page.$('input[aria-label="Repeat interval"]'),'Back preserves repeat settings');
+      await clickText('Cancel');await page.waitForFunction(()=>document.body.textContent.includes('Dialog closed'));
+      await visit('schedule');await clickText('Checkup');await clickText('Usage');
+      await page.waitForSelector('input[aria-label="Due usage"]');
+      await capture(`schedule-usage-${width}`,'[aria-label="Close maintenance form"]');
+      await page.keyboard.press('Escape');await page.waitForFunction(()=>document.body.textContent.includes('Dialog closed'));
+
       await visit('tracker-app');await page.waitForSelector('button[aria-label^="Manage 2023"]');await page.click('button[aria-label^="Manage 2023"]');
       await capture(`tracker-manage-${width}`,'[aria-label="Close tracking management"]');
       await page.click('[aria-label="Close tracking management"]');

@@ -1,7 +1,9 @@
 'use client';
 import MaintenanceEntryChoice from './MaintenanceEntryChoice';
 import { useLeadDialog } from './leads/useLeadDialog';
-import DateInput from './DateInput';
+import ScheduleDatePicker from '../app/maintenance/ScheduleDatePicker';
+import CostDetailIcon from './CostDetailIcon';
+import dialogStyles from './AccountDialog.module.css';
 
 import DropdownOverlay from './DropdownOverlay';
 import { useEffect, useRef, useState } from 'react';
@@ -187,10 +189,6 @@ function selectedAssetLabel(asset: DealerMaintenanceTrackedAsset): string {
   return details.length ? details.join(' • ') : asset.assetTitle;
 }
 
-function triggerLabel(triggerType: TriggerType): string {
-  return triggerType === 'date' ? 'Specific date' : 'Usage';
-}
-
 function ProposalDropdown({
   label,
   value,
@@ -265,27 +263,6 @@ function ProposalDropdown({
   );
 }
 
-function SwitchField({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={`${styles.switchField} ${checked ? styles.switchFieldActive : ''}`}
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-    >
-      <span className={styles.switchTrack}><span /></span>
-      <strong>Recurring</strong>
-    </button>
-  );
-}
-
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <div className={styles.maintenanceCurrentUsage}>
@@ -308,17 +285,37 @@ export default function DealerMaintenanceScheduleModal({
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft());
   const [step, setStep] = useState<ScheduleStep>('maintenance-type');
+  const [scheduleStep, setScheduleStep] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const dialogRef = useLeadDialog(dismiss, saving);
   function dismiss() {
+    if (!saving) onClose();
+  }
+  function goBack() {
     if (saving) return;
-    if (step === 'form' && !initialRecord && !initialProposal) setStep('trigger-type');
+    setError('');
+    if (step === 'form' && scheduleStep > 0) setScheduleStep((current) => current - 1);
+    else if (step === 'form' && !initialRecord && !initialProposal) setStep('trigger-type');
     else if (step === 'trigger-type') setStep('maintenance-type');
     else onClose();
   }
 
+  useEffect(() => {
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = rootOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    dialogRef.current?.querySelector<HTMLElement>('h3[tabindex]')?.focus({ preventScroll: true });
+  }, [step, scheduleStep]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -339,6 +336,7 @@ export default function DealerMaintenanceScheduleModal({
           throw new Error('The asset owner has not enabled dealer-created maintenance schedules.');
         }
         setAsset(payload.asset);
+        setScheduleStep(0);
         if (initialProposal) {
           setDraft(draftFromProposal(initialProposal, payload.asset));
           setStep('form');
@@ -365,13 +363,13 @@ export default function DealerMaintenanceScheduleModal({
   function updateDraft(update: Partial<Draft>) {
     setDraft((current) => {
       const next = { ...current, ...update };
-      if (update.triggerType === 'date') {
+      if (update.triggerType === 'date' && current.triggerType !== 'date') {
         next.alertBeforeValue = '7';
         next.alertBeforeUnit = 'days';
         next.recurringIntervalValue = '1';
         next.recurringIntervalUnit = 'months';
       }
-      if (update.triggerType === 'usage' && asset) {
+      if (update.triggerType === 'usage' && current.triggerType !== 'usage' && asset) {
         next.alertBeforeValue = String(defaultUsageAlert(asset.usageMetric));
         next.alertBeforeUnit = asset.usageMetric;
         next.recurringIntervalValue = String(defaultUsageInterval(asset.usageMetric));
@@ -397,6 +395,17 @@ export default function DealerMaintenanceScheduleModal({
       return;
     }
 
+    if (!Number.isFinite(Number(draft.alertBeforeValue)) || Number(draft.alertBeforeValue) < 0
+      || (draft.triggerType === 'date' && !Number.isInteger(Number(draft.alertBeforeValue)))) {
+      setError('Enter a valid reminder amount.'); return;
+    }
+    if (draft.triggerType === 'usage' && (!Number.isFinite(Number(draft.dueUsage)) || Number(draft.dueUsage) < 0)) {
+      setError('Enter a valid usage target.'); return;
+    }
+    if (draft.recurringEnabled && (!Number.isFinite(Number(draft.recurringIntervalValue)) || Number(draft.recurringIntervalValue) <= 0
+      || (draft.triggerType === 'date' && !Number.isInteger(Number(draft.recurringIntervalValue))))) {
+      setError('Enter a valid repeat interval.'); return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -451,7 +460,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (loading || !asset) {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
+      <div className={`${styles.page} ${styles.modalBackdrop} ${styles.maintenanceChoiceBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -476,17 +485,17 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'maintenance-type') {
     return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={asset.assetTitle} assetDetails={selectedAssetLabel(asset)}
-      onClose={dismiss} onBack={dismiss} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
+      onClose={dismiss} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
 
   }
 
   if (step === 'trigger-type') {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
+      <div className={`${styles.page} ${styles.modalBackdrop} ${styles.maintenanceChoiceBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
-              <h2 id="dealer-maintenance-trigger-title">When should it be due?</h2>
+              <h2 id="dealer-maintenance-trigger-title">Due by date or usage?</h2>
               <p>{asset.assetTitle}</p>
               <p>{selectedAssetLabel(asset)}</p>
             </div>
@@ -502,10 +511,11 @@ export default function DealerMaintenanceScheduleModal({
                 type="button"
                 onClick={() => {
                   updateDraft({ triggerType: 'date' });
+                  setScheduleStep(0);
                   setStep('form');
                 }}
               >
-                <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
+                <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CostDetailIcon kind="calendar" /></span>
                 <strong>Specific date</strong>
                 <small>Choose a due date.</small>
               </button>
@@ -514,10 +524,11 @@ export default function DealerMaintenanceScheduleModal({
                 type="button"
                 onClick={() => {
                   updateDraft({ triggerType: 'usage' });
+                  setScheduleStep(0);
                   setStep('form');
                 }}
               >
-                <span className={styles.maintenanceChoiceIcon} aria-hidden="true">↗</span>
+                <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CostDetailIcon kind="usage" /></span>
                 <strong>Usage</strong>
                 <small>Choose a target {usageUnitLabel(asset.usageMetric)} reading.</small>
               </button>
@@ -533,8 +544,8 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   return (
-    <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
-      <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
+    <div className={`${styles.page} ${styles.modalBackdrop} ${styles.maintenanceChoiceBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
+      <section className={`${styles.formModal} ${styles.schedulingDialog} ${styles.simpleScheduleDialog}`}>
         <header className={styles.modalHeader}>
           <div>
             <h2 id="dealer-maintenance-form-title">
@@ -549,104 +560,78 @@ export default function DealerMaintenanceScheduleModal({
             <CloseIcon />
           </button>
         </header>
-        <div className={styles.modalDivider} />
-        <div className={styles.formModalScrollBody}>
-          {error ? <div className={`${styles.notice} ${styles.noticeError}`} role="alert">{error}</div> : null}
-          <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
-          <div className={styles.maintenanceFieldGrid}>
-            {draft.triggerType === 'date' ? (
-              <>
-                <label className={styles.filterField}>
-                  <span>Due date</span>
-                  <DateInput value={draft.dueDate} onValueChange={(value) => updateDraft({ dueDate: value })} />
-                </label>
-                <label className={styles.filterField}>
-                  <span>Alert before</span>
-                  <div className={styles.maintenanceInlineFields}>
-                    <input type="number" min="0" step="1" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
-                    <ProposalDropdown
-                      label="Alert unit"
-                      hideLabel
-                      value={draft.alertBeforeUnit}
-                      options={DATE_UNIT_OPTIONS}
-                      onChange={(value) => updateDraft({ alertBeforeUnit: value as DateIntervalUnit })}
-                    />
-                  </div>
-                </label>
-                <SwitchField checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
-                {draft.recurringEnabled ? (
+            <div key={scheduleStep} className={`${styles.formModalScrollBody} ${dialogStyles.body}`}>
+              <div className={styles.scheduleSectionHeading}>
+                <CostDetailIcon kind={scheduleStep === 0 && draft.triggerType === 'usage' ? 'usage' : (['calendar', 'clock', 'calendar', 'document'] as const)[scheduleStep]} />
+                <h3 tabIndex={-1} aria-live="polite">{['When is it due?', 'When should we remind you?', 'Should this repeat?', 'Any notes?'][scheduleStep]}</h3>
+              </div>
+              <div className={styles.scheduleQuestion}>
+                {scheduleStep === 0 ? (
+                  <>
+                    {draft.triggerType === 'date' ? (
+                      <ScheduleDatePicker value={draft.dueDate} onChange={(dueDate) => updateDraft({ dueDate })} />
+                    ) : (
+                      <label className={styles.filterField}>
+                        <span>Due at ({usageUnitLabel(asset.usageMetric)})</span>
+                        <input aria-label="Due usage" required type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
+                        <small>Current: {formatUsage(asset.currentUsage, asset.usageMetric)}</small>
+                      </label>
+                    )}
+                  </>
+                ) : null}
+                {scheduleStep === 1 ? (
                   <label className={styles.filterField}>
-                    <span>Recurring interval</span>
+                    <span>Remind me before</span>
                     <div className={styles.maintenanceInlineFields}>
-                      <input type="number" min="1" step="1" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
-                      <ProposalDropdown
-                        label="Recurring unit"
-                        hideLabel
-                        value={draft.recurringIntervalUnit}
-                        options={DATE_UNIT_OPTIONS}
-                        onChange={(value) => updateDraft({ recurringIntervalUnit: value as DateIntervalUnit })}
-                      />
+                      <input aria-label="Reminder amount" required type="number" min="0" step={draft.triggerType === 'date' ? '1' : '0.01'} value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
+                      {draft.triggerType === 'date' ? (
+                        <ProposalDropdown label="Reminder unit" hideLabel value={draft.alertBeforeUnit} options={DATE_UNIT_OPTIONS} onChange={(value) => updateDraft({ alertBeforeUnit: value as DateIntervalUnit })} />
+                      ) : <ReadOnlyField label="Unit" value={usageUnitLabel(asset.usageMetric)} />}
                     </div>
                   </label>
                 ) : null}
-              </>
-            ) : (
-              <>
-                <ReadOnlyField label="Current usage" value={formatUsage(asset.currentUsage, asset.usageMetric)} />
-                <ReadOnlyField label="Usage metric" value={usageUnitLabel(asset.usageMetric)} />
-                <label className={styles.filterField}>
-                  <span>Due usage</span>
-                  <input type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
-                </label>
-                <label className={styles.filterField}>
-                  <span>Alert before</span>
-                  <div className={styles.maintenanceInlineFields}>
-                    <input type="number" min="0" step="0.01" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
-                    <ReadOnlyField label="Unit" value={usageUnitLabel(asset.usageMetric)} />
-                  </div>
-                </label>
-                <SwitchField checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
-                {draft.recurringEnabled ? (
+                {scheduleStep === 2 ? (
+                  <>
+                    <fieldset className={styles.scheduleRepeat}>
+                      <legend className={styles.scheduleHiddenLabel}>Repeat this schedule?</legend>
+                      <div>
+                        <button type="button" aria-pressed={!draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: false })}>Once only</button>
+                        <button type="button" aria-pressed={draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: true })}>Repeat</button>
+                      </div>
+                    </fieldset>
+                    {draft.recurringEnabled ? (
+                      <label className={styles.filterField}>
+                        <span>Repeat every</span>
+                        <div className={styles.maintenanceInlineFields}>
+                          <input aria-label="Repeat interval" required type="number" min={draft.triggerType === 'date' ? '1' : '0.01'} step={draft.triggerType === 'date' ? '1' : '0.01'} value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
+                          {draft.triggerType === 'date' ? (
+                            <ProposalDropdown label="Repeat unit" hideLabel value={draft.recurringIntervalUnit} options={DATE_UNIT_OPTIONS} onChange={(value) => updateDraft({ recurringIntervalUnit: value as DateIntervalUnit })} />
+                          ) : <ReadOnlyField label="Unit" value={usageUnitLabel(asset.usageMetric)} />}
+                        </div>
+                      </label>
+                    ) : null}
+                  </>
+                ) : null}
+                {scheduleStep === 3 ? (
                   <label className={styles.filterField}>
-                    <span>Recurring interval</span>
-                    <div className={styles.maintenanceInlineFields}>
-                      <input type="number" min="0" step="0.01" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
-                      <ReadOnlyField label="Unit" value={usageUnitLabel(asset.usageMetric)} />
-                    </div>
+                    <span>Notes (optional)</span>
+                    <textarea maxLength={4000} aria-label="Notes" value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} placeholder="Anything the team should know?" />
                   </label>
                 ) : null}
-              </>
-            )}
-
-            <ProposalDropdown
-              label="Assigned to"
-              value="unassigned"
-              options={[{ value: 'unassigned', label: 'Unassigned' }]}
-              onChange={() => undefined}
-              disabled
-            />
-
-            <label className={`${styles.filterField} ${styles.maintenanceFieldFull}`}>
-              <span>Notes</span>
-              <textarea
-                value={draft.notes}
-                onChange={(event) => updateDraft({ notes: event.target.value })}
-                placeholder="Add service/checkup notes, supplier detail or internal reminders..."
-                maxLength={4000}
-              />
-            </label>
-          </div>
-        </div>
+              </div>
+              {error ? <p role="alert">{error}</p> : null}
+            </div>
         <footer className={styles.modalFooter}>
-          {!initialProposal && !initialRecord ? (
-            <button className={styles.secondaryButton} type="button" onClick={dismiss} disabled={saving}>Back</button>
-          ) : null}
+          {scheduleStep > 0 || (!initialRecord && !initialProposal) ? <button className={styles.secondaryButton} type="button" onClick={goBack} disabled={saving}>Back</button> : null}
           <button className={styles.secondaryButton} type="button" onClick={dismiss} disabled={saving}>Cancel</button>
-          <button className={styles.primaryButton} type="button" onClick={() => void submit()} disabled={saving}>
-            {saving
-              ? 'Saving…'
-              : initialRecord ? 'Save changes' : 'Create schedule'}
-          </button>
+          <button className={styles.primaryButton} data-primary-action type="button" disabled={saving} onClick={(event) => {
+            if (scheduleStep === 0 && draft.triggerType === 'date' && !draft.dueDate) { setError('Choose a due date.'); return; }
+            const fields = event.currentTarget.closest('section')?.querySelectorAll<HTMLInputElement>('input');
+            if (fields && Array.from(fields).some((field) => !field.reportValidity())) return;
+            setError('');
+            if (scheduleStep < 3) setScheduleStep((current) => current + 1);
+            else void submit();
+          }}>{saving ? 'Saving…' : scheduleStep < 3 ? 'Next' : initialRecord || initialProposal ? 'Save changes' : 'Create schedule'}</button>
         </footer>
       </section>
     </div>

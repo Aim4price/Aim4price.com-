@@ -57,9 +57,11 @@ test('empty shared assets stay in My Leads until maintenance exists', () => {
 test('dealer scheduling wizard reuses the owner maintenance flow without the asset picker', () => {
   assert.match(scheduleModal, /from '\.\.\/app\/maintenance\/page\.module\.css'/);
   assert.match(scheduleModal, /<MaintenanceEntryChoice step="type" timing="upcoming"/);
-  assert.match(scheduleModal, />When should it be due\?</);
+  assert.match(scheduleModal, />Due by date or usage\?</);
   assert.match(scheduleModal, /maintenanceChoiceGrid/);
-  assert.match(scheduleModal, /maintenanceFieldGrid/);
+  assert.match(scheduleModal, /simpleScheduleDialog/);
+  assert.match(scheduleModal, /<ScheduleDatePicker/);
+  assert.doesNotMatch(scheduleModal, /label="Assigned to"/);
   assert.match(scheduleModal, /'Create schedule'/);
   assert.doesNotMatch(scheduleModal, /Choose asset for maintenance/);
 });
