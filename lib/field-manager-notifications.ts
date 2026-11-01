@@ -128,7 +128,9 @@ export async function listFieldManagerNotifications(input: {
       maintenanceRecordId: record.id,
       assetId: record.assetId,
       title: assignedToViewer
-        ? `${maintenanceLabel} assigned to you`
+        ? isSharedMaintenanceNotification(record)
+          ? `${sharedTitle(record, maintenanceLabel)} — assigned to you`
+          : `${maintenanceLabel} assigned to you`
         : sharedTitle(record, maintenanceLabel),
       body: `${record.assetTitle}: ${record.title}. ${dueText(record)}`,
       href: '/field-manager/overview',

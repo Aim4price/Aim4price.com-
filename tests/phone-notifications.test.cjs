@@ -153,6 +153,11 @@ test('owner reminders link to the exact maintenance record and exclude inaccessi
   const result=await events.listPushEvents(who,{categories:['maintenance'],allowedAssets:new Set(['asset']),admin:false});
   assert.equal(result.length,1);
   assert.equal(result[0].href,'/owner-app/assets/asset/maintenance?maintenanceId=record');
+  assert.equal(result[0].title,'Maintenance due now');
+  record.computedStatus='overdue';
+  assert.equal((await events.listPushEvents(who,{categories:['maintenance'],allowedAssets:new Set(['asset']),admin:false}))[0].title,'Maintenance overdue');
+  record.computedStatus='due_soon';
+  assert.equal((await events.listPushEvents(who,{categories:['maintenance'],allowedAssets:new Set(['asset']),admin:false}))[0].title,'Maintenance due soon');
 });
 
 test('desktop account limits combine with personal choices without overwriting either',()=>{

@@ -226,10 +226,10 @@ function partnerDisplayName(row: OpenPartnerNoteRow): string {
 
 function leadStatusLabel(status: AssetLeadStatus): string {
   if (status === 'sent') return 'new';
-  if (status === 'viewed') return 'viewed';
-  if (status === 'accepted') return 'accepted';
-  if (status === 'quoted') return 'quoted';
-  if (status === 'declined') return 'declined';
+  if (status === 'viewed') return 'opened';
+  if (status === 'accepted') return 'opened';
+  if (status === 'quoted') return 'handled';
+  if (status === 'declined') return 'removed';
   return 'closed';
 }
 
@@ -444,8 +444,8 @@ async function listOwnerDealerAssetCorrectionNotifications(userId: string): Prom
         id: `dealer-correction:${correction.id}:${correction.updatedAtIso}`,
         category: 'dealer_correction',
         tone: 'warning',
-        title: correction.licenseRenewalDateChanged ? 'Licence expert updated renewal date' : 'Dealer updated asset details',
-        body: `${correctionActor(correction)} updated the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Accept the change to update your Asset Register.`,
+        title: correction.licenseRenewalDateChanged ? 'Licence renewal date change proposed' : 'Asset detail changes proposed',
+        body: `${correctionActor(correction)} suggested changing the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Review and accept to update your Asset Register.`,
         href: '',
         createdAtIso: correction.updatedAtIso,
         assetId: correction.assetId,
@@ -501,7 +501,7 @@ async function listOwnerDealerCostNotifications(userId: string): Promise<HeaderN
         id: `dealer-cost:${invoice.id}:${invoice.updatedAtIso}`,
         category: 'dealer_cost',
         tone: 'warning',
-        title: 'Dealer added an asset cost',
+        title: 'Asset cost awaiting your approval',
         body: `${dealerName} added ${costDetail || 'a cost'} for ${invoice.assetTitle}. View it and choose whether it must be stored in your Cost Ledger.`,
         href: '',
         createdAtIso: invoice.updatedAtIso || invoice.createdAtIso,
@@ -525,7 +525,7 @@ async function listOwnerDealerCostNotifications(userId: string): Promise<HeaderN
         id: `dealer-cost-deletion:${invoice.id}:${invoice.dealerDeletionRequestedAtIso || invoice.updatedAtIso}`,
         category: 'dealer_cost',
         tone: 'warning',
-        title: 'Dealer removed an asset cost',
+        title: 'Shared asset cost removed',
         body: `${dealerName} removed ${costDetail || 'a cost'} for ${invoice.assetTitle}. Review it and choose whether to keep your copy in the Cost Ledger or delete it permanently.`,
         href: '',
         createdAtIso: invoice.dealerDeletionRequestedAtIso || invoice.updatedAtIso || invoice.createdAtIso,
@@ -583,8 +583,8 @@ async function listOwnerRecurringMaintenanceNotifications(userId: string): Promi
       .map((record) => ({
         id: `maintenance-recurring:${record.id}`,
         category: 'maintenance',
-        tone: 'warning',
-        title: 'Next recurring maintenance',
+        tone: 'info',
+        title: 'Next maintenance scheduled',
         body: `${record.title} for ${record.assetTitle} was scheduled automatically. ${maintenanceDueText(record)}`,
         href: `/owner-app/assets/${encodeURIComponent(record.assetId)}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
         createdAtIso: isoFallback(record.createdAtIso),
@@ -630,7 +630,7 @@ async function listOpenPartnerNoteNotifications(userId: string): Promise<HeaderN
         id: `partner-note:${row.id}`,
         category: 'partner_note',
         tone: 'info',
-        title: 'Partner note left',
+        title: 'New note on your asset',
         body: `${partnerDisplayName(row)} left a note on ${assetTitle}: ${noteText}`,
         href: '/asset-register',
         createdAtIso: isoFallback(row.created_at || row.updated_at),
@@ -675,10 +675,12 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
           id: `lead-owner:${lead.id}:${lead.status}:${lead.updatedAtIso}`,
           category: 'lead',
           tone: leadTone(lead.status),
-          title: lead.status === 'viewed' ? 'Asset received and opened' : `Shared asset ${statusLabel}`,
-          body: lead.status === 'viewed'
+          title: lead.status === 'viewed' || lead.status === 'accepted' ? 'Asset received and opened' : `Shared asset ${statusLabel}`,
+          body: lead.status === 'viewed' || lead.status === 'accepted'
             ? `${assetTitle} has been received and opened by ${partner}.`
-            : `${partner} ${statusLabel} the shared asset ${assetTitle}.`,
+            : lead.status === 'declined'
+              ? `${partner} removed ${assetTitle} from their shared assets. Your Asset Register is unchanged.`
+              : `${partner} marked ${assetTitle} as ${statusLabel}.`,
           href: '/leads',
           createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
           assetId: lead.assetRegisterItemId,
@@ -733,7 +735,7 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
         actionRequired: true,
         category: 'asset_discovery',
         tone: 'warning',
-        title: '#1 priority · Discovery enquiry',
+        title: 'Someone is interested in your asset',
         body: `Another user is looking for a machine like your ${assetName}. Interested in selling it?`,
         href: '',
         createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
@@ -765,7 +767,7 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
         actionRequired: false,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
-        title: approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
+        title: approved ? 'Asset enquiry approved' : 'Owner is not selling currently',
         body: approved
             ? `Your enquiry for ${assetName} was approved.`
             : `The owner is not interested in selling ${assetName} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
@@ -793,8 +795,8 @@ async function listMarketplaceSourcingNotifications(userId: string): Promise<Hea
         id: `marketplace-sourcing:${request.id}`,
         category: 'marketplace_sourcing',
         tone: pending ? 'warning' : 'info',
-        title: pending ? 'New Marketplace sourcing request' : 'Marketplace sourcing request opened',
-        body: `${requesterName} asked whether you can help source equipment similar to ${equipmentTitle}.`,
+        title: pending ? 'Equipment sourcing request' : 'Equipment sourcing request opened',
+        body: `${requesterName} asked you to help find equipment similar to ${equipmentTitle}. Open the request to view the details.`,
         href: `/marketplace/sourcing-requests/${encodeURIComponent(request.id)}`,
         createdAtIso: isoFallback(request.updatedAtIso || request.createdAtIso),
         marketplaceSourcingRequestId: request.id,
@@ -855,7 +857,9 @@ async function listQrScanNotifications(userId: string): Promise<HeaderNotificati
         category: 'qr_scan',
         tone: 'neutral',
         title: /notes\s*\/\s*problems:/i.test(row.note || '') ? 'Problem reported' : 'Asset updated',
-        body: `${updaterName} updated ${assetTitle}. ${scanNotificationDetailText(row)}`,
+        body: /notes\s*\/\s*problems:/i.test(row.note || '')
+          ? `${updaterName} reported a problem with ${assetTitle}. ${truncateText(asText(row.note).replace(/^notes\s*\/\s*problems:\s*/i, ''))}`
+          : `${updaterName} updated ${assetTitle}. ${scanNotificationDetailText(row)}`,
         href: '/asset-register',
         createdAtIso,
         assetId: asText(row.asset_id),

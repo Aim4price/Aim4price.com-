@@ -1,3 +1,4 @@
+import { normalizeNotificationCopy } from './notification-copy';
 import { getDb } from './db';
 import {
   listComputedHeaderNotifications,
@@ -263,11 +264,9 @@ function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): Noti
       : 'history';
 
   return {
-    id: row.event_key,
     category: row.category as HeaderNotificationCategory,
     tone: row.tone as HeaderNotificationTone,
-    title: row.title,
-    body: row.body,
+    ...normalizeNotificationCopy({id: row.event_key, title: row.title, body: row.body}),
     href: row.href,
     createdAtIso: iso(row.source_created_at) || new Date(0).toISOString(),
     assetId: asOptionalText(payload.assetId),

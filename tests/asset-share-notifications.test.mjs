@@ -36,7 +36,11 @@ for (const leadType of ['replacement_quote', 'insurance', 'finance', 'license_re
     assert.equal(opened.assetId, 'asset');
     assert.equal(opened.id, `lead-owner:share:viewed:${lead.updatedAtIso}`);
     assert.equal(api.normalizeAccountType('licensing'), 'licensing');
+    lead.status = 'quoted';
+    assert.equal((await api.owner('owner'))[0].body, 'Business marked 2022 New Holland TT4.90 as handled.');
+    lead.status = 'accepted';
+    assert.equal((await api.owner('owner'))[0].title, 'Asset received and opened');
     lead.status = 'declined';
-    assert.equal((await api.owner('owner'))[0].body, 'Business declined the shared asset 2022 New Holland TT4.90.');
+    assert.equal((await api.owner('owner'))[0].body, 'Business removed 2022 New Holland TT4.90 from their shared assets. Your Asset Register is unchanged.');
   });
 }
