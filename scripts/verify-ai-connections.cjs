@@ -128,7 +128,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
       && panel.querySelector('footer button:last-child')?.disabled === false;
   });
   await page.keyboard.press('Escape');
-  await render({...base,providers:base.providers.slice(0,1)},false);
+  await render(base,false);
   await page.screenshot({path:path.join(evidence,'owner-overview.png'),fullPage:true});
   await page.click('summary::-p-text(What information is shared?)');
   await page.screenshot({path:path.join(evidence,'owner-sharing-details.png'),fullPage:true});
@@ -137,6 +137,14 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
   await page.screenshot({path:path.join(evidence,'owner-connect-desktop.png')});
+  assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', e=>e.href),'https://chatgpt.com/plugins?search=Aim4price');
+  assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Manual setup'));
+  for (const viewport of [{width:1280,height:650},{width:390,height:844}]) {
+    await page.setViewport(viewport);
+    await verifySetupFit('ChatGPT plugin handover');
+  }
+  await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.textContent==='Change assistant').click());
+  await choose('Claude');
   async function verifySetupFit(label) {
     await page.waitForFunction(() => {
       const body = document.querySelector('#ai-connect-panel > div');

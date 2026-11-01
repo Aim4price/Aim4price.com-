@@ -4,6 +4,7 @@ on:
     paths:
       - 'lib/ai-connection/**'
       - 'integrations/chatgpt/**'
+      - 'public/ai/aim4price-plugin.png'
       - 'scripts/package-chatgpt.py'
       - 'tests/ai-publication.test.cjs'
       - 'tests/test_chatgpt_package.py'

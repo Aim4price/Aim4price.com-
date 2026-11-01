@@ -23,7 +23,7 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(auth['resource'], mcp['url'])
                 self.assertNotIn('clientSecret', auth['client'])
                 self.assertNotIn('/admin/', z.read('mcp.json').decode())
-                self.assertTrue(z.read('assets/logo.png').startswith(b'\x89PNG'))
+                self.assertEqual(z.read('assets/logo.png'), (root / 'public/ai/aim4price-plugin.png').read_bytes())
                 manifest = json.loads(z.read('plugin.json'))
                 self.assertEqual(manifest['extensions']['com.openai']['publication']['countries'], ['ZA'])
     def test_reject_bad_origin_and_client_id(self):

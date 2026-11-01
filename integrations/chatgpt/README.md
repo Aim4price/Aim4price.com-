@@ -15,7 +15,7 @@ python3 scripts/package-chatgpt.py --client-id aim4price-chatgpt-public
 
 The proposed ID above must be registered before connecting. The ZIP is written to
 `.next/chatgpt/aim4price.zip`. It contains only `plugin.json`, `mcp.json` and the
-existing Aim4price logo. `--origin` must match `AIM4PRICE_AI_ORIGIN` exactly,
+opaque white-background Aim4price logo from `public/ai/aim4price-plugin.png`. `--origin` must match `AIM4PRICE_AI_ORIGIN` exactly,
 including `www` if present. The scope and resource are Owner-only. The OAuth
 client secret is entered in the OpenAI portal, never packaged or shown to users.
 Review cases in the manifest are expected behaviours, not executed test evidence.
@@ -49,8 +49,8 @@ South Africa is the initial publication country; adjust only for intended market
 7. After publication, set `AIM4PRICE_CHATGPT_LISTING_URL` to the actual HTTPS listing
    on `chatgpt.com/apps/<id>` or `chatgpt.com/plugins/<id>`. Never guess the URL.
    The UI validates it and offers the listing handover only when it is configured
-   and the ChatGPT provider is registered. Invalid or absent values retain private
-   connection guidance. Setting the URL alone does not change account eligibility.
+   and the ChatGPT provider is registered. Invalid or absent values open the ChatGPT plugin directory filtered to Aim4price,
+   with an explicit availability note; they never open the chat homepage. Setting the URL alone does not change account eligibility.
 8. For a customer rollout, confirm `AIM4PRICE_AI_ACCESS_MODE=owners` and the shared
    limiter, deployment migrations and data-access restrictions described in
    `docs/ai-provider-admin-rollout.md`. Then test a second eligible Owner account.
@@ -74,8 +74,10 @@ South Africa is the initial publication country; adjust only for intended market
 
 Published: choose ChatGPT, open the real Aim4price listing, connect/sign in/approve,
 then select Aim4price in a conversation. No server URL or shared secret is needed.
-Before publication: clearly identify private setup and direct users to an already
-configured connection or Aim4price support. The homepage is not a connect link.
+Without a verified listing URL: open plugin search with an availability note.
+Customers who cannot find Aim4price are directed to support. Owner ChatGPT setup
+never exposes the MCP address. Private setup remains for other providers and admins.
+The homepage is not a connect link.
 The existing Check connection action checks approved grants, not a live MCP query.
 
 ## Sources checked 2026-11-01
@@ -83,3 +85,11 @@ The existing Check connection action checks approved grants, not a live MCP quer
 - https://developers.openai.com/plugins/build/plugins
 - https://developers.openai.com/plugins/deploy/submission
 - https://developers.openai.com/plugins/deploy/app-review
+
+## Update existing ChatGPT branding
+
+Use `public/ai/aim4price-plugin.png` as the plugin logo and composer icon. It has
+an opaque white background so the black mark remains visible in dark mode.
+Rebuild and upload the ZIP to update a submitted package. For an existing private
+plugin, replace its icon in its editor with the same PNG. Repository deployment
+does not update an installed ChatGPT plugin or publish a revised listing.
