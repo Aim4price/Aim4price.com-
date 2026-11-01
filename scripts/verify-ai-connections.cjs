@@ -52,6 +52,14 @@ const evidence=path.join(root,'.next/ai-connection-validation');
    await page.waitForSelector('h1');
   }
   await page.setViewport({width:1280,height:1000});
+  await render({...base,chatGptListingUrl:'https://chatgpt.com/plugins/aim4price-test'},false);
+  await page.click('button[aria-haspopup="dialog"]');
+  await page.waitForSelector('#ai-connect-panel');
+  await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.querySelector('strong')?.textContent==='ChatGPT').click());
+  await page.waitForSelector('a[href="https://chatgpt.com/plugins/aim4price-test"]');
+  assert.equal(await page.$eval('a[href="https://chatgpt.com/plugins/aim4price-test"]',e=>e.textContent),'Connect in ChatGPT');
+  assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Copy address'));
+  await page.screenshot({path:path.join(evidence,'owner-published-handover.png')});
   await render(base,true);
   // The launcher must keep the Owner App Users dimensions, without compact overrides.
   const sizing = await page.evaluate(() => {

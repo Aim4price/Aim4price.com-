@@ -11,6 +11,7 @@ import {
   type Audience,
 } from "../../../lib/ai-connection/security";
 import ConnectionView from "./connection-view";
+import { chatGptListingUrl } from "../../../lib/ai-connection/publication";
 export async function renderAiConnectionPage(
   searchParams: Record<string, string | string[] | undefined> = {},
   audience: Audience = "owner",
@@ -48,6 +49,7 @@ export async function renderAiConnectionPage(
     return (
       <ConnectionView
         audience={audience}
+        chatGptListingUrl={audience === "owner" ? chatGptListingUrl(process.env.AIM4PRICE_CHATGPT_LISTING_URL) : undefined}
         clientId={config.clientId}
         providerName={config.clientName}
         providers={config.clients

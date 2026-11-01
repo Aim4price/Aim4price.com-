@@ -13,6 +13,7 @@ type Connection = { id: string; provider?: string; disabled?: boolean; created_a
 export type ConnectionViewProps = {
   audience?: 'owner' | 'admin';
   providerName?: string;
+  chatGptListingUrl?: string;
   clientId?: string;
   providers?: { name: string; launchUrl?: string }[];
   account?: { name: string; email: string };
@@ -73,7 +74,7 @@ function SharedInformation({ examples = false, admin = false }: { examples?: boo
   </div>;
 }
 
-export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [] }: ConnectionViewProps) {
+export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [], chatGptListingUrl }: ConnectionViewProps) {
   const admin = audience === 'admin';
   const duration = admin ? '24 hours' : '30 days';
   const makeSetup = (selectedProvider?: string) => <>
@@ -84,9 +85,20 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <h3>Sign in to get started</h3>
       <p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
+    </div> : resource && selectedProvider === 'ChatGPT' && chatGptListingUrl && !admin ? <div className={styles.setupLayout}>
+      <div className={styles.providerGrid}><div className={styles.permission}>
+        <div className={styles.cardHeading}><span className={styles.permissionIcon}><img src={providerLogos.ChatGPT} alt="" width="28" height="28" /></span><h3>ChatGPT</h3></div>
+        <p>Connect through the Aim4price listing. No server address or credentials to copy.</p>
+        <a className={styles.primary} href={chatGptListingUrl} target="_blank" rel="noopener noreferrer">Connect in ChatGPT</a>
+      </div></div>
+      <ul className={styles.steps}>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Open Aim4price in ChatGPT</h3><p>Choose the connection option on the listing.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Check your Aim4price account and approve read-only access.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask about your records</h3><p>Select Aim4price in your conversation. Return here to manage access.</p></div></li>
+      </ul>
     </div> : resource ? <>
       <SetupGuide manual={<>
-        <p>In your assistant’s connection settings, paste this into the MCP server URL field. Choose OAuth, then sign in to Aim4price and approve access.</p>
+        <p>Private setup requires OAuth credentials and a callback registered by Aim4price. The server address alone is not enough. Setup administrators enter credentials in the assistant’s secure configuration, never in chat.</p>
         <ServerAddress resource={resource} />
         {admin && <><p>OAuth client ID: <code>{clientId}</code></p><p>Scope: <code>aim4price:admin:read</code>. Use the separate admin client secret from Railway’s secure variable settings when configuring the private assistant connection.</p></>}
         <p className={styles.note}>Use a provider registered by Aim4price. This address is not a sign-in link. No personal API key is needed; never share passwords or connection secrets in chat.</p>
@@ -95,12 +107,12 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <div className={styles.providerGrid}>
         {providers.filter(provider => !selectedProvider || provider.name.toLowerCase().includes(selectedProvider.toLowerCase())).map(provider => <div className={styles.permission} key={provider.name}>
           <div className={styles.cardHeading}><span className={styles.permissionIcon}>{selectedProvider && providerLogos[selectedProvider] ? <img src={providerLogos[selectedProvider]} alt="" width="28" height="28" /> : <Icon kind="chat" />}</span><h3>{provider.name}</h3></div>
-          <p>{admin ? 'Private admin reporting with read-only access.' : 'Continue in your assistant to approve access.'}</p>
+          <p>{admin ? 'Private admin reporting with read-only access.' : 'Private connection. Use an Aim4price connection already configured for your account or workspace.'}</p>
           {provider.launchUrl && <a className={styles.primary} href={provider.launchUrl} target="_blank" rel="noopener noreferrer">Open {provider.name}</a>}
         </div>)}
       </div>
       <ul className={styles.steps}>
-        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Add the Aim4price connection in {selectedProvider || 'your assistant'}. Opening the app alone does not connect it.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Use your existing connection</h3><p>Select the configured Aim4price connection in {selectedProvider || 'your assistant'}. If it is unavailable, contact Aim4price for setup.</p></div></li>
         <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Use your Aim4price account and approve read-only access.</p></div></li>
         <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Select Aim4price in your conversation and ask about your records.</p></div></li>
       </ul>
