@@ -64,3 +64,83 @@
 .footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: .75rem; }
 .closeAction { margin-right: auto; }
 .page .error { color: var(--app-danger, #ac3441); }
+
+/* Annual review: compact, consistent panels with clear decision hierarchy. */
+.dialog { width: min(1040px, calc(100vw - 2rem)); }
+.eyebrow { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--app-accent, #176b50); margin-bottom: .65rem; }
+.reviewStatus { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem 2rem; background: var(--app-surface-soft, #edf6f1); }
+.previewLabel { padding: 0; background: transparent; font-size: .7rem; justify-content: flex-start; }
+.stageLabel { font-size: .7rem; font-weight: 650; color: var(--app-muted, #64766e); }
+.progressTrack { padding: 0; gap: 3px; }
+.progressTrack > span { flex: 1; width: auto; height: 3px; border-radius: 0; }
+.body { scrollbar-gutter: stable; }
+.welcome { display: grid; grid-template-columns: .85fr 1.15fr; gap: 2.25rem; align-items: center; text-align: left; padding: .4rem 0; }
+.yearPanel { position: relative; overflow: hidden; min-height: 310px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 1.25rem; background: radial-gradient(ellipse at top left, #377d66, transparent 70%), #103e32; color: #fff; isolation: isolate; }
+.yearPanel::before, .yearPanel::after { content: ''; position: absolute; width: 300px; height: 300px; border: 1px solid #ffffff20; border-radius: 50%; z-index: -1; }
+.yearPanel::before { top: -170px; right: -120px; }
+.yearPanel::after { bottom: -190px; left: -110px; width: 380px; height: 380px; }
+.yearPanel .heroIcon { background: #ffffff12; color: #dcf1e7; border-color: #ffffff26; width: 3rem; height: 3rem; margin-bottom: .8rem; }
+.yearPanel .heroIcon svg { width: 1.5rem; height: 1.5rem; }
+.yearPanel .year { color: #fff; font-size: clamp(4rem, 7vw, 6rem); letter-spacing: -.07em; margin: 0; }
+.yearCaption { margin-top: .7rem; font-size: .85rem; color: #c8e4d7; }
+.welcomeCopy h3 { font-size: clamp(1.6rem, 3vw, 2.25rem); line-height: 1.13; font-weight: 750; }
+.welcomeCopy > p { max-width: 29rem; font-size: .85rem; }
+.welcomeFacts { display: grid; gap: .9rem; margin: 1.3rem 0; }
+.welcomeFacts > span { display: grid; grid-template-columns: 2rem 1fr; column-gap: .6rem; align-items: center; }
+.welcomeFacts svg { width: 1.25rem; height: 1.25rem; grid-row: span 2; color: var(--app-accent, #176b50); }
+.welcomeFacts strong { font-size: .85rem; font-weight: 650; }
+.welcomeFacts small { font-size: .73rem; color: var(--app-muted, #64766e); margin-top: .2rem; }
+.welcome .muted { border-top: 1px solid var(--app-line, #d6e4dd); padding-top: .85rem; margin-top: 1rem; font-size: .73rem; }
+.intro { margin: .4rem auto 1.2rem; }
+.dialog .intro p { font-size: .83rem; max-width: 38rem; margin-inline: auto; }
+.page .options button { justify-items: start; text-align: left; padding: 1.5rem; gap: .65rem; background: var(--app-surface-soft, #f4f8f6); transition: border-color .15s, box-shadow .15s; }
+.page .options button:first-child { border-color: var(--app-accent, #25805f); background: linear-gradient(135deg, var(--app-surface-soft, #eaf5ef), var(--app-surface, #fff)); }
+.page .options button:hover:not(:disabled) { box-shadow: 0 8px 24px #143d3112; }
+.options svg { box-sizing: content-box; width: 1.4rem; height: 1.4rem; padding: .7rem; border-radius: .8rem; background: var(--app-surface, #fff); border: 1px solid var(--app-line, #d6e4dd); margin-bottom: .4rem; }
+.options strong { font-size: 1.05rem; font-weight: 700; }
+.dialog .note { font-size: .73rem; margin-top: .8rem; }
+.sliderCard { position: relative; gap: .45rem; padding: 1rem 2rem; background: linear-gradient(135deg, var(--app-surface-soft, #eaf5ef), var(--app-surface, #fff)); }
+.sliderCard label { font-size: .8rem; color: var(--app-muted, #64766e); }
+.sliderCard output { font-size: 3.5rem; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.sliderCard input { appearance: none; -webkit-appearance: none; background: transparent; height: 44px; margin: 0; }
+.sliderCard input::-webkit-slider-runnable-track { height: 7px; border-radius: 10px; background: linear-gradient(to right, var(--app-accent, #176b50) var(--range-fill), var(--app-line, #d6e4dd) var(--range-fill)); }
+.sliderCard input::-webkit-slider-thumb { appearance: none; width: 25px; height: 25px; border: 4px solid var(--app-surface, #fff); border-radius: 50%; background: var(--app-accent, #176b50); box-shadow: 0 2px 8px #103e3240; margin-top: -9px; }
+.sliderCard input::-moz-range-track { height: 7px; border-radius: 10px; background: var(--app-line, #d6e4dd); }
+.sliderCard input::-moz-range-progress { height: 7px; background: var(--app-accent, #176b50); }
+.sliderCard input::-moz-range-thumb { width: 19px; height: 19px; border: 4px solid var(--app-surface, #fff); border-radius: 50%; background: var(--app-accent, #176b50); }
+.rangeLabels { margin-top: -.3rem; font-size: .7rem; }
+.page .sliderCard button { padding: .4rem .8rem; font-size: .75rem; }
+.sliderCard small { font-size: .68rem; }
+.resultIntro { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem; margin: 0 0 1rem; }
+.resultIntro p { font-size: .73rem; }
+.badge { font-size: .73rem; border: 1px solid var(--app-line, #d6e4dd); }
+.totals article { padding: 1.2rem; background: linear-gradient(145deg, var(--app-surface, #fff), var(--app-surface-soft, #f0f7f3)); }
+.totals dl { margin: 1rem 0; gap: .7rem; }
+.totals dl div:last-child { display: grid; padding-top: .7rem; border-top: 1px solid var(--app-line, #d6e4dd); gap: .25rem; }
+.totals dl div:last-child dd { font-size: clamp(1.5rem, 2.5vw, 2rem); letter-spacing: -.04em; line-height: 1.2; }
+.totals dt { font-size: .73rem; }
+.totals dd { font-size: .95rem; }
+.totals .delta { font-size: .8rem; border: 0; padding: .55rem .7rem; border-radius: .5rem; background: var(--app-surface, #fff); }
+.metricIcon { width: 2rem; height: 2rem; margin-bottom: .6rem; }
+.confirmation { max-width: 44rem; margin: auto; }
+.confirmTotals > span { border: 1px solid var(--app-line, #d6e4dd); text-align: left; }
+.page .primary { box-shadow: 0 4px 10px #103e3215; }
+@media (max-width: 600px) {
+  .dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
+  .reviewStatus { padding: .6rem 1.25rem; }
+  .stageLabel { display: none; }
+  .welcome { grid-template-columns: 1fr; gap: 1.2rem; }
+  .yearPanel { min-height: 150px; }
+  .yearPanel .heroIcon { display: none; }
+  .yearPanel .year { font-size: 4.5rem; }
+  .yearCaption { margin-top: .15rem; }
+  .welcomeCopy h3 br { display: none; }
+  .welcomeFacts { margin: 1rem 0; }
+  .sliderCard { padding: 1rem; }
+  .page .options button { padding: 1rem; gap: .4rem; }
+  .options svg { margin-bottom: 0; }
+  .footer { gap: .5rem; }
+  .footer button { font-size: .78rem; }
+  .totals dl div:last-child dd { font-size: 1.7rem; }
+}
+@media (prefers-reduced-motion: reduce) { .page .options button { transition: none; } }
