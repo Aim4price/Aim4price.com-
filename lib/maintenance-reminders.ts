@@ -1,3 +1,4 @@
+import {maintenanceAssetAvailable} from './maintenance-asset-lifecycle';
 import {AIM4PRICE_EMAIL_FONT_STACK,AIM4PRICE_EMAIL_LOGO_PATH,buildEmailBrandHeader} from './email-brand';
 import {getAccountProfile} from './account-profile';
 import {canBusinessRead} from './business-accounts';
@@ -69,7 +70,7 @@ export function maintenanceReminderEmail(r:AssetMaintenanceRecord,serial:string,
  return {subject,text,html};
 }
 export async function listMaintenanceReminderNotifications(userId:string){await ensureAssetMaintenanceTables();await ensureMaintenanceReminders();const owners=(await getDb().query('SELECT DISTINCT owner_id FROM maintenance_reminder_sources WHERE scheduler_id=$1',[userId])).rows.map(r=>r.owner_id);const user=(await getDb().query('SELECT id,email FROM "user" WHERE id=$1',[userId])).rows[0];if(!user)return [];
- const items=[];for(const owner of new Set([userId,...owners]))for(const r of await listAssetMaintenanceRecords(owner,{status:'upcoming'})){const stage=reminderStage(r);if(!stage)continue;const source=await maintenanceSource(r.id);if(owner!==userId&&(!source||!await schedulerPermission(source,user)))continue;const who=source?(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source.scheduler_id])).rows[0]:null;items.push({id:`maintenance-reminder:${r.id}:${stage}`,category:'maintenance' as const,tone:'warning' as const,title:stage==='soon'?'Maintenance almost due':'Maintenance due',body:`${r.assetTitle}: ${r.title}. ${maintenanceDueLabel(r)}.${who?` Scheduled by ${who.name||who.email}.`:''}`,href:reminderHref(r.id),createdAtIso:r.updatedAtIso,assetId:r.assetId,actionRequired:true});}return items;}
+ const items=[];for(const owner of new Set([userId,...owners]))for(const r of await listAssetMaintenanceRecords(owner,{status:'upcoming'})){const stage=reminderStage(r);if(!stage||!await maintenanceAssetAvailable(owner,r.assetId))continue;const source=await maintenanceSource(r.id);if(owner!==userId&&(!source||!await schedulerPermission(source,user)))continue;const who=source?(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source.scheduler_id])).rows[0]:null;items.push({id:`maintenance-reminder:${r.id}:${stage}`,category:'maintenance' as const,tone:'warning' as const,title:stage==='soon'?'Maintenance almost due':'Maintenance due',body:`${r.assetTitle}: ${r.title}. ${maintenanceDueLabel(r)}.${who?` Scheduled by ${who.name||who.email}.`:''}`,href:reminderHref(r.id),createdAtIso:r.updatedAtIso,assetId:r.assetId,actionRequired:true});}return items;}
 /** One bounded batch per run. Scheduler supplies the returned owner cursor until complete. */
 export async function sendMaintenanceReminderBatch(after=''){
  // Explicit rollout switch prevents the first deployment from emailing the backlog.
@@ -79,7 +80,7 @@ export async function sendMaintenanceReminderBatch(after=''){
  const owners=(await getDb().query(`SELECT DISTINCT user_id FROM asset_maintenance_records WHERE status='upcoming' AND user_id>$1 AND (cardinality($2::text[])=0 OR user_id=ANY($2::text[])) ORDER BY user_id LIMIT 20`,[after,allowedOwners])).rows;
  let sent=0,failed=0;
  for(const owner of owners)for(const original of await listAssetMaintenanceRecords(owner.user_id,{status:'upcoming'})){
-  const stage=reminderStage(original);if(!stage)continue;const source=await maintenanceSource(original.id);
+  const stage=reminderStage(original);if(!stage||!await maintenanceAssetAvailable(owner.user_id,original.assetId))continue;const source=await maintenanceSource(original.id);
   const recipients=(await getDb().query('SELECT id,email,name FROM "user" WHERE id=$1',[owner.user_id])).rows;
   const scheduler=source?(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source.scheduler_id])).rows[0]:recipients[0];
   for(const user of recipients){
@@ -87,8 +88,9 @@ export async function sendMaintenanceReminderBatch(after=''){
    if(user.id!==owner.user_id&&(!source||!await schedulerPermission(source,user)))continue;
    const key=`maintenance:${r.id}:${user.id}:${stage}`;
    const claim=await getDb().query(`INSERT INTO maintenance_reminder_deliveries(event_key,record_id,recipient_id,stage) VALUES($1,$2::uuid,$3,$4) ON CONFLICT(event_key) DO UPDATE SET attempted_at=now(),attempts=maintenance_reminder_deliveries.attempts+1 WHERE maintenance_reminder_deliveries.sent_at IS NULL AND maintenance_reminder_deliveries.attempted_at<now()-interval '15 minutes' AND maintenance_reminder_deliveries.first_attempt_at>now()-interval '23 hours' AND maintenance_reminder_deliveries.attempts<10 RETURNING event_key`,[key,r.id,user.id,stage]);if(!claim.rows.length)continue;
-   try{if(!process.env.RESEND_API_KEY)throw Error('Email service is not configured.');const asset=await getAssetRegisterItemById(owner.user_id,r.assetId);const message=maintenanceReminderEmail(r,asset?.serialNumber||'',scheduler?.name||scheduler?.email||'The owner',getSiteOrigin()+reminderHref(r.id));await sendAim4priceEmail({to:user.email,...message,idempotencyKey:key,usage:{accountId:owner.user_id,actorId:source?.scheduler_id||owner.user_id,eventKey:key}});await getDb().query('UPDATE maintenance_reminder_deliveries SET sent_at=now(),error=NULL WHERE event_key=$1',[key]);sent++;}catch(e){failed++;await getDb().query('UPDATE maintenance_reminder_deliveries SET error=$2 WHERE event_key=$1',[key,e instanceof Error?e.message:'Delivery failed']);}
+   try{if(!process.env.RESEND_API_KEY)throw Error('Email service is not configured.');const asset=await getAssetRegisterItemById(owner.user_id,r.assetId);if(!asset||!await maintenanceAssetAvailable(owner.user_id,r.assetId))continue;const latest=await getAssetMaintenanceRecordById(owner.user_id,r.id);if(!latest||reminderStage(latest)!==stage)continue;const message=maintenanceReminderEmail(r,asset?.serialNumber||'',scheduler?.name||scheduler?.email||'The owner',getSiteOrigin()+reminderHref(r.id));await sendAim4priceEmail({to:user.email,...message,idempotencyKey:key,usage:{accountId:owner.user_id,actorId:source?.scheduler_id||owner.user_id,eventKey:key}});await getDb().query('UPDATE maintenance_reminder_deliveries SET sent_at=now(),error=NULL WHERE event_key=$1',[key]);sent++;}catch(e){failed++;await getDb().query('UPDATE maintenance_reminder_deliveries SET error=$2 WHERE event_key=$1',[key,e instanceof Error?e.message:'Delivery failed']);}
   }
  }
  return {sent,failed,next:owners.length===20?owners.at(-1).user_id:null};
 }
+
