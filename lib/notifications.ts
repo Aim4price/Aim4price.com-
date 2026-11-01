@@ -13,7 +13,6 @@ import {
   type AccountRole,
   type AssetLead,
   type AssetLeadStatus,
-  type LeadType,
 } from './partner-access';
 import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
 import {
@@ -126,7 +125,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 function normalizeAccountType(value: unknown): AccountRole {
   const normalized = asText(value).toLowerCase();
 
-  if (normalized === 'dealer' || normalized === 'finance' || normalized === 'insurance') {
+  if (normalized === 'dealer' || normalized === 'finance' || normalized === 'insurance' || normalized === 'licensing') {
     return normalized;
   }
 
@@ -225,12 +224,6 @@ function partnerDisplayName(row: OpenPartnerNoteRow): string {
   return asText(row.partner_business_name) || asText(row.partner_display_name) || 'A partner';
 }
 
-function leadTypeLabel(leadType: LeadType): string {
-  if (leadType === 'finance') return 'finance';
-  if (leadType === 'insurance') return 'insurance';
-  return 'replacement quote';
-}
-
 function leadStatusLabel(status: AssetLeadStatus): string {
   if (status === 'sent') return 'new';
   if (status === 'viewed') return 'viewed';
@@ -251,17 +244,6 @@ function isQrDealerHelpLead(lead: AssetLead): boolean {
   const source = asText(sections.source).toLowerCase();
 
   return source === 'asset_qr_share' || source === 'qr_dealer_help' || source === 'scan_share';
-}
-
-function isShareOpportunityLead(lead: AssetLead): boolean {
-  const sections = asRecord(lead.includedSections);
-  const source = asText(sections.source).toLowerCase();
-
-  return source === 'asset_register_options'
-    || source === 'full_asset_register'
-    || source === 'asset_qr_share'
-    || source === 'qr_dealer_help'
-    || source === 'scan_share';
 }
 
 function qrDealerHelpOperatorName(lead: AssetLead): string {
@@ -671,7 +653,6 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
       .filter((lead) => isWithinDays(lead.updatedAtIso || lead.createdAtIso, RECENT_LEAD_DAYS))
       .map((lead) => {
         const partner = lead.partnerBusinessName || lead.partnerName || 'A partner';
-        const typeLabel = leadTypeLabel(lead.leadType);
         const statusLabel = leadStatusLabel(lead.status);
         const assetTitle = assetTitleFromLead(lead);
 
@@ -694,8 +675,10 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
           id: `lead-owner:${lead.id}:${lead.status}:${lead.updatedAtIso}`,
           category: 'lead',
           tone: leadTone(lead.status),
-          title: `${typeLabel.charAt(0).toUpperCase()}${typeLabel.slice(1)} lead ${statusLabel}`,
-          body: `${partner} ${statusLabel} your ${typeLabel} request for ${assetTitle}.`,
+          title: lead.status === 'viewed' ? 'Asset received and opened' : `Shared asset ${statusLabel}`,
+          body: lead.status === 'viewed'
+            ? `${assetTitle} has been received and opened by ${partner}.`
+            : `${partner} ${statusLabel} the shared asset ${assetTitle}.`,
           href: '/leads',
           createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
           assetId: lead.assetRegisterItemId,
@@ -718,8 +701,6 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
       .filter((lead) => isWithinDays(lead.updatedAtIso || lead.createdAtIso, RECENT_LEAD_DAYS))
       .map((lead) => {
         const owner = lead.ownerBusinessName || lead.ownerName || 'An asset owner';
-        const typeLabel = leadTypeLabel(lead.leadType);
-        const shareOpportunity = isShareOpportunityLead(lead);
         const assetTitle = assetTitleFromLead(lead);
         const ownerMessage = truncateText(lead.ownerMessage, 96);
         const bodySuffix = ownerMessage ? ` Message: ${ownerMessage}` : '';
@@ -728,12 +709,8 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
           id: `lead-partner:${lead.id}:${lead.status}:${lead.updatedAtIso}`,
           category: 'lead',
           tone: lead.status === 'sent' ? 'info' : leadTone(lead.status),
-          title: lead.status === 'sent'
-            ? shareOpportunity ? 'New opportunity' : 'New lead opportunity'
-            : `${shareOpportunity ? 'Opportunity' : 'Lead'} ${leadStatusLabel(lead.status)}`,
-          body: shareOpportunity
-            ? `${owner} sent an opportunity for ${assetTitle}.${bodySuffix}`
-            : `${owner} sent a ${typeLabel} opportunity for ${assetTitle}.${bodySuffix}`,
+          title: 'Asset shared with you',
+          body: `${owner} has shared ${assetTitle} with you.${bodySuffix}`,
           href: '/leads',
           createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
         } satisfies HeaderNotificationItem;
