@@ -26,6 +26,7 @@ export type TractorValuationModel = {
 
 
 type TractorAssumptionOptions = {
+  baseYear?: number;
   privateSettings?: PrivateEstimateSettings | null;
   maxLifetimeHours?: number | null;
   conditionFactorOverride?: number | null;
@@ -71,6 +72,7 @@ export function calculateTractorAim4priceDetails(
   return calculateEngineHoursValue({
     replacementPriceExVat,
     yearModel,
+    baseYear: options?.baseYear,
     hours,
     condition,
     maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
@@ -96,6 +98,7 @@ export function calculateTractorFrontPtoValue(
   return calculateEngineHoursValue({
     replacementPriceExVat: getTractorFrontPtoReplacementPrice(replacementPriceOverrideExVat),
     yearModel,
+    baseYear: options?.baseYear,
     hours,
     condition,
     maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
@@ -132,6 +135,7 @@ export function calculateTractorLoaderValue(
   frontLoaderYear: number | string | null | undefined,
   fallbackYear: number,
   replacementPriceOverrideExVat?: number | null,
+  baseYear = currentBaseYear(),
 ): number {
   if (!enabled) {
     return 0;
@@ -142,15 +146,15 @@ export function calculateTractorLoaderValue(
     replacementPriceExVat: replacementPrice,
     yearAdded: frontLoaderYear,
     fallbackYear,
-    baseYear: currentBaseYear(),
+    baseYear,
     annualDepreciationPercent: 10,
   });
 }
 
-function parseExtraYear(value: number | string | null | undefined, fallbackYear: number): number {
+function parseExtraYear(value: number | string | null | undefined, fallbackYear: number, baseYear = currentBaseYear()): number {
   const parsed = Number(typeof value === 'string' ? value.trim() : value);
 
-  if (!Number.isInteger(parsed) || parsed < 1950 || parsed > currentBaseYear() + 1) {
+  if (!Number.isInteger(parsed) || parsed < 1950 || parsed > baseYear + 1) {
     return fallbackYear;
   }
 
@@ -164,6 +168,7 @@ export function calculateTractorGpsValue(
   gpsYear: number | string | null | undefined,
   fallbackYear: number,
   replacementPriceOverrideExVat?: number | null,
+  baseYear = currentBaseYear(),
 ): number {
   if (!enabled) {
     return 0;
@@ -172,8 +177,8 @@ export function calculateTractorGpsValue(
   const normalizedType: GpsType = gpsType === 'full-autosteer' ? 'full-autosteer' : 'guidance-only';
   const replacementPrice = getTractorGpsReplacementPrice(normalizedType, replacementPriceOverrideExVat);
 
-  const actualGpsYear = parseExtraYear(gpsYear, fallbackYear);
-  const age = Math.max(0, currentBaseYear() - actualGpsYear);
+  const actualGpsYear = parseExtraYear(gpsYear, fallbackYear, baseYear);
+  const age = Math.max(0, baseYear - actualGpsYear);
   const depreciation = clamp(age * 10, 0, 100);
   const currentValue = replacementPrice * (1 - depreciation / 100);
 

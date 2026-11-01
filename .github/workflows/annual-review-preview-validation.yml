@@ -1,0 +1,41 @@
+name: Annual review preview validation
+on:
+  pull_request:
+    paths:
+      - 'app/admin/annual-review/**'
+      - 'app/api/admin/annual-review/**'
+      - 'lib/annual-review-*.ts'
+      - 'lib/asset-register-revaluation.ts'
+      - 'lib/asset-register-db.ts'
+      - 'lib/generic-valuation.ts'
+      - 'lib/server-valuation.ts'
+      - 'lib/valuation/**'
+      - 'tests/annual-review-preview.test.cjs'
+      - 'scripts/verify-annual-review.cjs'
+      - '.github/workflows/annual-review-preview-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: annual-review-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/annual-review-preview.test.cjs
+      - run: node --experimental-strip-types --test tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs tests/basic-catalogue.test.mjs tests/asset-revaluation-save.test.cjs
+      - run: node scripts/verify-annual-review.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: annual-review-preview-screenshots
+          path: .next/annual-review-validation

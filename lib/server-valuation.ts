@@ -215,7 +215,7 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
   return row ? mapModelRow(row) : null;
 }
 
-export async function runServerValuation(input: RunValuationInput): Promise<Result> {
+export async function runServerValuation(input: RunValuationInput, context?: { baseYear: number }): Promise<Result> {
   const model = await fetchModel(String(input.modelId));
   if (!model) {
     throw new Error('MODEL_NOT_FOUND');
@@ -233,7 +233,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, 'hours');
   const maxLifetimeHours = advancedAssumptions?.privateSettings?.lifetimeUsage ?? advancedAssumptions?.maxLifetimeUsage ?? defaultMaxLifetimeHours;
   const conditionFactorOverride = getValuationConditionFactorOverride(input.condition, advancedAssumptions);
-  const assumptionOptions = { maxLifetimeHours, conditionFactorOverride, privateSettings: advancedAssumptions?.privateSettings };
+  const assumptionOptions = { baseYear: context?.baseYear, maxLifetimeHours, conditionFactorOverride, privateSettings: advancedAssumptions?.privateSettings };
 
   const baseCalculation = calculateTractorAim4priceDetails(
     model,
@@ -293,6 +293,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     input.frontLoaderYear,
     safeYear,
     frontLoaderReplacementPriceExVat,
+    context?.baseYear,
   );
   const gpsValueExVat = calculateTractorGpsValue(
     model,
@@ -301,6 +302,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     input.gpsYear,
     safeYear,
     gpsReplacementPriceExVat,
+    context?.baseYear,
   );
   const knownExtrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat;
   const extrasValueExVat = knownExtrasValueExVat + otherExtraValueExVat;

@@ -392,6 +392,7 @@ function scoreBand(band: ReplacementPriceBand): number {
 }
 
 type DepreciationInput = {
+  baseYear?: number;
   basicLifetime?: number;
   sectorKey: SectorKey;
   replacementPrice: number | null;
@@ -517,6 +518,7 @@ function shouldBlendAgeIntoPercentageDepreciation(input: DepreciationInput): boo
 }
 
 function calculateAgeAwarePercentValue(input: {
+  baseYear?: number;
   privateSettings?: PrivateEstimateSettings | null;
   replacementPriceExVat: number;
   percentUsed: number;
@@ -530,7 +532,7 @@ function calculateAgeAwarePercentValue(input: {
   const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
   const usageDepPct = input.privateSettings?.usageDepreciationPercent ?? clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
   const remainingPercent = 100 - usageDepPct;
-  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel, undefined, input.privateSettings) : null);
+  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel, input.baseYear, input.privateSettings) : null);
   const averageDepPct = ageDepPct === null ? usageDepPct : weightedDepreciationPercent(ageDepPct, usageDepPct, input.privateSettings);
   const baseValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
@@ -575,6 +577,7 @@ function resolveDepreciation(input: DepreciationInput): {
     familyKey: input.familyKey,
     bodyType: input.specsJson.body_type ?? input.specsJson.vehicle_type,
     yearModel: input.year,
+    baseYear: input.baseYear,
     yearModelUnknown: input.yearModelUnknown,
   });
 
@@ -601,13 +604,13 @@ function resolveDepreciation(input: DepreciationInput): {
     };
   }
 
-  const yearForDepreciation = input.yearModelUnknown ? currentBaseYear() : Math.round(input.year);
+  const yearForDepreciation = input.yearModelUnknown ? (input.baseYear ?? currentBaseYear()) : Math.round(input.year);
 
   // Family-first Basic Estimate can explicitly mark families where usage is not
   // a meaningful measurement. Keep the shared age, condition, marketability and
   // salvage mathematics, but do not invent a percentage-worked fallback.
   if (input.valuationMode === 'year_condition') {
-    const ageDepPct = input.advancedAssumptions?.privateSettings?.ageDepreciationPercent ?? (input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation, undefined, input.advancedAssumptions?.privateSettings));
+    const ageDepPct = input.advancedAssumptions?.privateSettings?.ageDepreciationPercent ?? (input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation, input.baseYear, input.advancedAssumptions?.privateSettings));
     const ageAdjustedValue = input.replacementPrice * (1 - ageDepPct / 100);
     const conditionAdjustedValue = applyCondition(
       ageAdjustedValue,
@@ -646,6 +649,7 @@ function resolveDepreciation(input: DepreciationInput): {
       replacementPriceExVat: input.replacementPrice,
       percentUsed: lifeWorkedPercent,
       yearModel: yearForDepreciation,
+    baseYear: input.baseYear,
       includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
       condition: input.condition,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
@@ -681,6 +685,7 @@ function resolveDepreciation(input: DepreciationInput): {
       const calculated = calculateEngineHoursValue({
         replacementPriceExVat: input.replacementPrice,
         yearModel: yearForDepreciation,
+        baseYear: input.baseYear,
         includeAgeDepreciation: !input.yearModelUnknown,
         hours: knownHours,
         condition: input.condition,
@@ -715,6 +720,7 @@ function resolveDepreciation(input: DepreciationInput): {
     const calculated = calculateEngineHoursValue({
       replacementPriceExVat: input.replacementPrice,
       yearModel: yearForDepreciation,
+    baseYear: input.baseYear,
       includeAgeDepreciation: !input.yearModelUnknown,
       hours: estimatedHours,
       condition: input.condition,
@@ -748,6 +754,7 @@ function resolveDepreciation(input: DepreciationInput): {
     replacementPriceExVat: input.replacementPrice,
     percentUsed: lifeWorkedPercent,
     yearModel: yearForDepreciation,
+    baseYear: input.baseYear,
     includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
     condition: input.condition,
     floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
@@ -1676,7 +1683,7 @@ async function collectTypedModelKeys(input: {
   return { keys: [...keys], hasApprovedAlias: result.rows.length > 0 };
 }
 
-export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
+export async function runGenericValuation(input: GenericValuationInput, context?: { baseYear: number }): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
   const basicRecovery = input.basicRecovery === true;
   if (basicRecovery && !(Number(input.userReplacementPriceExVat) > 0)) throw new Error('Confirm a positive replacement price.');
@@ -1842,6 +1849,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const marketSources: MarketMatch[] = [];
 
   const commonCalculationInput = {
+    baseYear: context?.baseYear,
     sectorKey: family.sectorKey,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,

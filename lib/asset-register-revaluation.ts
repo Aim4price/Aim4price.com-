@@ -668,6 +668,7 @@ function resolveGenericMethod(
 }
 
 async function revalueTractorAsset(input: {
+  previewYear?: number;
   userId: string;
   asset: AssetRegisterItem;
   row: ValuationRunRow;
@@ -758,7 +759,13 @@ async function revalueTractorAsset(input: {
     advancedAssumptions,
   };
 
-  const result = await runServerValuation(valuationInput);
+  if (input.previewYear) {
+    valuationInput.frontPtoReplacementPriceExVat = optionalReplacementPrice(payloadInput.frontPtoReplacementPriceExVat ?? payloadOutput.frontPtoReplacementPriceExVat);
+    valuationInput.gpsReplacementPriceExVat = optionalReplacementPrice(payloadInput.gpsReplacementPriceExVat ?? payloadOutput.gpsReplacementPriceExVat);
+    valuationInput.otherExtraName = asText(payloadInput.otherExtraName ?? payloadOutput.otherExtraName) || null;
+    valuationInput.otherExtraReplacementPriceExVat = optionalReplacementPrice(payloadInput.otherExtraReplacementPriceExVat ?? payloadInput.otherExtraValueExVat ?? payloadOutput.otherExtraReplacementPriceExVat);
+  }
+  const result = await runServerValuation(valuationInput, input.previewYear ? { baseYear: input.previewYear } : undefined);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
   const rawValue = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
   const selectedValueExVat = input.ignoreApprovedBaseline ? rawValue : applyApprovedValueBaseline(rawValue, input.asset.specsJson);
@@ -840,6 +847,7 @@ async function revalueTractorAsset(input: {
 }
 
 async function revalueGenericAsset(input: {
+  previewYear?: number;
   userId: string;
   asset: AssetRegisterItem;
   row: ValuationRunRow;
@@ -964,7 +972,7 @@ async function revalueGenericAsset(input: {
     userReplacementPriceExVat,
     userReplacementPriceYear: asInteger(payloadInput.userReplacementPriceYear ?? input.row.user_replacement_price_year),
     advancedAssumptions,
-  });
+  }, input.previewYear ? { baseYear: input.previewYear } : undefined);
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const rawValue = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
   const selectedValueExVat = input.ignoreApprovedBaseline ? rawValue : applyApprovedValueBaseline(rawValue, input.asset.specsJson);
@@ -1044,8 +1052,14 @@ export async function revalueAssetRegisterItem(input: {
   lifeWorkedPercentOverride?: number | null;
   usageAmountOverride?: number | null;
   allowUsageDecrease?: boolean;
-}): Promise<AssetRevaluationResult> {
-  const asset = await getAssetRegisterItemById(input.userId, input.assetId);
+}, previewContext?: { year: number; asset: AssetRegisterItem }): Promise<AssetRevaluationResult> {
+  // The simulation context is server-only and must never enter a saving path.
+  if (previewContext && (
+    !input.previewOnly || previewContext.asset.userId !== input.userId ||
+    previewContext.asset.id !== input.assetId || !Number.isInteger(previewContext.year) ||
+    previewContext.year < 2000 || previewContext.year > 2100
+  )) throw new Error('INVALID_PREVIEW_CONTEXT');
+  const asset = previewContext?.asset ?? await getAssetRegisterItemById(input.userId, input.assetId);
 
   if (!asset) {
     throw new Error('ASSET_NOT_FOUND');
@@ -1086,6 +1100,7 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
+      previewYear: previewContext?.year,
       ignoreApprovedBaseline: input.ignoreApprovedBaseline,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
@@ -1101,6 +1116,7 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
+    previewYear: previewContext?.year,
     ignoreApprovedBaseline: input.ignoreApprovedBaseline,
       previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
