@@ -1235,6 +1235,7 @@ export default function AccountClient({
           }).setView(center, zoom);
 
           L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            referrerPolicy: "strict-origin",
             attribution: "&copy; OpenStreetMap contributors",
             maxZoom: 19,
             detectRetina: true,

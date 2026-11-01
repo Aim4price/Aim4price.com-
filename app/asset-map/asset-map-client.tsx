@@ -707,6 +707,7 @@ export default function AssetMapClient() {
     "loading" | "ready" | "error"
   >("loading");
   const [mapRendererAttempt, setMapRendererAttempt] = useState(0);
+  const [roadTilesUnavailable, setRoadTilesUnavailable] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isExportScopeMenuOpen, setIsExportScopeMenuOpen] = useState(false);
@@ -1158,11 +1159,17 @@ export default function AssetMapClient() {
         const roadLayer = L.tileLayer(
           "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           {
+            referrerPolicy: "strict-origin",
             maxZoom: 19,
             attribution:
               '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           },
         );
+        // Identify only the website origin to OSM, never an asset URL or token.
+        // Leaflet can initialise successfully even when its tile server rejects images.
+        roadLayer.on("tileerror", () => {
+          if (!cancelled) setRoadTilesUnavailable(true);
+        });
         const satelliteLayer = L.tileLayer(
           "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
           {
@@ -1905,6 +1912,15 @@ export default function AssetMapClient() {
                     Try again
                   </button>
                 </div>
+              ) : roadTilesUnavailable && basemapMode === "road" ? (
+                <div className={styles.mapError} role="alert">
+                  <strong>The street map is temporarily unavailable.</strong>
+                  <span>Your asset locations are still available in Satellite view.</span>
+                  <button type="button" className={styles.retryButton}
+                    onClick={() => setBasemapMode("satellite")}>
+                    Open Satellite
+                  </button>
+                </div>
               ) : !mappedAssets.length ? (
                 <div className={styles.mapEmpty}>
                   <strong>No GPS locations saved yet.</strong>
@@ -2093,7 +2109,13 @@ export default function AssetMapClient() {
                       key={option.value}
                       type="button"
                       className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ""}`}
-                      onClick={() => setBasemapMode(option.value)}
+                      onClick={() => {
+                        if (option.value === "road") {
+                          setRoadTilesUnavailable(false);
+                          baseLayersRef.current.road?.redraw();
+                        }
+                        setBasemapMode(option.value);
+                      }}
                       aria-pressed={basemapMode === option.value}
                     >
                       {option.label}

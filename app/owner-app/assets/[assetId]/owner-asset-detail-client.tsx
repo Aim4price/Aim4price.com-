@@ -1837,7 +1837,7 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
       const savedLng = Number(location.longitude);
       const center: [number, number] = hasCoordinates ? [savedLat, savedLng] : [-29, 24];
       const map = L.map(mapElementRef.current).setView(center, hasCoordinates ? 13 : 5);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {referrerPolicy: "strict-origin",  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
       mapRef.current = map;
       const setPoint = (lat: number, lng: number) => {
         if (!markerRef.current) {

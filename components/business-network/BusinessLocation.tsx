@@ -52,6 +52,7 @@ export default function BusinessLocation({
         if (!active || !element.current) return;
         map.current = L.map(element.current).setView([-29, 24], 5);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          referrerPolicy: "strict-origin",
           attribution:
             '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
           maxZoom: 19,

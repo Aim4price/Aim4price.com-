@@ -196,3 +196,16 @@ test("styling keeps the original layout while improving map clarity", () => {
   );
 });
 
+
+test("street tiles identify only the origin, even on a private document", () => {
+  const options = assetMapClient.match(/const roadLayer = L\.tileLayer\([\s\S]*?referrerPolicy: "([^"]+)"/);
+  assert.equal(options?.[1], "strict-origin");
+});
+
+test("tile failures offer satellite without removing the asset list", () => {
+  assert.match(assetMapClient, /roadLayer\.on\("tileerror",[\s\S]*?if \(!cancelled\) setRoadTilesUnavailable\(true\)/);
+  const sidebar = assetMapClient.slice(assetMapClient.indexOf('<aside'), assetMapClient.indexOf('</aside>'));
+  assert.doesNotMatch(sidebar, /roadTilesUnavailable/);
+  assert.match(assetMapClient, /roadTilesUnavailable && basemapMode === "road"[\s\S]*?setBasemapMode\("satellite"\)/);
+  assert.match(assetMapClient, /setRoadTilesUnavailable\(false\);[\s\S]*?road\?\.redraw\(\)/);
+});

@@ -11,7 +11,7 @@ export default function AssetLocationPickerMap({latitude,longitude,onChange}:Pro
   loadLeaflet().then(L=>{
    if(cancelled||!node.current)return;
    map=L.map(node.current,{zoomControl:false,minZoom:2,maxZoom:19,scrollWheelZoom:false});
-   const road=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+   const road=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{referrerPolicy: "strict-origin", maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
    const satellite=L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri'});
    const labels=L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Labels &copy; Esri'});
    const icon=L.divIcon({className:styles.marker,html:`<span class="${styles.pin}"><span></span></span>`,iconSize:[38,48],iconAnchor:[19,48]});
