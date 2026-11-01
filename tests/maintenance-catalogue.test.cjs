@@ -6,7 +6,7 @@ const { PGlite } = require('@electric-sql/pglite');
 function load(file, mocks = {}) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('require', 'exports', code)(name => name in mocks ? mocks[name] : name==='./asset-history-schema'?load('lib/asset-history-schema.ts',{'./db':mocks['./db']}):require(name), exports);
+  new Function('require', 'exports', code)(name => name in mocks ? mocks[name] : ['./asset-history-schema','./maintenance-asset-lifecycle'].includes(name)?load(`lib/${name.slice(2)}.ts`,{'./db':mocks['./db']}):require(name), exports);
   return exports;
 }
 const seedModule = load('lib/maintenance-catalogue-seed.ts');
