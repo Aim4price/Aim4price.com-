@@ -54,28 +54,14 @@ test("Dealer App and Dealer Desktop history type choices omit supporting copy", 
   );
 });
 
-test("Dealer App timeline is a required custom date range while Desktop keeps presets", () => {
-  assert.match(source, /dealerAppMode \? 'Timeline' : 'Choose a timeline'/);
-  assert.match(
-    source,
-    /setHistoryTimelineFilter\(dealerAppMode \? 'custom' : 'all'\)/,
-  );
-  assert.match(
-    source,
-    /!dealerAppMode \? \([\s\S]*?historyTimelineOptions\.map/,
-  );
-  assert.match(source, /dealerAppMode \|\| historyTimelineFilter === 'custom'/);
+test("History opens to records with optional dates on desktop and app", () => {
+  assert.doesNotMatch(source, /historyModalStep|setHistoryModalStep/);
+  assert.match(source, />Asset history<\/h3>/);
+  assert.match(source, /historyTimelineOptions\.map/);
+  assert.match(source, /historyTimelineFilter === 'custom'/);
   assert.match(source, /max=\{historyToDate \|\| undefined\}/);
   assert.match(source, /min=\{historyFromDate \|\| undefined\}/);
-  assert.match(
-    source,
-    /disabled=\{dealerAppMode \? !historyFromDate \|\| !historyToDate/,
-  );
-  assert.match(source, /historyFiltersActive && !dealerAppMode/);
-  assert.match(
-    styles,
-    /\.dealerApp \.historyDateRange \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
-  );
+  assert.match(source, /aria-pressed=\{historyRecordType === option.value\}/);
 });
 
 test("Dealer App history results use narrow-screen-safe alignment without changing desktop rules", () => {

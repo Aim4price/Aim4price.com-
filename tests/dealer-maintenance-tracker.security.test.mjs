@@ -53,9 +53,8 @@ test('upcoming work is collapsed by default and remains outside maintenance hist
 test('history opens as a focused timeline instead of extending the asset card', () => {
   assert.match(tracker, /aria-haspopup="dialog"/);
   assert.match(tracker, /aria-labelledby="maintenance-history-title"/);
-  assert.match(tracker, /What would you like to see\?/);
-  assert.match(tracker, /Choose a timeline/);
-  assert.match(tracker, /Maintenance history/);
+  assert.match(tracker, />Asset history<\/h3>/);
+  assert.match(tracker, /historyRecordDetails/);
   assert.match(tracker, /historyTypeTabs/);
   assert.match(tracker, /historyTimelineFilters/);
   assert.match(tracker, /historyTimeline/);
@@ -65,36 +64,22 @@ test('history opens as a focused timeline instead of extending the asset card', 
   assert.doesNotMatch(tracker, /id=\{`maintenance-view-/);
 });
 
-test('history separates information, timeline and records into individual modal screens', () => {
-  const allIndex = tracker.indexOf("{ value: 'all', label: 'All' }");
-  const maintenanceIndex = tracker.indexOf("{ value: 'maintenance', label: 'Maintenance' }");
-  const notesIndex = tracker.indexOf("{ value: 'notes', label: 'Notes' }");
-  const timelineIndex = tracker.indexOf('historyTimelineOptions');
-  assert.ok(allIndex > 0);
-  assert.ok(maintenanceIndex > allIndex);
-  assert.ok(notesIndex > maintenanceIndex);
-  assert.ok(timelineIndex > notesIndex);
-  assert.match(tracker, /historyModalStep === 1/);
-  assert.match(tracker, /historyModalStep === 2/);
-  assert.match(tracker, /historyModalStep === 3/);
-  assert.match(tracker, /function chooseHistoryRecordType[\s\S]*setHistoryModalStep\(2\)/);
-  assert.match(tracker, /function chooseHistoryTimeline[\s\S]*setHistoryModalStep\(3\)/);
-  assert.match(tracker, /historyModalStep === 2 && historyTimelineFilter === 'custom'/);
-  assert.match(tracker, />\s*Back\s*</);
+test('history presents records directly with type and optional date filters', () => {
+  assert.match(tracker, /label: 'Problems & notes'/);
+  assert.doesNotMatch(tracker, /historyModalStep|setHistoryModalStep/);
+  assert.match(tracker, /aria-pressed=\{historyRecordType === option.value\}/);
+  assert.match(tracker, /historyTimelineFilter === 'custom'/);
+  assert.match(tracker, /historyOpenProblemsOnly && \(item.kind !== 'issue' \|\| item.problem.notedAtIso\)/);
+  assert.match(tracker, /hasPendingProposal \|\| hasOpenProblems/);
   assert.match(tracker, /Last 12 months/);
   assert.match(tracker, /Last 3 months/);
   assert.match(tracker, /Custom dates/);
-  assert.match(trackerStyles, /\.historyTypeTabs button[\s\S]*min-height: 6\.5rem/);
-  assert.match(trackerStyles, /\.historyChoiceModal\.historyChoiceModal/);
-  assert.match(trackerStyles, /width: min\(calc\(100vw - 2rem\), 60rem\)/);
-  assert.doesNotMatch(tracker, /aria-pressed=\{historyRecordType === option\.value\}/);
-  assert.doesNotMatch(tracker, /aria-pressed=\{historyTimelineFilter === option\.value\}/);
 });
 
 test('history adds restrained visual guidance without adding another decision', () => {
   assert.match(tracker, /function HistoryRecordIcon/);
   assert.match(tracker, /function HistoryTimelineChoiceIcon/);
-  assert.match(tracker, /className=\{styles\.historyProgress\}/);
+  assert.doesNotMatch(tracker, /className=\{styles\.historyProgress\}/);
   assert.match(tracker, /className=\{styles\.historyChoiceIcon\}/);
   assert.match(tracker, /className=\{styles\.historyChoiceArrow\}/);
   assert.match(trackerStyles, /\.historyProgress/);
