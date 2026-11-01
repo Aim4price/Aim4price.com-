@@ -5463,7 +5463,7 @@
 
 /* Usage reminders and repeat intervals match the date scheduling fields. */
 .simpleScheduleDialog .scheduleQuestion .maintenanceInlineFields {
-  align-items: stretch;
+  align-items: start;
 }
 .simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage {
   display: flex;
