@@ -671,7 +671,7 @@
 }
 
 .assetList::-webkit-scrollbar {
-  width: 16px;
+  width: 20px;
 }
 
 .assetList::-webkit-scrollbar-track {
@@ -681,7 +681,8 @@
 }
 
 .assetList::-webkit-scrollbar-thumb {
-  border: 3px solid #e6efea;
+  min-height: 56px;
+  border: 2px solid #e6efea;
   border-radius: 999px;
   background: #4d8a73;
   background-clip: padding-box;
