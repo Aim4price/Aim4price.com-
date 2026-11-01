@@ -595,8 +595,8 @@ export default function DealerMaintenanceScheduleModal({
                     <fieldset className={styles.scheduleRepeat}>
                       <legend className={styles.scheduleHiddenLabel}>Repeat this schedule?</legend>
                       <div>
-                        <button type="button" aria-pressed={!draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: false })}>Once only</button>
-                        <button type="button" aria-pressed={draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: true })}>Repeat</button>
+                        <button type="button" aria-pressed={!draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: false })}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="3" /><path d="M8 3v4m8-4v4M4 10h16m-12 5 3 3 5-5" /></svg><span>Once only</span></button>
+                        <button type="button" aria-pressed={draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: true })}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 7H7a4 4 0 0 0-4 4m2 6h12a4 4 0 0 0 4-4M16 4l3 3-3 3M8 14l-3 3 3 3" /></svg><span>Repeat</span></button>
                       </div>
                     </fieldset>
                     {draft.recurringEnabled ? (
@@ -637,5 +637,6 @@ export default function DealerMaintenanceScheduleModal({
     </div>
   );
 }
+
 
 
