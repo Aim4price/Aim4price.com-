@@ -343,6 +343,7 @@ export default function AdminAssetMapClient({
         roadLayerRef.current = L.tileLayer(
           "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           {
+            referrerPolicy: "strict-origin",
             maxZoom: 19,
             attribution:
               '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',

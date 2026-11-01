@@ -2189,6 +2189,7 @@ function buildReportHtml(
 
         function addRoadLayer(map) {
           return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            referrerPolicy: 'strict-origin',
             maxZoom: 19,
             detectRetina: true,
             keepBuffer: 4,
