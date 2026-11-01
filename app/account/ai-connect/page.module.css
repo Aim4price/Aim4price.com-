@@ -1,28 +1,12 @@
 .page {
   color: var(--app-text, #123e31);
   min-height: calc(var(--website-design-vh, 1vh) * 75);
-  padding: 1.5rem 1.75rem 2.5rem;
-  font-family: var(--font-body, 'Montserrat'), sans-serif;
+  padding: 0;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 1rem;
   line-height: 1.6;
 }
-.shell { max-width: 1200px; margin: 0 auto; }
-.back {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: .65rem 1rem;
-  margin-bottom: 1.25rem;
-  border: 1px solid var(--app-line, #dce7e2);
-  border-radius: 1rem;
-  background: var(--app-surface, #fff);
-  color: inherit;
-  font-weight: 800;
-  text-decoration: none;
-  box-shadow: 0 8px 22px var(--app-shadow-colour, #1031270b);
-}
-.launcher .intro p { white-space: normal; overflow: visible; }
-.launcher .intro h1 { line-height: 1.08; }
+.shell { min-width: 0; }
 .shell h2, .shell h3 {
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
   color: var(--app-text, #123e31);
@@ -91,7 +75,7 @@
   text-decoration: none;
 }
 .flowPanel button:disabled { opacity: .65; cursor: wait; }
-.flowPanel button:hover:not(:disabled), .approval button:hover, .back:hover { border-color: var(--app-accent, #208460); }
+.flowPanel button:hover:not(:disabled), .approval button:hover { border-color: var(--app-accent, #208460); }
 .shell :is(button, a, input, summary):focus-visible { outline: 3px solid var(--app-info, #4b8edf); outline-offset: 4px; }
 .accountLine { display: grid; gap: .2rem; margin: 1.25rem 0; overflow-wrap: anywhere; }
 .accountLine span { color: var(--app-muted, #60746d); font-size: .95rem; }
@@ -103,7 +87,7 @@
 .active { border-radius: 2rem; padding: .4rem .8rem; background: var(--app-surface-soft, #e5f4eb); font-size: .9rem; font-weight: 700; }
 .empty { padding: 1.3rem 0 .3rem; }
 .empty p { margin: .5rem 0 1rem; color: var(--app-muted, #60746d); }
-.examples { border: 1px solid var(--app-line, #dce7e2); border-radius: 1.5rem; padding: 0; margin-top: 1.35rem; background: var(--app-surface, #fff); overflow: hidden; }
+.examples { border: 1px solid var(--app-line, #dce7e2); border-radius: 1.5rem; padding: 0; margin-top: 0; background: var(--app-surface, #fff); overflow: hidden; }
 .permissions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1.3rem; }
 .permission { min-width: 0; padding: 1.05rem; border-radius: 1rem; border: 1px solid var(--app-line, #dce7e2); background: var(--app-surface-soft, #f6faf8); }
 .permissionIcon { background: var(--app-surface, #fff); }
@@ -137,7 +121,6 @@
   color: #edf5ef;
 }
 @media (max-width: 760px) {
-  :global(body:not(:has([data-website-canvas]))) .page { padding: 1.2rem .85rem; }
   :global(body:not(:has([data-website-canvas]))) .permissions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   :global(body:not(:has([data-website-canvas]))) .approval { padding: 1.1rem; }
 }
@@ -184,13 +167,6 @@
 .providerGrid .permission { display: flex; flex-direction: column; gap: .8rem; }
 .providerGrid .primary { margin-top: auto; }
 
-/* App Users surfaces, with compact content specific to AI connections. */
-.launcher.launcher { gap: 1.15rem; padding: 1.65rem; overflow: visible; }
-.launcher .intro h1 { font-size: 2.35rem; letter-spacing: -.045em; }
-.launcher .actionButton { min-height: 7.5rem; padding: 1.2rem; gap: 1rem; }
-.launcher .actionIcon { width: 3.5rem; height: 3.5rem; border-radius: 1rem; }
-.launcher .actionCopy strong { font-size: 1.6rem; letter-spacing: -.035em; }
-.launcher .actionCopy small { font-size: .9rem; }
 .connectionModal.connectionModal { grid-template-rows: auto minmax(0, 1fr) auto; }
 .setupLayout { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: 1.5rem; align-items: start; }
 .setupLayout .providerGrid { margin: 0; grid-template-columns: 1fr; }
@@ -220,8 +196,6 @@
 @media (max-width: 760px) {
   :global(body:not(:has([data-website-canvas]))) .setupLayout { grid-template-columns: 1fr; }
   :global(body:not(:has([data-website-canvas]))) .dialogFooter { padding: 1rem; flex-wrap: wrap; gap: .75rem; }
-  :global(body:not(:has([data-website-canvas]))) .launcher.launcher { padding: 1.15rem; }
-  :global(body:not(:has([data-website-canvas]))) .launcher .intro h1 { font-size: 1.85rem; }
   :global(body:not(:has([data-website-canvas]))) .connectionCopy { min-width: 0; flex-basis: 60%; }
 }
 

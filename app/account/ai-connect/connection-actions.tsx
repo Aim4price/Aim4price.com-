@@ -97,19 +97,19 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew} ${styles.actionButton}`}
         aria-haspopup="dialog" aria-expanded={flow === 'connect'} aria-controls={flow === 'connect' ? "ai-connect-panel" : undefined}
         onClick={() => flow === 'connect' ? close() : setFlow('connect')}>
-        <span className={`${accessStyles.actionIcon} ${styles.actionIcon}`} aria-hidden="true">
+        <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
-        <span className={`${accessStyles.actionCopy} ${styles.actionCopy}`}><strong>Connect</strong><small>Choose your assistant.</small></span>
+        <span className={accessStyles.actionCopy}><strong>Connect</strong><small>Choose your assistant.</small></span>
       </button>
       <button ref={manageButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage} ${styles.actionButton}`}
         aria-haspopup="dialog" aria-expanded={flow === 'manage'} aria-controls={flow === 'manage' ? "ai-manage-panel" : undefined}
         onClick={() => flow === 'manage' ? close() : setFlow('manage')}>
-        <span className={`${accessStyles.actionIcon} ${styles.actionIcon}`} aria-hidden="true">
+        <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" /></svg>
         </span>
-        <span className={`${accessStyles.actionCopy} ${styles.actionCopy}`}><strong>Manage</strong><small>{count === undefined ? 'View or disconnect access.' : count === 0 ? 'No active connections' : `${count} active connection${count === 1 ? '' : 's'}`}</small></span>
+        <span className={accessStyles.actionCopy}><strong>Manage</strong><small>{count === undefined ? 'View or disconnect access.' : count === 0 ? 'No active connections' : `${count} active connection${count === 1 ? '' : 's'}`}</small></span>
 
       </button>
     </div>

@@ -48,11 +48,26 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   const base={account:{name:'Example Farm',email:'owner@example.test'},resource:'https://www.aim4price.com/api/ai/mcp',providers:[{name:'ChatGPT',launchUrl:'https://chatgpt.com/'},{name:'Claude',launchUrl:'https://claude.ai/'}],connections:[]};
   async function render(props,dark=false){
    await page.goto('about:blank');
-   await page.setContent(`<!doctype html><html data-background="${dark?'dark':'light'}"><head><style>:root{--modal-backdrop-color:rgba(8,23,18,.55);--modal-backdrop-filter:blur(6px)}body{margin:0;font-family:Arial;background:${dark?'#111827':'#eef2f4'};color:#17202b}button,input{font:inherit}*{box-sizing:border-box}${sheets.join('\n')}</style></head><body><div id="root"></div><script>${react}</script><script>${reactDOM}</script><script>${runtime};ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(require('app/account/ai-connect/connection-view').default,${JSON.stringify(props)}));</script></body></html>`);
+   await page.setContent(`<!doctype html><html data-background="${dark?'dark':'light'}"><head><style>:root{--website-design-vw:1vw;--website-design-vh:1vh;--shell-width:min(calc(100% - 3rem),1180px);--modal-backdrop-color:rgba(8,23,18,.55);--modal-backdrop-filter:blur(6px)}body{margin:0;font-family:Arial;background:${dark?'#111827':'#eef2f4'};color:#17202b}button,input{font:inherit}*{box-sizing:border-box}${sheets.join('\n')}</style></head><body><div id="root"></div><script>${react}</script><script>${reactDOM}</script><script>${runtime};ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(require('app/account/ai-connect/connection-view').default,${JSON.stringify(props)}));</script></body></html>`);
    await page.waitForSelector('h1');
   }
   await page.setViewport({width:1280,height:1000});
   await render(base,true);
+  // The launcher must keep the Owner App Users dimensions, without compact overrides.
+  const sizing = await page.evaluate(() => {
+   const title = document.querySelector('h1');
+   const card = document.querySelector('button[aria-haspopup="dialog"]');
+   return {
+    shell: document.querySelector('main > div').getBoundingClientRect().width,
+    title: parseFloat(getComputedStyle(title).fontSize),
+    card: parseFloat(getComputedStyle(card).minHeight),
+    icon: card.firstElementChild.getBoundingClientRect().width,
+   };
+  });
+  assert.equal(sizing.shell,1180);
+  assert.ok(Math.abs(sizing.title-57.6)<.1);
+  assert.ok(Math.abs(sizing.card-179.2)<.1);
+  assert.ok(Math.abs(sizing.icon-76.8)<.1);
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.ok((await page.$eval('[role="dialog"]',e=>e.textContent)).includes('Claude'));
   assert.equal(await page.$eval('a[href="https://claude.ai/"]',e=>e.textContent),'Open Claude');
@@ -89,6 +104,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   const text=await page.$eval('main',e=>e.textContent);assert.ok(text.includes('cross-account administrator access'));assert.ok(!text.includes('Costs & budgets'));assert.ok(!text.includes('Fuel purchases'));
   await page.screenshot({path:path.join(evidence,'admin-consent.png'),fullPage:true});
   await page.setViewport({width:390,height:844});await render(base,false);
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
+  await page.screenshot({path:path.join(evidence,'owner-overview-mobile.png'),fullPage:true});
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
   await page.screenshot({path:path.join(evidence,'owner-provider-modal-mobile.png'),fullPage:true});
