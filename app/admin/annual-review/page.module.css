@@ -183,3 +183,10 @@
 .disclosureMark::after { width: 2px; height: 10px; top: 3px; left: 7px; }
 .calculationDetails[open] .disclosureMark::after { display: none; }
 @media (max-width: 600px) { .page .options button { padding: 1rem; } }
+
+/* A single, compact heading replaces the repeated status strips. */
+.dialog .reviewHeader { align-items: center; gap: 1rem; background: linear-gradient(110deg, var(--app-surface-soft, #edf6f1), var(--app-surface, #fff)); }
+.reviewHeader h2 { margin: 0; flex: 1; font-size: clamp(1.4rem, 2.8vw, 2rem); line-height: 1.2; }
+.reviewName { font-size: 1rem; font-weight: 650; }
+.dialog .welcomeHeader { padding-block: 1rem !important; }
+.reviewHeader > button { flex-shrink: 0; margin-left: auto; }
