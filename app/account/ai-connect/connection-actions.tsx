@@ -5,15 +5,20 @@ import { createPortal } from '../../../components/WebsitePortal';
 import { useRouter } from 'next/navigation';
 import accessStyles from '../app-access-management.module.css';
 import styles from './page.module.css';
+import { providerLogos } from './provider-logos';
 
 type Flow = 'connect' | 'manage';
 
-export default function ConnectionActions({ setup, management, count, admin = false }: {
+export default function ConnectionActions({ setup, management, count, assistantOptions = [], admin = false }: {
   admin?: boolean;
+  assistantOptions?: { name: string; available: boolean; setup: ReactNode }[];
   setup: ReactNode;
   management: ReactNode;
   count?: number;
 }) {
+  const [selectedAssistant, setSelectedAssistant] = useState<string | null>(null);
+  const assistant = assistantOptions.find(option => option.name === selectedAssistant);
+  const choosingAssistant = !admin && !assistant;
   const router = useRouter();
   const [checking, startTransition] = useTransition();
   const [checked, setChecked] = useState(false);
@@ -59,6 +64,7 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         event.preventDefault();
         event.stopPropagation();
         setFlow(null);
+        setSelectedAssistant(null);
       } else if (event.key === 'Tab') {
         const elements = focusable();
         const first = elements[0];
@@ -89,6 +95,7 @@ export default function ConnectionActions({ setup, management, count, admin = fa
 
   function close() {
     setFlow(null);
+    setSelectedAssistant(null);
   }
 
   return <>
@@ -120,19 +127,29 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
-          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? 'Connect your assistant' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
+          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Choose where you want to ask about your Aim4price records.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : ''}`}>
-          {flow === 'connect' ? setup : management}
+          {flow === 'connect' ? admin ? setup : choosingAssistant ? <div className={styles.assistantChoices}>
+            {assistantOptions.map(option => <button type="button" key={option.name} className={styles.assistantChoice}
+              onClick={() => { setSelectedAssistant(option.name); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>
+              <img src={providerLogos[option.name]} alt="" width="56" height="56" />
+              <strong>{option.name}</strong>
+              <span>{option.available ? 'Set up connection' : 'Not available yet'}</span>
+            </button>)}
+          </div> : <>
+            <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>
+            {assistant?.setup}
+          </> : management}
 
         </div>
         <footer className={styles.dialogFooter}>
           <p role="status">{checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : 'Access appears here after approval in your assistant.'}</p>
           <div className={styles.footerActions}>
-          <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>
-          {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => setFlow('connect')}>Connect assistant</button>}
+          {(flow === 'manage' || !choosingAssistant) && <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>}
+          {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => { setSelectedAssistant(null); setFlow('connect'); }}>Connect assistant</button>}
           </div>
         </footer>
       </section>

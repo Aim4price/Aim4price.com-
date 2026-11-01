@@ -66,24 +66,27 @@ function SharedInformation({ examples = false, admin = false }: { examples?: boo
 export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [] }: ConnectionViewProps) {
   const admin = audience === 'admin';
   const duration = admin ? '24 hours' : '30 days';
-  const setup = <>
-    {signInHref ? <div className={styles.empty}>
+  const makeSetup = (selectedProvider?: string) => <>
+    {selectedProvider && !signInHref && !providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? <div className={styles.empty}>
+      <h3>{selectedProvider} connection is not available yet</h3>
+      <p>{selectedProvider === 'Gemini' ? 'Gemini setup is planned. We will enable it after regional availability and the Aim4price connection have been verified.' : 'We will enable this option once its Aim4price connection is configured and tested.'}</p>
+    </div> : signInHref ? <div className={styles.empty}>
       <h3>Sign in to get started</h3>
       <p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
     </div> : resource ? <>
       <div className={styles.setupLayout}>
       <div className={styles.providerGrid}>
-        {providers.map(provider => <div className={styles.permission} key={provider.name}>
+        {providers.filter(provider => !selectedProvider || provider.name.toLowerCase().includes(selectedProvider.toLowerCase())).map(provider => <div className={styles.permission} key={provider.name}>
           <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind="chat" /></span><h3>{provider.name}</h3></div>
           <p>{admin ? 'Private admin reporting with read-only access.' : 'Ask about your Aim4price records with read-only access.'}</p>
           {provider.launchUrl && <a className={styles.primary} href={provider.launchUrl} target="_blank" rel="noopener noreferrer">Open {provider.name}</a>}
         </div>)}
       </div>
       <ul className={styles.steps}>
-        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Open your assistant and add its Aim4price connection. Opening the assistant alone does not connect it.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Open {selectedProvider || 'your assistant'} and add its Aim4price connection. Opening it alone does not connect it.</p></div></li>
         <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Sign in to Aim4price and review the account and read-only access.</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Return to your assistant and select Aim4price in your conversation.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Return to {selectedProvider || 'your assistant'} and select Aim4price in your conversation.</p></div></li>
       </ul>
       </div>
       <details className={styles.setup}>
@@ -99,6 +102,13 @@ export default function ConnectionView({ account, connections, resource, proof, 
       {!admin && <AccountSetup />}
     </>}
   </>;
+
+  const setup = makeSetup();
+  const assistantOptions = ['ChatGPT', 'Claude', 'Gemini'].map(name => ({
+    name,
+    available: providers.some(provider => provider.name.toLowerCase().includes(name.toLowerCase())),
+    setup: makeSetup(name),
+  }));
 
   const management = <>
     {account && <div className={`${accessStyles.loginIdentity} ${styles.accountLine}`}><Icon kind="asset" /><div><strong>{account.name}</strong><span>{account.email}</span></div></div>}
@@ -143,7 +153,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
               <p className={styles.note}>Access lasts {duration}. You can disconnect from this page at any time. Information already shared may remain in your AI conversations.</p>
               <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
             </form>
-          </section> : <ConnectionActions admin={admin} setup={setup} management={management} count={connections?.length} />}
+          </section> : <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} />}
           <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
         </section>
         {!proof && <details className={styles.examples} open>
