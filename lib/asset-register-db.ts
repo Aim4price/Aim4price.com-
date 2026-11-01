@@ -4066,3 +4066,14 @@ export async function saveApprovedAssetValue(client: import('pg').PoolClient, as
   return mapAssetRegisterRow(result.rows[0]);
 }
 
+
+/** Admin preview reads existing rows only; never creates a register or installs schema. */
+export async function readAnnualReviewAssets(userId: string, assetId?: string): Promise<AssetRegisterItem[]> {
+  const schema = await getTableSchema('asset_register_items');
+  const result = await getDb().query<AssetRegisterRow>(`
+    select ${buildSelectList(schema)} from asset_register_items
+    where user_id = $1 ${assetId ? 'and id = $2::uuid' : ''}
+    ${schema.columnNames.has('lifecycle_state') ? "and coalesce(lifecycle_state, 'active') = 'active'" : ''}
+    order by id`, assetId ? [userId, assetId] : [userId]);
+  return result.rows.map(mapAssetRegisterRow);
+}
