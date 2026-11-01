@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
+import { createPortal } from '../../../components/WebsitePortal';
+import { useRouter } from 'next/navigation';
 import accessStyles from '../app-access-management.module.css';
 import styles from './page.module.css';
 
@@ -12,8 +14,19 @@ export default function ConnectionActions({ setup, management, count, admin = fa
   management: ReactNode;
   count?: number;
 }) {
+  const router = useRouter();
+  const [checking, startTransition] = useTransition();
+  const [checked, setChecked] = useState(false);
+  function checkStatus() {
+    setChecked(true);
+    startTransition(() => router.refresh());
+  }
   const [flow, setFlow] = useState<Flow | null>(null);
-  const panel = useRef<HTMLElement>(null);
+  const panel = useRef<HTMLElement | null>(null);
+  const attachPanel = useCallback((element: HTMLElement | null) => {
+    panel.current = element;
+    element?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus();
+  }, []);
   const connectButton = useRef<HTMLButtonElement>(null);
   const manageButton = useRef<HTMLButtonElement>(null);
 
@@ -84,26 +97,26 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew} ${styles.actionButton}`}
         aria-haspopup="dialog" aria-expanded={flow === 'connect'} aria-controls={flow === 'connect' ? "ai-connect-panel" : undefined}
         onClick={() => flow === 'connect' ? close() : setFlow('connect')}>
-        <span className={accessStyles.actionIcon} aria-hidden="true">
+        <span className={`${accessStyles.actionIcon} ${styles.actionIcon}`} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
-        <span className={accessStyles.actionCopy}><strong>Connect</strong><small>Choose your assistant.</small></span>
+        <span className={`${accessStyles.actionCopy} ${styles.actionCopy}`}><strong>Connect</strong><small>Choose your assistant.</small></span>
       </button>
       <button ref={manageButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage} ${styles.actionButton}`}
         aria-haspopup="dialog" aria-expanded={flow === 'manage'} aria-controls={flow === 'manage' ? "ai-manage-panel" : undefined}
         onClick={() => flow === 'manage' ? close() : setFlow('manage')}>
-        <span className={accessStyles.actionIcon} aria-hidden="true">
+        <span className={`${accessStyles.actionIcon} ${styles.actionIcon}`} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" /></svg>
         </span>
-        <span className={accessStyles.actionCopy}><strong>Manage</strong><small>View or disconnect access.</small></span>
-        {count !== undefined && <span className={accessStyles.actionMeta}><span className={accessStyles.countPill} aria-label={`${count} active connections`}>{count}</span></span>}
+        <span className={`${accessStyles.actionCopy} ${styles.actionCopy}`}><strong>Manage</strong><small>{count === undefined ? 'View or disconnect access.' : count === 0 ? 'No active connections' : `${count} active connection${count === 1 ? '' : 's'}`}</small></span>
+
       </button>
     </div>
-    {flow && <div className={accessStyles.modalOverlay} data-website-overlay>
+    {flow && createPortal(<div className={`${accessStyles.modalOverlay} ${styles.connectionOverlay}`} data-website-overlay>
       <button type="button" className={accessStyles.modalBackdrop} tabIndex={-1} aria-label="Close AI connection dialog" onClick={close} />
-      <section ref={panel} id={`ai-${flow}-panel`}
-        className={`${accessStyles.modal} ${accessStyles.notificationStyle}`}
+      <section ref={attachPanel} id={`ai-${flow}-panel`}
+        className={`${accessStyles.modal} ${accessStyles.notificationStyle} ${styles.connectionModal}`}
         role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
@@ -113,9 +126,14 @@ export default function ConnectionActions({ setup, management, count, admin = fa
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel}`}>
           {flow === 'connect' ? setup : management}
+          {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => setFlow('connect')}>Connect assistant</button>}
         </div>
+        <footer className={styles.dialogFooter}>
+          <p role="status">{checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : 'Access appears here after approval in your assistant.'}</p>
+          <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>
+        </footer>
       </section>
-    </div>}
+    </div>, document.body)}
   </>;
 }
 

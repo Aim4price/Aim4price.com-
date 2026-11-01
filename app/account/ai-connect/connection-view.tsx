@@ -27,6 +27,8 @@ export type ConnectionViewProps = {
 function Icon({ kind = 'spark' }: { kind?: string }) {
   const paths: Record<string, string> = {
     spark: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
+    chat: 'M4 4h16v12H9l-5 4V4Zm4 4h8m-8 4h5',
+    link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
     shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6',
     asset: 'M3 7h18v14H3V7Zm4 0V3h10v4M3 12h18M9 12v3h6v-3',
     cost: 'M5 3h14v18l-3-2-4 2-4-2-3 2V3Zm4 5h6m-6 4h6m-6 4h3',
@@ -52,9 +54,9 @@ const adminPermissions = [
 ];
 function SharedInformation({ examples = false, admin = false }: { examples?: boolean; admin?: boolean }) {
   return <div className={examples ? styles.questionGrid : admin ? styles.adminPermissions : styles.permissions}>
-    {(admin ? adminPermissions : permissions).map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title}>
+    {(admin ? adminPermissions : permissions).map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title} data-category={icon}>
       <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind={icon} /></span><h3>{title}</h3></div>
-      <p>{detail}</p>
+      {!examples && <p>{detail}</p>}
       {examples && <div className={styles.question}><p>“{example}”</p><CopyQuestion question={example} category={title} /></div>}
     </div>)}
   </div>;
@@ -69,27 +71,28 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
     </div> : resource ? <>
-      <p className={styles.description}>Choose a configured assistant, add the Aim4price connection there, then sign in and approve access.</p>
+      <div className={styles.setupLayout}>
       <div className={styles.providerGrid}>
         {providers.map(provider => <div className={styles.permission} key={provider.name}>
-          <h3>{provider.name}</h3>
-          <p>Configured for {admin ? 'private admin reporting' : 'Owner accounts'}. Connection setup in the assistant is required.</p>
-          {provider.launchUrl && <a className={styles.primary} href={provider.launchUrl} target="_blank" rel="noopener noreferrer">Open {provider.name} ↗</a>}
+          <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind="chat" /></span><h3>{provider.name}</h3></div>
+          <p>{admin ? 'Private admin reporting with read-only access.' : 'Ask about your Aim4price records with read-only access.'}</p>
+          {provider.launchUrl && <a className={styles.primary} href={provider.launchUrl} target="_blank" rel="noopener noreferrer">Open {provider.name}</a>}
         </div>)}
       </div>
-      <ol className={styles.steps}>
-        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><h3>Add Aim4price in your assistant</h3><p>Use the installed Aim4price connection, or its custom MCP connection settings. Opening the assistant alone does not connect it.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><h3>Sign in and approve</h3><p>Check the provider, account and permissions before allowing read-only access.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><h3>Ask your question</h3><p>Return to your assistant and select Aim4price in your conversation.</p></div></li>
-      </ol>
+      <ul className={styles.steps}>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Add Aim4price</h3><p>Open your assistant and add its Aim4price connection. Opening the assistant alone does not connect it.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Sign in to Aim4price and review the account and read-only access.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask your question</h3><p>Return to your assistant and select Aim4price in your conversation.</p></div></li>
+      </ul>
+      </div>
       <details className={styles.setup}>
-        <summary>Connection address & setup help</summary>
+        <summary>Manual setup & connection address</summary>
         <p>Copy this address into the assistant’s MCP server URL field. It is not a browser sign-in link. Custom connections must use a provider registered by Aim4price.</p>
         <ServerAddress resource={resource} />
         {admin && <><p>OAuth client ID: <code>{clientId}</code></p><p>Scope: <code>aim4price:admin:read</code>. Use the separate admin client secret from Railway’s secure variable settings when configuring the private assistant connection.</p></>}
-        <p className={styles.note}>Use OAuth sign-in. No personal API key is needed. Never paste passwords or connection secrets into a chat. A public directory listing is not required for a configured custom connection.</p>
+        <p className={styles.note}>Use OAuth sign-in. No personal API key is needed. Never paste passwords or connection secrets into a chat.</p>
       </details>
-      <p className={styles.note}>Additional assistants become available after their connection is configured and tested.</p>
+
     </> : <>
       <p className={styles.description}>{disabled ? 'AI connections are not enabled here yet.' : 'Check your account to help with connection setup.'}</p>
       {!admin && <AccountSetup />}
@@ -97,7 +100,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
   </>;
 
   const management = <>
-    {account && <div className={styles.accountLine}><strong>{account.name}</strong><span>{account.email}</span></div>}
+    {account && <div className={`${accessStyles.loginIdentity} ${styles.accountLine}`}><Icon kind="asset" /><div><strong>{account.name}</strong><span>{account.email}</span></div></div>}
     {connections?.length ? <div className={styles.connectionList}>
       {connections.map(c => <div className={styles.connection} key={c.id}>
         <span className={styles.connectionIcon}><Icon /></span>
@@ -109,8 +112,9 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <DisconnectButton id={c.id} audience={audience} />
       </div>)}
     </div> : <div className={styles.empty}>
+      <span className={styles.emptyIcon}><Icon kind="link" /></span>
       <h3>{connections ? 'No active connections' : 'Connection details unavailable'}</h3>
-      <p>{connections ? 'Use Connect to set up your assistant. Once approved, its access will appear here.' : signInHref ? 'Sign in to view and manage your connections.' : 'Your connections will appear here once your account is ready.'}</p>
+      <p>{connections ? 'Connect your assistant to start asking about your records. Approved connections will appear here.' : signInHref ? 'Sign in to view and manage your connections.' : 'Your connections will appear here once your account is ready.'}</p>
       {signInHref && <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>}
     </div>}
     <p className={styles.note}>Access lasts {duration}. Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
@@ -119,13 +123,13 @@ export default function ConnectionView({ account, connections, resource, proof, 
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
-        <Link href={admin ? "/admin" : "/account"} className={styles.back}>← Back to {admin ? 'admin' : 'account'}</Link>
+        <Link href={admin ? "/admin" : "/account"} className={styles.back}>Back to {admin ? 'admin' : 'account'}</Link>
         <section className={`${accessStyles.launcher} ${styles.launcher}`} aria-labelledby="ai-connections-title">
           <div className={`${accessStyles.launcherIntro} ${styles.intro}`}>
             <h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1>
-            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : 'Connect your assistant. Ask about your assets. Stay in control.'}</p>
+            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
-          <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Your records stay yours.'}</strong> AI can read information you approve, but cannot add, edit or delete your records.</p></div>
+          <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
             <h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2>
@@ -141,7 +145,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
             </form>
           </section> : <ConnectionActions admin={admin} setup={setup} management={management} count={connections?.length} />}
         </section>
-        {!proof && <details className={styles.examples}>
+        {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
             <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Turn your records into answers</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
             <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg></span>
