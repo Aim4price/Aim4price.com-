@@ -21,6 +21,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import Link from "next/link";
+import { watchMapTileFailures } from "../../lib/map-tile-recovery";
 import { downloadAssetMapReport } from "../../lib/asset-map-download";
 import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
@@ -1167,8 +1168,11 @@ export default function AssetMapClient() {
         );
         // Identify only the website origin to OSM, never an asset URL or token.
         // Leaflet can initialise successfully even when its tile server rejects images.
-        roadLayer.on("tileerror", () => {
-          if (!cancelled) setRoadTilesUnavailable(true);
+        watchMapTileFailures(roadLayer, () => {
+          if (cancelled || !map.hasLayer(roadLayer)) return;
+          setRoadTilesUnavailable(true);
+          setBasemapMode("satellite");
+          setNotice({ tone: "error", message: "Street map unavailable. Switched to Satellite view." });
         });
         const satelliteLayer = L.tileLayer(
           "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",

@@ -203,7 +203,7 @@ test("street tiles identify only the origin, even on a private document", () => 
 });
 
 test("tile failures offer satellite without removing the asset list", () => {
-  assert.match(assetMapClient, /roadLayer\.on\("tileerror",[\s\S]*?if \(!cancelled\) setRoadTilesUnavailable\(true\)/);
+  assert.match(assetMapClient, /watchMapTileFailures\(roadLayer,[\s\S]*?if \(cancelled \|\| !map\.hasLayer\(roadLayer\)\) return;[\s\S]*?setBasemapMode\("satellite"\)/);
   const sidebar = assetMapClient.slice(assetMapClient.indexOf('<aside'), assetMapClient.indexOf('</aside>'));
   assert.doesNotMatch(sidebar, /roadTilesUnavailable/);
   assert.match(assetMapClient, /roadTilesUnavailable && basemapMode === "road"[\s\S]*?setBasemapMode\("satellite"\)/);
