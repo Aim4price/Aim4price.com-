@@ -6,7 +6,7 @@ import {stripTypeScriptTypes} from 'node:module';
 const source=readFileSync(new URL('../lib/maintenance-reminders.ts',import.meta.url),'utf8');
 const brand=readFileSync(new URL('../lib/email-brand.ts',import.meta.url),'utf8');
 function load(overrides={}){
- const dependencies={process:{env:{}},getDb:()=>({query:async()=>({rows:[]})}),ensureAssetMaintenanceTables:async()=>{},listAssetMaintenanceRecords:async()=>[],getAssetMaintenanceRecordById:async()=>null,getAssetRegisterItemById:async()=>({serialNumber:'ABC'}),getSiteOrigin:()=> 'https://www.aim4price.com',sendAim4priceEmail:async()=>{},...overrides};
+ const dependencies={maintenanceAssetAvailable:async()=>true,process:{env:{}},getDb:()=>({query:async()=>({rows:[]})}),ensureAssetMaintenanceTables:async()=>{},listAssetMaintenanceRecords:async()=>[],getAssetMaintenanceRecordById:async()=>null,getAssetRegisterItemById:async()=>({serialNumber:'ABC'}),getSiteOrigin:()=> 'https://www.aim4price.com',sendAim4priceEmail:async()=>{},...overrides};
  const code=stripTypeScriptTypes(brand+'\n'+source.replace(/^import .*\n/gm,'')).replace(/^export /gm,'');
  return new Function(...Object.keys(dependencies),code+';return {maintenanceReminderEmail,sendMaintenanceReminderBatch,reminderStage};')(...Object.values(dependencies));
 }
@@ -47,3 +47,11 @@ test('completion detected before sending suppresses reminder',async()=>{
  const api=load({process:{env:{MAINTENANCE_REMINDER_ENABLED:'true'}},getDb:()=>({query}),listAssetMaintenanceRecords:async()=>[record],getAssetMaintenanceRecordById:async()=>({...record,status:'done'}),sendAim4priceEmail:async()=>{throw Error('Must not send');}});
  assert.equal((await api.sendMaintenanceReminderBatch()).sent,0);
 });
+
+test('asset removed between selection and provider call is not emailed',async()=>{
+ let checks=0,sends=0;
+ const query=async(sql,args)=>({rows:sql.includes('SELECT DISTINCT user_id')?[{user_id:'owner'}]:sql.includes('SELECT id,email,name')?[{id:'owner',email:'owner@example.test'}]:sql.includes('RETURNING event_key')?[{event_key:args[0]}]:[]});
+ const api=load({process:{env:{MAINTENANCE_REMINDER_ENABLED:'true',RESEND_API_KEY:'test'}},getDb:()=>({query}),maintenanceAssetAvailable:async()=>++checks===1,listAssetMaintenanceRecords:async()=>[record],getAssetMaintenanceRecordById:async()=>record,sendAim4priceEmail:async()=>{sends++;}});
+ assert.equal((await api.sendMaintenanceReminderBatch()).sent,0);assert.equal(checks,2);assert.equal(sends,0);
+});
+
