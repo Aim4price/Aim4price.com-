@@ -48,7 +48,7 @@ export default function MaintenanceEntryChoice(props: Props) {
       transitionTimer.current = null;
       setTransitioning(false);
       action();
-    }, 450);
+    }, 700);
   };
   const choices = props.step === 'timing' ? [
     { label: 'Already done', description: 'Record past services, repairs or checks.', icon: <CostDetailIcon kind="document" />, onClick: props.onDone },
