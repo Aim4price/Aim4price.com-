@@ -203,7 +203,11 @@ function ScheduleIcon() {
   return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 2v6m10-6v6M3 10h18M7 14h3m4 0h3M7 17h3" /></svg>;
 }
 function ChecklistIcon() {
-  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 6 1 1 2-2m-3 6 1 1 2-2M13 8h4m-4 5h4m-4 5h4" /></svg>;
+  return (
+    <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m3 6 2 2 3-4M12 6h9m-18 7 2 2 3-4M12 13h9M3 20h5m4 0h9" />
+    </svg>
+  );
 }
 
 function ManageIcon() {
