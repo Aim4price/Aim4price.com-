@@ -5932,3 +5932,92 @@
 .leadsPage .leadThread:has(.leadControlTooltip:is(:hover, :focus-visible)) {
   z-index: 1;
 }
+
+/* Shared lead/tracking confirmation: keep every region inside the card. */
+.leadDeleteModal.leadDeleteModal .leadDeleteContent {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Override the account dialog's inset header, which assumes a padded parent. */
+.leadDeleteModal.leadDeleteModal.leadDeleteModal .leadDeleteHeader.leadDeleteHeader.leadDeleteHeader.leadDeleteHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 2.75rem !important;
+  align-items: start !important;
+  gap: 1.25rem !important;
+  width: auto !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 1.5rem !important;
+}
+
+.leadDeleteModal .leadDeleteHeader > div {
+  min-width: 0;
+}
+
+.leadDeleteModal .leadDeleteCloseButton.leadDeleteCloseButton {
+  position: static !important;
+  margin: 0 !important;
+}
+
+.leadDeleteModal .leadDeleteSummary.leadDeleteSummary {
+  box-sizing: border-box;
+  width: auto !important;
+  min-width: 0;
+  max-width: none !important;
+  overflow-wrap: anywhere;
+}
+
+.leadDeleteModal .leadDeleteSummary > span {
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+.leadDeleteModal .leadDeleteSummary > small {
+  display: block;
+  line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.leadDeleteModal .leadDeleteWarning {
+  min-width: 0;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+
+.leadDeleteModal .leadDeleteActions.leadDeleteActions {
+  box-sizing: border-box;
+  width: auto !important;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.leadDeleteModal .leadDeleteActions > button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 10.5rem !important;
+  max-width: 100%;
+  padding: 0.85rem 1.5rem !important;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.leadDeleteModal .leadDeleteActions > button > span {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal.leadDeleteModal.leadDeleteModal .leadDeleteHeader.leadDeleteHeader.leadDeleteHeader.leadDeleteHeader {
+    padding: 1.2rem !important;
+    gap: 0.85rem !important;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal .leadDeleteActions > button {
+    width: 100%;
+    min-width: 0 !important;
+  }
+}
