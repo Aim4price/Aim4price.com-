@@ -7,12 +7,23 @@ Open **Admin → Preview annual review** (`/admin/annual-review`). The defaults 
 selected owner's existing active assets across all registers. Both the page and
 API require the existing Aim4price Admin access check.
 
-The four screens support asset selection, per-asset depreciation, optional
-replacement-price changes, and a summary. Every screen says **Preview — no changes
-saved**. “Include in preview” is a simulated decision, not a save. Close/Escape
-cancels outstanding calculation requests; Resume retains the current in-memory
-preview. Leaving/reloading the page clears that preview. Change the year and open
-a fresh preview to inspect the following year.
+The flow offers one account-wide percentage adjustment, with no asset picker or
+individual replacement-price inputs:
+
+1. A New Year welcome.
+2. Yes/No to updating replacement prices; No closes without calculating or saving.
+3. A percentage slider, starting at the suggested 3% allowance (not a measured
+   inflation rate), adjustable from -10% to +20% in 0.5-point increments.
+4. Aggregate current/proposed replacement prices and asset values, including the
+   monetary changes. Totals cover successfully calculated eligible assets only;
+   incomplete/failed previews cannot proceed to confirmation.
+5. A separate confirmation. **Confirm preview** changes only the in-memory UI to
+   **Preview complete**; there is still no saving endpoint.
+
+Every screen says **Preview — no changes saved**. Close/Escape cancels outstanding
+requests. Resume retains in-memory results; retry requests only missing/failed
+assets. Changing the percentage clears old results and confirmation. Leaving or
+reloading clears the preview. Individual changes belong in the Asset Register.
 
 - No cron, annual prompt, write endpoint, history record, notification, saleability
   update, or annual completion marker is introduced.
@@ -24,7 +35,7 @@ a fresh preview to inspect the following year.
   process clock, environment, database timestamps, or defaults for live callers.
   Passing the simulation context into a saving recalculation is rejected.
 - Recalculation uses current valuation rules and saved inputs. Usage and condition
-  are retained. The preview does not project usage or inflate replacement prices.
+  are retained. Replacement prices change only in the preview after the Admin chooses a percentage; usage is never projected.
 - Manual valuations, unknown age, fixed age overrides, missing valuation dates,
   and assets already valued in/after the simulated year are excluded with a reason.
   Dates use the South African calendar boundary. No old value is repeatedly
@@ -33,11 +44,13 @@ a fresh preview to inspect the following year.
   the item prices agree. The calculator receives the new base plus saved extras
   once. Tractor extras retain their own saved prices and installation years.
   Ambiguous legacy extras are excluded rather than guessed.
-- All displayed valuation results exclude VAT. Individual replacement inputs can
-  include VAT at 15%; conversion occurs once before server calculation. Percentage
-  adjustments affect the asset-only replacement price, not saved extras.
-- A replacement preview recalculates at the simulated year, even if the initial
-  depreciation screen was skipped; the screen explicitly explains this.
+- All totals exclude VAT and cover eligible assets only. Replacement totals are
+  explicitly asset-only; saved extras remain separate and unchanged. Asset-value
+  totals include each valuation engine’s treatment of those extras.
+- The same chosen percentage applies to every eligible asset’s base replacement
+  price. Values are recalculated for the simulated year using the current rules,
+  so age depreciation can offset a replacement-price increase. The percentage
+  is never applied directly to the old asset value.
 - Failed calculations remain visible and can be retried without repeating successful
   ones. Asset revision checks reject results from an asset changed since loading.
 - Saleability warnings refer to existing saved assessments; none are marked stale.
@@ -51,9 +64,9 @@ snapshots and calculation failures. Database doubles reject every non-SELECT que
 Saving functions throw if the preview ever reaches them.
 
 `node scripts/verify-annual-review.cjs` renders the real client against isolated
-fixture APIs on desktop, tablet and mobile. It exercises selections, failed-only
-retries, percentage changes, VAT inputs, Close/Escape/Resume and a new year's
-preview. It checks modal geometry and produces screenshots under
+fixture APIs on desktop, tablet and mobile. It exercises the No path, the default 3% slider, zero/negative adjustments,
+aggregate totals, failed-only retries, Close/Escape/Resume, confirmation without
+network writes, the following year and a large register. It checks modal geometry and produces screenshots under
 `.next/annual-review-validation`. It never signs in to production or uses real
 owner data.
 
