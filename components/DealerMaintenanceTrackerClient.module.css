@@ -3062,8 +3062,8 @@
 .historyPeriod > span { flex: 0 0 auto; }
 .historyPeriod select { flex: 1; width: 0; }
 @media (max-width: 760px) {
-  .dealerApp .historyModal .historyToolbar { grid-template-columns: 1fr; padding: 0; }
-  .dealerApp .historyRecordDetails > summary { gap: .6rem; flex-wrap: nowrap; }
-  .dealerApp .historyExpandLabel { margin-left: 0; font-size: 0; gap: 0; }
-  .dealerApp .historyRecordHeading > span { line-height: 1.5; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyModal .historyToolbar { grid-template-columns: 1fr; padding: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyRecordDetails > summary { gap: .6rem; flex-wrap: nowrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyExpandLabel { margin-left: 0; font-size: 0; gap: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyRecordHeading > span { line-height: 1.5; }
 }
