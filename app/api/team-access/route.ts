@@ -2,7 +2,7 @@ import { listAssetGroups } from '../../../lib/asset-groups';
 import { buildAppAssetDirectoryGroups } from '../../../lib/app-asset-directory';
 import { NextRequest } from 'next/server';
 import { getDb } from '../../../lib/db';
-import { requireTeamOwner, mapTeamGrant, saveTeamGrant, setTeamGrantStatus, removeTeamGrant, listTeamOwnerAssets } from '../../../lib/team-access';
+import { requireTeamOwner, mapTeamGrant, saveTeamGrant, setTeamGrantStatus, prepareTeamAccessEmail, removeTeamGrant, listTeamOwnerAssets } from '../../../lib/team-access';
 import { teamJson, teamError } from '../../../lib/team-access-http';
 import { TeamAccessError } from '../../../lib/team-access-policy';
 import { listAssetRegisters } from '../../../lib/asset-registers';
@@ -38,24 +38,26 @@ export async function POST(request: NextRequest) {
             return teamJson({ ok: true, warning: 'Desktop user removed. Their access to this business has ended.' });
         }
         let grant;
-        if (body.action === 'revoke' || body.action === 'reinvite' || body.action === 'send-invitation') {
+        if (body.action === 'revoke' || body.action === 'reinvite') {
             grant = await setTeamGrantStatus(actor, String(body.id || ''), Number(body.version), body.action === 'revoke' ? 'revoked' : 'pending');
         }
+        else if (body.action === 'send-invitation')
+            grant = await prepareTeamAccessEmail(actor, String(body.id || ''), Number(body.version));
         else if (body.action === 'save')
             grant = await saveTeamGrant(actor, body);
         else
             throw new TeamAccessError('Unsupported team action.', 400);
         let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link and password with this person.' : 'Desktop access saved.') : 'Desktop access saved. No email sent.';
         // Saving or reactivating access never sends email, including requests from older clients.
-        if (body.action === 'send-invitation' && grant.status === 'pending') {
+        if (body.action === 'send-invitation' && grant.status === 'active') {
             const link = getSiteOrigin() + '/team';
             const name = (profile.businessName || profile.displayName || 'An Aim4price business').replace(/[<>"&]/g, '');
             try {
-                await sendAim4priceEmail({ to: grant.email, subject: `${name} invited you to Aim4price`, text: `${name} invited you to their team workspace. Sign in with your existing Aim4price account and accept the invitation at ${link}. Your access is controlled by the business owner.`, html: `<p>${name} invited you to their Aim4price team workspace.</p><p>Sign in with your existing Aim4price account and accept the invitation.</p><p><a href="${link}">Open team workspace</a></p><p>Your access is controlled by the business owner.</p>` });
-                warning = 'Invitation sent. This person uses their existing Aim4price password.';
+                await sendAim4priceEmail({ to: grant.email, subject: `${name} gave you access to Aim4price`, text: `${name} gave you access to their team workspace. Sign in with your existing Aim4price account at ${link}. Your access is controlled by the business owner.`, html: `<p>${name} gave you access to their Aim4price team workspace.</p><p>Sign in with your existing Aim4price account to open the workspace.</p><p><a href="${link}">Open team workspace</a></p><p>Your access is controlled by the business owner.</p>` });
+                warning = 'Access email sent. This person uses their existing Aim4price password.';
             }
             catch {
-                warning = 'Access saved, but the invitation email could not be sent. Copy the team workspace link and share it with this person.';
+                warning = 'Access saved, but the access email could not be sent. Copy the team workspace link and share it with this person.';
             }
         }
         return teamJson({ ok: true, member: grant, warning });
