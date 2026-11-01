@@ -26,7 +26,12 @@ async function main() {
       const u=new URL(r.url()); if(!u.pathname.startsWith('/api/'))return r.continue();
       if(u.pathname!='/api/admin/annual-review')return r.respond({status:200,contentType:'application/json',body:JSON.stringify({notifications:[]})});
       let response;
-      if(r.method()==='GET')response={previewOnly:true,owner:{email:u.searchParams.get('email'),name:'Test Owner'},year:Number(u.searchParams.get('year')),assets};
+      if(r.method()==='GET'){
+        // Force the reload race: the previous welcome remains in a closed dialog
+        // while the large-register request is pending.
+        if(assets.length>3)await new Promise(resolve=>setTimeout(resolve,250));
+        response={previewOnly:true,owner:{email:u.searchParams.get('email'),name:'Test Owner'},year:Number(u.searchParams.get('year')),assets};
+      }
       else {
         const body=JSON.parse(r.postData()); requests.push(body); assert.equal(body.action,'preview');
         const asset=assets.find(a=>a.id===body.assetId);
@@ -36,7 +41,17 @@ async function main() {
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(response)});
     });
     await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');});
-    async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')===t||b.textContent.trim()===t)&&!b.disabled),{},text);await page.evaluate(t=>[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')===t||b.textContent.trim()===t)&&!b.disabled).click(),text);}
+    async function click(text){
+      // Closed native dialogs retain their controls in the DOM. Only interact
+      // with visible controls in the active dialog (or the unobstructed page).
+      const handle=await page.waitForFunction(t=>{
+        const scope=document.querySelector('dialog[open]')||document;
+        return [...scope.querySelectorAll('button')].find(b=>
+          (b.getAttribute('aria-label')===t||b.textContent.trim()===t||b.querySelector('strong')?.textContent===t)
+          &&!b.disabled&&b.getClientRects().length>0&&getComputedStyle(b).visibility==='visible');
+      },{},text);
+      try { await handle.asElement().click(); } finally { await handle.dispose(); }
+    }
     async function fill(selector,value){await page.$eval(selector,(el,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));},value);}
     async function capture(name){await page.evaluate(()=>document.fonts.ready);const geometry=await page.$eval('dialog',d=>{const r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,dialogWidth:r.width,overflow:d.scrollWidth-d.clientWidth,bodyOverflow:document.documentElement.scrollWidth-innerWidth};});assert.ok(geometry.left>=0&&geometry.right<=geometry.width+1&&geometry.top>=0&&geometry.bottom<=geometry.height+1,JSON.stringify(geometry));assert.ok(geometry.overflow<2,JSON.stringify(geometry));assert.ok(geometry.dialogWidth>=Math.min(900,geometry.width-60),JSON.stringify(geometry));await page.screenshot({path:path.join(output,name+'.png')});}
     for(const [width,height] of [[1440,900],[430,740],[768,700]]){
@@ -48,10 +63,10 @@ async function main() {
       assert.equal(await page.$$eval('dialog input',els=>els.length),0,'welcome must have no asset picker');
       await capture('welcome-'+width);
       await click('Continue');await capture('choice-'+width);
-      await page.evaluate(()=>[...document.querySelectorAll('dialog button')].find(b=>b.textContent.includes('No, keep prices unchanged')).click());
+      await click('No, keep prices unchanged');
       await page.waitForSelector('dialog:not([open])');assert.equal(requests.length,0,'No must close without calculations');
       await click('Resume preview');
-      await page.evaluate(()=>[...document.querySelectorAll('dialog button')].find(b=>b.textContent.includes('Yes, review an adjustment')).click());
+      await click('Yes, review an adjustment');
       assert.equal(await page.$eval('#annual-percent',el=>el.value),'3');
       assert.equal(await page.$$eval('dialog input[type=number]',els=>els.length),0,'no individual inputs');
       await capture('percentage-'+width);await click('Preview results');
@@ -82,11 +97,14 @@ async function main() {
     // A large register gets the same aggregate flow, with every eligible asset included.
     for(let i=0;i<18;i++)assets.push({...assets[0],id:'extra-'+i,title:'Review asset '+i});
     requests.length=0;
-    await page.setViewport({width:1440,height:900});await click('Open preview');await click('Continue');
-    await page.evaluate(()=>[...document.querySelectorAll('dialog button')].find(b=>b.textContent.includes('Yes, review an adjustment')).click());
+    await page.setViewport({width:1440,height:900});await click('Open preview');
+    await page.waitForSelector('dialog[open]');await click('Continue');
+    await page.waitForFunction(()=>document.querySelector('dialog[open]').textContent.includes('all 20 eligible assets'));
+    await click('Yes, review an adjustment');
     await click('Preview results');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('20 of 20 assets calculated'));
     assert.equal(requests.length,20);assert.equal(new Set(requests.map(r=>r.assetId)).size,20);assert.ok(!requests.some(r=>r.assetId==='manual'));
     await capture('results-large-register');await click('Close');
+    console.log('PASS delayed large-register reload: visible controls, all 20 eligible assets calculated');
     assert.deepEqual(errors,[]);
   } finally { if(browser)await browser.close(); await fs.rm(route,{recursive:true,force:true}); if(server){const exit=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await exit;} }
 }
