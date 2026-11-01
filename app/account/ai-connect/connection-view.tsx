@@ -85,16 +85,17 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <h3>Sign in to get started</h3>
       <p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
-    </div> : resource && selectedProvider === 'ChatGPT' && !admin ? <div className={styles.setupLayout}>
+    </div> : resource && selectedProvider === 'ChatGPT' && !admin ? <div className={`${styles.setupLayout} ${styles.chatGptSetup}`}>
       <div className={styles.providerGrid}><div className={styles.permission}>
         <div className={styles.cardHeading}><span className={styles.permissionIcon}><img src={providerLogos.ChatGPT} alt="" width="28" height="28" /></span><h3>ChatGPT</h3></div>
-        <p>{chatGptListingUrl ? "Add Aim4price in ChatGPT, then connect your account." : "Find Aim4price in ChatGPT’s plugins. Availability depends on your account."}</p>
+        <p>{chatGptListingUrl ? "Connect your Aim4price account." : "Find the Aim4price plugin."}</p>
         <a className={styles.primary} href={chatGptListingUrl || "https://chatgpt.com/plugins?search=Aim4price"} target="_blank" rel="noopener noreferrer">{chatGptListingUrl ? "Connect in ChatGPT" : "Find Aim4price in ChatGPT"}</a>
+        {!chatGptListingUrl && <small className={styles.availabilityHint}>Plugin missing? Contact Aim4price for access.</small>}
       </div></div>
       <ul className={styles.steps}>
-        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Open Aim4price in ChatGPT</h3><p>{chatGptListingUrl ? "Install the Aim4price plugin and choose Connect." : "Select Aim4price and install it. If it is missing, contact Aim4price for access."}</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Check your Aim4price account and approve read-only access.</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask about your records</h3><p>Select Aim4price in your conversation. Return here to manage access.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Open Aim4price in ChatGPT</h3><p>{chatGptListingUrl ? "Install Aim4price, then choose Connect." : "Install Aim4price from the plugin directory."}</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Approve read-only access to your account.</p></div></li>
+        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask about your records</h3><p>Select Aim4price in your chat and ask a question.</p></div></li>
       </ul>
     </div> : resource ? <>
       <SetupGuide manual={<>
