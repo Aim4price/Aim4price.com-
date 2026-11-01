@@ -119,6 +119,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),true);
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.querySelector('strong')?.textContent==='Umbrellas')),false,'Choices must stay hidden until Choose assets is clicked');
  await click('Choose assets');
+ await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});
+ await page.screenshot({path:'.next/team-access-validation/asset-picker-options.png'});
  await click('Umbrellas');await page.waitForSelector('dialog[open]');await click('Workshop fleet');await click('Cancel');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),true);
  await click('Umbrellas');await page.waitForSelector('dialog[open]');await click('Workshop fleet');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
