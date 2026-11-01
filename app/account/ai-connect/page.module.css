@@ -231,3 +231,25 @@
   :global(body:not(:has([data-website-canvas]))) .flowPanel .assistantChoice { display: grid; grid-template-columns: 3rem 1fr; text-align: left; min-height: 5rem; gap: .2rem 1rem; padding: .75rem 1rem; }
   :global(body:not(:has([data-website-canvas]))) .assistantChoice img { grid-row: 1 / 3; width: 2.75rem; height: 2.75rem; }
 }
+
+/* Consistent question rhythm: heading, prompt, context, then copy action. */
+.questionGrid { gap: 1rem; }
+.questionCard { padding: 1.15rem; background: var(--app-surface, #fff); }
+.questionCard .cardHeading { gap: .75rem; }
+.questionCard .permissionIcon { width: 2.4rem; height: 2.4rem; border-radius: .75rem; background: var(--app-surface-soft, #f3f8f5); }
+.questionCard .permissionIcon svg { width: 1.3rem; height: 1.3rem; }
+.questionCard h3 { font-size: 1.05rem; letter-spacing: -.025em; }
+.questionCard .question { display: flex; flex-direction: column; flex: 1; margin-top: 1rem; padding-top: 0; }
+.questionCard .question > p { flex: 1; margin: 0 0 .65rem; font-size: .98rem; line-height: 1.55; font-weight: 600; }
+.questionNote { display: block; margin-bottom: 1rem; color: var(--app-muted, #60746d); font-size: .8rem; line-height: 1.5; }
+.questionCard .copyQuestion { border-top: 1px solid var(--app-line, #dce7e2); padding-top: .85rem; }
+.questionCard .copyQuestion button { font-size: .85rem; font-weight: 650; background: var(--app-surface-soft, #f3f8f5); }
+.questionCard[data-category='cost'] .permissionIcon { color: var(--app-info, #245883); }
+.questionCard[data-category='fuel'] .permissionIcon { color: var(--app-accent, #187c59); }
+.sharingDetails { gap: .85rem; padding: .85rem 0; }
+.sharingDetails > div { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; align-items: center; gap: .75rem; padding: 1rem; border: 1px solid var(--app-line, #dce7e2); border-radius: .9rem; }
+.sharingIcon { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: .65rem; background: var(--app-surface-soft, #f3f8f5); color: var(--app-muted, #60746d); }
+.sharingIcon svg { width: 1.2rem; height: 1.2rem; }
+.sharingDetails h3 { font-size: .95rem; letter-spacing: -.02em; }
+.sharingDetails p { grid-column: 1 / -1; margin: 0; font-size: .85rem; line-height: 1.6; }
+.sharingNote { font-size: .82rem; line-height: 1.6; padding: .85rem 1rem; }

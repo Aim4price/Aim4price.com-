@@ -122,6 +122,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.keyboard.press('Escape');
   await render({...base,providers:base.providers.slice(0,1)},false);
   await page.screenshot({path:path.join(evidence,'owner-overview.png'),fullPage:true});
+  await page.click('summary::-p-text(What information is shared?)');
+  await page.screenshot({path:path.join(evidence,'owner-sharing-details.png'),fullPage:true});
   await page.click('button[aria-haspopup="dialog"]');
   await page.waitForSelector('#ai-connect-panel');
   await choose('ChatGPT');

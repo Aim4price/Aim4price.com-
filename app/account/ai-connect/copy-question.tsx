@@ -8,7 +8,7 @@ export default function CopyQuestion({ question, category }: { question: string;
   async function copy() {
     try {
       await navigator.clipboard.writeText(question);
-      setStatus('Copied. Paste into ChatGPT.');
+      setStatus('Copied. Paste into your assistant.');
     } catch {
       setStatus('Select the question above and copy it manually.');
     }

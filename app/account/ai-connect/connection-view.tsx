@@ -31,7 +31,8 @@ function Icon({ kind = 'spark' }: { kind?: string }) {
     chat: 'M4 4h16v12H9l-5 4V4Zm4 4h8m-8 4h5',
     link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
     shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6',
-    asset: 'M3 7h18v14H3V7Zm4 0V3h10v4M3 12h18M9 12v3h6v-3',
+    asset: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7',
+    records: 'M6 3h9l4 4v14H6V3Zm9 0v5h4M9 12h7m-7 4h5',
     cost: 'M5 3h14v18l-3-2-4 2-4-2-3 2V3Zm4 5h6m-6 4h6m-6 4h3',
     fuel: 'M4 21V4h9v17M3 21h12M4 10h9m0 3h3v5a2 2 0 0 0 4 0V9l-3-4',
     service: 'm14 6 4 4m-9 3-6 6 2 2 6-6m1-11a6 6 0 0 0-4 10l2 2a6 6 0 0 0 10-4l-4 1-3-3 1-4Z',
@@ -39,10 +40,10 @@ function Icon({ kind = 'spark' }: { kind?: string }) {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind] || paths.spark} /></svg>;
 }
 const permissions = [
-  ['asset', 'Assets & values', 'Your active assets, recorded hours or kilometres, condition and saved values.', 'How many active assets do I have, and what is their total saved value?'],
-  ['cost', 'Costs & budgets', 'Recorded costs, monthly and annual budgets, spending and remaining amounts.', 'How much of my budget is left this month?'],
-  ['fuel', 'Fuel', 'Recorded fuel purchases, litres and fuel issued from storage to assets.', 'How many litres of fuel were issued from storage this month?'],
-  ['service', 'Maintenance', 'Service schedules, maintenance activity and logged asset problems.', 'Which services are overdue, and which assets have open problems?'],
+  ['asset', 'Assets & values', 'Your active assets, recorded hours or kilometres, condition and saved values.', 'How many active assets do I have, and what is my saved register value excluding VAT?'],
+  ['cost', 'Costs & budgets', 'Recorded costs, monthly and annual budgets, spending and remaining amounts.', 'For each monthly budget, how much have I spent and how much is left this month?'],
+  ['fuel', 'Fuel', 'Recorded fuel purchases, litres and fuel issued from storage to assets.', 'How many litres are recorded as issued from fuel storage this month?'],
+  ['service', 'Maintenance', 'Service schedules, maintenance activity and logged asset problems.', 'Which saved maintenance schedules are overdue or due soon?'],
 ];
 function date(value: string) {
   return new Date(value).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Johannesburg' });
@@ -53,12 +54,19 @@ const adminPermissions = [
   ['cost', 'Values & data gaps', 'Saved values excluding VAT, umbrella exclusions and missing valuations.', 'Break down asset values by account and show missing valuations.'],
   ['service', 'Asset comparisons', 'Search by brand, type, condition and lifecycle, with saved usage readings.', 'Show active New Holland tractors across accounts, including their recorded hours.'],
 ];
+const questionNotes: Record<string, string> = {
+  asset: 'Saved values, not a new valuation.',
+  cost: 'Each budget shown separately, including VAT.',
+  fuel: 'Recorded issues, not measured consumption.',
+  service: 'Based on saved dates and usage readings.',
+};
+
 function SharedInformation({ examples = false, admin = false }: { examples?: boolean; admin?: boolean }) {
   return <div className={examples ? styles.questionGrid : admin ? styles.adminPermissions : styles.permissions}>
     {(admin ? adminPermissions : permissions).map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title} data-category={icon}>
       <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind={icon} /></span><h3>{title}</h3></div>
       {!examples && <p>{detail}</p>}
-      {examples && <div className={styles.question}><p>“{example}”</p><CopyQuestion question={example} category={title} /></div>}
+      {examples && <div className={styles.question}><p>{example}</p>{!admin && <span className={styles.questionNote}>{questionNotes[icon]}</span>}<CopyQuestion question={example} category={title} /></div>}
     </div>)}
   </div>;
 }
@@ -158,18 +166,18 @@ export default function ConnectionView({ account, connections, resource, proof, 
         </section>
         {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
-            <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Turn your records into answers</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
+            <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
             <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg></span>
           </summary>
           <div className={styles.examplesBody}>
-            <p className={styles.questionHint}>Once connected, copy a question into your assistant and select Aim4price in your conversation.</p>
+            <p className={styles.questionHint}>Copy a question into your connected assistant and ask it to use Aim4price.</p>
             <SharedInformation examples admin={admin} />
             <details className={styles.disclosure}>
               <summary>What information is shared?</summary>
               <div className={styles.sharingDetails}>
-                <div><h3>{admin ? 'Authorised admin reporting' : 'Only your connected account'}</h3><p>{admin ? 'This private connection reads approved asset fields across accounts. It does not expose passwords, tokens, contact details, exact locations or attachments.' : 'Your assistant can retrieve your account profile and the records described above. It cannot access another Owner’s account through this connection.'}</p></div>
-                <div><h3>You stay in control</h3><p>Access is read-only: your AI cannot add, change or delete records. Disconnect at any time using Manage above.</p></div>
-                <div><h3>Based on what you have saved</h3><p>Answers depend on your recorded information. Missing records may leave gaps. Photos and document attachments are not shared through this connection.</p></div>
+                <div><span className={styles.sharingIcon}><Icon kind="asset" /></span><h3>{admin ? 'Admin access' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
+                <div><span className={styles.sharingIcon}><Icon kind="shield" /></span><h3>Read-only access</h3><p>Your assistant cannot add, edit or delete records. Stop future access at any time through Manage.</p></div>
+                <div><span className={styles.sharingIcon}><Icon kind="records" /></span><h3>Saved records</h3><p>Answers depend on what you have recorded. Missing information can leave gaps. Photos and document attachments are not shared.</p></div>
               </div>
               <p className={styles.sharingNote}>Requested information is shared with your AI provider. Disconnecting stops future access; information already shared may remain in your conversations.</p>
             </details>
