@@ -1,3 +1,4 @@
+import {maintenanceAssetAvailable} from '../../../../lib/maintenance-asset-lifecycle';
 import {ensureSharingFoundation,recordSharingUsage} from '../../../../lib/sharing-foundation';
 import type {NextRequest} from 'next/server';
 import {getServerSession,isOwnerAppSession,isDealerAppSession} from '../../../../lib/auth-session';
@@ -14,7 +15,7 @@ async function handle(request:NextRequest,{params}:{params:{id:string}}){try{
  if(request.method!=='GET')requireBusinessOrigin(request);
  const session=await getServerSession({requireActive:false,allowBusiness:true,allowOwnerApp:true,allowDealerApp:true});
  if(!session?.user)return businessJson({error:'Please sign in to open maintenance.'},401);
- const record=await reminderRecord(params.id);if(!record)return businessJson({error:'Maintenance is no longer available.'},404);
+ const record=await reminderRecord(params.id);if(!record||!await maintenanceAssetAvailable(record.userId,record.assetId))return businessJson({error:'This asset is no longer available. Its upcoming maintenance has been removed.'},404);
  const source=await maintenanceSource(record.id);const owner=session.user.id===record.userId;
  if(owner){if(!await getAssetRegisterAccountAccess(session))return businessJson({error:'Asset access is required.'},403);if(isOwnerAppSession(session)){const a=await getOwnerAppAccess();if(!a||!ownerAppCan(a,'manage_assets')||!ownerAppCanAccessAsset(a,record.assetId))return businessJson({error:'Asset access is required.'},403);}}
  else if(isOwnerAppSession(session)||isDealerAppSession(session)||!source||!await schedulerPermission(source,session.user))return businessJson({error:'This maintenance is no longer shared with you.'},403);
@@ -37,3 +38,4 @@ async function handle(request:NextRequest,{params}:{params:{id:string}}){try{
  return businessJson({ok:true,status:result.completed.status});
  }catch(e){console.error('Maintenance reminder action failed',e);return businessJson({error:'Unable to complete maintenance. Check the required service details and refresh to see its latest status.'},400);}}
 export const GET=handle;export const POST=handle;
+
