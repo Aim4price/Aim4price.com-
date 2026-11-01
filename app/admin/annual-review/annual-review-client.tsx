@@ -118,7 +118,7 @@ export default function AnnualReviewClient() {
     <p>The simulation uses 1 January of the selected year. Live dates, values and history are unchanged. Closing keeps this preview available until you leave this page.</p>
     {!open && error && <p role="alert" className={styles.error}>{error}</p>}
     <dialog ref={dialog} className={`${styles.dialog} ${chrome.surface} ${chrome.flush}`} onCancel={e => { e.preventDefault(); close(); }} aria-labelledby="review-title">
-      <header className={chrome.header}><div><h2 id="review-title" ref={heading} tabIndex={-1}>{step === 0 ? `Welcome to ${data?.year}` : titles[step]}</h2><p>{data?.owner.email} · 1 January {data?.year}</p></div><button className={chrome.close} aria-label="Close annual review" onClick={close}>×</button></header>
+      <header className={chrome.header}><div><h2 id="review-title" ref={heading} tabIndex={-1}>{step === 0 ? `Welcome to ${data?.year}` : titles[step]}</h2><p>{data?.owner.email} · 1 January {data?.year}</p></div><button data-modal-close className={chrome.close} aria-label="Close annual review" onClick={close}>×</button></header>
       <div className={styles.previewLabel}>Preview — no changes saved</div>
       <div className={chrome.body}>
         <nav className={styles.steps} aria-label="Review stages">{titles.map((title, index) => <span key={title} aria-current={index === step ? 'step' : undefined}>{title}</span>)}</nav>
