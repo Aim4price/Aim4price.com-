@@ -86,7 +86,7 @@ test('listing settings reject cross-origin requests before looking up any accoun
 });
 test('history keeps resolved updates but removes revoked asset shares and newly forbidden categories',async()=>{
  const rows=[{event:{...event('completed',{category:'maintenance'}),assetId:'allowed'}},{event:{...event('revoked',{category:'maintenance'}),assetId:'private'}},{event:{...event('commercial',{category:'enquiries'}),sourceCategory:'marketplace_sourcing'}}];
- const f=load('lib/app-notification-history.ts',{'./db':{getDb:()=>({query:async(sql)=>sql.startsWith('select event')?{rows}:sql.startsWith('select asset')?{rows:[{asset_id:'allowed'}]}:{rows:[]}})},'./app-notification-state':{appNotificationViewer:()=> 'dealer:account:member',readAppNotificationKeys:async()=>new Set()}});
+ const f=load('lib/app-notification-history.ts',{'./notification-copy':load('lib/notification-copy.ts'),'./db':{getDb:()=>({query:async(sql)=>sql.startsWith('select event')?{rows}:sql.startsWith('select asset')?{rows:[{asset_id:'allowed'}]}:{rows:[]}})},'./app-notification-state':{appNotificationViewer:()=> 'dealer:account:member',readAppNotificationKeys:async()=>new Set()}});
  const result=await f.withAppNotificationHistory(who,{categories:['maintenance','enquiries'],canSource:false},[]);
  assert.deepEqual(result.map(x=>x.id),['completed']);assert.equal(result[0].isRead,true);
 });

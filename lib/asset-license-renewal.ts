@@ -232,7 +232,7 @@ export function buildAssetLicenseRenewalAlert(
       ? 'Due'
       : 'Due soon';
   const registrationNumber = readLicenseRegistrationNumber(asset);
-  const subject = registrationNumber ? `License ${registrationNumber}` : 'License';
+  const subject = registrationNumber ? `Licence ${registrationNumber}` : 'Licence';
 
   return {
     id: `license-renewal:${asset.id}:${renewal.key}`,
@@ -241,8 +241,10 @@ export function buildAssetLicenseRenewalAlert(
     registrationNumber,
     computedStatus,
     computedStatusLabel,
-    heading: 'License renewal upcoming',
-    body: `${subject} needs to be renewed by ${formatDateLabel(renewal.key)}.`,
+    heading: computedStatus === 'overdue' ? 'Licence renewal overdue' : computedStatus === 'due' ? 'Licence renewal due today' : 'Licence renewal due soon',
+    body: computedStatus === 'overdue'
+      ? `${subject} was due for renewal on ${formatDateLabel(renewal.key)}. Update the renewal date if it has already been renewed.`
+      : `${subject} needs to be renewed by ${formatDateLabel(renewal.key)}.`,
   };
 }
 

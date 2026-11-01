@@ -17,6 +17,7 @@ export type DealerMaintenanceViewerNotification = {
   title: string;
   body: string;
   isRead: boolean;
+  isCurrent?: boolean;
   createdAtIso: string;
   assignedToViewer: boolean;
 };
@@ -85,6 +86,8 @@ async function listAssignedProblemNotifications(input: {
        and access.is_active = true
       inner join public.asset_register_items asset
         on asset.id = assignment.asset_register_item_id
+       and asset.user_id = access.owner_user_id
+       and coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'
       where assignment.dealer_user_id = $1
         and assignment.assigned_staff_id = $2::uuid
         and assignment.workflow_status <> 'resolved'
@@ -151,7 +154,7 @@ export async function listDealerMaintenanceNotificationsForViewer(input: {
 
   return notifications.map((notification) => ({
     ...notification,
-    isRead: readKeys.has(eventKey(notification.id)),
+    isRead: notification.isCurrent === false || readKeys.has(eventKey(notification.id)),
   }));
 }
 

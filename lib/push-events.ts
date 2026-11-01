@@ -29,7 +29,7 @@ export async function listPushEvents(who: PushIdentity, access: NonNullable<Awai
       if (!activeAssets.has(record.assetId) || record.status !== 'upcoming' || record.alertNotedAtIso || !['due_soon','due','overdue'].includes(record.computedStatus)) continue;
       if (access.allowedAssets && !access.allowedAssets.has(record.assetId)) continue;
       events.push({ id: `maintenance:${record.id}:${record.dueDate ?? record.dueUsage}:${record.computedStatus}`, category: 'maintenance', assetId: record.assetId,
-        title: 'Maintenance upcoming', body: `${record.assetTitle}: ${buildAlertBody(record)}`,
+        title: record.computedStatus === 'overdue' ? 'Maintenance overdue' : record.computedStatus === 'due' ? 'Maintenance due now' : 'Maintenance due soon', body: `${record.assetTitle}: ${buildAlertBody(record)}`,
         href: `${root}/assets/${encodeURIComponent(record.assetId)}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`, createdAtIso: record.updatedAtIso, reminder: true });
     }
     for (const row of assets.rows) {

@@ -208,6 +208,7 @@ export type DealerMaintenanceNotification = {
   title: string;
   body: string;
   isRead: boolean;
+  isCurrent?: boolean;
   createdAtIso: string;
 };
 
@@ -1886,14 +1887,16 @@ function notificationBody(asset: DealerMaintenanceTrackedAsset, record: DealerMa
   return `${asset.assetTitle} is approaching its ${label} due date.`;
 }
 
-export async function syncDealerMaintenanceNotifications(dealerUserId: string): Promise<void> {
+export async function syncDealerMaintenanceNotifications(dealerUserId: string): Promise<Set<string>> {
   await ensureDealerMaintenanceTrackerTables();
   const assets = await listDealerTrackedAssets(dealerUserId);
   const db = getDb();
+  const currentKeys = new Set<string>();
   for (const asset of assets) {
     for (const record of asset.maintenanceRecords) {
       if (!['due_soon', 'due', 'overdue'].includes(record.computedStatus)) continue;
       const status = record.computedStatus as 'due_soon' | 'due' | 'overdue';
+      currentKeys.add(`${asset.accessId}:${record.id}:${status}`);
       await db.query(
         `
           insert into public.dealer_maintenance_notifications (
@@ -1921,12 +1924,13 @@ export async function syncDealerMaintenanceNotifications(dealerUserId: string): 
       );
     }
   }
+  return currentKeys;
 }
 
 export async function listDealerMaintenanceNotifications(
   dealerUserId: string,
 ): Promise<DealerMaintenanceNotification[]> {
-  await syncDealerMaintenanceNotifications(dealerUserId);
+  const currentKeys = await syncDealerMaintenanceNotifications(dealerUserId);
   const result = await getDb().query<DealerMaintenanceNotificationRow>(
     `
       select
@@ -1940,6 +1944,13 @@ export async function listDealerMaintenanceNotifications(
         notification.read_at,
         notification.created_at
       from public.dealer_maintenance_notifications notification
+      inner join public.dealer_maintenance_access access
+        on access.id = notification.access_id and access.is_active = true
+       and access.dealer_user_id = notification.dealer_user_id
+      inner join public.asset_register_items asset
+        on asset.id = notification.asset_register_item_id
+       and asset.user_id = access.owner_user_id
+       and coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'
       where notification.dealer_user_id = $1
       order by notification.created_at desc, notification.id desc
       limit 50
@@ -1954,7 +1965,8 @@ export async function listDealerMaintenanceNotifications(
     status: row.notification_status as 'due_soon' | 'due' | 'overdue',
     title: row.title,
     body: row.body,
-    isRead: Boolean(row.read_at),
+    isCurrent: currentKeys.has(`${row.access_id}:${row.maintenance_record_id}:${row.notification_status}`),
+    isRead: Boolean(row.read_at) || !currentKeys.has(`${row.access_id}:${row.maintenance_record_id}:${row.notification_status}`),
     createdAtIso: iso(row.created_at),
   }));
 }

@@ -1,3 +1,4 @@
+import { normalizeNotificationCopy } from './notification-copy';
 import { getDb } from './db';
 import { appNotificationViewer, readAppNotificationKeys } from './app-notification-state';
 import type { PushIdentity } from './push-store';
@@ -37,6 +38,6 @@ export async function withAppNotificationHistory(who:PushIdentity,access:NonNull
     events.set(event.id,{...event,isRead:true});
   }
   const read=await readAppNotificationKeys(who,[...events.keys()]);
-  return [...events.values()].map(item=>({...item,isRead:Boolean(item.isRead||read.has(item.id)||!currentIds.has(item.id))}))
+  return [...events.values()].map(item=>({...normalizeNotificationCopy(item),isRead:Boolean(item.isRead||read.has(item.id)||!currentIds.has(item.id))}))
     .sort((a,b)=>Date.parse(b.createdAtIso)-Date.parse(a.createdAtIso));
 }
