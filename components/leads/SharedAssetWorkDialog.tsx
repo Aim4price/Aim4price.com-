@@ -11,13 +11,13 @@ import type {MaintenanceIdentity} from '../../lib/maintenance-catalogue';
 
 type Props={
  endpoint:string;action:'details'|'maintenance'|'history';assetTitle:string;assetSubtitle?:string;
- onClose:()=>void;onSaved?:()=>void;onSchedule?:()=>void;initialField?:SharedUpdateField;
+ onClose:()=>void;onSaved?:()=>void;onSchedule?:()=>void;initialField?:SharedUpdateField;completedOnly?:boolean;
 };
 export default function SharedAssetWorkDialog(props:Props){
  if(props.action==='history')return <AssetHistoryDialog {...props}/>;
  return props.action==='details'?<SharedAssetUpdateDialog {...props}/>:<SharedAssetWork {...props}/>;
 }
-function SharedAssetWork({endpoint,action,assetTitle,assetSubtitle,onClose,onSaved,onSchedule}:Props){
+function SharedAssetWork({endpoint,action,assetTitle,assetSubtitle,onClose,onSaved,onSchedule,completedOnly=false}:Props){
  const router=useRouter();
  const [asset,setAsset]=useState<(Omit<AssetOption,'usageMetric'>&{usageMetric:AssetOption['usageMetric']|'none';maintenanceIdentity?:MaintenanceIdentity})|null>(null);
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[saved,setSaved]=useState(false);
@@ -31,9 +31,9 @@ function SharedAssetWork({endpoint,action,assetTitle,assetSubtitle,onClose,onSav
   catch(e){setError(e instanceof Error?e.message:'Please try again.');throw e;}finally{setBusy(false);}
  }
  if(action==='maintenance'&&asset&&!saved)return <>
-  {!serviceOpen && (entryStep==='timing'
+  {!serviceOpen && (!completedOnly && entryStep==='timing'
     ?<MaintenanceEntryChoice step="timing" assetTitle={asset.title} onClose={onClose} onDone={()=>setEntryStep('type')} onUpcoming={onSchedule}/>
-    :<MaintenanceEntryChoice step="type" timing="done" assetTitle={asset.title} onClose={()=>setEntryStep('timing')} onBack={()=>setEntryStep('timing')} onType={next=>{setType(next);setServiceOpen(true);}}/>)}
+    :<MaintenanceEntryChoice step="type" timing="done" assetTitle={asset.title} onClose={completedOnly ? onClose : ()=>setEntryStep('timing')} onBack={completedOnly ? onClose : ()=>setEntryStep('timing')} onType={next=>{setType(next);setServiceOpen(true);}}/>)}
   {type&&<div hidden={!serviceOpen}><DesktopServiceModal key={type} checklistEndpoint={`${endpoint}/checklist`} partsEndpoint={`${endpoint}/parts`} standalone record={{id:asset.id,assetId:asset.id,assetTitle:asset.title,assetKind:asset.kind,assetCategoryLabel:asset.categoryLabel,assetYearModel:asset.yearModel,assetCondition:asset.condition,maintenanceIdentity:asset.maintenanceIdentity,maintenanceType:type,title:type==='service'?'Service or repair':'Check-up',currentUsage:asset.usageReading,usageMetric:asset.usageMetric==='none'?null:asset.usageMetric}} busy={busy} onClose={()=>setServiceOpen(false)} onBack={()=>setServiceOpen(false)} onSubmit={completion=>save({...completion,maintenanceType:type})}/></div>}
  </>;
 
