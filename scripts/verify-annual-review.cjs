@@ -36,7 +36,7 @@ async function main() {
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(response)});
     });
     await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');});
-    async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t&&!b.disabled),{},text);await page.evaluate(t=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===t&&!b.disabled).click(),text);}
+    async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>(b.getAttribute('aria-label')===t||b.textContent.trim()===t)&&!b.disabled),{},text);await page.evaluate(t=>[...document.querySelectorAll('button')].find(b=>(b.getAttribute('aria-label')===t||b.textContent.trim()===t)&&!b.disabled).click(),text);}
     async function fill(selector,value){await page.$eval(selector,(el,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));},value);}
     async function capture(name){await page.evaluate(()=>document.fonts.ready);const geometry=await page.$eval('dialog',d=>{const r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,dialogWidth:r.width,overflow:d.scrollWidth-d.clientWidth,bodyOverflow:document.documentElement.scrollWidth-innerWidth};});assert.ok(geometry.left>=0&&geometry.right<=geometry.width+1&&geometry.top>=0&&geometry.bottom<=geometry.height+1,JSON.stringify(geometry));assert.ok(geometry.overflow<2,JSON.stringify(geometry));assert.ok(geometry.dialogWidth>=Math.min(900,geometry.width-60),JSON.stringify(geometry));await page.screenshot({path:path.join(output,name+'.png')});}
     for(const [width,height] of [[1440,900],[430,740],[768,700]]){
@@ -68,6 +68,21 @@ async function main() {
       await fill('input[type=number]','2028');await click('Open preview');await page.waitForFunction(()=>document.querySelector('#review-title').textContent==='Welcome to 2028');assert.equal(requests.length,before,'opening next year must not calculate or save');await click('Close');
       console.log('PASS annual review at '+width+'px: selection, retry, VAT, replacement, close/resume, next year');
     }
+    // A real owner can have dozens of assets: paging/search must preserve selection.
+    for(let i=0;i<18;i++)assets.push({...assets[0],id:'extra-'+i,title:'Review asset '+String(i).padStart(2,'0')});
+    await page.setViewport({width:1440,height:900});
+    await click('Open preview');await page.waitForSelector('dialog[open]');
+    assert.equal(await page.$$eval('dialog input[type=checkbox]:not(:disabled)',els=>els.length),6);
+    await click('Next assets');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('Review asset 04'));
+    await fill('dialog input[type=search]','Review asset 17');
+    assert.equal(await page.$$eval('dialog input[type=checkbox]:not(:disabled)',els=>els.length),1);
+    await page.click('dialog input[type=checkbox]:not(:disabled)');
+    await fill('dialog input[type=search]','');
+    await capture('welcome-large-register');
+    await click('Next');await click('Calculate preview');
+    await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('19 of 19 calculated'));
+    assert.ok(!requests.some(r=>r.assetId==='extra-17'),'search deselection must persist across pages');
+    await capture('depreciation-large-register');await click('Close');
     assert.deepEqual(errors,[]);
   } finally { if(browser)await browser.close(); await fs.rm(route,{recursive:true,force:true}); if(server){const exit=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await exit;} }
 }
