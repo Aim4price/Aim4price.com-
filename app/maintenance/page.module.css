@@ -5357,3 +5357,6 @@
 .ledgerCard[data-maintenance-status='upcoming'] .statusSymbol {
   font-weight: 650;
 }
+
+/* Shared owner/dealer entry icons use the same outline weight and sizing. */
+.schedulingDialog .maintenanceChoiceIcon svg { width: 1.5rem; height: 1.5rem; color: inherit; }

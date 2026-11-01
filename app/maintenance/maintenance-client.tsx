@@ -1619,12 +1619,12 @@ export default function MaintenanceClient({
             <div className={styles.maintenanceChoiceBody}>
               <div className={styles.maintenanceChoiceGrid}>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('date')}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CostDetailIcon kind="calendar" /></span>
                   <strong>Specific date</strong>
                   <small>Choose a due date.</small>
                 </button>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('usage')}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">↗</span>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CostDetailIcon kind="usage" /></span>
                   <strong>Usage</strong>
                   <small>Choose a target {usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.</small>
                 </button>
