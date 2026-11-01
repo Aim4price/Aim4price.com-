@@ -79,7 +79,22 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button[aria-haspopup="dialog"]:nth-child(2)');
   await page.waitForSelector('#ai-manage-panel');
   assert.equal(await page.$eval('[data-website-overlay]',e=>e.parentElement===document.body),true);
+  await page.setViewport({width:1280,height:650});
+  await page.waitForFunction(() => {
+    const body = document.querySelector('#ai-manage-panel > div');
+    return body.scrollHeight <= body.clientHeight + 2;
+  });
+  const manageFit = await page.$eval('#ai-manage-panel', panel => {
+    const footer = panel.querySelector('footer');
+    const buttons = Array.from(footer.querySelectorAll('button'));
+    return buttons.length === 2 && buttons.every(button => {
+      const rect = button.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    });
+  });
+  assert.ok(manageFit, 'Both management actions must stay visible on a short desktop');
   await page.screenshot({path:path.join(evidence,'owner-empty-management.png')});
+  await page.setViewport({width:1280,height:1000});
   await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-manage-panel button')).find(e=>e.textContent==='Connect assistant').click());
   await page.waitForSelector('#ai-connect-panel');
   assert.equal(await page.evaluate(()=>document.activeElement.hasAttribute('data-dialog-close')),true);

@@ -124,13 +124,16 @@ export default function ConnectionActions({ setup, management, count, admin = fa
           <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
-        <div className={`${accessStyles.modalBody} ${styles.flowPanel}`}>
+        <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : ''}`}>
           {flow === 'connect' ? setup : management}
-          {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => setFlow('connect')}>Connect assistant</button>}
+
         </div>
         <footer className={styles.dialogFooter}>
           <p role="status">{checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : 'Access appears here after approval in your assistant.'}</p>
+          <div className={styles.footerActions}>
           <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>
+          {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => setFlow('connect')}>Connect assistant</button>}
+          </div>
         </footer>
       </section>
     </div>, document.body)}

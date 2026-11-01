@@ -115,7 +115,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
     </div> : <div className={styles.empty}>
       <span className={styles.emptyIcon}><Icon kind="link" /></span>
       <h3>{connections ? 'No active connections' : 'Connection details unavailable'}</h3>
-      <p>{connections ? 'Connect your assistant to start asking about your records. Approved connections will appear here.' : signInHref ? 'Sign in to view and manage your connections.' : 'Your connections will appear here once your account is ready.'}</p>
+      <p>{connections ? 'Connect your assistant to ask about your records.' : signInHref ? 'Sign in to view and manage your connections.' : 'Your connections will appear here once your account is ready.'}</p>
       {signInHref && <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>}
     </div>}
     <p className={styles.note}>Access lasts {duration}. Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
