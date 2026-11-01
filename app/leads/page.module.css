@@ -1021,7 +1021,7 @@
 }
 
 .leadNoteBody .leadNoteAttachmentDropzone {
-  min-height: 7.6rem;
+  min-height: 6rem;
   border-color: var(--app-line, rgba(37, 94, 74, 0.26)) !important;
   background:
     radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), transparent 38%),
@@ -1861,7 +1861,7 @@
 }
 
 .leadNoteAttachmentIcon {
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 2;
   width: 2.6rem;
   height: 2.6rem;
   padding: 0.62rem;
@@ -4670,7 +4670,7 @@
 }
 
 .leadNoteBody textarea:focus {
-  min-height: 12rem !important;
+  min-height: 8rem !important;
 }
 
 .leadManageOverlay {
@@ -4823,7 +4823,7 @@
 
 @media (max-width: 420px) and (max-height: 720px) {
   :global(:where(html:not(:has([data-website-canvas])))) .leadNoteBody textarea:focus {
-    min-height: 10rem !important;
+    min-height: 8rem !important;
   }
 }
 
@@ -5931,4 +5931,33 @@
 
 .leadsPage .leadThread:has(.leadControlTooltip:is(:hover, :focus-visible)) {
   z-index: 1;
+}
+
+/* Keep note composition compact and the upload control easy to scan. */
+.leadNoteAttachmentOptional {
+  color: var(--app-muted, #69798a);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.leadNoteBody .leadNoteAttachmentDropzone {
+  row-gap: 0.4rem !important;
+  align-content: center;
+}
+
+.leadNoteAttachmentDropzone:focus-within {
+  outline: 2px solid var(--app-accent, #187053);
+  outline-offset: 3px;
+}
+
+.leadNoteBody .leadNoteDeliveryHint {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-muted, #64746a);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.5;
 }
