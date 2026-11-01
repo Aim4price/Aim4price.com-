@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'lib/ai-connection/**'
+      - 'integrations/chatgpt/**'
+      - 'scripts/package-chatgpt.py'
+      - 'tests/ai-publication.test.cjs'
+      - 'tests/test_chatgpt_package.py'
       - 'app/api/ai/**'
       - 'app/account/ai-connect/**'
       - 'app/admin/ai-connect/**'
@@ -33,5 +37,7 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts
       - run: npm run test:ai-connection
+      - run: node --test tests/ai-publication.test.cjs
+      - run: python3 tests/test_chatgpt_package.py
       - run: npm run typecheck
       - run: node scripts/verify-ai-connections.cjs

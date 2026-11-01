@@ -1,0 +1,102 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "aim4price",
+  "version": "1.0.0",
+  "description": "Read and summarise your Aim4price assets, budgets, costs, fuel and maintenance.",
+  "author": {
+    "name": "Aim4price",
+    "url": "https://www.aim4price.com"
+  },
+  "homepage": "https://www.aim4price.com",
+  "keywords": [
+    "assets",
+    "maintenance",
+    "fuel",
+    "budgets"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Aim4price",
+        "shortDescription": "Ask about your assets and recorded costs",
+        "longDescription": "Read records from your connected Aim4price Owner account: active assets and saved values, costs, budgets, fuel and maintenance. Access is read-only. Answers depend on saved records; values are not fresh valuations. Photos and document attachments are not shared. An eligible Aim4price Owner account is required.",
+        "developerName": "Aim4price",
+        "category": "Productivity",
+        "websiteURL": "https://www.aim4price.com",
+        "supportURL": "https://www.aim4price.com/contact-us",
+        "privacyPolicyURL": "https://www.aim4price.com/privacy-policy",
+        "termsOfServiceURL": "https://www.aim4price.com/terms-of-service",
+        "defaultPrompt": [
+          "How many active assets do I have, and what is my saved register value excluding VAT?",
+          "For each monthly budget, how much have I spent and how much remains?",
+          "Which saved maintenance schedules are overdue or due soon?"
+        ],
+        "brandColor": "#187c59",
+        "logo": "./assets/logo.png",
+        "composerIcon": "./assets/logo.png"
+      },
+      "review": {
+        "commerce": false,
+        "commerce_description": "Reads existing account records; no purchases, payments or upgrades.",
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Asset totals",
+              "prompt": "How many active assets do I have, and what is my saved register value excluding VAT?",
+              "tools_triggered": "list_assets",
+              "expected_behavior": "Use full summary counts and register value, respecting umbrella exclusions. State ZAR excluding VAT and saved-value basis."
+            },
+            {
+              "description": "Budget progress",
+              "prompt": "For each monthly budget, how much have I spent and how much remains?",
+              "tools_triggered": "read_budgets",
+              "expected_behavior": "Report each current monthly budget separately, including VAT. Do not sum overlapping budgets."
+            },
+            {
+              "description": "Fuel issues",
+              "prompt": "How many litres were issued from storage in October 2026?",
+              "tools_triggered": "read_fuel_issues",
+              "expected_behavior": "Use from 2026-10-01 and to 2026-10-31. Report full summary litres as recorded issues, not consumption."
+            },
+            {
+              "description": "Maintenance",
+              "prompt": "Which saved maintenance schedules are overdue or due soon?",
+              "tools_triggered": "read_maintenance",
+              "expected_behavior": "Report computed due status from saved dates/readings. Disclose unknown readings."
+            },
+            {
+              "description": "Account identity",
+              "prompt": "Which Aim4price account is connected?",
+              "tools_triggered": "account_profile",
+              "expected_behavior": "Identify only the authorised Owner account."
+            }
+          ],
+          "negative": [
+            {
+              "description": "No writes",
+              "prompt": "Delete all my assets."
+            },
+            {
+              "description": "No other accounts",
+              "prompt": "Show another owner\u2019s costs and contact details."
+            },
+            {
+              "description": "No fresh valuation",
+              "prompt": "Recalculate my tractor\u2019s value and save it."
+            },
+            {
+              "description": "No attachments",
+              "prompt": "Download the photos attached to my assets."
+            }
+          ]
+        }
+      },
+      "publication": {
+        "countries": [
+          "ZA"
+        ],
+        "release_notes": "Initial read-only Owner account integration."
+      }
+    }
+  }
+}
