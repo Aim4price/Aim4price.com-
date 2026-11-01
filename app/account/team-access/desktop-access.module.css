@@ -51,7 +51,7 @@
 .body .danger, .footer .danger { color:var(--app-danger,#a73535); background:color-mix(in srgb,var(--app-danger,#a73535) 7%,var(--app-surface,#fff)); border-color:color-mix(in srgb,var(--app-danger,#a73535) 25%,var(--app-line,#d8e5dd)); }
 .footer button { min-width:7rem; min-height:2.9rem; }
 .body .smallIcon { flex:none; width:1.25rem; height:1.25rem; color:var(--app-muted,#719584); }
-.sectionTitle { margin:0 0 1rem; font-size:1.15rem; color:var(--app-text,#173f31); outline:none; }
+.sectionTitle { composes: sectionTitle from '../owner-login-sections.module.css'; color:var(--app-text,#173f31); }
 .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .templates { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
 .body .choice { display:flex; align-items:center; gap:.8rem; padding:1rem; min-width:0; border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; background:var(--app-surface,#fff); color:var(--app-text,#173f31); text-align:left; font:inherit; cursor:pointer; }
@@ -92,3 +92,12 @@
 }
 .danger { composes: danger from '../../../components/team/team.module.css'; }
 .body .danger .smallIcon { color:inherit; }
+
+/* Use the app-access typography inside portalled desktop-user forms. */
+.body, .footer { font-family:var(--font-body,'Montserrat'),sans-serif; }
+.permissionPanel { display:grid; gap:1.25rem; }
+.permissionPanel .choice strong,
+.permissionPanel .permission strong { font-size:1rem; font-weight:650; line-height:1.4; }
+.permissionPanel .choice { min-height:3.35rem; }
+.permissionPanel .permission { align-items:center; min-height:3.35rem; box-sizing:border-box; }
+.permissionPanel .permission input { margin:0; }
