@@ -31,7 +31,7 @@ def build(client_id, origin, output):
     with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
         archive.writestr('plugin.json', json.dumps(manifest, indent=2) + '\n')
         archive.writestr('mcp.json', json.dumps(mcp, indent=2) + '\n')
-        archive.write(ROOT / 'public/icon.png', 'assets/logo.png')
+        archive.write(ROOT / 'public/ai/aim4price-plugin.png', 'assets/logo.png')
     return output
 
 if __name__ == '__main__':
