@@ -5,6 +5,7 @@ import DisconnectButton from './disconnect-button';
 import AccountSetup from './account-setup';
 import ConnectionActions, { ServerAddress } from './connection-actions';
 import accessStyles from '../app-access-management.module.css';
+import pageStyles from '../dealer-app/page.module.css';
 import styles from './page.module.css';
 
 type Connection = { id: string; provider?: string; disabled?: boolean; created_at: string; expires_at: string };
@@ -122,14 +123,13 @@ export default function ConnectionView({ account, connections, resource, proof, 
 
   return (
     <main className={styles.page}>
-      <div className={styles.shell}>
-        <Link href={admin ? "/admin" : "/account"} className={styles.back}>Back to {admin ? 'admin' : 'account'}</Link>
+      <div className={`${pageStyles.shell} ${styles.shell}`}>
+        <Link href={admin ? "/admin" : "/account"} className={pageStyles.backButton}>Back to {admin ? 'admin' : 'account'}</Link>
         <section className={`${accessStyles.launcher} ${styles.launcher}`} aria-labelledby="ai-connections-title">
-          <div className={`${accessStyles.launcherIntro} ${styles.intro}`}>
+          <div className={accessStyles.launcherIntro}>
             <h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1>
             <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
-          <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
             <h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2>
@@ -144,6 +144,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
               <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
             </form>
           </section> : <ConnectionActions admin={admin} setup={setup} management={management} count={connections?.length} />}
+          <div className={styles.safety}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
         </section>
         {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
