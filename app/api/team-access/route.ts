@@ -38,15 +38,16 @@ export async function POST(request: NextRequest) {
             return teamJson({ ok: true, warning: 'Desktop user removed. Their access to this business has ended.' });
         }
         let grant;
-        if (body.action === 'revoke' || body.action === 'reinvite') {
+        if (body.action === 'revoke' || body.action === 'reinvite' || body.action === 'send-invitation') {
             grant = await setTeamGrantStatus(actor, String(body.id || ''), Number(body.version), body.action === 'revoke' ? 'revoked' : 'pending');
         }
         else if (body.action === 'save')
             grant = await saveTeamGrant(actor, body);
         else
             throw new TeamAccessError('Unsupported team action.', 400);
-        let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link and password with this person.' : 'Desktop access saved.') : '';
-        if (body.sendInvitation === true && grant.status === 'pending') {
+        let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link and password with this person.' : 'Desktop access saved.') : 'Desktop access saved. No email sent.';
+        // Saving or reactivating access never sends email, including requests from older clients.
+        if (body.action === 'send-invitation' && grant.status === 'pending') {
             const link = getSiteOrigin() + '/team';
             const name = (profile.businessName || profile.displayName || 'An Aim4price business').replace(/[<>"&]/g, '');
             try {

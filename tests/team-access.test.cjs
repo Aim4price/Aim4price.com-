@@ -273,7 +273,7 @@ test('desktop login route enforces origin, rate limits and isolated cookies; log
  }finally{await f.db.close();}
 });
 
-test('owner creation emails existing accounts only and never includes the supplied password',async()=>{
+test('desktop creation and reactivation stay silent; only manual invitation sends email',async()=>{
  const f=await setup();try{
  f.setSession({user:{...owner,emailVerified:false}});const emails=[];
  const json=(body,status=200)=>({body,status});
@@ -286,7 +286,16 @@ test('owner creation emails existing accounts only and never includes the suppli
   '../../../lib/email':{getSiteOrigin:()=> 'https://aim4price.example',sendAim4priceEmail:async e=>emails.push(e)},
  });
  const existing=await route.POST({body:{...f.input,action:'save',password:'Do-not-email-this-password',sendInvitation:true}});
- assert.equal(existing.status,200);assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
+ assert.equal(existing.status,200);assert.equal(emails.length,0);assert.equal(existing.body.member.status,'pending');
+ const edited=await route.POST({body:{...f.input,id:existing.body.member.id,version:existing.body.member.version,action:'save',sendInvitation:true}});
+ assert.equal(edited.status,200);assert.equal(emails.length,0);
+ const revoked=await route.POST({body:{id:edited.body.member.id,version:edited.body.member.version,action:'revoke'}});
+ const reactivated=await route.POST({body:{id:revoked.body.member.id,version:revoked.body.member.version,action:'reinvite',sendInvitation:true}});
+ assert.equal(reactivated.status,200);assert.equal(emails.length,0);
+ const manual=await route.POST({body:{id:reactivated.body.member.id,version:reactivated.body.member.version,action:'send-invitation'}});
+ assert.equal(manual.status,200);assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
+ const stale=await route.POST({body:{id:reactivated.body.member.id,version:reactivated.body.member.version,action:'send-invitation'}});
+ assert.equal(stale.status,409);assert.equal(emails.length,1);
  const managed=await route.POST({body:{...f.input,email:'new@example.com',action:'save',password:'Initial-password-123',sendInvitation:true}});
  assert.equal(managed.status,200);assert.equal(managed.body.member.managedLogin,true);assert.equal(emails.length,1);assert.ok(!JSON.stringify(managed).includes('Initial-password-123'));
  }finally{await f.db.close();}
