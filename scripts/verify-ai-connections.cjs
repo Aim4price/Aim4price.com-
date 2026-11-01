@@ -111,13 +111,13 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.waitForSelector('#ai-connect-panel');
   assert.equal(await page.evaluate(()=>document.activeElement.hasAttribute('data-dialog-close')),true);
   await choose('ChatGPT');
-  await page.click('#ai-connect-panel footer button');
+  await page.click('#ai-connect-panel footer button:last-child');
   // React's transition can still show "Checking…" after the click resolves.
   // Wait for the completed UI state instead of racing the next render on CI.
   await page.waitForFunction(() => {
     const panel = document.querySelector('#ai-connect-panel');
     return panel?.querySelector('[role="status"]')?.textContent.includes('No approved connections yet')
-      && panel.querySelector('footer button')?.disabled === false;
+      && panel.querySelector('footer button:last-child')?.disabled === false;
   });
   await page.keyboard.press('Escape');
   await render({...base,providers:base.providers.slice(0,1)},false);
@@ -129,6 +129,33 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
   await page.screenshot({path:path.join(evidence,'owner-connect-desktop.png')});
+  async function verifySetupFit(label) {
+    await page.waitForFunction(() => {
+      const body = document.querySelector('#ai-connect-panel > div');
+      return body && body.scrollHeight <= body.clientHeight + 2;
+    });
+    assert.ok(await page.$eval('#ai-connect-panel', panel => {
+      const rect = panel.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= innerHeight && panel.scrollWidth <= panel.clientWidth + 2;
+    }), label + ' must fit the viewport');
+  }
+  for (const viewport of [{width:1280,height:650},{width:390,height:844}]) {
+    await page.setViewport(viewport);
+    await verifySetupFit('Connection guide');
+    await page.screenshot({path:path.join(evidence,`owner-setup-${viewport.width}.png`)});
+    await page.click('button::-p-text(Manual setup & connection address)');
+    await page.waitForSelector('#ai-manual-title');
+    assert.equal(await page.evaluate(()=>document.activeElement.id),'ai-manual-title');
+    assert.equal(await page.$('#ai-connect-panel a[target="_blank"]'),null);
+    await verifySetupFit('Manual setup');
+    await page.screenshot({path:path.join(evidence,`owner-manual-${viewport.width}.png`)});
+    await page.click('button::-p-text(Back to connection guide)');
+    await page.waitForSelector('#ai-connect-panel a[target="_blank"]');
+    await verifySetupFit('Restored guide');
+  }
+  await page.keyboard.press('Escape');
+  assert.equal(await page.evaluate(()=>document.documentElement.style.overflow),'');
+  await page.setViewport({width:1280,height:1000});
   await render({...base,audience:'admin',resource:'https://www.aim4price.com/api/ai/admin/mcp',providerName:'ChatGPT Admin',proof:'synthetic-proof',authorization:'synthetic-request'},false);
   const form=await page.$eval('form',e=>({action:e.getAttribute('action'),terms:e.querySelector('[name="terms"]').required,text:e.textContent}));
   assert.equal(form.action,'/api/ai/oauth/authorize');assert.equal(form.terms,true);assert.ok(form.text.includes('24 hours'));
