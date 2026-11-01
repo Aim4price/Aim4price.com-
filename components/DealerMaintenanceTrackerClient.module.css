@@ -104,25 +104,6 @@
   height: auto !important;
 }
 .trackerPage .trackerPhotoLabel.trackerPhotoLabel { left: .7rem; right: auto; }
-.completionSummary {
-  padding: .85rem 1rem;
-  border: 1px solid var(--app-line, #d8e5df);
-  border-radius: .85rem;
-  background: var(--app-surface, #fff);
-}
-.completionSummary p {
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: .88rem;
-  line-height: 1.5;
-}
-.completionSummary small {
-  display: block;
-  margin-top: .5rem;
-  color: var(--app-muted, #60746c);
-  font-size: .8rem;
-}
 
 .trackerStatusValue {
   max-width: 24rem;
@@ -3014,3 +2995,28 @@
 :global(:where([data-website-canvas])) .trackerHeaderActions > :last-child {
   grid-column: -2 / -1;
 }
+
+/* History is a browsable list; filters no longer occupy separate wizard screens. */
+.historyModal .historyStep { gap: .65rem; }
+.historyModal .historyTypeTabs { gap: .55rem; }
+.historyModal .historyTypeTabs button {
+  min-height: 3rem;
+  padding: .55rem .75rem;
+  gap: .5rem;
+}
+.historyModal .historyChoiceIcon { width: 1.8rem; height: 1.8rem; min-width: 1.8rem; padding: .3rem; }
+.historyModal .historyChoiceCopy strong { font-size: .88rem; }
+.historyModal .historyTypeTabs button > b { min-width: 1.5rem; min-height: 1.5rem; height: 1.5rem; font-size: .8rem; }
+.historyModal .historyTimelineFilters { display: flex; flex-wrap: wrap; gap: .45rem; }
+.historyModal .historyTimelineFilters button { min-height: 2.5rem; padding: .45rem .7rem; }
+.historyModal .historyTimelineFilters :is(.historyChoiceIcon, .historyChoiceArrow, small) { display: none; }
+.historyModal .historyTimelineCopy strong { font-size: .82rem; }
+.historyRecordDetails { min-width: 0; }
+.historyRecordDetails > summary { padding: .8rem; cursor: pointer; font-size: .95rem; font-weight: 650; overflow-wrap: anywhere; }
+.historyRecordDetails > summary:focus-visible { outline: 2px solid var(--app-accent, #227b59); outline-offset: -2px; border-radius: .5rem; }
+.openProblemsButton { display: inline-flex; align-items: center; justify-self: start; gap: .5rem; padding: .55rem .85rem; border-radius: 999px; border: 1px solid var(--app-warning-line, #e1bd7a); color: var(--app-warning, #81510b); background: var(--app-warning-soft, #fff5e4); font: inherit; font-size: .88rem; font-weight: 650; cursor: pointer; }
+.historyModal .historyChoiceStep { padding: 0; }
+.historyModal .historyTypeTabs { display: flex; flex-wrap: wrap; }
+.historyModal .historyTypeTabs button { flex: 0 1 auto; grid-template-columns: auto auto auto; }
+.historyModal .historyModalBody { align-content: start; }
+.historyModal .historyTimelineMeta > span { justify-self: start; }

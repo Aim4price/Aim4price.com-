@@ -43,7 +43,8 @@ test('recurring completion keeps a Done card and a separate live replacement car
   assert.match(tracker, /loggedProblems: asset\.loggedProblems\.filter\(\(problem\) => Boolean\(problem\.notedAtIso\)\)/);
   assert.match(tracker, /const maintenanceCards = useMemo\([\s\S]*?flatMap\(buildTrackerMaintenanceCards\)/);
   assert.match(tracker, /key=\{asset\.trackerCardId\}/);
-  assert.match(tracker, /isCompletedCard \? 'Work completed' : 'What needs attention\?'/);
+  assert.doesNotMatch(tracker, /className=\{styles\.completionSummary\}/);
+  assert.match(tracker, /!isCompletedCard && \(activeProblems\.length > 0 \|\| pendingScheduleProposals\.length > 0\)/);
   assert.match(assetMaintenance, /createNextRecurringRecord\([\s\S]*?completedRecord\.notes,[\s\S]*?completedRecord\.id/);
   assert.match(assetMaintenance, /generated_from_maintenance_id/);
 });

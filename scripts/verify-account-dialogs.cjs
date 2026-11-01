@@ -6,6 +6,9 @@ const {spawn}=require('node:child_process');
 const puppeteer=require('puppeteer-core');
 const chromium=require('@sparticuz/chromium');
 const data=require('../tests/fixtures/account-dialog-data.json');
+// Exercise history with a real completion and an unresolved problem.
+data.asset.completedMaintenanceRecords=[{...data.asset.nextMaintenance,id:'history-completed',title:'Completed service fixture',status:'done',computedStatusLabel:'Done',completedAtIso:'2026-10-23T10:00:00Z',completedNotes:'Mechanic: Gerald',completedBy:'Gerald'}];
+data.asset.loggedProblems=[{id:'history-problem',summary:'Oil leak fixture',note:'Inspect the seal',createdAtIso:'2026-10-24T10:00:00Z',notedAtIso:null,operatorName:'Owner'}];
 const root=path.resolve(__dirname,'..');
 async function main(){
   const routes=['app/account-dialog-validation','app/owner-app/account-dialog-validation'];
@@ -67,6 +70,24 @@ async function main(){
       await page.click('[aria-label="Close tracking management"]');
       await page.click('[aria-label="View maintenance history"]');
       await capture(`tracker-history-${width}`,'[aria-label="Close maintenance history"]');
+      assert.equal(await page.$eval('#maintenance-history-title',n=>n.textContent),'Asset history');
+      assert.ok(await page.evaluate(()=>document.body.textContent.includes('Completed service fixture')),'History records appear immediately');
+      await page.evaluate(()=>[...document.querySelectorAll('summary')].find(n=>n.textContent==='Completed service fixture').click());
+      assert.ok(await page.evaluate(()=>document.body.textContent.includes('Mechanic: Gerald')));
+      assert.ok(await page.evaluate(()=>!document.body.textContent.includes('Completed by Gerald')),'Do not repeat mechanic attribution');
+      await clickText('Problems & notes');
+      assert.ok(await page.evaluate(()=>document.body.textContent.includes('Oil leak fixture')));
+      assert.ok(await page.evaluate(()=>!document.body.textContent.includes('Completed service fixture')));
+      await clickText('All');
+      await clickText('Custom dates');
+      await page.waitForSelector('[aria-label^="Maintenance history from date"]');
+      await clickText('All time');
+      await page.click('[aria-label="Close maintenance history"]');
+      await page.waitForSelector('[class*="openProblemsButton"]');
+      await page.click('[class*="openProblemsButton"]');
+      await page.waitForSelector('#maintenance-history-title');
+      assert.ok(await page.evaluate(()=>document.body.textContent.includes('Open problems')));
+      assert.ok(await page.evaluate(()=>!document.body.textContent.includes('Completed service fixture')));
       await visit('showroom');await clickText('Manage advert');
       await capture(`showroom-${width}`,'[aria-label="Close advert manager"]');
       console.log(`PASS real account dialogs at ${width}x${height}`);
