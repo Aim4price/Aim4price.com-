@@ -31,14 +31,15 @@ function Icon({ kind = 'spark' }: { kind?: string }) {
     spark: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
     chat: 'M4 4h16v12H9l-5 4V4Zm4 4h8m-8 4h5',
     link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
-    shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6',
-    asset: 'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7',
+    shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Z M8.5 12l2.5 2.5 4.5-5',
+    account: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2',
+    asset: 'm12 3 9 5v8l-9 5-9-5V8l9-5Zm0 10 9-5M12 13 3 8m9 5v8M7.5 5.5l9 5',
     records: 'M6 3h9l4 4v14H6V3Zm9 0v5h4M9 12h7m-7 4h5',
     cost: 'M5 3h14v18l-3-2-4 2-4-2-3 2V3Zm4 5h6m-6 4h6m-6 4h3',
     fuel: 'M4 21V4h9v17M3 21h12M4 10h9m0 3h3v5a2 2 0 0 0 4 0V9l-3-4',
-    service: 'm14 6 4 4m-9 3-6 6 2 2 6-6m1-11a6 6 0 0 0-4 10l2 2a6 6 0 0 0 10-4l-4 1-3-3 1-4Z',
+    service: 'M14.5 6.5 17 9l4-4a6 6 0 0 1-7.8 7.8L6.5 19.5a2.1 2.1 0 0 1-3-3l6.7-6.7A6 6 0 0 1 18 2l-3.5 4.5Z',
   };
-  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind] || paths.spark} /></svg>;
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind] || paths.spark} /></svg>;
 }
 const permissions = [
   ['asset', 'Assets & values', 'Your active assets, recorded hours or kilometres, condition and saved values.', 'How many active assets do I have, and what is my saved register value excluding VAT?'],
@@ -167,15 +168,15 @@ export default function ConnectionView({ account, connections, resource, proof, 
         {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
             <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
-            <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg></span>
+            <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
           </summary>
           <div className={styles.examplesBody}>
             <p className={styles.questionHint}>Copy a question into your connected assistant and ask it to use Aim4price.</p>
             <SharedInformation examples admin={admin} />
             <details className={styles.disclosure}>
-              <summary>What information is shared?</summary>
+              <summary className={styles.disclosureHeading}><span>What information is shared?</span><span className={styles.disclosureChevron} aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span></summary>
               <div className={styles.sharingDetails}>
-                <div><span className={styles.sharingIcon}><Icon kind="asset" /></span><h3>{admin ? 'Admin access' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
+                <div><span className={styles.sharingIcon}><Icon kind="account" /></span><h3>{admin ? 'Admin access' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
                 <div><span className={styles.sharingIcon}><Icon kind="shield" /></span><h3>Read-only access</h3><p>Your assistant cannot add, edit or delete records. Stop future access at any time through Manage.</p></div>
                 <div><span className={styles.sharingIcon}><Icon kind="records" /></span><h3>Saved records</h3><p>Answers depend on what you have recorded. Missing information can leave gaps. Photos and document attachments are not shared.</p></div>
               </div>
@@ -183,7 +184,6 @@ export default function ConnectionView({ account, connections, resource, proof, 
             </details>
           </div>
         </details>}
-        <footer className={styles.footer}><span>You choose when to connect and disconnect.</span><nav aria-label="AI connection policies"><Link href="/terms-of-service">Terms of Service</Link><Link href="/privacy-policy">Privacy Policy</Link></nav></footer>
       </div>
     </main>
   );
