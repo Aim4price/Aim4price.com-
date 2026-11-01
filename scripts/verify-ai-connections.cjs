@@ -69,7 +69,19 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   assert.ok(Math.abs(sizing.card-179.2)<.1);
   assert.ok(Math.abs(sizing.icon-76.8)<.1);
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
-  assert.ok((await page.$eval('[role="dialog"]',e=>e.textContent)).includes('Claude'));
+  assert.equal(await page.$$eval('#ai-connect-panel img', icons => icons.length), 3);
+  assert.equal(await page.$('a[href="https://chatgpt.com/"]'), null);
+  await page.screenshot({path:path.join(evidence,'assistant-chooser.png')});
+  async function choose(name) {
+    await page.evaluate(name => Array.from(document.querySelectorAll('#ai-connect-panel button')).find(button => button.querySelector('strong')?.textContent === name).click(), name);
+    await page.waitForFunction(name => document.querySelector('#ai-connect-title')?.textContent === 'Connect ' + name, {}, name);
+  }
+  await choose('Gemini');
+  assert.ok((await page.$eval('#ai-connect-panel', e=>e.textContent)).includes('not available yet'));
+  assert.equal(await page.$('#ai-connect-panel a[target="_blank"]'), null);
+  await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(button=>button.textContent==='Change assistant').click());
+  await choose('Claude');
+  assert.equal(await page.$('a[href="https://chatgpt.com/"]'), null);
   assert.equal(await page.$eval('a[href="https://claude.ai/"]',e=>e.textContent),'Open Claude');
   assert.equal(await page.$eval('[role="dialog"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
   await page.screenshot({path:path.join(evidence,'owner-provider-modal-dark.png')});
@@ -79,10 +91,26 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button[aria-haspopup="dialog"]:nth-child(2)');
   await page.waitForSelector('#ai-manage-panel');
   assert.equal(await page.$eval('[data-website-overlay]',e=>e.parentElement===document.body),true);
+  await page.setViewport({width:1280,height:650});
+  await page.waitForFunction(() => {
+    const body = document.querySelector('#ai-manage-panel > div');
+    return body.scrollHeight <= body.clientHeight + 2;
+  });
+  const manageFit = await page.$eval('#ai-manage-panel', panel => {
+    const footer = panel.querySelector('footer');
+    const buttons = Array.from(footer.querySelectorAll('button'));
+    return buttons.length === 2 && buttons.every(button => {
+      const rect = button.getBoundingClientRect();
+      return rect.top >= 0 && rect.bottom <= window.innerHeight;
+    });
+  });
+  assert.ok(manageFit, 'Both management actions must stay visible on a short desktop');
   await page.screenshot({path:path.join(evidence,'owner-empty-management.png')});
+  await page.setViewport({width:1280,height:1000});
   await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-manage-panel button')).find(e=>e.textContent==='Connect assistant').click());
   await page.waitForSelector('#ai-connect-panel');
   assert.equal(await page.evaluate(()=>document.activeElement.hasAttribute('data-dialog-close')),true);
+  await choose('ChatGPT');
   await page.click('#ai-connect-panel footer button');
   // React's transition can still show "Checking…" after the click resolves.
   // Wait for the completed UI state instead of racing the next render on CI.
@@ -94,8 +122,11 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.keyboard.press('Escape');
   await render({...base,providers:base.providers.slice(0,1)},false);
   await page.screenshot({path:path.join(evidence,'owner-overview.png'),fullPage:true});
+  await page.click('summary::-p-text(What information is shared?)');
+  await page.screenshot({path:path.join(evidence,'owner-sharing-details.png'),fullPage:true});
   await page.click('button[aria-haspopup="dialog"]');
   await page.waitForSelector('#ai-connect-panel');
+  await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
   await page.screenshot({path:path.join(evidence,'owner-connect-desktop.png')});
   await render({...base,audience:'admin',resource:'https://www.aim4price.com/api/ai/admin/mcp',providerName:'ChatGPT Admin',proof:'synthetic-proof',authorization:'synthetic-request'},false);

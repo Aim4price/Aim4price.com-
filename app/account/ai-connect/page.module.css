@@ -202,3 +202,54 @@
 .connectionOverlay { color: var(--app-text, #123e31); font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.6; }
 .flowPanel h3 { margin: 0; color: var(--app-text, #123e31); font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: 1.06rem; font-weight: 800; line-height: 1.3; letter-spacing: -.025em; }
 .connectionOverlay :is(button, a, summary):focus-visible { outline: 3px solid var(--app-accent, #208460); outline-offset: 3px; }
+
+/* Keep empty management compact, with both actions outside the scroll area. */
+.connectionModal .managePanel { padding-top: 1rem; padding-bottom: 1rem; scrollbar-gutter: auto; }
+.managePanel .accountLine { margin-bottom: .85rem; padding: .7rem 1rem; }
+.managePanel .empty { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: .3rem 1rem; padding: 1.15rem; text-align: left; }
+.managePanel .emptyIcon { grid-column: 1; grid-row: 1 / 3; margin: 0; }
+.managePanel .empty h3, .managePanel .empty p, .managePanel .empty > a { grid-column: 2; }
+.managePanel .empty p { max-width: none; margin: 0; font-size: .92rem; line-height: 1.5; }
+.managePanel > .note { margin-top: .85rem; font-size: .82rem; line-height: 1.5; }
+.footerActions { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: .65rem; }
+.dialogFooter .primary { background: var(--app-accent, #187c59); border-color: transparent; color: var(--ai-button-text, #fff); }
+.dialogFooter .primary:hover { border-color: var(--app-accent, #208460); filter: brightness(.96); }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .footerActions { width: 100%; }
+  :global(body:not(:has([data-website-canvas]))) .footerActions button { flex: 1; padding-inline: .65rem; }
+}
+
+.assistantChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: .3rem 0; }
+.flowPanel .assistantChoice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8rem; min-height: 11rem; padding: 1.4rem 1rem; border-radius: 1.1rem; background: var(--app-surface-soft, #f3f8f5); transition: border-color 150ms ease, box-shadow 150ms ease; }
+.assistantChoice img { display: block; width: 3.5rem; height: 3.5rem; object-fit: contain; }
+.assistantChoice strong { font-size: 1.15rem; }
+.assistantChoice span { font-size: .8rem; font-weight: 550; color: var(--app-muted, #60746d); }
+.assistantChoice:hover { box-shadow: inset 0 0 0 1px var(--app-accent, #208460); }
+.flowPanel .changeAssistant { margin: 0 0 1rem; padding: .45rem .75rem; font-size: .85rem; }
+@media (max-width: 600px) {
+  :global(body:not(:has([data-website-canvas]))) .assistantChoices { grid-template-columns: 1fr; gap: .65rem; }
+  :global(body:not(:has([data-website-canvas]))) .flowPanel .assistantChoice { display: grid; grid-template-columns: 3rem 1fr; text-align: left; min-height: 5rem; gap: .2rem 1rem; padding: .75rem 1rem; }
+  :global(body:not(:has([data-website-canvas]))) .assistantChoice img { grid-row: 1 / 3; width: 2.75rem; height: 2.75rem; }
+}
+
+/* Consistent question rhythm: heading, prompt, context, then copy action. */
+.questionGrid { gap: 1rem; }
+.questionCard { padding: 1.15rem; background: var(--app-surface, #fff); }
+.questionCard .cardHeading { gap: .75rem; }
+.questionCard .permissionIcon { width: 2.4rem; height: 2.4rem; border-radius: .75rem; background: var(--app-surface-soft, #f3f8f5); }
+.questionCard .permissionIcon svg { width: 1.3rem; height: 1.3rem; }
+.questionCard h3 { font-size: 1.05rem; letter-spacing: -.025em; }
+.questionCard .question { display: flex; flex-direction: column; flex: 1; margin-top: 1rem; padding-top: 0; }
+.questionCard .question > p { flex: 1; margin: 0 0 .65rem; font-size: .98rem; line-height: 1.55; font-weight: 600; }
+.questionNote { display: block; margin-bottom: 1rem; color: var(--app-muted, #60746d); font-size: .8rem; line-height: 1.5; }
+.questionCard .copyQuestion { border-top: 1px solid var(--app-line, #dce7e2); padding-top: .85rem; }
+.questionCard .copyQuestion button { font-size: .85rem; font-weight: 650; background: var(--app-surface-soft, #f3f8f5); }
+.questionCard[data-category='cost'] .permissionIcon { color: var(--app-info, #245883); }
+.questionCard[data-category='fuel'] .permissionIcon { color: var(--app-accent, #187c59); }
+.sharingDetails { gap: .85rem; padding: .85rem 0; }
+.sharingDetails > div { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; align-items: center; gap: .75rem; padding: 1rem; border: 1px solid var(--app-line, #dce7e2); border-radius: .9rem; }
+.sharingIcon { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: .65rem; background: var(--app-surface-soft, #f3f8f5); color: var(--app-muted, #60746d); }
+.sharingIcon svg { width: 1.2rem; height: 1.2rem; }
+.sharingDetails h3 { font-size: .95rem; letter-spacing: -.02em; }
+.sharingDetails p { grid-column: 1 / -1; margin: 0; font-size: .85rem; line-height: 1.6; }
+.sharingNote { font-size: .82rem; line-height: 1.6; padding: .85rem 1rem; }
