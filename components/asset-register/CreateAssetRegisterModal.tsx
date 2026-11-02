@@ -35,10 +35,9 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
           >
             <div className={styles.modalHeader}>
               <div>
-                <h2 id={titleId}>Create a new asset register</h2>
+                <h2 id={titleId}>Create asset register</h2>
                 <p className={styles.modalIntro}>
-                  Add the business details for the register. Only the business
-                  name is required. Logos are added from the register card after creation.
+                  Only the business name is required. You can update these details later.
                 </p>
               </div>
               <button
@@ -53,6 +52,7 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
               </button>
             </div>
 
+            <div className={`${styles.modalBody} ${styles.createRegisterBody}`}>
             <div className={styles.formGrid}>
               <label className={styles.field}>
                 <span>Business name</span>
@@ -99,11 +99,12 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
                 </span>
               </label>
 
-              <label className={`${styles.field} ${styles.fullField}`}>
+              <label className={styles.field}>
                 <span>Address</span>
                 <span className={styles.registerInputWithIcon}>
                   <SettingsDetailIcon name="location" />
-                  <textarea
+                  <input
+                    type="text"
                     value={draft.addressLine1}
                     onChange={(event) =>
                       onChange({ ...draft, addressLine1: event.target.value })
@@ -116,6 +117,7 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
 
             <ValueInclusionControl combined checked={draft.includeInCombinedTotals !== false} onChange={checked => onChange({ ...draft, includeInCombinedTotals: checked })} disabled={busy} />
             {error ? <p role="alert">{error}</p> : null}
+            </div>
             <div className={styles.modalFooter}>
               <button
                 type="button"

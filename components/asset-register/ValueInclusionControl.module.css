@@ -1,7 +1,7 @@
-.control { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:18px 22px; margin:12px 0; border:1px solid #d9e4e0; border-radius:18px; background:#f5f9f7; color:#153c32; grid-column:1 / -1; cursor:pointer; }
+.control { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:16px 18px; margin:12px 0; border:1px solid var(--app-line, #d9e4e0); border-radius:14px; background:var(--app-surface-soft, #f5f9f7); color:var(--app-text, #153c32); grid-column:1 / -1; cursor:pointer; }
 .control strong { display:block; font-size:16px; }
-.control small { display:block; margin-top:5px; line-height:1.5; color:#557067; }
-.control input { appearance:none; flex:0 0 46px; width:46px; height:26px; border-radius:20px; background:#869c94; position:relative; cursor:pointer; }
+.control small { display:block; margin-top:5px; line-height:1.5; color:var(--app-muted, #557067); }
+.control input { appearance:none; margin:0; padding:0; border:0; flex:0 0 46px; width:46px; height:26px; border-radius:20px; background:#869c94; position:relative; cursor:pointer; }
 .control input::after { content:''; position:absolute; width:20px; height:20px; top:3px; left:3px; border-radius:50%; background:white; transition:transform .15s; }
 .control input:checked { background:#247b60; }
 .control input:checked::after { transform:translateX(20px); }
