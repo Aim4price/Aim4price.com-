@@ -18222,9 +18222,9 @@ export default function AssetRegisterClient({
 
                 {manualAssetStep === 2 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualUtilityRow}>
+                    <div className={editingAsset ? updateStyles.classificationBar : styles.manualUtilityRow}>
                       {editingAsset ? (
-                        <dl className={styles.assetClassificationSummary}>
+                        <dl className={updateStyles.classificationSummary}>
                           <div><dt>Asset type</dt><dd>{selectedManualAssetType.label}</dd></div>
                           {editingAsset.equipmentFamilyLabel?.trim() ? (
                             <div><dt>Family</dt><dd>{editingAsset.equipmentFamilyLabel}</dd></div>
@@ -18239,12 +18239,19 @@ export default function AssetRegisterClient({
 
                       <button
                         type="button"
-                        className={styles.manualSettingsButton}
+                        className={editingAsset ? updateStyles.advancedSettingsButton : styles.manualSettingsButton}
                         onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
                         aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                         title={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                       >
-                        <ManageIcon className={styles.buttonIcon} />
+                        {editingAsset ? (
+                          <span className={updateStyles.settingsIcon} aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M5 3v8m0 4v6M12 3v3m0 4v11M19 3v12m0 4v2" />
+                              <circle cx="5" cy="13" r="2" /><circle cx="12" cy="8" r="2" /><circle cx="19" cy="17" r="2" />
+                            </svg>
+                          </span>
+                        ) : <ManageIcon className={styles.buttonIcon} />}
                         <span>{editingAsset ? 'Advanced settings' : 'Change type'}</span>
                       </button>
                     </div>
