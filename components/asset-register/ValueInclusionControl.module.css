@@ -7,3 +7,6 @@
 .control input:checked::after { transform:translateX(20px); }
 .control input:focus-visible { outline:3px solid #83baa6; outline-offset:4px; }
 .control input:disabled { opacity:.5; cursor:wait; }
+
+/* Match the asset management modal subtitle. */
+.control small.assetHelper { font-family:inherit; font-size:.88rem; font-weight:650; line-height:1.5; color:var(--app-muted, #64746a); }
