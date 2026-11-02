@@ -11,6 +11,7 @@ export type AssetRegisterSummary = {
   addressLine1: string;
   logoUrls: string[];
   showLogosOnRegister: boolean;
+  includeInCombinedTotals?: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -29,6 +30,7 @@ export type AssetRegisterInput = {
   address?: string | null;
   logoUrls?: string[] | null;
   showLogosOnRegister?: boolean | null;
+  includeInCombinedTotals?: boolean;
 };
 
 export type DeleteAssetRegisterResult = {
@@ -46,6 +48,7 @@ type AssetRegisterRow = {
   address_line_1: string | null;
   logo_urls: unknown;
   show_logos_on_register: boolean | null;
+  include_in_combined_totals?: boolean;
   is_primary: boolean | null;
   is_selected: boolean | null;
   created_at: string | Date | null;
@@ -206,6 +209,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
     addressLine1: cleanText(row.address_line_1),
     logoUrls: normalizeLogoUrls(row.logo_urls),
     showLogosOnRegister: normalizeLogoVisibility(row.show_logos_on_register, true),
+    includeInCombinedTotals: row.include_in_combined_totals !== false,
     isPrimary: Boolean(row.is_primary),
     isSelected: Boolean(row.is_selected),
     assetCount: Math.max(0, Math.round(numberValue(row.asset_count))),
@@ -273,7 +277,8 @@ async function buildAssetRegisterTotalsSql(): Promise<{
     'official_replacement_price_ex_vat',
   ]);
   const countsTowardRegisterValueExpression = `
-    not exists (
+    (to_jsonb(ai)->'specs_json'->'includeInRegisterTotal') is distinct from 'false'::jsonb
+    and not exists (
       select 1
       from public.asset_group_members group_member
       where group_member.asset_id = ai.id
@@ -283,7 +288,7 @@ async function buildAssetRegisterTotalsSql(): Promise<{
 
   return {
     totalValueSql: `coalesce(sum(case when ${countsTowardRegisterValueExpression} then ${currentValueExpression} else 0 end), 0)::numeric as total_value`,
-    totalReplacementPriceSql: `coalesce(sum(${replacementPriceExpression}), 0)::numeric as total_replacement_price`,
+    totalReplacementPriceSql: `coalesce(sum(case when ${countsTowardRegisterValueExpression} then ${replacementPriceExpression} else 0 end), 0)::numeric as total_replacement_price`,
   };
 }
 
@@ -518,7 +523,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   const schemaReady = await isDatabaseSchemaReady(() => db.query(`
     with register_schema as (
       select id, user_id, business_name, email, phone, address_line_1,
-             logo_urls, show_logos_on_register, is_primary, is_selected,
+             logo_urls, show_logos_on_register, include_in_combined_totals, is_primary, is_selected,
              created_at, updated_at
       from public.asset_registers
       where false
@@ -577,6 +582,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       add column if not exists address_line_1 text,
       add column if not exists logo_urls jsonb not null default '[]'::jsonb,
       add column if not exists show_logos_on_register boolean not null default true,
+      add column if not exists include_in_combined_totals boolean not null default true,
       add column if not exists is_primary boolean not null default false,
       add column if not exists is_selected boolean not null default false,
       add column if not exists created_at timestamptz not null default now(),
@@ -993,12 +999,13 @@ async function insertAssetRegister(
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, now(), now())
+      values ($1, $2, $3, $4, $5, $6::jsonb, $7, $10, $8, $9, now(), now())
       returning
         id,
         user_id,
@@ -1008,6 +1015,7 @@ async function insertAssetRegister(
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,
@@ -1026,6 +1034,7 @@ async function insertAssetRegister(
       showLogosOnRegister,
       isPrimary,
       isSelected,
+      input.includeInCombinedTotals !== false,
     ],
   );
 
@@ -1047,6 +1056,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,
@@ -1076,6 +1086,7 @@ export async function getOrCreatePrimaryAssetRegister(userId: string): Promise<A
           address_line_1,
           logo_urls,
           show_logos_on_register,
+          include_in_combined_totals,
           is_primary,
           is_selected,
           created_at,
@@ -1145,6 +1156,7 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
         ar.address_line_1,
         ar.logo_urls,
         ar.show_logos_on_register,
+        ar.include_in_combined_totals,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -1183,6 +1195,7 @@ export async function getSelectedAssetRegister(userId: string): Promise<AssetReg
         ar.address_line_1,
         ar.logo_urls,
         ar.show_logos_on_register,
+        ar.include_in_combined_totals,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -1227,6 +1240,7 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
         ar.address_line_1,
         ar.logo_urls,
         ar.show_logos_on_register,
+        ar.include_in_combined_totals,
         ar.is_primary,
         ar.is_selected,
         ar.created_at,
@@ -1283,6 +1297,7 @@ export async function updateAssetRegister(userId: string, registerId: string, in
         address_line_1 = $6,
         logo_urls = case when $7 then $8::jsonb else logo_urls end,
         show_logos_on_register = case when $9 then $10 else show_logos_on_register end,
+        include_in_combined_totals = coalesce($11::boolean, include_in_combined_totals),
         updated_at = now()
       where user_id = $1 and id::text = $2
       returning
@@ -1294,6 +1309,7 @@ export async function updateAssetRegister(userId: string, registerId: string, in
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,
@@ -1313,6 +1329,7 @@ export async function updateAssetRegister(userId: string, registerId: string, in
       JSON.stringify(normalizeLogoUrls(input.logoUrls)),
       hasLogoVisibility,
       normalizeLogoVisibility(input.showLogosOnRegister, true),
+      input.includeInCombinedTotals ?? null,
     ],
   );
 
@@ -1356,6 +1373,7 @@ export async function updateAssetRegisterLogo(input: {
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,
@@ -1515,6 +1533,7 @@ export async function deleteAssetRegister(input: {
         address_line_1,
         logo_urls,
         show_logos_on_register,
+        include_in_combined_totals,
         is_primary,
         is_selected,
         created_at,

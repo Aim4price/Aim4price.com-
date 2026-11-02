@@ -18,6 +18,8 @@ import MarketplacePhotoEditor from '../../components/MarketplacePhotoEditor';
 import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
 import advancedStyles from '../../components/asset-register/AdvancedSettings.module.css';
 import AssetMessageReader from '../../components/asset-register/AssetMessageReader';
+import CreateAssetRegisterModal, { type RegisterDetailsDraft } from '../../components/asset-register/CreateAssetRegisterModal';
+import ValueInclusionControl from '../../components/asset-register/ValueInclusionControl';
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
 import AssetPartsModal from '../../components/AssetPartsModal';
 import PhotoViewerActions from '../../components/PhotoViewerActions';
@@ -751,6 +753,7 @@ type RegisterAsset = {
   normalizedTypedModelName: string;
   familyIsPropelled?: boolean | null;
   specsJson: Record<string, unknown>;
+  registerIncludedInCombinedTotals?: boolean;
   depreciationMethodUsed: string;
   lifeWorkedPercent: number | null;
   lifeRemainingPercent: number | null;
@@ -880,6 +883,7 @@ type AssetRegisterSummary = {
   addressLine1: string;
   logoUrls?: string[];
   showLogosOnRegister?: boolean;
+  includeInCombinedTotals?: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -5381,7 +5385,7 @@ function buildRegisterBasicSummary(assets: RegisterAsset[], groups: AssetGroup[]
 
   uniqueAssets.forEach((asset) => {
     const valueExVat = Math.round(Number(asset.value || 0));
-    const countedValueExVat = assetCountsTowardRegisterTotal(asset.id, memberships) ? valueExVat : 0;
+    const countedValueExVat = assetCountsTowardRegisterTotal(asset, memberships) ? valueExVat : 0;
     const replacementPrice = readAssetReplacementPriceExVat(asset);
     const insuredValue = readAssetInsuredValueExVat(asset);
     const isInsured = readInsuranceStatusChoice(asset) === 'yes';
@@ -5400,11 +5404,11 @@ function buildRegisterBasicSummary(assets: RegisterAsset[], groups: AssetGroup[]
 
     if (replacementPrice !== null) {
       replacementPricedAssets += 1;
-      replacementValueExVat += replacementPrice;
+      replacementValueExVat += assetCountsTowardRegisterTotal(asset, memberships) ? replacementPrice : 0;
     }
 
     if (insuredValue !== null) {
-      insuredValueExVat += insuredValue;
+      insuredValueExVat += assetCountsTowardRegisterTotal(asset, memberships) ? insuredValue : 0;
     }
 
     if (isFinanced) {
@@ -6265,6 +6269,12 @@ export default function AssetRegisterClient({
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
   const [isAssetGroupModalOpen, setIsAssetGroupModalOpen] = useState(false);
+  const [isCreatingRegisterFromMove, setIsCreatingRegisterFromMove] = useState(false);
+  const [moveRegisterDraft, setMoveRegisterDraft] = useState<RegisterDetailsDraft>({ businessName: '', email: '', phone: '', addressLine1: '', includeInCombinedTotals: true });
+  const [isSavingMoveRegister, setIsSavingMoveRegister] = useState(false);
+  const [moveRegisterCreateError, setMoveRegisterCreateError] = useState('');
+  const [isSavingValueInclusion, setIsSavingValueInclusion] = useState(false);
+  const [valueInclusionError, setValueInclusionError] = useState('');
   const [isCreatingUmbrellaFromMove, setIsCreatingUmbrellaFromMove] = useState(false);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
@@ -7054,6 +7064,7 @@ export default function AssetRegisterClient({
         tone: 'success',
         message: input.groupId ? 'Umbrella updated.' : 'Umbrella created.',
       });
+      await handleRefreshAssetRegister(true);
     } catch (error) {
       setAssetGroupError(error instanceof Error ? error.message : 'Failed to save the umbrella.');
     } finally {
@@ -7457,8 +7468,8 @@ export default function AssetRegisterClient({
       isPrimary: false,
       isSelected: false,
       assetCount: savedRegisters.reduce((sum, register) => sum + Math.max(0, Number(register.assetCount) || 0), 0),
-      totalValue: savedRegisters.reduce((sum, register) => sum + (Number(register.totalValue) || 0), 0),
-      totalReplacementPrice: savedRegisters.reduce((sum, register) => sum + (Number(register.totalReplacementPrice) || 0), 0),
+      totalValue: savedRegisters.reduce((sum, register) => sum + (register.includeInCombinedTotals === false ? 0 : Number(register.totalValue) || 0), 0),
+      totalReplacementPrice: savedRegisters.reduce((sum, register) => sum + (register.includeInCombinedTotals === false ? 0 : Number(register.totalReplacementPrice) || 0), 0),
       unnotedAlertCount: savedRegisters.reduce((sum, register) => sum + registerSummaryUnnotedAlertCount(register), 0),
       createdAtIso: savedRegisters[0]?.createdAtIso ?? newestUpdatedAt,
       updatedAtIso: newestUpdatedAt,
@@ -8123,8 +8134,44 @@ export default function AssetRegisterClient({
     }
   }
 
+  async function createRegisterFromMove(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isSavingMoveRegister || !moveRegisterDraft.businessName.trim()) return;
+    setIsSavingMoveRegister(true);
+    setMoveRegisterCreateError('');
+    try {
+      const response = await fetch('/api/asset-registers', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moveRegisterDraft) });
+      const payload = await response.json() as AssetRegisterApiResponse;
+      if (!response.ok || !payload.ok || !payload.register) throw new Error(payload.error || 'Could not create the register.');
+      if (Array.isArray(payload.registers)) setAssetRegisters(payload.registers);
+      setAssetRegisterMoveTargetId(payload.register.id);
+      setIsCreatingRegisterFromMove(false);
+    } catch (error) {
+      setMoveRegisterCreateError(error instanceof Error ? error.message : 'Could not create the register.');
+    } finally { setIsSavingMoveRegister(false); }
+  }
+
+  async function saveAssetValueInclusion(included: boolean) {
+    if (!activeAsset || isSavingValueInclusion) return;
+    const asset = activeAsset;
+    setIsSavingValueInclusion(true);
+    setValueInclusionError('');
+    try {
+      const response = await fetch('/api/asset-register', { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetId: asset.id, includeInRegisterTotal: included }) });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not save the value setting.');
+      const updated = { ...asset, specsJson: { ...asset.specsJson, includeInRegisterTotal: included } };
+      setAssets(current => current.map(item => item.id === asset.id ? updated : item));
+      setActiveAsset(current => current?.id === asset.id ? updated : current);
+      await handleRefreshAssetRegister(true);
+    } catch (error) {
+      setValueInclusionError(error instanceof Error ? error.message : 'Could not save the value setting.');
+    } finally { setIsSavingValueInclusion(false); }
+  }
+
   function resetAssetRegisterMoveManager() {
     assetRegisterMoveGroupsRequestRef.current += 1;
+    setIsCreatingRegisterFromMove(false);
     setAssetRegisterMoveAsset(null);
     setAssetRegisterMoveDestination('register');
     setAssetRegisterMoveTargetId('');
@@ -8282,6 +8329,7 @@ export default function AssetRegisterClient({
                     ...asset,
                     registerId: assetRegisterMoveTargetId,
                     registerName: targetRegister?.businessName ?? asset.registerName,
+                    registerIncludedInCombinedTotals: targetRegister?.includeInCombinedTotals !== false,
                   }
                 : asset
             ))
@@ -8329,6 +8377,7 @@ export default function AssetRegisterClient({
           : `${movedAssetTitle} moved successfully.`,
       });
       window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated'));
+      await handleRefreshAssetRegister(true);
     } catch (error) {
       setAssetRegisterMoveError(error instanceof Error ? error.message : 'Failed to move asset.');
     } finally {
@@ -8598,7 +8647,7 @@ export default function AssetRegisterClient({
         return;
       }
 
-      if (assetRegisterMoveAsset && !isCreatingUmbrellaFromMove) {
+      if (assetRegisterMoveAsset && !isCreatingUmbrellaFromMove && !isCreatingRegisterFromMove) {
         closeAssetRegisterMoveManager();
         return;
       }
@@ -8714,7 +8763,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, isCreatingUmbrellaFromMove, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, isCreatingUmbrellaFromMove, isCreatingRegisterFromMove, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -8819,6 +8868,7 @@ export default function AssetRegisterClient({
       registerId: asset.registerId,
       registerName: asset.registerName,
       value: asset.value,
+      valueIncluded: asset.specsJson?.includeInRegisterTotal !== false && asset.registerIncludedInCombinedTotals !== false,
       categoryLabel: assetKindLabel(asset),
       yearModel: asset.yearModel,
       usageLabel: buildAssetUsageValue(asset),
@@ -8839,7 +8889,7 @@ export default function AssetRegisterClient({
 
   const totalValueInclVat = useMemo(() => Math.round(totalValue * 1.15), [totalValue]);
   const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
-  const totalReplacementValue = useMemo(() => sumAssetReplacementValues(assets), [assets]);
+  const totalReplacementValue = useMemo(() => sumAssetReplacementValues(assets.filter(asset => assetCountsTowardRegisterTotal(asset, assetGroupMemberships))), [assets, assetGroupMemberships]);
   const totalReplacementValueInclVat = useMemo(() => Math.round(totalReplacementValue * 1.15), [totalReplacementValue]);
   const displayedReplacementValue = replacementValueVatMode === 'included' ? totalReplacementValueInclVat : totalReplacementValue;
   const replacementPricedAssetCount = useMemo(() => countAssetsWithReplacementPrice(assets), [assets]);
@@ -8853,7 +8903,7 @@ export default function AssetRegisterClient({
       .filter((asset) => isAim4priceValuedAsset(asset))
       .reduce(
         (sum, asset) => sum + (
-          assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+          assetCountsTowardRegisterTotal(asset, assetGroupMemberships)
             ? Math.round(Number(asset.value || 0))
             : 0
         ),
@@ -8868,7 +8918,7 @@ export default function AssetRegisterClient({
         (stats, asset) => ({
           count: stats.count + 1,
           value: stats.value + (
-            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+            assetCountsTowardRegisterTotal(asset, assetGroupMemberships)
               ? Math.round(Number(asset.value || 0))
               : 0
           ),
@@ -8887,7 +8937,7 @@ export default function AssetRegisterClient({
         return {
           count: stats.count + 1,
           value: stats.value + (
-            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+            assetCountsTowardRegisterTotal(asset, assetGroupMemberships)
               ? Math.round(Number(asset.value || 0))
               : 0
           ),
@@ -8923,7 +8973,7 @@ export default function AssetRegisterClient({
         return {
           count: stats.count + 1,
           value: stats.value + (
-            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+            assetCountsTowardRegisterTotal(asset, assetGroupMemberships)
               ? Math.round(Number(asset.value || 0))
               : 0
           ),
@@ -11143,6 +11193,7 @@ export default function AssetRegisterClient({
     if (typeof window !== 'undefined') {
       setOwnerCommandReturnLocation(`${window.location.pathname}${window.location.search}`);
     }
+    setValueInclusionError('');
     setActiveAsset(asset);
     setActiveDealerTrackingByAssetId((current) => ({ ...current, [asset.id]: false }));
     void loadDealerTrackingStatus(asset.id);
@@ -14581,25 +14632,29 @@ export default function AssetRegisterClient({
 
       return {
         ...snapshot,
+        countsInRegisterTotal: assetCountsTowardRegisterTotal(asset, sharedAssetGroupMemberships),
         assetGroup: membership
           ? {
               id: membership.group.id,
               name: membership.group.name,
               role: membership.member.role,
               relationship: membership.member.relationship,
-              countsTowardTotal: assetCountsTowardRegisterTotal(asset.id, sharedAssetGroupMemberships),
+              countsTowardTotal: assetCountsTowardRegisterTotal(asset, sharedAssetGroupMemberships),
               valueMode: membership.group.valueMode,
               primaryAssetId: membership.group.members.find((member) => member.role === 'primary')?.assetId ?? null,
               memberCount: membership.group.members.length,
-              countedMemberCount: membership.group.members.filter((member) => assetCountsTowardRegisterTotal(member.assetId, sharedAssetGroupMemberships)).length,
-              countsInRegisterTotal: assetCountsTowardRegisterTotal(asset.id, sharedAssetGroupMemberships),
+              countedMemberCount: membership.group.members.filter((member) => {
+                const memberAsset = sharedAssets.find(item => item.id === member.assetId);
+                return memberAsset && assetCountsTowardRegisterTotal(memberAsset, sharedAssetGroupMemberships);
+              }).length,
+              countsInRegisterTotal: assetCountsTowardRegisterTotal(asset, sharedAssetGroupMemberships),
             }
           : null,
       };
     });
     const sharedTotalValue = sumAssetValues(sharedAssets, sharedAssetGroups);
     const sharedTotalReplacementValue = sharedAssets.reduce(
-      (sum, asset) => sum + (Number(readAssetReplacementPriceExVat(asset)) || 0),
+      (sum, asset) => sum + (assetCountsTowardRegisterTotal(asset, sharedAssetGroupMemberships) ? Number(readAssetReplacementPriceExVat(asset)) || 0 : 0),
       0,
     );
     const generatedAtIso = new Date().toISOString();
@@ -14960,10 +15015,10 @@ export default function AssetRegisterClient({
     const orderedReportAssets = orderAssetsByGroups(reportAssets, reportAssetGroups);
     const reportValue = sumAssetValues(reportAssets, reportAssetGroups);
     const reportValueInclVat = Math.round(reportValue * 1.15);
-    const reportReplacementValue = sumAssetReplacementValues(reportAssets);
+    const reportReplacementValue = sumAssetReplacementValues(reportAssets.filter(asset => assetCountsTowardRegisterTotal(asset, reportAssetGroupMemberships)));
     const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
     const reportReplacementPricedCount = countAssetsWithReplacementPrice(reportAssets);
-    const reportInsuredValue = sumAssetInsuredValues(reportAssets);
+    const reportInsuredValue = sumAssetInsuredValues(reportAssets.filter(asset => assetCountsTowardRegisterTotal(asset, reportAssetGroupMemberships)));
     const reportInsuredValueInclVat = Math.round(reportInsuredValue * 1.15);
     const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset, reportAssetGroups);
     const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes', reportAssetGroups);
@@ -14982,7 +15037,7 @@ export default function AssetRegisterClient({
       buildPrintableAssetThumbnailMap(orderedReportAssets),
     ]);
 
-    const eligibleSellingAssets = orderedReportAssets.filter(asset=>assetCountsTowardRegisterTotal(asset.id,reportAssetGroupMemberships));
+    const eligibleSellingAssets = orderedReportAssets.filter(asset=>assetCountsTowardRegisterTotal(asset,reportAssetGroupMemberships));
     const sellingAssessments = eligibleSellingAssets.map(asset=>reportSellingAssessment(asset,savedSaleability[asset.id])).filter(item=>item && !item.needsReview);
     const sellingTotal = sellingAssessments.reduce((sum,item)=>sum+(item?.priceExVat ?? 0),0);
     const reportPayload: AssetRegisterSummaryPayload = {
@@ -15024,10 +15079,11 @@ export default function AssetRegisterClient({
         const isPropertyAsset = asset.kind === 'property';
         const membership = reportAssetGroupMemberships.get(asset.id);
         const groupDetail = membership
-          ? `Umbrella: ${membership.group.name} · ${assetGroupValueModeLabel(membership.group)} · Counts in register total: ${assetCountsTowardRegisterTotal(asset.id, reportAssetGroupMemberships) ? 'Yes' : 'No'}`
+          ? `Umbrella: ${membership.group.name} · ${assetGroupValueModeLabel(membership.group)} · Counts in register total: ${assetCountsTowardRegisterTotal(asset, reportAssetGroupMemberships) ? 'Yes' : 'No'}`
           : '';
 
         return {
+          countsInRegisterTotal: assetCountsTowardRegisterTotal(asset, reportAssetGroupMemberships),
           asset: asset.title,
           type: isCombinedRegisterView
             ? `${asset.registerName || 'Asset Register'} · ${assetKindLabel(asset)}`
@@ -16071,9 +16127,16 @@ export default function AssetRegisterClient({
               onClose={closeAssetRegisterMoveManager}
               onMove={() => void handleMoveAssetRegister()}
               onCreateUmbrella={openCreateUmbrellaFromMove}
-              suspended={isCreatingUmbrellaFromMove}
+              onCreateRegister={() => {
+                setMoveRegisterDraft({ businessName: '', email: '', phone: '', addressLine1: '', includeInCombinedTotals: true });
+                setMoveRegisterCreateError('');
+                setIsCreatingRegisterFromMove(true);
+              }}
+              suspended={isCreatingUmbrellaFromMove || isCreatingRegisterFromMove}
             />
           ) : null}
+
+          {isCreatingRegisterFromMove && assetRegisterMoveAsset ? <CreateAssetRegisterModal draft={moveRegisterDraft} onChange={setMoveRegisterDraft} onSubmit={createRegisterFromMove} onClose={() => { if (!isSavingMoveRegister) setIsCreatingRegisterFromMove(false); }} busy={isSavingMoveRegister} error={moveRegisterCreateError} /> : null}
 
           <section className={styles.assetSummaryCarousel} aria-label="Asset register summary">
             <button
@@ -16714,7 +16777,7 @@ export default function AssetRegisterClient({
                         ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            <h2>{asset.title}</h2>
+                            <h2>{asset.title}</h2>{asset.specsJson?.includeInRegisterTotal === false ? <small>Excluded from register total</small> : asset.registerIncludedInCombinedTotals === false ? <small>Register excluded from combined totals</small> : null}
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span className={styles.assetValueMethodLabel}>{asset.selectedMethod === 'manual' ? 'Manual value' : asset.selectedMethod === 'aim4price' ? 'Aim4price Value' : `${methodLabel(asset.selectedMethod)} value`}</span>
@@ -20292,6 +20355,11 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
+              {canUseOwnerOnlyAssetActions ? <>
+                <ValueInclusionControl checked={activeAsset.specsJson?.includeInRegisterTotal !== false} onChange={checked => void saveAssetValueInclusion(checked)} disabled={isSavingValueInclusion} />
+                {valueInclusionError ? <p role="alert">{valueInclusionError}</p> : null}
+                {activeAsset.registerIncludedInCombinedTotals === false ? <p>This register is excluded from combined totals.</p> : null}
+              </> : null}
               <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid} ${actionColours.pricing}`} data-manage-actions>
                 <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Values and price history.</small></span></button>
                 <button data-manage-action="suggestValue"

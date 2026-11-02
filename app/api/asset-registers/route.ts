@@ -25,6 +25,7 @@ type AssetRegisterBody = {
   addressLine1?: unknown;
   logoUrls?: unknown;
   showLogosOnRegister?: unknown;
+  includeInCombinedTotals?: unknown;
 };
 
 function unauthorized() {
@@ -53,6 +54,7 @@ function readRegisterInput(body: AssetRegisterBody) {
     addressLine1: string;
     logoUrls?: string[] | null;
     showLogosOnRegister?: boolean | null;
+    includeInCombinedTotals?: boolean;
   } = {
     businessName: String(body.businessName ?? '').trim(),
     email: String(body.email ?? '').trim(),
@@ -73,6 +75,7 @@ function readRegisterInput(body: AssetRegisterBody) {
       : !['false', '0', 'no', 'off', 'hide', 'hidden'].includes(normalizedVisibility);
   }
 
+  if (typeof body.includeInCombinedTotals === 'boolean') input.includeInCombinedTotals = body.includeInCombinedTotals;
   return input;
 }
 
@@ -149,6 +152,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as AssetRegisterBody;
+    if ('includeInCombinedTotals' in body && typeof body.includeInCombinedTotals !== 'boolean') {
+      return NextResponse.json({ ok: false, error: 'Choose whether to include this register in combined totals.' }, { status: 400 });
+    }
     const register = await createAssetRegister(session.user.id, readRegisterInput(body));
     await recordAdminUsageEventSafely({
       userId: getUsageUserId(session),
@@ -177,6 +183,9 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = (await request.json()) as AssetRegisterBody;
+    if ('includeInCombinedTotals' in body && typeof body.includeInCombinedTotals !== 'boolean') {
+      return NextResponse.json({ ok: false, error: 'Choose whether to include this register in combined totals.' }, { status: 400 });
+    }
     const registerId = String(body.registerId ?? '').trim();
 
     if (!registerId) {

@@ -1,3 +1,4 @@
+import { getDb } from '../../../lib/db';
 import { retryDatabaseRead, isTransientDatabaseReadError } from '../../../lib/database-read-retry';
 import { attachOpenAssetAlerts } from '../../../lib/asset-register-alerts';
 import { NextRequest, NextResponse } from 'next/server';
@@ -549,6 +550,7 @@ async function readAssetRegister(request: NextRequest, userId: string) {
         ...item,
         registerId: item.registerId || sourceRegister.id,
         registerName: sourceRegister.businessName,
+        registerIncludedInCombinedTotals: sourceRegister.includeInCombinedTotals !== false,
       }));
     }));
     const baseItems = itemGroups.flat();
@@ -568,7 +570,7 @@ async function readAssetRegister(request: NextRequest, userId: string) {
       isSelected: false,
       assetCount: items.length,
       totalValue: combinedValue,
-      totalReplacementPrice: items.reduce((sum, item) => sum + Number(item.replacementPriceExVat || 0), 0),
+      totalReplacementPrice: registerValueForAssets(items.map(item => ({ ...item, value: item.replacementPriceExVat ?? 0 })), groups),
       createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
       updatedAtIso: registers.reduce(
         (latest, entry) => entry.updatedAtIso > latest ? entry.updatedAtIso : latest,
@@ -931,6 +933,7 @@ export async function PATCH(request: NextRequest) {
 
   const body = (await request.json()) as {
     assetId?: unknown;
+    includeInRegisterTotal?: unknown;
     assetFlagged?: unknown;
     isFlagged?: unknown;
     flagged?: unknown;
@@ -950,6 +953,22 @@ export async function PATCH(request: NextRequest) {
 
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'includeInRegisterTotal')) {
+    if (typeof body.includeInRegisterTotal !== 'boolean') {
+      return NextResponse.json({ ok: false, error: 'Choose whether to include this asset in totals.' }, { status: 400 });
+    }
+    try {
+      await getDb().query(`update public.asset_register_items
+        set specs_json = coalesce(specs_json, '{}'::jsonb) || jsonb_build_object('includeInRegisterTotal', $3::boolean), updated_at = now()
+        where user_id = $1 and id = $2::uuid`, [session.user.id, assetId, body.includeInRegisterTotal]);
+      const item = await getAssetRegisterItemById(session.user.id, assetId);
+      return NextResponse.json({ ok: true, item });
+    } catch (error) {
+      console.error('asset total inclusion PATCH failed', error);
+      return NextResponse.json({ ok: false, error: 'Could not save the value setting. Please try again.' }, { status: 500 });
+    }
   }
 
   const hasYearModelRequest =

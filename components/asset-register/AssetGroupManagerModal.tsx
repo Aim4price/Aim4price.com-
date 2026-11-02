@@ -305,6 +305,7 @@ function ReportGraphic({ src, alt, icon }: ReportGraphicProps) {
 }
 
 export type AssetGroupModalAsset = {
+  valueIncluded?: boolean;
   id: string;
   title: string;
   registerId: string | null;
@@ -561,10 +562,10 @@ export default function AssetGroupManagerModal({
   const clearableSelectedAssetCount = selectedAssetIds.filter((assetId) => group || assetId !== anchorAsset?.id).length;
 
   const countedValue = selectedAssets.reduce((sum, asset) => {
-    if (countsTowardTotalByAssetId[asset.id] === false) return sum;
+    if (countsTowardTotalByAssetId[asset.id] === false || asset.valueIncluded === false) return sum;
     return sum + Math.round(Number(asset.value) || 0);
   }, 0);
-  const countedAssetCount = selectedAssetIds.filter((assetId) => countsTowardTotalByAssetId[assetId] !== false).length;
+  const countedAssetCount = selectedAssets.filter(asset => countsTowardTotalByAssetId[asset.id] !== false && asset.valueIncluded !== false).length;
   const memberValueOptions = group
     ? [...(hasPrimaryAsset ? PRIMARY_MEMBER_VALUE_OPTIONS : GROUPED_MEMBER_VALUE_OPTIONS), REMOVE_MEMBER_OPTION]
     : hasPrimaryAsset
@@ -696,7 +697,7 @@ export default function AssetGroupManagerModal({
       return;
     }
 
-    if (selectedAssetIds.length < 1 || countedAssetCount < 1 || (hasPrimaryAsset && !primaryAssetId) || !name.trim()) return;
+    if (selectedAssetIds.length < 1 || (hasPrimaryAsset && !primaryAssetId) || !name.trim()) return;
 
     const valueMode = hasPrimaryAsset
       && selectedAssetIds.every((assetId) => assetId === primaryAssetId || countsTowardTotalByAssetId[assetId] === false)
@@ -1150,7 +1151,7 @@ export default function AssetGroupManagerModal({
                               </svg>
                               <span className={styles.totalSwitchCopy}>
                                 <strong>Include in umbrella total</strong>
-                                <small>{countsTowardTotalByAssetId[asset.id] === false
+                                <small>{asset.valueIncluded === false ? 'Excluded by this asset’s or register’s value setting.' : countsTowardTotalByAssetId[asset.id] === false
                                   ? 'Keeps this asset in the umbrella without adding its value.'
                                   : 'Adds this asset’s value to the total.'}</small>
                               </span>
@@ -1214,7 +1215,7 @@ export default function AssetGroupManagerModal({
               <button
                 type="submit"
                 className={group ? accountStyles.primaryButton : styles.saveButton}
-                disabled={busy || (editorStep === 1 && !name.trim()) || (editorStep === 3 && (selectedAssetIds.length < 1 || countedAssetCount < 1 || (hasPrimaryAsset && !primaryAssetId)))} data-download-primary="true" data-asset-choice-action="primary"
+                disabled={busy || (editorStep === 1 && !name.trim()) || (editorStep === 3 && (selectedAssetIds.length < 1 || (hasPrimaryAsset && !primaryAssetId)))} data-download-primary="true" data-asset-choice-action="primary"
               >
                 {editorStep < 3 ? 'Next' : busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
               </button>

@@ -45,6 +45,7 @@ jobs:
         run: npm run test:report-design
       - name: Shared workflow regression tests
         run: |
+          npm run test:register-value-inclusion
           npm run test:asset-card-ui
           npm run test:umbrella-modal-design
           npm run test:signup-flow

@@ -1,9 +1,10 @@
 'use client';
 import { useEffect, useId, useRef, type FormEvent } from 'react';
+import ValueInclusionControl from './ValueInclusionControl';
 import SettingsDetailIcon from '../SettingsDetailIcon';
 import styles from '../../app/asset-registers/page.module.css';
 
-export type RegisterDetailsDraft = { businessName: string; email: string; phone: string; addressLine1: string };
+export type RegisterDetailsDraft = { businessName: string; email: string; phone: string; addressLine1: string; includeInCombinedTotals?: boolean };
 export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, onClose, busy, error }: {
   draft: RegisterDetailsDraft; onChange: (draft: RegisterDetailsDraft) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void; onClose: () => void; busy: boolean; error?: string;
@@ -113,6 +114,7 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
               </label>
             </div>
 
+            <ValueInclusionControl combined checked={draft.includeInCombinedTotals !== false} onChange={checked => onChange({ ...draft, includeInCombinedTotals: checked })} disabled={busy} />
             {error ? <p role="alert">{error}</p> : null}
             <div className={styles.modalFooter}>
               <button

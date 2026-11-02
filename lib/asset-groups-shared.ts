@@ -64,6 +64,8 @@ export type GroupAwareAsset = {
   value?: number | null;
   replacementPriceExVat?: number | null;
   assetGroup?: AssetGroupExportMeta | null;
+  specsJson?: Record<string, unknown>;
+  registerIncludedInCombinedTotals?: boolean;
 };
 
 export type AssetGroupPageEntry<T extends { id: string }> =
@@ -180,19 +182,26 @@ export function projectAssetGroupsToAssets<T extends { id: string }>(
 }
 
 export function assetCountsTowardRegisterTotal(
-  assetId: string,
+  assetOrId: string | GroupAwareAsset,
   groupsOrMemberships: AssetGroup[] | Map<string, AssetGroupMembership>,
 ): boolean {
   const memberships = groupsOrMemberships instanceof Map
     ? groupsOrMemberships
     : buildAssetGroupMembershipMap(groupsOrMemberships);
+  const assetId = typeof assetOrId === 'string' ? assetOrId : assetOrId.id;
+  if (typeof assetOrId !== 'string' && !assetValueIsIncluded(assetOrId)) return false;
   const membership = memberships.get(assetId);
 
   if (!membership) return true;
   return assetGroupMemberCountsTowardTotal(membership.group, membership.member);
 }
 
+export function assetValueIsIncluded(asset: GroupAwareAsset): boolean {
+  return asset.specsJson?.includeInRegisterTotal !== false && asset.registerIncludedInCombinedTotals !== false;
+}
+
 export function assetCountsTowardRegisterTotalFromMeta(asset: GroupAwareAsset): boolean {
+  if (!assetValueIsIncluded(asset)) return false;
   const group = asset.assetGroup;
 
   if (!group) return true;
@@ -209,7 +218,7 @@ export function registerValueForAssets<T extends GroupAwareAsset>(
     : buildAssetGroupMembershipMap(groupsOrMemberships);
 
   return assets.reduce((sum, asset) => {
-    if (!assetCountsTowardRegisterTotal(asset.id, memberships)) return sum;
+    if (!assetCountsTowardRegisterTotal(asset, memberships)) return sum;
     const value = Number(asset.value ?? 0);
     return sum + (Number.isFinite(value) ? Math.round(value) : 0);
   }, 0);
@@ -232,7 +241,7 @@ export function groupRegisterValue<T extends GroupAwareAsset>(
 
   return group.members.reduce((sum, member) => {
     const asset = assetById.get(member.assetId);
-    if (!asset || !assetCountsTowardRegisterTotal(member.assetId, memberships)) return sum;
+    if (!asset || !assetCountsTowardRegisterTotal(asset, memberships)) return sum;
     const value = Number(asset.value ?? 0);
     return sum + (Number.isFinite(value) ? Math.round(value) : 0);
   }, 0);

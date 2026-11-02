@@ -1,4 +1,6 @@
 "use client";
+import ValueInclusionControl from '../../components/asset-register/ValueInclusionControl';
+import { decorateAssetsWithGroups, assetCountsTowardRegisterTotalFromMeta, type AssetGroup, type AssetGroupExportMeta } from '../../lib/asset-groups-shared';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 import ShareNextIcon from '../../components/asset-register/ShareNextIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -47,6 +49,7 @@ type AssetRegisterSummary = {
   addressLine1: string;
   logoUrls: string[];
   showLogosOnRegister: boolean;
+  includeInCombinedTotals?: boolean;
   isPrimary: boolean;
   isSelected: boolean;
   assetCount: number;
@@ -68,6 +71,8 @@ type AssetRegisterDocument = {
 };
 
 type RegisterAsset = {
+  assetGroup?: AssetGroupExportMeta | null;
+  registerIncludedInCombinedTotals?: boolean;
   id: string;
   userId: string;
   registerId: string | null;
@@ -130,6 +135,7 @@ type AssetRegistersApiResponse = {
 };
 
 type AssetRegisterItemsApiResponse = {
+  groups?: AssetGroup[];
   ok: boolean;
   register?: AssetRegisterSummary;
   items?: RegisterAsset[];
@@ -162,6 +168,7 @@ type RegisterDraft = {
   addressLine1: string;
   logoUrls: string[];
   showLogosOnRegister: boolean;
+  includeInCombinedTotals?: boolean;
 };
 
 const MAX_REGISTER_LOGOS = 1;
@@ -175,6 +182,7 @@ const emptyRegisterDraft: RegisterDraft = {
   addressLine1: "",
   logoUrls: [],
   showLogosOnRegister: true,
+  includeInCombinedTotals: true,
 };
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
@@ -349,6 +357,7 @@ function formatUploadSize(bytes: number): string {
 
 function draftFromRegister(register: AssetRegisterSummary): RegisterDraft {
   return {
+    includeInCombinedTotals: register.includeInCombinedTotals !== false,
     businessName: register.businessName,
     email: register.email,
     phone: register.phone,
@@ -930,15 +939,15 @@ type ExportRegisterBundle = {
 };
 
 function sumAssetValues(items: RegisterAsset[]): number {
-  return items.reduce((sum, asset) => sum + Math.round(numericValue(asset.value) ?? 0), 0);
+  return items.reduce((sum, asset) => sum + (assetCountsTowardRegisterTotalFromMeta(asset) ? Math.round(numericValue(asset.value) ?? 0) : 0), 0);
 }
 
 function sumAssetReplacementValues(items: RegisterAsset[]): number {
-  return items.reduce((sum, asset) => sum + Math.round(readAssetReplacementPriceExVat(asset) ?? 0), 0);
+  return items.reduce((sum, asset) => sum + (assetCountsTowardRegisterTotalFromMeta(asset) ? Math.round(readAssetReplacementPriceExVat(asset) ?? 0) : 0), 0);
 }
 
 function sumAssetInsuredValues(items: RegisterAsset[]): number {
-  return items.reduce((sum, asset) => sum + Math.round(readAssetInsuredValueExVat(asset) ?? 0), 0);
+  return items.reduce((sum, asset) => sum + (assetCountsTowardRegisterTotalFromMeta(asset) ? Math.round(readAssetInsuredValueExVat(asset) ?? 0) : 0), 0);
 }
 
 function countAssetsWithReplacementPrice(items: RegisterAsset[]): number {
@@ -951,7 +960,7 @@ function calculateAssetStats(items: RegisterAsset[], predicate: (asset: Register
       if (!predicate(asset)) return stats;
       return {
         count: stats.count + 1,
-        value: stats.value + Math.round(numericValue(asset.value) ?? 0),
+        value: stats.value + (assetCountsTowardRegisterTotalFromMeta(asset) ? Math.round(numericValue(asset.value) ?? 0) : 0),
       };
     },
     { count: 0, value: 0 },
@@ -1000,6 +1009,7 @@ function buildExportReportRows(bundles: ExportRegisterBundle[], scope: ExportSco
       const licenseRegistrationNumber = readLicenseRegistrationNumber(asset);
 
       return {
+        countsInRegisterTotal: assetCountsTowardRegisterTotalFromMeta(asset),
         asset: cleanText(asset.title) || "Asset",
         type: `${sourcePrefix}${assetKindLabel(asset)}`,
         method: methodLabel(asset.selectedMethod),
@@ -1411,8 +1421,8 @@ export default function AssetRegistersClient({
       isPrimary: false,
       isSelected: false,
       assetCount: registers.reduce((sum, register) => sum + register.assetCount, 0),
-      totalValue: registers.reduce((sum, register) => sum + register.totalValue, 0),
-      totalReplacementPrice: registers.reduce((sum, register) => sum + register.totalReplacementPrice, 0),
+      totalValue: registers.reduce((sum, register) => sum + (register.includeInCombinedTotals === false ? 0 : register.totalValue), 0),
+      totalReplacementPrice: registers.reduce((sum, register) => sum + (register.includeInCombinedTotals === false ? 0 : register.totalReplacementPrice), 0),
       createdAtIso: registers[0]?.createdAtIso ?? newestUpdatedAt,
       updatedAtIso: newestUpdatedAt,
     };
@@ -2028,7 +2038,7 @@ export default function AssetRegistersClient({
             ? data.assets
             : [];
 
-        return { register: data.register ?? register, items };
+        return { register: data.register ?? register, items: decorateAssetsWithGroups(items, data.groups ?? []) };
       }),
     );
 
@@ -2056,6 +2066,7 @@ export default function AssetRegistersClient({
     }
 
     const bundles = await loadExportRegisterBundles(targetRegisters);
+    bundles.forEach(bundle => { bundle.items = bundle.items.map(item => ({ ...item, registerIncludedInCombinedTotals: activeExportScope === 'single' || bundle.register.includeInCombinedTotals !== false })); });
     const allAssets = bundles.flatMap((bundle) => bundle.items);
     const reportValue = sumAssetValues(allAssets);
     const reportValueInclVat = Math.round(reportValue * 1.15);
@@ -2879,7 +2890,7 @@ export default function AssetRegistersClient({
 
                       <div className={styles.registerInfo}>
                         <div className={styles.registerTitleBlock}>
-                          <h2>{register.businessName}</h2>
+                          <h2>{register.businessName}</h2>{register.includeInCombinedTotals === false ? <small>Excluded from combined totals</small> : null}
                           <div className={styles.registerDetails}>
                             <RegisterContactDetails register={register} />
                           </div>
@@ -3806,6 +3817,7 @@ export default function AssetRegistersClient({
               </label>
             </div>
 
+            <ValueInclusionControl combined checked={editDraft.includeInCombinedTotals !== false} onChange={checked => applyEditDraftChange(current => ({ ...current, includeInCombinedTotals: checked }))} disabled={isSavingDetails} />
             <div className={styles.modalFooter}>
               <button
                 type="button"

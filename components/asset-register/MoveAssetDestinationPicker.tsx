@@ -27,6 +27,7 @@ type Props = {
   onClose: () => void;
   onMove: () => void;
   onCreateUmbrella?: () => void;
+  onCreateRegister?: () => void;
   suspended?: boolean;
 };
 
@@ -69,10 +70,10 @@ export default function MoveAssetDestinationPicker(props: Props) {
 
   return (
     <div className={styles.overlay} data-website-overlay data-account-asset-modal>
-      <div className={styles.backdrop} onClick={props.onClose} />
+      <div className={styles.backdrop} onClick={() => { if (!props.busy) props.onClose(); }} />
       <div ref={dialogRef} className={`${styles.dialog} ${step === 'choice' ? styles.choiceDialog : styles.registerDialog}`} role="dialog" aria-modal="true" aria-labelledby="move-asset-name" aria-describedby="move-destination-description" aria-busy={props.busy}
         onKeyDown={(event) => {
-          if (event.key === 'Escape') { event.stopPropagation(); if (step === 'destination') goBack(); else props.onClose(); return; }
+          if (event.key === 'Escape') { event.stopPropagation(); if (props.busy) return; if (step === 'destination') goBack(); else props.onClose(); return; }
           if (event.key !== 'Tab') return;
           const nodes = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), a[href]') ?? []);
           if (!nodes.length) { event.preventDefault(); return; }
@@ -83,8 +84,8 @@ export default function MoveAssetDestinationPicker(props: Props) {
         }}>
         <header className={styles.header}>
           <div>
-            <p id="move-asset-name" className={styles.assetName}>{step === 'destination' && !isUmbrella ? 'Change Asset Register' : props.assetName}</p>
-            <p id="move-destination-description" className={styles.assetDetails}>{step === 'destination' && !isUmbrella ? props.assetName : props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
+            <p id="move-asset-name" className={styles.assetName}>{step === 'destination' ? (isUmbrella ? 'Move to Umbrella' : 'Change Asset Register') : props.assetName}</p>
+            <p id="move-destination-description" className={styles.assetDetails}>{step === 'destination' ? props.assetName : props.assetDetails.replace(/^Year model:/, 'Year Model:').replaceAll(' · ', ' • ')}</p>
           </div>
           <button type="button" className={styles.close} onClick={props.onClose} disabled={props.busy} aria-label="Close move asset modal" data-modal-close="true">×</button>
         </header>
@@ -106,13 +107,18 @@ export default function MoveAssetDestinationPicker(props: Props) {
             <svg className={styles.searchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg>
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
           </div>
+          {!isUmbrella && props.onCreateRegister ? (
+            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateRegister?.(); }} disabled={props.busy}>
+              <span aria-hidden="true">+</span> Add register
+            </button>
+          ) : null}
           {isUmbrella && props.canUseUmbrellas && props.onCreateUmbrella ? (
-            <button type="button" className={styles.addUmbrella} onClick={props.onCreateUmbrella} disabled={props.busy}>
+            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateUmbrella?.(); }} disabled={props.busy}>
               <span aria-hidden="true">+</span> Add umbrella
             </button>
           ) : null}
           </div>
-          {props.loading ? <p className={styles.empty} role="status">Loading umbrellas...</p>
+          {props.loading ? <p className={styles.empty} role="status">{isUmbrella ? 'Loading umbrellas...' : 'Loading asset registers...'}</p>
             : props.loadError ? <div className={styles.empty} role="alert"><p>{props.loadError}</p><button type="button" onClick={props.onRetry}>Try again</button></div>
             : visible.length ? <div className={styles.options} role="group" aria-label={isUmbrella ? 'Target umbrella' : 'Target asset register'}>
               {visible.map((option) => <RegisterPickerRow key={option.value} option={{...option, icon: isUmbrella ? 'umbrella' : 'folder'}} selected={props.targetId === option.value} disabled={props.busy} onSelect={props.onSelect} />)}
@@ -120,7 +126,7 @@ export default function MoveAssetDestinationPicker(props: Props) {
             : <div className={styles.empty}>
               {query ? <><p>No destinations match “{search}”.</p><button type="button" onClick={() => setSearch('')}>Clear search</button></>
                 : isUmbrella ? <p>No other umbrellas are available. Add an umbrella to group this asset.</p>
-                : <><p>No other asset registers are available.</p><a href={props.managementHref}>Create an asset register</a></>}
+                : <><p>No other asset registers are available. Add a register to move this asset.</p>{!props.onCreateRegister ? <a href={props.managementHref}>Create an asset register</a> : null}</>}
             </div>}
           </>}
         </div>

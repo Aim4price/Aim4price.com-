@@ -38,6 +38,7 @@ export type AssetRegisterDocument = {
 };
 
 export type AssetRegisterItem = {
+  registerIncludedInCombinedTotals?: boolean;
   realisticSellingAssessment?: {priceExVat:number; assessedAt:string; needsReview:boolean} | null;
   id: string;
   userId: string;

@@ -647,19 +647,19 @@ function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
 }
 
 function replacementValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(replacementPriceExVat(item) ?? 0), 0);
+  return items.reduce((sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? Math.round(replacementPriceExVat(item) ?? 0) : 0), 0);
 }
 
 function replacementValueInclVatTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + moneyInclVatTotal(replacementPriceExVat(item)), 0);
+  return items.reduce((sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? moneyInclVatTotal(replacementPriceExVat(item)) : 0), 0);
 }
 
 function insuredValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(insuredValueExVat(item) ?? 0), 0);
+  return items.reduce((sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? Math.round(insuredValueExVat(item) ?? 0) : 0), 0);
 }
 
 function insuredValueInclVatTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + moneyInclVatTotal(insuredValueExVat(item)), 0);
+  return items.reduce((sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? moneyInclVatTotal(insuredValueExVat(item)) : 0), 0);
 }
 
 function countFinanced(items: AssetRegisterItem[]): number {
@@ -878,11 +878,11 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
 
     if (replacementPrice !== null) {
       replacementPricedAssets += 1;
-      replacementValueExVat += replacementPrice;
+      replacementValueExVat += exportAssetCountsTowardRegisterTotal(item) ? replacementPrice : 0;
     }
 
     if (insuredValue !== null) {
-      insuredValueTotalExVat += insuredValue;
+      insuredValueTotalExVat += exportAssetCountsTowardRegisterTotal(item) ? insuredValue : 0;
     }
 
     if (isFinanced) {
@@ -1138,13 +1138,13 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     [
       textCell('Insured value ex VAT', 'metaLabel'),
       insuredValueExVatRange
-        ? formulaCell(`SUM(${insuredValueExVatRange})`, insuredValueTotal(items), 'currency')
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${insuredValueExVatRange})`, insuredValueTotal(items), 'currency')
         : moneyCell(0),
     ],
     [
       textCell('Insured value incl VAT', 'metaLabel'),
       insuredValueInclVatRange
-        ? formulaCell(`SUM(${insuredValueInclVatRange})`, insuredValueInclVatTotal(items), 'currency')
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${insuredValueInclVatRange})`, insuredValueInclVatTotal(items), 'currency')
         : moneyCell(0),
     ],
     [
@@ -1154,13 +1154,13 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     [
       textCell('Replacement value ex VAT', 'metaLabel'),
       replacementValueExVatRange
-        ? formulaCell(`SUM(${replacementValueExVatRange})`, replacementValueTotal(items), 'currency')
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${replacementValueExVatRange})`, replacementValueTotal(items), 'currency')
         : moneyCell(0),
     ],
     [
       textCell('Replacement value incl VAT', 'metaLabel'),
       replacementValueInclVatRange
-        ? formulaCell(`SUM(${replacementValueInclVatRange})`, replacementValueInclVatTotal(items), 'currency')
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${replacementValueInclVatRange})`, replacementValueInclVatTotal(items), 'currency')
         : moneyCell(0),
     ],
   ];
@@ -1264,7 +1264,7 @@ function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: 
       [textCell('Umbrella structure and register-value treatment for grouped assets.', 'subtitle')],
       [],
       [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
-      [textCell('Accounting note', 'metaLabel'), textCell('Rows marked No remain fully tracked but are excluded from register totals according to the saved umbrella setting.', 'subtitle')],
+      [textCell('Accounting note', 'metaLabel'), textCell('Rows marked No remain fully tracked but are excluded from register totals according to the saved asset, umbrella and register inclusion settings.', 'subtitle')],
       [],
       [
         textCell('Group name', 'tableHeader'),
@@ -1578,7 +1578,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
         font: 'F1',
         size: 8.8,
       }]
-    : [];
+    : [{ text: `Counts in register total: ${exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'}`, font: 'F1', size: 8.8 }];
 
   if (isProperty) {
     return [
@@ -3268,7 +3268,7 @@ export async function GET(request: NextRequest) {
       const [rawBundles, allGroups] = await Promise.all([
         Promise.all(selectedRegisters.map(async (register) => ({
           register,
-          items: await listAssetRegisterItems(ownerUserId, register.id),
+          items: (await listAssetRegisterItems(ownerUserId, register.id)).map(item => ({ ...item, registerIncludedInCombinedTotals: scope === 'single' || register.includeInCombinedTotals !== false })),
         }))),
         listAssetGroups(ownerUserId),
       ]);
@@ -3313,7 +3313,7 @@ export async function GET(request: NextRequest) {
         : scopedRawBundles;
       const assessedAssets = await withRealisticSellingAssessments(selectedRawBundles.flatMap((bundle) => bundle.items), 'report');
       const assessmentById = new Map(assessedAssets.map(item=>[item.id,item]));
-      selectedRawBundles.forEach(bundle=>{bundle.items=bundle.items.map(item=>assessmentById.get(item.id) ?? item);});
+      selectedRawBundles.forEach(bundle=>{bundle.items=bundle.items.map(item=>({ ...item, ...(assessmentById.get(item.id) ?? {}), registerIncludedInCombinedTotals: item.registerIncludedInCombinedTotals }));});
       const combinedAssets = selectedRawBundles.flatMap((bundle) => bundle.items);
       const combinedGroups = scope === 'combined'
         ? projectAssetGroupsToAssets(allGroups, combinedAssets)
