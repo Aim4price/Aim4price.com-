@@ -320,20 +320,37 @@
   min-width: 0;
 }
 
-/* Shared category colours for owner, dealer and shared-asset report choices. */
+/* Shared category colours for owner, dealer and shared-asset reports. */
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="valuation"])),
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="depreciation"])) {
+  --report-tint: #f0f7ff; --report-border: #c6ddf4; --report-icon-ink: #235b89;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="maintenance"])) {
+  --report-tint: #fff7e9; --report-border: #ebd9b8; --report-icon-ink: #826124;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="fuel"])) {
+  --report-tint: #fff0ee; --report-border: #efcbc6; --report-icon-ink: #a34f45;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="ownership"])) {
+  --report-tint: #f5f0fc; --report-border: #dcd0ed; --report-icon-ink: #695089;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="map"])) {
+  --report-tint: #edf8f2; --report-border: #c4dfd0; --report-icon-ink: #24614a;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind])) {
+  background: linear-gradient(120deg, var(--app-surface, #fff), var(--report-tint)) !important;
+  border-color: var(--report-border) !important;
+}
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind]) {
-  --report-icon-ink: #695089;
   color: var(--report-icon-ink) !important;
   background: color-mix(in srgb, var(--report-icon-ink) 8%, var(--app-surface, #fff)) !important;
   border-color: color-mix(in srgb, var(--report-icon-ink) 24%, var(--app-surface, #fff)) !important;
   stroke-width: 1.8;
 }
-.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:is(:global([data-report-kind="maintenance"]), :global([data-report-kind="fuel"])) {
-  --report-icon-ink: var(--app-warning, #826124);
+:global(html[data-app-theme="dark"]) .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind])) {
+  background: linear-gradient(120deg, var(--app-surface, #182522), color-mix(in srgb, var(--app-surface, #182522) 88%, var(--report-tint))) !important;
+  border-color: color-mix(in srgb, var(--app-surface, #182522) 60%, var(--report-border)) !important;
 }
-.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind="map"]) {
-  --report-icon-ink: var(--app-accent, #24614a);
-}
-:global(html[data-app-theme="dark"]) .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:is(:global([data-report-kind="valuation"]), :global([data-report-kind="depreciation"]), :global([data-report-kind="ownership"])) {
-  --report-icon-ink: #c9b2ed;
+:global(html[data-app-theme="dark"]) .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind]) {
+  color: color-mix(in srgb, var(--report-icon-ink) 45%, white) !important;
 }
