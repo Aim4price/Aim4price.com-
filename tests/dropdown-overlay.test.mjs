@@ -272,7 +272,18 @@ test('every custom listbox uses an overlay, verified body portal, or verified in
   assert.match(assetRegister, /import ModalSelect,.*from ['"]\.\.\/\.\.\/components\/AssetModalSelect['"]/);
   assert.match(assetModalSelect, /usePortal = true/);
   assert.match(assetModalSelect, /createPortal\([\s\S]*document\.body/);
-  assert.doesNotMatch(assetRegister, /usePortal\s*=\s*\{false\}/);
+  // Only the future-year grid expands in flow; every other Asset Register
+  // select retains its portal. Check the exact call site and layout contract.
+  const inlineSelects = [...assetRegister.matchAll(/<ModalSelect\b[^>]*(?:>)[\s\S]*?\/>/g)]
+    .map(match => match[0]).filter(tag => /usePortal\s*=\s*\{false\}/.test(tag));
+  assert.equal(inlineSelects.length, 1);
+  assert.match(inlineSelects[0], /label="Target year"/);
+  assert.match(inlineSelects[0], /menuClassName=\{futureStyles\.yearMenu\}/);
+  assert.match(inlineSelects[0], /options=\{projectionYearSelectOptions\}/);
+  const futureStyles = await read('app/asset-register/future-value.module.css');
+  assert.match(futureStyles, /\.yearMenu\.yearMenu\.yearMenu\s*\{[^}]*position: static !important/);
+  assert.match(futureStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(futureStyles, /max-height: none !important/);
 });
 
 test('marketplace filters use branded listboxes instead of browser-native selects', async () => {

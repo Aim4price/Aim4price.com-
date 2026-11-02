@@ -151,6 +151,7 @@ import {
   type AssetGroupSaveInput,
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
+import futureStyles from './future-value.module.css';
 import actionColours from '../../components/leads/ManageActionGrid.module.css';
 import accountStyles from '../account/page.module.css';
 import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
@@ -21668,7 +21669,7 @@ export default function AssetRegisterClient({
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeProjectionModal} />
 
-          <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${styles.projectionQuestionModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
+          <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${styles.projectionQuestionModal} ${accountStyles.modalTheme} ${futureStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">Future asset value</h3>
@@ -21685,18 +21686,21 @@ export default function AssetRegisterClient({
                 {projectionStep !== 'result' ? (
                   <section key={projectionStep} className={styles.projectionSimpleCard}>
                     {projectionStep === 1 ? (<>
-                      <h4>Which year would you like to estimate?</h4>
+                      <h4><ProjectionIcon kind="year" />Which year would you like to estimate?</h4>
                     <ModalSelect<string>
                       label="Target year"
                       value={projectionForm.targetYear}
                       options={projectionYearSelectOptions}
                       onChange={(value) => advanceProjectionStep({ targetYear: value })}
-                      className={styles.projectionYearSelectField}
+                      className={`${styles.projectionYearSelectField} ${futureStyles.yearField}`}
+                      menuClassName={futureStyles.yearMenu}
+                      usePortal={false}
+                      showDescriptions={false}
                     />
 
                     </>) : null}
                     {projectionStep === 2 ? (<>
-                      <h4>What annual inflation rate do you expect?</h4>
+                      <h4><ProjectionIcon kind="inflation" />What annual inflation rate do you expect?</h4>
                     <div className={styles.projectionQuickButtons}>
                       {PROJECTION_INFLATION_PRESETS.map((rate) => {
                         const isSelected = projectionForm.inflationRatePct === rate;
@@ -21715,7 +21719,7 @@ export default function AssetRegisterClient({
                       })}
                     </div>
                     <label className={styles.field}>
-                      <span>Annual inflation (%)</span>
+                      <span>Or enter your own annual rate (%)</span>
                       <input
                         type="number"
                         min="-50"
@@ -21729,7 +21733,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 3 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4>{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
+                        <h4><ProjectionIcon kind="usage" />{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
                         <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
                       </div>
                       <p id="projection-usage-help">{projectionUsageHelpText}</p>
@@ -21754,7 +21758,7 @@ export default function AssetRegisterClient({
                     </>) : null}
                     {projectionStep === 4 ? (<>
                       <div className={styles.projectionSimpleSectionHeader}>
-                        <h4>What will its future condition be?</h4>
+                        <h4><ProjectionIcon kind="condition" />What will its future condition be?</h4>
                         <p>In {projectionForm.targetYear} · Current condition: {conditionLabel(projectionAsset.condition)}</p>
                       </div>
                     <div className={styles.projectionConditionGrid}>
@@ -21781,14 +21785,14 @@ export default function AssetRegisterClient({
                 {projectionError ? <div role="alert" className={styles.projectionError}>{projectionError}</div> : null}
 
                 {projectionStep === 'result' && projectionResult ? (
-                  <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
-                    <div className={styles.projectionValueHero}>
+                  <section ref={projectionResultRef} className={`${styles.projectionSimpleResult} ${futureStyles.result}`} aria-live="polite">
+                    <div className={`${styles.projectionValueHero} ${futureStyles.value}`}>
                     <span className={styles.projectionResultLabel}><ProjectionIcon kind="value" />Projected future price</span>
                     <strong>{pricingMoney(projectionResult.projected.retailExVat)}</strong>
                     <div className={styles.projectionResultBasis}><p>{pricingVatLabel} value for {projectionResult.targetYear}.</p><PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} /></div>
 
                     </div>
-                    <div className={styles.projectionSimpleMeta}>
+                    <div className={`${styles.projectionSimpleMeta} ${futureStyles.summary}`}>
                       <div><span className={styles.projectionMetaLabel}><ProjectionIcon kind="value" />Current saved value</span><strong>{pricingMoney(projectionAsset.value)}</strong></div>
                       <div>
                         <span className={styles.projectionMetaLabel}><ProjectionIcon kind="year" />Year</span>
