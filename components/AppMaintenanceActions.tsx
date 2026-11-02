@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import AppAssetChecklistButton from './AppAssetChecklistButton';
 import AppAssetPartsButton from './AppAssetPartsButton';
 import styles from './AppMaintenanceActions.module.css';
+import actionStyles from './leads/ManageActionGrid.module.css';
 import assetStyles from '../app/asset-register/page.module.css';
 import AssetActionIcon from './asset-register/AssetActionIcon';
 
@@ -35,11 +36,11 @@ export default function AppMaintenanceActions({ apiBase, assetTitle, onRecord, o
   }
   return <section className={styles.section} aria-label="Maintenance actions">
     <header className={styles.heading}><h2>Maintenance</h2><p>Record completed work, find parts or plan the next job.</p></header>
-    <div className={styles.grid}>
-    {record && <button className={styles.card} type="button" onClick={record}><Icon kind="add"/><span><strong>Add maintenance</strong><small>Record completed checks, services or repairs.</small></span></button>}
-    {canViewChecklist && <AppAssetChecklistButton endpoint={`${apiBase}/checklist`} className={styles.card} onRecord={record} onSchedule={schedule}><Icon kind="checklist"/><span><strong>Checklists</strong><small>View checks, service tasks and custom items.</small></span></AppAssetChecklistButton>}
-    {canParts && <AppAssetPartsButton endpoint={`${apiBase}/parts`} assetTitle={assetTitle} className={styles.card}><Icon kind="parts"/><span><strong>Parts</strong><small>View and add part numbers for this asset.</small></span></AppAssetPartsButton>}
-    {schedule && <button className={styles.card} type="button" onClick={schedule}><Icon kind="schedule"/><span><strong>{scheduleLabel}</strong><small>{scheduleLabel === 'Edit schedule' ? 'Update the schedule.' : 'Create a schedule for this asset.'}</small></span></button>}
+    <div className={`${styles.grid} ${actionStyles.grid} ${actionStyles.maintenance}`} data-manage-actions>
+    {record && <button className={styles.card} data-manage-action="addMaintenance" type="button" onClick={record}><Icon kind="add"/><span><strong>Add maintenance</strong><small>Record completed checks, services or repairs.</small></span></button>}
+    {canViewChecklist && <AppAssetChecklistButton endpoint={`${apiBase}/checklist`} className={styles.card} manageAction="maintenance" onRecord={record} onSchedule={schedule}><Icon kind="checklist"/><span><strong>Checklists</strong><small>View checks, service tasks and custom items.</small></span></AppAssetChecklistButton>}
+    {canParts && <AppAssetPartsButton endpoint={`${apiBase}/parts`} assetTitle={assetTitle} className={styles.card} manageAction="viewParts"><Icon kind="parts"/><span><strong>Parts</strong><small>View and add part numbers for this asset.</small></span></AppAssetPartsButton>}
+    {schedule && <button className={styles.card} data-manage-action="maintenanceSchedules" type="button" onClick={schedule}><Icon kind="schedule"/><span><strong>{scheduleLabel}</strong><small>{scheduleLabel === 'Edit schedule' ? 'Update the schedule.' : 'Create a schedule for this asset.'}</small></span></button>}
     </div>
   </section>;
 }

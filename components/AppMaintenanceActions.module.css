@@ -16,3 +16,10 @@
 .icon svg { width:1.45rem; height:1.45rem; }
 .grid > button:last-of-type:nth-of-type(odd) { grid-column:1/-1; }
 @media(max-width:600px) { :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns:minmax(0,1fr); } }
+
+/* Use the same category tokens as the owner and dealer Manage cards. */
+.card .icon {
+  background: var(--action-tint, var(--app-surface-soft, #eef6f2));
+  border-color: var(--action-border, var(--app-line, #d0dfd8));
+  color: var(--action-ink, var(--app-text, #173c30));
+}
