@@ -1,3 +1,4 @@
+import {trackingEmailPermission} from '../../../../lib/maintenance-email-access';
 import {maintenanceAssetAvailable} from '../../../../lib/maintenance-asset-lifecycle';
 import {ensureSharingFoundation,recordSharingUsage} from '../../../../lib/sharing-foundation';
 import type {NextRequest} from 'next/server';
@@ -17,9 +18,10 @@ async function handle(request:NextRequest,{params}:{params:{id:string}}){try{
  if(!session?.user)return businessJson({error:'Please sign in to open maintenance.'},401);
  const record=await reminderRecord(params.id);if(!record||!await maintenanceAssetAvailable(record.userId,record.assetId))return businessJson({error:'This asset is no longer available. Its upcoming maintenance has been removed.'},404);
  const source=await maintenanceSource(record.id);const owner=session.user.id===record.userId;
+ const permitted=async(write=false,client?:Parameters<typeof trackingEmailPermission>[5])=>await trackingEmailPermission(record.userId,record.assetId,session.user.id,record.status==='done'?'maintenance_completed':'reminder',write,client)||!!source&&await schedulerPermission(source,session.user,write,client);
  if(owner){if(!await getAssetRegisterAccountAccess(session))return businessJson({error:'Asset access is required.'},403);if(isOwnerAppSession(session)){const a=await getOwnerAppAccess();if(!a||!ownerAppCan(a,'manage_assets')||!ownerAppCanAccessAsset(a,record.assetId))return businessJson({error:'Asset access is required.'},403);}}
- else if(isOwnerAppSession(session)||isDealerAppSession(session)||!source||!await schedulerPermission(source,session.user))return businessJson({error:'This maintenance is no longer shared with you.'},403);
- const canComplete=owner||!!source&&await schedulerPermission(source,session.user,true);
+ else if(isOwnerAppSession(session)||isDealerAppSession(session)||!await permitted())return businessJson({error:'This maintenance is no longer shared with you.'},403);
+ const canComplete=owner||await permitted(true);
  if(request.method==='GET'){
   if(request.nextUrl.searchParams.get('checklist')==='1'){if(!canComplete)return businessJson({error:'Completion permission is required.'},403);return businessJson({items:await listAssetChecklistItems(record.userId,record.assetId)});}
   const scheduler=(await getDb().query('SELECT name,email FROM "user" WHERE id=$1',[source?.scheduler_id||record.userId])).rows[0];
@@ -32,10 +34,11 @@ async function handle(request:NextRequest,{params}:{params:{id:string}}){try{
  const body=await businessBody(request);
  if(!owner)await ensureSharingFoundation();
  const result=await completeAssetMaintenanceRecord(record.userId,record.id,{completedAt:body.completedAt,completedUsage:body.completedUsage,completedNotes:body.completedNotes,completedBy:body.completedBy,maintenanceWork:body.maintenanceWork,continueSchedule:body.continueSchedule},{assetId:record.assetId,before:async client=>{
-  if(!owner&&(!source||!await schedulerPermission(source,session.user,true,client)))throw Error('Maintenance access has changed.');
+  if(!owner&&!await permitted(true,client))throw Error('Maintenance access has changed.');
   await setAssetHistoryActor(client,session.user.id,session.user.name||session.user.email,'Maintenance reminder');
  },after:async(client,completed)=>{if(!owner)await recordSharingUsage({accountId:session.user.id,actorId:session.user.id,assetId:record.assetId,token:source?.share_token||undefined,metric:'contribution',eventKey:`maintenance-reminder:${completed.id}`},client);}});
  return businessJson({ok:true,status:result.completed.status});
  }catch(e){console.error('Maintenance reminder action failed',e);return businessJson({error:'Unable to complete maintenance. Check the required service details and refresh to see its latest status.'},400);}}
 export const GET=handle;export const POST=handle;
+
 
