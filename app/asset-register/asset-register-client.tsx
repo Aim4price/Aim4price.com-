@@ -18526,8 +18526,7 @@ export default function AssetRegisterClient({
                                 <button type="button" className={advancedStyles.readingTrigger}
                                   disabled={['pending', 'saving', 'error'].includes(assetAutosaveState)}
                                   onClick={openAssetSettingsUsageView} aria-label={`Update ${usageFieldLabel.toLowerCase()}`}>
-                                  <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
-                                  <AssetDetailIcon kind="usage" />
+                                  {formatAssetSettingsUsageInput(editingAsset, settingsUsageMode) || 'Not set'}
                                 </button>
                               </div>
                             ) : <label className={updateStyles.usageReading}>

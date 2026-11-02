@@ -184,6 +184,7 @@
   text-transform: uppercase; letter-spacing: 0;
 }
 .usageEditor.usageEditor .usageReading input,
+.usageEditor.usageEditor .usageReading button,
 .usageEditor.usageEditor .usageTypeField button {
   width: 100% !important; min-width: 0 !important; min-height: 3.75rem !important;
   height: 3.75rem !important; box-sizing: border-box; margin: 0 !important;
