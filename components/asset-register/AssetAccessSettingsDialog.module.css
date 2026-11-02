@@ -55,7 +55,7 @@
 /* Match the Manage Umbrella chooser's proportions and coloured action tiles. */
 .dialog.guideDialog {
   --access-padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.6), 2.4rem);
-  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 60rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 68rem) !important;
   padding: var(--access-padding) !important;
   border-radius: 1.55rem !important;
   background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8)) !important;
@@ -74,7 +74,7 @@
 .dialog .accessChoice {
   display: grid; grid-template-columns: 46px minmax(0,1fr); grid-template-rows: auto auto;
   align-content: center; align-items: center; column-gap: 18px; row-gap: .3rem;
-  padding: 1.4rem 1.5rem !important; min-height: 8rem !important;
+  padding: 1.25rem 1.4rem !important; min-height: 7.25rem !important;
   border: 1px solid var(--choice-line) !important; border-radius: 20px !important;
   background: linear-gradient(145deg, var(--app-surface, #fff), var(--choice-soft)) !important;
   color: var(--choice-ink) !important; text-align: left; font: inherit; cursor: pointer;
@@ -87,7 +87,7 @@
 .choiceIcon { grid-column: 1; grid-row: 1 / 3; align-self: center; display: grid; place-items: center; box-sizing: border-box; width: 46px; height: 46px; border: 1px solid var(--choice-line); border-radius: 15px; background: linear-gradient(180deg, var(--app-surface, #fff), var(--choice-soft)); color: var(--choice-ink); box-shadow: inset 0 1px 0 rgba(255,255,255,.82); }
 .choiceIcon svg { display: block; width: 24px; height: 24px; }
 .choiceTitle { grid-column: 2; align-self: end; padding: 0; font-size: 1rem; font-weight: 800; line-height: 1.2; }
-.choiceDescription { grid-column: 2; align-self: start; color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
+.choiceDescription { grid-column: 2; align-self: start; color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; overflow-wrap: normal; }
 /* Compact settings preserve room for permission cards and action buttons. */
 .dialog [data-permission-grid] { gap: .45rem; }
 .dialog [data-permission-grid] > label { min-height: 3.55rem; padding: .5rem .85rem; }
@@ -247,3 +247,15 @@
   scroll-padding: 1rem;
 }
 .dialog.documentsDialog .footer { margin: 0; padding: 1rem 0 0; background: transparent; border-color: var(--app-line, #dce5e0); }
+
+/* Keep the opening choices roomy without constraining the permissions screen. */
+.dialog.guideDialog .header p { font-size: .88rem !important; color: var(--app-muted, #64746a) !important; }
+.dialog.guideDialog .accessChoices { gap: 1.1rem; }
+.dialog.guideDialog .choiceTitle { line-height: 1.35; }
+:global(:where([data-website-canvas])) .dialog.guideDialog .choiceDescription { white-space: nowrap; }
+@media (min-width: 1000px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.guideDialog .choiceDescription { white-space: nowrap; }
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.guideDialog .accessChoices { grid-template-columns: minmax(0, 1fr); }
+}
