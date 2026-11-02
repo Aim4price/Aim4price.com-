@@ -70,8 +70,8 @@
 .header .subject h3 { white-space:normal; overflow-wrap:anywhere; font-size:1.65rem; line-height:1.25; }
 .header .subject p { white-space:normal; font-weight:500; }
 .historyActions { border-top:1px solid var(--app-line,#dce5df); margin-top:1.5rem; padding-top:1.2rem; }
-.historyActions button { display:flex; align-items:center; gap:.8rem; width:100%; padding:1rem 1.1rem; text-align:left; }
+.historyActions button { display:flex; align-items:center; gap:.8rem; width:100%; padding:1rem 1.1rem; text-align:left; font-weight:800; background:var(--app-surface-soft,#f1f8f4); }
 .historyActions svg { width:1.3rem; height:1.3rem; flex:none; }
-.historyHint { margin-left:auto; color:var(--app-muted,#64746a); font-size:.85rem; font-weight:500; }
+.historyHint { margin-left:auto; color:var(--app-muted,#64746a); font-size:.85rem; font-weight:650; }
 .historyActions button:focus-visible { outline:3px solid var(--app-accent,#719e8f); outline-offset:3px; }
 .liveNote { margin:0 0 1rem; color:var(--app-muted,#64746a); font-size:.85rem; line-height:1.5; }
