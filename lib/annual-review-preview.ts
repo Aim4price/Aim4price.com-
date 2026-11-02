@@ -75,15 +75,23 @@ export async function calculateAnnualPreview(email: string, year: unknown, asset
   const entry = data.rows.find(entry => entry.asset.id === assetId);
   if (!entry) throw new Error('Asset not found for this owner.');
   const { asset, row } = entry;
-  if (expectedRevision && asset.updatedAtIso !== expectedRevision) throw new Error("This asset changed. Reload the owner preview before continuing.");
+  if (expectedRevision && asset.updatedAtIso !== expectedRevision) throw new Error("This asset changed. Reload the owner review before continuing.");
   if (!row.eligible) throw new Error(row.reason || 'This asset is not eligible.');
   const replacementPrice = replacement === undefined ? row.replacementPrice! : priceExVat(replacement, false);
   try {
-    const result = await revalueAssetRegisterItem({ userId: data.owner.id, assetId,
-      previewOnly: true, replacementPriceExVat: replacementPrice + entry.includedExtras }, { year: data.year, asset });
-    if (!Number.isFinite(result.newValueExVat) || result.newValueExVat < 0) throw new Error('The valuation returned no usable value.');
+    // Compare like with like: isolate the price adjustment from the change
+    // between an older saved valuation and today's rules for the review year.
+    const estimate = async (price: number) => {
+      const result = await revalueAssetRegisterItem({ userId: data.owner.id, assetId,
+        previewOnly: true, replacementPriceExVat: price + entry.includedExtras }, { year: data.year, asset });
+      if (!Number.isFinite(result.newValueExVat) || result.newValueExVat < 0) throw new Error('The valuation returned no usable value.');
+      return result;
+    };
+    const baseline = await estimate(row.replacementPrice!);
+    const result = replacementPrice === row.replacementPrice ? baseline : await estimate(replacementPrice);
     return { id: assetId, currentValue: row.currentValue, proposedValue: result.newValueExVat,
-      replacementPrice, error: null, warning: result.warning };
+      unchangedPriceValue: baseline.newValueExVat,
+      replacementPrice, error: null, warning: result.warning || baseline.warning };
   } catch (error) {
     return { id: assetId, currentValue: row.currentValue, proposedValue: null, replacementPrice,
       error: error instanceof Error ? error.message : 'This estimate could not be calculated.' };

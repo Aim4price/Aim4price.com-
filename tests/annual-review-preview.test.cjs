@@ -87,6 +87,8 @@ test('Basic extras are added exactly once and only the asset-only replacement ch
   const expected=await f.generic.runGenericValuation({...f.input,userReplacementPriceExVat:980000},{baseYear:2027});
   assert.equal(preview.error,null); assert.equal(preview.proposedValue,expected.aim4priceValueExVat);
   assert.equal(preview.replacementPrice,880000);
+  const baseline=await f.generic.runGenericValuation({...f.input,userReplacementPriceExVat:900000},{baseYear:2027});
+  assert.equal(preview.unchangedPriceValue,baseline.aim4priceValueExVat);
   const bad=fixture({basicExtras:true,ambiguousExtras:true});
   assert.equal((await bad.api.loadAnnualReview('owner@example.com',2027)).rows[0].row.eligible,false);
 });
@@ -97,6 +99,8 @@ test('tractor extras preserve custom replacement prices and installation years w
   const preview=await f.api.calculateAnnualPreview('owner@example.com',2027,'asset',770000);
   const expected=await f.server.runServerValuation({...f.input,userReplacementPriceExVat:770000},{baseYear:2027});
   assert.equal(preview.error,null); assert.equal(preview.proposedValue,expected.aim4priceValueExVat);
+  const baseline=await f.server.runServerValuation({...f.input,userReplacementPriceExVat:700000},{baseYear:2027});
+  assert.equal(preview.unchangedPriceValue,baseline.aim4priceValueExVat);
   const next=await f.server.runServerValuation({...f.input,userReplacementPriceExVat:770000},{baseYear:2028});
   assert.ok(next.frontLoaderValueExVat<expected.frontLoaderValueExVat); assert.ok(next.gpsValueExVat<expected.gpsValueExVat);
 });
@@ -121,4 +125,41 @@ test('both API methods enforce Admin access before loading owner data',async()=>
   });
   const route=load('app/api/admin/annual-review/route.ts');
   assert.equal((await route.GET({})).status,403); assert.equal((await route.POST({})).status,403); assert.equal(reads,0);
+});
+
+test('price effect is isolated from saved-value drift for increases, zero and decreases',async()=>{
+  const f=fixture();
+  const before=JSON.stringify(f.asset);
+  const baseline=await f.api.calculateAnnualPreview('owner@example.com',2027,'asset',900000);
+  assert.equal(baseline.proposedValue,baseline.unchangedPriceValue,'zero percent has zero price effect');
+  for(const percent of [-5,3,20]){
+    const result=await f.api.calculateAnnualPreview('owner@example.com',2027,'asset',policy.percentagePrice(900000,percent));
+    assert.equal(result.error,null);
+    assert.equal(result.unchangedPriceValue,baseline.proposedValue);
+    const rulesChange=result.unchangedPriceValue-result.currentValue;
+    const priceChange=result.proposedValue-result.unchangedPriceValue;
+    assert.ok(Math.abs(rulesChange+priceChange-(result.proposedValue-result.currentValue))<.001);
+    assert.equal(Math.sign(priceChange),Math.sign(percent));
+  }
+  assert.equal(JSON.stringify(f.asset),before);
+  assert.ok(f.queries.every(sql=>/^select/i.test(sql.trim())));
+});
+test('Admin endpoint rejects save/apply actions without reading or writing assets',async()=>{
+  let reads=0;
+  const load=loader({
+    [path.resolve('lib/admin-api-access.ts')]:{
+      requireAdminApiAccess:async()=>({ok:true}),
+      adminApiError:message=>({status:400,message}),
+    },
+    [path.resolve('lib/annual-review-preview.ts')]:{
+      loadAnnualReview:()=>reads++,
+      calculateAnnualPreview:()=>reads++,
+    },
+  });
+  const route=load('app/api/admin/annual-review/route.ts');
+  for(const action of ['save','apply','confirm']){
+    const response=await route.POST({json:async()=>({action,email:'owner@example.com',assetId:'asset',revision:'v1',replacementPrice:100000})});
+    assert.equal(response.status,400);
+  }
+  assert.equal(reads,0);
 });
