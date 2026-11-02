@@ -1,6 +1,6 @@
-.page{min-height:100vh;padding:clamp(20px,5vw,64px) 16px;background:var(--app-page-bg,#f2f6f3);color:var(--app-text,#173c32)}
-.card{max-width:760px;margin:auto;padding:clamp(24px,4vw,44px);background:var(--app-surface,#fff);border:1px solid var(--app-border,#d7e5dc);border-radius:24px}
-.card h1{font-size:clamp(24px,4vw,36px);line-height:1.25;overflow-wrap:anywhere}
+.page{min-height:var(--website-visible-height,100vh);padding:clamp(20px,calc(5 * var(--website-design-vw,1vw)),64px) 16px;background:var(--app-page-bg,#f2f6f3);color:var(--app-text,#173c32)}
+.card{max-width:760px;margin:auto;padding:clamp(24px,calc(4 * var(--website-design-vw,1vw)),44px);background:var(--app-surface,#fff);border:1px solid var(--app-border,#d7e5dc);border-radius:24px}
+.card h1{font-size:clamp(24px,calc(4 * var(--website-design-vw,1vw)),36px);line-height:1.25;overflow-wrap:anywhere}
 .card p{line-height:1.6}
 .status{color:var(--app-text,#173c32);font-weight:700}
 .note{white-space:pre-wrap;overflow-wrap:anywhere;padding:24px;border:1px solid var(--app-border,#d7e5dc);border-radius:14px;line-height:1.7;margin:24px 0}
