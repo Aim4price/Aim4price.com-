@@ -16,7 +16,7 @@ test('owner email shows recorded usage, interval, branding and safe content',()=
  const email=load().maintenanceReminderEmail(record,'VIN','Owner','https://www.aim4price.com/maintenance-reminder/record');
  assert.match(email.html,/Tractor &lt;test&gt;/);assert.match(email.html,/Oil &amp; filter/);
  assert.match(email.html,/Every 250 hours/);assert.match(email.html,/Last recorded usage/);
- assert.match(email.html,/aim4price-mark-black.png/);assert.match(email.html,/Manage maintenance/);
+ assert.match(email.html,/aim4price-mark-black.png/);assert.match(email.html,/View maintenance/);
  assert.match(email.text,/last recorded usage/);assert.match(email.subject,/almost due/);
 });
 test('overdue wording is distinct and empty optional rows are omitted',()=>{
