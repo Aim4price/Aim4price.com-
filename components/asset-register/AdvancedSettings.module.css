@@ -73,13 +73,12 @@
 
 /* Reading changes use the same confirmed editor from the card and Details. */
 .readingTrigger {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  display: block;
   width: 100%; min-height: 3.25rem; padding: .75rem 1rem;
   border: 1px solid var(--app-border, #bfd8ce); border-radius: .9rem;
   background: var(--app-input-bg, #edf5f1); color: var(--app-text, #153d31);
-  font: inherit; text-align: left; cursor: pointer;
+  font: inherit; font-weight: 600; text-align: left; white-space: nowrap; cursor: pointer;
 }
-.readingTrigger svg { width: 1.4rem; height: 1.4rem; flex-shrink: 0; }
 .readingTrigger:focus-visible { outline: 3px solid #319b74; outline-offset: 3px; }
 .readingTrigger:disabled { opacity: .6; cursor: wait; }
 .readingHeading { display: flex; align-items: center; gap: .65rem; }
