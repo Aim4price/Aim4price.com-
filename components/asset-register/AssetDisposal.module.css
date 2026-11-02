@@ -5,7 +5,7 @@
 .fields input { min-width: 0; padding: .8rem 1rem; font-size: 1.05rem; font-weight: 650; }
 .fields textarea { padding: .85rem 1rem; }
 .fields label > span { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .6rem; }
-.fields label > span small { margin: 0; font-weight: 500; }
+.fields label > span small { margin: 0; font-weight: 650; }
 .answers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
 .transferFlow { display: grid; gap: 1rem; }
 .transferOption { display: grid; align-content: start; gap: .5rem; padding: 1rem; min-width: 0; border: 1px solid var(--app-line, #cfddd7); border-radius: .95rem; background: var(--app-surface, #fff); color: var(--app-text, #29453c); text-align: left; cursor: pointer; }
@@ -40,57 +40,62 @@
   :global(:where(html:not(:has([data-website-canvas])))) .footer.footer { padding-inline: 1rem; }
 }
 
-/* Compact register-only shell: leave the marketplace outcome dialog unchanged. */
+/* Owner flow uses the Manage modal typography and inset chrome. */
 .dialog.dialog {
   width: min(60rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem));
   max-height: calc(var(--website-visible-height, 100dvh) - 2rem);
-  border-radius: 1.4rem;
-  font-size: .9375rem;
-  font-weight: 500;
+  --disposal-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  border-radius: 1.55rem;
+  border-color: var(--app-line, rgba(18, 45, 37, .12));
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8));
+  color: var(--app-text, #12352d);
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+  font-size: .95rem;
+  font-weight: 650;
 }
-.dialog .header { padding: 1.15rem 1.5rem; align-items: center; }
-.dialog .header h2 { font-size: 1.6rem; font-weight: 700; line-height: 1.2; letter-spacing: -.025em; }
-.dialog .header p { font-size: .9375rem; font-weight: 500; line-height: 1.4; }
-.dialog .progress { padding: .75rem 1.5rem; gap: .6rem; }
+.dialog .header { margin: var(--disposal-padding) var(--disposal-padding) 0; padding: 0 0 1.15rem; align-items: start; background: transparent; }
+.dialog .header h2 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
+.dialog .header p { margin-top: .35rem; max-width: none; color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; }
+.dialog .progress { margin: 0 var(--disposal-padding); padding: 1rem 0; gap: .6rem; }
 .dialog .progress li { min-height: 2.9rem; padding: .5rem .65rem; gap: .5rem; border-radius: .75rem; }
 .dialog .progress li > span { flex-basis: 1.8rem; width: 1.8rem; height: 1.8rem; }
-.dialog .progress li > small { font-size: .8125rem; font-weight: 600; }
-.dialog .body { padding: 1.15rem 1.5rem 1.4rem; background: var(--app-surface, #fff); }
+.dialog .progress li > small { font-size: .8125rem; font-weight: 800; }
+.dialog .body { padding: 1.3rem var(--disposal-padding) var(--disposal-padding); background: transparent; }
 .dialog .step, .dialog .destination { gap: 1rem; padding: 0; }
 .dialog .stepHeader { gap: .35rem; }
-.dialog .stepHeader strong { font-size: 1.125rem; font-weight: 600; line-height: 1.35; }
-.dialog .stepHeader small { max-width: none; font-size: .9375rem; font-weight: 500; line-height: 1.45; }
+.dialog .stepHeader strong { font-size: 1.125rem; font-weight: 800; line-height: 1.35; }
+.dialog .stepHeader small { color: var(--app-muted, #64746a); max-width: none; font-size: .9375rem; font-weight: 650; line-height: 1.45; }
 .dialog .reasonGrid { gap: .65rem; }
-.dialog .option { min-height: 3.65rem; padding: .75rem 1rem; gap: .75rem; border-color: var(--app-line, #cfddd7); background: var(--app-surface, #fff); }
+.dialog .option { min-height: 4.5rem; padding: 1rem 1.15rem; gap: 1rem; border-radius: 1.25rem; color: var(--app-text, #12352d); border-color: var(--app-line, #c4dfd0); background: linear-gradient(120deg, var(--app-surface, #fff), var(--app-surface-soft, #edf8f2)); }
 .dialog .option[aria-pressed='true'] { background: var(--app-surface-soft, #eaf5ef); border-color: var(--app-accent, #197454); }
-.dialog .option strong, .dialog .choiceCopy strong, .dialog .transferNote strong { font-size: .9375rem; font-weight: 600; }
+.dialog .option strong, .dialog .choiceCopy strong, .dialog .transferNote strong { font-size: 1rem; font-weight: 800; }
 .outcomeIcon { width: 1.4rem; height: 1.4rem; flex: 0 0 1.4rem; color: var(--app-accent, #197454); }
 .dialog .fields { padding: 0; gap: .85rem 1rem; border: 0; background: transparent; }
 .dialog .fields label { gap: .4rem; }
-.dialog .fields label > span { font-size: .9375rem; font-weight: 600; }
-.dialog .fields label small { font-size: .8125rem; font-weight: 500; }
-.dialog .fields input, .dialog .fields textarea { font-size: .9375rem; font-weight: 500; line-height: 1.4; padding: .65rem .85rem; border-radius: .75rem; }
-.dialog .fields input { min-height: 2.8rem; }
+.dialog .fields label > span { font-size: 1rem; font-weight: 800; }
+.dialog .fields label small { font-size: .8125rem; font-weight: 650; }
+.dialog .fields input, .dialog .fields textarea { font-size: .9375rem; font-weight: 650; line-height: 1.4; padding: .65rem .85rem; border-radius: .75rem; }
+.dialog .fields input { min-height: 3.2rem; }
 .dialog .fields textarea { min-height: 4.5rem; height: 4.5rem; resize: vertical; }
-.dialog .answers button { min-height: 3rem; font-size: .9375rem; font-weight: 600; }
+.dialog .answers button { min-height: 3rem; font-size: 1rem; font-weight: 800; }
 .dialog .summary { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin: 0; }
 .dialog .summary > div { padding: .85rem; border-radius: .75rem; }
-.dialog .summary dt { font-size: .8125rem; font-weight: 500; text-transform: none; letter-spacing: normal; }
-.dialog .summary dd { margin: .35rem 0 0; font-size: .9375rem; font-weight: 600; overflow-wrap: anywhere; }
+.dialog .summary dt { font-size: .8125rem; font-weight: 650; text-transform: none; letter-spacing: normal; }
+.dialog .summary dd { margin: .35rem 0 0; font-size: 1rem; font-weight: 800; overflow-wrap: anywhere; }
 .dialog .destination .transferOption { min-height: 7rem; grid-template-columns: 2.75rem minmax(0, 1fr); gap: .75rem; padding: 1rem 2rem 1rem 1rem; }
 .dialog .choiceIcon { width: 2.75rem; height: 2.75rem; border-radius: .75rem; }
 .dialog .choiceIcon svg { width: 1.4rem; height: 1.4rem; }
-.dialog .choiceCopy small, .dialog .transferNote small, .dialog .reviewHint, .dialog .notice { font-size: .875rem; font-weight: 500; line-height: 1.45; }
+.dialog .choiceCopy small, .dialog .transferNote small, .dialog .reviewHint, .dialog .notice { font-size: .875rem; font-weight: 650; line-height: 1.45; }
 .dialog .transferNote { padding: .85rem 1rem; gap: .25rem; }
-.dialog .footer { flex: 0 0 auto; padding: .9rem 1.5rem max(.9rem, env(safe-area-inset-bottom)); gap: .75rem; }
-.dialog .footer button { min-height: 2.9rem; border-radius: .8rem; font-size: .9375rem; font-weight: 600; box-shadow: none; }
+.dialog .footer { flex: 0 0 auto; margin: 0 var(--disposal-padding); padding: 1rem 0 max(1.25rem, env(safe-area-inset-bottom)); gap: .75rem; }
+.dialog .footer button { min-height: 2.9rem; border-radius: 1rem; font-size: .95rem; font-weight: 700; box-shadow: none; }
 @media (max-width: 720px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .header,
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .body,
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer { padding-inline: 1rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .dialog .progress { padding: .65rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .progress { margin-inline: 1rem; padding: .85rem 0; }
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header h2 { font-size: 1.35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header h2 { font-size: 1.55rem; }
 }
 @media (max-width: 420px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .reasonGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -99,14 +104,30 @@
 
 /* Keep the VAT basis beside the amount, without changing the saved ex-VAT value. */
 .dialog .amountField { gap: .4rem; }
-.dialog .amountLabel { margin-bottom: .55rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .6rem; color: var(--app-text, #254d40); font-size: .9375rem; font-weight: 600; line-height: 1.35; }
+.dialog .amountLabel { margin-bottom: .55rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .6rem; color: var(--app-text, #254d40); font-size: 1rem; font-weight: 800; line-height: 1.35; }
 .dialog .amountLabel small { margin: 0; }
-.amountControl { display: flex; align-items: center; min-width: 0; border: 1px solid var(--app-line, #cddbd5); border-radius: .75rem; background: var(--app-surface, #fff); }
+.amountControl { display: flex; align-items: center; min-width: 0; border: 1px solid var(--app-line, #cddbd5); border-radius: .75rem; overflow: hidden; background: var(--app-surface-soft, #edf5f0); }
 .amountControl > span { flex: 1; min-width: 0; }
-.dialog .amountControl input { border: 0; background: transparent; }
+.dialog .amountControl input { border: 0; background: transparent; border-radius: .75rem 0 0 .75rem; }
 .amountControl:focus-within { border-color: var(--app-accent, #4f8c76); box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 95, 73, .1)); }
 .dialog .amountControl input:focus { box-shadow: none; }
 .amountVatToggle { display: flex; flex: none; gap: .2rem; padding: .25rem; }
 .amountVatToggle button { min-height: 2.25rem; padding: .4rem .65rem; border: 1px solid transparent; border-radius: .55rem; background: transparent; color: var(--app-muted, #62766d); font: inherit; font-size: .8125rem; font-weight: 650; cursor: pointer; }
 .amountVatToggle button[aria-pressed='true'] { background: var(--app-accent, #165340); color: var(--app-accent-contrast, #fff); }
 .amountVatToggle button:focus-visible { outline: 2px solid var(--app-accent, #165340); outline-offset: 1px; }
+
+/* Match Manage's text hierarchy across impact, review and destination screens. */
+.dialog .step strong, .dialog .destination strong { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-weight: 800; color: var(--app-text, #12352d); }
+.dialog .step p, .dialog .step small, .dialog .destination small, .dialog .summary dt { color: var(--app-muted, #64746a); font-weight: 650; line-height: 1.5; }
+.dialog .transferOption { border-radius: 1.25rem; background: linear-gradient(120deg, var(--app-surface, #fff), var(--app-surface-soft, #edf8f2)); }
+.dialog .transferOption[aria-pressed='true'], .dialog .option[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--app-accent, #197454); }
+.dialog .footer button:first-child { color: var(--app-text, #12352d); border-color: var(--app-line, #d5e0da); background: var(--app-surface-soft, #f5f9f7); }
+@media (max-width: 720px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog { --disposal-padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer { padding-inline: 0; }
+}
+
+.dialog .header > button { width: 2.75rem; min-width: 2.75rem; height: 2.75rem; border-radius: .9rem; border-color: var(--app-line, #d5e0da); background: var(--app-surface-soft, #f5f9f7); color: var(--app-text, #264f3e); box-shadow: none; }
+.dialog .footer { background: transparent; }
+.dialog .fields input:not([type='hidden']) { font-family: var(--font-body, 'Montserrat'), sans-serif; font-weight: 650; }
