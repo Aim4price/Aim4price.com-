@@ -319,3 +319,21 @@
   text-overflow: ellipsis !important;
   min-width: 0;
 }
+
+/* Shared category colours for owner, dealer and shared-asset report choices. */
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind]) {
+  --report-icon-ink: #695089;
+  color: var(--report-icon-ink) !important;
+  background: color-mix(in srgb, var(--report-icon-ink) 8%, var(--app-surface, #fff)) !important;
+  border-color: color-mix(in srgb, var(--report-icon-ink) 24%, var(--app-surface, #fff)) !important;
+  stroke-width: 1.8;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:is(:global([data-report-kind="maintenance"]), :global([data-report-kind="fuel"])) {
+  --report-icon-ink: var(--app-warning, #826124);
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind="map"]) {
+  --report-icon-ink: var(--app-accent, #24614a);
+}
+:global(html[data-app-theme="dark"]) .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:is(:global([data-report-kind="valuation"]), :global([data-report-kind="depreciation"]), :global([data-report-kind="ownership"])) {
+  --report-icon-ink: #c9b2ed;
+}
