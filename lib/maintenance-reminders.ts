@@ -50,23 +50,28 @@ export function maintenanceReminderEmail(r:AssetMaintenanceRecord,serial:string,
  const guidance=r.triggerType==='usage'?'This reminder uses your last recorded usage. Update the reading in Aim4price if it has changed.':'Review the scheduled work and record it once completed.';
  const subject=`${status}: ${r.assetTitle}`;
  const preferenceText=preferences?`\n\nStop reminders for this asset: ${preferences.asset}\nStop all maintenance emails for this account: ${preferences.account}\nYour schedules stay saved. These links also let you turn reminders back on.`:'';
- const preferenceHtml=preferences?`<p style="margin:24px 0 8px;padding-top:20px;border-top:1px solid #e2ebe5;font-size:13px;line-height:1.6"><a href="${escape(preferences.asset)}" style="color:#1a654d">Stop reminders for this asset</a></p><p style="margin:0 0 8px;font-size:13px;line-height:1.6"><a href="${escape(preferences.account)}" style="color:#1a654d">Stop all maintenance emails for this account</a></p><p style="margin:0;color:#64786f;font-size:12px;line-height:1.6">Your schedules stay saved. You can turn reminders back on using these links.</p>`:'';
+ const preferenceHtml=preferences?`<p style="margin:24px 0 8px;padding-top:20px;border-top:1px solid #e2ebe5;font-size:13px;line-height:1.6"><a href="${escape(preferences.asset)}" style="color:#1a654d">Stop reminders for this asset</a></p><p style="margin:0 0 8px;font-size:13px;line-height:1.6"><a href="${escape(preferences.account)}" style="color:#1a654d">Stop all maintenance emails for this account</a></p><p style="margin:0;color:#64786f;font-size:13px;line-height:1.6">Your schedules stay saved. You can turn reminders back on using these links.</p>`:'';
  const text=`${status}\n\n${rows.map(([label,value])=>label+': '+value).join('\n')}\n\n${guidance}\n\nManage maintenance: ${url}\n\nSign in to view the latest status. If this work is already completed, record it in Aim4price to stop reminders.${preferenceText}`;
- const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+ const badge=r.computedStatus==='overdue'?'Overdue':reminderStage(r)==='soon'?'Due soon':'Due now';
+ const accent=r.computedStatus==='overdue'?'#a63832':'#a65315';
+ const summary=r.triggerType==='usage'&&typeof r.dueUsage==='number'&&typeof r.currentUsage==='number'?`${Math.abs(r.dueUsage-r.currentUsage).toLocaleString('en-ZA')} ${unit==='%'?'percentage points':unit} ${r.dueUsage<r.currentUsage?'overdue':r.dueUsage===r.currentUsage?'— due now':'remaining'}`:maintenanceDueLabel(r);
+ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media only screen and (max-width:620px){.reminder-body{padding:24px 18px!important}.reminder-title{font-size:23px!important}.reminder-action{width:100%!important}}</style></head>
  <body style="margin:0;background:#f2f6f3;font-family:${AIM4PRICE_EMAIL_FONT_STACK};color:#173c32">
  <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px">
  <!--[if mso]><table role="presentation" width="600"><tr><td><![endif]-->
  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:white;border:1px solid #d7e5dc;border-radius:12px">
  ${buildEmailBrandHeader(new URL(AIM4PRICE_EMAIL_LOGO_PATH,getSiteOrigin()).toString())}
- <tr><td style="padding:30px">
- <h1 style="margin:0 0 12px;font-size:25px;line-height:1.3">${escape(status)}</h1>
- <p style="margin:0 0 24px;color:#64786f;font-size:14px;line-height:1.6">${escape(guidance)}</p>
+ <tr><td class="reminder-body" style="padding:28px 30px;font-family:${AIM4PRICE_EMAIL_FONT_STACK}">
+ <p style="margin:0 0 16px"><span style="display:inline-block;padding:6px 12px;border-radius:20px;background:#fff3e6;color:${accent};font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:13px;font-weight:700;line-height:20px">${badge}</span></p>
+ <h1 class="reminder-title" style="margin:0 0 8px;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:26px;line-height:1.3;font-weight:700">${escape(r.assetTitle)}</h1>
+ <p style="margin:0 0 20px;font-size:16px;line-height:1.5;color:#486357;font-family:${AIM4PRICE_EMAIL_FONT_STACK}">${escape(r.title)}</p>
+ <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 12px;background:#fff8ef;border:1px solid #f0dcc3;border-radius:10px"><tr><td style="padding:18px 20px;font-family:${AIM4PRICE_EMAIL_FONT_STACK}"><p style="margin:0 0 4px;font-size:23px;line-height:1.3;font-weight:700;color:${accent}">${escape(summary)}</p>${r.triggerType==='usage'?`<p style="margin:0;font-size:14px;line-height:1.5;color:#486357">${escape(maintenanceDueLabel(r))}</p>`:''}</td></tr></table>
  <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">
- ${rows.map(([label,value])=>`<tr><th scope="row" align="left" valign="top" style="padding:12px 12px 12px 0;border-bottom:1px solid #e2ebe5;font-size:13px;color:#64786f;font-weight:normal;width:35%">${escape(label)}</th><td style="padding:12px 0;border-bottom:1px solid #e2ebe5;font-size:14px;line-height:1.5;overflow-wrap:anywhere">${escape(value)}</td></tr>`).join('')}
+ ${rows.filter(([label])=>!['Asset','Work required','Due'].includes(label)).map(([label,value])=>`<tr><th scope="row" align="left" valign="top" style="padding:12px 12px 12px 0;border-bottom:1px solid #e2ebe5;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:14px;color:#486357;font-weight:500;width:42%">${escape(label)}</th><td style="padding:12px 0;border-bottom:1px solid #e2ebe5;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:15px;color:#173c32;font-weight:600;line-height:1.5;overflow-wrap:anywhere">${escape(value)}</td></tr>`).join('')}
  </table>
- <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0"><tr><td bgcolor="#1a654d" style="border-radius:6px;mso-padding-alt:15px 24px"><a href="${escape(url)}" style="display:inline-block;padding:15px 24px;color:white;text-decoration:none;font-size:14px;font-weight:bold">Manage maintenance</a></td></tr></table>
- <p style="margin:0;color:#64786f;font-size:12px;line-height:1.6">Sign in to view the latest status. If this work is already completed, record it in Aim4price to stop reminders.</p>
- <p style="margin:16px 0 0;color:#64786f;font-size:12px;line-height:1.6">Button not working? <a href="${escape(url)}" style="color:#1a654d">Open maintenance in Aim4price</a>.</p>
+ <table role="presentation" cellspacing="0" cellpadding="0" class="reminder-action" width="100%" style="margin:24px 0 16px"><tr><td align="center" bgcolor="#1a654d" style="border-radius:6px;mso-padding-alt:15px 24px"><a href="${escape(url)}" style="display:block;padding:15px 24px;color:white;text-decoration:none;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:15px;font-weight:bold">Manage maintenance</a></td></tr></table>
+ <p style="margin:0;color:#64786f;font-size:13px;line-height:1.6">${escape(guidance)} Already done? Record the work in Aim4price to stop reminders.</p>
+ <p style="margin:16px 0 0;color:#64786f;font-size:13px;line-height:1.6">Button not working? <a href="${escape(url)}" style="color:#1a654d">Open maintenance in Aim4price</a>.</p>
  ${preferenceHtml}
  </td></tr></table><!--[if mso]></td></tr></table><![endif]-->
  </td></tr></table></body></html>`;
@@ -109,5 +114,6 @@ export async function sendMaintenanceReminderBatch(after=''){
  }
  return {sent,failed,next:!testMode&&owners.length===20?owners.at(-1).user_id:null};
 }
+
 
 

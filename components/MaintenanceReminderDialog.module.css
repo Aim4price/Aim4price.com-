@@ -2,3 +2,15 @@
 .body{display:grid;gap:16px;padding:4px 0;color:var(--app-text,#173c32)}
 .body h3,.body p{margin:0;line-height:1.5}
 .footer{grid-column:1 / -1;display:flex;justify-content:flex-end;width:100%;gap:12px}
+.workHeading{display:flex;align-items:center;gap:16px}
+.workIcon{display:grid;place-items:center;flex:0 0 48px;height:48px;border:1px solid #efd6b4;border-radius:14px;background:#fff7eb;color:#a65315}
+.body h3{font-size:1.2rem;font-weight:750;color:var(--app-text,#173c32)}
+.scheduledBy{font-size:.92rem;color:var(--app-text-muted,#536b60)}
+.duePanel{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:20px 22px;border:1px solid #efd6b4;border-radius:16px;background:var(--app-surface,#fffaf3)}
+.duePanel strong{font-size:1.2rem;line-height:1.4}
+.status{padding:7px 13px;border-radius:999px;background:#fff0db;color:#894713;font-size:.9rem;font-weight:700}
+.details{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:0}
+.details>div{padding:16px 18px;border:1px solid var(--app-border,#d7e5dc);border-radius:14px;background:var(--app-surface,#fff)}
+.details dt{font-size:.85rem;color:var(--app-text-muted,#536b60);margin-bottom:6px}
+.details dd{margin:0;font-size:1rem;font-weight:650;line-height:1.5;overflow-wrap:anywhere}
+
