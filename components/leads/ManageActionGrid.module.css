@@ -46,3 +46,11 @@
   background: var(--action-tint) !important;
   border-color: var(--action-border) !important;
 }
+
+/* Owner pricing matches the Realistic Market Value row on the asset card. */
+.grid > .ownerPricingAction[data-manage-action],
+.grid.pricing.ownerPricing > :is(button, a)[data-manage-action] {
+  --action-tint: #f0f7ff;
+  --action-border: #c6ddf4;
+  --action-ink: #235b89;
+}

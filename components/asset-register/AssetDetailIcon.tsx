@@ -23,6 +23,6 @@ const symbols: Record<string, ReactNode> = {
   alert: <><path d="M10.3 4.4 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.4a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/></>,
   info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/></>,
 };
-export default function AssetDetailIcon({kind}: {kind: string}) {
-  return <svg className={styles.detailIcon} data-detail-icon={kind} aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{symbols[kind] || symbols.serial}</svg>;
+export default function AssetDetailIcon({kind, className}: {kind: string; className?: string}) {
+  return <svg className={className ? `${styles.detailIcon} ${className}` : styles.detailIcon} data-detail-icon={kind} aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{symbols[kind] || symbols.serial}</svg>;
 }

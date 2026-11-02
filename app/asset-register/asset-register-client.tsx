@@ -2221,16 +2221,6 @@ function ProjectionIcon({ kind }: { kind: string }) {
   return <span className={styles.projectionIcon} data-kind={kind} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[kind] ?? paths.value} /></svg></span>;
 }
 
-function SaleabilityIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 18a8 8 0 1 1 16 0" />
-      <path d="m12 14 4-4" />
-      <path d="M7 18h10" />
-    </svg>
-  );
-}
-
 function PrintIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -20131,7 +20121,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
+                  <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${actionColours.ownerPricingAction}`} onClick={openPricingDialog}>
                     <TrendIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Manage pricing</strong>
@@ -20360,7 +20350,7 @@ export default function AssetRegisterClient({
                 {valueInclusionError ? <p role="alert">{valueInclusionError}</p> : null}
                 {activeAsset.registerIncludedInCombinedTotals === false ? <p>This register is excluded from combined totals.</p> : null}
               </> : null}
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid} ${actionColours.pricing}`} data-manage-actions>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid} ${actionColours.pricing} ${actionColours.ownerPricing}`} data-manage-actions>
                 <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Values and price history.</small></span></button>
                 <button data-manage-action="suggestValue"
                   type="button"
@@ -20394,7 +20384,7 @@ export default function AssetRegisterClient({
                   disabled={isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openPricingTool(activeAsset, 'saleability')}
                 >
-                  <SaleabilityIcon className={styles.buttonIcon} />
+                  <AssetDetailIcon kind="market" className={styles.buttonIcon} />
                   <span>
                     <strong>Realistic Market Value</strong>
                     <small>Estimate a selling price.</small>
