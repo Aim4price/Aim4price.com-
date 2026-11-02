@@ -102,7 +102,9 @@ const fixture=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,m
  assert(await page.$eval('#asset-disposal-amount',el=>el.getAttribute('aria-label').includes('including VAT')));
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'VAT controls must fit mobile');
  await page.screenshot({path:'/tmp/disposal-vat-'+reason+'-'+width+'.png'});
- await click('Next');await click('Next');await click('Back');await click('Back');
+ await click('Next');await click('Next');
+ assert.match(await page.$$eval('dl > div',rows=>rows.find(row=>row.querySelector('dt')?.textContent==='Amount (excl. VAT)').querySelector('dd').textContent),/^R 100[.,]20$/,'Review must show a rounded amount and explicit VAT basis');
+ await click('Back');await click('Back');
  assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'115.23','Back navigation preserves amount and VAT basis');
  await page.focus('#asset-disposal-amount');await page.keyboard.down('Control');await page.keyboard.press('A');await page.keyboard.up('Control');await page.keyboard.press('Backspace');
  await click('Excl');assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'');assert.equal(await page.evaluate(()=>window.disposalDraft.disposalAmountExVat),'');
