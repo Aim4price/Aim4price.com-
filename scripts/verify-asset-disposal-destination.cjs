@@ -40,6 +40,7 @@ function add(file){
 add('components/MarketplaceOutcomeModal.module.css');
 add('components/asset-register/AssetDisposal.module.css');
 add('components/DateInput');
+add('components/VatPriceInput');
 add('components/asset-register/DisposalIcon');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -62,12 +63,14 @@ const next=client.slice(client.indexOf('  function handleDisposalWizardNext()'),
 const source=`
 const disposalStyles=require('components/MarketplaceOutcomeModal.module.css'),disposalLayout=require('components/asset-register/AssetDisposal.module.css');
 const DateInput=require('components/DateInput').default;
+const VatPriceInput=require('components/VatPriceInput').default;
 const DisposalIcon=require('components/asset-register/DisposalIcon').default;
 ${helpers}
 function Fixture({reason}){
  const [disposalWizardStep,setDisposalWizardStep]=React.useState(4);
  const [disposalInformationView,setDisposalInformationView]=React.useState('summary');
- const [disposalDraft,setDisposalDraft]=React.useState({reason,disposalDate:'2026-10-26',disposalAmountExVat:'5000',aim4priceOutcomeInfluence:'yes',transferAction:'',note:''});
+ const [disposalDraft,setDisposalDraft]=React.useState({reason,disposalDate:'2026-10-26',disposalAmountExVat:'5000',amountVatIncluded:false,aim4priceOutcomeInfluence:'yes',transferAction:'',note:''});
+ window.disposalDraft=disposalDraft;
  const disposalBodyRef=React.useRef(null),disposalCandidateAsset={id:'fixture',title:'1-Cube Dam Scoop #2'},busyDeleteId=null;
  const setNotice=()=>{},setDisposalCandidateAsset=()=>{};
  function handleConfirmDisposal(event){event.preventDefault();window.saved={...disposalDraft};}
@@ -87,6 +90,23 @@ const fixture=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,m
  async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text);if(!b||b.disabled)throw Error('Unavailable '+text);b.click();},text);}
  for(const width of [1440,390]){
  await page.setViewport({width,height:900});
+ for(const reason of ['sold','traded_in','scrapped','written_off','other']){
+ await page.evaluate(reason=>window.renderFixture(reason),reason);await page.waitForSelector('#asset-disposal-information-title');
+ await click('Back');await click('Back');await page.waitForSelector('#asset-disposal-amount');
+ assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'5 000');
+ await click('Incl');assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'5 750');
+ await page.focus('#asset-disposal-amount');await page.keyboard.down('Control');await page.keyboard.press('A');await page.keyboard.up('Control');await page.keyboard.type('115.23');
+ assert(Math.abs(Number(await page.evaluate(()=>window.disposalDraft.disposalAmountExVat))-100.2)<0.000001);
+ for(let i=0;i<3;i++){await click('Excl');assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'100.2');await click('Incl');assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'115.23');}
+ assert(Math.abs(Number(await page.evaluate(()=>window.disposalDraft.disposalAmountExVat))-100.2)<0.000001,'Toggling must not change the saved basis');
+ assert(await page.$eval('#asset-disposal-amount',el=>el.getAttribute('aria-label').includes('including VAT')));
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'VAT controls must fit mobile');
+ await page.screenshot({path:'/tmp/disposal-vat-'+reason+'-'+width+'.png'});
+ await click('Next');await click('Next');await click('Back');await click('Back');
+ assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'115.23','Back navigation preserves amount and VAT basis');
+ await page.focus('#asset-disposal-amount');await page.keyboard.down('Control');await page.keyboard.press('A');await page.keyboard.up('Control');await page.keyboard.press('Backspace');
+ await click('Excl');assert.equal(await page.$eval('#asset-disposal-amount',el=>el.value),'');assert.equal(await page.evaluate(()=>window.disposalDraft.disposalAmountExVat),'');
+ }
  for(const reason of ['sold','traded_in']){
  await page.evaluate(reason=>window.renderFixture(reason),reason);await page.waitForSelector('#asset-disposal-information-title');
  assert.equal(await page.$('#asset-register-transfer-title'),null);await click('Next');await page.waitForSelector('#asset-register-transfer-title');
@@ -106,6 +126,6 @@ const fixture=ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.React,m
  assert.equal(await page.$('#asset-register-transfer-title'),null);await click(reason==='mistake_duplicate'?'Delete duplicate':'Save disposal');assert.equal(await page.evaluate(()=>window.saved.reason),reason);
  }
  }
- assert.deepEqual(errors,[]);console.log('PASS separate Information screens, four stages, preserved choices, save gating, non-transfer outcomes and desktop/mobile footer spacing');
+ assert.deepEqual(errors,[]);console.log('PASS VAT conversion, repeated toggles, blank amounts and back navigation; separate Information screens, four stages, preserved choices, save gating, non-transfer outcomes and desktop/mobile footer spacing');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -63,6 +63,7 @@ import CompactChoicePages from '../../components/CompactChoicePages';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 import PricingVatToggle from '../../components/PricingVatToggle';
+import VatPriceInput from '../../components/VatPriceInput';
 import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
 import CardVatToggle from '../../components/CardVatToggle';
 import { attachHeaderNavDrag } from '../../lib/header-nav-drag';
@@ -232,6 +233,7 @@ type DisposalDraft = {
   reason: DisposalReason | '';
   disposalDate: string;
   disposalAmountExVat: string;
+  amountVatIncluded: boolean;
   note: string;
   aim4priceOutcomeInfluence: OutcomeInfluence | '';
   transferAction: AssetTransferAction | '';
@@ -262,6 +264,7 @@ function createDisposalDraft(): DisposalDraft {
     reason: '',
     disposalDate: lifecycleToday(),
     disposalAmountExVat: '',
+    amountVatIncluded: false,
     note: '',
     aim4priceOutcomeInfluence: '',
     transferAction: '',
@@ -21116,7 +21119,16 @@ export default function AssetRegisterClient({
                 </div>
                 {disposalDraft.reason === 'mistake_duplicate' ? <p className={disposalLayout.notice}>No price or disposal details are required. The final step will clearly confirm what is removed and what audit information is retained.</p> : <div className={`${disposalStyles.detailsGrid} ${disposalLayout.fields}`}>
                   <label className={disposalStyles.textField}><span>Effective date</span><DateInput required value={disposalDraft.disposalDate} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalDate: value }))} /></label>
-                  <label className={disposalStyles.textField}><span>{disposalAmountLabel(disposalDraft.reason)} <small>Optional, excl. VAT</small></span><input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" /></label>
+                  <div className={`${disposalStyles.textField} ${disposalLayout.amountField}`}>
+                    <label htmlFor="asset-disposal-amount" className={disposalLayout.amountLabel}>{disposalAmountLabel(disposalDraft.reason)} <small>Optional, {disposalDraft.amountVatIncluded ? 'incl.' : 'excl.'} VAT</small></label>
+                    <div className={disposalLayout.amountControl}>
+                      <VatPriceInput id="asset-disposal-amount" valueExVat={disposalDraft.disposalAmountExVat} included={disposalDraft.amountVatIncluded} vatRate={0.15} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: value }))} placeholder="0" aria-label={`${disposalAmountLabel(disposalDraft.reason)}, ${disposalDraft.amountVatIncluded ? 'including' : 'excluding'} VAT`} />
+                      <div className={disposalLayout.amountVatToggle} role="group" aria-label="Amount VAT basis">
+                        <button type="button" aria-label="Including VAT" aria-pressed={disposalDraft.amountVatIncluded} onClick={() => setDisposalDraft((current) => ({ ...current, amountVatIncluded: true }))}>Incl</button>
+                        <button type="button" aria-label="Excluding VAT" aria-pressed={!disposalDraft.amountVatIncluded} onClick={() => setDisposalDraft((current) => ({ ...current, amountVatIncluded: false }))}>Excl</button>
+                      </div>
+                    </div>
+                  </div>
                   <label className={`${disposalStyles.textField} ${disposalStyles.noteField}`}><span>Reference or note <small>Optional</small></span><textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Buyer, dealer, insurer or other useful reference" /></label>
                 </div>}
               </section> : null}
