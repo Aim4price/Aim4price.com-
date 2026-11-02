@@ -9,10 +9,10 @@ async function setup(){const pg=new PGlite();await pg.exec(`CREATE TABLE "user"(
 test('reminder stages stop after completion; overdue shares the due delivery key',async()=>{const x=await setup();try{assert.equal(x.api.reminderStage(x.record),'soon');assert.equal(x.api.reminderStage({...x.record,computedStatus:'overdue'}),'due');assert.equal(x.api.reminderStage({...x.record,status:'done'}),null);assert.equal(x.api.reminderStage({...x.record,status:'cancelled'}),null);}finally{await x.pg.close();}});
 test('value email identifies asset and amounts, safely escapes text, and links to exact decision',()=>{const api=load('lib/value-suggestion-email.ts');const m=api.valueSuggestionEmail({title:'Tractor',serial:'VIN',actor:'<Dealer>',before:100,amount:120,reason:'<script>bad</script>',url:`https://example.test/value-review/${assetId}/${id}`});assert.ok(m.text.includes('VIN'));assert.ok(m.text.includes(id));assert.ok(m.html.includes('&lt;Dealer&gt;'));assert.ok(!m.html.includes('<script>'));});
 test('maintenance action endpoint blocks other users and revoked access before completion, then rechecks writes',async()=>{
- const sessions={user:{id:'scheduler',email:'s@test.example',name:'Workshop'}};let available=true,allowed=true,writeAllowed=true,completed=0,beforeChecked=false;
+ const sessions={user:{id:'scheduler',email:'s@test.example',name:'Workshop'}};let available=true,allowed=true,writeAllowed=true,completed=0,beforeChecked=false,tracked=false;
  const record={id,userId:'owner',assetId,status:'upcoming',assetValue:100000};const source={scheduler_id:'scheduler'};
  const api=load('app/api/maintenance-reminders/[id]/route.ts',{
- '../../../../lib/maintenance-email-access':{trackingEmailPermission:async()=>false},
+ '../../../../lib/maintenance-email-access':{trackingEmailPermission:async(o,a,u,k,write)=>tracked&&u==='tracking-dealer'&&(!write||writeAllowed)},
  '../../../../lib/maintenance-asset-lifecycle':{maintenanceAssetAvailable:async()=>available},
  '../../../../lib/sharing-foundation':{ensureSharingFoundation:async()=>{},recordSharingUsage:async()=>{}},
  '../../../../lib/auth-session':{getServerSession:async()=>sessions,isOwnerAppSession:()=>false,isDealerAppSession:()=>false},
@@ -34,6 +34,12 @@ test('maintenance action endpoint blocks other users and revoked access before c
  allowed=true;writeAllowed=false;assert.equal((await api.POST(post,{params:{id}})).status,403);
  writeAllowed=true;record.status='done';assert.equal((await api.POST(post,{params:{id}})).status,409);
  record.status='upcoming';assert.equal((await api.POST(post,{params:{id}})).status,200);assert.equal(completed,1);assert.equal(beforeChecked,true);
+ sessions.user.id='tracking-dealer';allowed=false;tracked=true;writeAllowed=false;
+ assert.equal((await api.GET(get,{params:{id}})).status,200);
+ assert.equal((await api.GET(get,{params:{id}})).body.canComplete,false);
+ assert.equal((await api.POST(post,{params:{id}})).status,403);
+ writeAllowed=true;assert.equal((await api.POST(post,{params:{id}})).status,200);
+ tracked=false;assert.equal((await api.GET(get,{params:{id}})).status,403);
 });
 
 test('business scheduler on a targeted share needs owner permission, not business review',async()=>{const x=await setup();try{x.profile.accountType='business';const source={record_id:id,owner_id:'owner',asset_id:assetId,scheduler_id:'scheduler',access_id:null,share_token:'token'};assert.equal(await x.api.schedulerPermission(source,{id:'scheduler',email:'workshop@test.example'},true),true);x.revoke();assert.equal(await x.api.schedulerPermission(source,{id:'scheduler',email:'workshop@test.example'},true),false);}finally{await x.pg.close();}});
