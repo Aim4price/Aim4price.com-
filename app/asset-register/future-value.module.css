@@ -1,0 +1,67 @@
+/* Scoped to future value; the year choices stay in the field's own layout. */
+.dialog.dialog.dialog {
+  width: min(100%, 62rem);
+  padding: 1.25rem !important;
+  gap: 0;
+  max-height: none !important;
+}
+.dialog.dialog [aria-label='Future price questions'] {
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+  flex: 0 0 auto;
+  padding: 1rem 0 !important;
+  margin: 0 !important;
+}
+.dialog.dialog h4 { margin: 0; }
+.dialog.dialog section > p { margin: 0; color: #405c50; font-size: .95rem; line-height: 1.5; }
+.dialog.dialog label { gap: .45rem; }
+.dialog.dialog input { min-height: 3rem; padding: .7rem 1rem; }
+.dialog.dialog section > button { justify-self: start; min-height: 2.75rem; padding: .55rem 1rem; }
+.dialog.dialog > div:last-child { margin-top: .5rem !important; padding-top: .8rem !important; }
+.yearField.yearField { position: relative; gap: .5rem; }
+.yearMenu.yearMenu.yearMenu {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .4rem;
+  padding: .5rem;
+  margin: 0;
+  border-radius: .85rem;
+  box-shadow: none;
+  background: #f3f8f5;
+}
+.yearMenu.yearMenu [role='option'] {
+  min-height: 2.5rem !important;
+  padding: .5rem .75rem !important;
+  margin: 0;
+  justify-content: center;
+  gap: .4rem;
+  border-radius: .6rem;
+  font-size: .95rem;
+  box-shadow: none !important;
+}
+@media (max-height: 740px) {
+  .dialog.dialog.dialog { padding: 1rem !important; }
+  .dialog.dialog [aria-label='Future price questions'] { padding: .65rem 0 !important; }
+  .yearMenu.yearMenu [role='option'] { min-height: 2.15rem !important; padding: .35rem .5rem !important; }
+}
+@media (max-width: 600px) {
+  .dialog.dialog.dialog { padding: 1rem !important; }
+  .dialog.dialog h4 { font-size: 1.05rem !important; }
+  .yearMenu.yearMenu [role='option'] { font-size: .85rem; padding-inline: .25rem !important; }
+  .dialog.dialog .result { gap: .65rem; }
+  .dialog.dialog .value { padding: .8rem; gap: .5rem; }
+  .dialog.dialog .value > strong { font-size: 2rem; }
+  .dialog.dialog .value > div { flex-direction: row; align-items: center; gap: .5rem; }
+  .dialog.dialog .summary { padding: .15rem .75rem; }
+  .dialog.dialog .summary > div { padding: .4rem 0; }
+  .dialog.dialog .summary strong { font-size: .85rem; }
+  .dialog.dialog .summary [aria-hidden='true'] { display: none; }
+  .dialog.dialog .summary > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+}
