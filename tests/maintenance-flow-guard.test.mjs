@@ -87,3 +87,41 @@ test('Owner maintenance checklist shortcut carries the exact asset and opens its
   assert.match(client, /if \(initialOpenChecklists\) \{\s*setChecklistAssetId\(requestedAssetId\);\s*setQuickLaunchActive\(true\);\s*setModalMode\('checklists'\);/);
   assert.match(client, /initialAssetId=\{checklistAssetId\}/);
 });
+
+test('asset maintenance menu always offers records and distinct record/schedule entries', () => {
+  const register = source('app/asset-register/asset-register-client.tsx');
+  const menu = register.slice(register.indexOf('aria-labelledby="owner-command-choice-title"'), register.indexOf('{activeAsset && isDealerTrackingSettingsOpen'));
+  assert.match(menu, /data-manage-action="allMaintenance"/);
+  assert.match(menu, /<strong>All maintenance<\/strong>/);
+  assert.doesNotMatch(menu, /hasRecords|maintenanceAvailability/);
+  for (const action of ['record', 'schedule']) {
+    assert.ok(menu.includes(`{ add: true, maintenanceAction: '${action}' }`));
+  }
+  assert.match(menu, /<strong>Schedule maintenance<\/strong>/);
+  assert.match(register, /options.maintenanceAction\) params.set\('action', options.maintenanceAction\)/);
+  const page = source('app/maintenance/page.tsx');
+  assert.match(page, /initialEntryTiming=\{requestedAction === 'schedule' \? 'upcoming' : requestedAction === 'record' \? 'done' : undefined\}/);
+});
+
+test('quick launch selects the exact asset and intended timing without saving', () => {
+  const client = source('app/maintenance/maintenance-client.tsx');
+  const start = client.indexOf('    if (initialLaunchHandled || isLoading) return;');
+  const end = client.indexOf('  }, [assets, initialAssetId', start);
+  const body = client.slice(start, end);
+  for (const timing of ['done', 'upcoming', undefined]) {
+    const calls = {};
+    const asset = { id: 'selected-asset' };
+    const context = { initialLaunchHandled: false, isLoading: false, initialAssetId: asset.id,
+      assets: [{ id: 'other-asset' }, asset], initialOpenChecklists: false, initialEntryTiming: timing,
+      emptyDraftForAsset: selected => ({ assetId: selected.id }),
+    };
+    for (const setter of ['setInitialLaunchHandled', 'setNotice', 'setChecklistAssetId', 'setQuickLaunchActive', 'setModalMode', 'setEditingRecordId', 'setDraft', 'setPickerSearch', 'setEntryTiming']) {
+      context[setter] = value => { calls[setter] = value; };
+    }
+    new Function(...Object.keys(context), body)(...Object.values(context));
+    assert.deepEqual(calls.setDraft, { assetId: asset.id });
+    assert.equal(calls.setQuickLaunchActive, true);
+    assert.equal(calls.setModalMode, timing ? 'maintenance-type' : 'timing');
+    assert.equal(calls.setEntryTiming, timing);
+  }
+});

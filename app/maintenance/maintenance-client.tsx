@@ -143,6 +143,7 @@ type MaintenanceFilters = {
 type MaintenanceClientProps = {
   initialAssetId?: string;
   initialOpenAdd?: boolean;
+  initialEntryTiming?: 'done' | 'upcoming';
   initialOpenChecklists?: boolean;
   initialReturnTo?: string;
 };
@@ -780,6 +781,7 @@ function recordSearchText(record: MaintenanceRecord): string {
 export default function MaintenanceClient({
   initialAssetId = '',
   initialOpenAdd = false,
+  initialEntryTiming,
   initialOpenChecklists = false,
   initialReturnTo = '',
 }: MaintenanceClientProps = {}) {
@@ -920,14 +922,19 @@ export default function MaintenanceClient({
       setDraft(emptyDraftForAsset(requestedAsset));
       setPickerSearch('');
       setQuickLaunchActive(true);
-      setModalMode('timing');
+      if (initialEntryTiming) {
+        setEntryTiming(initialEntryTiming);
+        setModalMode('maintenance-type');
+      } else {
+        setModalMode('timing');
+      }
       return;
     }
 
     if (requestedAssetId) {
       setNotice({ type: 'error', text: 'This asset is not available for maintenance.' });
     }
-  }, [assets, initialAssetId, initialOpenChecklists, initialLaunchHandled, isLoading]);
+  }, [assets, initialAssetId, initialOpenChecklists, initialEntryTiming, initialLaunchHandled, isLoading]);
 
   useEffect(() => {
     const refresh = () => {
