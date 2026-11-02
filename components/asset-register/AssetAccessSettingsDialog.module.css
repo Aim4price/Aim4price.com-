@@ -252,8 +252,9 @@
 .dialog.guideDialog .header p { font-size: .88rem !important; color: var(--app-muted, #64746a) !important; }
 .dialog.guideDialog .accessChoices { gap: 1.1rem; }
 .dialog.guideDialog .choiceTitle { line-height: 1.35; }
+:global(:where([data-website-canvas])) .dialog.guideDialog .choiceDescription { white-space: nowrap; }
 @media (min-width: 1000px) {
-  .dialog.guideDialog .choiceDescription { white-space: nowrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.guideDialog .choiceDescription { white-space: nowrap; }
 }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dialog.guideDialog .accessChoices { grid-template-columns: minmax(0, 1fr); }
