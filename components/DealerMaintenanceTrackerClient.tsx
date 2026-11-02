@@ -7,8 +7,7 @@ import AppMaintenanceActions from './AppMaintenanceActions';
 import LeadManageDialog from './leads/LeadManageDialog';
 import AssetActionIcon from './asset-register/AssetActionIcon';
 import manageActionStyles from './leads/ManageActionGrid.module.css';
-import maintenanceActionStyles from './AppMaintenanceActions.module.css';
-import { useLeadDialog } from './leads/useLeadDialog';
+import MaintenanceEntryChoice from './MaintenanceEntryChoice';
 import dialogStyles from './AccountDialog.module.css';
 import ProblemCard from './leads/LeadProblemCard';
 import DateInput from './DateInput';
@@ -1825,7 +1824,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         </div>
       ) : null}
 
-      {workChoiceAsset && <DealerWorkChoice asset={workChoiceAsset} onClose={() => setWorkChoiceAsset(null)} onChoose={type => { const asset = workChoiceAsset; setWorkChoiceAsset(null); setServiceTarget({ asset, standalone: true, record: { id: '', assetId: asset.assetId, assetTitle: asset.assetTitle, assetKind: asset.assetKind, maintenanceType: type, title: type === 'checkup' ? 'Check-up' : 'Service or repair', currentUsage: asset.currentUsage, usageMetric: asset.usageMetric } }); }} />}
+      {workChoiceAsset && <MaintenanceEntryChoice step="type" timing="done" assetTitle={workChoiceAsset.assetTitle} onClose={() => setWorkChoiceAsset(null)} onBack={() => setWorkChoiceAsset(null)} onType={type => { const asset = workChoiceAsset; setWorkChoiceAsset(null); setServiceTarget({ asset, standalone: true, record: { id: '', assetId: asset.assetId, assetTitle: asset.assetTitle, assetKind: asset.assetKind, maintenanceType: type, title: type === 'checkup' ? 'Check-up' : 'Service or repair', currentUsage: asset.currentUsage, usageMetric: asset.usageMetric } }); }} />}
 
       {serviceTarget ? (
         <DesktopServiceModal
@@ -1849,6 +1848,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           }}
           busy={isSavingService}
           onClose={() => setServiceTarget(null)}
+          onBack={serviceTarget.standalone ? () => {
+            setWorkChoiceAsset(serviceTarget.asset);
+            setServiceTarget(null);
+          } : undefined}
           onSubmit={completeService}
         />
       ) : null}
@@ -1893,16 +1896,4 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
     </main>
   );
-}
-
-function DealerWorkChoice({ asset, onClose, onChoose }: { asset: DealerMaintenanceTrackedAsset; onClose: () => void; onChoose: (type: 'checkup' | 'service') => void }) {
-  const ref = useLeadDialog(onClose);
-  return <div className={`${assetStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
-    <div className={assetStyles.modalBackdrop} onClick={onClose} />
-    <section ref={ref} tabIndex={-1} className={`${assetStyles.modalCard} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="dealer-work-choice-title">
-      <header className={assetStyles.modalHeader}><div><h3 id="dealer-work-choice-title">Add maintenance</h3><p>{asset.assetTitle}</p></div><button type="button" className={dialogStyles.close} aria-label="Close add maintenance" onClick={onClose} data-modal-close="true">×</button></header>
-      <p>What work was completed?</p>
-      <div className={maintenanceActionStyles.grid}>{(['checkup', 'service'] as const).map(type => <button type="button" key={type} className={maintenanceActionStyles.card} onClick={() => onChoose(type)}><span className={maintenanceActionStyles.icon}><ManageIcon className={assetStyles.buttonIcon}/></span><span><strong>{type === 'checkup' ? 'Check-up' : 'Service or repair'}</strong><small>{type === 'checkup' ? 'Record an inspection and its findings.' : 'Record completed work, parts and notes.'}</small></span></button>)}</div>
-    </section>
-  </div>;
 }
