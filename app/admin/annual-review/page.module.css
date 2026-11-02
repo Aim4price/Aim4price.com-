@@ -198,3 +198,39 @@
 @media (max-width: 600px) { .valueBreakdown > div { flex-direction: column; gap: .2rem; } }
 
 .dialog .confirmation h3 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+
+/* Readable supporting copy, without changing the shared dialog design. */
+.page { --review-secondary: color-mix(in srgb, var(--app-text, #153d31) 85%, var(--app-surface, #fff)); }
+.page p, .dialog .note, .resultIntro p, .sliderCard label, .rangeLabels,
+.calculationDetails, .totals dt { color: var(--review-secondary); font-weight: 500; }
+.dialog .note, .resultIntro p, .calculationDetails { font-size: .88rem; }
+.totals dt, .sliderCard label { font-weight: 650; }
+.setup > label:first-child { flex: 1 1 24rem; }
+.setup > label:nth-child(2) { flex: 0 1 8rem; }
+.setup > label { min-width: 0; }
+
+/* Recover vertical space through padding, not smaller text or hidden overflow. */
+.dialog.dialog .reviewHeader.reviewHeader.reviewHeader.reviewHeader { padding: 1rem 2rem !important; align-items: center !important; }
+.dialog.dialog .body.body.body.body { padding: 1rem 2rem !important; }
+.dialog.dialog .footer.footer.footer.footer { padding: .85rem 2rem !important; }
+.totals article { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: .7rem; padding: 1rem 1.15rem; }
+.totals .metricIcon { margin: 0; width: 2.3rem; height: 2.3rem; }
+.totals dl, .totals .delta { grid-column: 1 / -1; }
+.totals dl { margin: .8rem 0; gap: .5rem; }
+.totals dl div:last-child { padding-top: .5rem; }
+.resultIntro { margin-bottom: .75rem; }
+.dialog .note { margin: .65rem 0; }
+.calculationDetails { margin-top: .35rem; }
+.confirmation { padding-bottom: .25rem; }
+.confirmation .heroIcon { margin-bottom: .7rem; }
+.warningGroups { display: grid; gap: .6rem; margin: .5rem 0; }
+.warningGroups section { padding: .75rem 1rem; background: var(--app-surface-soft, #edf6f1); border: 1px solid var(--app-line, #d6e4dd); border-radius: .75rem; }
+.warningGroups p { margin: 0; }
+.affectedAssets summary { font-weight: 650; }
+.affectedAssets ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .45rem 1.5rem; padding-left: 1.2rem; margin: .4rem 0; line-height: 1.5; }
+@media (max-width: 600px) {
+  .dialog.dialog .reviewHeader.reviewHeader.reviewHeader.reviewHeader,
+  .dialog.dialog .body.body.body.body { padding: 1rem !important; }
+  .dialog.dialog .footer.footer.footer.footer { padding: .75rem 1rem !important; }
+  .setup > label:first-child { flex-basis: 100%; }
+}
