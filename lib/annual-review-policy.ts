@@ -6,6 +6,8 @@ export type AnnualReviewAsset = {
 export type AnnualReviewResult = {
   id: string; currentValue: number; proposedValue: number | null;
   replacementPrice: number | null; error: string | null; warning?: string;
+  /** Same review year and rules, with the saved replacement price. Not a saved value. */
+  unchangedPriceValue?: number;
 };
 export function reviewYear(value: unknown): number {
   const year = Number(value);

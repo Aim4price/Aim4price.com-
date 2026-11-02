@@ -19,7 +19,7 @@ async function main() {
     browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless:true, pipe:true });
     const page = await browser.newPage(), errors=[], requests=[];
     page.on('pageerror',e=>errors.push(e.message));
-    let failOnce=true;
+    let failOnce=true, malformedOnce=false;
     const assets=[{id:'one',revision:'v1',title:'2023 Toyota Hilux',currentValue:500000,replacementPrice:800000,eligible:true,reason:null,saleability:true,extrasNote:'Asset alone. Saved extras are retained separately, once.'}, {id:'two',revision:'v1',title:'2022 John Deere 6135B',currentValue:900000,replacementPrice:1500000,eligible:true,reason:null,saleability:false,extrasNote:'Asset replacement price only.'}, {id:'manual',revision:'v1',title:'Manual asset',currentValue:50000,replacementPrice:null,eligible:false,reason:'Manual valuation — kept unchanged.',saleability:false,extrasNote:''}];
     await page.setRequestInterception(true);
     page.on('request',async r=>{
@@ -36,8 +36,9 @@ async function main() {
         const body=JSON.parse(r.postData()); requests.push(body); assert.equal(body.action,'preview');
         const asset=assets.find(a=>a.id===body.assetId);
         const failed=body.assetId==='two'&&failOnce; if(failed)failOnce=false;
-        response={previewOnly:true,result:{id:asset.id,currentValue:asset.currentValue,proposedValue:failed?null:Math.round((body.replacementPrice??asset.replacementPrice)*.55),replacementPrice:body.replacementPrice??asset.replacementPrice,error:failed?'Temporary fixture failure':null}};
+        response={previewOnly:true,result:{id:asset.id,currentValue:asset.currentValue,unchangedPriceValue:Math.round(asset.replacementPrice*.55),proposedValue:failed?null:Math.round((body.replacementPrice??asset.replacementPrice)*.55),replacementPrice:body.replacementPrice??asset.replacementPrice,error:failed?'Temporary fixture failure':null}};
       }
+      if(r.method()==='POST' && malformedOnce){delete response.result.unchangedPriceValue;malformedOnce=false;}
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(response)});
     });
     await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');});
@@ -66,53 +67,82 @@ async function main() {
       await click('Continue');await capture('choice-'+width);
       await click('No, keep unchanged');
       assert.equal(requests.length,0,'Keep unchanged must not recalculate');
-      assert.deepEqual(await page.$$eval('dialog dd',els=>els.map(e=>e.textContent.replace(/\D/g,''))),['2300000','2300000','1400000','1400000']);
+      assert.deepEqual(await page.$$eval('dialog article dd',els=>els.map(e=>e.textContent.replace(/\D/g,''))),['2300000','2300000','1400000','1400000']);
       assert.equal(await page.$$eval('dialog p',els=>els.filter(e=>e.textContent==='No change').length),2);
       await capture('unchanged-results-'+width);
-      await click('Next');await click('Confirm review');
-      assert.ok(await page.$eval('dialog',el=>el.textContent.includes('Your prices remain unchanged.')));
-      assert.equal(requests.length,0,'Unchanged confirmation must not call the API');
+      assert.equal(await page.$$eval('dialog button',els=>els.some(e=>e.textContent==='Next')),false,'unchanged path needs no confirmation');
+      await click('Back');assert.equal(await page.$eval('#review-title',el=>el.textContent),'Adjust replacement prices for 2027?');
+      await click('No, keep unchanged');
+      assert.equal(requests.length,0,'Unchanged review must not call the API');
       assert.equal(await page.$eval('dialog',el=>/preview/i.test(el.textContent)),false,'No preview wording in flow');
-      await click('Done');await click('Open review');await page.waitForSelector('dialog[open]');
-      await click('Continue');await click('Yes, update prices');
+      await click('Finish');await click('Open review');await page.waitForSelector('dialog[open]');
+      await click('Continue');await click('Yes, adjust prices');
       assert.equal(await page.$eval('#annual-percent',el=>el.value),'3');
       assert.equal(await page.$$eval('dialog input[type=number]',els=>els.length),0,'no individual inputs');
       await capture('percentage-'+width);await click('Review results');
       await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('1 calculation needs another look'));
       assert.equal(requests.length,2);assert.equal(requests[0].replacementPrice,824000);assert.equal(requests[1].replacementPrice,1545000);
       assert.ok(await page.$$eval('dialog button',els=>els.find(b=>b.textContent==='Next').disabled),'partial totals cannot be confirmed');
+      assert.equal(await page.$$eval('dialog article dd',els=>els.length),0,'do not present partial totals as register totals');
       await capture('partial-results-'+width);
       const count=requests.filter(r=>r.assetId==='one').length;
       await click('Retry calculations');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
       assert.equal(requests.filter(r=>r.assetId==='one').length,count,'successful previews are not repeated');
-      assert.deepEqual(await page.$$eval('dialog dd',els=>els.map(e=>e.textContent.replace(/\D/g,''))),['2300000','2369000','1400000','1302950']);
+      assert.deepEqual(await page.$$eval('dialog article dd',els=>els.map(e=>e.textContent.replace(/\D/g,''))),['2300000','2369000','1400000','1302950']);
+      await page.$eval('summary',el=>el.click());
+      const breakdown=await page.$$eval('dialog details dd',els=>els.map(e=>e.textContent.replace(/[^0-9−+]/g,'')));
+      assert.deepEqual(breakdown,['1400000','1265000','−135000','+37950','1302950']);
       await capture('results-'+width);
       await page.keyboard.press('Escape');await page.waitForSelector('dialog:not([open])');const before=requests.length;
       await click('Resume review');assert.equal(requests.length,before,'resume must not calculate');
-      await click('Next');assert.equal(await page.$eval('#review-title',el=>el.textContent),'Are you sure?');
+      await click('Next');assert.equal(await page.$eval('#review-title',el=>el.textContent),'Review your adjustment');
+      assert.ok(await page.$eval('dialog h3',el=>el.scrollWidth<=el.clientWidth+1),'confirmation heading must not truncate');
       await capture('confirmation-'+width);await click('Back');await click('Back');
       await fill('#annual-percent','0');await click('Review results');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
       assert.equal(requests.at(-2).replacementPrice,800000);assert.equal(requests.at(-1).replacementPrice,1500000);
       await click('Back');await fill('#annual-percent','-5');await click('Review results');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
       assert.equal(requests.at(-2).replacementPrice,760000);assert.equal(requests.at(-1).replacementPrice,1425000);
       await click('Next');const beforeConfirm=requests.length;
-      await click('Confirm review');assert.equal(requests.length,beforeConfirm,'confirmation never calls a write or calculation API');
+      await click('Finish review');assert.equal(requests.length,beforeConfirm,'confirmation never calls a write or calculation API');
       assert.equal(await page.$eval('#review-title',el=>el.textContent),'Review complete');await capture('complete-'+width);await click('Done');
       await fill('input[type=number]','2028');await click('Open review');await page.waitForFunction(()=>document.querySelector('#review-title').textContent==='Happy new year, 2028!');
       assert.equal(requests.length,beforeConfirm,'new year does not calculate automatically');await click('Close');
       console.log('PASS annual percentage review at '+width+'px: decline, slider, totals, retry, close/resume, confirmation, next year');
     }
+    // A malformed result cannot leak an incomplete total into confirmation.
+    malformedOnce=true;failOnce=false;
+    await click('Open review');await page.waitForSelector('dialog[open]');await click('Continue');await click('Yes, adjust prices');await click('Review results');
+    await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('1 calculation needs another look'));
+    assert.equal(await page.$$eval('dialog article dd',els=>els.length),0);
+    const beforeRetry=requests.length;
+    await click('Retry calculations');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
+    assert.equal(requests.length,beforeRetry+1);
+    await click('Close');
     // A large register gets the same aggregate flow, with every eligible asset included.
     for(let i=0;i<18;i++)assets.push({...assets[0],id:'extra-'+i,title:'Review asset '+i});
     requests.length=0;
     await page.setViewport({width:1440,height:900});await click('Open review');
     await page.waitForSelector('dialog[open]');await click('Continue');
-    await page.waitForFunction(()=>document.querySelector('dialog[open]').textContent.includes('all 20 eligible assets'));
-    await click('Yes, update prices');
+    await page.waitForFunction(()=>document.querySelector('dialog[open]').textContent.includes('20 eligible assets'));
+    await click('Yes, adjust prices');
     await click('Review results');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('20 of 20 assets calculated'));
     assert.equal(requests.length,20);assert.equal(new Set(requests.map(r=>r.assetId)).size,20);assert.ok(!requests.some(r=>r.assetId==='manual'));
     await capture('results-large-register');await click('Close');
     console.log('PASS delayed large-register reload: visible controls, all 20 eligible assets calculated');
+
+    // Switching from calculated results to unchanged must discard old proposals.
+    await click('Resume review');await click('Back');await click('Back');
+    const countBeforeNo=requests.length;await click('No, keep unchanged');
+    const amounts=await page.$$eval('dialog article dd',els=>els.map(e=>e.textContent));
+    assert.equal(amounts[0],amounts[1]);assert.equal(amounts[2],amounts[3]);
+    assert.equal(requests.length,countBeforeNo);await click('Finish');
+    // No eligible assets is a valid no-op, not a zero-valued portfolio.
+    for(const asset of assets)asset.eligible=false;
+    await click('Open review');await page.waitForSelector('dialog[open]');await click('Continue');
+    assert.ok(await page.$$eval('dialog button',els=>els.find(e=>e.textContent.includes('Yes, adjust prices')).disabled));
+    await click('No, keep unchanged');
+    assert.equal(await page.$$eval('dialog article dd',els=>els.length),0);
+    await click('Finish');assert.equal(requests.length,countBeforeNo);
     assert.deepEqual(errors,[]);
   } finally { if(browser)await browser.close(); await fs.rm(route,{recursive:true,force:true}); if(server){const exit=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await exit;} }
 }

@@ -190,3 +190,11 @@
 .reviewName { font-size: 1rem; font-weight: 650; }
 .dialog .welcomeHeader { padding-block: 1rem !important; }
 .reviewHeader > button { flex-shrink: 0; margin-left: auto; }
+
+.valueBreakdown { display: grid; gap: .7rem; margin: 1rem 0; color: var(--app-text, #153d31); }
+.valueBreakdown > div { display: flex; justify-content: space-between; gap: 1rem; }
+.valueBreakdown dd { margin: 0; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums; }
+.valueBreakdown > div:last-child { border-top: 1px solid var(--app-line, #d6e4dd); padding-top: .7rem; }
+@media (max-width: 600px) { .valueBreakdown > div { flex-direction: column; gap: .2rem; } }
+
+.dialog .confirmation h3 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
