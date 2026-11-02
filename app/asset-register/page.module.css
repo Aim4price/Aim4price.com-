@@ -41822,3 +41822,12 @@ button.documentOpenLink {
 }
 
 .bulkFinanceChooseButton > [data-asset-choose-icon] { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--app-accent, #176346) !important; }
+
+/* Shared-maintenance recipient chooser; settings use AssetAccessSettingsDialog. */
+.sharedMaintenanceListModal.sharedMaintenanceListModal {
+  width: min(var(--website-dialog-reference-width, 100%), 1080px) !important;
+}
+.sharedMaintenanceListModal .dealerTrackingBody {
+  scrollbar-gutter: auto;
+  padding-right: .15rem !important;
+}

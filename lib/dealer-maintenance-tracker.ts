@@ -195,6 +195,7 @@ export type DealerMaintenanceAccessSummary = {
   id: string;
   dealerUserId: string;
   dealerName: string;
+  dealerLogoUrl?: string;
   grantedByName: string;
   createdAtIso: string;
   permissions: DealerMaintenancePermissions;
@@ -246,6 +247,7 @@ type DealerMaintenanceAccessRow = {
   owner_email: string | null;
   dealer_display_name: string | null;
   dealer_business_name: string | null;
+  dealer_logo_url?: string | null;
 };
 
 type DealerMaintenanceNotificationRow = {
@@ -691,7 +693,8 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         owner.phone as owner_phone,
         owner_user.email as owner_email,
         dealer.display_name as dealer_display_name,
-        dealer.business_name as dealer_business_name
+        dealer.business_name as dealer_business_name,
+        dealer.logo_url as dealer_logo_url
       from public.dealer_maintenance_access access
       left join public.account_profiles owner on owner.user_id = access.owner_user_id
       left join public."user" owner_user on owner_user.id = access.owner_user_id
@@ -860,6 +863,7 @@ export async function listOwnerDealerMaintenanceAccess(
     id: row.id,
     dealerUserId: row.dealer_user_id,
     dealerName: accessDealerName(row),
+    dealerLogoUrl: asText(row.dealer_logo_url),
     grantedByName: asText(row.granted_by_name),
     createdAtIso: iso(row.created_at),
     permissions: rowPermissions(row),

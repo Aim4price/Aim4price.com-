@@ -20293,7 +20293,7 @@ export default function AssetRegisterClient({
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsDealerTrackingSettingsOpen(false)} />
 
-          <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
+          <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.sharedMaintenanceListModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="dealer-tracking-settings-title">Shared maintenance</h3>
@@ -20316,6 +20316,7 @@ export default function AssetRegisterClient({
                   </div>
                   <DealerMaintenanceAccessSettings
                     assetId={activeAsset.id}
+                    assetTitle={activeAsset.title}
                     entries={dealerTrackingAccess}
                     mutationUrl="/api/dealer-maintenance-access"
                     onEntriesChange={(entries) => {

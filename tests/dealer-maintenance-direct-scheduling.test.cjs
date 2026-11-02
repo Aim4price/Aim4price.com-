@@ -8,7 +8,7 @@ const S='20000000-0000-4000-8000-000000000001';
 async function setup(){
  const pg=new PGlite();
  await pg.exec(`CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text);
- CREATE TABLE account_profiles(user_id text,display_name text,business_name text,phone text);
+ CREATE TABLE account_profiles(user_id text,display_name text,business_name text,phone text,logo_url text);
  CREATE TABLE "user"(id text,email text);
  CREATE TABLE asset_leads(id uuid PRIMARY KEY,owner_user_id text,partner_user_id text,asset_register_item_id uuid);
  CREATE TABLE asset_maintenance_records(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id text,asset_register_item_id uuid,maintenance_type text,trigger_type text,status text,title text,notes text,assigned_field_manager_id uuid,assigned_name text,due_date date,due_usage numeric,usage_metric text,alert_before_value numeric,alert_before_unit text,recurring_enabled boolean,recurring_interval_value numeric,recurring_interval_unit text,created_at timestamptz,updated_at timestamptz);
@@ -18,6 +18,8 @@ async function setup(){
  const query=(sql,params)=>/create extension/i.test(sql)?Promise.resolve({rows:[]}):params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
  const db={query,connect:async()=>{if(beforeWrite){const fn=beforeWrite;beforeWrite=null;await fn();}return {query,release(){}};}};
  const mocks={
+ // These tests create schedules; history attribution belongs to completion.
+ './asset-history-schema':{setAssetHistoryActor:async()=>{throw Error('Schedule creation must not invoke completion history attribution');}},
  './maintenance-reminders':{ensureMaintenanceReminders:async()=>{},saveMaintenanceSource:async(client,source)=>{await client.query('CREATE TABLE IF NOT EXISTS test_sources(record_id uuid, scheduler_id text)');await client.query('INSERT INTO test_sources VALUES($1::uuid,$2)',[source.record_id,source.scheduler_id]);}},
  './sharing-foundation':{ensureSharingFoundation:async()=>{},recordSharingUsage:async event=>usage.push(event)},
  './live-shared-asset-access':{requireLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');return sharedScope;},lockLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');}},

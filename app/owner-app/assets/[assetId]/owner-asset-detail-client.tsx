@@ -1445,6 +1445,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         ) : (
           <DealerMaintenanceAccessSettings
             assetId={assetId}
+            assetTitle={draft.title}
             entries={dealerTrackingAccess}
             mutationUrl="/api/dealer-maintenance-access"
             onEntriesChange={setDealerTrackingAccess}
