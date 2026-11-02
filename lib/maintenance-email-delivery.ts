@@ -71,7 +71,7 @@ async function sendEvent(e:Event,test:boolean,since:string){
   const current=async()=>{
    if(e.kind==='reminder'||e.kind==='maintenance_completed'){
     const r=await getAssetMaintenanceRecordById(e.owner_id,e.record_id);
-    return r&&(e.kind==='reminder'?!!reminderStage(r)&&Date.parse(r.updatedAtIso)>=Date.parse(since):r.status==='done')?r:null;
+    return r&&r.assetId===e.asset_id&&(e.kind==='reminder'?!!reminderStage(r)&&Date.parse(r.updatedAtIso)>=Date.parse(since):r.status==='done')?r:null;
    }
    const p=(await listIssueNotesForAssets([e.asset_id],{includeNoted:true})).find(p=>p.id===e.record_id);
    return p&&(e.kind==='problem_logged'?!p.notedAtIso:!!p.notedAtIso)?p:null;
