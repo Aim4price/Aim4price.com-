@@ -2007,6 +2007,7 @@ export async function completeAssetMaintenanceRecord(
   try {
     await client.query('begin');
     await guard.before?.(client);
+    if(!guard.before&&!input.sourceScanEventId)await client.query("SELECT set_config('aim4price.audit_actor',$1,true),set_config('aim4price.audit_source','Owner maintenance',true)",[userId]);
 
     if (input.offlineEventId) {
       await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId + ':maintenance:' + input.offlineEventId]);
@@ -2358,4 +2359,5 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
     maintenanceAlerts: (allAlertsByAssetId.get(asset.id) ?? []).sort((a, b) => alertPriority(a) - alertPriority(b)),
   }));
 }
+
 

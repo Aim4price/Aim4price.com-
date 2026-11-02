@@ -1800,6 +1800,7 @@ export async function saveScanAssetEvent(
 
   try {
     await client.query("BEGIN");
+    if(input.actorType==='owner_session')await client.query("SELECT set_config('aim4price.audit_actor',$1,true),set_config('aim4price.audit_source','Owner scan',true)",[scopedOwnerUserId]);
 
     const assetLookup = await client.query<ScanAccessRow>(
       `
@@ -2308,3 +2309,4 @@ export async function saveScanAssetEvent(
     client.release();
   }
 }
+

@@ -347,14 +347,13 @@ export async function markAssetIssueNoteStatusNoted(input: {
     throw new Error('ISSUE_NOTE_STATUS_FORBIDDEN');
   }
 
-  await db.query(
-    `
-      update public.asset_scan_events
-      set issue_noted_at = coalesce(issue_noted_at, now())
-      where id::text = $1
-    `,
-    [input.issueNoteStatusId],
-  );
+  const client=await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query("SELECT set_config('aim4price.audit_actor',$1,true),set_config('aim4price.audit_source','Owner problem resolution',true)",[input.currentUserId]);
+    await client.query(`update public.asset_scan_events set issue_noted_at=coalesce(issue_noted_at,now()) where id::text=$1`,[input.issueNoteStatusId]);
+    await client.query('COMMIT');
+  } catch(error){await client.query('ROLLBACK');throw error;} finally {client.release();}
 
   const updated = await db.query<AssetIssueNoteOwnerRow>(
     `${assetIssueNoteSelectSql('where e.id::text = $1')} limit 1`,
@@ -368,3 +367,4 @@ export async function markAssetIssueNoteStatusNoted(input: {
 
   return updatedStatus;
 }
+
