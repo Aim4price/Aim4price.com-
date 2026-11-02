@@ -20,7 +20,17 @@ test('native checklist scope preserves role, assignment and separate record/sche
  assigned=true;assert.deepEqual(await api.resolveAppMaintenanceAccess({},'field-manager','asset'),{ownerId:'owner',assetId:'asset',canRecord:false,canEdit:false,canSchedule:true,canRemove:false});
  fm=false;await assert.rejects(api.resolveAppMaintenanceAccess({},'field-manager','asset'),e=>e.status===401);
  assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRecord,false);
- shared.permissions={canAddMaintenance:true};assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canEdit,true);
+ assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRemove,false);
+ shared.permissions={canCreateMaintenanceSchedules:true};assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRemove,false);
+ shared.permissions={canAddMaintenance:true};
+ for (const dealerApp of [true,false]) {
+   session=dealerApp?{user:{id:'dealer'},dealerApp:{role:'maintenance'}}:{user:{id:'dealer'}};
+   const access=await api.resolveAppMaintenanceAccess({},'dealer','access');
+   assert.equal(access.canEdit,true);assert.equal(access.canRemove,true);
+   assert.equal(access.ownerId,'owner');assert.equal(access.assetId,'asset');
+ }
+ session={user:{id:'dealer'},dealerApp:{role:'maintenance'}};
+ shared.permissions={canViewMaintenanceReports:true};assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRemove,false);
  shared.permissions={canViewParts:true};await assert.rejects(api.resolveAppMaintenanceAccess({},'dealer','access'),e=>e.status===403);
  dealerRole=false;await assert.rejects(api.resolveAppMaintenanceAccess({},'dealer','access'),e=>e.status===403);
  owner=null;await assert.rejects(api.resolveAppMaintenanceAccess({},'owner','asset'),e=>e.status===401);
@@ -30,16 +40,26 @@ test('native checklist mutations require trusted origin, edit permission and a f
  const api=load('lib/app-maintenance-checklist-api.ts',{
  './app-maintenance-access':{resolveAppMaintenanceAccess:async()=>({ownerId:revoked?'other':'owner',assetId:'asset',canRemove:removable,canEdit:editable,canRecord:editable,canSchedule:editable})},
  './external-lead-access':{ExternalLeadAccessError:Denied},'./trusted-request-origin':{isTrustedRequestOrigin:()=>trusted},
- './asset-checklist-db':{changeAssetChecklistItem:async(owner,id,input,check)=>{await check();return [];},addAssetChecklistItem:async(owner,id,input,check)=>{assert.equal(owner,'owner');assert.equal(id,'asset');if(input.revoke)revoked=true;await check();writes++;return input;},removeAssetChecklistItem:async()=>{},listAssetChecklistItems:async()=>[]},
+ './asset-checklist-db':{changeAssetChecklistItem:async(owner,id,input,check)=>{assert.equal(owner,'owner');assert.equal(id,'asset');if(input.revoke)removable=false;await check();writes++;return [];},addAssetChecklistItem:async(owner,id,input,check)=>{assert.equal(owner,'owner');assert.equal(id,'asset');if(input.revoke)revoked=true;await check();writes++;return input;},removeAssetChecklistItem:async()=>{},listAssetChecklistItems:async()=>[]},
  './asset-register-db':{},'./maintenance-catalogue-db':{},'./maintenance-catalogue':{},'./asset-checklist-report':{},'./report-pdf':{},'./asset-usage':{}
  });
  const request=input=>({method:'POST',headers:new Headers(),nextUrl:new URL('https://www.aim4price.com/api/native/checklist'),json:async()=>input});
  assert.equal((await api.appMaintenanceChecklist(request({label:'Inspect hose'}),'owner','asset')).status,201);
  assert.equal((await api.appMaintenanceChecklist({...request({}),method:'PATCH'},'owner','asset')).status,403);
  removable=true;assert.equal((await api.appMaintenanceChecklist({...request({}),method:'PATCH'},'owner','asset')).status,200);
+ for (const mode of ['checked','serviced','repaired']) {
+   for (const action of ['edit','delete']) {
+     const input={mode,action,optionId:'task',label:'Task',revision:0};
+     assert.equal((await api.appMaintenanceChecklist({...request(input),method:'PATCH'},'dealer','access')).status,200);
+   }
+ }
+ assert.equal(writes,8);
+ assert.equal((await api.appMaintenanceChecklist({...request({revoke:true}),method:'PATCH'},'dealer','access')).status,403);
+ assert.equal(writes,8);
+ removable=true;
  editable=false;assert.equal((await api.appMaintenanceChecklist(request({}),'owner','asset')).status,403);
  editable=true;trusted=false;assert.equal((await api.appMaintenanceChecklist(request({}),'owner','asset')).status,403);
- trusted=true;assert.equal((await api.appMaintenanceChecklist(request({revoke:true}),'owner','asset')).status,403);assert.equal(writes,1);
+ trusted=true;assert.equal((await api.appMaintenanceChecklist(request({revoke:true}),'owner','asset')).status,403);assert.equal(writes,8);
 });
 test('dealer can submit unscheduled work without inventing a maintenance record id',async()=>{
  let calls=[],allow=true;

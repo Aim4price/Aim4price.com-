@@ -31,5 +31,5 @@ export async function resolveAppMaintenanceAccess(request: NextRequest, app: Mai
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') throw new ExternalLeadAccessError('Dealer access is not available.', 403);
   const asset = await getDealerTrackedAsset(session.user.id, id);
   if (!asset || !(asset.permissions.canAddMaintenance || asset.permissions.canCreateMaintenanceSchedules || asset.permissions.canViewMaintenanceReports)) throw new ExternalLeadAccessError('The owner has not shared maintenance access.', 403);
-  return { ownerId: asset.ownerUserId, assetId: asset.assetId, canRecord: !!asset.permissions.canAddMaintenance, canSchedule: !!asset.permissions.canCreateMaintenanceSchedules, canEdit: !!asset.permissions.canAddMaintenance, canRemove: false };
+  return { ownerId: asset.ownerUserId, assetId: asset.assetId, canRecord: !!asset.permissions.canAddMaintenance, canSchedule: !!asset.permissions.canCreateMaintenanceSchedules, canEdit: !!asset.permissions.canAddMaintenance, canRemove: !!asset.permissions.canAddMaintenance };
 }

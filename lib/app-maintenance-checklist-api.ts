@@ -21,12 +21,12 @@ export async function appMaintenanceChecklist(request: NextRequest, app: Mainten
       if (!fresh.canEdit || ((request.method === 'PATCH' || request.method === 'DELETE') && !fresh.canRemove) || fresh.ownerId !== access.ownerId || fresh.assetId !== access.assetId) throw new ExternalLeadAccessError('Your access has changed. Reopen the checklist.', 403);
     };
     if (request.method === 'PATCH') {
-      if (!access.canRemove) throw new ExternalLeadAccessError('Only the asset owner can edit or delete existing checklist items.', 403);
+      if (!access.canRemove) throw new ExternalLeadAccessError('You do not have permission to edit or delete existing checklist items.', 403);
       return NextResponse.json({ items: await changeAssetChecklistItem(access.ownerId, access.assetId, await request.json(), checkAccess) }, { headers });
     }
     if (request.method === 'POST') return NextResponse.json({ item: await addAssetChecklistItem(access.ownerId, access.assetId, await request.json(), checkAccess) }, { status: 201, headers });
     if (request.method === 'DELETE') {
-      if (!access.canRemove) throw new ExternalLeadAccessError('Only the asset owner can remove saved checklist items.', 403);
+      if (!access.canRemove) throw new ExternalLeadAccessError('You do not have permission to remove saved checklist items.', 403);
       await removeAssetChecklistItem(access.ownerId, access.assetId, request.nextUrl.searchParams.get('itemId') || '', checkAccess);
       return NextResponse.json({ ok: true }, { headers });
     }
