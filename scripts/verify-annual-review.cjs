@@ -36,7 +36,7 @@ async function main() {
         const body=JSON.parse(r.postData()); requests.push(body); assert.equal(body.action,'preview');
         const asset=assets.find(a=>a.id===body.assetId);
         const failed=body.assetId==='two'&&failOnce; if(failed)failOnce=false;
-        response={previewOnly:true,result:{id:asset.id,currentValue:asset.currentValue,unchangedPriceValue:Math.round(asset.replacementPrice*.55),proposedValue:failed?null:Math.round((body.replacementPrice??asset.replacementPrice)*.55),replacementPrice:body.replacementPrice??asset.replacementPrice,error:failed?'Temporary fixture failure':null}};
+        response={previewOnly:true,result:{id:asset.id,currentValue:asset.currentValue,unchangedPriceValue:Math.round(asset.replacementPrice*.55),proposedValue:failed?null:Math.round((body.replacementPrice??asset.replacementPrice)*.55),replacementPrice:body.replacementPrice??asset.replacementPrice,warning:assets.length>3?'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.':undefined,error:failed?'Temporary fixture failure':null}};
       }
       if(r.method()==='POST' && malformedOnce){delete response.result.unchangedPriceValue;malformedOnce=false;}
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(response)});
@@ -54,8 +54,13 @@ async function main() {
       try { await handle.asElement().click(); } finally { await handle.dispose(); }
     }
     async function fill(selector,value){await page.$eval(selector,(el,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,value);el.dispatchEvent(new Event('input',{bubbles:true}));},value);}
-    async function capture(name){await page.evaluate(()=>document.fonts.ready);const geometry=await page.$eval('dialog',d=>{const r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,dialogWidth:r.width,overflow:d.scrollWidth-d.clientWidth,bodyOverflow:document.documentElement.scrollWidth-innerWidth};});assert.ok(geometry.left>=0&&geometry.right<=geometry.width+1&&geometry.top>=0&&geometry.bottom<=geometry.height+1,JSON.stringify(geometry));assert.ok(geometry.overflow<2,JSON.stringify(geometry));assert.ok(geometry.dialogWidth>=Math.min(900,geometry.width-60),JSON.stringify(geometry));await page.screenshot({path:path.join(output,name+'.png')});}
-    for(const [width,height] of [[1440,900],[430,740],[768,700]]){
+    async function assertDesktopFits(){
+      if(page.viewport().width<1000)return;
+      const overflow=await page.$eval('dialog [class*=body]',el=>el.scrollHeight-el.clientHeight);
+      assert.ok(overflow<=2,'Main desktop screen should fit without scrolling: '+overflow);
+    }
+    async function capture(name){await page.evaluate(()=>document.fonts.ready);const geometry=await page.$eval('dialog',d=>{const r=d.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,dialogWidth:r.width,overflow:d.scrollWidth-d.clientWidth,bodyOverflow:document.documentElement.scrollWidth-innerWidth};});assert.ok(geometry.left>=0&&geometry.right<=geometry.width+1&&geometry.top>=0&&geometry.bottom<=geometry.height+1,JSON.stringify(geometry));assert.ok(geometry.overflow<2,JSON.stringify(geometry));assert.ok(geometry.dialogWidth>=Math.min(900,geometry.width-60),JSON.stringify(geometry));if(!await page.$('dialog details[open]'))await assertDesktopFits();await page.screenshot({path:path.join(output,name+'.png')});}
+    for(const [width,height] of [[1440,900],[1366,768],[430,740],[768,700]]){
       requests.length=0;failOnce=true;
       await page.setViewport({width,height});
       await page.goto('http://127.0.0.1:3037/admin/annual-review-validation',{waitUntil:'networkidle0',timeout:120000});
@@ -89,7 +94,7 @@ async function main() {
       await click('Retry calculations');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
       assert.equal(requests.filter(r=>r.assetId==='one').length,count,'successful previews are not repeated');
       assert.deepEqual(await page.$$eval('dialog article dd',els=>els.map(e=>e.textContent.replace(/\D/g,''))),['2300000','2369000','1400000','1302950']);
-      await page.$eval('summary',el=>el.click());
+      await assertDesktopFits();await page.$eval('summary',el=>el.click());
       const breakdown=await page.$$eval('dialog details dd',els=>els.map(e=>e.textContent.replace(/[^0-9−+]/g,'')));
       assert.deepEqual(breakdown,['1400000','1265000','−135000','+37950','1302950']);
       await capture('results-'+width);
@@ -121,13 +126,18 @@ async function main() {
     // A large register gets the same aggregate flow, with every eligible asset included.
     for(let i=0;i<18;i++)assets.push({...assets[0],id:'extra-'+i,title:'Review asset '+i});
     requests.length=0;
-    await page.setViewport({width:1440,height:900});await click('Open review');
+    await page.setViewport({width:1366,height:768});await click('Open review');
     await page.waitForSelector('dialog[open]');await click('Continue');
     await page.waitForFunction(()=>document.querySelector('dialog[open]').textContent.includes('20 eligible assets'));
     await click('Yes, adjust prices');
     await click('Review results');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('20 of 20 assets calculated'));
     assert.equal(requests.length,20);assert.equal(new Set(requests.map(r=>r.assetId)).size,20);assert.ok(!requests.some(r=>r.assetId==='manual'));
-    await capture('results-large-register');await click('Close');
+    await capture('results-large-register');
+    await page.$$eval('summary',els=>els.find(el=>el.textContent.includes('Calculation notes')).click());
+    assert.equal(await page.$$eval('dialog section p',els=>els.filter(el=>el.textContent.includes('The original valuation history was unavailable.')).length),1,'repeat warning once per group');
+    await page.$$eval('summary',els=>els.find(el=>el.textContent.includes('20 affected assets')).click());
+    assert.equal(await page.$$eval('dialog section li',els=>els.length),20,'all affected assets remain accessible');
+    await capture('grouped-notes');await click('Close');
     console.log('PASS delayed large-register reload: visible controls, all 20 eligible assets calculated');
 
     // Switching from calculated results to unchanged must discard old proposals.
