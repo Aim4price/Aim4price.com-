@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import ShareLinkSettings from './ShareLinkSettings';
-import ShareNextIcon from './ShareNextIcon';
 import type { ExternalSharePermissions } from '../../lib/external-share-permissions';
 import styles from './ShareHistory.module.css';
 type Entry = {
@@ -70,14 +69,14 @@ export default function ShareHistory({ assetIds, umbrellaId, subject, onBack }: 
         }
     }
     return <div className={styles.panel} data-share-history>
-  <p className={styles.intro}>Open a shared link, update its settings or revoke access.</p>
+  <p className={styles.intro}>Manage your shared links and access.</p>
   {notice && <p role="status">{notice}</p>}
   {error && <p role="alert" className={styles.error}>{error}</p>}
   {!rows.length ? <p className={styles.empty} role="status">{busy ? 'Loading shared links…' : 'No shared links yet.'}</p> : <div className={styles.list} aria-busy={busy}>{rows.map(row => <article className={styles.row} key={row.token}>
-   <div className={styles.details}><strong>{row.recipient_name || row.recipient_email || row.umbrella_name || 'Shared link'}</strong><small>{new Date(row.created_at).toLocaleString('en-ZA', {dateStyle: 'medium', timeStyle: 'short'})}</small><span className={styles.status} data-revoked={Boolean(row.revoked_at)}>{row.revoked_at ? 'Access revoked' : 'Active'}</span></div>
+   <svg className={styles.linkIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 .5l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7-.5l-3 3a5 5 0 0 0 7 7l2-2" /></svg><div className={styles.details}><strong>{row.recipient_name || row.recipient_email || row.umbrella_name || 'Shared link'}</strong><small>{new Date(row.created_at).toLocaleString('en-ZA', {dateStyle: 'medium', timeStyle: 'short'})}</small></div><span className={styles.status} data-revoked={Boolean(row.revoked_at)}>{row.revoked_at ? 'Access revoked' : 'Active'}</span>
    <div className={styles.actions}>{row.revoked_at ? <button className={styles.revoke} type="button" disabled={busy} title="Remove this revoked link from History" onClick={() => void remove(row.token)}>Delete</button> : <><a href={`/asset-share/${row.token}`} target="_blank" rel="noreferrer">Open<span className={styles.srOnly}> shared link in a new tab</span></a><button type="button" disabled={busy} onClick={()=>{setNotice('');setEditing(row);}}>Settings</button><button className={styles.revoke} type="button" disabled={busy} onClick={() => void revoke(row.token)}>Revoke access</button></>}</div>
   </article>)}</div>}
-  <footer><button type="button" className={styles.backButton} onClick={onBack}><ShareNextIcon direction="left" />Share options</button><span className={styles.page}>Page {offset / 5 + 1}</span>{offset > 0 && <button type="button" disabled={busy} onClick={() => setOffset(offset - 5)}>Previous</button>}{more && <button type="button" disabled={busy} onClick={() => setOffset(offset + 5)}>Next</button>}</footer>
+  <footer><button type="button" className={styles.backButton} onClick={onBack}>Share options</button><span className={styles.page}>Page {offset / 5 + 1}</span>{offset > 0 && <button type="button" disabled={busy} onClick={() => setOffset(offset - 5)}>Previous</button>}{more && <button type="button" disabled={busy} onClick={() => setOffset(offset + 5)}>Next</button>}</footer>
   {editing && <ShareLinkSettings token={editing.token} subject={subject} initialPermissions={editing.permissions} onClose={()=>setEditing(null)} onSaved={permissions=>{setRows(current=>current.map(row=>row.token===editing.token?{...row,permissions}:row));setEditing(null);setNotice('Link settings updated.');}}/>}
  </div>;
 }
