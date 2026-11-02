@@ -47,21 +47,21 @@
   box-shadow: none !important;
 }
 @media (max-height: 740px) {
-  .dialog.dialog.dialog { padding: 1rem !important; }
-  .dialog.dialog [aria-label='Future price questions'] { padding: .65rem 0 !important; }
-  .yearMenu.yearMenu [role='option'] { min-height: 2.15rem !important; padding: .35rem .5rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog { padding: 1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog [aria-label='Future price questions'] { padding: .65rem 0 !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearMenu.yearMenu [role='option'] { min-height: 2.15rem !important; padding: .35rem .5rem !important; }
 }
 @media (max-width: 600px) {
-  .dialog.dialog.dialog { padding: 1rem !important; }
-  .dialog.dialog h4 { font-size: 1.05rem !important; }
-  .yearMenu.yearMenu [role='option'] { font-size: .85rem; padding-inline: .25rem !important; }
-  .dialog.dialog .result { gap: .65rem; }
-  .dialog.dialog .value { padding: .8rem; gap: .5rem; }
-  .dialog.dialog .value > strong { font-size: 2rem; }
-  .dialog.dialog .value > div { flex-direction: row; align-items: center; gap: .5rem; }
-  .dialog.dialog .summary { padding: .15rem .75rem; }
-  .dialog.dialog .summary > div { padding: .4rem 0; }
-  .dialog.dialog .summary strong { font-size: .85rem; }
-  .dialog.dialog .summary [aria-hidden='true'] { display: none; }
-  .dialog.dialog .summary > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog { padding: 1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog h4 { font-size: 1.05rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearMenu.yearMenu [role='option'] { font-size: .85rem; padding-inline: .25rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .result { gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .value { padding: .8rem; gap: .5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .value > strong { font-size: 2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .value > div { flex-direction: row; align-items: center; gap: .5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary { padding: .15rem .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary > div { padding: .4rem 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary strong { font-size: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary [aria-hidden='true'] { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary > div { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); }
 }
