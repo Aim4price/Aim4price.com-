@@ -243,6 +243,7 @@ await fill('textarea','Updated replacement quotation');await click('Preview chan
   window.root.render(React.createElement(require('components/MaintenanceReminderDialog').default,{id:'maintenance'}));
  });
  await page.waitForFunction(()=>document.body.textContent.includes('Scheduled by Example Workshop'));
+ assert(await page.$$eval('button',nodes=>nodes.some(n=>n.textContent==='Complete service')), 'upcoming maintenance must offer completion');
  await page.screenshot({path:'/tmp/maintenance-reminder.png'});
  await click('Complete service');await page.waitForSelector('input');
  await page.evaluate(()=>{window.reminder.record.status='done';window.reminder.record.completedBy='Example Workshop';window.dispatchEvent(new Event('focus'));});

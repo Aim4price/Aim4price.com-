@@ -70,3 +70,20 @@
 .menu.menu.menu > button[data-settings-action="usage-type"] > svg {
   color: #245f9a !important; background: #eaf4ff !important; border-color: #bcd8f2 !important;
 }
+
+/* Reading changes use the same confirmed editor from the card and Details. */
+.readingTrigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  width: 100%; min-height: 3.25rem; padding: .75rem 1rem;
+  border: 1px solid var(--app-border, #bfd8ce); border-radius: .9rem;
+  background: var(--app-input-bg, #edf5f1); color: var(--app-text, #153d31);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.readingTrigger svg { width: 1.4rem; height: 1.4rem; flex-shrink: 0; }
+.readingTrigger:focus-visible { outline: 3px solid #319b74; outline-offset: 3px; }
+.readingTrigger:disabled { opacity: .6; cursor: wait; }
+.readingHeading { display: flex; align-items: center; gap: .65rem; }
+.readingHeading svg { width: 1.5rem; height: 1.5rem; color: var(--app-text, #153d31); }
+.trackingDetails { border-top: 1px solid var(--app-border, #d4e3dc); padding-top: .9rem; }
+.trackingDetails summary { cursor: pointer; font-weight: 600; color: var(--app-text, #153d31); padding: .4rem 0; }
+.trackingDetails[open] summary { margin-bottom: .75rem; }
