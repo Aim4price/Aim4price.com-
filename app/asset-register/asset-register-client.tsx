@@ -4219,11 +4219,12 @@ function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '
 function buildOwnerAssetPageHref(
   pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents' | '/budgets',
   assetId: string,
-  options: { add?: boolean; budgetAction?: boolean; checklists?: boolean } = {},
+  options: { add?: boolean; budgetAction?: boolean; checklists?: boolean; maintenanceAction?: 'record' | 'schedule' } = {},
   currentLocation = '/asset-register',
 ): string {
   const params = new URLSearchParams({ assetId });
   if (options.add) params.set('add', '1');
+  if (options.maintenanceAction) params.set('action', options.maintenanceAction);
   if (options.checklists) params.set('action', 'checklists');
   if (options.budgetAction) params.set('budgetAction', 'open');
   params.set('returnTo', buildAssetRegisterManageReturnPath(assetId, currentLocation));
@@ -6355,22 +6356,6 @@ export default function AssetRegisterClient({
   const [partsOpen, setPartsOpen] = useState(false);
   useEffect(() => { setPartsOpen(false); }, [activeAsset?.id]);
   const [ownerAssetCommandPanel, setOwnerAssetCommandPanel] = useState<OwnerAssetCommandPanel>(null);
-  const [maintenanceAvailability, setMaintenanceAvailability] = useState<{ assetId: string; hasRecords: boolean; error?: string } | null>(null);
-  useEffect(() => {
-    if (!ownerAssetCommandPanel || !activeAsset) return;
-    const assetId = activeAsset.id;
-    const controller = new AbortController();
-    setMaintenanceAvailability(null);
-    fetch(`/api/maintenance?assetId=${encodeURIComponent(assetId)}`, { cache: 'no-store', signal: controller.signal })
-      .then(async response => {
-        const data = await response.json();
-        if (!response.ok || !data.ok || !Array.isArray(data.records)) throw new Error('Could not check maintenance records. Please reopen Maintenance to try again.');
-        setMaintenanceAvailability({ assetId, hasRecords: data.records.some((record: { status: string }) => record.status !== 'cancelled') });
-      }).catch(error => {
-        if (!controller.signal.aborted) setMaintenanceAvailability({ assetId, hasRecords: false, error: error.message });
-      });
-    return () => controller.abort();
-  }, [ownerAssetCommandPanel, activeAsset?.id]);
   const [ownerCommandReturnLocation, setOwnerCommandReturnLocation] = useState('/asset-register');
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
   const [quoteScope, setQuoteScope] = useState<QuoteScope>('asset');
@@ -20232,17 +20217,24 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={styles.ownerCommandChoiceBody}>
-              {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.error ? <p role="alert">{maintenanceAvailability.error}</p> : null}
               <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid} ${actionColours.maintenance}`} data-manage-actions>
                 <Link data-manage-action="addMaintenance"
-                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true, maintenanceAction: 'record' }, ownerCommandReturnLocation)}
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                 >
                   <PlusIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Add maintenance</strong>
-                    <small>Log services or repairs.</small>
+                    <small>Record completed work.</small>
                   </span>
+                </Link>
+
+                <Link data-manage-action="maintenanceSchedules"
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true, maintenanceAction: 'schedule' }, ownerCommandReturnLocation)}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                >
+                  <AssetActionIcon action="maintenanceSchedules" className={styles.buttonIcon} />
+                  <span><strong>Schedule maintenance</strong><small>Plan upcoming work.</small></span>
                 </Link>
 
                 <Link data-manage-action="maintenanceChecklists"
@@ -20256,18 +20248,16 @@ export default function AssetRegisterClient({
                   <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong><small>View and add parts.</small></span>
                 </button>
 
-                {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.hasRecords ? (
-                  <Link data-manage-action="maintenanceSchedules"
-                    href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
-                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
-                  >
-                    <ManageIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Manage maintenance</strong>
-                      <small>Records and schedules.</small>
-                    </span>
-                  </Link>
-                ) : null}
+                <Link data-manage-action="allMaintenance"
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                >
+                  <ManageIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>All maintenance</strong>
+                    <small>Records and schedules.</small>
+                  </span>
+                </Link>
 
                 {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
                   <button data-manage-action="maintenanceSchedules"

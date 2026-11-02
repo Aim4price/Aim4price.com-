@@ -32,13 +32,14 @@ export default async function MaintenancePage({ searchParams }: MaintenancePageP
   const initialAssetId = readSingleSearchParam(searchParams?.assetId).slice(0, 120);
   const requestedAction = readSingleSearchParam(searchParams?.action).toLowerCase();
   const initialOpenAdd = Boolean(initialAssetId)
-    && (readSingleSearchParam(searchParams?.add) === '1' || requestedAction === 'add');
+    && (readSingleSearchParam(searchParams?.add) === '1' || requestedAction === 'add' || requestedAction === 'record' || requestedAction === 'schedule');
   const initialReturnTo = normalizeInternalReturnPath(searchParams?.returnTo);
 
   return (
     <MaintenanceClient
       initialAssetId={initialAssetId}
       initialOpenAdd={initialOpenAdd}
+      initialEntryTiming={requestedAction === 'schedule' ? 'upcoming' : requestedAction === 'record' ? 'done' : undefined}
       initialOpenChecklists={Boolean(initialAssetId) && requestedAction === 'checklists'}
       initialReturnTo={initialReturnTo}
     />
