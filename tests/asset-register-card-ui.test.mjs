@@ -293,7 +293,11 @@ test('Manage routes every asset to the focused map for location setup', () => {
   assert.doesNotMatch(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location'/);
   assert.doesNotMatch(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
   assert.match(ownerManage, /Add a GPS location\./);
-  assert.match(settingsCloseFlow, /\['status-mapped', 'manage-map-location'\]\.includes/);
+  const returnActions = settingsCloseFlow.match(/\[([^\]]+)\]\.includes\(assetModalReturnRef/)?.[1];
+  assert.ok(returnActions, 'settings close flow must check the recorded return action');
+  for (const action of ['status-mapped', 'manage-map-location', 'detail-usage']) {
+    assert.ok(returnActions.includes(`'${action}'`), `${action} must restore its origin`);
+  }
   assert.match(settingsCloseFlow, /returnOrigin\?\.origin === 'manage'/);
   assert.match(settingsCloseFlow, /openActionDialog\(latestAsset\)/);
 });
@@ -311,8 +315,14 @@ test('Manage map setup is a focused workflow without the Settings back button', 
 
   assert.match(client, /const isManageMapLocationFlow = assetModalReturnRef\.current\?\.origin === 'manage'[\s\S]*?assetModalReturnRef\.current\.action === 'manage-map-location'/);
   assert.match(settingsModal, /styles\.assetSettingsMapEntryModal/);
-  assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Advanced settings'\}/);
-  assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
+  const titleExpression = settingsModal.match(/<h3 id="asset-settings-title">\{([^}]+)\}<\/h3>/)?.[1];
+  assert.ok(titleExpression, 'settings dialog must have a contextual title');
+  const titleFor = new Function('isManageMapLocationFlow', 'assetSettingsView', 'settingsUsageMode', 'assetSettingsUsageHeading', `return (${titleExpression});`);
+  const usageHeading = mode => `Correct ${mode}`;
+  assert.equal(titleFor(true, 'location', 'hours', usageHeading), 'Map asset');
+  assert.equal(titleFor(false, 'menu', 'hours', usageHeading), 'Advanced settings');
+  assert.equal(titleFor(false, 'usage', 'hours', usageHeading), 'Correct hours');
+  assert.match(settingsModal, /assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
   assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
   const editor = readFileSync(new URL('../components/AssetLocationEditor.tsx', import.meta.url), 'utf8');
   assert.match(settingsModal, /<AssetLocationEditor/);
