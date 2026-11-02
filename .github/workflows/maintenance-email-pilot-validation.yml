@@ -3,7 +3,13 @@ on:
   pull_request:
     paths:
       - 'lib/maintenance-reminder*.ts'
-      - 'lib/maintenance-email-preferences.ts'
+      - 'lib/maintenance-email*.ts'
+      - 'lib/asset-issue-notes.ts'
+      - 'lib/asset-maintenance.ts'
+      - 'lib/scan-assets.ts'
+      - 'lib/dealer-maintenance-tracker.ts'
+      - 'app/api/maintenance-reminders/**'
+      - 'app/asset-problem/**'
       - 'lib/maintenance-asset-lifecycle.ts'
       - 'lib/email*.ts'
       - 'instrumentation.ts'
@@ -31,3 +37,4 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/owner-maintenance-email.test.mjs tests/maintenance-reminders.test.cjs tests/maintenance-email-pilot.test.cjs tests/maintenance-reminder-runtime.test.cjs
+
