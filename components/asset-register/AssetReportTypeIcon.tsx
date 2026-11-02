@@ -1,6 +1,6 @@
 export default function AssetReportTypeIcon({ className, kind }: { className?: string; kind: 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership' | 'map' }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} data-report-kind={kind} aria-hidden="true" focusable="false">
       {kind === 'valuation' ? (
         <>
           <rect x="5" y="3" width="14" height="18" rx="2" />
