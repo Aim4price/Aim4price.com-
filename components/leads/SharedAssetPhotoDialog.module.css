@@ -1,4 +1,4 @@
-.modal.modal { width: min(100%, 1120px); }
+.modal.modal { width: min(760px, var(--website-dialog-reference-width, calc(100vw - 40px))); }
 .content { display: grid; gap: 1.1rem; }
 .hint { margin: 0; color: var(--app-muted, #64746a); font-size: .9rem; line-height: 1.5; }
 .picker { display: grid; grid-template-columns: 4rem minmax(0, 1fr); align-items: center; gap: 1rem; padding: 1.2rem; border: 1px solid var(--app-info-line, #c2d3dc); border-radius: 1.15rem; background: var(--app-surface, #fff); color: var(--app-text, #12352d); text-align: left; font: inherit; cursor: pointer; box-shadow: 0 9px 20px rgba(18,55,45,.035); }
