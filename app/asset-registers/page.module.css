@@ -4535,3 +4535,18 @@
   font-weight: 650 !important;
   line-height: 1.5 !important;
 }
+
+/* Keep register details and inclusion in one inset, scrollable body. */
+.accountRegisterModal.createModalCard > .createRegisterBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.accountRegisterModal.createModalCard .createRegisterBody > .formGrid {
+  padding: 0;
+  margin: 0;
+  gap: 1rem;
+}
+.accountRegisterModal.createModalCard .createRegisterBody > label {
+  margin: 0;
+}

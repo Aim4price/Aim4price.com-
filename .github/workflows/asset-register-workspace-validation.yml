@@ -41,6 +41,7 @@ jobs:
         run: |
           node --test tests/move-asset-destination-picker.test.mjs
           node scripts/verify-move-asset-picker.cjs
+          node scripts/verify-create-register.cjs
       - name: Approved report design contract
         run: npm run test:report-design
       - name: Shared workflow regression tests
