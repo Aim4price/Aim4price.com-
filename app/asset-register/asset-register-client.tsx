@@ -1358,7 +1358,7 @@ const LIFETIME_PERCENT_SETTINGS_ERROR =
 const USAGE_READING_SETTINGS_ERROR =
   'The new usage reading cannot be lower than the reading already saved on this asset. Use Correct reading in Advanced settings to review this change.';
 const ASSET_SETTINGS_USAGE_COPY =
-  'Only correct an incorrect reading.';
+  'Enter the reading shown on your asset’s meter.';
 const USAGE_OVERRIDE_CONFIRMATION_TEXT =
   'Confirm the corrected reading below. Saving recalculates value and records the change in history.';
 
@@ -9812,6 +9812,10 @@ export default function AssetRegisterClient({
     if(target==='replacement'){openConfirmedValue(asset,'replacement');return;}
     rememberAssetModalReturn(asset, 'card', `detail-${target}`, trigger);
     setExpandedAssetId(asset.id);
+    if (target === 'usage' && isSavedAim4priceAsset(asset)) {
+      openAssetSettingsModalForAsset(asset, 'usage');
+      return;
+    }
     openUpdater(asset, target);
   }
 
@@ -9984,7 +9988,7 @@ export default function AssetRegisterClient({
 
   function closeAssetSettingsModal() {
     if (isAssetSettingsBusy) return;
-    const returnOrigin = !isAssetModalOpen && ['status-mapped', 'manage-map-location'].includes(assetModalReturnRef.current?.action ?? '')
+    const returnOrigin = !isAssetModalOpen && ['status-mapped', 'manage-map-location', 'detail-usage'].includes(assetModalReturnRef.current?.action ?? '')
       ? assetModalReturnRef.current
       : null;
     if (returnOrigin) assetModalReturnRef.current = null;
@@ -10063,6 +10067,7 @@ export default function AssetRegisterClient({
     if (isAssetSettingsBusy || !isSavedAim4priceAsset(editingAsset)) return;
     const usageMode = getAssetSettingsUsageMode(editingAsset);
     setAssetSettingsView('usage');
+    setIsAssetSettingsModalOpen(true);
     setAssetSettingsUsageInput(formatAssetSettingsUsageInput(editingAsset, usageMode));
     setAssetSettingsError('');
     clearAssetSettingsLocationFeedback();
@@ -18515,7 +18520,17 @@ export default function AssetRegisterClient({
                               onChange={() => setUsageTypeDialogOpen(true)}
                               className={updateStyles.usageTypeField}
                             />
-                            <label className={updateStyles.usageReading}>
+                            {editingAsset && isSavedAim4priceAsset(editingAsset) && !usageTypeChangeConfirmed ? (
+                              <div className={updateStyles.usageReading}>
+                                <span>{usageFieldLabel}</span>
+                                <button type="button" className={advancedStyles.readingTrigger}
+                                  disabled={['pending', 'saving', 'error'].includes(assetAutosaveState)}
+                                  onClick={openAssetSettingsUsageView} aria-label={`Update ${usageFieldLabel.toLowerCase()}`}>
+                                  <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
+                                  <AssetDetailIcon kind="usage" />
+                                </button>
+                              </div>
+                            ) : <label className={updateStyles.usageReading}>
                               <span>{usageFieldLabel}</span>
                               {showPercentUsageField ? (
                                 <input
@@ -18548,7 +18563,7 @@ export default function AssetRegisterClient({
                                   placeholder={usageFieldPlaceholder}
                                 />
                               )}
-                            </label>
+                            </label>}
                           </div>}
                           conditionControl={<AssetDetailChoiceField<AssetConditionValue>
                               label="Condition"
@@ -18983,7 +18998,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : 'Advanced settings'}</h3>
+                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : assetSettingsView === 'usage' ? assetSettingsUsageHeading(settingsUsageMode) : 'Advanced settings'}</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
@@ -18991,7 +19006,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAssetSettingsModal}
-                aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close advanced settings'}
+                aria-label={isManageMapLocationFlow ? 'Close map asset' : assetSettingsView === 'usage' ? 'Close reading editor' : 'Close advanced settings'}
                 disabled={isAssetSettingsBusy}
                 data-modal-close="true"
               >
@@ -19000,7 +19015,7 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
-              {assetSettingsView !== 'menu' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
+              {assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
                 <button
                   type="button"
                   className={styles.assetSettingsBackButton}
@@ -19173,13 +19188,12 @@ export default function AssetRegisterClient({
                 </section>
               ) : null}
 
-              {assetSettingsView === 'usage' && <AssetTrackingUsage key={editingAsset.id} assetId={editingAsset.id}/>}
 
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <h4>{assetSettingsUsageHeading(settingsUsageMode)}</h4>
-                    <p>{ASSET_SETTINGS_USAGE_COPY}</p>
+                    <h4 className={advancedStyles.readingHeading}><AssetDetailIcon kind="usage" /> {settingsUsageMode === 'percent' ? 'Lifetime used' : 'Meter reading'}</h4>
+                    <p>{settingsUsageMode === 'percent' ? 'Enter the percentage of the asset’s lifetime already used.' : ASSET_SETTINGS_USAGE_COPY}</p>
                   </div>
 
                   {settingsUsageMode !== 'none' ? (
@@ -19225,11 +19239,12 @@ export default function AssetRegisterClient({
                       <p className={styles.assetSettingsUsageHint}>Saving updates recorded usage, recalculates value and logs the correction.</p>
 
                       <div className={styles.assetSettingsActions}>
+                        <button type="button" className={styles.secondaryButton} onClick={closeAssetSettingsModal} disabled={isAssetSettingsBusy}>Cancel</button>
                         <button
                           type="button"
                           className={styles.primaryButton}
                           onClick={requestAim4priceUsageOverrideSetting}
-                          disabled={isAssetSettingsBusy}
+                          disabled={isAssetSettingsBusy || parseAssetSettingsUsageInput(settingsUsageMode, assetSettingsUsageInput) === settingsUsageCurrentValue}
                         >
                           {isSavingAssetSettings ? 'Saving...' : 'Review change'}
                         </button>
@@ -19243,7 +19258,11 @@ export default function AssetRegisterClient({
                 </section>
               ) : null}
 
-              {assetSettingsError ? <p className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
+              {assetSettingsView === 'usage' && <details className={advancedStyles.trackingDetails}>
+                <summary>Automatic usage updates</summary>
+                <AssetTrackingUsage key={editingAsset.id} assetId={editingAsset.id}/>
+              </details>}
+              {assetSettingsError ? <p role="alert" className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
             </div>
           </div>
         </div>
