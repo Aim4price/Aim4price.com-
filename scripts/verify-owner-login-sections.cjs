@@ -155,6 +155,21 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('‹ All logins');
    await click('Manage Alex');await heading('Manage access');
    await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-overview.png'});
+   if(kind==='field') {
+     for (const viewport of [{width:1366,height:768},{width:390,height:844}]) {
+       await page.setViewport(viewport);
+       assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}),'Field dialog fits width');
+       if(viewport.width>640) assert(await page.$eval('[role="dialog"]',el=>Array.from(el.querySelectorAll('*')).every(e=>!['auto','scroll'].includes(getComputedStyle(e).overflowY)||e.scrollHeight<=e.clientHeight+1)),'Field desktop overview has no internal scroll');
+       assert(await page.evaluate(()=>{
+         const reference=getComputedStyle(document.querySelector('[role="dialog"] header p'));
+         return Array.from(document.querySelectorAll('[data-field-app] button strong + span')).every(el=>{
+           const style=getComputedStyle(el);return ['fontFamily','fontSize','fontWeight','lineHeight','color'].every(key=>style[key]===reference[key]);
+         });
+       }),'Field supporting typography matches the dialog subtitle');
+       await page.screenshot({path:'.next/owner-login-validation/field-overview-'+viewport.width+'.png'});
+     }
+     await page.setViewport({width:1280,height:900});
+   }
    await card('Login details');
    if(kind!=='field') {
      assert(await page.$$eval('label input',inputs=>inputs.every(input=>{const icon=input.parentElement.querySelector('svg');return !icon||parseFloat(getComputedStyle(input).paddingLeft)>icon.getBoundingClientRect().right-input.getBoundingClientRect().left+6;})), 'Input text must clear the leading icon');

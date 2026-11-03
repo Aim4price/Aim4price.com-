@@ -697,7 +697,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function renderAccountNameSetup() {
-    if (accountName) return businessSettingsOpen ? kind === 'owner' ? (
+    if (accountName) return businessSettingsOpen ? kind !== 'dealer' ? (
       <div className={styles.businessIdentity}>
         <span>Business login ID:</span>
         <strong>{accountName}</strong>
@@ -960,7 +960,7 @@ function AppAccessManagement({ kind, configOverride }: {
   const isSelectedBusy = selectedRecord ? busyId === selectedRecord.id || deletingId === selectedRecord.id : false;
 
   return (
-    <main data-owner-app={kind === 'owner' ? '' : undefined} className={`${baseStyles.page} ${kind === 'owner' ? styles.ownerExperience : ''}`}>
+    <main data-personal-app-access={kind !== 'dealer' ? '' : undefined} data-field-app={kind === 'field' ? '' : undefined} className={`${baseStyles.page} ${kind !== 'dealer' ? styles.personalAppExperience : ''}`}>
       <AppHeader active="none" />
       <section className={baseStyles.shell}>
         <button type="button" className={baseStyles.backButton} onClick={() => window.location.assign('/account')}>
@@ -1178,7 +1178,7 @@ function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, o
 
   const choices = section === 'fuel' ? FUEL_SCOPE_OPTIONS : ASSET_SCOPE_OPTIONS;
   const scopeKey = section === 'fuel' ? 'fuelScope' : 'assetScope';
-  return <section className={ownerStyles.assetPanel} aria-label={`Field Manager ${section}`}>
+  return <section className={ownerStyles.assetPanel} data-field-section={section} aria-label={`Field Manager ${section}`}>
     <fieldset className={ownerStyles.fields} disabled={saving}>
       {section === 'permissions' ? <div className={ownerStyles.choices}>{([
         ['canRecordWork', 'Check, service and repair', 'tools'],

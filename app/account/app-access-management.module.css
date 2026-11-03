@@ -1373,26 +1373,26 @@
 .dealerSetup .passwordEye { background:transparent; border:0; box-shadow:none; min-width:2.75rem; }
 .dealerSetup .formActions button { min-width:8rem; }
 
-/* Owner App supporting copy uses the directory subtitle as its reference. */
-.ownerExperience {
+/* Owner and Field App supporting copy uses the directory subtitle as its reference. */
+.personalAppExperience {
   --access-copy-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   --access-copy-size: .88rem;
   --access-copy-weight: 620;
   --access-copy-leading: 1.5;
   --access-copy-colour: var(--app-muted, #63766f);
 }
-.ownerExperience .launcherIntro p,
-.ownerExperience .actionCopy small,
-.ownerExperience .qrCopy small,
-.ownerExperience .usernamePreview,
-.ownerExperience .loginIdentity span,
-.ownerExperience .loginHint,
-.ownerExperience .loginHelp,
-.ownerExperience .businessLoginSetup .loginExample,
-.ownerExperience .emptyState p,
-.ownerExperience .modalHeader p,
-.ownerExperience .businessIdentity p,
-.ownerExperience .businessIdentity > span {
+.personalAppExperience .launcherIntro p,
+.personalAppExperience .actionCopy small,
+.personalAppExperience .qrCopy small,
+.personalAppExperience .usernamePreview,
+.personalAppExperience .loginIdentity span,
+.personalAppExperience .loginHint,
+.personalAppExperience .loginHelp,
+.personalAppExperience .businessLoginSetup .loginExample,
+.personalAppExperience .emptyState p,
+.personalAppExperience .modalHeader p,
+.personalAppExperience .businessIdentity p,
+.personalAppExperience .businessIdentity > span {
   font-family: var(--access-copy-family);
   font-size: var(--access-copy-size);
   font-weight: var(--access-copy-weight);
@@ -1400,30 +1400,30 @@
   color: var(--access-copy-colour);
   letter-spacing: 0;
 }
-.ownerExperience .launcher { gap: 1.5rem; }
-.ownerExperience .actionButton { min-height: 9rem; }
-.ownerExperience .actionCopy strong { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem); line-height: 1.15; }
-.ownerExperience .loginStripStreamlined { grid-template-columns: minmax(22rem, 1.1fr) minmax(16rem, 1fr) auto; }
-.ownerExperience .qrHandoff { grid-template-columns: 6.5rem minmax(0, 1fr); gap: 1rem; padding: .85rem; box-shadow: none; }
-.ownerExperience .qrImageFrame { width: 6.5rem; background: #fff; border-color: #dce4df; }
-.ownerExperience .qrCopy { gap: .45rem; }
-.ownerExperience .qrCopy strong { font-size: .95rem; font-weight: 750; line-height: 1.4; }
-.ownerExperience .loginLinkCard { box-shadow: none; }
-.ownerExperience .newUserSetup .passwordEye {
+.personalAppExperience .launcher { gap: 1.5rem; }
+.personalAppExperience .actionButton { min-height: 9rem; }
+.personalAppExperience .actionCopy strong { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem); line-height: 1.15; }
+.personalAppExperience .loginStripStreamlined { grid-template-columns: minmax(22rem, 1.1fr) minmax(16rem, 1fr) auto; }
+.personalAppExperience .qrHandoff { grid-template-columns: 6.5rem minmax(0, 1fr); gap: 1rem; padding: .85rem; box-shadow: none; }
+.personalAppExperience .qrImageFrame { width: 6.5rem; background: #fff; border-color: #dce4df; }
+.personalAppExperience .qrCopy { gap: .45rem; }
+.personalAppExperience .qrCopy strong { font-size: .95rem; font-weight: 750; line-height: 1.4; }
+.personalAppExperience .loginLinkCard { box-shadow: none; }
+.personalAppExperience .newUserSetup .passwordEye {
   display: grid; place-items: center; width: 2.75rem; min-width: 2.75rem; height: 2.75rem;
   padding: .65rem; border: 0; border-radius: .7rem; background: transparent; box-shadow: none;
   color: var(--app-muted, #63766f);
 }
-.ownerExperience .passwordEye:hover { background: var(--app-success-soft, #e7f1eb); }
-.ownerExperience .passwordEye svg { opacity: 1; }
+.personalAppExperience .passwordEye:hover { background: var(--app-success-soft, #e7f1eb); }
+.personalAppExperience .passwordEye svg { opacity: 1; }
 @media (max-width: 1100px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .ownerExperience .loginStripStreamlined { grid-template-columns: minmax(0, 1fr) auto; }
-  :global(:where(html:not(:has([data-website-canvas])))) .ownerExperience .qrHandoff { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .personalAppExperience .loginStripStreamlined { grid-template-columns: minmax(0, 1fr) auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .personalAppExperience .qrHandoff { grid-column: 1 / -1; }
 }
 @media (max-width: 640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .ownerExperience .loginStripStreamlined { grid-template-columns: minmax(0, 1fr); }
-  :global(:where(html:not(:has([data-website-canvas])))) .ownerExperience .qrHandoff { grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .ownerExperience .qrImageFrame { width: 5.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .personalAppExperience .loginStripStreamlined { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .personalAppExperience .qrHandoff { grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .personalAppExperience .qrImageFrame { width: 5.5rem; }
 }
 
 .businessIdentity { display: grid; gap: .5rem; margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--app-line, #d8e5dd); border-radius: 1rem; background: var(--app-surface-soft, #f3f8f5); }
