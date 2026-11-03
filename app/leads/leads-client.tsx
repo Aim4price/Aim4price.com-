@@ -518,6 +518,14 @@ function ChevronDownIcon({ className }: IconProps) {
   );
 }
 
+function ChevronUpIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m6 15 6-6 6 6" />
+    </svg>
+  );
+}
+
 function ChevronLeftIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -1803,6 +1811,7 @@ export default function LeadsClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
+  const [expandedLeadDetailsId, setExpandedLeadDetailsId] = useState<string | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const openedCardRef = useOutsideCardDismiss(openLeadId !== null, () => setOpenLeadId(null));
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
@@ -2198,6 +2207,7 @@ export default function LeadsClient({
   async function openLead(leadToOpen: AssetLead) {
     setNotice(null);
     // Open immediately so a slow viewed-status request cannot reopen a dismissed card.
+    setExpandedLeadDetailsId(null);
     setOpenLeadId(leadToOpen.id);
     await markLeadViewed(leadToOpen);
   }
@@ -3586,6 +3596,7 @@ export default function LeadsClient({
             <div className={styles.leadStack}>
               {paginatedLeads.map((lead) => {
                 const isLeadOpen = openLeadId === lead.id;
+                const showLeadDetails = !isDealerLeadsMode || expandedLeadDetailsId === lead.id;
                 const isLeadNew = isNewLead(lead);
                 const isLeadDone = isCompletedLead(lead);
                 const isLeadActive = !isLeadNew && !isLeadDone;
@@ -3727,7 +3738,7 @@ export default function LeadsClient({
                     {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly detailsVisible={isLeadOpen}/>}
 
                     {isLeadOpen ? (
-                      <LeadAssetCard className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
+                      <LeadAssetCard expanded={showLeadDetails} className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
                         identity={<>
                             <h2>{assetTitle(lead)}</h2>
                             {dealerAppMode && !isFullRegisterLead(lead) ? (
@@ -3749,6 +3760,21 @@ export default function LeadsClient({
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
                               <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
+                              {isDealerLeadsMode ? (
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton} ${assetStyles.controlTooltip} ${styles.leadQuickActionButton}`}
+                                  onClick={() => setExpandedLeadDetailsId(current => current === lead.id ? null : lead.id)}
+                                  aria-expanded={showLeadDetails}
+                                  aria-controls={`lead-details-${lead.id}`}
+                                  data-tooltip={showLeadDetails ? 'Hide details' : 'View details'}
+                                >
+                                  {showLeadDetails
+                                    ? <ChevronUpIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />
+                                    : <ChevronDownIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />}
+                                  <span>{showLeadDetails ? 'Hide details' : 'View details'}</span>
+                                </button>
+                              ) : (
                               <button
                                 type="button" data-tooltip="Send a note or quote"
                                 className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
@@ -3758,12 +3784,15 @@ export default function LeadsClient({
                                 <NoteIcon className={assetStyles.buttonIcon} />
                                 <span>Send</span>
                               </button>
+                              )}
 
                               <LeadManageButton onClick={() => setManagedLead(lead)} />
                             </div>
                         </>}
                       >
-                        {renderLeadDetails(lead)}
+                        <div id={`lead-details-${lead.id}`} hidden={!showLeadDetails}>
+                          {showLeadDetails ? renderLeadDetails(lead) : null}
+                        </div>
                       </LeadAssetCard>
                     ) : null}
                   </article>
@@ -3857,6 +3886,12 @@ export default function LeadsClient({
                 <ManageActionGrid className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
                   {(
                     <>
+                      {isDealerLeadsMode && (
+                        <button data-manage-action="sendNote" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openNoteModal(managedLead)}>
+                          <NoteIcon className={assetStyles.buttonIcon} />
+                          <span><strong>Send note</strong><small>Send a note to the owner.</small></span>
+                        </button>
+                      )}
                       <button data-manage-action="whatsapp" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
                         <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
                         <span>

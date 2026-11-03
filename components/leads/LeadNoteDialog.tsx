@@ -19,7 +19,7 @@ export default function LeadNoteDialog({assetTitle,noteDraft,setNoteDraft,noteAt
           <section className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${styles.leadNoteModal} ${dialogStyles.surface} ${dialogStyles.flush}`} ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
             <div className={`${assetStyles.modalHeader} ${dialogStyles.header} ${styles.leadNoteHeader}`}>
               <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
-                <h3 id="lead-note-title">Send note or quote</h3>
+                <h3 id="lead-note-title">Send note</h3>
                 <p>{assetTitle}</p>
               </div>
 

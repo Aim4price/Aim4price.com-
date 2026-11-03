@@ -13,7 +13,7 @@ export default function Page(){return <SharedAssetSend assetId="10000000-0000-40
  async function click(text){await page.$$eval('button',(nodes,text)=>{const button=nodes.find(n=>n.textContent.trim()===text||n.querySelector('strong')?.textContent===text);if(!button)throw Error('Missing '+text);button.click();},text);}
  await page.setViewport({width:1440,height:900});await page.goto('http://127.0.0.1:3039/business/shared-send-validation',{waitUntil:'networkidle0',timeout:120000});
  await click('Send');await page.waitForSelector('textarea');
- assert(await page.$eval('[role=dialog]',e=>e.textContent.includes('Send note or quote')));
+ assert.equal(await page.$eval('#lead-note-title',e=>e.textContent.trim()),'Send note');
  await page.type('textarea','Please see the attached quote.');
  await page.screenshot({path:'/tmp/shared-send-modal.png'});
  await click('Send note');await page.waitForFunction(()=>document.body.textContent.includes('Note sent'));
