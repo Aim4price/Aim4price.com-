@@ -182,6 +182,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await click('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');
      await page.waitForFunction(()=>document.querySelector('input[autocomplete="new-password"]').value==='');assert.deepEqual(await patch(),{password:'new-secret-123'});
      await click('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('No assets selected.'));
+     assert(await page.$$eval('[data-field-section] button > span:first-child', els=>els.filter(e=>e.querySelector('svg')).every(e=>getComputedStyle(e).display==='none')), 'Selection buttons do not reserve space for hidden icons');
+     await page.screenshot({path:'.next/owner-login-validation/field-assets-refined.png'});
      await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
      await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
      await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-field-section] [role="status"]')?.textContent==='Changes saved.');assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
