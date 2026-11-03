@@ -1692,7 +1692,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
               </form>
             ) : null}
 
-            {(mode === "login" || mode === "signup") && <aside className={styles.sharedEntry} aria-label="Shared enquiry account access">
+            {(mode === "login" || (mode === "signup" && signupStep === 1)) && <aside className={styles.sharedEntry} aria-label="Shared enquiry account access">
               <div>
                 <strong>Received a shared enquiry link?</strong>
                 <span>Create an account to view and respond to your shared enquiry.</span>
