@@ -110,6 +110,11 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.$eval('[role=dialog] h2',el=>el.textContent),'New desktop user');
  await click('Open calendar');await page.waitForSelector('dialog[open]');await click('Today');
+ // Use a future expiry: a UTC runner's Today can already have ended in South Africa.
+ await click('Next month');
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('dialog[open] button[data-date]')).some(button=>new Date(button.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000));
+ await page.evaluate(()=>Array.from(document.querySelectorAll('dialog[open] button[data-date]')).find(button=>!button.disabled&&new Date(button.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000).click());
+ await page.waitForFunction(()=>new Date(document.querySelector('dialog[open] [aria-pressed=true]')?.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000);
  const expiry=await page.$eval('dialog[open] [aria-pressed=true]',el=>el.dataset.date);
  await page.screenshot({path:'.next/team-access-validation/expiry-calendar.png'});
  await click('Confirm date');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
