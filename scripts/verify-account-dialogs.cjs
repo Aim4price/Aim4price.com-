@@ -160,6 +160,18 @@ async function main(){
     for (const width of [1920,1440,1024,768,430]) {
       await page.setViewport({width,height:1080});
       await page.goto('http://127.0.0.1:3036/account-dialog-validation?view=leads',{waitUntil:'networkidle0',timeout:120000});
+      const summary = await page.$eval('[aria-label="Shared asset summary"]', section =>
+        [...section.querySelectorAll('button')].map(button => ({
+          title: button.querySelector('[class*="heroSummaryTitle"]').textContent,
+          count: Number(button.querySelector('strong').textContent),
+        })));
+      assert.deepEqual(summary.map(item => item.title), ['New', 'Viewed', 'All shared']);
+      assert.equal(summary[0].count + summary[1].count, summary[2].count);
+      assert.equal(await page.evaluate(() => [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Mark handled')), false);
+      await page.$eval('[aria-label="Shared asset summary"] button:nth-child(2)', button => button.click());
+      await page.waitForFunction(() => document.querySelector('[aria-label="Shared asset summary"] button:nth-child(2)')?.getAttribute('aria-pressed') === 'true');
+      assert.equal(await page.$$eval('article[class*="leadThread"]', cards => cards.length), summary[1].count);
+      await page.$eval('[aria-label="Shared asset summary"] button:nth-child(3)', button => button.click());
       await clickText('Open');
       await page.waitForSelector('[class*="expandedLeadHeader"]');
       assert.equal(await page.$eval('[aria-controls^="lead-details-"]',button=>button.getAttribute('aria-expanded')),'false','Lead details start collapsed');

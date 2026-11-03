@@ -65,7 +65,7 @@ const DealerMaintenanceScheduleModal = dynamic(
 type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking';
+type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'viewed' | 'tracking';
 type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
@@ -253,6 +253,13 @@ const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'open', label: 'Open leads' },
   { value: 'completed', label: 'Handled leads' },
   { value: 'tracking', label: 'Tracking requests' },
+];
+
+const DEALER_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
+  { value: 'all', label: 'All shared' },
+  { value: 'new', label: 'New' },
+  { value: 'viewed', label: 'Viewed' },
+  { value: 'tracking', label: 'Shared for tracking' },
 ];
 
 const ACCOUNTANT_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
@@ -1888,6 +1895,7 @@ export default function LeadsClient({
 
     return periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
+      if (statusFilter === 'viewed' && isNewLead(lead)) return false;
       if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
       if (statusFilter === 'tracking' && !isTrackingLead(lead)) return false;
@@ -1904,6 +1912,8 @@ export default function LeadsClient({
     () => summaryLeads.filter((lead) => isNewLead(lead)).length,
     [summaryLeads],
   );
+  // Includes previously handled shares: viewing is independent of work status.
+  const viewedLeadCount = summaryLeads.length - newLeadCount;
   const activeLeadCount = useMemo(
     () => summaryLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
     [summaryLeads],
@@ -1927,15 +1937,16 @@ export default function LeadsClient({
 
     if (selectedMonth && selectedMonth.value !== 'all') labels.push(selectedMonth.label);
     if (yearFilter !== 'all') labels.push(yearFilter);
-    if (statusFilter === 'new') labels.push('New leads');
+    if (statusFilter === 'new') labels.push(isDealerLeadsMode ? 'New' : 'New leads');
+    if (statusFilter === 'viewed') labels.push('Viewed');
     if (statusFilter === 'open') labels.push('Open leads');
     if (statusFilter === 'completed') labels.push('Handled leads');
-    if (statusFilter === 'tracking') labels.push('Tracking requests');
+    if (statusFilter === 'tracking') labels.push(isDealerLeadsMode ? 'Shared for tracking' : 'Tracking requests');
 
     if (!labels.length) return 'Filter';
     if (labels.length === 1) return labels[0];
     return `${labels.length} filters`;
-  }, [monthFilter, statusFilter, yearFilter]);
+  }, [monthFilter, statusFilter, yearFilter, isDealerLeadsMode]);
 
   const loadData = useCallback(async (includeIdentity = true, background = false): Promise<boolean> => {
     if (!background) setIsLoading(true);
@@ -3474,7 +3485,7 @@ export default function LeadsClient({
           )}
 
           {useDealerWorkspaceStyles ? (
-            <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
+            <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Shared asset summary">
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === 'new' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('new')} aria-pressed={statusFilter === 'new'}>
                 <span className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
@@ -3483,31 +3494,31 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests not yet opened.</small>
+                  <small className={styles.leadOwnerSummaryText}>Shared assets not yet viewed.</small>
                 </span>
               </button>
 
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'open' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('open')} aria-pressed={statusFilter === 'open'}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'viewed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('viewed')} aria-pressed={statusFilter === 'viewed'}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Open</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Viewed</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{viewedLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests being actioned.</small>
+                  <small className={styles.leadOwnerSummaryText}>Shared assets you have viewed.</small>
                 </span>
               </button>
 
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'all' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Handled</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>All shared</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{summaryLeads.length}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests that need no further action.</small>
+                  <small className={styles.leadOwnerSummaryText}>All assets shared with you.</small>
                 </span>
               </button>
             </section>
@@ -3584,7 +3595,7 @@ export default function LeadsClient({
             <div className={`${styles.leadResultSummary} ${useDealerWorkspaceStyles ? styles.leadResultSummaryDealer : ''}`}>
               <span>Showing</span>
               <strong>{filteredLeads.length}</strong>
-              <span>of {periodLeads.length} leads for the selected period</span>
+              <span>of {periodLeads.length} {isDealerLeadsMode ? 'shared assets' : 'leads'} for the selected period</span>
             </div>
           ) : null}
 
@@ -3598,7 +3609,7 @@ export default function LeadsClient({
                 const isLeadOpen = openLeadId === lead.id;
                 const showLeadDetails = !isDealerLeadsMode || expandedLeadDetailsId === lead.id;
                 const isLeadNew = isNewLead(lead);
-                const isLeadDone = isCompletedLead(lead);
+                const isLeadDone = !isDealerLeadsMode && isCompletedLead(lead);
                 const isLeadActive = !isLeadNew && !isLeadDone;
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
@@ -3693,7 +3704,7 @@ export default function LeadsClient({
                               </>
                             ) : (
                               <>
-                                <button
+                                {!isDealerLeadsMode ? <button
                                   type="button" data-tooltip={isLeadDone ? 'Return to open' : 'Mark handled'}
                                   className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
                                   onClick={() => void toggleLeadDone(lead)}
@@ -3702,7 +3713,7 @@ export default function LeadsClient({
                                 >
                                   <CheckIcon className={assetStyles.buttonIcon} />
                                   <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
-                                </button>
+                                </button> : null}
 
                                 {isLeadOpen ? (
                                   <>
@@ -3869,7 +3880,7 @@ export default function LeadsClient({
           <FilterQuestion
             label="Which status?"
             value={draftLeadFilters.status}
-            options={STATUS_FILTER_OPTIONS}
+            options={isDealerLeadsMode ? DEALER_STATUS_FILTER_OPTIONS : STATUS_FILTER_OPTIONS}
             onChange={(value) => setDraftLeadFilters((current) => ({ ...current, status: value as LeadStatusFilter }))}
           />
         </FilterFlow>
