@@ -144,7 +144,7 @@ const runtime =
               createdAtIso: "2026-11-02T10:00:00Z",
               notedAtIso: null,
             });
-          else window.items[0].notedAtIso = "2026-11-02T12:00:00Z";
+          else { window.items[0].notedAtIso = "2026-11-02T12:00:00Z"; window.items[0].resolutionNote = body.resolutionNote; }
         }
         return { ok: true, json: async () => ({ items: window.items }) };
       };
@@ -195,7 +195,7 @@ const runtime =
     );
     await page.evaluate(() => (window.failSave = false));
     await click("Save problem");
-    await wait("1 open");
+    await wait("Open problem");
     assert.equal(
       await page.evaluate(() => window.requests[0].requestId),
       await page.evaluate(() => window.requests[1].requestId),
@@ -205,12 +205,12 @@ const runtime =
     await wait("Has this problem been fixed?");
     await page.screenshot({ path: "/tmp/problems-resolve.png" });
     await click("Cancel");
-    await wait("1 open");
+    await wait("Open problem");
     await click("Mark resolved");
     await wait("Has this problem been fixed?");
     await page.type("textarea", "Replaced coupling seal.");
     await click("Mark resolved");
-    await wait("0 open · 1 resolved");
+    await wait("Resolved problem");
     assert.equal(await page.evaluate(() => window.requests.at(-1).resolutionNote), "Replaced coupling seal.");
     assert.equal(
       await page.evaluate(() => window.requests.at(-1).confirmed),
@@ -224,8 +224,14 @@ const runtime =
       ),
       false,
     );
+    await wait("Replaced coupling seal.");
+    await page.screenshot({ path: "/tmp/problems-resolved.png" });
+    await click("Open 0");
+    await wait("No open problems");
+    await click("Resolved 1");
+    await wait("Replaced coupling seal.");
     await page.evaluate(() => window.render({ canWrite: false }));
-    await wait("0 open · 1 resolved");
+    await wait("Resolved problem");
     assert.equal(
       await page.evaluate(() =>
         [...document.querySelectorAll("button")].some(

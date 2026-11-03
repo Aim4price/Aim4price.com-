@@ -23,6 +23,7 @@ export default function SharedProblems({
 }) {
   const [items, setItems] = useState<AssetIssueNoteStatus[]>([]),
     [step, setStep] = useState<"choices" | "log" | "list">("choices"),
+    [problemView, setProblemView] = useState<"open" | "resolved">("open"),
     [note, setNote] = useState(""),
     [resolutionNote, setResolutionNote] = useState(""),
     [error, setError] = useState(""),
@@ -79,6 +80,7 @@ export default function SharedProblems({
       const data = await response.json();
       if (!response.ok) throw Error(data.error || "Could not save problem.");
       setItems(data.items || []);
+      setProblemView(resolve ? "resolved" : "open");
       setResolve(null);
       setNote("");
       setRequestId(crypto.randomUUID());
@@ -91,6 +93,8 @@ export default function SharedProblems({
     }
   }
   const openProblems = items.filter((item) => !item.notedAtIso);
+  const resolvedProblems = items.filter((item) => item.notedAtIso);
+  const visibleProblems = problemView === "open" ? openProblems : resolvedProblems;
   const startResolve = (problem: AssetIssueNoteStatus) => {
     setRequestId(crypto.randomUUID());
     setResolutionNote("");
@@ -110,12 +114,12 @@ export default function SharedProblems({
   const renderProblems = (problems: AssetIssueNoteStatus[]) => (
     <div className={ui.list}>
       {problems.map((problem) => (
-        <article key={problem.id} className={ui.problem}>
+        <article key={problem.id} className={`${ui.problem} ${ui.listProblem} ${problem.notedAtIso ? ui.resolvedProblem : ui.openProblem}`}>
           <header className={ui.problemHeader}>
-            <strong>{problem.notedAtIso ? "Resolved problem" : "Reported problem"}</strong>
-            <span className={problem.notedAtIso ? ui.resolved : ui.open}>
-              {problem.notedAtIso ? "Resolved" : "Open"}
+            <span className={ui.statusIcon}>
+              <AssetActionIcon action={problem.notedAtIso ? "maintenanceSchedules" : "loggedProblems"} />
             </span>
+            <strong>{problem.notedAtIso ? "Resolved problem" : "Open problem"}</strong>
           </header>
           <p className={ui.note}>{problem.note}</p>
           {!!problem.photoUrls?.length && <div className={ui.photos}>{problem.photoUrls.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt={"Problem attachment " + (index + 1)} loading="lazy" /></a>)}</div>}
@@ -355,19 +359,23 @@ export default function SharedProblems({
               <p className={ui.copy}>Loading problems…</p>
             </div>
           ) : items.length ? (
-            <>
-              <p className={ui.copy}>
-                {openProblems.length} open ·{" "}
-                {items.length - openProblems.length} resolved
-              </p>
-              {renderProblems(openProblems)}
-              {items.some((item) => item.notedAtIso) && (
-                <details className={ui.history}>
-                  <summary>Resolved history · {items.length - openProblems.length}</summary>
-                  {renderProblems(items.filter((item) => item.notedAtIso))}
-                </details>
+            <div className={ui.problemBrowser}>
+              <div className={ui.filters} role="group" aria-label="Problem status">
+                <button type="button" aria-pressed={problemView === "open"} onClick={() => setProblemView("open")}>
+                  Open <span>{openProblems.length}</span>
+                </button>
+                <button type="button" aria-pressed={problemView === "resolved"} onClick={() => setProblemView("resolved")}>
+                  Resolved <span>{resolvedProblems.length}</span>
+                </button>
+              </div>
+              {visibleProblems.length ? renderProblems(visibleProblems) : (
+                <div className={ui.empty} role="status">
+                  <span className={ui.icon}><AssetActionIcon action="maintenanceSchedules" /></span>
+                  <h3>{problemView === "open" ? "No open problems" : "No resolved problems yet"}</h3>
+                  <p className={ui.copy}>{problemView === "open" ? "All logged problems have been resolved." : "Problems you resolve will appear here."}</p>
+                </div>
               )}
-            </>
+            </div>
           ) : !error ? (
             <div className={ui.empty}>
               <span className={ui.icon}>
