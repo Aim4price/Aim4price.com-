@@ -1693,8 +1693,8 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
             ) : null}
 
             {(mode === "login" || mode === "signup") && <aside className={styles.sharedEntry}>
-              <div><strong>Received a shared enquiry link?</strong><span>Start here to access your shared enquiry.</span></div>
-              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Click here to continue <span aria-hidden="true">→</span></Link>
+              <div><strong>Received a shared enquiry?</strong><span>Set up access to view and respond to the enquiry.</span></div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Access shared enquiry</Link>
             </aside>}
 
             <p className={styles.footerText}>

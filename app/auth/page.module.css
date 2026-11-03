@@ -877,11 +877,11 @@
 }
 
 /* A single, clear route for recipients on both authentication tabs. */
-.sharedEntry { display:grid; gap:1rem; margin-top:.5rem; padding:1.2rem; border:1px solid #c8dfd3; border-radius:1rem; background:#f1f7f3; color:#24543e; }
+.sharedEntry { display:grid; gap:.85rem; margin-top:.5rem; padding:1rem 1.15rem; border:1px solid #c8dfd3; border-radius:1rem; background:linear-gradient(120deg,#f1f7f3,#f8fbf9); color:#24543e; }
 .sharedEntry div { display:grid; gap:.35rem; }
 .sharedEntry strong { font-size:1rem; line-height:1.4; }
-.sharedEntry div span { font-size:.85rem; color:#61756a; line-height:1.5; }
-.sharedEntry a { display:flex; align-items:center; justify-content:space-between; gap:1rem; min-height:3rem; padding:.75rem 1rem; border:1px solid #b7d2c3; border-radius:.75rem; background:#fff; color:#174d3e; text-decoration:none; font-size:.9rem; font-weight:800; }
+.sharedEntry div span { font-size:.85rem; color:#4d6559; line-height:1.5; }
+.sharedEntry a { display:flex; align-items:center; justify-content:center; gap:1rem; min-height:3rem; padding:.75rem 1rem; border:1px solid #b7d2c3; border-radius:.75rem; background:#fff; color:#174d3e; text-decoration:none; font-size:.9rem; font-weight:800; }
 .sharedEntry a:hover { background:#e7f2ec; border-color:#739e86; }
 .sharedEntry a:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
 
