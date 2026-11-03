@@ -1,3 +1,4 @@
+import { listDealerProblemNotifications } from './dealer-problem-notifications';
 import {
   listDealerMaintenanceNotifications,
   type DealerMaintenanceNotification,
@@ -13,7 +14,7 @@ export type DealerMaintenanceViewerNotification = {
   accessId: string;
   assetId: string;
   maintenanceRecordId: string;
-  status: DealerMaintenanceNotification['status'] | 'assigned_problem';
+  status: DealerMaintenanceNotification['status'] | 'assigned_problem' | 'reported_problem';
   title: string;
   body: string;
   isRead: boolean;
@@ -128,16 +129,18 @@ export async function listDealerMaintenanceNotificationsForViewer(input: {
   viewerKey: string;
   staffId?: string | null;
 }): Promise<DealerMaintenanceViewerNotification[]> {
-  const [maintenanceNotifications, assignedProblemNotifications] = await Promise.all([
+  const [maintenanceNotifications, assignedProblemNotifications, reportedProblemNotifications] = await Promise.all([
     listDealerMaintenanceNotifications(input.dealerUserId),
     listAssignedProblemNotifications({
       dealerUserId: input.dealerUserId,
       staffId: input.staffId,
     }),
+    listDealerProblemNotifications(input.dealerUserId),
   ]);
 
   const notifications: DealerMaintenanceViewerNotification[] = [
     ...assignedProblemNotifications,
+    ...reportedProblemNotifications,
     ...maintenanceNotifications.map((notification) => ({
       ...notification,
       assignedToViewer: false,
@@ -179,4 +182,5 @@ export async function markDealerMaintenanceNotificationsReadForViewer(input: {
     allowedIds.map(eventKey),
   );
 }
+
 
