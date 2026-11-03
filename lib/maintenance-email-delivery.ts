@@ -25,13 +25,47 @@ export function ensureAssetEmailDelivery(){return ready??=getDb().query(`
  CREATE INDEX IF NOT EXISTS asset_email_events_recent ON asset_email_events(created_at);
  `).then(()=>{}).catch(e=>{ready=undefined;throw e;});}
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export function assetActivityEmail(input:{kind:AssetEmailKind;assetTitle:string;description:string;actor:string;when:string;url:string;photoUrl?:string;preferences:{asset:string;account:string;all:string}}):Message{
- const title=input.kind==='problem_logged'?'Problem reported':input.kind==='problem_resolved'?'Problem resolved':'Maintenance completed';
+export function assetActivityEmail(input:{kind:AssetEmailKind;assetTitle:string;description:string;actor:string;when:string;url:string;photoUrl?:string;resolutionNote?:string;preferences:{asset:string;account:string;all:string}}):Message{
+ const reported=input.kind==='problem_logged';
+ const resolved=input.kind==='problem_resolved';
+ const title=reported?'Problem reported':resolved?'Problem resolved':'Maintenance completed';
  const subject=`${title}: ${input.assetTitle}`;
- const details=`${input.actor} · ${input.when}`;
- const action=input.kind.startsWith('problem_')?'View problem':'View maintenance';
+ const action=reported||resolved?'View problem':'View maintenance';
+ const accent=reported?'#a3262e':'#1a654d';
+ const tint=reported?'#fff2f2':'#edf7f1';
+ const border=reported?'#efc9cc':'#cce3d5';
+ const intro=reported?'A new problem has been reported for this asset.':resolved?'This problem has been marked as resolved.':'Completed work has been recorded for this asset.';
+ const noteLabel=resolved?'Original problem':reported?'Reported problem':'Work completed';
+ const resolution=resolved?input.resolutionNote?.trim():'';
+ const rows:[string,string][]=[[reported?'Reported by':resolved?'Resolved by':'Completed by',input.actor],[reported?'Reported on':resolved?'Resolved on':'Completed on',input.when]];
  const links=`Stop these updates for this asset: ${input.preferences.asset}\nStop these updates for your account: ${input.preferences.account}\nStop all asset updates for this asset: ${input.preferences.all}`;
- return {subject,text:`${subject}\n${details}\n\n${input.description}\n\n${action}: ${input.url}\n\n${links}\nYour records stay saved. These links also let you turn emails back on.`,html:`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f2f6f3;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK}"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="padding:24px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:auto;background:white;border:1px solid #d7e5dc;border-radius:12px">${buildEmailBrandHeader(new URL(AIM4PRICE_EMAIL_LOGO_PATH,getSiteOrigin()).toString())}<tr><td style="padding:24px"><p style="color:#a65315;font-weight:700;margin:0 0 12px">${title}</p><h1 style="font-size:25px;margin:0 0 12px">${escape(input.assetTitle)}</h1><p style="font-size:14px;color:#486357">${escape(details)}</p><p style="padding:18px;background:#fff8ef;border:1px solid #f0dcc3;border-radius:10px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere">${escape(input.description)}</p>${input.photoUrl?`<img src="${escape(input.photoUrl)}" alt="Photo attached to this problem" style="display:block;width:100%;max-width:552px;height:auto;border-radius:10px;margin:16px 0">`:""}<a href="${escape(input.url)}" style="display:block;padding:16px;background:#1a654d;color:white;text-align:center;text-decoration:none;border-radius:8px;font-weight:700">${action}</a><p style="font-size:14px;line-height:1.7;margin-top:24px"><a style="color:#1a654d" href="${escape(input.preferences.asset)}">Stop these updates for this asset</a><br><a style="color:#1a654d" href="${escape(input.preferences.account)}">Stop these updates for my account</a><br><a style="color:#1a654d" href="${escape(input.preferences.all)}">Stop all asset updates for this asset</a></p><p style="font-size:14px;color:#486357">Your records stay saved. You can turn emails back on using these links.</p></td></tr></table></td></tr></table></body></html>`};
+ const text=`${subject}\n${intro}\n\n${noteLabel}:\n${input.description}${resolution?`\n\nResolution note:\n${resolution}`:''}\n\n${action}: ${input.url}\n\n${rows.map(([label,value])=>`${label}: ${value}`).join('\n')}\n\n${links}\nYour records stay saved. These links also let you turn emails back on.`;
+ const note=(label:string,value:string)=>`<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 14px;background:${tint};border:1px solid ${border};border-radius:10px"><tr><td style="padding:18px;font-family:${AIM4PRICE_EMAIL_FONT_STACK}"><p style="margin:0 0 8px;font-size:14px;line-height:1.5;font-weight:700;color:${accent}">${label}</p><p style="margin:0;color:#173c32;font-size:16px;line-height:1.6;overflow-wrap:anywhere;word-break:break-word">${escape(value).replace(/\r?\n/g,'<br>')}</p></td></tr></table>`;
+ const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media only screen and (max-width:620px){.activity-body{padding:20px 18px!important}.activity-title{font-size:23px!important}}</style></head>
+ <body style="margin:0;background:#f2f6f3;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK}">
+ <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:24px 12px">
+ <!--[if mso]><table role="presentation" width="600"><tr><td><![endif]-->
+ <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:white;border:1px solid #d7e5dc;border-radius:12px">
+ ${buildEmailBrandHeader(new URL(AIM4PRICE_EMAIL_LOGO_PATH,getSiteOrigin()).toString())}
+ <tr><td class="activity-body" style="padding:22px 30px;font-family:${AIM4PRICE_EMAIL_FONT_STACK}">
+ <p style="margin:0 0 12px"><span style="display:inline-block;padding:6px 12px;border-radius:20px;background:${tint};color:${accent};font-size:14px;font-weight:700;line-height:20px">${title}</span></p>
+ <h1 class="activity-title" style="margin:0 0 8px;color:#173c32;font-size:26px;line-height:1.3;font-weight:700;overflow-wrap:anywhere">${escape(input.assetTitle)}</h1>
+ <p style="margin:0 0 20px;font-size:16px;line-height:1.5;color:#486357">${intro}</p>
+ ${note(noteLabel,input.description)}
+ ${resolution?note('Resolution note',resolution):''}
+ <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:16px 0 18px"><tr><td align="center" bgcolor="#1a654d" style="border-radius:6px;mso-padding-alt:15px 24px"><a href="${escape(input.url)}" style="display:block;padding:15px 24px;color:white;text-decoration:none;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:15px;font-weight:bold">${action}</a></td></tr></table>
+ <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">${rows.map(([label,value])=>`<tr><th scope="row" align="left" valign="top" style="padding:10px 12px 10px 0;border-bottom:1px solid #e2ebe5;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:14px;color:#486357;font-weight:500;width:42%">${label}</th><td style="padding:10px 0;border-bottom:1px solid #e2ebe5;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:15px;color:#173c32;font-weight:600;line-height:1.5;overflow-wrap:anywhere">${escape(value)}</td></tr>`).join('')}</table>
+ ${input.photoUrl?`<p style="margin:20px 0 10px;font-size:14px;font-weight:700;color:#486357">Attached photo</p><img src="${escape(input.photoUrl)}" alt="Photo attached to this problem" width="538" style="display:block;width:100%;max-width:538px;height:auto;border-radius:10px">`:''}
+ <p style="margin:18px 0 0;color:#486357;font-size:14px;line-height:1.6">Button not working? <a href="${escape(input.url)}" style="color:#1a654d">${action} in Aim4price</a>.</p>
+ <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e2ebe5">
+ <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#173c32">Email preferences</p>
+ <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.asset)}">Stop these updates for this asset</a></p>
+ <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.account)}">Stop these updates for my account</a></p>
+ <p style="margin:0 0 10px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.all)}">Stop all asset updates for this asset</a></p>
+ <p style="margin:0;font-size:14px;line-height:1.6;color:#486357">Your records stay saved. You can turn emails back on using these links.</p>
+ </div></td></tr></table><!--[if mso]></td></tr></table><![endif]-->
+ </td></tr></table></body></html>`;
+ return {subject,text,html};
 }
 // Canonical history records are committed with the work. Read transitions, not ordinary edits.
 export async function collectAssetEmailEvents(since:string){
@@ -96,7 +130,7 @@ async function sendEvent(e:Event,test:boolean,since:string){
    const photos=e.kind.startsWith('problem_')?(await getDb().query("SELECT photo_urls FROM asset_scan_events WHERE id=$1::uuid AND asset_id=$2::uuid",[e.record_id,e.asset_id])).rows[0]?.photo_urls:null;
    const photo=Array.isArray(photos)?photos.find((p:unknown)=>typeof p==='string'&&(p.startsWith('/')&&!p.startsWith('//')||p.startsWith('https://'))):undefined;
    const photoUrl=photo?new URL(photo,getSiteOrigin()).toString():undefined;
-   message=assetActivityEmail({kind:e.kind,assetTitle:asset.title,description,photoUrl,actor:e.actor_name||'An asset team member',when:new Date(e.created_at).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'}),url:getSiteOrigin()+(e.kind==='maintenance_completed'?reminderHref(e.record_id):`/asset-problem/${encodeURIComponent(e.record_id)}`),preferences});
+   message=assetActivityEmail({kind:e.kind,assetTitle:asset.title,description,photoUrl,resolutionNote:'note' in record?record.resolutionNote:undefined,actor:e.actor_name||'An asset team member',when:new Date(e.created_at).toLocaleString('en-GB',{timeZone:'Africa/Johannesburg',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})+' SAST',url:getSiteOrigin()+(e.kind==='maintenance_completed'?reminderHref(e.record_id):`/asset-problem/${encodeURIComponent(e.record_id)}`),preferences});
   }
   const claim=await getDb().query(CLAIM_ASSET_EMAIL_SQL,[e.event_key,user.id,JSON.stringify({email:user.email,...message})]);if(!claim.rows.length)continue;
   try{
