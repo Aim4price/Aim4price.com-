@@ -138,3 +138,42 @@
 .dialog .toolbar:has(> button:nth-child(2)) { justify-content:space-between; }
 .dialog .summary > div { gap:.6rem; padding:1.1rem; }
 .dialog .menuActions { gap:.8rem; }
+
+/* Compact value workflow: pricing blue, clear labels and bounded history pages. */
+.dialog.dialog.dialog.dialog.dialog { width:min(68rem,var(--website-dialog-reference-width,100%)) !important; }
+.dialog.dialog.dialog.dialog.dialog > header { padding:1.25rem 1.5rem !important; }
+.dialog.dialog.dialog.dialog.dialog > div { padding:1.25rem 1.5rem !important; }
+.dialog .body { gap:.85rem; color:var(--app-text,#193e32); }
+.dialog .summary { gap:.8rem; }
+.dialog .summary > div { padding:.85rem 1rem; gap:.35rem; background:var(--app-surface-soft,#f0f7ff); border-color:var(--app-line,#c6ddf4); }
+.dialog .summary strong { font-size:1.55rem; }
+.dialog .summary span { color:var(--app-text,#31566c); }
+.dialog .toolbar { padding:0; }
+.dialog .toolbar .utilityButton { min-height:2.5rem; padding:.45rem .8rem; }
+.dialog .menuActions { gap:.75rem; }
+.dialog .menuActions button { min-height:4.5rem; padding:.85rem !important; background:var(--app-surface-soft,#f0f7ff); border-color:var(--app-line,#c6ddf4); color:var(--app-text,#234f73); }
+.dialog .menuActions button:nth-child(3) { background:var(--app-surface-soft,#f3f5f6); border-color:var(--app-line,#d9e0e3); color:var(--app-text,#394c58); }
+.dialog .valueIcon { background:var(--app-surface,#e6f0fa); color:var(--app-text,#235b89); }
+.dialog .valueIcon[data-kind='history'] { background:var(--app-surface,#e9edef); color:var(--app-muted,#52616b); }
+.dialog .menuActions small,.dialog .note,.dialog .empty p { color:var(--app-muted,#4d635c); }
+.dialog .field { gap:.4rem; }
+.dialog .field input,.dialog .field textarea { border-color:var(--app-line,#c6d9e7); background:var(--app-surface,#f7fafc); color:var(--app-text,#193e32); }
+.dialog .field textarea { resize:none; }
+.dialog .replacementVat { display:flex; }
+.dialog .replacementVat button { min-height:2.5rem; padding:.45rem .75rem; }
+.dialog .request { padding:.85rem; gap:.4rem; }
+.dialog .request p { line-height:1.4; }
+.dialog .empty { padding:1.4rem 1rem; background:var(--app-surface-soft,#f5f8fa); border-color:var(--app-line,#c6d9e7); }
+.pagination { display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+.pagination span { font-size:.85rem; font-weight:650; }
+.dialog .body[data-value-view='history'] .summary { display:none; }
+@media(max-width:600px){
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog > header,
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog.dialog.dialog.dialog > div { padding:1rem !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog .summary > div { padding:.65rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog .summary strong { font-size:1.15rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .dialog .summary span { font-size:.75rem; }
+}
+
+.dialog .toolbar:has(> button:only-child:not(.refreshButton)) { justify-content:flex-start; }
