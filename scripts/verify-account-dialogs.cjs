@@ -162,6 +162,11 @@ async function main(){
       await page.goto('http://127.0.0.1:3036/account-dialog-validation?view=leads',{waitUntil:'networkidle0',timeout:120000});
       await clickText('Open');
       await page.waitForSelector('[class*="expandedLeadHeader"]');
+      assert.equal(await page.$eval('[aria-controls^="lead-details-"]',button=>button.getAttribute('aria-expanded')),'false','Lead details start collapsed');
+      assert.equal(await page.$eval('[id^="lead-details-"]',panel=>panel.hidden),true);
+      await clickText('View details');
+      await page.waitForFunction(()=>document.querySelector('[aria-controls^="lead-details-"]')?.getAttribute('aria-expanded')==='true');
+      assert.equal(await page.$eval('[id^="lead-details-"]',panel=>panel.hidden),false);
       await page.evaluate(()=>document.fonts.ready);
       const result=await page.evaluate(()=>{
         const card=document.querySelector('[class*="leadAssetCard"]');
@@ -179,8 +184,16 @@ async function main(){
       assert.deepEqual(result.clipped,[],`Lead content clipped at ${width}`);
       assert.equal(result.overlaps,false,`Lead actions overlap at ${width}`);
       assert.equal(result.contained,true,`Lead card exceeds its outer card at ${width}`);
-      assert.deepEqual(result.actions,['Share','Send','Manage'],'Share, Send and Manage must all fit');
-      console.log(`PASS expanded desktop lead at ${width}px`);
+      assert.deepEqual(result.actions,['Share','Hide details','Manage'],'Share, Hide details and Manage must all fit');
+      await clickText('Hide details');
+      await page.waitForFunction(()=>document.querySelector('[aria-controls^="lead-details-"]')?.getAttribute('aria-expanded')==='false');
+      await page.click('[class*="leadAssetCard"] [aria-label="Manage lead"]');
+      await page.waitForSelector('[data-manage-action="sendNote"]');
+      await page.click('[data-manage-action="sendNote"]');
+      await page.waitForSelector('#lead-note-title');
+      assert.equal(await page.$eval('#lead-note-title',node=>node.textContent.trim()),'Send note');
+      await page.keyboard.press('Escape');
+      console.log(`PASS dealer details toggle and Manage Send note at ${width}px`);
     }
     assert.deepEqual(errors,[],'Browser runtime errors');
     assert.deepEqual(mutations,[],'Read-only fixture review must not submit mutations');
