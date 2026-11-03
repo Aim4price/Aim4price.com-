@@ -170,3 +170,19 @@
 .option:not(.optionActive) .check {
   visibility: hidden;
 }
+
+/* A quiet, readable access selector for Owner App users. */
+.ownerSelect .label { font-size: .9rem; font-weight: 650; letter-spacing: 0; text-transform: none; color: var(--app-text, #40564e); }
+.ownerSelect .button { min-height: 3.35rem; border-radius: .9rem; background: var(--app-surface-soft, #f3f8f5); box-shadow: none; }
+.ownerSelect .button:hover { transform: none; }
+.ownerSelect .buttonCopy strong,
+.ownerSelect .optionCopy strong { font-size: 1rem; font-weight: 700; letter-spacing: 0; line-height: 1.4; }
+.ownerSelect .selectedDescription,
+.ownerSelect .optionCopy small {
+  margin: 0; font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: .88rem; font-weight: 620; line-height: 1.5; color: var(--app-muted, #63766f);
+  white-space: normal; overflow-wrap: anywhere;
+}
+.ownerSelect.menu { padding: .5rem; gap: .4rem; background: var(--app-surface, #fff); }
+.ownerSelect .option { padding: .8rem; }
+.ownerSelect .optionCopy { gap: .3rem; }

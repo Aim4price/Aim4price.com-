@@ -19,6 +19,7 @@ type FriendlySelectProps<T extends string> = {
   onChange: (value: T) => void;
   disabled?: boolean;
   className?: string;
+  appearance?: 'default' | 'owner';
 };
 
 export default function FriendlySelect<T extends string>({
@@ -28,6 +29,7 @@ export default function FriendlySelect<T extends string>({
   onChange,
   disabled = false,
   className = '',
+  appearance = 'default',
 }: FriendlySelectProps<T>) {
   const [open, setOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
@@ -56,11 +58,16 @@ export default function FriendlySelect<T extends string>({
       const viewportTop = websiteVisibleViewport().top;
       const viewportLeft = websiteVisibleViewport().left;
       const width = Math.min(Math.max(rect.width, 260), viewportWidth - edge * 2);
-      const estimatedHeight = Math.min(320, Math.max(110, options.length * 72 + 12));
+      const estimatedHeight = appearance === 'owner' && menuRef.current
+        ? menuRef.current.scrollHeight + 2
+        : Math.min(320, Math.max(110, options.length * 72 + 12));
       const below = viewportTop + viewportHeight - rect.bottom - edge - gap;
       const above = rect.top - viewportTop - edge - gap;
-      const openAbove = below < Math.min(estimatedHeight, 190) && above > below;
-      const maxHeight = Math.max(110, Math.min(320, openAbove ? above : below));
+      const openAbove = below < (appearance === 'owner' ? estimatedHeight : Math.min(estimatedHeight, 190)) && above > below;
+      const availableHeight = openAbove ? above : below;
+      const maxHeight = appearance === 'owner'
+        ? Math.max(0, availableHeight)
+        : Math.max(110, Math.min(320, availableHeight));
       const left = Math.min(
         Math.max(rect.left, viewportLeft + edge),
         viewportLeft + viewportWidth - width - edge,
@@ -87,6 +94,7 @@ export default function FriendlySelect<T extends string>({
     }
 
     positionMenu();
+    const frame = requestAnimationFrame(positionMenu);
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', positionMenu);
@@ -96,6 +104,7 @@ export default function FriendlySelect<T extends string>({
     window.visualViewport?.addEventListener('scroll', positionMenu);
 
     return () => {
+      cancelAnimationFrame(frame);
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', positionMenu);
@@ -104,13 +113,13 @@ export default function FriendlySelect<T extends string>({
       window.visualViewport?.removeEventListener('resize', positionMenu);
       window.visualViewport?.removeEventListener('scroll', positionMenu);
     };
-  }, [open, options.length]);
+  }, [open, options.length, appearance, Boolean(menuStyle)]);
 
   const menu = (
     <div
       ref={menuRef}
       id={menuId}
-      className={styles.menu}
+      className={`${styles.menu} ${appearance === 'owner' ? styles.ownerSelect : ''}`}
       data-dropdown-overlay-portal="true"
       role="listbox"
       aria-labelledby={labelId}
@@ -143,7 +152,7 @@ export default function FriendlySelect<T extends string>({
   );
 
   return (
-    <div ref={rootRef} className={`${styles.root} ${className}`}>
+    <div ref={rootRef} className={`${styles.root} ${className} ${appearance === 'owner' ? styles.ownerSelect : ''}`}>
       <span id={labelId} className={styles.label}>{label}</span>
       <button
         ref={buttonRef}
@@ -151,18 +160,21 @@ export default function FriendlySelect<T extends string>({
         className={`${styles.button} ${open ? styles.buttonOpen : ''}`}
         onClick={() => setOpen((current) => !current)}
         disabled={disabled}
+        aria-labelledby={labelId}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
       >
         <span className={styles.buttonCopy}>
           <strong>{selected?.label ?? 'Select an option'}</strong>
-          {selected?.description ? <small>{selected.description}</small> : null}
+          {appearance !== 'owner' && selected?.description ? <small>{selected.description}</small> : null}
         </span>
         <svg viewBox="0 0 24 24" className={styles.chevron} aria-hidden="true">
           <path d="m7 10 5 5 5-5" />
         </svg>
       </button>
+
+      {appearance === 'owner' && selected?.description ? <p className={styles.selectedDescription}>{selected.description}</p> : null}
 
       {open && menuStyle && typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
     </div>

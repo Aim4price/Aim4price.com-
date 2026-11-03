@@ -72,8 +72,34 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function fill(label,value){const input=await page.evaluateHandle(label=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.startsWith(label))?.querySelector('input'),label);await input.click({clickCount:3});await input.press('Backspace');await input.type(value);}
  async function patch(){return page.evaluate(()=>window.requests.filter(r=>r.method==='PATCH').at(-1).body);}
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.includes('Manage logins')));
+ fs.mkdirSync('.next/owner-ui-review',{recursive:true});
+ for (const viewport of [{width:1366,height:768},{width:1920,height:900},{width:390,height:844}]) {
+   await page.setViewport(viewport);
+   await page.screenshot({path:'.next/owner-ui-review/launcher-'+viewport.width+'.png'});
+   await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Add login')).click());
+   await page.waitForSelector('[role="dialog"] input');
+   await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));
+   assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}),'Modal fits width');
+   if(viewport.width>640) assert(await page.$eval('[role="dialog"]',el=>Array.from(el.querySelectorAll('*')).every(e=>!['auto','scroll'].includes(getComputedStyle(e).overflowY)||e.scrollHeight<=e.clientHeight+1)),'Desktop create dialog has no internal scroll');
+   await page.screenshot({path:'.next/owner-ui-review/create-'+viewport.width+'.png'});
+   await page.click('[aria-haspopup="listbox"]');
+   await page.waitForSelector('[role="listbox"]');
+   await new Promise(r=>setTimeout(r,100));
+   assert(await page.$eval('[role="listbox"]',el=>{const r=el.getBoundingClientRect(),b=document.querySelector('[aria-haspopup="listbox"]').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1&&(r.bottom<=b.top||r.top>=b.bottom);}), 'Access menu aligns with field and stays in viewport');
+   if(viewport.width>640) assert(await page.$eval('[role="listbox"]',el=>el.scrollHeight<=el.clientHeight+1),'All access options fit without scrolling');
+   await page.screenshot({path:'.next/owner-ui-review/access-'+viewport.width+'.png'});
+   await page.evaluate(()=>Array.from(document.querySelectorAll('[role="option"]')).find(b=>b.textContent.includes('View only')).click());
+   assert(await page.$eval('[aria-haspopup="listbox"]',e=>e.textContent.includes('View only')));
+   await click('Show passcode');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');
+   await click('Hide passcode');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'password');
+   await click('Cancel');
+ }
+ await page.setViewport({width:1280,height:900});
  await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
+ const supportStyle = await page.$eval('[role="dialog"] header p',el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.color];});
  await click('Manage George Jnr');await heading('Manage access');
+ assert.deepEqual(await page.$$eval('[role="dialog"] button > span > span',els=>els.filter(el=>el.textContent.includes('Choose what they can do.')).map(el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.color];})),[supportStyle], 'Owner helper text matches the directory subtitle');
+
  assert.equal(await page.$$eval('button strong',els=>els.filter(e=>['Login details','Permissions','Asset access','Passcode'].includes(e.textContent)).length),4);
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(b=>b.textContent==='Delete')),false);
  fs.mkdirSync('.next/owner-login-validation',{recursive:true});

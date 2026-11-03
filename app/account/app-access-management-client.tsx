@@ -697,7 +697,13 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function renderAccountNameSetup() {
-    if (accountName) return businessSettingsOpen ? <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
+    if (accountName) return businessSettingsOpen ? kind === 'owner' ? (
+      <div className={styles.businessIdentity}>
+        <span>Business login ID:</span>
+        <strong>{accountName}</strong>
+        <p>Your team signs in using person@{accountName}. This ID is permanent.</p>
+      </div>
+    ) : <p className={ownerStyles.info}>Business login ID: <strong>{accountName}</strong><br />Your team signs in using person@{accountName}. This ID is permanent.</p> : null;
     const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
@@ -918,6 +924,7 @@ function AppAccessManagement({ kind, configOverride }: {
     return (
       <FriendlySelect
         label={config.roleLabel}
+        appearance={kind === 'owner' ? 'owner' : 'default'}
         value={value}
         options={config.roleOptions}
         onChange={onChange}
@@ -953,7 +960,7 @@ function AppAccessManagement({ kind, configOverride }: {
   const isSelectedBusy = selectedRecord ? busyId === selectedRecord.id || deletingId === selectedRecord.id : false;
 
   return (
-    <main className={baseStyles.page}>
+    <main data-owner-app={kind === 'owner' ? '' : undefined} className={`${baseStyles.page} ${kind === 'owner' ? styles.ownerExperience : ''}`}>
       <AppHeader active="none" />
       <section className={baseStyles.shell}>
         <button type="button" className={baseStyles.backButton} onClick={() => window.location.assign('/account')}>

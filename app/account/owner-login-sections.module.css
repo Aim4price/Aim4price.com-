@@ -125,3 +125,18 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dealerRoles { grid-template-columns:1fr; }
 }
+
+/* Match supporting copy to the Owner App directory subtitle. */
+:global([data-owner-app]) .copy > span,
+:global([data-owner-app]) .hint,
+:global([data-owner-app]) .choice small,
+:global([data-owner-app]) .statusAction p,
+:global([data-owner-app]) .history dt,
+:global([data-owner-app]) .rowRole,
+:global([data-owner-app]) .info {
+  font-family: var(--access-copy-family, inherit);
+  font-size: var(--access-copy-size, .88rem);
+  font-weight: var(--access-copy-weight, 620);
+  line-height: var(--access-copy-leading, 1.5);
+  color: var(--access-copy-colour, var(--app-muted, #63766f));
+}
