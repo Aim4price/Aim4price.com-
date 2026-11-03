@@ -125,3 +125,35 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dealerRoles { grid-template-columns:1fr; }
 }
+
+/* Match supporting copy to the app directory subtitle. */
+:global([data-personal-app-access]) .copy > span,
+:global([data-personal-app-access]) .hint,
+:global([data-personal-app-access]) .choice small,
+:global([data-personal-app-access]) .statusAction p,
+:global([data-personal-app-access]) .history dt,
+:global([data-personal-app-access]) .rowRole,
+:global([data-personal-app-access]) .info {
+  font-family: var(--access-copy-family, inherit);
+  font-size: var(--access-copy-size, .88rem);
+  font-weight: var(--access-copy-weight, 620);
+  line-height: var(--access-copy-leading, 1.5);
+  color: var(--access-copy-colour, var(--app-muted, #63766f));
+}
+
+/* Field managers have an extra fuel-access action; keep the desktop overview compact. */
+:global([data-field-app]) .grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
+:global([data-field-app]) .manager .card { padding:1rem; gap:.75rem; }
+:global([data-field-app]) .copy strong { font-size:1rem; }
+:global([data-field-app]) .copy small { margin-top:0; }
+:global([data-field-app]) .toolbar { margin-bottom:1rem; }
+:global([data-field-section=permissions]) .choices { grid-template-columns:repeat(2,minmax(0,1fr)); }
+:global([data-personal-app-access]) .pickerHeader p {
+  font-family:var(--access-copy-family,inherit); font-size:var(--access-copy-size,.88rem);
+  font-weight:var(--access-copy-weight,620); line-height:var(--access-copy-leading,1.5);
+  color:var(--access-copy-colour,var(--app-muted,#63766f));
+}
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-field-app]) .grid,
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-field-section=permissions]) .choices { grid-template-columns:1fr; }
+}
