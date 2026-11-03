@@ -155,8 +155,8 @@ export default function SharedProblems({
   const banners = openProblems.length > 0 && (
     <section className={ui.openProblems} aria-label="Open problems">
       <header className={ui.sectionHeader}>
-        <span className={`${ui.icon} ${ui.warningIcon}`}><AssetActionIcon action="loggedProblems" /></span>
-        <div><strong>Open problems · {openProblems.length}</strong><p className={ui.copy}>Reported issues shared with this asset.</p></div>
+        <span className={`${ui.icon} ${ui.problemIcon}`}><AssetActionIcon action="loggedProblems" /></span>
+        <div><strong>Open problems · {openProblems.length}</strong></div>
       </header>
       {openProblems.map((problem) => (
         <article key={problem.id} className={ui.compactProblem} data-message-banner>
@@ -174,7 +174,7 @@ export default function SharedProblems({
     resolve &&
     createPortal(
       <LeadActionDialog
-        className={ui.modal}
+        className={`${ui.modal} ${ui.resolutionModal}`}
         title="Resolve problem"
         assetTitle={assetTitle}
         onClose={() => setResolve(null)}
@@ -218,7 +218,7 @@ export default function SharedProblems({
             placeholder="What was repaired or checked?"
             onChange={(event) => setResolutionNote(event.target.value)} />
         </label>
-        <p className={ui.copy}>This note is visible to the owner and people with access to this asset’s logged problems.</p>
+        <p className={ui.copy}>Shared with everyone who can view this problem.</p>
         {error && (
           <p className={ui.error} role="alert">
             {error}
