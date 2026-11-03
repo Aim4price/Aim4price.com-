@@ -923,7 +923,7 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
         accountType === 'dealer'
-          ? listDealerProblemNotifications(input.userId).then(items => items.map(item => ({
+          ? listDealerProblemNotifications(input.userId).then(items => items.map<HeaderNotificationItem>(item => ({
               id: item.id, category: 'qr_scan' as const, tone: 'warning' as const,
               title: item.title, body: item.body, assetId: item.assetId,
               href: `/asset-problem/${encodeURIComponent(item.problemId)}`,
