@@ -1,3 +1,4 @@
+import { listDealerProblemNotifications } from './dealer-problem-notifications';
 import {listMaintenanceReminderNotifications} from './maintenance-reminders';
 import {listValueRequests} from './asset-value-requests';
 import { listBillingNotifications } from './billing-notifications';
@@ -922,6 +923,14 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
         accountType === 'dealer'
+          ? listDealerProblemNotifications(input.userId).then(items => items.map<HeaderNotificationItem>(item => ({
+              id: item.id, category: 'qr_scan' as const, tone: 'warning' as const,
+              title: item.title, body: item.body, assetId: item.assetId,
+              href: `/asset-problem/${encodeURIComponent(item.problemId)}`,
+              createdAtIso: item.createdAtIso,
+            })))
+          : Promise.resolve([]),
+        accountType === 'dealer'
           ? listRequesterAssetDiscoveryNotifications(input.userId)
           : Promise.resolve([]),
         accountType === 'dealer'
@@ -942,3 +951,4 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
     )
     .slice(0, MAX_COMPUTED_NOTIFICATIONS);
 }
+

@@ -2,7 +2,7 @@ import type {NextRequest} from 'next/server';
 import {getDb} from './db';
 import {contributionScope, type ContributionTarget} from './shared-asset-contributions';
 import {requireLiveSharedAsset} from './live-shared-asset-access';
-import {listIssueNotesForAssets} from './asset-issue-notes';
+import {listIssueNotesForAssets,ensureAssetIssueNoteStorage} from './asset-issue-notes';
 import {ensureFuelLedgerTables} from './fuel-ledger';
 import {ensureSharedAssetActivity,recordSharedAssetActivity} from './shared-asset-activity';
 import {ensureSharingFoundation,recordSharingUsage} from './sharing-foundation';
@@ -34,9 +34,11 @@ export async function sharedAssetProblems(request:NextRequest,target:Contributio
   const body=await businessBody(request),id=String(body.requestId||'');
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))throw Error('Reopen the form and try again.');
   const resolving=body.action==='resolve',note=String(body.note||'').trim();
+  const resolutionNote=String(body.resolutionNote||'').trim();
+  if(resolutionNote.length>4000)throw Error('Use up to 4,000 characters for the resolution note.');
   if(!resolving&&(body.action!=='log'||!note||note.length>4000))throw Error('Enter a problem of up to 4,000 characters.');
   if(resolving&&(!/^[0-9a-f-]{36}$/i.test(String(body.problemId||''))||body.confirmed!==true))throw Error('Confirm that this problem is resolved.');
-  await ensureProblemStorage();await ensureSharedAssetActivity();await ensureSharingFoundation();
+  await ensureProblemStorage();await ensureAssetIssueNoteStorage();await ensureSharedAssetActivity();await ensureSharingFoundation();
   const client=await getDb().connect();
   try {
    await client.query('BEGIN');await scope.lock(client);
@@ -47,17 +49,25 @@ export async function sharedAssetProblems(request:NextRequest,target:Contributio
    const action=resolving?'Problem resolved':'Problem logged';
    if(previous&&(previous.owner_id!==scope.ownerId||previous.asset_id!==scope.assetId||previous.actor_id!==scope.user.id||previous.action!==action))throw Error('Invalid save identifier.');
    if(!previous){
+    let changed=true;
     if(resolving){
-     const result=await client.query(`UPDATE asset_scan_events SET issue_noted_at=coalesce(issue_noted_at,now()) WHERE id=$1::uuid AND asset_id=$2::uuid AND lower(coalesce(note,'')) LIKE '%notes%problems:%' RETURNING id`,[body.problemId,scope.assetId]);
-     if(!result.rows.length)throw new ExternalLeadAccessError('Problem unavailable.',404);
+     const result=await client.query(`UPDATE asset_scan_events SET issue_resolution_note=CASE WHEN issue_noted_at IS NULL THEN $3 ELSE issue_resolution_note END, issue_resolved_by_name=CASE WHEN issue_noted_at IS NULL THEN $4 ELSE issue_resolved_by_name END, issue_noted_at=coalesce(issue_noted_at,now()) WHERE id=$1::uuid AND asset_id=$2::uuid AND issue_noted_at IS NULL AND lower(coalesce(note,'')) LIKE '%notes%problems:%' RETURNING id`,[body.problemId,scope.assetId,resolutionNote,scope.user.name||scope.user.email]);
+     if(!result.rows.length){
+      const existing=await client.query(`SELECT id FROM asset_scan_events WHERE id=$1::uuid AND asset_id=$2::uuid AND issue_noted_at IS NOT NULL AND lower(coalesce(note,'')) LIKE '%notes%problems:%'`,[body.problemId,scope.assetId]);
+      if(!existing.rows.length)throw new ExternalLeadAccessError('Problem unavailable.',404);
+      changed=false;
+     }
     }else{
      await client.query(`INSERT INTO asset_scan_events(id,asset_id,actor_type,operator_name,note) VALUES($1::uuid,$2::uuid,'shared_asset',$3,$4)`,[id,scope.assetId,scope.user.name||scope.user.email,`Notes/Problems: ${note}`]);
     }
-    await recordSharedAssetActivity(client,{id,ownerId:scope.ownerId,assetId:scope.assetId,actorId:scope.user.id,actorName:scope.user.name||scope.user.email,action,after:resolving?{problemId:body.problemId}:{problemId:id,note}});
+    if(changed){
+    await recordSharedAssetActivity(client,{id,ownerId:scope.ownerId,assetId:scope.assetId,actorId:scope.user.id,actorName:scope.user.name||scope.user.email,action,after:resolving?{problemId:body.problemId,resolutionNote}:{problemId:id,note}});
     await recordSharingUsage({accountId:scope.user.id,actorId:scope.user.id,assetId:scope.assetId,token:scope.token,metric:'contribution',eventKey:`problem:${id}`},client);
+    }
    }
    await client.query('COMMIT');
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
   return businessJson({ok:true,items:await listIssueNotesForAssets([scope.assetId],{includeNoted:true})});
  }catch(error){return error instanceof ExternalLeadAccessError?businessJson({error:error.message},error.status):businessError(error);}
 }
+

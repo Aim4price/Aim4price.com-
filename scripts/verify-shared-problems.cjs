@@ -208,8 +208,10 @@ const runtime =
     await wait("1 open");
     await click("Mark resolved");
     await wait("Has this problem been fixed?");
+    await page.type("textarea", "Replaced coupling seal.");
     await click("Mark resolved");
     await wait("0 open · 1 resolved");
+    assert.equal(await page.evaluate(() => window.requests.at(-1).resolutionNote), "Replaced coupling seal.");
     assert.equal(
       await page.evaluate(() => window.requests.at(-1).confirmed),
       true,
@@ -246,6 +248,23 @@ const runtime =
       ),
     );
     await page.screenshot({ path: "/tmp/problems-mobile.png" });
+    await page.evaluate(() => {
+      window.items = [{id: 'open-1', note: 'Hydraulic leak near rear coupling. '.repeat(20), operatorName: 'Test owner', createdAtIso: '2026-11-03T10:00:00Z', notedAtIso: null}];
+      window.render({notesOnly: true, detailsVisible: true, canWrite: true});
+      window.dispatchEvent(new Event('aim4price:problems-updated'));
+    });
+    await wait('Open problems · 1');
+    assert(await page.$eval('[data-message-banner]', n => n.getBoundingClientRect().height < 250));
+    assert(await page.$eval('[data-message-banner]', n => n.scrollWidth <= n.clientWidth));
+    await page.screenshot({path: '/tmp/problems-compact-mobile.png'});
+    await page.setViewport({width: 1280, height: 900});
+    await page.screenshot({path: '/tmp/problems-compact-desktop.png'});
+    await page.click('[aria-label="Open message: Reported problem"]');
+    await wait('Reported problem');
+    assert(await page.$eval('[role="dialog"]', n => n.textContent.includes('Hydraulic leak near rear coupling. '.repeat(10))));
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => window.render({notesOnly: false}));
+    await wait('Logged problems');
     await page.keyboard.press("Escape");
     assert(await page.evaluate(() => window.dialogClosed));
     console.log(
@@ -258,3 +277,4 @@ const runtime =
   console.error(e);
   process.exitCode = 1;
 });
+

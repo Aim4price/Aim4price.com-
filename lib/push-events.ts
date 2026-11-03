@@ -59,7 +59,7 @@ export async function listPushEvents(who: PushIdentity, access: NonNullable<Awai
       const notifications = await listDealerMaintenanceNotificationsForViewer({ dealerUserId: who.accountId, staffId: who.memberId, viewerKey: access.viewerKey });
       for (const item of notifications) events.push({ ...item,
         category: item.status === 'assigned_problem' ? 'assignments' : 'maintenance',
-        href: `${root}/maintenance/${encodeURIComponent(item.accessId)}`, reminder: item.status !== 'assigned_problem' });
+        href: `${root}/maintenance/${encodeURIComponent(item.accessId)}`, reminder: item.status !== 'assigned_problem' && item.status !== 'reported_problem' });
     }
     if (access.categories.includes('enquiries')) {
       const current = await listComputedHeaderNotifications({ userId: who.accountId, accountType: 'dealer' });
@@ -83,4 +83,5 @@ export async function listPushEvents(who: PushIdentity, access: NonNullable<Awai
     .filter(event => options.includeRead || !event.isRead)
     .sort((a,b) => Date.parse(b.createdAtIso)-Date.parse(a.createdAtIso));
 }
+
 

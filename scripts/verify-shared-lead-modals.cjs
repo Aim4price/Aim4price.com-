@@ -220,10 +220,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.fixtureRoot.render(React.createElement(require('components/leads/SharedProblems').default,{endpoint:'/api/test/problems',assetTitle:'2023 Toyota Hilux',canWrite:true,onClose:()=>{}}));
  });
  await click('Log problem');await page.waitForSelector('textarea');await page.type('textarea','Hydraulic leak');await click('Save problem');
- await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Resolved'));
- await click('Resolved');await page.waitForFunction(()=>document.body.textContent.includes('Are you sure this problem is resolved?'));
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Mark resolved'));
+ await click('Mark resolved');await page.waitForFunction(()=>document.body.textContent.includes('Has this problem been fixed?'));
  assert.equal(await page.evaluate(()=>window.problemWrites.length),1,'Opening confirmation does not resolve');
- await click('Cancel');await click('Resolved');await click('Yes, resolved');
+ await click('Cancel');await click('Mark resolved');await click('Mark resolved');
  await page.waitForFunction(()=>window.problemWrites.length===2);
  assert(await page.evaluate(()=>window.problemWrites[1].confirmed===true));
  await page.screenshot({path:'/tmp/shared-problems-resolved.png'});
@@ -239,13 +239,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });
  await page.waitForSelector('[data-open-problems]');
  assert.equal(await page.evaluate(()=>document.body.textContent.includes('Rear light is not working.')),false,'Closed lead hides problem details');
- assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Resolved')),false);
+ assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Mark resolved')),false);
  const problemTint=await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage);
  await click('Open lead');
- await page.waitForFunction(()=>document.body.textContent.includes('Open issue reported'));
+ await page.waitForFunction(()=>document.body.textContent.includes('Open problems · 1'));
  assert(await page.evaluate(()=>document.body.textContent.includes('By George')));
  await page.screenshot({path:'/tmp/lead-problem-open.png'});
- await click('Resolved');await click('Yes, resolved');
+ await click('Mark resolved');await click('Mark resolved');
  await page.waitForFunction(()=>!document.querySelector('[data-open-problems]'));
  assert.notEqual(await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage),problemTint,'Resolving the last problem clears the red tint');
  // The normal update action starts with owner-style section cards; shortcuts bypass it.
@@ -316,3 +316,4 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
+

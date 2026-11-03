@@ -6,7 +6,6 @@ import AssetActionIcon from "../asset-register/AssetActionIcon";
 import LeadActionDialog from "./LeadActionDialog";
 import ui from "./SharedProblems.module.css";
 import type { AssetIssueNoteStatus } from "../../lib/asset-issue-notes";
-import styles from "../../app/asset-register/page.module.css";
 export default function SharedProblems({
   endpoint,
   assetTitle,
@@ -25,6 +24,7 @@ export default function SharedProblems({
   const [items, setItems] = useState<AssetIssueNoteStatus[]>([]),
     [step, setStep] = useState<"choices" | "log" | "list">("choices"),
     [note, setNote] = useState(""),
+    [resolutionNote, setResolutionNote] = useState(""),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -70,6 +70,7 @@ export default function SharedProblems({
                 action: "resolve",
                 problemId: resolve.id,
                 confirmed: true,
+                resolutionNote,
                 requestId,
               }
             : { action: "log", note, requestId },
@@ -92,6 +93,7 @@ export default function SharedProblems({
   const openProblems = items.filter((item) => !item.notedAtIso);
   const startResolve = (problem: AssetIssueNoteStatus) => {
     setRequestId(crypto.randomUUID());
+    setResolutionNote("");
     setResolve(problem);
   };
   const formatDate = (value: string) => {
@@ -105,17 +107,21 @@ export default function SharedProblems({
           timeZone: "Africa/Johannesburg",
         }).format(date);
   };
-  const list = (
+  const renderProblems = (problems: AssetIssueNoteStatus[]) => (
     <div className={ui.list}>
-      {items.map((problem) => (
+      {problems.map((problem) => (
         <article key={problem.id} className={ui.problem}>
           <header className={ui.problemHeader}>
-            <strong>{problem.summary || "Logged problem"}</strong>
+            <strong>{problem.notedAtIso ? "Resolved problem" : "Reported problem"}</strong>
             <span className={problem.notedAtIso ? ui.resolved : ui.open}>
               {problem.notedAtIso ? "Resolved" : "Open"}
             </span>
           </header>
           <p className={ui.note}>{problem.note}</p>
+          {!!problem.photoUrls?.length && <div className={ui.photos}>{problem.photoUrls.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt={"Problem attachment " + (index + 1)} loading="lazy" /></a>)}</div>}
+          {problem.notedAtIso && problem.resolutionNote && (
+            <div className={ui.resolution}><strong>Resolution note</strong><p className={ui.note}>{problem.resolutionNote}</p></div>
+          )}
           <div className={ui.problemFooter}>
             <div className={ui.meta}>
               <span>
@@ -129,7 +135,7 @@ export default function SharedProblems({
                   .join(" · ") || "Logged problem"}
               </span>
               {problem.notedAtIso && (
-                <span>Resolved {formatDate(problem.notedAtIso)}</span>
+                <span>Resolved {formatDate(problem.notedAtIso)}{problem.resolvedByName ? ` · ${problem.resolvedByName}` : ""}</span>
               )}
             </div>
             {canWrite && !problem.notedAtIso && (
@@ -146,48 +152,24 @@ export default function SharedProblems({
       ))}
     </div>
   );
-  const banners = openProblems.map((problem) => (
-    <div
-      key={problem.id}
-      className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}
-      data-message-banner
-    >
-      <AssetMessageReader
-        title="Open issue reported"
-        assetTitle={assetTitle}
-        className={styles.partnerNoteText}
-        actions={
-          canWrite && (
-            <button
-              className={styles.partnerNoteButton}
-              type="button"
-              onClick={() => startResolve(problem)}
-            >
-              Resolved
-            </button>
-          )
-        }
-      >
-        <strong>Open issue reported</strong>
-        <p>{problem.note}</p>
-        <small className={styles.issueNoteMeta}>
-          {[
-            problem.operatorName ? `By ${problem.operatorName}` : "",
-            problem.createdAtIso
-              ? new Intl.DateTimeFormat("en-ZA", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                  timeZone: "Africa/Johannesburg",
-                }).format(new Date(problem.createdAtIso))
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </small>
-      </AssetMessageReader>
-    </div>
-  ));
+  const banners = openProblems.length > 0 && (
+    <section className={ui.openProblems} aria-label="Open problems">
+      <header className={ui.sectionHeader}>
+        <span className={`${ui.icon} ${ui.warningIcon}`}><AssetActionIcon action="loggedProblems" /></span>
+        <div><strong>Open problems · {openProblems.length}</strong><p className={ui.copy}>Reported issues shared with this asset.</p></div>
+      </header>
+      {openProblems.map((problem) => (
+        <article key={problem.id} className={ui.compactProblem} data-message-banner>
+          <AssetMessageReader title="Reported problem" assetTitle={assetTitle} className={ui.problemText}
+            actions={canWrite && <button className={ui.secondary} type="button" onClick={() => startResolve(problem)}>Mark resolved</button>}>
+            <p className={ui.preview}>{problem.note}</p>
+            <small className={ui.meta}>{[problem.operatorName ? `By ${problem.operatorName}` : "", formatDate(problem.createdAtIso), problem.photoUrls?.length ? `${problem.photoUrls.length} photo(s) attached` : ""].filter(Boolean).join(" · ")}</small>
+            {!!problem.photoUrls?.length && <div className={ui.photos}>{problem.photoUrls.map((url, index) => <a key={url} href={url} target="_blank" rel="noreferrer"><img src={url} alt={"Problem attachment " + (index + 1)} loading="lazy" /></a>)}</div>}
+          </AssetMessageReader>
+        </article>
+      ))}
+    </section>
+  );
   const confirmation =
     resolve &&
     createPortal(
@@ -230,6 +212,13 @@ export default function SharedProblems({
         <div className={ui.problem}>
           <p className={ui.note}>{resolve.note}</p>
         </div>
+        <label className={ui.field}>
+          <span>Resolution note (optional)</span>
+          <textarea rows={3} maxLength={4000} value={resolutionNote} disabled={busy}
+            placeholder="What was repaired or checked?"
+            onChange={(event) => setResolutionNote(event.target.value)} />
+        </label>
+        <p className={ui.copy}>This note is visible to the owner and people with access to this asset’s logged problems.</p>
         {error && (
           <p className={ui.error} role="alert">
             {error}
@@ -354,7 +343,7 @@ export default function SharedProblems({
                 />
               </label>
               <p className={ui.hint}>
-                Include the symptoms and any useful details.
+                Include the symptoms and any useful details. This problem is visible to the owner and people with access to this asset’s logged problems.
                 <span>{note.length.toLocaleString("en-ZA")} / 4 000</span>
               </p>
             </div>
@@ -371,7 +360,13 @@ export default function SharedProblems({
                 {openProblems.length} open ·{" "}
                 {items.length - openProblems.length} resolved
               </p>
-              {list}
+              {renderProblems(openProblems)}
+              {items.some((item) => item.notedAtIso) && (
+                <details className={ui.history}>
+                  <summary>Resolved history · {items.length - openProblems.length}</summary>
+                  {renderProblems(items.filter((item) => item.notedAtIso))}
+                </details>
+              )}
             </>
           ) : !error ? (
             <div className={ui.empty}>
@@ -392,3 +387,4 @@ export default function SharedProblems({
     </>
   );
 }
+

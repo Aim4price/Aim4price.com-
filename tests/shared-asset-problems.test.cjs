@@ -17,7 +17,11 @@ test('shared problems preserve owner notes, scoped resolution, retry safety and 
  assert.equal((await send({action:'resolve',problemId:id,requestId:randomUUID()})).status,400);
  const foreignProblem=randomUUID();await pg.query("INSERT INTO asset_scan_events(id,asset_id,note) VALUES($1,$2,'Notes/Problems: Other asset')",[foreignProblem,otherAsset]);
  assert.equal((await send({action:'resolve',problemId:foreignProblem,confirmed:true,requestId:randomUUID()})).status,404);
- const resolution=randomUUID();result=await send({action:'resolve',problemId:id,confirmed:true,requestId:resolution});assert.equal(result.status,200);assert.ok(result.data.items[0].notedAtIso);assert.equal((await notes.listIssueNotesForAssets([assetId])).length,0);await send({action:'resolve',problemId:id,confirmed:true,requestId:resolution});assert.equal(usage,2);
+ const resolution=randomUUID();result=await send({action:'resolve',problemId:id,confirmed:true,resolutionNote:'Replaced coupling seal',requestId:resolution});assert.equal(result.status,200);assert.equal(result.data.items[0].resolutionNote,'Replaced coupling seal');assert.equal(result.data.items[0].resolvedByName,'Dealer');assert.ok(result.data.items[0].notedAtIso);assert.equal((await notes.listIssueNotesForAssets([assetId])).length,0);await send({action:'resolve',problemId:id,confirmed:true,requestId:resolution});assert.equal(usage,2);
+ const saved=result.data.items[0].notedAtIso;
+ await send({action:'resolve',problemId:id,confirmed:true,resolutionNote:'Overwrite attempt',requestId:randomUUID()});
+ const history=(await notes.listIssueNotesForAssets([assetId],{includeNoted:true}))[0];assert.equal(history.resolutionNote,'Replaced coupling seal');assert.equal(history.notedAtIso,saved);
+ assert.equal((await send({action:'resolve',problemId:id,confirmed:true,resolutionNote:'x'.repeat(4001),requestId:randomUUID()})).status,400);
  allowed=false;assert.equal((await send({action:'log',note:'Denied',requestId:randomUUID()})).status,403);allowed=true;revoked=true;assert.equal((await send({action:'log',note:'Revoked',requestId:randomUUID()})).status,403);
  assert.equal((await pg.query('SELECT * FROM shared_asset_activity')).rows.length,2);
  }finally{await pg.close();}
@@ -27,3 +31,4 @@ test('link report permissions are opt-in and preserve explicit selections',()=>{
  assert.equal(permissions.assetLinkPermissions().maintenanceReports,false);assert.equal(permissions.assetLinkPermissions().costOfOwnership,false);
  const selected=permissions.assetLinkPermissions({maintenanceReports:true,costOfOwnership:false});assert.equal(selected.maintenanceReports,true);assert.equal(selected.costOfOwnership,false);
 });
+

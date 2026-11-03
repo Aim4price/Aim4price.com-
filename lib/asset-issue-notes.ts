@@ -7,6 +7,9 @@ type AssetIssueNoteRow = {
   operator_name: string | null;
   note: string | null;
   issue_noted_at?: string | null;
+  photo_urls?: unknown;
+  issue_resolution_note?: string | null;
+  issue_resolved_by_name?: string | null;
   created_at: string | Date | null;
 };
 
@@ -23,6 +26,9 @@ export type AssetIssueNoteStatus = {
   actorType: string;
   createdAtIso: string;
   notedAtIso: string | null;
+  photoUrls?: string[];
+  resolutionNote?: string;
+  resolvedByName?: string;
 };
 
 export type AssetIssueNoteGroup = {
@@ -79,7 +85,7 @@ function splitIssueNoteLines(section: string): string[] {
     .filter(Boolean);
 }
 
-function extractStandaloneIssueNoteText(note: string): string {
+export function extractStandaloneIssueNoteText(note: string): string {
   return splitScanNoteSections(note)
     .map((section) => {
       const lines = splitIssueNoteLines(section);
@@ -151,10 +157,13 @@ function mapIssueNoteStatusFromScanEvent(row: AssetIssueNoteRow): AssetIssueNote
     actorType: asText(row.actor_type),
     createdAtIso: asDateIso(row.created_at),
     notedAtIso: row.issue_noted_at ?? null,
+    photoUrls: Array.isArray(row.photo_urls) ? row.photo_urls.filter((url: unknown): url is string => typeof url === 'string' && (url.startsWith('https://') || url.startsWith('/') && !url.startsWith('//'))) : [],
+    resolutionNote: asText(row.issue_resolution_note),
+    resolvedByName: asText(row.issue_resolved_by_name),
   };
 }
 
-async function ensureAssetIssueNoteStorage(): Promise<boolean> {
+export async function ensureAssetIssueNoteStorage(): Promise<boolean> {
   const db = getDb();
   const tableCheck = await db.query<{ table_name: string | null }>(
     `select to_regclass('public.asset_scan_events')::text as table_name`,
@@ -166,7 +175,9 @@ async function ensureAssetIssueNoteStorage(): Promise<boolean> {
 
   await db.query(`
     alter table public.asset_scan_events
-      add column if not exists issue_noted_at timestamptz
+      add column if not exists issue_noted_at timestamptz,
+      add column if not exists issue_resolution_note text,
+      add column if not exists issue_resolved_by_name text
   `);
 
   return true;
@@ -196,6 +207,9 @@ export async function listOpenIssueNoteGroupsForAssets(
         e.operator_name,
         e.note,
         e.issue_noted_at::text as issue_noted_at,
+        to_jsonb(e)->'photo_urls' as photo_urls,
+        e.issue_resolution_note,
+        e.issue_resolved_by_name,
         e.created_at
       from public.asset_scan_events e
       where e.asset_id::text = any($1::text[])
@@ -259,6 +273,9 @@ export async function listIssueNotesForAssets(
         e.operator_name,
         e.note,
         e.issue_noted_at::text as issue_noted_at,
+        to_jsonb(e)->'photo_urls' as photo_urls,
+        e.issue_resolution_note,
+        e.issue_resolved_by_name,
         e.created_at
       from public.asset_scan_events e
       where e.asset_id::text = any($1::text[])
@@ -312,6 +329,9 @@ function assetIssueNoteSelectSql(whereClause: string): string {
       e.operator_name,
       e.note,
       e.issue_noted_at::text as issue_noted_at,
+        to_jsonb(e)->'photo_urls' as photo_urls,
+        e.issue_resolution_note,
+        e.issue_resolved_by_name,
       e.created_at,
       a.user_id::text as asset_owner_user_id
     from public.asset_scan_events e
@@ -367,4 +387,5 @@ export async function markAssetIssueNoteStatusNoted(input: {
 
   return updatedStatus;
 }
+
 
