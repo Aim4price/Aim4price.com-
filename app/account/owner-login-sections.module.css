@@ -157,3 +157,59 @@
   :global(:where(html:not(:has([data-website-canvas])))) :global([data-field-app]) .grid,
   :global(:where(html:not(:has([data-website-canvas])))) :global([data-field-section=permissions]) .choices { grid-template-columns:1fr; }
 }
+
+/* Text-led Field Manager settings, scoped away from other app directories. */
+.sectionManager .settingsLayout { display:grid; grid-template-columns:12rem minmax(0,1fr); gap:1.75rem; align-items:start; }
+.sectionManager .sectionNav { display:grid; gap:.45rem; padding:.65rem; border-radius:1.1rem; background:var(--app-surface-soft,#f2f6f4); }
+.sectionManager .sectionNav button { text-align:left; border-color:transparent; background:transparent; padding:.75rem .85rem; font-size:.9rem; line-height:1.4; }
+.sectionManager .sectionNav button[aria-current] { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
+.sectionManager .settingsContent { min-width:0; padding:.25rem 0; }
+.sectionManager .toolbar { margin-bottom:1.4rem; padding-bottom:1rem; border-bottom:1px solid var(--app-line,#d8e5dd); }
+.sectionManager button { background:var(--app-success-soft,#e8f2ed); }
+.sectionManager .toolbar button { background:var(--app-surface-soft,#edf1ef); }
+.sectionManager svg,.sectionManager .roleIcon,.sectionManager .icon { display:none; }
+.sectionManager .fields .inputIcon input { padding-left:1rem; }
+.sectionManager .fields .password.inputIcon input { padding-right:5rem; }
+.sectionManager .password.inputIcon button { width:4rem; background:var(--app-success-soft,#e8f2ed); font-size:.85rem; }
+.sectionManager .sectionTitle { margin-bottom:1.2rem; }
+.sectionManager .primary { background:var(--app-accent,#195b43); }
+.sectionManager .danger { background:var(--app-danger-soft,#f9eded); }
+.sectionManager .choices { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.sectionManager .choice { align-items:flex-start; gap:.65rem; padding:1rem; background:var(--app-surface-soft,#f3f6f4); }
+.sectionManager .choice input { margin:.15rem 0 0; }
+.sectionManager .choice[data-selected=true] { background:var(--app-success-soft,#e8f2ed); }
+.sectionManager .choice[data-permission-tone=maintenance] { background:color-mix(in srgb,#e89a37 9%,var(--app-surface,#fff)); }
+.sectionManager .choice[data-permission-tone=fuel] { background:color-mix(in srgb,#d96464 8%,var(--app-surface,#fff)); }
+.sectionManager .choice[data-selected=true] { border-color:var(--app-accent,#28815f); }
+.sectionManager .assetPanel .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.sectionManager .assetPanel > .hint { margin-top:1rem; }
+.sectionManager .card { background:var(--app-success-soft,#e8f2ed); }
+.sectionManager .footer { margin-top:1.25rem; }
+.sectionManager .history > div { flex-wrap:wrap; }
+
+/* Pickers are portalled, so carry their own typography and restrained selection styling. */
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row] {
+  padding:.75rem 1rem !important; min-height:4rem !important;
+  background:var(--app-surface-soft,#f2f6f4) !important; box-shadow:none !important; transform:none !important;
+}
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:hover { border-color:var(--app-accent,#28815f) !important; outline:none !important; box-shadow:none !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:focus-within { outline:2px solid var(--app-accent,#28815f) !important; outline-offset:2px; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-selected=true] { background:var(--app-success-soft,#e6f2eb) !important; border-color:var(--app-accent,#28815f) !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row] input { width:1.2rem !important; height:1.2rem !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-copy] > strong { font-size:1rem !important; font-weight:750 !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-meta],
+.compactPicker .pickerHeader p,.compactPicker .pickerFooter > span { font-family:var(--font-heading,'Montserrat'),var(--font-body,'Inter'),sans-serif; font-size:.88rem !important; line-height:1.5 !important; font-weight:620 !important; color:var(--app-muted,#63766f) !important; }
+.compactPicker button { background:var(--app-surface-soft,#edf1ef); font-weight:650; }
+.compactPicker .primary { background:var(--app-accent,#195b43); }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-toolbar] input { background:var(--app-surface-soft,#f2f6f4) !important; box-shadow:none !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-list] { gap:.5rem !important; }
+@media(max-width:760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .settingsLayout { grid-template-columns:1fr; gap:1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .sectionNav { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .choices,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .assetPanel .grid { grid-template-columns:1fr; }
+}
+
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-toolbar] input { background-image:none !important; padding-left:1rem !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-list] { flex:0 1 auto !important; max-height:calc(var(--website-visible-height,100dvh) * .5) !important; }
+.compactPicker .pickerHeader,.compactPicker .pickerFooter { flex-shrink:0; }
