@@ -152,24 +152,47 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    },kind);
    await page.waitForFunction(()=>document.body.textContent.includes('Manage logins'));
    await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
+   if(kind==='field') {
+     await page.type('input[type="search"]','missing');assert(await page.evaluate(()=>document.body.textContent.includes('No matching logins.')));
+     await page.$eval('input[type="search"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'alex');el.dispatchEvent(new Event('input',{bubbles:true}));});
+     await click('Business login settings');await click('All logins');await click('Manage Alex');await heading('Login details');
+     assert.equal(await page.$$eval('nav[aria-label="Login settings"] button',els=>els.length),6);
+     assert(!await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='‹ Back')));
+     for(const viewport of [{width:1366,height:768},{width:390,height:844}]) {
+       await page.setViewport(viewport);
+       assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}),'Field dialog fits viewport');
+       if(viewport.width>640) assert(await page.$eval('[role="dialog"]',el=>Array.from(el.querySelectorAll('*')).every(e=>!['auto','scroll'].includes(getComputedStyle(e).overflowY)||e.scrollHeight<=e.clientHeight+1)),'Desktop details fit without internal scroll');
+       await page.screenshot({path:'.next/owner-login-validation/field-details-'+viewport.width+'.png'});
+     }
+     await page.setViewport({width:1366,height:768});
+     await fill('Display name','Unsaved');confirm=false;await click('Permissions');await heading('Login details');
+     assert.equal(await page.$eval('label input',e=>e.value),'Unsaved');
+     confirm=true;await click('Permissions');await heading('Permissions');await page.waitForSelector('input[type="checkbox"]');
+     await page.click('input[type="checkbox"]');confirm=false;await click('Password');await heading('Permissions');
+     confirm=true;await click('Password');await heading('Password');await click('Permissions');await page.waitForSelector('input[type="checkbox"]');
+     assert.equal(await page.$eval('input[type="checkbox"]',e=>e.checked),true,'Discarded access changes do not leak into another section');
+     await page.click('input[type="checkbox"]');await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Changes saved.'));
+     assert.equal(await page.evaluate(()=>window.appSettings.canRecordWork),false);assert.deepEqual(await page.evaluate(()=>window.appSettings.fuelStorageIds),['tank']);
+     await page.screenshot({path:'.next/owner-login-validation/field-permissions.png'});
+     await click('Login details');await fill('Display name','Alex Updated');await click('Save changes');
+     await page.waitForFunction(()=>document.querySelector('h2').textContent==='Manage Alex Updated');
+     assert.deepEqual(await patch(),{displayName:'Alex Updated',username:'alex@skb'});
+     await click('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');
+     await page.waitForFunction(()=>document.querySelector('input[autocomplete="new-password"]').value==='');assert.deepEqual(await patch(),{password:'new-secret-123'});
+     await click('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('No assets selected.'));
+     await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
+     await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
+     await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Changes saved.'));assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
+     await click('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');
+     await page.screenshot({path:'.next/owner-login-validation/field-picker.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');
+     await click('Login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
+     await click('All logins');await click('Add login');await page.waitForSelector('input[autocomplete="new-password"]');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Cancel');
+     await page.evaluate(()=>ReactDOM.unmountComponentAtNode(document.getElementById('other-app')));
+     continue;
+   }
    await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('‹ All logins');
    await click('Manage Alex');await heading('Manage access');
    await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-overview.png'});
-   if(kind==='field') {
-     for (const viewport of [{width:1366,height:768},{width:390,height:844}]) {
-       await page.setViewport(viewport);
-       assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}),'Field dialog fits width');
-       if(viewport.width>640) assert(await page.$eval('[role="dialog"]',el=>Array.from(el.querySelectorAll('*')).every(e=>!['auto','scroll'].includes(getComputedStyle(e).overflowY)||e.scrollHeight<=e.clientHeight+1)),'Field desktop overview has no internal scroll');
-       assert(await page.evaluate(()=>{
-         const reference=getComputedStyle(document.querySelector('[role="dialog"] header p'));
-         return Array.from(document.querySelectorAll('[data-field-app] button strong + span')).every(el=>{
-           const style=getComputedStyle(el);return ['fontFamily','fontSize','fontWeight','lineHeight','color'].every(key=>style[key]===reference[key]);
-         });
-       }),'Field supporting typography matches the dialog subtitle');
-       await page.screenshot({path:'.next/owner-login-validation/field-overview-'+viewport.width+'.png'});
-     }
-     await page.setViewport({width:1280,height:900});
-   }
    await card('Login details');
    if(kind!=='field') {
      assert(await page.$$eval('label input',inputs=>inputs.every(input=>{const icon=input.parentElement.querySelector('svg');return !icon||parseFloat(getComputedStyle(input).paddingLeft)>icon.getBoundingClientRect().right-input.getBoundingClientRect().left+6;})), 'Input text must clear the leading icon');
