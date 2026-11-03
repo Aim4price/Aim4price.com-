@@ -57,7 +57,7 @@ test('legacy umbrella shares are recognised as independent asset leads without a
 
 test('every shared asset counts independently in lead summaries and dealer badges', () => {
   assert.match(leadsClient, /summaryLeads\.filter\(\(lead\) => isNewLead\(lead\)\)\.length/);
-  assert.match(leadsClient, /of \{periodLeads\.length\} leads for the selected period/);
+  assert.match(leadsClient, /of \{periodLeads\.length\} \{isDealerLeadsMode \? 'shared assets' : 'leads'\} for the selected period/);
   assert.match(dealerHome, /const newLeadCount = leads\.filter\([\s\S]*?\)\.length/);
   assert.match(partnerAccess, /from public\.asset_leads[\s\S]*where partner_user_id = \$1/);
   assert.doesNotMatch(partnerAccess, /notification_key|group by notification_key/);
