@@ -160,11 +160,13 @@
 
 /* Text-led Field Manager settings, scoped away from other app directories. */
 .sectionManager .settingsLayout { display:grid; grid-template-columns:12rem minmax(0,1fr); gap:1.75rem; align-items:start; }
-.sectionManager .sectionNav { display:grid; gap:.45rem; padding:.65rem; border-radius:1.1rem; background:var(--app-surface-soft,#f2f6f4); }
-.sectionManager .sectionNav button { text-align:left; border-color:transparent; background:transparent; padding:.75rem .85rem; font-size:.9rem; line-height:1.4; }
+.sectionManager .sectionNav { display:grid; gap:.25rem; padding:.5rem; border-radius:1rem; background:var(--app-surface-soft,#f2f6f4); }
+.sectionManager .sectionNav button { text-align:left; border-color:transparent; background:transparent; padding:.6rem .85rem; font-size:.9rem; line-height:1.4; }
 .sectionManager .sectionNav button[aria-current] { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
-.sectionManager .settingsContent { min-width:0; padding:.25rem 0; }
-.sectionManager .toolbar { margin-bottom:1.4rem; padding-bottom:1rem; border-bottom:1px solid var(--app-line,#d8e5dd); }
+.sectionManager .settingsContent { min-width:0; min-height:20rem; display:flex; flex-direction:column; padding:.15rem 0; }
+.sectionManager .settingsContent > form,
+.sectionManager .settingsContent > .assetPanel { display:flex; flex-direction:column; flex:1; }
+.sectionManager .toolbar { margin-bottom:1.25rem; padding-bottom:0; }
 .sectionManager button { background:var(--app-success-soft,#e8f2ed); }
 .sectionManager .toolbar button { background:var(--app-surface-soft,#edf1ef); }
 .sectionManager svg,.sectionManager .roleIcon,.sectionManager .icon { display:none; }
@@ -184,7 +186,15 @@
 .sectionManager .assetPanel .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .sectionManager .assetPanel > .hint { margin-top:1rem; }
 .sectionManager .card { background:var(--app-success-soft,#e8f2ed); }
-.sectionManager .footer { margin-top:1.25rem; }
+.sectionManager .card > .icon { display:none; }
+.sectionManager .assetPanel .card { padding:.9rem 1rem; }
+.sectionManager .assetPanel .card .copy { width:100%; flex-direction:row; align-items:center; justify-content:space-between; gap:.75rem; }
+.sectionManager .assetPanel .card .copy strong { font-size:1rem; font-weight:650; }
+.sectionManager .assetPanel .card .copy small { margin:0; white-space:nowrap; color:var(--app-muted,#63766f); }
+.sectionManager .assetPanel .grid:has(> :only-child) { grid-template-columns:1fr; }
+.sectionManager .footer { margin-top:auto; padding-top:1rem; }
+.sectionManager .settingsContent > form > .fields,
+.sectionManager .assetPanel > .fields { margin-bottom:1.25rem; }
 .sectionManager .history > div { flex-wrap:wrap; }
 
 /* Pickers are portalled, so carry their own typography and restrained selection styling. */
@@ -193,7 +203,8 @@
   background:var(--app-surface-soft,#f2f6f4) !important; box-shadow:none !important; transform:none !important;
 }
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:hover { border-color:var(--app-accent,#28815f) !important; outline:none !important; box-shadow:none !important; }
-.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:focus-within { outline:2px solid var(--app-accent,#28815f) !important; outline-offset:2px; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:focus-within { outline:none !important; }
+.compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row]:has(input:focus-visible) { outline:2px solid var(--app-accent,#28815f) !important; outline-offset:2px; }
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-selected=true] { background:var(--app-success-soft,#e6f2eb) !important; border-color:var(--app-accent,#28815f) !important; }
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-row] input { width:1.2rem !important; height:1.2rem !important; }
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-copy] > strong { font-size:1rem !important; font-weight:750 !important; }
@@ -213,3 +224,24 @@
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-toolbar] input { background-image:none !important; padding-left:1rem !important; }
 .compactPicker.compactPicker.compactPicker.compactPicker.compactPicker [data-asset-choice-list] { flex:0 1 auto !important; max-height:calc(var(--website-visible-height,100dvh) * .5) !important; }
 .compactPicker .pickerHeader,.compactPicker .pickerFooter { flex-shrink:0; }
+
+/* Calm pointer feedback, with a distinct ring reserved for keyboard navigation. */
+.sectionManager.sectionManager button:hover:not(:disabled) { box-shadow:none !important; transform:none; }
+.sectionManager.sectionManager button:focus:not(:focus-visible),
+.sectionManager.sectionManager .choice:focus-within { outline:none !important; box-shadow:none !important; }
+.sectionManager.sectionManager button:focus-visible,
+.sectionManager.sectionManager .choice:has(input:focus-visible) { outline:2px solid var(--app-accent,#28815f) !important; outline-offset:3px; box-shadow:none; }
+.sectionManager .sectionNav button:not([aria-current]):hover { background:var(--app-success-soft,#e8f2ed); }
+.sectionManager .primary:disabled { opacity:1; background:var(--app-surface-soft,#edf1ef); color:var(--app-muted,#63766f); border-color:var(--app-line,#d8e5dd); }
+.sectionManager .history { padding:1rem; border-radius:.85rem; background:var(--app-surface-soft,#f2f6f4); gap:.65rem; margin-bottom:.5rem; }
+.sectionManager .history dd { font-size:.9rem; font-weight:620; }
+.sectionManager .statusAction:last-child { padding-bottom:0; }
+.sectionManager .usernameSuggestion { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.85rem 1rem; background:var(--app-surface-soft,#f2f6f4); border-radius:.85rem; }
+.sectionManager .usernameSuggestion p { margin:0; }
+.sectionManager .usernameSuggestion button { overflow-wrap:anywhere; text-align:left; }
+@media(max-width:760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .settingsContent { min-height:0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionManager .usernameSuggestion { flex-direction:column; align-items:stretch; }
+}
+
+.sectionManager .choice input:focus-visible { outline:none; }
