@@ -8,6 +8,11 @@ on:
       - 'lib/asset-maintenance.ts'
       - 'lib/scan-assets.ts'
       - 'lib/dealer-maintenance-tracker.ts'
+      - 'lib/dealer-problem-notifications.ts'
+      - 'lib/dealer-maintenance-notification-inbox.ts'
+      - 'lib/shared-asset-problems.ts'
+      - 'tests/dealer-problem-notifications.test.cjs'
+      - 'tests/shared-asset-problems.test.cjs'
       - 'app/api/maintenance-reminders/**'
       - 'app/asset-problem/**'
       - 'lib/maintenance-asset-lifecycle.ts'
@@ -36,5 +41,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/owner-maintenance-email.test.mjs tests/maintenance-reminders.test.cjs tests/maintenance-email-pilot.test.cjs tests/maintenance-reminder-runtime.test.cjs
+      - run: node --test tests/owner-maintenance-email.test.mjs tests/maintenance-reminders.test.cjs tests/maintenance-email-pilot.test.cjs tests/maintenance-reminder-runtime.test.cjs tests/dealer-problem-notifications.test.cjs tests/shared-asset-problems.test.cjs
+
 
