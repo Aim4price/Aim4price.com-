@@ -93,6 +93,7 @@ test('dealer maintenance keeps only the current urgency active and preserves eac
   let notices=await exports.listDealerMaintenanceNotifications('dealer');
   assert.deepEqual(notices.map(n=>n.isCurrent),[false,false,true]);
   const inbox=load('lib/dealer-maintenance-notification-inbox.ts',{
+    './dealer-problem-notifications':{listDealerProblemNotifications:async()=>[]},
     './dealer-maintenance-tracker':{listDealerMaintenanceNotifications:async()=>notices.map(n=>({...n,isRead:true}))},
     './db':{getDb:()=>db},
     './app-notification-read-state':{listReadNotificationEventKeys:async key=>key==='staff-a'?new Set(['dealer-notification:overdue']):new Set()},
@@ -103,3 +104,4 @@ test('dealer maintenance keeps only the current urgency active and preserves eac
   assets=[];notices=await exports.listDealerMaintenanceNotifications('dealer');
   assert.ok(notices.every(n=>!n.isCurrent&&n.isRead),'completed or no longer due work is history');
 });
+
