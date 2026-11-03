@@ -261,11 +261,10 @@
 .history > summary { padding: 0.9rem 0; cursor: pointer; font-weight: 750; color: var(--app-text, #173d31); }
 .history > summary:focus-visible { outline: 3px solid var(--app-accent, #287b5c); outline-offset: 3px; }
 
-.compactProblem { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-.compactProblem .problemText { flex: 1; }
+.compactProblem { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.compactProblem .problemText { flex: 1 1 16rem; }
 .compactProblem .preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .compactProblem > button { flex-shrink: 0; }
-@media (max-width: 540px) { .compactProblem { align-items: stretch; flex-direction: column; } .compactProblem > button { align-self: flex-start; } }
 
 .photos { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem; }
 .photos a { width: 5rem; height: 4rem; overflow: hidden; border-radius: 0.6rem; border: 1px solid var(--app-line, #d6e3dd); }
