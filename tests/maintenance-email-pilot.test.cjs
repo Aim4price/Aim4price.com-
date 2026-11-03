@@ -51,3 +51,22 @@ test('owner self-report keeps opt-outs, active-asset checks and pilot restrictio
  x.available(true);await x.pg.exec("UPDATE \"user\" SET email='another@example.test' WHERE id='owner'");
  assert.equal((await x.api.sendAssetEmailBatch()).sent,0);
 }));
+
+test('activity email design separates escaped problem/resolution notes and keeps actions and preferences',()=>scenario(async x=>{
+ const input={kind:'problem_logged',assetTitle:'Tractor <A>',description:'Leak <script>\nSecond line',actor:'Alex & Team',when:'03 Nov 2026, 13:04 SAST',url:'https://example.test/problem?a=1&b=2',preferences:{asset:'https://example.test/p/asset',account:'https://example.test/p/account',all:'https://example.test/p/all'}};
+ const reported=x.api.assetActivityEmail({...input,resolutionNote:'Must not appear'});
+ assert.match(reported.html,/#a3262e/);assert.match(reported.html,/Reported problem/);
+ assert.match(reported.html,/Leak &lt;script&gt;<br>Second line/);assert.match(reported.html,/Alex &amp; Team/);
+ assert.doesNotMatch(reported.html,/Must not appear|<script>/);
+ assert.ok(reported.html.indexOf('>View problem</a>')<reported.html.indexOf('>Reported by</th>'));
+ for(const url of Object.values(input.preferences))assert.ok(reported.html.includes(url));
+ const resolved=x.api.assetActivityEmail({...input,kind:'problem_resolved',resolutionNote:'Replaced seal <checked>'});
+ assert.match(resolved.html,/#edf7f1/);assert.doesNotMatch(resolved.html,/#a3262e/);
+ assert.match(resolved.html,/Original problem/);assert.match(resolved.html,/Resolution note/);
+ assert.match(resolved.html,/Replaced seal &lt;checked&gt;/);assert.match(resolved.text,/Resolution note:\nReplaced seal <checked>/);
+ assert.match(resolved.html,/Resolved by/);assert.match(resolved.html,/Resolved on/);
+ assert.doesNotMatch(x.api.assetActivityEmail({...input,kind:'problem_resolved'}).html,/Resolution note/);
+ x.record.status='cancelled';x.problem.notedAtIso=new Date().toISOString();x.problem.resolutionNote='Seal replaced';
+ await x.event('problem_resolved','owner');await x.api.sendAssetEmailBatch();
+ assert.match(x.sent[0].html,/Seal replaced/);assert.match(x.sent[0].html,/SAST/);
+}));
