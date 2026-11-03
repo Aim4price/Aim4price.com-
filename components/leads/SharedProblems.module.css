@@ -339,7 +339,7 @@
 .listProblem .resolution { margin-bottom: 0.8rem; }
 .listProblem .resolution .note { margin-bottom: 0; }
 @media (max-width: 480px) {
-  .listProblem { padding: 1rem; }
-  .listProblem .problemFooter { align-items: flex-start; }
-  .listProblem .problemFooter .secondary { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listProblem { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listProblem .problemFooter { align-items: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listProblem .problemFooter .secondary { width: 100%; }
 }
