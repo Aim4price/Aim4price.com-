@@ -4,11 +4,13 @@ import styles from "../../app/leads/page.module.css";
 
 /** Shared by signed-in Leads and public enquiries. Controls and permitted data are supplied by each caller. */
 export default function LeadAssetCard({
+  expanded = true,
   identity,
   aside,
   children,
   className = "",
 }: {
+  expanded?: boolean;
   identity: ReactNode;
   aside: ReactNode;
   children: ReactNode;
@@ -16,7 +18,7 @@ export default function LeadAssetCard({
 }) {
   return (
     <div
-      className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${className} ${assetStyles.assetCardExpanded}`}
+      className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${className} ${expanded ? assetStyles.assetCardExpanded : ""}`}
     >
       <div
         className={`${assetStyles.assetHeader} ${styles.leadAssetHeader} ${styles.expandedLeadHeader}`}
