@@ -66,7 +66,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  else if(method==='DELETE')users=users.filter(u=>!url.endsWith(u.id));
  return {ok,json:async()=>data};};
  ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('app/account/app-access-management-client').OwnerAppAccessManagement));`});
- async function click(text){await page.waitForFunction(text=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()===text||b.getAttribute('aria-label')===text),{},text);await page.evaluate(text=>{const b=Array.from(document.querySelectorAll('button')).find(b=>b.textContent.trim()===text||b.getAttribute('aria-label')===text);b.click();},text);}
+ async function click(text){await page.waitForFunction(text=>Array.from(document.querySelectorAll('button')).some(b=>(b.textContent.trim()===text||b.getAttribute('aria-label')===text)&&!b.matches(':disabled')),{},text);await page.evaluate(text=>{const b=Array.from(document.querySelectorAll('button')).find(b=>(b.textContent.trim()===text||b.getAttribute('aria-label')===text)&&!b.matches(':disabled'));b.click();},text);}
  async function card(title){await page.waitForFunction(title=>Array.from(document.querySelectorAll('button')).some(b=>b.querySelector('strong')?.textContent===title&&!b.disabled),{},title);await page.evaluate(title=>Array.from(document.querySelectorAll('button')).find(b=>b.querySelector('strong')?.textContent===title).click(),title);}
  async function heading(title){console.log('Checking screen:',title);await page.waitForFunction(title=>Array.from(document.querySelectorAll('h3')).some(h=>h.textContent===title),{},title);}
  async function fill(label,value){const input=await page.evaluateHandle(label=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.startsWith(label))?.querySelector('input'),label);await input.click({clickCount:3});await input.press('Backspace');await input.type(value);}
@@ -145,6 +145,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
        else if(url.endsWith('/access')) {if(method==='PUT')window.appSettings=body;data={ok:true,settings:window.appSettings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor'}],groups:[{id:'farm',name:'Farm',memberCount:1,memberAssetIds:['tractor']}],storages:[{id:'tank',name:'Diesel tank',locationLabel:'Yard'}]};}
        else if(method==='PATCH'){window.appUser={...window.appUser,...body};data={ok:true,[kind==='field'?'manager':'staff']:window.appUser};}
        else data={ok:true,[kind==='field'?'managers':'staff']:[window.appUser]};
+       // Exercise asynchronous saves/loads: navigation must wait for enabled controls.
+       if(kind==='field')await new Promise(resolve=>setTimeout(resolve,75));
        return {ok:true,json:async()=>data};
      };
      const exports=require('app/account/app-access-management-client');
@@ -153,7 +155,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await page.waitForFunction(()=>document.body.textContent.includes('Manage logins'));
    await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
    if(kind==='field') {
-     await page.type('input[type="search"]','missing');assert(await page.evaluate(()=>document.body.textContent.includes('No matching logins.')));
+     await page.waitForSelector('input[type="search"]');await page.type('input[type="search"]','missing');assert(await page.evaluate(()=>document.body.textContent.includes('No matching logins.')));
      await page.$eval('input[type="search"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'alex');el.dispatchEvent(new Event('input',{bubbles:true}));});
      await click('Business login settings');await click('All logins');await click('Manage Alex');await heading('Login details');
      assert.equal(await page.$$eval('nav[aria-label="Login settings"] button',els=>els.length),6);
@@ -171,7 +173,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await page.click('input[type="checkbox"]');confirm=false;await click('Password');await heading('Permissions');
      confirm=true;await click('Password');await heading('Password');await click('Permissions');await page.waitForSelector('input[type="checkbox"]');
      assert.equal(await page.$eval('input[type="checkbox"]',e=>e.checked),true,'Discarded access changes do not leak into another section');
-     await page.click('input[type="checkbox"]');await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Changes saved.'));
+     await page.click('input[type="checkbox"]');await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-field-section] [role="status"]')?.textContent==='Changes saved.');
      assert.equal(await page.evaluate(()=>window.appSettings.canRecordWork),false);assert.deepEqual(await page.evaluate(()=>window.appSettings.fuelStorageIds),['tank']);
      await page.screenshot({path:'.next/owner-login-validation/field-permissions.png'});
      await click('Login details');await fill('Display name','Alex Updated');await click('Save changes');
@@ -182,7 +184,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await click('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('No assets selected.'));
      await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
      await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
-     await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Changes saved.'));assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
+     await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-field-section] [role="status"]')?.textContent==='Changes saved.');assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
      await click('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');
      await page.screenshot({path:'.next/owner-login-validation/field-picker.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');
      await click('Login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
