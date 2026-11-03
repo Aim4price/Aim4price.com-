@@ -48,6 +48,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
  try {
  const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(process.env.LOGIN_BROWSER_CPU_RATE)await page.emulateCPUThrottling(Number(process.env.LOGIN_BROWSER_CPU_RATE));
  let confirm=true;page.on('dialog',dialog=>confirm?dialog.accept():dialog.dismiss());
  await page.setViewport({width:1280,height:900});
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#eef4ef}'+sheets.join('\n')+'</style><div id="app"></div>');
@@ -155,8 +156,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await page.waitForFunction(()=>document.body.textContent.includes('Manage logins'));
    await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
    if(kind==='field') {
-     await page.waitForSelector('input[type="search"]');await page.type('input[type="search"]','missing');assert(await page.evaluate(()=>document.body.textContent.includes('No matching logins.')));
+     await page.waitForSelector('input[type="search"]',{visible:true});
+     // Let the modal's opening focus frame finish before sending keyboard input.
+     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+     await page.click('input[type="search"]');await page.type('input[type="search"]','missing');
+     await page.waitForFunction(()=>document.querySelector('input[type="search"]')?.value==='missing'&&document.body.textContent.includes('No matching logins.'));
+     assert.equal(await page.$$eval('button[aria-label="Manage Alex"]',buttons=>buttons.length),0,'Unmatched search hides the login');
      await page.$eval('input[type="search"]',el=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(el,'alex');el.dispatchEvent(new Event('input',{bubbles:true}));});
+     await page.waitForSelector('button[aria-label="Manage Alex"]');
      await click('Business login settings');await click('All logins');await click('Manage Alex');await heading('Login details');
      assert.equal(await page.$$eval('nav[aria-label="Login settings"] button',els=>els.length),6);
      assert(!await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='‹ Back')));
