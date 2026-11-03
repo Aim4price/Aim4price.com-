@@ -1692,9 +1692,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
               </form>
             ) : null}
 
-            {(mode === "login" || mode === "signup") && <aside className={styles.sharedEntry}>
-              <div><strong>Received a shared enquiry?</strong><span>Set up access to view and respond to the enquiry.</span></div>
-              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Access shared enquiry</Link>
+            {(mode === "login" || mode === "signup") && <aside className={styles.sharedEntry} aria-label="Shared enquiry account access">
+              <div>
+                <strong>Received a shared enquiry link?</strong>
+                <span>Create an account to view and respond to your shared enquiry.</span>
+              </div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Create enquiry account</Link>
+              <p className={styles.sharedEntryLogin}>
+                Already have an Aim4price account?{" "}
+                {mode === "login" ? "Log in above." : <button type="button" disabled={isSubmitting} onClick={() => updateHashAndMode("login")}>Log in</button>}
+              </p>
             </aside>}
 
             <p className={styles.footerText}>

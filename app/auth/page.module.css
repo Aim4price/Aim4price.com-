@@ -884,6 +884,12 @@
 .sharedEntry a { display:flex; align-items:center; justify-content:center; gap:1rem; min-height:3rem; padding:.75rem 1rem; border:1px solid #b7d2c3; border-radius:.75rem; background:#fff; color:#174d3e; text-decoration:none; font-size:.9rem; font-weight:800; }
 .sharedEntry a:hover { background:#e7f2ec; border-color:#739e86; }
 .sharedEntry a:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
+.sharedEntryLogin { margin:0; color:#4d6559; font-size:.85rem; line-height:1.5; text-align:center; }
+.sharedEntryLogin button { padding:0; border:0; background:transparent; color:#174d3e; font:inherit; font-weight:750; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
+.sharedEntryLogin button:hover:not(:disabled) { color:#087553; }
+.sharedEntryLogin button:focus-visible { outline:3px solid #168a65; outline-offset:3px; border-radius:.2rem; }
+.sharedEntryLogin button:disabled { opacity:.6; cursor:wait; }
+
 
 .dealerRegisterInfo {
   justify-self: start;
