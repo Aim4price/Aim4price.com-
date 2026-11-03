@@ -49,7 +49,12 @@ export async function collectAssetEmailEvents(since:string){
  AND NOT EXISTS(SELECT 1 FROM asset_email_events e WHERE e.event_key=k.kind||':'||h.record_id)
  ORDER BY h.created_at,h.id LIMIT 200 ON CONFLICT DO NOTHING`,[since]);
 }
-export function recipientEligible(email:string,recipientId:string,actorId:string|null,test:boolean){return recipientId!==actorId&&(!test||email.trim().toLowerCase()===MAINTENANCE_TEST_EMAIL);}
+export function recipientEligible(email:string,recipientId:string,actorId:string|null,test:boolean,ownerId?:string,kind?:AssetEmailKind){
+ // The owner mailbox is the central destination for problem reports, even when
+ // an owner-linked app or the owner account itself recorded the action.
+ const ownerProblem=recipientId===ownerId&&(kind==='problem_logged'||kind==='problem_resolved');
+ return (recipientId!==actorId||ownerProblem)&&(!test||email.trim().toLowerCase()===MAINTENANCE_TEST_EMAIL);
+}
 export const CLAIM_ASSET_EMAIL_SQL=`INSERT INTO asset_email_deliveries(event_key,recipient_id,payload) VALUES($1,$2,$3::jsonb)
  ON CONFLICT(event_key,recipient_id) DO UPDATE SET attempted_at=now(),attempts=asset_email_deliveries.attempts+1
  WHERE asset_email_deliveries.sent_at IS NULL AND asset_email_deliveries.attempted_at<now()-interval '15 minutes'
@@ -58,10 +63,10 @@ async function sendEvent(e:Event,test:boolean,since:string){
  let sent=0,failed=0;
  const category:AssetEmailCategory=e.kind.startsWith('problem_')?'problems':'maintenance';
  for(const user of await assetEmailRecipients(e.owner_id,e.asset_id)){
-  if(!recipientEligible(user.email,user.id,e.actor_id,test))continue;
+  if(!recipientEligible(user.email,user.id,e.actor_id,test,e.owner_id,e.kind))continue;
   const eligible=async()=>{
    const identity=(await getDb().query('SELECT email FROM "user" WHERE id=$1',[user.id])).rows[0];
-   return !!identity&&identity.email===user.email&&recipientEligible(identity.email,user.id,e.actor_id,test)
+   return !!identity&&identity.email===user.email&&recipientEligible(identity.email,user.id,e.actor_id,test,e.owner_id,e.kind)
     &&await maintenanceAssetAvailable(e.owner_id,e.asset_id)
     &&await trackingEmailPermission(e.owner_id,e.asset_id,user.id,e.kind)
     &&await maintenanceEmailsAllowed(user.id,e.asset_id,category);
@@ -122,3 +127,4 @@ export async function sendAssetEmailBatch(after=''){
  for(const event of events){const result=await sendEvent(event,rollout.test,rollout.since);sent+=result.sent;failed+=result.failed;}
  return {sent,failed,next:owners.length===20?owners.at(-1).user_id:null};
 }
+
