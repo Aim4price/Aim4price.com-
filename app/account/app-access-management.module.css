@@ -1434,9 +1434,11 @@
 :global([data-login-settings]) .modal .loginDetailIcon,
 :global([data-login-settings]) .modal .setupInputIcon > svg { display:none; }
 :global([data-login-settings]) .modal .setupInputIcon input { padding-left:1rem; }
-:global([data-login-settings]) .modal .loginSummary { grid-template-columns:minmax(0,1fr) auto; gap:.75rem; }
+:global([data-login-settings]) .modal .loginSummary { grid-template-columns:minmax(0,1fr) minmax(0,auto) auto; gap:1rem; }
+:global([data-login-settings]) .modal .loginSummary > .loginActions { grid-column:3; padding:.75rem 1rem .75rem 0; gap:1rem; white-space:nowrap; }
+.directoryRole { max-width:16rem; overflow-wrap:anywhere; color:var(--app-muted,#65796f); font-size:.88rem; line-height:1.4; }
 :global([data-login-settings]) .modal .loginIdentity { padding:.75rem 1rem; }
-:global([data-login-settings]) .modal .directoryList { gap:.6rem; }
+:global([data-login-settings]) .modal .directoryList { gap:.6rem; align-content:start; grid-auto-rows:max-content; }
 :global([data-login-settings]) .modal .directoryHeader { margin-bottom:1rem; }
 :global([data-login-settings]) .modal .directoryHeader button,
 :global([data-login-settings]) .modal .cancelButton,
@@ -1448,7 +1450,9 @@
 :global([data-login-settings]) .modal .directorySearch input { background:var(--app-surface-soft,#f2f6f4); }
 :global([data-login-settings]) .modal .directorySearch input:focus-visible { outline:2px solid var(--app-accent,#28815f); outline-offset:2px; }
 @media(max-width:640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) :global([data-login-settings]) .modal .loginSummary { grid-template-columns:1fr; gap:0; }
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-login-settings]) .modal .loginSummary { grid-template-columns:minmax(0,1fr); gap:0; }
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-login-settings]) .modal .directoryRole { padding:0 1rem .75rem; max-width:none; }
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-login-settings]) .modal .loginSummary > .loginActions { grid-column:1; padding:0 1rem 1rem; justify-content:space-between; }
 }
 
 :global([data-login-settings]) .modal .setupInputIcon:has(.passwordEye) input { padding-right:5rem; }

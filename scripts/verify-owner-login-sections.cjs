@@ -56,6 +56,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:`${runtime}
  window.requests=[];window.failSave=false;
  let users=[{id:'one',displayName:'George Jnr',username:'jnr@skb',accessRole:'admin',isActive:true,lastLoginAtIso:null,updatedAtIso:'2026-10-08T08:26:00Z'}, {id:'two',displayName:'Gerald',username:'gerald@skb',accessRole:'view_only',isActive:true,lastLoginAtIso:null,updatedAtIso:'2026-10-08T08:26:00Z'}];
+ users.push({...users[1],id:'three',displayName:'Alex',username:'alex@skb',isActive:false});
  let settings={assetScope:'selected',assetIds:[],groupIds:[]};
  window.fetch=async(url,options={})=>{
  const method=options.method||'GET',body=options.body?JSON.parse(options.body):null;window.requests.push({url,method,body});
@@ -97,6 +98,26 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  }
  await page.setViewport({width:1280,height:900});
  await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
+ for (const viewport of [{width:1366,height:768},{width:1920,height:1080},{width:390,height:844}]) {
+   await page.setViewport(viewport);
+   await page.waitForSelector('button[aria-label="Manage George Jnr"]');
+   await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));
+   const layout=await page.evaluate(()=>{
+     const rows=Array.from(document.querySelectorAll('[role="dialog"] article'));
+     return rows.map(row=>{
+       const r=row.getBoundingClientRect(),button=row.querySelector('button'),b=button.getBoundingClientRect(),name=row.querySelector('strong').getBoundingClientRect();
+       return {height:r.height,aligned:b.top<name.bottom&&b.bottom>name.top,fits:b.left>=r.left&&b.right<=r.right,overflow:row.scrollWidth>row.clientWidth+1};
+     });
+   });
+   assert.equal(layout.length,3);
+   assert(layout.every(row=>row.fits&&!row.overflow),'Directory controls stay inside their row');
+   if(viewport.width>640){
+     assert(layout.every(row=>row.aligned&&row.height<110),'Desktop identity and actions share a compact row');
+     assert(await page.$eval('[role="dialog"] article',row=>row.parentElement.scrollHeight<=row.parentElement.clientHeight+1),'Three desktop logins fit without a list scrollbar');
+   }
+   await page.screenshot({path:'.next/owner-ui-review/directory-'+viewport.width+'.png'});
+ }
+ await page.setViewport({width:1280,height:900});
  const supportStyle = await page.$eval('[role="dialog"] header p',el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.color];});
  await click('Manage George Jnr');await heading('Login details');
  assert.equal(await page.$$eval('nav[aria-label="Login settings"] button',els=>els.length),5);
