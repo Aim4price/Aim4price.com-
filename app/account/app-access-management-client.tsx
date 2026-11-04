@@ -958,12 +958,12 @@ function AppAccessManagement({ kind, configOverride }: {
     );
   }
 
-  const visibleRecords = kind === 'field' ? records.filter(record => `${record.displayName} ${record.username}`.toLowerCase().includes(directorySearch.trim().toLowerCase())) : records;
+  const visibleRecords = records.filter(record => `${record.displayName} ${record.username}`.toLowerCase().includes(directorySearch.trim().toLowerCase()));
 
   const isSelectedBusy = selectedRecord ? busyId === selectedRecord.id || deletingId === selectedRecord.id : false;
 
   return (
-    <main data-personal-app-access={kind !== 'dealer' ? '' : undefined} data-field-app={kind === 'field' ? '' : undefined} className={`${baseStyles.page} ${kind !== 'dealer' ? styles.personalAppExperience : ''}`}>
+    <main data-personal-app-access={kind !== 'dealer' ? '' : undefined} data-login-settings="true" className={`${baseStyles.page} ${kind !== 'dealer' ? styles.personalAppExperience : ''}`}>
       <AppHeader active="none" />
       <section className={baseStyles.shell}>
         <button type="button" className={baseStyles.backButton} onClick={() => window.location.assign('/account')}>
@@ -1043,7 +1043,7 @@ function AppAccessManagement({ kind, configOverride }: {
                   autoComplete="new-password"
                 />
                 <button type="button" className={`${baseStyles.passwordToggleButton} ${styles.passwordEye}`} aria-label={`${showCreatePassword ? 'Hide' : 'Show'} ${config.passwordLabel.toLowerCase()}`} aria-pressed={showCreatePassword} onClick={() => setShowCreatePassword((current) => !current)}>
-                  {kind === 'field' ? (showCreatePassword ? 'Hide' : 'Show') : <AccessSectionIcon name="eye"/>}
+                  {showCreatePassword ? 'Hide' : 'Show'}
                 </button>
               </div>
             </div>
@@ -1071,7 +1071,7 @@ function AppAccessManagement({ kind, configOverride }: {
       >
         <InlineNotice notice={notice} />
         {businessSettingsOpen ? <div className={styles.newUserSetup}>
-          <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>{kind === 'field' ? 'All logins' : '‹ All logins'}</button>
+          <button type="button" className={styles.modalBackButton} onClick={() => setBusinessSettingsOpen(false)} disabled={namespaceBusy}>All logins</button>
           {renderAccountNameSetup()}
         </div> : !selectedRecord ? (
           <section className={`${baseStyles.card} ${styles.surface}`}>
@@ -1079,11 +1079,11 @@ function AppAccessManagement({ kind, configOverride }: {
               <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
               <div className={ownerStyles.listActions}>
                 <button type="button" onClick={() => setBusinessSettingsOpen(true)}>Business login settings</button>
-                <button type="button" className={ownerStyles.primary} onClick={() => openFlow('new')}>{kind === 'field' ? 'Add login' : 'Add user'}</button>
+                <button type="button" className={ownerStyles.primary} onClick={() => openFlow('new')}>Add login</button>
               </div>
             </div>
-            {kind === 'field' && records.length > 0 ? <label className={styles.directorySearch}>Search logins<input type="search" value={directorySearch} onChange={event => setDirectorySearch(event.target.value)} placeholder="Search by name or username" /></label> : null}
-            {kind === 'field' && !loading && records.length > 0 && !visibleRecords.length ? <p className={styles.loginHint}>No matching logins. Try another name or username.</p> : null}
+            {records.length > 0 ? <label className={styles.directorySearch}>Search logins<input type="search" value={directorySearch} onChange={event => setDirectorySearch(event.target.value)} placeholder="Search by name or username" /></label> : null}
+            {!loading && records.length > 0 && !visibleRecords.length ? <p className={styles.loginHint}>No matching logins. Try another name or username.</p> : null}
             {loading ? <div className={styles.emptyState}><p>Loading access details…</p></div> : null}
             {!loading && !records.length ? (
               <div className={styles.emptyState}>
@@ -1103,7 +1103,7 @@ function AppAccessManagement({ kind, configOverride }: {
             ) : null}
           </section>
         ) : <OwnerLoginSections
-          sectionNavigation={kind === 'field'}
+          sectionNavigation
           businessLoginLayout={businessLoginLayout}
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
           accountName={accountName} passwordMinimum={config.passwordMinimum} passwordMaximum={config.passwordMaximum}
@@ -1299,11 +1299,11 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
           { key: 'assetIds', title: 'Choose assets', icon: 'box', text: 'Select individual assets.' },
         ] as const).map(choice => <button type="button" className={ownerStyles.card} key={choice.key} disabled={saving} onClick={() => setPicker(choice.key)}><span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><span>{choice.text}</span><small>{(settings[choice.key] ?? []).length} selected</small></span></button>)}</div>
         <p className={ownerStyles.hint} aria-live="polite">{countLabel(settings.groupIds.length, 'umbrella')} · {countLabel((settings.registerIds ?? []).length, 'register')} · {countLabel(settings.assetIds.length, 'individual asset')} · {countLabel(includedCount, 'asset')} included</p>
-        {picker ? <OwnerAccessPicker key={picker} title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'registerIds' ? 'Choose registers' : 'Choose assets'} description={picker === 'assetIds' ? 'Choose individual assets for this login.' : 'Includes current and future assets.'} selected={settings[picker] ?? []} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'registerIds' ? registers.map(register => ({ id: register.id, title: register.name, detail: `${assets.filter(asset => asset.registerId === register.id).length} assets` })) : assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/>: null}
+        {picker ? <OwnerAccessPicker compact key={picker} title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'registerIds' ? 'Choose registers' : 'Choose assets'} description={picker === 'assetIds' ? 'Choose individual assets for this login.' : 'Includes current and future assets.'} selected={settings[picker] ?? []} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'registerIds' ? registers.map(register => ({ id: register.id, title: register.name, detail: `${assets.filter(asset => asset.registerId === register.id).length} assets` })) : assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/>: null}
       </> : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving}>
+      <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving || JSON.stringify(settings) === savedSettings.current}>
         {saving ? 'Saving…' : 'Save changes'}
       </button></footer>
     </section>

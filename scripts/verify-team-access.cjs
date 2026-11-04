@@ -65,7 +65,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox','--disable-gpu','--disable-dev-shm-usage'],headless:true});
  fs.mkdirSync('.next/team-access-validation',{recursive:true});
  try {
- const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));let acceptDiscard=true;page.on('dialog',d=>acceptDiscard?d.accept():d.dismiss());
  async function mount(mode,width=1440){
   await page.goto('about:blank');
   await page.setViewport({width,height:1000});
@@ -76,8 +76,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     const asset={id:'asset-a',registerId:'register-a',registerName:'Skimmelkrans Boerdery',title:'Landini Super 110',brand:'Landini',model:'Super 110',year:2024,serial:'VIN123',registration:'ABC123',condition:'good',usage:2741,usageMetric:'hours',photoCount:0};
     window.requests=[];window.revoked=false;window.showValues=false;
     window.fetch=async(url,init={})=>{window.requests.push({url:String(url),method:init.method||'GET',body:init.body});let response;
-      if(url==='/api/team-access'&&init.method==='POST'){window.saved=JSON.parse(init.body);if(window.saved.action==='remove')window.removed=true;response={ok:true};}
-      else if(url==='/api/team-access')response={businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
+      if(url==='/api/team-access'&&init.method==='POST'){window.saved=JSON.parse(init.body);if(window.saved.action==='save'&&window.saved.id){const {password,action,...savedMember}=window.saved;window.savedMember={...savedMember,version:savedMember.version+1};}if(window.saved.action==='remove')window.removed=true;response={ok:true};}
+      else if(url==='/api/team-access')response={businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1,...window.savedMember}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
       else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',status:'active',permissions,expiresAt:null}]};
       else if(window.revoked)return {ok:false,json:async()=>({error:'Team access has been revoked.'})};
       else if(String(url).endsWith('/documents'))response={documents:[{id:'document-a',title:'Operator manual',fileName:'manual.pdf',assetIds:['asset-a']}]};
@@ -92,20 +92,29 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function fillLabel(label,value){await page.evaluate((label)=>{const node=Array.from(document.querySelectorAll('label')).find(l=>l.childNodes[0]?.textContent.trim()===label);node.querySelector('input,textarea').setAttribute('data-fill','true');},label);await page.locator('[data-fill=true]').fill(value);await page.$eval('[data-fill=true]',e=>e.removeAttribute('data-fill'));}
  async function assertFits(){assert(await page.$eval('[role=dialog]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}),'Dialog bounds');}
  await mount('login');await fillLabel('Email address','staff@example.com');await fillLabel('Password','Initial-password-123');await page.evaluate(()=>{window.fetch=async(url,init)=>{window.loginRequest=JSON.parse(init.body);return {ok:false,json:async()=>({error:'Incorrect email or password.'})}}});await click('Sign in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect email or password.'));assert.deepEqual(await page.evaluate(()=>window.loginRequest),{email:'staff@example.com',password:'Initial-password-123',business:'owner-a'});
- await mount('owner');await click('Manage users');await assertFits();await click('View activity');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent==='Team activity');await click('Back to users');await click('Manage');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent === 'Manage Existing user');await click('Permissions');await page.waitForSelector('input[type=checkbox]');await click('Back');await click('All users');await page.waitForFunction(()=>document.body.textContent.includes('Choose a person to manage.'));await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/desktop-users-manager.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));await page.screenshot({path:'.next/team-access-validation/desktop-users-launcher.png'});await click('Add user');await fillLabel('Name','Workshop staff');await fillLabel('Email address','staff@example.com');await fillLabel('Initial password','Initial-password-123');
+ await mount('owner');await click('Manage users');await assertFits();await click('View activity');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent==='Team activity');await click('Back to users');await click('Manage');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent === 'Manage Existing user');assert.equal(await page.$$eval('nav[aria-label="User settings"] button',els=>els.length),5);
+ await fillLabel('Name','Updated user');await click('Permissions');await page.waitForSelector('input[type=checkbox]');await click('Login details');assert.equal(await page.$eval('input[maxlength="100"]',el=>el.value),'Updated user');
+ acceptDiscard=false;await click('All users');assert(await page.$('nav[aria-label="User settings"]'));acceptDiscard=true;
+ await click('Save access');await page.waitForFunction(()=>document.body.textContent.includes('Desktop access saved.'));assert(await page.$('nav[aria-label="User settings"]'));assert.equal(await page.$eval('input[maxlength="100"]',el=>el.value),'Updated user');
+ await click('All users');await page.evaluate(()=>{window.requests=[];window.saved=null;});await page.waitForFunction(()=>document.body.textContent.includes('Choose a person to manage.'));await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/desktop-users-manager.png'});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));await page.screenshot({path:'.next/team-access-validation/desktop-users-launcher.png'});await click('Add user');await fillLabel('Name','Workshop staff');await fillLabel('Email address','staff@example.com');await fillLabel('Initial password','Initial-password-123');
  assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
  await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'text');
  assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.value),'Initial-password-123');
  assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);
  await click('Hide password');assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
  await page.screenshot({path:'.next/team-access-validation/password-preview.png'});
- await click('Show password');await click('Continue');await click('Back');
+ await click('Show password');await click('Continue');await click('Previous step');
  assert.equal(await page.$eval('input[autocomplete="new-password"]',el=>el.type),'password');
 
  await click('Open calendar');await page.waitForSelector('dialog[open]');
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.$eval('[role=dialog] h2',el=>el.textContent),'New desktop user');
  await click('Open calendar');await page.waitForSelector('dialog[open]');await click('Today');
+ // Use a future expiry: a UTC runner's Today can already have ended in South Africa.
+ await click('Next month');
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('dialog[open] button[data-date]')).some(button=>new Date(button.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000));
+ await page.evaluate(()=>Array.from(document.querySelectorAll('dialog[open] button[data-date]')).find(button=>!button.disabled&&new Date(button.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000).click());
+ await page.waitForFunction(()=>new Date(document.querySelector('dialog[open] [aria-pressed=true]')?.dataset.date+'T21:59:59.000Z').getTime()>Date.now()+2*86400000);
  const expiry=await page.$eval('dialog[open] [aria-pressed=true]',el=>el.dataset.date);
  await page.screenshot({path:'.next/team-access-validation/expiry-calendar.png'});
  await click('Confirm date');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
@@ -117,27 +126,24 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'.next/team-access-validation/owner-permissions-desktop.png'});
  await click('Continue');
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),true);
- assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.querySelector('strong')?.textContent==='Umbrellas')),false,'Choices must stay hidden until Choose assets is clicked');
- await click('Choose assets');
+ await click('Selected assets only');
  await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});
  await page.screenshot({path:'.next/team-access-validation/asset-picker-options.png'});
- await click('Umbrellas');await page.waitForSelector('dialog[open]');await click('Workshop fleet');await click('Cancel');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ await click('Umbrellas');await page.waitForSelector('dialog[open]');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),true);
- await click('Umbrellas');await page.waitForSelector('dialog[open]');await click('Workshop fleet');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
- await click('Choose assets');await page.waitForSelector('dialog[open]');assert.equal(await page.$eval('dialog[open] [data-asset-choice-row]',el=>el.getAttribute('aria-pressed')),'true');await click('Deselect all');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
- await click('Registers');await page.waitForSelector('dialog[open]');await click('Skimmelkrans Boerdery');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
- await click('Back');
- assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.querySelector('strong')?.textContent==='Umbrellas')),false,'Back must return to the scope choices');
- assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),false,'Back must retain confirmed selections');
+ await click('Umbrellas');await page.waitForSelector('dialog[open]');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ await click('Choose assets');await page.waitForSelector('dialog[open]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',el=>el.checked),true);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ await click('Registers');await page.waitForSelector('dialog[open]');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+ assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),false,'Confirmed selections enable continuation');
  await page.screenshot({path:'.next/team-access-validation/asset-access.png'});await click('Continue');
  await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='Operator manual').querySelector('input').click());await assertFits();
  await click('Continue');await page.waitForFunction(()=>document.body.textContent.includes('Review access'));await page.screenshot({path:'.next/team-access-validation/review.png'});assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);await click('Create user');await page.waitForFunction(()=>window.saved);const saved=await page.evaluate(()=>window.saved);assert.equal(saved.expiresAt,`${expiry}T21:59:59.000Z`);assert.equal(saved.email,'staff@example.com');assert.notEqual(saved.sendInvitation,true);assert.equal(saved.password,'Initial-password-123');assert.equal(saved.permissions.viewValues,false);assert.deepEqual(saved.registerIds,['register-a']);assert.deepEqual(saved.documentIds,['document-a']);
  await page.setViewport({width:390,height:844});await click('Add user');await assertFits();await fillLabel('Name','Mobile user');await fillLabel('Email address','mobile@example.com');await click('Continue');await page.waitForSelector('input[type=checkbox]');await page.screenshot({path:'.next/team-access-validation/owner-permissions-mobile.png'});
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
- await mount('owner');await click('Manage users');await click('Manage');await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/manage-overview.png'});await page.setViewport({width:390,height:844});await assertFits();await page.screenshot({path:'.next/team-access-validation/manage-overview-mobile.png'});await page.setViewport({width:1440,height:1000});await click('Remove user');
+ await mount('owner');await click('Manage users');await click('Manage');await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/manage-overview.png'});await page.setViewport({width:390,height:844});await assertFits();await page.screenshot({path:'.next/team-access-validation/manage-overview-mobile.png'});await page.setViewport({width:1440,height:1000});await click('Login status');await page.screenshot({path:'.next/team-access-validation/login-status.png'});await click('Remove user');
  await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent==='Remove desktop user?');
  assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);
- await click('Cancel');await click('Manage');await click('Remove user');await assertFits();
+ await click('Cancel');await click('Manage');await click('Login status');await click('Remove user');await assertFits();
  await click('Remove user');await page.waitForFunction(()=>document.body.textContent.includes('No desktop users yet.'));
  assert.deepEqual(await page.evaluate(()=>window.saved),{action:'remove',id:'member-a',version:1});
  await mount('member');await click('Open workspace');await click('Open asset →');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);

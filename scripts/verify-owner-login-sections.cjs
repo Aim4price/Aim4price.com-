@@ -98,10 +98,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:1280,height:900});
  await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('Manage logins')).click());
  const supportStyle = await page.$eval('[role="dialog"] header p',el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.color];});
- await click('Manage George Jnr');await heading('Manage access');
- assert.deepEqual(await page.$$eval('[role="dialog"] button > span > span',els=>els.filter(el=>el.textContent.includes('Choose what they can do.')).map(el=>{const s=getComputedStyle(el);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight,s.color];})),[supportStyle], 'Owner helper text matches the directory subtitle');
-
- assert.equal(await page.$$eval('button strong',els=>els.filter(e=>['Login details','Permissions','Asset access','Passcode'].includes(e.textContent)).length),4);
+ await click('Manage George Jnr');await heading('Login details');
+ assert.equal(await page.$$eval('nav[aria-label="Login settings"] button',els=>els.length),5);
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="dialog"] button')).some(b=>b.textContent==='Delete')),false);
  fs.mkdirSync('.next/owner-login-validation',{recursive:true});
  await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));
@@ -110,10 +108,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));
  await page.screenshot({path:'.next/owner-login-validation/overview-mobile.png'});
  await page.setViewport({width:1280,height:900});
- await card('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Full access to all assets')));
- assert.equal(await page.$$eval('input[type="checkbox"]',els=>els.length),0);await click('‹ Back');
- await card('Permissions');await page.click('input[value="operations"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{accessRole:'operations'});
- await card('Asset access');await card('Umbrella');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
+ await click('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Full access to all assets')));
+ assert.equal(await page.$$eval('input[type="checkbox"]',els=>els.length),0);await click('Login details');
+ await click('Permissions');await page.click('input[value="operations"]');await click('Save changes');await heading('Permissions');assert.deepEqual(await patch(),{accessRole:'operations'});
+ await click('Asset access');await card('Umbrella');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
  await card('Registers');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
  await card('Registers');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
  await card('Choose assets');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await page.screenshot({path:'.next/owner-login-validation/asset-picker.png'});await click('Confirm selection');
@@ -123,12 +121,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:390,height:844});await card('Choose assets');
  assert(await page.$eval('dialog[open]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}));
  await page.screenshot({path:'.next/owner-login-validation/picker-mobile.png'});await click('Cancel');await page.setViewport({width:1280,height:900});
- await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body),{assetScope:'selected',assetIds:['tractor'],groupIds:['farm'],registerIds:['register-a']});
- await card('Passcode');await fill('New passcode','4321');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'4321'});
- await card('Login details');await fill('Display name','George Junior');await page.evaluate(()=>window.failSave=true);await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Username is already in use.'));await heading('Login details');
- await page.evaluate(()=>window.failSave=false);await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{displayName:'George Junior',username:'jnr@skb'});
- await card('Login details');await fill('Display name','Unsaved');confirm=false;await click('‹ Back');await heading('Login details');confirm=true;await click('‹ Back');await heading('Manage access');
- await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
+ await page.evaluate(()=>window.holdAccess=true);await click('Save changes');await page.waitForFunction(()=>document.querySelector('[data-modal-close]').disabled);await page.evaluate(()=>{window.holdAccess=false;window.releaseAccess();});await page.waitForFunction(()=>document.body.textContent.includes('Access saved.'));assert.deepEqual(await page.evaluate(()=>window.requests.filter(r=>r.method==='PUT').at(-1).body),{assetScope:'selected',assetIds:['tractor'],groupIds:['farm'],registerIds:['register-a']});
+ await click('Passcode');await fill('New passcode','4321');await click('Save changes');await page.waitForFunction(()=>document.querySelector('input[autocomplete="new-password"]').value==='');assert.deepEqual(await patch(),{password:'4321'});
+ await click('Login details');await fill('Display name','George Junior');await page.evaluate(()=>window.failSave=true);await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Username is already in use.'));await heading('Login details');
+ await page.evaluate(()=>window.failSave=false);await click('Save changes');await heading('Login details');assert.deepEqual(await patch(),{displayName:'George Junior',username:'jnr@skb'});
+ await click('Login details');await fill('Display name','Unsaved');confirm=false;await click('Permissions');await heading('Login details');confirm=true;await click('Permissions');await heading('Permissions');
+ await click('Login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
  confirm=false;await click('Delete');assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='DELETE').length),0);confirm=true;await click('Delete');await page.waitForFunction(()=>!document.body.textContent.includes('Manage George Junior'));
  await page.evaluate(()=>{document.getElementById('app').remove();const host=document.createElement('div');host.id='other-app';document.body.append(host);});
  // Exercise every app against the same section flow, using its existing API contract.
@@ -201,23 +199,23 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await page.evaluate(()=>ReactDOM.unmountComponentAtNode(document.getElementById('other-app')));
      continue;
    }
-   await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('‹ All logins');
-   await click('Manage Alex');await heading('Manage access');
+   await click('Business login settings');assert(await page.evaluate(()=>document.body.textContent.includes('Business login ID:')));await click('All logins');
+   await click('Manage Alex');await heading('Login details');
    await page.evaluate(()=>Promise.allSettled(document.getAnimations().map(a=>a.finished)));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-overview.png'});
-   await card('Login details');
+   await click('Login details');
    if(kind!=='field') {
      assert(await page.$$eval('label input',inputs=>inputs.every(input=>{const icon=input.parentElement.querySelector('svg');return !icon||parseFloat(getComputedStyle(input).paddingLeft)>icon.getBoundingClientRect().right-input.getBoundingClientRect().left+6;})), 'Input text must clear the leading icon');
      await page.screenshot({path:'.next/owner-login-validation/'+kind+'-details.png'});
    }
-   await fill('Display name','Alex Updated');await click('Save changes');await heading('Manage access');
+   await fill('Display name','Alex Updated');await click('Save changes');await heading('Login details');
    assert.deepEqual(await patch(),{displayName:'Alex Updated',username:'alex@skb'});
-   await card('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{password:'new-secret-123'});
-   await card('Permissions');
+   await click('Password');await fill('New password','new-secret-123');await click('Show password');assert.equal(await page.$eval('input[autocomplete="new-password"]',e=>e.type),'text');await click('Save changes');await page.waitForFunction(()=>document.querySelector('input[autocomplete="new-password"]').value==='');assert.deepEqual(await patch(),{password:'new-secret-123'});
+   await click('Permissions');
    if(kind==='field') {
      await page.waitForSelector('input[type="checkbox"]');await page.click('input[type="checkbox"]');await click('Save changes');await heading('Manage access');
      assert.equal(await page.evaluate(()=>window.appSettings.canRecordWork),false);
      assert.deepEqual(await page.evaluate(()=>window.appSettings.fuelStorageIds),['tank']);
-     await card('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('Umbrellas'));await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
+     await click('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('Umbrellas'));await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
      await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
      await click('Save changes');await heading('Manage access');assert.deepEqual(await page.evaluate(()=>window.appSettings.groupIds),['farm']);
      await card('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');await click('‹ Back');
@@ -228,10 +226,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
        assert(await page.$eval('button[type="submit"]',el=>el.getBoundingClientRect().bottom<=innerHeight), 'Save action should fit on screen');
        await page.screenshot({path:'.next/owner-login-validation/'+kind+'-permissions.png'});
      }
-     await page.click('input[value="owner"]');await click('Save changes');await heading('Manage access');assert.deepEqual(await patch(),{role:'owner'});
+     await page.click('input[value="owner"]');await click('Save changes');await heading('Permissions');assert.deepEqual(await patch(),{role:'owner'});
    }
    await page.setViewport({width:390,height:844});assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));await page.screenshot({path:'.next/owner-login-validation/'+kind+'-mobile.png'});await page.setViewport({width:1280,height:900});
-   if(kind!=='field') await card('Login status'); else await click('Manage login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
+   if(kind!=='field') await click('Login status'); else await click('Login status');await click('Deactivate');await page.waitForFunction(()=>document.querySelector('[data-active="false"]'));await click('Activate');await page.waitForFunction(()=>document.querySelector('[data-active="true"]'));
    await page.evaluate(()=>ReactDOM.unmountComponentAtNode(document.getElementById('other-app')));
  }
  assert.deepEqual(errors,[]);console.log('PASS: section navigation, role/asset access, scoped saves, duplicate errors, unsaved edits, status actions and mobile layout');

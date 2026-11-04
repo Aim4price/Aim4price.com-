@@ -1431,28 +1431,28 @@
 .businessIdentity p { margin: .25rem 0 0; }
 
 /* Inner Field Manager screens; the approved launcher remains unchanged. */
-:global([data-field-app]) .modal .loginDetailIcon,
-:global([data-field-app]) .modal .setupInputIcon > svg { display:none; }
-:global([data-field-app]) .modal .setupInputIcon input { padding-left:1rem; }
-:global([data-field-app]) .modal .loginSummary { grid-template-columns:minmax(0,1fr) auto; gap:.75rem; }
-:global([data-field-app]) .modal .loginIdentity { padding:.75rem 1rem; }
-:global([data-field-app]) .modal .directoryList { gap:.6rem; }
-:global([data-field-app]) .modal .directoryHeader { margin-bottom:1rem; }
-:global([data-field-app]) .modal .directoryHeader button,
-:global([data-field-app]) .modal .cancelButton,
-:global([data-field-app]) .modal .modalBackButton { background:var(--app-surface-soft,#edf1ef); }
-:global([data-field-app]) .modal .directoryHeader button:last-child { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
-:global([data-field-app]) .modal .newUserSetup .passwordEye { width:4rem; font-size:.85rem; font-weight:650; background:var(--app-success-soft,#e8f2ed); }
+:global([data-login-settings]) .modal .loginDetailIcon,
+:global([data-login-settings]) .modal .setupInputIcon > svg { display:none; }
+:global([data-login-settings]) .modal .setupInputIcon input { padding-left:1rem; }
+:global([data-login-settings]) .modal .loginSummary { grid-template-columns:minmax(0,1fr) auto; gap:.75rem; }
+:global([data-login-settings]) .modal .loginIdentity { padding:.75rem 1rem; }
+:global([data-login-settings]) .modal .directoryList { gap:.6rem; }
+:global([data-login-settings]) .modal .directoryHeader { margin-bottom:1rem; }
+:global([data-login-settings]) .modal .directoryHeader button,
+:global([data-login-settings]) .modal .cancelButton,
+:global([data-login-settings]) .modal .modalBackButton { background:var(--app-surface-soft,#edf1ef); }
+:global([data-login-settings]) .modal .directoryHeader button:last-child { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
+:global([data-login-settings]) .modal .newUserSetup .passwordEye { width:4rem; font-size:.85rem; font-weight:650; background:var(--app-success-soft,#e8f2ed); }
 .directorySearch { display:grid; gap:.5rem; margin-bottom:1rem; font-size:.88rem; font-weight:620; color:var(--app-muted,#63766f); }
 .directorySearch input { width:100%; min-height:2.9rem; padding:.7rem 1rem; border:1px solid var(--app-line,#d8e5dd); border-radius:.85rem; color:var(--app-text,#173f31); font:inherit; }
-:global([data-field-app]) .modal .directorySearch input { background:var(--app-surface-soft,#f2f6f4); }
-:global([data-field-app]) .modal .directorySearch input:focus-visible { outline:2px solid var(--app-accent,#28815f); outline-offset:2px; }
+:global([data-login-settings]) .modal .directorySearch input { background:var(--app-surface-soft,#f2f6f4); }
+:global([data-login-settings]) .modal .directorySearch input:focus-visible { outline:2px solid var(--app-accent,#28815f); outline-offset:2px; }
 @media(max-width:640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) :global([data-field-app]) .modal .loginSummary { grid-template-columns:1fr; gap:0; }
+  :global(:where(html:not(:has([data-website-canvas])))) :global([data-login-settings]) .modal .loginSummary { grid-template-columns:1fr; gap:0; }
 }
 
-:global([data-field-app]) .modal .setupInputIcon:has(.passwordEye) input { padding-right:5rem; }
-:global([data-field-app]) .modal .directoryList { max-height:max(10rem,calc(var(--website-visible-height,100dvh) - 24rem)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:auto; scrollbar-color:var(--app-muted,#829a92) var(--app-surface-soft,#edf3ef); padding:.2rem .5rem .2rem .2rem; }
-:global([data-field-app]) .modal .directoryList::-webkit-scrollbar { width:12px; }
-:global([data-field-app]) .modal .directoryList::-webkit-scrollbar-thumb { background:var(--app-muted,#829a92); border:3px solid var(--app-surface,#fff); border-radius:12px; }
-:global([data-field-app]) .modal .accessMessage { margin-top:1rem; font-size:.88rem; font-weight:620; line-height:1.5; }
+:global([data-login-settings]) .modal .setupInputIcon:has(.passwordEye) input { padding-right:5rem; }
+:global([data-login-settings]) .modal .directoryList { max-height:max(10rem,calc(var(--website-visible-height,100dvh) - 24rem)); overflow-y:auto; overscroll-behavior:contain; scrollbar-width:auto; scrollbar-color:var(--app-muted,#829a92) var(--app-surface-soft,#edf3ef); padding:.2rem .5rem .2rem .2rem; }
+:global([data-login-settings]) .modal .directoryList::-webkit-scrollbar { width:12px; }
+:global([data-login-settings]) .modal .directoryList::-webkit-scrollbar-thumb { background:var(--app-muted,#829a92); border:3px solid var(--app-surface,#fff); border-radius:12px; }
+:global([data-login-settings]) .modal .accessMessage { margin-top:1rem; font-size:.88rem; font-weight:620; line-height:1.5; }
