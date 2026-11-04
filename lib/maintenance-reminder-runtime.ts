@@ -17,7 +17,7 @@ export async function startMaintenanceReminderTestSender() {
       await ensureAssetEmailDelivery();
       await getDb().query("INSERT INTO asset_email_worker(id,last_started_at) VALUES('sender',now()) ON CONFLICT(id) DO UPDATE SET last_started_at=now()");
       // South Africa is UTC+2 year-round. Activity alerts are checked all day.
-      const includeReminders=rollout.test||new Date().getUTCHours()>=5;
+      const includeReminders=rollout.test||(new Date().getUTCHours()+2)%24>=7;
       const result=await sendAssetEmailBatch(cursor,includeReminders);
       if(includeReminders)cursor=result.next||'';
       await getDb().query("UPDATE asset_email_worker SET last_finished_at=now(),last_error=NULL,last_sent=$1,last_failed=$2 WHERE id='sender'",[result.sent,result.failed]);
