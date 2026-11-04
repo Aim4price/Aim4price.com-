@@ -367,3 +367,64 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  await f.service.loadTeamScope(ready.id);
  }finally{await f.db.close();}
  });
+
+test('My access lists only the signed-in grant and projects safe summaries across account types',async()=>{
+ const f=await setup();
+ try {
+ const grant=await f.active({documentIds:[docId]});
+ const other=await f.invite({email:'second@example.com',password:'Initial-password-123'});
+ let type='owner',subtype='',status='active';
+ const route=load('app/api/team-workspaces/route.ts',{
+  'next/server':{},'../../../lib/db':{getDb:()=>f.pool},
+  '../../../lib/team-access':f.service,
+  '../../../lib/team-access-schema':{ensureTeamAccessSchema:async()=>{}},
+  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:type,accountSubtype:subtype,accountStatus:status,businessName:'Granted business'})},
+  '../../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
+  '../../../lib/team-access-http':{teamJson:b=>b,teamError:e=>{throw e}},
+  '../../../lib/business-network-api':{},
+ });
+ for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:true},{type:'business',allowed:false}]){
+   type=account.type;subtype=account.subtype||'';
+   const response=await route.GET();
+   assert.equal(response.workspaces.length,1);
+   const item=response.workspaces[0];
+   assert.equal(item.id,grant.id);assert.equal(item.available,account.allowed);
+   assert.equal(item.scope,'selected');assert.equal(item.registerCount,1);assert.equal(item.documentCount,1);
+   assert.equal(Object.hasOwn(item,'ownerId'),false);assert.equal(Object.hasOwn(item,'documentIds'),false);
+   assert.equal(JSON.stringify(response).includes(other.id),false);
+ }
+ type='owner';status='suspended';assert.equal((await route.GET()).workspaces[0].available,false);
+ status='active';
+ const login=await f.login.authenticateTeamLogin('owner','second@example.com','Initial-password-123');
+ f.setSession(null);f.setCookie(login);
+ assert.equal((await route.GET()).workspaces[0].id,other.id);
+ await f.db.query("UPDATE team_access SET status='revoked' WHERE id=$1",[other.id]);
+ await assert.rejects(()=>route.GET(),/Sign in/);
+ }finally{await f.db.close();}
+});
+
+test('Account sends managed staff to My access without reading the main account profile',async()=>{
+ let session=null,managed={id:'desktop:grant',email:'staff@example.com'},profileReads=0,managedReads=0;
+ const page=load('app/account/page.tsx',{
+  '../../components/AccountDirectoryListing':()=>null,
+  '../business/business-client':()=>null,
+  '../../lib/business-accounts':{},'../business/page.module.css':{},
+  '../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
+  '../../lib/auth-session':{getAnyServerSession:async()=>session},
+  'next/navigation':{redirect:path=>{throw new Error('REDIRECT '+path)}},
+  '../../lib/account-profile':{getAccountProfile:async()=>{profileReads++;throw new Error('PERSONAL PROFILE')}},
+  '../../lib/account-access':{requireActivePageAccess:async()=>{throw new Error('REDIRECT /auth#login')}},
+  '../../lib/team-login':{getManagedTeamActor:async()=>{managedReads++;return managed}},
+  './account-client':()=>null,
+ });
+ await assert.rejects(()=>page.default(),/REDIRECT \/team\/access/);
+ assert.equal(profileReads,0);
+ managed=null;
+ await assert.rejects(()=>page.default(),/REDIRECT \/auth#login/);
+ for(const accountType of ['owner','business','dealer','middleman']){
+   session={user:{id:accountType,email:accountType+'@example.com'}};
+   const before=managedReads;
+   await assert.rejects(()=>page.default(),/PERSONAL PROFILE/);
+   assert.equal(managedReads,before,'A personal session takes precedence over a managed cookie');
+ }
+});

@@ -11,13 +11,14 @@ export const metadata = { title: 'Desktop users', robots: { index: false, follow
 export default async function Page() {
     const session = await getAnyServerSession();
     let message = '';
+    let assetOnly = false;
     if (session?.user?.id) {
-        try { await requireTeamOwner(); }
+        try { const { profile } = await requireTeamOwner(); assetOnly = profile.accountType === 'dealer'; }
         catch (error) {
             if (!(error instanceof TeamAccessError)) throw error;
             message = error.message;
         }
-        if (!message) return <><AppHeader active="none"/><TeamAccessClient /></>;
+        if (!message) return <><AppHeader active="none"/><TeamAccessClient assetOnly={assetOnly} /></>;
     }
-    return <><AppHeader active="none"/><main className={styles.page}><Link className={styles.button} href="/account">Back to account</Link><h1>Desktop users</h1>{!session?.user?.id ? <><p>Sign in to manage desktop access for your business.</p><Link className={styles.primary} href="/auth?returnTo=/account/team-access">Sign in</Link></> : <div className={styles.notice}><p>{message}</p><Link className={styles.button} href="/team">Open my invited desktop access</Link></div>}</main></>;
+    return <><AppHeader active="none"/><main className={styles.page}><Link className={styles.button} href="/account">Back to account</Link><h1>Desktop users</h1>{!session?.user?.id ? <><p>Sign in to manage desktop access for your business.</p><Link className={styles.primary} href="/auth?returnTo=/account/team-access">Sign in</Link></> : <div className={styles.notice}><p>{message}</p><Link className={styles.button} href="/team/access">Open my access</Link></div>}</main></>;
 }

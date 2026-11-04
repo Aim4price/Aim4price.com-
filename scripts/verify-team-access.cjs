@@ -54,6 +54,7 @@ function add(file){
 add('app/account/team-access/team-access-client');
 add('app/team/team-workspace-client');
 add('components/team/TeamLogin');
+add('app/team/access/my-access-client');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -78,7 +79,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     window.fetch=async(url,init={})=>{window.requests.push({url:String(url),method:init.method||'GET',body:init.body});let response;
       if(url==='/api/team-access'&&init.method==='POST'){window.saved=JSON.parse(init.body);if(window.saved.action==='save'&&window.saved.id){const {password,action,...savedMember}=window.saved;window.savedMember={...savedMember,version:savedMember.version+1};}if(window.saved.action==='remove')window.removed=true;response={ok:true};}
       else if(url==='/api/team-access')response={businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1,...window.savedMember}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
-      else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',status:'active',permissions,expiresAt:null}]};
+      else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',displayName:'Workshop staff',available:true,status:'active',scope:'selected',registerCount:1,assetCount:0,documentCount:1,permissions,expiresAt:null}]};
       else if(window.revoked)return {ok:false,json:async()=>({error:'Team access has been revoked.'})};
       else if(String(url).endsWith('/documents'))response={documents:[{id:'document-a',title:'Operator manual',fileName:'manual.pdf',assetIds:['asset-a']}]};
       else if(String(url).includes('/maintenance'))response={records:[{id:'maintenance-a',title:'Engine service',type:'service',status:'upcoming',statusLabel:'Upcoming',notes:'Change oil',dueDate:'2026-11-01'}]};
@@ -86,7 +87,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
       else response={name:'Skimmelkrans Boerdery',permissions:{...permissions,viewValues:window.showValues},assets:[window.showValues?{...asset,values:{current:987654,replacement:1234567,insured:999999}}:asset],version:window.showValues?2:1};
       return {ok:true,json:async()=>response};
     };
-    ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('${mode==='login'?'components/team/TeamLogin':mode==='owner'?'app/account/team-access/team-access-client':'app/team/team-workspace-client'}').default,{email:'staff@example.com',business:'owner-a'}));`});
+    ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('${mode.startsWith('access')?'app/team/access/my-access-client':mode==='login'?'components/team/TeamLogin':mode==='owner'?'app/account/team-access/team-access-client':'app/team/team-workspace-client'}').default,{email:'staff@example.com',name:'Workshop staff',managed:${mode==='access-managed'},initialWorkspace:${JSON.stringify(mode==='member-direct'?'membership-a':'')},business:'owner-a'}));`});
  }
  async function click(text){await page.waitForFunction(t=>Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)),{},text);await page.evaluate(t=>Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)).click(),text);}
  async function fillLabel(label,value){await page.evaluate((label)=>{const node=Array.from(document.querySelectorAll('label')).find(l=>l.childNodes[0]?.textContent.trim()===label);node.querySelector('input,textarea').setAttribute('data-fill','true');},label);await page.locator('[data-fill=true]').fill(value);await page.$eval('[data-fill=true]',e=>e.removeAttribute('data-fill'));}
@@ -153,6 +154,27 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setViewport({width:390,height:844});await assertFits();await page.screenshot({path:'.next/team-access-validation/member-documents-mobile.png'});await click('Done');
  await page.evaluate(()=>{window.revoked=true;window.dispatchEvent(new Event('focus'));});await page.waitForFunction(()=>document.body.textContent.includes('revoked'));
  assert.equal(await page.evaluate(()=>document.body.textContent.includes('Landini Super 110')),false,'Revoked workspace retained assets');
+ await mount('member-direct');await page.waitForFunction(()=>document.body.textContent.includes('Landini Super 110'));assert(await page.$('a[href="/team/access"]'));
+ for(const mode of ['access-personal','access-managed']) {
+   await mount(mode);
+   await page.waitForSelector('a[href="/team?workspace=membership-a"]');
+   assert.equal(Boolean(await page.$('a[href="/account"]')),mode==='access-personal');
+   assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Sign out')),mode==='access-managed');
+   assert(await page.evaluate(()=>document.body.textContent.includes('Asset values are hidden.')));
+   assert.equal(await page.evaluate(()=>document.body.textContent.includes('View asset values')),false);
+   for(const width of [1440,390]) {
+     await page.setViewport({width,height:900});
+     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'My access fits viewport');
+     await page.screenshot({path:'.next/team-access-validation/'+mode+'-'+width+'.png'});
+   }
+   await page.evaluate(()=>{window.fetch=async()=>({ok:false,json:async()=>({error:'Access has been revoked.'})});window.dispatchEvent(new Event('focus'));});
+   await page.waitForFunction(()=>document.body.textContent.includes('Access has been revoked.'));
+   assert.equal(await page.evaluate(()=>document.body.textContent.includes('Skimmelkrans Boerdery')),false);
+ }
+ await mount('access-personal');
+ await page.waitForSelector('a[href="/team?workspace=membership-a"]');
+ await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({workspaces:[]})});window.dispatchEvent(new Event('focus'));});
+ await page.waitForFunction(()=>document.body.textContent.includes('No desktop access yet'));
  assert.deepEqual(errors,[]);console.log('PASS owner permissions, scope and document selection, safe defaults, member editing and maintenance, responsive modals, and revoked workspace clearing');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

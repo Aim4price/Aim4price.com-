@@ -1,0 +1,28 @@
+.page { max-width:70rem; }
+.header { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; padding:1.8rem; border:1px solid var(--app-line,#d0e2d9); border-radius:1.5rem; background:linear-gradient(115deg,var(--app-success-soft,#e7f4ed),var(--app-surface,#fff)); }
+.header p { margin:0; font-weight:650; overflow-wrap:anywhere; }
+.email { display:block; margin-top:.35rem; font-size:.92rem; font-weight:500; }
+.intro { max-width:60rem; margin:1.5rem 0; }
+.list { display:grid; gap:1.25rem; }
+.card { box-shadow:none; }
+.cardHeader { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding-bottom:1rem; border-bottom:1px solid var(--app-line,#d0e2d9); }
+.cardHeader p { margin:0; }
+.status { font-size:.88rem; color:var(--app-muted,#65796f); }
+.details { display:grid; gap:.8rem; margin:1.25rem 0; }
+.details > div { display:grid; grid-template-columns:10rem minmax(0,1fr); gap:1rem; line-height:1.5; }
+.details dt { color:var(--app-muted,#65796f); }
+.details dd { margin:0; }
+.card h3 { font-size:1rem; margin:1.4rem 0 .8rem; }
+.permissions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem 1.5rem; padding-left:1.25rem; line-height:1.5; }
+.note { font-size:.88rem; }
+.footer { display:flex; align-items:center; justify-content:space-between; gap:1rem; border-top:1px solid var(--app-line,#d0e2d9); padding-top:1rem; margin-top:1.25rem; }
+.footer p { font-size:.88rem; margin:0; max-width:35rem; }
+.footer a { flex-shrink:0; }
+.page .header button,.page .header a,.page section > a { background:var(--app-surface-soft,#edf3ef); }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .cardHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { align-items:flex-start; flex-direction:column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .details > div { grid-template-columns:1fr; gap:.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .permissions { grid-template-columns:1fr; }
+}

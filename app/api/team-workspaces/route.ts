@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { sharingPlan } from '../../../lib/sharing-foundation';
 import { getDb } from '../../../lib/db';
 import { requireTeamActor, acceptTeamGrant, mapTeamGrant } from '../../../lib/team-access';
 import { ensureTeamAccessSchema } from '../../../lib/team-access-schema';
@@ -15,7 +16,8 @@ export async function GET() {
         const workspaces = await Promise.all(rows.map(async (row) => {
             const grant = mapTeamGrant(row);
             const profile = await getAccountProfile({ id: grant.ownerId });
-            return { id: grant.id, status: grant.status, name: profile.businessName || profile.displayName || 'Business workspace', permissions: grant.permissions, expiresAt: grant.expiresAt };
+            const available = ['owner', 'dealer'].includes(profile.accountType) && profile.accountStatus === 'active' && await sharingPlan(grant.ownerId, profile.accountType) === 'desktop';
+            return { available, id: grant.id, status: grant.status, name: profile.businessName || profile.displayName || 'Business workspace', permissions: grant.permissions, expiresAt: grant.expiresAt, displayName: grant.displayName, scope: grant.scope, registerCount: grant.registerIds.length, assetCount: grant.assetIds.length, documentCount: grant.documentIds.length };
         }));
         return teamJson({ email: actor.email, workspaces });
     }
