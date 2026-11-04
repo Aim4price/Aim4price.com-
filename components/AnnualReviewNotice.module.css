@@ -4,4 +4,3 @@
 .notice a { display:inline-flex; align-items:center; justify-content:center; min-height:56px; padding:0 1.5rem; border-radius:.9rem; background:var(--app-accent,#176b50); color:white; font-weight:700; text-decoration:none; }
 .notice button { min-width:48px; min-height:48px; border:1px solid var(--app-line,#d6e4dd); border-radius:.9rem; background:transparent; color:inherit; font-size:1.4rem; cursor:pointer; }
 .notice a:focus-visible,.notice button:focus-visible { outline:3px solid var(--app-accent,#25805f); outline-offset:3px; }
-@media(max-width:600px) { .notice a { flex:1; } }
