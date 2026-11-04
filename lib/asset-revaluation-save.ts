@@ -6,11 +6,12 @@ import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-regist
 export async function saveAssetRevaluation<T>(
   expected: AssetRegisterItem,
   persist: (transaction: PoolClient) => Promise<T>,
+  outerTransaction?: PoolClient,
 ): Promise<T> {
-  const transaction = await getDb().connect();
+  const transaction = outerTransaction ?? await getDb().connect();
   let discardConnection = false;
   try {
-    await transaction.query('BEGIN');
+    if (!outerTransaction) await transaction.query('BEGIN');
     const current = await getAssetRegisterItemById(expected.userId, expected.id, transaction);
     if (!current) throw new Error('ASSET_NOT_FOUND');
     if (current.selectedMethod === 'manual') throw new Error('ASSET_NOT_REVALUEABLE');
@@ -19,9 +20,10 @@ export async function saveAssetRevaluation<T>(
     }
     await transaction.query("SELECT set_config('aim4price.valuation_write','resolved',true)");
     const result = await persist(transaction);
-    await transaction.query('COMMIT');
+    if (!outerTransaction) await transaction.query('COMMIT');
     return result;
   } catch (error) {
+    if (outerTransaction) throw error;
     try {
       await transaction.query('ROLLBACK');
     } catch {
@@ -30,6 +32,6 @@ export async function saveAssetRevaluation<T>(
     }
     throw error;
   } finally {
-    transaction.release(discardConnection);
+    if (!outerTransaction) transaction.release(discardConnection);
   }
 }

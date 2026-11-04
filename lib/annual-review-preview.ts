@@ -7,11 +7,11 @@ import { annualExclusion, reviewYear, priceExVat, type AnnualReviewAsset, type A
 const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' ? value as Record<string, unknown> : {};
 
 /** No register creation, snapshots, notifications, history entries or other writes. */
-export async function loadAnnualReview(email: string, requestedYear: unknown, assetId?: string) {
+export async function loadAnnualReview(email: string, requestedYear: unknown, assetId?: string, accountId?: string) {
   const year = reviewYear(requestedYear);
   const result = await getDb().query(`select u.id, u.email, u.name from "user" u
     left join account_profiles ap on ap.user_id = u.id
-    where lower(trim(u.email)) = lower(trim($1)) and coalesce(ap.account_type, 'owner') = 'owner' limit 2`, [email]);
+    where ${accountId ? 'u.id = $1' : 'lower(trim(u.email)) = lower(trim($1))'} and coalesce(ap.account_type, 'owner') ${accountId ? "in ('owner', 'dealer')" : "= 'owner'"} limit 2`, [accountId ?? email]);
   if (result.rows.length !== 1) throw new Error('One matching owner account is required.');
   const owner = result.rows[0];
   const assets = await withRealisticSellingAssessments(await readAnnualReviewAssets(owner.id, assetId), 'report');
@@ -70,8 +70,8 @@ export async function loadAnnualReview(email: string, requestedYear: unknown, as
   return { owner, year, rows };
 }
 
-export async function calculateAnnualPreview(email: string, year: unknown, assetId: string, replacement?: number, expectedRevision?: string): Promise<AnnualReviewResult> {
-  const data = await loadAnnualReview(email, year, assetId);
+export async function calculateAnnualPreview(email: string, year: unknown, assetId: string, replacement?: number, expectedRevision?: string, accountId?: string): Promise<AnnualReviewResult> {
+  const data = await loadAnnualReview(email, year, assetId, accountId);
   const entry = data.rows.find(entry => entry.asset.id === assetId);
   if (!entry) throw new Error('Asset not found for this owner.');
   const { asset, row } = entry;

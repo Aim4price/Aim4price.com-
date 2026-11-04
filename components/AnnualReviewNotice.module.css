@@ -1,0 +1,7 @@
+.notice { display:flex; align-items:center; flex-wrap:wrap; gap:1rem; margin:1rem auto; padding:1.2rem; max-width:1200px; border:1px solid var(--app-line,#d6e4dd); border-radius:1rem; background:var(--app-surface-soft,#f4f8f6); color:var(--app-text,#103e32); }
+.notice div { flex:1; min-width:220px; }
+.notice p { margin:.4rem 0 0; color:var(--app-muted,#64746a); }
+.notice a { display:inline-flex; align-items:center; justify-content:center; min-height:56px; padding:0 1.5rem; border-radius:.9rem; background:var(--app-accent,#176b50); color:white; font-weight:700; text-decoration:none; }
+.notice button { min-width:48px; min-height:48px; border:1px solid var(--app-line,#d6e4dd); border-radius:.9rem; background:transparent; color:inherit; font-size:1.4rem; cursor:pointer; }
+.notice a:focus-visible,.notice button:focus-visible { outline:3px solid var(--app-accent,#25805f); outline-offset:3px; }
+@media(max-width:600px) { .notice a { flex:1; } }

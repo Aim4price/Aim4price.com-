@@ -1861,6 +1861,11 @@ async function getAssetRegisterSchema(): Promise<TableSchema> {
   return getTableSchema('asset_register_items');
 }
 
+/** Initialise schema before an outer transaction acquires asset locks. */
+export async function prepareAssetRegisterRevaluation(): Promise<void> {
+  await getAssetRegisterSchema();
+}
+
 async function getValuationRunsSchema(): Promise<TableSchema> {
   return getTableSchema('valuation_runs');
 }

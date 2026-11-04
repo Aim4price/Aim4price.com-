@@ -50,7 +50,7 @@ async function fixture() {
     history: (await db.query('SELECT * FROM history')).rows.length,
     releases,
   });
-  return { db, api, expected, persist, state };
+  return { db, api, expected, persist, state, transaction };
 }
 
 test('revaluation commits the run, value and history together', async () => {
@@ -119,4 +119,20 @@ test('transactional timeline capture propagates history errors instead of swallo
     eventType: 'automatic_revaluation_saved',
   }), error => error === sentinel);
   assert.equal(calls, 1);
+});
+
+
+test('annual outer transaction owns commit and rollback of valuation history', async () => {
+  const f = await fixture();
+  try {
+    await f.transaction.query('BEGIN');
+    await f.api.saveAssetRevaluation(f.expected, f.persist, f.transaction);
+    assert.equal((await f.state()).releases, 0);
+    await f.transaction.query('ROLLBACK');
+    const state = await f.state();
+    assert.equal(state.runs, 0);
+    assert.equal(state.history, 0);
+    assert.equal(state.asset.value, 800);
+    assert.equal(state.releases, 0);
+  } finally { await f.db.close(); }
 });

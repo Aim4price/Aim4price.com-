@@ -1,4 +1,4 @@
-/** Pure policy used only by the read-only Admin annual review. */
+/** Shared eligibility and arithmetic for live and simulated annual reviews. */
 export type AnnualReviewAsset = {
   id: string; revision: string; title: string; currentValue: number; replacementPrice: number | null;
   eligible: boolean; reason: string | null; saleability: boolean; extrasNote: string;
@@ -40,4 +40,16 @@ export function annualExclusion(input: {
   if (lastYear === null) return 'Valuation date unavailable — review the saved estimate first.';
   if (lastYear >= input.year) return `Already valued for ${lastYear} — no annual update needed.`;
   return null;
+}
+
+/** First live review opens at midnight in South Africa on 1 January 2027. */
+export function liveReviewYear(now = new Date()): number | null {
+  const year = valuationYear(now.toISOString());
+  return year !== null && year >= 2027 ? year : null;
+}
+export function annualPercentage(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < -10 || value > 20 || !Number.isInteger(value * 2)) {
+    throw new Error('Choose an adjustment from −10% to 20% in steps of 0.5%.');
+  }
+  return value;
 }

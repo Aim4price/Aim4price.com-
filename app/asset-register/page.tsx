@@ -1,3 +1,4 @@
+import AnnualReviewNotice from '../../components/AnnualReviewNotice';
 import { redirect } from "next/navigation";
 import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
@@ -38,6 +39,7 @@ export default async function AssetRegisterPage({
       }
       return (
         <>
+          <AnnualReviewNotice />
           <AssetRegisterClient
             dealerRegisterMode="dealer"
             registerManagementHref="/asset-registers"
@@ -50,6 +52,7 @@ export default async function AssetRegisterPage({
     if (requestedView === "client" && requestedRegister && requestedRegister.id !== primaryRegister?.id) {
       return (
         <>
+          <AnnualReviewNotice />
           <AssetRegisterClient
             dealerRegisterMode="client"
             registerManagementHref="/asset-registers"
@@ -67,6 +70,7 @@ export default async function AssetRegisterPage({
       const dealerRegisterMode = requestedRegister.id === primaryRegister?.id ? "dealer" : "client";
       return (
         <>
+          <AnnualReviewNotice />
           <AssetRegisterClient
             dealerRegisterMode={dealerRegisterMode}
             registerManagementHref="/asset-registers"
@@ -77,14 +81,16 @@ export default async function AssetRegisterPage({
     }
 
     return (
-      <DealerRegisterGateway
-        registers={registers}
-      />
+      <>
+        <AnnualReviewNotice />
+        <DealerRegisterGateway registers={registers} />
+      </>
     );
   }
 
   return (
     <>
+      <AnnualReviewNotice />
       <AssetRegisterClient />
       <AssetRegisterOverview />
     </>
