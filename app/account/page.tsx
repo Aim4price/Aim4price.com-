@@ -7,6 +7,7 @@ import { getAnyServerSession } from '../../lib/auth-session';
 import { redirect } from 'next/navigation';
 import { getAccountProfile, getAccountScanPinStatus } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
+import { getManagedTeamActor } from "../../lib/team-login";
 import AccountClient from "./account-client";
 
 export const runtime = "nodejs";
@@ -14,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const signedIn = await getAnyServerSession();
+  if (!signedIn?.user && await getManagedTeamActor()) redirect("/team/access");
   if (signedIn?.user) {
     const profile = await getAccountProfile(signedIn.user);
     if (profile.accountType === 'business' || await sharingPlan(signedIn.user.id, profile.accountType) === 'free') {

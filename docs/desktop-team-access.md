@@ -47,3 +47,11 @@ Run:
 - `node scripts/verify-team-access.cjs` (optional `CANVAS_BROWSER_PATH`)
 
 The tests use synthetic users, a temporary PostgreSQL-compatible database and mocked network responses. They do not invite real people, modify production assets or send emails. Browser screenshots are written under `.next/team-access-validation`. CI runs the same checks.
+
+## My access
+
+`/team/access` is the read-only access summary for both managed desktop logins and personal accounts receiving access. Account pages for Owner, Dealer, Middleman and Business all link here. A managed desktop session visiting `/account` is redirected here; a personal session continues to show its own Account page. Managed workspace pages omit the personal-account navigation.
+
+The summary shows only grants returned for the current actor, their asset scope, granted actions, approved-document count and expiry in South Africa time. It refreshes on focus and every 30 seconds, clears on hidden/error, and links active eligible grants directly to their workspace. The workspace APIs still authorize every request; a query-string membership ID never grants access. Password resets remain with the main account holder for managed logins.
+
+Business accounts can receive access but cannot issue desktop grants. Dealer and Middleman grants remain limited to owned assets, not leads, parts or account administration. Middleman Account labels this entry “Desktop asset access”; the setup explains the limitation. Existing grants and permissions are preserved.

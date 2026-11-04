@@ -2185,8 +2185,8 @@ export default function AccountClient({
                     <h3 id="apps-connections-actions-title">Apps &amp; connections</h3>
                   </div>
                   <div className={styles.quickActionList}>
-                    {!(isOwnerAccount || isDealerAccount) || sharedAccount ? <Link className={styles.quickActionButton} href="/team"><QuickActionIcon name="connections" /><strong>My desktop access</strong></Link> : null}
-                    {(isOwnerAccount || isDealerAccount) && !sharedAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
+                    <Link className={styles.quickActionButton} href="/team/access"><QuickActionIcon name="connections" /><strong>My access</strong></Link>
+                    {(isOwnerAccount || isDealerAccount) && !sharedAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>{isMiddlemanAccount ? "Desktop asset access" : "Desktop users"}</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button
