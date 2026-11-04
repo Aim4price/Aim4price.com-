@@ -16,7 +16,7 @@ export const EMPTY_TEAM_PERMISSIONS = Object.fromEntries(TEAM_PERMISSIONS.map(p 
 export const TEAM_TEMPLATES = {
     viewer: { label: 'View only', permissions: { ...EMPTY_TEAM_PERMISSIONS } },
     workshop: { label: 'Workshop', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
-    office: { label: 'Office administrator', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
+    office: { label: 'Office', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
 } as const;
 export type TeamGrant = {
     managedLogin?: boolean;
