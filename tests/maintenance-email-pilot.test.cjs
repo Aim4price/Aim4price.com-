@@ -70,3 +70,15 @@ test('activity email design separates escaped problem/resolution notes and keeps
  await x.event('problem_resolved','owner');await x.api.sendAssetEmailBatch();
  assert.match(x.sent[0].html,/Seal replaced/);assert.match(x.sent[0].html,/SAST/);
 }));
+
+test('unattempted activity survives an outage longer than 23 hours',()=>scenario(async x=>{
+ x.record.status='cancelled';await x.event('problem_logged','owner');await x.api.collectAssetEmailEvents('2026-01-01');
+ await x.pg.exec("UPDATE asset_email_events SET created_at=now()-interval '48 hours'");
+ assert.equal((await x.api.sendAssetEmailBatch()).sent,1);
+ assert.equal((await x.api.sendAssetEmailBatch()).sent,0);
+}));
+test('activity-only batch defers maintenance but still delivers problems',()=>scenario(async x=>{
+ await x.event('problem_logged','owner');assert.equal((await x.api.sendAssetEmailBatch('',false)).sent,1);
+ assert.match(x.sent[0].subject,/Problem reported/);
+ assert.equal((await x.api.sendAssetEmailBatch('',true)).sent,1);
+}));

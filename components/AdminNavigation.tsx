@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./AdminNavigation.module.css";
 
 export type AdminSection =
+  | "asset-emails"
   | "videos"
   | "ai-connections"
   | "billing"
@@ -29,6 +30,7 @@ const ADMIN_LINKS: Array<{
   href: string;
   label: string;
 }> = [
+  { href: "/admin/asset-emails", label: "Asset emails", key: "asset-emails" },
   { href: "/admin/annual-review", label: "Preview annual review", key: "annual-review" },
   { href: "/admin/videos", label: "Video Manager", key: "videos" },
   { href: "/admin/ai-connect", label: "AI connections", key: "ai-connections" },
@@ -97,7 +99,7 @@ const ADMIN_LINKS: Array<{
 ];
 
 const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
-  { title: "Accounts & service", keys: ["accounts", "billing", "capture-queue", "work-tracker", "businesses"] },
+  { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker", "businesses"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
   { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },
 ];

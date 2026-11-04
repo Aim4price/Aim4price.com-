@@ -18,10 +18,14 @@ export function emailRollout(){
 }
 let ready:Promise<void>|undefined;
 export function ensureAssetEmailDelivery(){return ready??=getDb().query(`
+ SELECT pg_advisory_xact_lock(hashtext('asset-email-delivery-schema'));
  CREATE TABLE IF NOT EXISTS asset_email_rollout(id text PRIMARY KEY,started_at timestamptz NOT NULL DEFAULT now());
  INSERT INTO asset_email_rollout(id) VALUES('activity-v1') ON CONFLICT DO NOTHING;
  CREATE TABLE IF NOT EXISTS asset_email_events(event_key text PRIMARY KEY,owner_id text NOT NULL,asset_id uuid NOT NULL,record_id text NOT NULL,kind text NOT NULL,actor_id text,actor_name text,created_at timestamptz NOT NULL);
  CREATE TABLE IF NOT EXISTS asset_email_deliveries(event_key text NOT NULL,recipient_id text NOT NULL,payload jsonb NOT NULL,first_attempt_at timestamptz NOT NULL DEFAULT now(),attempted_at timestamptz NOT NULL DEFAULT now(),attempts int NOT NULL DEFAULT 1,sent_at timestamptz,error text,PRIMARY KEY(event_key,recipient_id));
+ ALTER TABLE asset_email_events ADD COLUMN IF NOT EXISTS checked_at timestamptz;
+ ALTER TABLE asset_email_events ADD COLUMN IF NOT EXISTS last_error text;
+ CREATE TABLE IF NOT EXISTS asset_email_worker(id text PRIMARY KEY,last_started_at timestamptz,last_finished_at timestamptz,last_error text,last_sent int NOT NULL DEFAULT 0,last_failed int NOT NULL DEFAULT 0);
  CREATE INDEX IF NOT EXISTS asset_email_events_recent ON asset_email_events(created_at);
  `).then(()=>{}).catch(e=>{ready=undefined;throw e;});}
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -38,7 +42,7 @@ export function assetActivityEmail(input:{kind:AssetEmailKind;assetTitle:string;
  const noteLabel=resolved?'Original problem':reported?'Reported problem':'Work completed';
  const resolution=resolved?input.resolutionNote?.trim():'';
  const rows:[string,string][]=[[reported?'Reported by':resolved?'Resolved by':'Completed by',input.actor],[reported?'Reported on':resolved?'Resolved on':'Completed on',input.when]];
- const links=`Stop these updates for this asset: ${input.preferences.asset}\nStop these updates for your account: ${input.preferences.account}\nStop all asset updates for this asset: ${input.preferences.all}`;
+ const links=`Stop these emails to me for this asset: ${input.preferences.asset}\nStop these emails to me for all assets: ${input.preferences.account}\nStop all asset emails to me for this asset: ${input.preferences.all}`;
  const text=`${subject}\n${intro}\n\n${noteLabel}:\n${input.description}${resolution?`\n\nResolution note:\n${resolution}`:''}\n\n${action}: ${input.url}\n\n${rows.map(([label,value])=>`${label}: ${value}`).join('\n')}\n\n${links}\nYour records stay saved. These links also let you turn emails back on.`;
  const note=(label:string,value:string)=>`<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 14px;background:${tint};border:1px solid ${border};border-radius:10px"><tr><td style="padding:18px;font-family:${AIM4PRICE_EMAIL_FONT_STACK}"><p style="margin:0 0 8px;font-size:14px;line-height:1.5;font-weight:700;color:${accent}">${label}</p><p style="margin:0;color:#173c32;font-size:16px;line-height:1.6;overflow-wrap:anywhere;word-break:break-word">${escape(value).replace(/\r?\n/g,'<br>')}</p></td></tr></table>`;
  const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>@media only screen and (max-width:620px){.activity-body{padding:20px 18px!important}.activity-title{font-size:23px!important}}</style></head>
@@ -59,9 +63,9 @@ export function assetActivityEmail(input:{kind:AssetEmailKind;assetTitle:string;
  <p style="margin:18px 0 0;color:#486357;font-size:14px;line-height:1.6">Button not working? <a href="${escape(input.url)}" style="color:#1a654d">${action} in Aim4price</a>.</p>
  <div style="margin-top:20px;padding-top:18px;border-top:1px solid #e2ebe5">
  <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#173c32">Email preferences</p>
- <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.asset)}">Stop these updates for this asset</a></p>
- <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.account)}">Stop these updates for my account</a></p>
- <p style="margin:0 0 10px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.all)}">Stop all asset updates for this asset</a></p>
+ <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.asset)}">Stop these emails to me for this asset</a></p>
+ <p style="margin:0 0 8px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.account)}">Stop these emails to me for all assets</a></p>
+ <p style="margin:0 0 10px;font-size:14px;line-height:1.6"><a style="color:#1a654d" href="${escape(input.preferences.all)}">Stop all asset emails to me for this asset</a></p>
  <p style="margin:0;font-size:14px;line-height:1.6;color:#486357">Your records stay saved. You can turn emails back on using these links.</p>
  </div></td></tr></table><!--[if mso]></td></tr></table><![endif]-->
  </td></tr></table></body></html>`;
@@ -145,20 +149,30 @@ async function sendEvent(e:Event,test:boolean,since:string){
  }
  return {sent,failed};
 }
-export async function sendAssetEmailBatch(after=''){
+export async function sendAssetEmailBatch(after='',includeReminders=true){
  const rollout=emailRollout();if(!rollout.enabled)return {sent:0,failed:0,next:null,disabled:true};
  await ensureAssetMaintenanceTables();await ensureMaintenanceReminders();await ensureAssetEmailDelivery();
  const allowedOwners=(process.env.MAINTENANCE_REMINDER_OWNER_IDS||'').split(',').map(x=>x.trim()).filter(Boolean);
  const owners=(await getDb().query(`SELECT DISTINCT user_id FROM asset_maintenance_records WHERE status='upcoming' AND user_id>$1 AND (cardinality($2::text[])=0 OR user_id=ANY($2::text[])) ORDER BY user_id LIMIT 20`,[after,allowedOwners])).rows;
  let sent=0,failed=0;
- for(const owner of owners)for(const r of await listAssetMaintenanceRecords(owner.user_id,{status:'upcoming'})){
+ for(const owner of includeReminders?owners:[])for(const r of await listAssetMaintenanceRecords(owner.user_id,{status:'upcoming'})){
   if(!reminderStage(r)||Date.parse(r.updatedAtIso)<Date.parse(rollout.since))continue;
+  try {
   const result=await sendEvent({event_key:`reminder:${r.id}`,owner_id:owner.user_id,asset_id:r.assetId,record_id:r.id,kind:'reminder',actor_id:null,actor_name:null,created_at:r.updatedAtIso},rollout.test,rollout.since);
   sent+=result.sent;failed+=result.failed;
+  } catch(error) { failed++;console.error('Maintenance reminder processing failed',{recordId:r.id,error}); }
  }
  await collectAssetEmailEvents(rollout.since);
- const events=(await getDb().query(`SELECT * FROM asset_email_events WHERE created_at>=greatest($1::timestamptz,now()-interval '23 hours') AND (cardinality($2::text[])=0 OR owner_id=ANY($2::text[])) ORDER BY created_at,event_key`,[rollout.since,allowedOwners])).rows as Event[];
- for(const event of events){const result=await sendEvent(event,rollout.test,rollout.since);sent+=result.sent;failed+=result.failed;}
- return {sent,failed,next:owners.length===20?owners.at(-1).user_id:null};
+ const events=(await getDb().query(`SELECT * FROM asset_email_events WHERE created_at>=$1::timestamptz AND (cardinality($2::text[])=0 OR owner_id=ANY($2::text[])) ORDER BY checked_at ASC NULLS FIRST,created_at,event_key LIMIT 200`,[rollout.since,allowedOwners])).rows as Event[];
+ for(const event of events){
+  try {
+   const result=await sendEvent(event,rollout.test,rollout.since);sent+=result.sent;failed+=result.failed;
+   await getDb().query('UPDATE asset_email_events SET checked_at=now(),last_error=NULL WHERE event_key=$1',[event.event_key]);
+  } catch(error) {
+   failed++;
+   await getDb().query('UPDATE asset_email_events SET checked_at=now(),last_error=$2 WHERE event_key=$1',[event.event_key,error instanceof Error?error.message:'Event processing failed']);
+  }
+ }
+ return {sent,failed,next:includeReminders&&owners.length===20?owners.at(-1).user_id:null};
 }
 

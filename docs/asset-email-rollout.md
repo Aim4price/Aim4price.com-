@@ -1,6 +1,6 @@
 # Asset email delivery
 
-The production pilot remains restricted to kallageldenhuys@gmail.com. No environment variables or recipient rollout are changed by this PR.
+Production delivery supports all eligible accounts. Pilot mode remains available as a restricted test switch.
 
 ## Rules
 
@@ -19,9 +19,15 @@ The one-minute pilot uses MAINTENANCE_REMINDER_TEST_MODE=true and a valid MAINTE
 
 Broad rollout requires MAINTENANCE_REMINDER_ENABLED=true, test mode off and an explicit MAINTENANCE_REMINDER_ROLLOUT_SINCE timestamp. Missing or invalid timestamps fail closed. MAINTENANCE_REMINDER_OWNER_IDS can restrict owner accounts. No broad rollout is enabled by this code.
 
-Upcoming records must be newly created or updated since that cutoff. Activity events start no earlier than the persisted first initialization of activity-v1 and the configured cutoff; no historical backfill. New activity is processed for 23 hours. Production cron should call the existing batch endpoint and follow its next cursor; the rapid timer remains pilot-only.
+Upcoming records must be newly created or updated since that cutoff. Activity events start no earlier than the persisted first initialization of activity-v1 and the configured cutoff; no historical backfill. Unattempted activity remains eligible after outages; events are checked in rotating batches of 200. Already-attempted deliveries keep the 23-hour retry safety limit. The production server runs the sender every minute without a logged-in user. Problem and completion events run all day; maintenance reminders run from 07:00 SAST. Owner pagination continues between ticks. No external cron is required on the always-running Railway service.
 
 The main owner should receive a problem email when logging or resolving their own problem, including through an owner-linked app. To test the pilot notification, report a new problem on an asset owned by the pilot mailbox; confirm one email arrives and repeated polls do not resend it. Verify problem and completion links, opt-outs, revoked sharing, recurring occurrences and that due/overdue transitions do not resend before enabling other recipients.
 
 Weekly summaries are intentionally deferred.
 
+
+## Operations
+
+The admin-only /admin/asset-emails page shows worker heartbeat, provider-accepted totals, unfinished deliveries and event-processing errors. A heartbeat older than five minutes needs attention. Provider acceptance is not proof of inbox delivery. Exhausted attempts require checking the provider record before any manual resend; the page deliberately does not bypass duplicate protection.
+
+Launch: deploy this revision first, then set MAINTENANCE_REMINDER_TEST_MODE=false, MAINTENANCE_REMINDER_ENABLED=true, MAINTENANCE_REMINDER_ROLLOUT_SINCE to the explicit launch timestamp, and MAINTENANCE_REMINDER_OWNER_IDS to empty. Verify Railway SUCCESS and production worker logs. Roll back sending by setting both enabled and test mode false. Keep the cutoff unchanged across redeploys. Existing schedules predating the cutoff become eligible only after being updated; no blanket historical email backfill.
