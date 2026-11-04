@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg';
 import { saveAssetRevaluation } from './asset-revaluation-save';
 import {applyApprovedValueBaseline} from './approved-value-baseline';
 import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
@@ -669,6 +670,7 @@ function resolveGenericMethod(
 
 async function revalueTractorAsset(input: {
   previewYear?: number;
+  transaction?: PoolClient;
   userId: string;
   asset: AssetRegisterItem;
   row: ValuationRunRow;
@@ -830,7 +832,7 @@ async function revalueTractorAsset(input: {
       preserveUsageReading: input.usageAmountOverride === undefined && (asRecord(input.asset.specsJson.trackingUsage).estimated === true || (input.asset.hours !== null && !Number.isInteger(input.asset.hours))),
     });
     return { saved, item };
-  });
+  }, input.transaction);
 
   return {
     item,
@@ -848,6 +850,7 @@ async function revalueTractorAsset(input: {
 
 async function revalueGenericAsset(input: {
   previewYear?: number;
+  transaction?: PoolClient;
   userId: string;
   asset: AssetRegisterItem;
   row: ValuationRunRow;
@@ -1024,7 +1027,7 @@ async function revalueGenericAsset(input: {
       preserveUsageReading: input.usageAmountOverride === undefined && (asRecord(input.asset.specsJson.trackingUsage).estimated === true || (input.asset.hours !== null && !Number.isInteger(input.asset.hours))),
     });
     return { saved, item };
-  });
+  }, input.transaction);
 
   return {
     item,
@@ -1041,6 +1044,9 @@ async function revalueGenericAsset(input: {
 }
 
 export async function revalueAssetRegisterItem(input: {
+  /** Server-only annual batch transaction and valuation year. Never read from request input. */
+  transaction?: PoolClient;
+  annualYear?: number;
   userId: string;
   assetId: string;
   selectedMethod?: unknown;
@@ -1100,7 +1106,8 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
-      previewYear: previewContext?.year,
+      previewYear: previewContext?.year ?? input.annualYear,
+      transaction: input.transaction,
       ignoreApprovedBaseline: input.ignoreApprovedBaseline,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
@@ -1116,7 +1123,8 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
-    previewYear: previewContext?.year,
+    previewYear: previewContext?.year ?? input.annualYear,
+    transaction: input.transaction,
     ignoreApprovedBaseline: input.ignoreApprovedBaseline,
       previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,

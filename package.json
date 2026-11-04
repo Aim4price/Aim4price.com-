@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prestart": "node scripts/migrate-annual-review.mjs",
     "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'",
     "typecheck": "tsc --noEmit",
     "test:lifecycle-calculator": "node --test tests/admin-lifecycle-calculator.test.mjs tests/admin-lifecycle-calculator.security.test.mjs tests/admin-lifecycle-calculator-report.test.mjs tests/admin-experience.test.mjs",

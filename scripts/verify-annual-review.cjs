@@ -12,29 +12,38 @@ async function main() {
   const output = path.join(root, '.next/annual-review-validation');
   try {
     await fs.mkdir(route);
-    await fs.writeFile(path.join(route, 'page.tsx'), `import AnnualReviewClient from '../annual-review/annual-review-client';\nexport const viewport={width:'device-width',initialScale:1};\nexport default function Page(){return <main className="adminWorkspaceRoot" style={{padding:16}}><AnnualReviewClient /></main>}`);
+    await fs.writeFile(path.join(route, 'page.tsx'), `import AnnualReviewClient from '../annual-review/annual-review-client';\nexport const viewport={width:'device-width',initialScale:1};\nexport default function Page({searchParams}:{searchParams:{live?:string}}){return <main className="adminWorkspaceRoot" style={{padding:16}}><AnnualReviewClient live={searchParams.live === '1'} /></main>}`);
     server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3037'], { cwd: root, env: { ...process.env, PGHOST:'127.0.0.1', PGPORT:'5432', PGUSER:'fixture', PGPASSWORD:'fixture-only', PGDATABASE:'fixture', BETTER_AUTH_SECRET:'annual-review-local-fixture-secret' }, stdio:['ignore','pipe','pipe'] });
     await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Next startup timeout')),90000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',code=>{clearTimeout(timer);reject(Error('Next exited '+code));});});
     await fs.mkdir(output,{recursive:true});
     browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless:true, pipe:true });
     const page = await browser.newPage(), errors=[], requests=[];
     page.on('pageerror',e=>errors.push(e.message));
-    let failOnce=true, malformedOnce=false;
+    let failOnce=true, malformedOnce=false, failSave=false, liveCompleted=false, liveAvailable=true;
     const assets=[{id:'one',revision:'v1',title:'2023 Toyota Hilux',currentValue:500000,replacementPrice:800000,eligible:true,reason:null,saleability:true,extrasNote:'Asset alone. Saved extras are retained separately, once.'}, {id:'two',revision:'v1',title:'2022 John Deere 6135B',currentValue:900000,replacementPrice:1500000,eligible:true,reason:null,saleability:false,extrasNote:'Asset replacement price only.'}, {id:'manual',revision:'v1',title:'Manual asset',currentValue:50000,replacementPrice:null,eligible:false,reason:'Manual valuation — kept unchanged.',saleability:false,extrasNote:''}];
     await page.setRequestInterception(true);
     page.on('request',async r=>{
       const u=new URL(r.url()); if(!u.pathname.startsWith('/api/'))return r.continue();
-      if(u.pathname!='/api/admin/annual-review')return r.respond({status:200,contentType:'application/json',body:JSON.stringify({notifications:[]})});
+      if(!['/api/admin/annual-review','/api/annual-review'].includes(u.pathname))return r.respond({status:200,contentType:'application/json',body:JSON.stringify({notifications:[]})});
       let response;
+      const live=u.pathname==='/api/annual-review';
+      if(live && r.method()==='GET' && (liveCompleted || !liveAvailable)) return r.respond({status:200,contentType:'application/json',body:JSON.stringify({available:false,year:2027,receipt:liveCompleted?{review_year:2027}:null})});
+      if(live && r.method()==='POST' && JSON.parse(r.postData()).action==='apply') {
+        const body=JSON.parse(r.postData());requests.push(body);
+        if(failSave){failSave=false;return r.respond({status:400,contentType:'application/json',body:JSON.stringify({error:'Your assets changed. Reload the review before saving.'})});}
+        liveCompleted=true;
+        return r.respond({status:200,contentType:'application/json',body:JSON.stringify({completed:true,year:2027})});
+      }
       if(r.method()==='GET'){
         // Force the reload race: the previous welcome remains in a closed dialog
         // while the large-register request is pending.
         if(assets.length>3)await new Promise(resolve=>setTimeout(resolve,250));
-        response={previewOnly:true,owner:{email:u.searchParams.get('email'),name:'Test Owner'},year:Number(u.searchParams.get('year')),assets};
+        response={available:true,previewOnly:!live,owner:{email:u.searchParams.get('email'),name:'Test Owner'},year:live?2027:Number(u.searchParams.get('year')),assets};
       }
       else {
         const body=JSON.parse(r.postData()); requests.push(body); assert.equal(body.action,'preview');
         const asset=assets.find(a=>a.id===body.assetId);
+        if(live)body.replacementPrice=Math.round(asset.replacementPrice*(1+body.percent/100)*100)/100;
         const failed=body.assetId==='two'&&failOnce; if(failed)failOnce=false;
         response={previewOnly:true,result:{id:asset.id,currentValue:asset.currentValue,unchangedPriceValue:Math.round(asset.replacementPrice*.55),proposedValue:failed?null:Math.round((body.replacementPrice??asset.replacementPrice)*.55),replacementPrice:body.replacementPrice??asset.replacementPrice,warning:assets.length>3?'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.':undefined,error:failed?'Temporary fixture failure':null}};
       }
@@ -153,6 +162,37 @@ async function main() {
     await click('No, keep unchanged');
     assert.equal(await page.$$eval('dialog article dd',els=>els.length),0);
     await click('Finish');assert.equal(requests.length,countBeforeNo);
+    // Live review requires an explicit confirmation; failed saving leaves the flow open.
+    assets.splice(3);assets[0].eligible=true;assets[1].eligible=true;requests.length=0;failOnce=false;
+    for(const width of [1366,430]) {
+      liveCompleted=false;
+      await page.setViewport({width,height:width===430?740:768});
+      await page.goto('http://127.0.0.1:3037/admin/annual-review-validation?live=1',{waitUntil:'networkidle0',timeout:120000});
+      await page.waitForSelector('dialog[open]');
+      assert.equal(await page.$$eval('input[type=email]',els=>els.length),0);
+      await click('Continue');await click('Yes, adjust prices');await click('Review results');
+      await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
+      assert.equal(requests.filter(r=>r.action==='apply').length,0);
+      await click('Next');await capture('live-confirmation-'+width);
+      failSave=true;await click('Confirm and save');
+      await page.waitForFunction(()=>document.querySelector('dialog [role=alert]')?.textContent.includes('Your assets changed'));
+      assert.ok(await page.$('dialog[open]'));
+      await click('Confirm and save');await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('Your values and valuation history have been updated.'));
+      await capture('live-complete-'+width);await click('Done');
+      await page.reload({waitUntil:'networkidle0'});assert.equal(await page.$('dialog[open]'),null);
+      assert.match(await page.$eval('main',el=>el.textContent),/2027 annual review is complete/);
+      requests.length=0;
+    }
+    liveCompleted=false;
+    await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('dialog[open]');
+    await click('Continue');await click('No, keep unchanged');await click('Next');
+    assert.equal(requests.length,0);await click('Confirm unchanged');
+    await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('All asset values are unchanged.'));
+    assert.equal(requests.length,1);assert.equal(requests[0].keepUnchanged,true);
+    await click('Done');liveCompleted=false;liveAvailable=false;
+    await page.reload({waitUntil:'networkidle0'});assert.equal(await page.$('dialog[open]'),null);
+    assert.match(await page.$eval('main',el=>el.textContent),/1 January 2027/);
+    console.log('PASS live confirmation, failed-save retry, unchanged completion, repeat visits and prelaunch gate');
     assert.deepEqual(errors,[]);
   } finally { if(browser)await browser.close(); await fs.rm(route,{recursive:true,force:true}); if(server){const exit=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await exit;} }
 }
