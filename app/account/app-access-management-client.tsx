@@ -937,12 +937,12 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
     const roleSummary = config.roleSummary(record);
     return (
-      <div className={`${styles.loginSummary} ${ownerStyles.userRow}`}>
+      <div className={styles.loginSummary}>
         <div className={styles.loginIdentity}>
           <LoginDetailIcon kind="person" />
           <div><strong>{record.displayName}</strong><span>{record.username}</span></div>
         </div>
-        {roleSummary ? <span className={ownerStyles.rowRole}>{roleSummary}</span> : null}
+        {roleSummary ? <span className={styles.directoryRole}>{roleSummary}</span> : null}
         <div className={styles.loginActions}>
           <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
             {record.isActive ? 'Active' : 'Inactive'}
