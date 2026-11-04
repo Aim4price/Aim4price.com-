@@ -14,5 +14,6 @@ test('server sender supports production, timing, pagination, overlap prevention 
  const pending=callbacks[0]();while(!release)await new Promise(r=>setImmediate(r));await callbacks[0]();assert.equal(batches.length,4);release();release=null;await pending;
  fail=true;await callbacks[0]();assert.ok(queries.some(([sql,args])=>sql.includes('last_error=$1')&&args[0]==='test failure'));
  fail=false;rollout.test=true;hour=0;await tick();assert.equal(batches.at(-1).reminders,true);
+ rollout.test=false;hour=22;await tick();assert.equal(batches.at(-1).reminders,false);
  rollout.enabled=false;const count=batches.length;await callbacks[0]();assert.equal(batches.length,count);
 });
