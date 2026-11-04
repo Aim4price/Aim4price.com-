@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import AppHeader from '../../../components/AppHeader';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { getManagedTeamActor } from '../../../lib/team-login';
+import { canManageTeamAccess } from '../../../lib/team-access';
 import MyAccessClient from './my-access-client';
 
 export const runtime = 'nodejs';
@@ -10,6 +11,7 @@ export const metadata = { title: 'My access | Aim4price', robots: { index: false
 
 export default async function MyAccessPage() {
   const session = await getAnyServerSession();
+  if (session?.user && await canManageTeamAccess()) redirect('/account');
   const managed = session?.user ? null : await getManagedTeamActor();
   const email = session?.user?.email || managed?.email;
   if (!email) redirect('/team');

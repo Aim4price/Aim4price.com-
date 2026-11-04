@@ -42,9 +42,10 @@ type Maintenance = {
 async function api(path: string, init?: RequestInit) { const response = await fetch(path, { ...init, cache: 'no-store' }); const body = await response.json(); if (!response.ok)
     throw new Error(body.error || 'This workspace is unavailable.'); return body; }
 const money = (n: number | null | undefined) => n == null ? 'Not recorded' : new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(n);
-export default function TeamWorkspaceClient({ email, managed = false, initialWorkspace = '' }: {
+export default function TeamWorkspaceClient({ email, managed = false, managementAccount = false, initialWorkspace = '' }: {
     email: string;
     managed?: boolean;
+    managementAccount?: boolean;
     initialWorkspace?: string;
 }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]), [membership, setMembership] = useState(initialWorkspace), [data, setData] = useState<WorkspaceData | null>(null);
@@ -158,7 +159,7 @@ export default function TeamWorkspaceClient({ email, managed = false, initialWor
     async function upload() { if (!file || !selected)
         return; const form = new FormData(); form.set('file', file); form.set('assetId', selected.id); form.set('requestId', uploadKey.current); await api(base + '/' + section, { method: 'POST', body: form }); setFile(null); await refresh(); setNotice(section === 'documents' ? 'Document uploaded for owner review.' : 'Photo uploaded.'); }
     return <main className={styles.page}>
-    <header className={styles.header}><div><h1>{data?.name || 'My desktop access'}</h1><p>Signed in as {email}</p></div><div className={styles.actions}><Link className={styles.button} href="/team/access">My access</Link>{membership && <button className={styles.button} onClick={() => { setMembership(''); setError(''); void loadWorkspaces().catch(e => setError(e.message)); }}>Switch workspace</button>}{managed ? <button className={styles.button} onClick={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/team'); })}>Sign out</button> : <SwitchAccountButton returnTo="/team"/>}</div></header>
+    <header className={styles.header}><div><h1>{data?.name || 'My desktop access'}</h1><p>Signed in as {email}</p></div><div className={styles.actions}><Link className={styles.button} href={managementAccount ? "/account" : "/team/access"}>{managementAccount ? "Account" : "My access"}</Link>{membership && <button className={styles.button} onClick={() => { setMembership(''); setError(''); void loadWorkspaces().catch(e => setError(e.message)); }}>Switch workspace</button>}{managed ? <button className={styles.button} onClick={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/team'); })}>Sign out</button> : <SwitchAccountButton returnTo="/team"/>}</div></header>
     {error && !selected && <p className={styles.error} role="alert">{error}</p>}{notice && !selected && <p className={styles.notice} role="status">{notice}</p>}
     {loading && <p role="status">Loading workspace…</p>}
     {!membership && <div className={styles.grid}>{workspaces.map(w => <article className={styles.card} key={w.id}><h2>{w.name}</h2><span className={styles.pill}>{!w.available ? "Workspace unavailable" : w.status === "active" ? "Active access" : "Ready to accept"}</span><p className={styles.muted}>{w.permissions.viewValues ? 'Asset values are visible.' : 'Asset values are hidden.'} {w.expiresAt ? `Access expires ${new Date(w.expiresAt).toLocaleDateString('en-ZA')}.` : ''}</p><p className={styles.muted}>{TEAM_PERMISSIONS.filter(p => w.permissions[p.key]).map(p => p.label).join(' · ') || 'View asset details only'}</p><button className={styles.primary} disabled={busy || !w.available} onClick={() => void act(async () => { if (w.status === 'pending')

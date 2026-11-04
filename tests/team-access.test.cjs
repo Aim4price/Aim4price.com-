@@ -428,3 +428,26 @@ test('Account sends managed staff to My access without reading the main account 
    assert.equal(managedReads,before,'A personal session takes precedence over a managed cookie');
  }
 });
+
+test('My access eligibility separates management accounts from secondary desktop users',async()=>{
+ const f=await setup();
+ try {
+ f.setSession({user:owner});assert.equal(await f.service.canManageTeamAccess(),true);
+ f.setSession({user:member});assert.equal(await f.service.canManageTeamAccess(),false);
+ await f.invite({email:'staff-login@example.com',password:'Initial-password-123'});
+ f.setCookie(await f.login.authenticateTeamLogin('owner','staff-login@example.com','Initial-password-123'));f.setSession(null);
+ assert.equal(await f.service.canManageTeamAccess(),false);
+ }finally{await f.db.close();}
+});
+
+test('Management account direct visits to My access return to Account before loading staff identity',async()=>{
+ const page=load('app/team/access/page.tsx',{
+  'next/navigation':{redirect:path=>{throw new Error('REDIRECT '+path)}},
+  '../../../components/AppHeader':()=>null,
+  '../../../lib/auth-session':{getAnyServerSession:async()=>({user:owner})},
+  '../../../lib/team-access':{canManageTeamAccess:async()=>true},
+  '../../../lib/team-login':{getManagedTeamActor:async()=>{throw new Error('Must not load staff identity')}},
+  './my-access-client':()=>null,
+ });
+ await assert.rejects(()=>page.default(),/REDIRECT \/account/);
+});
