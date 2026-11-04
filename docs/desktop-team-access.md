@@ -50,7 +50,7 @@ The tests use synthetic users, a temporary PostgreSQL-compatible database and mo
 
 ## My access
 
-`/team/access` is the read-only access summary for both managed desktop logins and personal accounts receiving access. Account pages for Owner, Dealer, Middleman and Business all link here. A managed desktop session visiting `/account` is redirected here; a personal session continues to show its own Account page. Managed workspace pages omit the personal-account navigation.
+`/team/access` is the read-only access summary for both managed desktop logins and personal accounts receiving access. Management account pages omit this staff-only shortcut. Eligible Owner, Dealer and Middleman account holders visiting this page directly return to Account; their invited workspaces remain accessible at `/team`. Business and other recipient account pages retain the shortcut. A managed desktop session visiting `/account` is redirected here; a personal session continues to show its own Account page. Managed workspace pages omit the personal-account navigation.
 
 The summary shows only grants returned for the current actor, their asset scope, granted actions, approved-document count and expiry in South Africa time. It refreshes on focus and every 30 seconds, clears on hidden/error, and links active eligible grants directly to their workspace. The workspace APIs still authorize every request; a query-string membership ID never grants access. Password resets remain with the main account holder for managed logins.
 

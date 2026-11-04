@@ -53,6 +53,14 @@ export async function requireTeamOwner() {
     await ensureTeamAccessSchema();
     return { actor, profile };
 }
+/** Use the same eligibility rule as desktop-user administration. */
+export async function canManageTeamAccess(): Promise<boolean> {
+    try { await requireTeamOwner(); return true; }
+    catch (error) {
+        if (error instanceof TeamAccessError) return false;
+        throw error;
+    }
+}
 export async function auditTeam(client: Pick<PoolClient, 'query'>, actor: TeamActor, grant: TeamGrant, action: string, assetId: string | null = null, details: Record<string, unknown> = {}) {
     await client.query('INSERT INTO team_access_activity(owner_id,membership_id,actor_id,actor_email,asset_id,action,details) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)', [grant.ownerId, grant.id, actor.id, actor.email, assetId, action, JSON.stringify({ ...details, targetName: grant.displayName, targetEmail: grant.email })]);
 }
