@@ -161,7 +161,16 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await page.waitForSelector('a[href="/team?workspace=membership-a"]');
    assert.equal(Boolean(await page.$('a[href="/account"]')),mode==='access-personal');
    assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Sign out')),mode==='access-managed');
+   assert(await page.evaluate(()=>document.body.textContent.includes('Asset values hidden')));
+   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),true);
+   await page.focus('button[aria-expanded]');
+   await page.keyboard.press('Space');
+   await page.waitForSelector('button[aria-expanded="true"]');
+   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),false);
    assert(await page.evaluate(()=>document.body.textContent.includes('Asset values are hidden.')));
+   await page.keyboard.press('Tab');
+   await click('Hide permissions');
+   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),true);
    assert.equal(await page.evaluate(()=>document.body.textContent.includes('View asset values')),false);
    for(const width of [1440,390]) {
      await page.setViewport({width,height:900});
@@ -174,6 +183,23 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  }
  await mount('access-personal');
  await page.waitForSelector('a[href="/team?workspace=membership-a"]');
+ await page.evaluate(()=>{
+   const base={permissions:{viewValues:true},scope:'all',registerCount:0,assetCount:0,documentCount:0,expiresAt:null};
+   window.fetch=async()=>({ok:true,json:async()=>({workspaces:[
+     {...base,id:'pending',name:'Dealer workspace',status:'pending',available:true},
+     {...base,id:'unavailable',name:'Middleman workspace',status:'active',available:false}
+   ]})});window.dispatchEvent(new Event('focus'));
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Invitation pending'));
+ assert.equal(await page.$$eval('a',els=>els.filter(e=>e.textContent==='Open workspace').length),0);
+ assert.equal(await page.$$eval('a',els=>els.filter(e=>e.textContent==='Review invitation').length),1);
+ assert(await page.evaluate(()=>document.body.textContent.includes('Workspace unavailable')));
+ await click('View permissions');
+ assert.equal(await page.$$eval('button[aria-expanded="true"]',els=>els.length),1);
+ await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='View permissions').click());
+ assert.equal(await page.$$eval('button[aria-expanded="true"]',els=>els.length),1);
+ await page.screenshot({path:'.next/team-access-validation/access-multiple.png'});
+
  await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({workspaces:[]})});window.dispatchEvent(new Event('focus'));});
  await page.waitForFunction(()=>document.body.textContent.includes('No desktop access yet'));
  assert.deepEqual(errors,[]);console.log('PASS owner permissions, scope and document selection, safe defaults, member editing and maintenance, responsive modals, and revoked workspace clearing');
