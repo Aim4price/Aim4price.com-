@@ -160,3 +160,12 @@ export function teamCsv(assets: TeamAsset[], includeValues: boolean): string {
     const headers = ['Asset', 'Register', 'Brand', 'Model', 'Year', 'Serial / VIN', 'Registration', 'Condition', 'Usage', 'Usage unit', ...(includeValues ? ['Current value excl. VAT', 'Replacement value excl. VAT', 'Insured value excl. VAT'] : [])];
     return '\uFEFF' + [headers, ...assets.map(a => [a.title, a.registerName, a.brand, a.model, a.year, a.serial, a.registration, a.condition, a.usage, a.usageMetric, ...(includeValues ? [a.values?.current, a.values?.replacement, a.values?.insured] : [])])].map(row => row.map(cell).join(',')).join('\r\n');
 }
+
+/** Full email addresses retain personal-account sign-in; @business usernames use desktop sign-in. */
+export function isEmailLogin(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+export function isDesktopUsername(value: string): boolean {
+    return value.length >= 3 && value.length <= 40
+        && /^[a-z0-9][a-z0-9._-]*(?:@[a-z0-9][a-z0-9_-]*)?$/.test(value);
+}

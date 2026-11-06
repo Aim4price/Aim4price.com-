@@ -6,7 +6,7 @@ import { sharingPlan } from '../../../lib/sharing-foundation';
 import { getDb } from '../../../lib/db';
 import { ensureTeamAccessSchema } from '../../../lib/team-access-schema';
 import { authenticateTeamLogin, TEAM_LOGIN_COOKIE, TEAM_LOGIN_AGE, teamTokenHash } from '../../../lib/team-login';
-import { TeamAccessError } from '../../../lib/team-access-policy';
+import { TeamAccessError, isDesktopUsername } from '../../../lib/team-access-policy';
 import { teamJson, teamError } from '../../../lib/team-access-http';
 import { requireBusinessOrigin, businessBody } from '../../../lib/business-network-api';
 import { limitBusinessAction } from '../../../lib/business-network';
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
     if ((await getAnyServerSession())?.user?.id) throw new TeamAccessError('Sign out of your current account before using a separate desktop login.', 409);
-    if ((!business && !/^[a-z0-9][a-z0-9._-]{2,39}$/.test(identifier)) || business.length > 128 || !identifier || identifier.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError(business ? 'Check the business sign-in link, username and password.' : 'Enter a valid desktop username and password.', 400);
+    if ((!business && !isDesktopUsername(identifier)) || business.length > 128 || !identifier || identifier.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError(business ? 'Check the business sign-in link, username and password.' : 'Enter a valid desktop username and password.', 400);
     const token = await authenticateTeamLogin(business, identifier, body.password);
     if (!business) {
       const row = (await getDb().query('SELECT g.owner_id FROM team_access_sessions s JOIN team_access g ON g.id=s.grant_id WHERE s.token_hash=$1', [teamTokenHash(token)])).rows[0];
