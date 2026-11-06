@@ -1,5 +1,6 @@
 "use client";
 
+import { isEmailLogin } from '../../lib/team-access-policy';
 import { adminAiReturnTo } from '../../lib/ai-connection/navigation';
 import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 
@@ -987,7 +988,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     setIsSubmitting(true);
 
     try {
-      if (!email.includes('@')) {
+      if (!isEmailLogin(email)) {
         const response = await fetch('/api/team-login', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: email, password: loginForm.password, rememberMe: loginForm.rememberMe }),
@@ -1607,7 +1608,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                       type="button"
                       className={styles.inlineTextButton}
                       onClick={() => {
-                        if (loginForm.email.trim() && !loginForm.email.includes('@')) {
+                        if (loginForm.email.trim() && !isEmailLogin(loginForm.email)) {
                           setNotice({ tone: "info", title: "Desktop password", text: "Ask your business owner to reset your desktop password." });
                         } else updateHashAndMode("forgot");
                       }}

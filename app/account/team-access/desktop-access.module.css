@@ -211,3 +211,16 @@
  :global(:where(html:not(:has([data-website-canvas])))) .refined .statusRow { flex-direction:column; align-items:stretch; }
 }
 .refined.refined .input { background:var(--app-success-soft,#e8f2ed); }
+
+/* Keep the login heading, help and fields together without paragraph margin stacking. */
+.refined .loginDetails { min-height:0; gap:1rem; }
+.refined .loginDetails > p { margin:0; line-height:1.5; }
+.refined .loginDetails .fields { margin-top:.25rem; gap:1rem 1.25rem; }
+.refined .loginDetails .field { align-content:start; gap:.45rem; }
+.refined .loginDetails .field small { margin:0; line-height:1.4; font-size:.85rem; }
+.refined .loginDetails .footer { margin-top:.25rem; }
+.refined .loginDetails .passwordField { display:flex; align-items:center; }
+.refined .loginDetails .passwordField .passwordToggle {
+  inset:0 .45rem 0 auto; margin:auto 0; transform:none;
+  width:3.8rem; height:2.25rem; padding:.25rem; line-height:1;
+}

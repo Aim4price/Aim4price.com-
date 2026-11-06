@@ -85,14 +85,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  // The normal login form routes usernames and personal emails to separate authenticators.
  await render('app/auth/auth-client',{},'/auth#login');await page.waitForSelector('input[autocomplete="username"]');
  assert.ok(await page.evaluate(()=>document.body.textContent.includes('Email address or username')));
- await page.locator('input[autocomplete="username"]').fill('office.user');await page.locator('input[autocomplete="current-password"]').fill('Desktop-password-123');
+ await page.locator('input[autocomplete="username"]').fill('office@farm');await page.locator('input[autocomplete="current-password"]').fill('Desktop-password-123');
  await click('Forgot password?');await page.waitForFunction(()=>document.body.textContent.includes('Ask your business owner'));assert.equal(logins.length,0);assert.equal(new URL(page.url()).hash,'#login');
  fs.mkdirSync('.next/team-access-validation',{recursive:true});await page.screenshot({path:'.next/team-access-validation/unified-login.png'});await click('Log in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect credentials'));
- assert.deepEqual(logins.at(-1),{path:'/api/team-login',body:{username:'office.user',password:'Desktop-password-123',rememberMe:true}});
+ assert.deepEqual(logins.at(-1),{path:'/api/team-login',body:{username:'office@farm',password:'Desktop-password-123',rememberMe:true}});
  await page.locator('input[autocomplete="username"]').fill('person@example.test');await click('Log in');await page.waitForResponse(r=>r.url().includes('/sign-in/email'));
  assert.equal(logins.at(-1).path,'/api/auth/sign-in/email');assert.equal(logins.at(-1).body.email,'person@example.test');
  await page.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(n=>n.textContent==='Log in').disabled);
- desktopSuccess=true;await page.locator('input[autocomplete="username"]').fill('office.user');await page.click('input[type="checkbox"]');
+ desktopSuccess=true;await page.locator('input[autocomplete="username"]').fill('office@farm');await page.click('input[type="checkbox"]');
  await Promise.all([page.waitForNavigation(),click('Log in')]);assert.equal(new URL(page.url()).pathname,'/team');assert.equal(logins.at(-1).body.rememberMe,false);
  await render('app/pricing/pricing-content',{});await page.waitForSelector('h1');assert(!await page.evaluate(()=>document.body.textContent.includes('x credits')));
  assert.deepEqual(errors,[]);console.log('PASS username/email login routing, desktop password help, remembered session choice, signup alignment, pricing copy and usage controls');

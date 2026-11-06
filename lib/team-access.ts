@@ -10,7 +10,7 @@ import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterIte
 import { listAccountDocuments } from './account-documents';
 import { resolveAssetUsage } from './asset-usage';
 import { ensureTeamAccessSchema } from './team-access-schema';
-import { TeamAccessError, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
+import { TeamAccessError, isDesktopUsername, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
 type TeamGrantRow = {
     managed_login?: boolean;
     username?: string | null;
@@ -134,7 +134,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     if (loginType !== undefined && loginType !== 'existing' && loginType !== 'managed') throw new TeamAccessError('Choose how this person will sign in.', 400);
     const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
     const usernameLogin = loginType === 'managed' && (!body.id || Boolean(username));
-    if (usernameLogin && !/^[a-z0-9][a-z0-9._-]{2,39}$/.test(username)) throw new TeamAccessError('Use a username of 3–40 letters, numbers, dots, underscores or hyphens.', 400);
+    if (usernameLogin && !isDesktopUsername(username)) throw new TeamAccessError('Use a username of 3–40 characters, such as kuyler@skimmelkrans. Full email addresses are reserved for personal accounts.', 400);
     const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
     if ((!usernameLogin && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || email === actor.email)) || !displayName || displayName.length > 100)
         throw new TeamAccessError('Enter the person’s name and their own valid email address.', 400);

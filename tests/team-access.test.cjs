@@ -267,8 +267,8 @@ test('desktop login route enforces origin, rate limits and isolated cookies; log
  assert.equal((await route.POST(req)).status,409);
  f.setSession(null);blocked=true;assert.equal((await route.POST(req)).status,429);blocked=false;
  assert.equal((await route.POST(req)).status,200);assert.equal(json.lastCookie[0],'aim4price_desktop_user');assert.equal(json.lastCookie[2].httpOnly,true);assert.equal(json.lastCookie[2].sameSite,'lax');
- const universal=await f.invite({email:'',loginType:'managed',username:'office.user',password:'Username-password-123'});
- const usernameReq={...req,body:{username:'OFFICE.USER',password:'Username-password-123',rememberMe:false}};
+ const universal=await f.invite({email:'',loginType:'managed',username:'office@farm',password:'Username-password-123'});
+ const usernameReq={...req,body:{username:'OFFICE@FARM',password:'Username-password-123',rememberMe:false}};
  assert.equal((await route.POST(usernameReq)).status,200);assert.equal(Object.hasOwn(json.lastCookie[2],'maxAge'),false);
  token=json.lastCookie[1];f.setCookie(token);assert.equal((await f.login.getManagedTeamActor()).managedGrantId,universal.id);
  assert.equal((await route.POST({...usernameReq,body:{...usernameReq.body,password:'wrong'}})).status,401);
@@ -476,27 +476,27 @@ test('explicit existing-account access never creates a desktop password or silen
 
 test('username logins are business-scoped, separate from personal accounts, and survive schema reruns',async()=>{
  const f=await setup();try{
- const input={loginType:'managed',email:'',username:'  Kuyler.Office  ',password:'Office-password-123'};
+ const input={loginType:'managed',email:'',username:'  Kuyler@Skimmelkrans  ',password:'Office-password-123'};
  const grant=await f.invite(input);
- assert.equal(grant.username,'kuyler.office');assert.equal(grant.email,'');assert.equal(grant.memberUserId,null);assert.equal(grant.managedLogin,true);
- await assert.rejects(f.invite({...input,username:'KUYLER.OFFICE'}),/already in use/);
+ assert.equal(grant.username,'kuyler@skimmelkrans');assert.equal(grant.email,'');assert.equal(grant.memberUserId,null);assert.equal(grant.managedLogin,true);
+ await assert.rejects(f.invite({...input,username:'KUYLER@SKIMMELKRANS'}),/already in use/);
  for(const username of ['ab','staff@example.com','bad space','x'.repeat(41)]) await assert.rejects(f.invite({...input,username}),/username/);
  await assert.rejects(f.invite({...input,username:'no.password',password:''}),/initial password/);
  const second=await f.invite({...input,username:'second.office'});assert.notEqual(grant.id,second.id);
  await f.db.exec(TEAM_ACCESS_SCHEMA);await f.db.exec(TEAM_ACCESS_SCHEMA);
  const personal=await f.invite({loginType:'existing'});
  f.setSession({user:member});await assert.rejects(f.service.loadTeamScope(grant.id));await f.service.loadTeamScope(personal.id);
- const token=await f.login.authenticateTeamLogin('owner','KUYLER.OFFICE','Office-password-123');f.setSession(null);f.setCookie(token);
- const actor=await f.service.requireTeamActor();assert.equal(actor.username,'kuyler.office');assert.equal(actor.managedGrantId,grant.id);
+ const token=await f.login.authenticateTeamLogin('owner','KUYLER@SKIMMELKRANS','Office-password-123');f.setSession(null);f.setCookie(token);
+ const actor=await f.service.requireTeamActor();assert.equal(actor.username,'kuyler@skimmelkrans');assert.equal(actor.managedGrantId,grant.id);
  await f.service.loadTeamScope(grant.id);await assert.rejects(f.service.loadTeamScope(second.id));await assert.rejects(f.service.loadTeamScope(personal.id));await assert.rejects(f.service.requireTeamOwner());
- await assert.rejects(f.login.authenticateTeamLogin('other','kuyler.office','Office-password-123'));
+ await assert.rejects(f.login.authenticateTeamLogin('other','kuyler@skimmelkrans','Office-password-123'));
  await assert.rejects(f.invite({...grant,loginType:'managed',username:'renamed'}),/unavailable/);
  const updated=await f.invite({...grant,loginType:'managed',password:'New-office-password-123'});
  assert.equal(await f.login.getManagedTeamActor(),null);
- await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler.office','Office-password-123'));
- f.setCookie(await f.login.authenticateTeamLogin('owner','kuyler.office','New-office-password-123'));
+ await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler@skimmelkrans','Office-password-123'));
+ f.setCookie(await f.login.authenticateTeamLogin('owner','kuyler@skimmelkrans','New-office-password-123'));
  await f.service.setTeamGrantStatus(owner,updated.id,updated.version,'revoked');assert.equal(await f.login.getManagedTeamActor(),null);
- await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler.office','New-office-password-123'));
+ await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler@skimmelkrans','New-office-password-123'));
  }finally{await f.db.close();}
 });
 
@@ -513,4 +513,12 @@ test('universal username sign-in fails closed for legacy duplicates and reserves
  f.setCookie(await f.login.authenticateTeamLogin('owner','unique.office','Username-password-123'));
  assert.equal((await f.login.getManagedTeamActor()).managedGrantId,grant.id);
  }finally{await f.db.close();}
+});
+
+test('@business usernames and full personal emails have unambiguous sign-in routes',()=>{
+ for(const name of ['kuyler@skimmelkrans','staff.office','staff_1@farm-2']) {
+  assert.equal(policy.isDesktopUsername(name),true);assert.equal(policy.isEmailLogin(name),false);
+ }
+ for(const name of ['staff@example.com','bad@@farm','@farm','staff@','staff name','staff@farm.co.za'])assert.equal(policy.isDesktopUsername(name),false);
+ assert.equal(policy.isEmailLogin('person@example.com'),true);
 });
