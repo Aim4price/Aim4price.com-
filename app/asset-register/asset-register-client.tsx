@@ -21,7 +21,7 @@ import AssetMessageReader from '../../components/asset-register/AssetMessageRead
 import CreateAssetRegisterModal, { type RegisterDetailsDraft } from '../../components/asset-register/CreateAssetRegisterModal';
 import ValueInclusionControl from '../../components/asset-register/ValueInclusionControl';
 import MoveAssetDestinationPicker from '../../components/asset-register/MoveAssetDestinationPicker';
-import AssetPartsModal from '../../components/AssetPartsModal';
+const AssetPartsModal = dynamic(() => import('../../components/AssetPartsModal'));
 import PhotoViewerActions from '../../components/PhotoViewerActions';
 import photoActionsLayout from '../../components/PhotoViewerActions.module.css';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
@@ -32,7 +32,7 @@ import ModalSelect, {type ModalSelectOption} from '../../components/AssetModalSe
 import AssetPaperworkFields, {type AssetStatusDraft} from '../../components/AssetPaperworkFields';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadActionDialog from '../../components/leads/LeadActionDialog';
-import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
+const SharedAssetWorkDialog = dynamic(() => import('../../components/leads/SharedAssetWorkDialog'));
 import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetDetailChoiceField from '../../components/AssetDetailChoiceField';
 import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
@@ -85,7 +85,7 @@ import DropdownOverlay from '../../components/DropdownOverlay';
 import AppHeader from '../../components/AppHeader';
 import { desktopRegisterAssets, desktopRegisterSummaries, projectTeamGroups, type TeamRegisterData } from '../../lib/team-register';
 import type { ReactNode } from 'react';
-import SaleabilityModal from '../../components/SaleabilityModal';
+const SaleabilityModal = dynamic(() => import('../../components/SaleabilityModal'));
 import AssetGroupManagerModal, {
   type AssetGroupReportFilters,
   type AssetGroupReportFormat,

@@ -1,7 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import AssetRegisterClient from '../asset-register/asset-register-client';
+import dynamic from 'next/dynamic';
+import PageLoadingState from '../../components/PageLoadingState';
+const AssetRegisterClient = dynamic(() => import('../asset-register/asset-register-client'), { loading: () => <PageLoadingState label="Loading Asset Register" detail="Getting your assets ready." /> });
 import AppHeader from '../../components/AppHeader';
 import type { TeamRegisterData } from '../../lib/team-register';
 import registerStyles from '../asset-register/page.module.css';
@@ -62,7 +64,7 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     const loadWorkspaces = useCallback(async () => { const response = await api('/api/team-workspaces'); setWorkspaces(response.workspaces);
       const available = response.workspaces.filter((workspace: Workspace) => workspace.available && workspace.status === 'active');
       if (available.length === 1) setMembership(current => current || available[0].id); }, []);
-    useEffect(() => { void loadWorkspaces().catch(e => setError(e.message)).finally(() => setLoading(false)); }, [loadWorkspaces]);
+    useEffect(() => { void loadWorkspaces().catch(e => setError(e.message)).finally(() => { if (!initialWorkspace) setLoading(false); }); }, [loadWorkspaces, initialWorkspace]);
     const refresh = useCallback(async () => {
         if (!membership)
             return;

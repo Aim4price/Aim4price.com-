@@ -19,7 +19,7 @@ export default async function AssetRegisterPage({
 }) {
   const personal = await getAnyServerSession();
   const managed = personal?.user ? null : await getManagedTeamActor();
-  if (managed) return <TeamWorkspaceClient email={managed.username || managed.email} managed/>;
+  if (managed) return <TeamWorkspaceClient email={managed.username || managed.email} managed initialWorkspace={managed.managedGrantId}/>;
   const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({

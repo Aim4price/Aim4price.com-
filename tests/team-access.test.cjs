@@ -34,7 +34,7 @@ async function setup() {
   './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
   './sharing-foundation':{sharingPlan:async id=>id==='owner'?'desktop':'free'},
   './asset-registers':{listAssetRegisters:async id=>id==='owner'?registers:[]},
-  './asset-register-db':{listAssetRegisterItems:async(id,reg)=>id==='owner'?assets.filter(a=>a.registerId===reg):[],getAssetRegisterItemById:async(id,key)=>id==='owner'?assets.find(a=>a.id===key):null},
+  './asset-register-db':{listAssetRegisterItemsForRegisters:async(id,regs)=>id==='owner'?assets.filter(a=>regs.includes(a.registerId)):[],getAssetRegisterItemById:async(id,key)=>id==='owner'?assets.find(a=>a.id===key):null},
   './account-documents':{listAccountDocuments:async id=>id==='owner'?docs:[]},
   './asset-usage':{resolveAssetUsage:()=>({value:500,metric:'hours'})},
   './team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy,

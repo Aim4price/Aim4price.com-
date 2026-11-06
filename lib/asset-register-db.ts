@@ -2547,7 +2547,6 @@ export async function getAssetRegisterItemsByRefs(
 }
 
 export async function listAssetRegisterItems(userId: string, registerId?: string | null): Promise<AssetRegisterItem[]> {
-  const db = getDb();
   const activeRegister = registerId
     ? await getAssetRegisterForUser(userId, registerId)
     : await getSelectedAssetRegister(userId);
@@ -2556,6 +2555,14 @@ export async function listAssetRegisterItems(userId: string, registerId?: string
     throw new Error('ASSET_REGISTER_NOT_FOUND');
   }
 
+  return listAssetRegisterItemsForRegisters(userId, [activeRegister.id]);
+}
+
+// Internal bulk reader. Callers supply registers obtained for this owner; the
+// user_id predicate remains mandatory even if a foreign register ID is passed.
+export async function listAssetRegisterItemsForRegisters(userId: string, registerIds: string[]): Promise<AssetRegisterItem[]> {
+  if (!registerIds.length) return [];
+  const db = getDb();
   const schema = await getAssetRegisterSchema();
 
   const updatedOrderColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
@@ -2570,11 +2577,11 @@ export async function listAssetRegisterItems(userId: string, registerId?: string
       select
         ${buildSelectList(schema)}
       from asset_register_items
-      where user_id = $1 and register_id = $2::uuid
+      where user_id = $1 and register_id = ANY($2::uuid[])
         ${schema.columnNames.has('lifecycle_state') ? "and coalesce(lifecycle_state, 'active') = 'active'" : ''}
       order by ${primaryOrderExpression} desc nulls last${secondaryOrderClause}, id desc
     `,
-    [userId, activeRegister.id],
+    [userId, registerIds],
   );
 
   return result.rows.map(mapAssetRegisterRow);
