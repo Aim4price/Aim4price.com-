@@ -8,7 +8,7 @@ import { sharingPlan } from './sharing-foundation';
 import { listAssetGroups } from './asset-groups';
 import { projectTeamGroups } from './team-register';
 import { listAssetRegisters } from './asset-registers';
-import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
+import { getAssetRegisterItemById, listAssetRegisterItemsForRegisters, type AssetRegisterItem } from './asset-register-db';
 import { listAccountDocuments } from './account-documents';
 import { resolveAssetUsage } from './asset-usage';
 import { ensureTeamAccessSchema } from './team-access-schema';
@@ -107,14 +107,13 @@ export async function lockTeamScope(client: PoolClient, scope: TeamScope, assetI
     await setAssetHistoryActor(client, scope.actor.id, scope.actor.name || scope.actor.email, 'team-workspace');
     return requireTeamAsset({ ...scope, grant: fresh }, assetId, client);
 }
-export async function listTeamOwnerAssets(ownerId: string) {
-    const registers = await listAssetRegisters(ownerId);
-    const lists = await Promise.all(registers.map(r => listAssetRegisterItems(ownerId, r.id)));
-    return [...new Map(lists.flat().map(a => [a.id, a])).values()];
+export async function listTeamOwnerAssets(ownerId: string, registers?: Awaited<ReturnType<typeof listAssetRegisters>>) {
+    const ownerRegisters = registers ?? await listAssetRegisters(ownerId);
+    return listAssetRegisterItemsForRegisters(ownerId, ownerRegisters.map(register => register.id));
 }
 export async function teamAssetList(scope: TeamScope) {
     const registers = await listAssetRegisters(scope.grant.ownerId);
-    const assets = (await listTeamOwnerAssets(scope.grant.ownerId)).filter(a => teamCanAccessAsset(scope.grant, a));
+    const assets = (await listTeamOwnerAssets(scope.grant.ownerId, registers)).filter(a => teamCanAccessAsset(scope.grant, a));
     return assets.map(asset => ({
         ...projectTeamAsset(asset, scope.grant, registers.find(r => r.id === asset.registerId)?.businessName || 'Asset register', resolveAssetUsage({ kind: asset.kind, hours: asset.hours, lifeWorkedPercent: asset.lifeWorkedPercent, specsJson: asset.specsJson })),
         registerLogoUrls: registers.find(r => r.id === asset.registerId)?.logoUrls || [],

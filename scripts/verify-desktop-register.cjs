@@ -3,7 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=r
 const {spawn}=require('node:child_process'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
 const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-validation'),accessFixture=path.join(root,'app/desktop-account-validation');
 (async()=>{let server,browser,created=false,accessCreated=false;try{
- await fs.mkdir(fixture);created=true;await fs.writeFile(path.join(fixture,'page.tsx'),`'use client';import TeamWorkspaceClient from '../team/team-workspace-client';export default function Page(){return <TeamWorkspaceClient email="staff@farm" managed/>}`);
+ await fs.mkdir(fixture);created=true;await fs.writeFile(path.join(fixture,'page.tsx'),`'use client';import TeamWorkspaceClient from '../team/team-workspace-client';export default function Page(){return <TeamWorkspaceClient email="staff@farm" managed initialWorkspace="membership-a"/>}`);
  await fs.mkdir(accessFixture);accessCreated=true;await fs.writeFile(path.join(accessFixture,'page.tsx'),`'use client';import MyAccessClient from '../team/access/my-access-client';export default function Page(){return <MyAccessClient email="staff@farm" name="Workshop staff" managed/>}`);
  server=spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-p','3035'],{cwd:root,stdio:['ignore','pipe','pipe']});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Next startup timeout')),90000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve()}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',code=>reject(Error('Next exited '+code)))});
@@ -11,15 +11,17 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  const page=await browser.newPage(),errors=[],ownerRequests=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message)});
  await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'auto'}));});
  const logo='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22green%22/%3E%3C/svg%3E';
- let revoked=false,values=false,revision=1;
+ let revoked=false,values=false,revision=1,workspaceListPending=false,requestedWhileListPending=false;
  const permissions={viewValues:false,editDetails:true,updateUsage:true,viewMaintenance:false,completeMaintenance:false,uploadDocuments:false,viewPhotos:false,uploadPhotos:false,exportAssets:false};
  const asset=(id,registerId,title)=>({id,registerId,registerName:registerId==='reg-a'?'Farm equipment':'Vehicles',title,kind:'tractor',brand:'Landini',model:'Super 110',year:2020,serial:'SERIAL',registration:'',condition:'good',usage:1200,usageMetric:'hours',photoCount:0,...(values?{values:{current:987654,replacement:1234567,insured:999999}}:{})});
  await page.setRequestInterception(true);page.on('request',request=>{const u=new URL(request.url());if(u.pathname.startsWith('/api/')){
  let body={ok:true},status=200;
  if(u.pathname==='/api/team-workspaces')body={workspaces:[{id:'membership-a',name:'Test farm',logoUrl:logo,accountType:'owner',scope:'all',documentCount:0,available:true,status:'active',permissions}]};
  else if(u.pathname==='/api/team-workspaces/membership-a'){
+ if(workspaceListPending)requestedWhileListPending=true;
  if(revoked){status=403;body={error:'Your access has been revoked.'}}else body={name:'Test farm',logoUrl:logo,permissions:{...permissions,viewValues:values},version:revision,assets:[asset('tractor-a','reg-a','Landini tractor'),asset('tractor-b','reg-a','Farm trailer'),asset('vehicle-a','reg-b','Farm vehicle')],groups:[{id:'umbrella-a',name:'Farm machinery',userId:'',registerId:null,valueMode:'separate',members:[{assetId:'tractor-a',role:'primary',countsTowardTotal:true,relationship:'primary',sortOrder:0},{assetId:'tractor-b',role:'member',countsTowardTotal:true,relationship:'grouped',sortOrder:1}],createdAtIso:'',updatedAtIso:''}]};
  }else if(u.pathname.includes('asset-register')||u.pathname.includes('asset-groups')){ownerRequests.push(u.pathname);status=403;body={error:'Owner endpoint blocked'}}
+ if(u.pathname==='/api/team-workspaces' && (request.headers().referer||'').includes('/desktop-validation')){workspaceListPending=true;setTimeout(()=>{workspaceListPending=false;void request.respond({status,contentType:'application/json',body:JSON.stringify(body)});},1500);return;}
  return request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
  }request.continue();});
  for(const width of [1440,430]) {
@@ -86,6 +88,6 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  values=false;revision++;await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForSelector('[aria-label="Value restricted"]');
  revoked=true;await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForFunction(()=>document.body.textContent.includes('revoked'));
  assert.equal(await page.$('[data-asset-group-id="umbrella-a"]'),null);
- assert.deepEqual(ownerRequests,[]);assert.deepEqual(errors,[]);console.log('PASS normal register, umbrellas, locked actions, hidden values, permission refresh and revocation at desktop/mobile sizes');
+ assert(requestedWhileListPending,"Known membership starts before the workspace list finishes");assert.deepEqual(ownerRequests,[]);assert.deepEqual(errors,[]);console.log('PASS normal register, umbrellas, locked actions, hidden values, permission refresh and revocation at desktop/mobile sizes');
  }finally{if(browser)await browser.close();if(created)await fs.rm(fixture,{recursive:true,force:true});if(accessCreated)await fs.rm(accessFixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/desktop-validation'),{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/desktop-account-validation'),{recursive:true,force:true});if(server)server.kill();}
 })().catch(e=>{console.error(e);process.exitCode=1});
