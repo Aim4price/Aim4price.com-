@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript'),load=require('./helpers/load-ts.cjs');
 const source=fs.readFileSync('app/api/asset-register/export/route.ts','utf8')+'\nexports.fixture={buildAssetRow,buildSourceAssetRow,buildPdfAssetLines,buildRegisterBasicExportSummary,buildWorkbookSheet,TABLE_HEADERS};';
 const exportsFixture={};
-new Function('require','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name=>name.endsWith('asset-groups-shared')?load('lib/asset-groups-shared.ts'):new Proxy({},{get:()=>()=>undefined}),exportsFixture);
+new Function('require','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name=>name==='node:async_hooks'?require(name):name.endsWith('asset-groups-shared')?load('lib/asset-groups-shared.ts'):new Proxy({},{get:()=>()=>undefined}),exportsFixture);
 const f=exportsFixture.fixture;
 const asset={id:'a',title:'Test tractor',kind:'equipment',value:100000,yearModel:2020,condition:'good',hours:200,specsJson:{},photos:[],documents:[],selectedMethod:'aim4price'};
 test('PDF/HTML asset lines always show realistic selling price, with N/A for missing and review labels for stale',()=>{

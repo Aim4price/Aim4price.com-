@@ -1,22 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { loadTeamScope, teamAssetList, auditTeam } from '../../../../../lib/team-access';
-import { teamCsv } from '../../../../../lib/team-access-policy';
-import { teamError, TEAM_HEADERS } from '../../../../../lib/team-access-http';
-import { getDb } from '../../../../../lib/db';
+import { NextRequest } from 'next/server';
+import { GET as renderRegisterReport } from '../../../asset-register/export/route';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export async function GET(_request: NextRequest, { params }: {
-    params: {
-        membershipId: string;
-    };
-}) {
-    try {
-        const scope = await loadTeamScope(params.membershipId, 'exportAssets');
-        const csv = teamCsv(await teamAssetList(scope), scope.grant.permissions.viewValues);
-        await auditTeam(getDb(), scope.actor, scope.grant, 'Asset list exported');
-        return new NextResponse(csv, { headers: { ...TEAM_HEADERS, 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': 'attachment; filename="team-assets.csv"' } });
-    }
-    catch (error) {
-        return teamError(error);
-    }
+
+/** Keep existing links working, but generate the same scoped report as the owner flow. */
+export async function GET(request: NextRequest, { params }: { params: { membershipId: string } }) {
+  const url = new URL(request.url);
+  url.pathname = '/api/asset-register/export';
+  // Always use the path membership, never a caller-supplied replacement.
+  url.searchParams.set('desktopMembership', params.membershipId);
+  return renderRegisterReport(new NextRequest(url, { headers: request.headers }));
 }

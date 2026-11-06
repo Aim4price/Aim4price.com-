@@ -1,3 +1,10 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { loadTeamScope, listTeamOwnerAssets, teamDocuments, auditTeam } from '../../../../lib/team-access';
+import { teamCanAccessAsset, TeamAccessError } from '../../../../lib/team-access-policy';
+import { teamError, TEAM_HEADERS } from '../../../../lib/team-access-http';
+import { getDb } from '../../../../lib/db';
+import { projectTeamGroups } from '../../../../lib/team-register';
+import { restrictTeamReportItems } from '../../../../lib/team-report-policy';
 import { withRealisticSellingAssessments } from '../../../../lib/realistic-selling-assessments';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
@@ -95,6 +102,8 @@ type RegisterSummaryPdfSection = {
   rows: Array<{ label: string; count?: string; valueExVat?: string; valueInclVat?: string }>;
 };
 
+// Per-request state: concurrent owner and restricted reports must never affect each other.
+const reportVisibility = new AsyncLocalStorage<{ hideValues: boolean }>();
 const NA_VALUE = 'N/A';
 const AIM4PRICE_REPORT_EMAIL = 'aim4price@gmail.com';
 const VAT_RATE = 0.15;
@@ -1356,6 +1365,7 @@ function formatPdfDate(value: Date): string {
 }
 
 function formatPdfMoney(value: unknown): string {
+  if (reportVisibility.getStore()?.hideValues) return 'Restricted';
   const numeric = numericValue(value) ?? 0;
   const rounded = Math.round(numeric);
   const formatted = Math.abs(rounded).toLocaleString('en-ZA').replace(/,/g, ' ');
@@ -1566,10 +1576,10 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const insuredValue = insuredValueExVat(item);
   const isProperty = item.kind === 'property';
   const insuredValueSummary = insuredValue === null
-    ? 'Insured value: N/A'
+    ? (reportVisibility.getStore()?.hideValues ? 'Insured value: Restricted' : 'Insured value: N/A')
     : `Insured value: ${formatPdfMoney(insuredValue)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(insuredValue))} incl. VAT`;
   const replacementSummary = replacementPrice === null
-    ? 'Replacement price: N/A'
+    ? (reportVisibility.getStore()?.hideValues ? 'Replacement price: Restricted' : 'Replacement price: N/A')
     : `Replacement price: ${formatPdfMoney(replacementPrice)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(replacementPrice))} incl. VAT`;
   const group = exportAssetGroup(item);
   const groupLines: Array<{ text: string; font: PdfFontKey; size: number }> = group
@@ -1585,7 +1595,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
       { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
       { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
       {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
-      {text: `Realistic selling price: ${item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
+      {text: `Realistic selling price: ${reportVisibility.getStore()?.hideValues ? 'Restricted' : item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
       ...groupLines,
       { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
       { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -1596,7 +1606,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
     {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
-      {text: `Realistic selling price: ${item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
+      {text: `Realistic selling price: ${reportVisibility.getStore()?.hideValues ? 'Restricted' : item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
     ...groupLines,
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
     { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
@@ -1740,7 +1750,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
 function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): RegisterSummaryPdfSection[] {
   const row = (label: string, count: number, valueExVat: number) => ({
     label,
-    count: String(count),
+    count: reportVisibility.getStore()?.hideValues && label === 'Replacement value' ? 'Restricted' : String(count),
     valueExVat: formatPdfMoney(valueExVat),
     valueInclVat: formatPdfMoney(moneyInclVatTotal(valueExVat)),
   });
@@ -1749,7 +1759,7 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
     {
       title: 'Register Values',
       rows: [
-        {label:`Realistic selling price (${summary.realistic.count} of ${summary.realistic.eligible} counted assets assessed)`,count:String(summary.realistic.count),valueExVat:summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A',valueInclVat:summary.realistic.count ? formatPdfMoney(moneyInclVatTotal(summary.realistic.value)) : 'N/A'},
+        {label:reportVisibility.getStore()?.hideValues ? 'Realistic selling price' : `Realistic selling price (${summary.realistic.count} of ${summary.realistic.eligible} counted assets assessed)`,count:reportVisibility.getStore()?.hideValues ? 'Restricted' : String(summary.realistic.count),valueExVat:reportVisibility.getStore()?.hideValues ? 'Restricted' : summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A',valueInclVat:reportVisibility.getStore()?.hideValues ? 'Restricted' : summary.realistic.count ? formatPdfMoney(moneyInclVatTotal(summary.realistic.value)) : 'N/A'},
         row('Total assets', summary.totalAssets, summary.currentValueExVat),
         row('Replacement value', summary.replacementPricedAssets, summary.replacementValueExVat),
         row('Insured value', summary.assetsInsured, summary.insuredAssetsValueExVat),
@@ -1853,9 +1863,10 @@ async function renderRegisterSummaryReportHtml(
   const reportTitle = fullReport ? 'Full Asset Register' : 'Asset Register Summary';
   const safeTitle = escapeHtml(`${ownerName} - ${reportTitle}`);
   const heroMeta = ownerAddress || 'Selected Aim4price asset register';
-  const footerDisclaimer = fullReport
+  const accessNote = reportVisibility.getStore() ? `Only assets permitted for this login are included. ${reportVisibility.getStore()?.hideValues ? 'Values are excluded. ' : ''}` : '';
+  const footerDisclaimer = accessNote + (fullReport
     ? 'Values reflect saved asset-register information at export time. Both VAT bases are shown at 15%. This is not a certified valuation, inspection report or guarantee of selling price.'
-    : 'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values are shown excluding VAT and including VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.';
+    : 'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values are shown excluding VAT and including VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.');
 
   return `<!doctype html>
 <html lang="en">
@@ -2396,7 +2407,7 @@ async function renderRegisterSummaryReportHtml(
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this report.</div>
+      <div class="assetReportScreenText">${reportVisibility.getStore() ? 'Only permitted assets and information are included. ' : ''}Save or print this report.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -2429,8 +2440,8 @@ async function renderRegisterSummaryReportHtml(
             <strong class="assetReportValue">${escapeHtml(registerValueExVat)}</strong>
             <span class="assetReportVat">VAT excluded</span>
             <div class="assetReportValueMeta">
-              <div><span>Realistic selling price (excl. VAT)</span><strong>${escapeHtml(summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A')}</strong></div>
-              <div><span>Assessed (counted assets)</span><strong>${summary.realistic.count} of ${summary.realistic.eligible}</strong></div>
+              <div><span>Realistic selling price (excl. VAT)</span><strong>${escapeHtml(reportVisibility.getStore()?.hideValues ? 'Restricted' : summary.realistic.count ? formatPdfMoney(summary.realistic.value) : 'N/A')}</strong></div>
+              <div><span>Assessed (counted assets)</span><strong>${reportVisibility.getStore()?.hideValues ? 'Restricted' : `${summary.realistic.count} of ${summary.realistic.eligible}`}</strong></div>
               <div><span>Total assets</span><strong>${escapeHtml(String(summary.totalAssets))}</strong></div>
             </div>
           </aside>
@@ -3140,7 +3151,59 @@ function buildRegisterSummaryHtmlResponse(html: string, fileName: string): NextR
   });
 }
 
+/** Desktop reports use the canonical renderer, with fresh authorization and scoped source data. */
+async function desktopReport(request: NextRequest, membershipId: string) {
+  try {
+    const scope = await loadTeamScope(membershipId, 'exportAssets');
+    const params = new URL(request.url).searchParams;
+    const format = params.get('format') || 'pdf';
+    const kind = params.get('reportKind') || 'full';
+    if (!['html', 'pdf'].includes(format) || !['full', 'summary'].includes(kind))
+      throw new TeamAccessError('Choose a PDF report or summary.', 400);
+    if (params.has('shareToken') || params.has('groupId'))
+      throw new TeamAccessError('Choose the assets to include in this report.', 400);
+    const selection = parseRequestedAssetIds(params);
+    if (selection.error) throw new TeamAccessError('Invalid asset selection (maximum 200 selected assets).', 400);
+    const registers = await listAssetRegisters(scope.grant.ownerId);
+    const allowed = (await listTeamOwnerAssets(scope.grant.ownerId, registers)).filter(item => teamCanAccessAsset(scope.grant, item));
+    const selectedIds = selectAuthorizedAssetIds(allowed, selection);
+    if (!selectedIds) throw new TeamAccessError('One or more selected assets are unavailable.', 404);
+    const registerIds = parseRegisterIds(params);
+    if (registerIds.some(id => !allowed.some(item => item.registerId === id)))
+      throw new TeamAccessError('Register unavailable.', 404);
+    const selected = allowed.filter(item => selectedIds.has(item.id) && (!registerIds.length || registerIds.includes(item.registerId || '')));
+    if (!selected.length) throw new TeamAccessError('No permitted assets to include.', 404);
+    const [profile, groups, documents] = await Promise.all([
+      getAccountProfile({ id: scope.grant.ownerId }), listAssetGroups(scope.grant.ownerId), teamDocuments(scope),
+    ]);
+    const assessed = scope.grant.permissions.viewValues ? await withRealisticSellingAssessments(selected, 'report') : selected;
+    const items = restrictTeamReportItems(assessed, scope.grant.permissions, documents);
+    // Project groups before decoration: hidden members and primaries cannot influence totals.
+    const safeGroups = projectTeamGroups(groups, selected.map(item => ({ id: item.id })) as Parameters<typeof projectTeamGroups>[1]);
+    const decorated = decorateAssetsWithGroups(items, safeGroups);
+    const bundles = registers.map(register => ({ register, items: decorated.filter(item => item.registerId === register.id)
+      .map(item => ({ ...item, registerIncludedInCombinedTotals: registerIds.length === 1 || register.includeInCombinedTotals !== false })) })).filter(bundle => bundle.items.length);
+    const selectedRegister = bundles.length === 1 ? bundles[0].register : null;
+    const reportProfile = buildScopedExportProfile(profile, selectedRegister ? 'single' : 'combined', bundles.map(bundle => bundle.register), (params.get('entityName') || '').trim().slice(0, 200));
+    const html = await reportVisibility.run({ hideValues: !scope.grant.permissions.viewValues }, () => kind === 'summary'
+      ? renderRegisterSummaryReportHtml(bundles.flatMap(bundle => bundle.items), reportProfile, new Date(), request.url)
+      : renderFullRegisterReportHtml(bundles, reportProfile, new Date(), request.url));
+    const content = format === 'html' ? html : await renderReportHtmlToPdf(html, { baseUrl: request.url, cookie: request.headers.get('cookie') || '' });
+    // Do not release a report if the owner revoked or changed access during generation.
+    const fresh = await loadTeamScope(membershipId, 'exportAssets');
+    if (fresh.grant.version !== scope.grant.version) throw new TeamAccessError('Your permissions changed. Refresh and try again.', 409);
+    await auditTeam(getDb(), scope.actor, scope.grant, 'Report downloaded', null, { reportKind: kind, assetCount: selected.length, valuesIncluded: scope.grant.permissions.viewValues });
+    return new NextResponse(content, { headers: { ...TEAM_HEADERS,
+      'Content-Type': format === 'html' ? 'text/html; charset=utf-8' : 'application/pdf',
+      'Content-Disposition': `inline; filename="aim4price-${kind}-report.${format}"`,
+    } });
+  } catch (error) { return teamError(error); }
+}
+
 export async function GET(request: NextRequest) {
+  const desktopMembership = new URL(request.url).searchParams.get('desktopMembership');
+  if (desktopMembership) return desktopReport(request, desktopMembership);
+
   const params = new URL(request.url).searchParams;
   const shareToken = params.get('shareToken');
   let sharedScope: Awaited<ReturnType<typeof import('../../../../lib/live-shared-asset-access').requireLiveSharedAsset>> | null = null;
