@@ -15,6 +15,7 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  const permissions={viewValues:false,editDetails:true,updateUsage:true,viewMaintenance:false,completeMaintenance:false,uploadDocuments:false,viewPhotos:false,uploadPhotos:false,exportAssets:false};
  const asset=(id,registerId,title)=>({id,registerId,registerName:registerId==='reg-a'?'Farm equipment':'Vehicles',title,kind:'tractor',brand:'Landini',model:'Super 110',year:2020,serial:'SERIAL',registration:'',condition:'good',usage:1200,usageMetric:'hours',photoCount:0,...(values?{values:{current:987654,replacement:1234567,insured:999999}}:{})});
  await page.setRequestInterception(true);page.on('request',request=>{const u=new URL(request.url());if(u.pathname.startsWith('/api/')){
+ if(u.pathname==='/api/team-workspaces/membership-a/export')return request.respond({status:200,contentType:'text/html',body:'<!doctype html><h1>Scoped report</h1>'});
  let body={ok:true},status=200;
  if(u.pathname==='/api/team-workspaces')body={workspaces:[{id:'membership-a',name:'Test farm',logoUrl:logo,accountType:'owner',scope:'all',documentCount:0,available:true,status:'active',permissions}]};
  else if(u.pathname==='/api/team-workspaces/membership-a'){
@@ -76,6 +77,30 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  await page.$eval('[aria-label="Close update asset menu"]',e=>e.click());
  if(await page.$('[aria-label="Close asset management"]')) await page.$eval('[aria-label="Close asset management"]',e=>e.click());
  }
+ permissions.exportAssets=true;revision++;
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForNetworkIdle();
+ for(const width of [1440,430]) {
+ await page.bringToFront();await page.setViewport({width,height:1000});
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Download'&&!b.disabled));
+ await page.$$eval('button',buttons=>buttons.find(b=>b.textContent.trim()==='Download').click());
+ await page.waitForSelector('#compact-register-export');
+ assert.equal(await page.$eval('#compact-register-export',el=>el.textContent.includes('XLSX')),false);
+ assert(await page.$eval('#compact-register-export',el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;}),'Owner download dialog fits');
+ await page.$eval('[data-download-primary="true"]',e=>e.click());
+ await page.screenshot({path:`.next/desktop-validation/reports-${width}.png`});
+ const exported=page.waitForRequest(r=>r.url().includes('/membership-a/export?'));
+ await page.$eval('[data-download-primary="true"]',e=>e.click());
+ const url=new URL((await exported).url());assert.equal(url.searchParams.get('format'),'html');assert.equal(url.searchParams.get('reportKind'),'full');
+ await page.waitForNetworkIdle();
+ for(const tab of await browser.pages())if(tab!==page)await tab.close();
+ const summary=page.waitForRequest(r=>r.url().includes('/membership-a/export?'));
+ await page.$$eval('button',buttons=>buttons.find(b=>b.textContent.trim()==='Summary').click());
+ assert.equal(new URL((await summary).url()).searchParams.get('reportKind'),'summary');
+ await page.waitForNetworkIdle();for(const tab of await browser.pages())if(tab!==page)await tab.close();
+ }
+ permissions.exportAssets=false;revision++;
+ await page.evaluate(()=>window.dispatchEvent(new Event('focus')));await page.waitForNetworkIdle();
+ assert(await page.$$eval('button',buttons=>buttons.find(b=>b.textContent.trim()==='Download').disabled),'Revoked download permission locks Download');
  await page.$eval('[aria-label="Switch Asset Register"]',e=>e.click());
  await page.waitForSelector('[aria-label="Available asset registers"]');
  await page.$$eval('[aria-label="Available asset registers"] button',es=>es.find(e=>e.textContent.includes('Vehicles')).click());

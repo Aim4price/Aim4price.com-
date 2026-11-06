@@ -49,15 +49,15 @@ test('permissions fail closed, dependencies are enforced, templates hide values'
  assert.deepEqual(permissions,policy.EMPTY_TEAM_PERMISSIONS);
  for(const [key,template] of Object.entries(policy.TEAM_TEMPLATES))assert.equal(template.permissions.viewValues,key==='manager');
 });
-test('projection omits financial data, private JSON and document links; CSV cannot restore them',()=>{
+test('projection omits financial data, private JSON and document links',()=>{
  const grant={scope:'all',registerIds:[],assetIds:[],permissions:{...policy.EMPTY_TEAM_PERMISSIONS}};
  const output=policy.projectTeamAsset(asset(aId,reg1),grant,'Farm',{value:500,metric:'hours'});
  assert.equal(Object.hasOwn(output,'values'),false);
- const serialized=JSON.stringify(output)+policy.teamCsv([output],false);
+ const serialized=JSON.stringify(output);
  for(const secret of ['987654','1234567','999999','888888','777777','FINANCIAL','PRIVATE','private-photo'])assert.ok(!serialized.includes(secret),secret);
  grant.permissions.viewValues=true;const visible=policy.projectTeamAsset(asset(aId,reg1),grant,'Farm',{value:500,metric:'hours'});
  assert.equal(visible.values.current,987654);assert.ok(!JSON.stringify(visible).includes('financeBalance'));
- assert.ok(policy.teamCsv([{...visible,title:'=HYPERLINK("evil")'}],true).includes("'=HYPERLINK"));
+
 });
 test('asset edit allowlist rejects values, owner IDs, nested specifications and ungranted operations',()=>{
  const grant={permissions:{...policy.EMPTY_TEAM_PERMISSIONS,updateUsage:true}};
@@ -131,7 +131,7 @@ test('team access does not impersonate the owner or broaden existing desktop ses
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
-function routes(f) {
+function routes(f, options = {}) {
  class NextResponse extends Response {static json(body,options){return new NextResponse(JSON.stringify(body),{...options,headers:{'Content-Type':'application/json',...options?.headers}});}}
  const http=load('lib/team-access-http.ts',{'next/server':{NextResponse},'./team-access-policy':policy});
  let writes=[],downloads=0;
@@ -151,6 +151,34 @@ function routes(f) {
  handlers['../../../../../lib/asset-register-uploads']={resolveAssetRegisterUploadBytes:async id=>{downloads++;assert.equal(id,'approved');return {status:'ready',upload:{data:Buffer.from('APPROVED FILE'),mimeType:'application/pdf'}};}};
  handlers['../../../../../lib/business-network']={limitBusinessAction:async()=>{}};
  handlers['../../../../../lib/asset-maintenance']={getAssetMaintenanceRecordById:async()=>({id:'maintenance',assetId:aId,maintenanceType:'service'}),listAssetMaintenanceRecords:async()=>[{id:'maintenance',assetId:aId,title:'Service',maintenanceType:'service',status:'upcoming',computedStatusLabel:'Upcoming',assetValue:987654,finance:{balance:888888}}],completeAssetMaintenanceRecord:async(ownerId,id,input,guard)=>{await guard.before(f.client);assert.equal(ownerId,'owner');assert.equal(guard.assetId,aId);assert.equal(input.completedBy,'Workshop staff');assert.equal(input.continueSchedule,undefined);writes.push({maintenance:id,input});await guard.after(f.client,{id});}};
+ // Exercise the actual canonical report renderer with the same scoped service used by production.
+ class NextRequest extends Request {}
+ const reportModules={
+  'node:async_hooks':require('node:async_hooks'), 'next/server':{NextRequest,NextResponse},
+  '../../../../lib/team-access':f.service,
+  '../../../../lib/team-access-policy':policy,
+  '../../../../lib/team-access-http':http,
+  '../../../../lib/db':{getDb:()=>f.pool},
+  '../../../../lib/team-register':load('lib/team-register.ts'),
+  '../../../../lib/team-report-policy':load('lib/team-report-policy.ts'),
+  '../../../../lib/realistic-selling-assessments':{withRealisticSellingAssessments:async items=>items},
+  '../../../../lib/report-theme.ts':load('lib/report-theme.ts'),
+  '../../../../lib/account-profile':{getAccountProfile:async()=>({businessName:'Private business',email:'owner@example.com',logoUrl:'https://example.com/logo.png'})},
+  '../../../../lib/asset-register-account-access':{},
+  '../../../../lib/asset-groups':{listAssetGroups:async()=>options.groups || []},
+  '../../../../lib/asset-groups-shared':load('lib/asset-groups-shared.ts'),
+  '../../../../lib/asset-register-db':{},
+  '../../../../lib/asset-registers':{listAssetRegisters:async()=>[{id:reg1,businessName:'Farm A'},{id:reg2,businessName:'Farm B'}]},
+  '../../../../lib/simple-xlsx':{},
+  '../../../../lib/report-branding':load('lib/report-branding.ts'),
+  '../../../../lib/report-logo':{resolveReportLogoUrlForHtml:async url=>url},
+  '../../../../lib/report-pdf':{renderReportHtmlToPdf:async html=>{await options.beforePdf?.();return Buffer.from(html)}},
+  '../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:()=>{throw Error('Desktop report must not resolve an owner session');}},
+  '../../../../lib/owner-app-access':{},
+ };
+ const canonicalReport=load('app/api/asset-register/export/route.ts',reportModules);
+ handlers['next/server']={NextRequest,NextResponse};
+ handlers['../../../asset-register/export/route']=canonicalReport;
  return {asset:load('app/api/team-workspaces/[membershipId]/route.ts',handlers),documents:load('app/api/team-workspaces/[membershipId]/documents/route.ts',handlers),maintenance:load('app/api/team-workspaces/[membershipId]/maintenance/route.ts',handlers),exports:load('app/api/team-workspaces/[membershipId]/export/route.ts',handlers),writes,get downloads(){return downloads;}};
 }
 function request(body={},query='') {return {body,url:'https://www.aim4price.com/api/team-workspaces/test'+query,nextUrl:new URL('https://www.aim4price.com/api/team-workspaces/test'+query),headers:new Headers({origin:'https://www.aim4price.com'})};}
@@ -171,9 +199,40 @@ test('real export and document routes reject disallowed downloads and omit hidde
  assert.equal((await r.exports.GET(request(),ctx)).status,403);
  assert.equal((await r.documents.GET(request({},'?id='+docId),ctx)).status,404);assert.equal(r.downloads,0);
  grant=await f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version,permissions:{exportAssets:true},documentIds:[docId]});
- let response=await r.exports.GET(request(),ctx);assert.equal(response.status,200);const csv=await response.text();assert.ok(!csv.includes('987654'));assert.ok(!csv.includes('value'));assert.match(response.headers.get('Cache-Control'),/no-store/);
+ let response=await r.exports.GET(request(),ctx);assert.equal(response.status,200);const html=await response.text();for(const secret of ['987654','1234567','999999','PRIVATE','FINANCIAL'])assert.ok(!html.includes(secret),secret);assert.match(html,/Restricted/);assert.match(html,/Full Asset Register/);assert.equal(response.headers.get('Content-Type'),'application/pdf');assert.match(response.headers.get('Cache-Control'),/no-store/);
+ assert.equal((await r.exports.GET(request({},'?format=csv'),ctx)).status,400);
+ assert.equal((await r.exports.GET(request({},'?format=xlsx'),ctx)).status,400);
+ assert.equal((await r.exports.GET(request({},'?assetIds='+bId),ctx)).status,404);
+ assert.equal((await r.exports.GET(request({},'?registerId='+reg2),ctx)).status,404);
+ assert.equal((await r.exports.GET(request({},'?assetIds='),ctx)).status,400);
+ assert.equal((await r.exports.GET(request({},'?shareToken=forged'),ctx)).status,400);
+ response=await r.exports.GET(request({},'?format=html&reportKind=summary'),ctx);
+ assert.equal(response.status,200);assert.match(await response.text(),/Asset Register Summary/);
+ grant=await f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version,permissions:{exportAssets:true,viewValues:true},documentIds:[docId]});
+ response=await r.exports.GET(request({},'?format=html&assetIds='+aId+'&desktopMembership=forged'),ctx);
+ assert.equal(response.status,200);const visible=await response.text();assert.match(visible,/987[\s\u00a0]654/);assert.ok(!visible.includes('Farm B'));assert.match(visible,/Documents: 1 saved/);assert.ok(!visible.includes('PRIVATE INVOICE'));
  response=await r.documents.GET(request({},'?id='+docId),ctx);assert.equal(response.status,200);assert.equal(await response.text(),'APPROVED FILE');assert.equal(r.downloads,1);
- await f.service.setTeamGrantStatus(owner,grant.id,grant.version,'revoked');assert.equal((await r.documents.GET(request({},'?id='+docId),ctx)).status,403);assert.equal(r.downloads,1);
+ await f.service.setTeamGrantStatus(owner,grant.id,grant.version,'revoked');assert.equal((await r.exports.GET(request(),ctx)).status,403);assert.equal((await r.documents.GET(request({},'?id='+docId),ctx)).status,403);assert.equal(r.downloads,1);
+ }finally{await f.db.close();}
+});
+test('report umbrellas and totals contain only permitted members',async()=>{
+ const f=await setup();try{
+ const grant=await f.active({permissions:{exportAssets:true,viewValues:true}});
+ f.assets[1].title='PRIVATE ASSET';
+ const r=routes(f,{groups:[{id:'group-a',name:'Equipment umbrella',valueMode:'included_in_primary',members:[
+ {assetId:bId,role:'primary',countsTowardTotal:true,sortOrder:0},
+ {assetId:aId,role:'member',countsTowardTotal:false,sortOrder:1},
+ ]}]});
+ const response=await r.exports.GET(request({},'?format=html'),{params:{membershipId:grant.id}});
+ assert.equal(response.status,200);const html=await response.text();assert.match(html,/Equipment umbrella/);assert.match(html,/1 grouped assets/);assert.ok(!html.includes('PRIVATE ASSET'));assert.ok(!html.includes('Farm B'));
+ }finally{await f.db.close();}
+});
+test('a report is withheld when access changes while PDF generation is running',async()=>{
+ const f=await setup();try{
+ const grant=await f.active({permissions:{exportAssets:true,viewValues:true}});
+ const r=routes(f,{beforePdf:async()=>{await f.service.setTeamGrantStatus(owner,grant.id,grant.version,'revoked')}});
+ const response=await r.exports.GET(request(),{params:{membershipId:grant.id}});
+ assert.equal(response.status,403);assert.ok(!(await response.text()).includes('987654'));
  }finally{await f.db.close();}
 });
 test('maintenance data excludes values and completion ignores forged actor and schedule controls',async()=>{

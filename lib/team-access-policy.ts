@@ -8,7 +8,7 @@ export const TEAM_PERMISSIONS = [
     { key: 'uploadDocuments', label: 'Upload documents', detail: 'Attach documents to accessible assets for owner review.' },
     { key: 'viewPhotos', label: 'View photos', detail: 'Photos can contain visible sensitive information.' },
     { key: 'uploadPhotos', label: 'Add photos', detail: 'Upload photos without changing or deleting existing ones.' },
-    { key: 'exportAssets', label: 'Export asset list', detail: 'CSV containing only the fields this person may see.' },
+    { key: 'exportAssets', label: 'Download reports', detail: 'PDF reports and summaries of permitted assets. Values follow their viewing permission.' },
 ] as const;
 export type TeamPermission = typeof TEAM_PERMISSIONS[number]['key'];
 export type TeamPermissions = Record<TeamPermission, boolean>;
@@ -184,12 +184,6 @@ export function validateTeamPatch(body: Record<string, unknown>, grant: TeamGran
         throw new TeamAccessError('No changes supplied.', 400);
     return patch;
 }
-export function teamCsv(assets: TeamAsset[], includeValues: boolean): string {
-    const cell = (value: unknown) => '"' + String(value ?? '').replace(/^[\s]*[=+@-]/, "'$&").replaceAll('"', '""') + '"';
-    const headers = ['Asset', 'Register', 'Brand', 'Model', 'Year', 'Serial / VIN', 'Registration', 'Condition', 'Usage', 'Usage unit', ...(includeValues ? ['Current value excl. VAT', 'Replacement value excl. VAT', 'Insured value excl. VAT'] : [])];
-    return '\uFEFF' + [headers, ...assets.map(a => [a.title, a.registerName, a.brand, a.model, a.year, a.serial, a.registration, a.condition, a.usage, a.usageMetric, ...(includeValues ? [a.values?.current, a.values?.replacement, a.values?.insured] : [])])].map(row => row.map(cell).join(',')).join('\r\n');
-}
-
 /** Full email addresses retain personal-account sign-in; @business usernames use desktop sign-in. */
 export function isEmailLogin(value: string): boolean {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());

@@ -2,7 +2,7 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),ts=require('typescript');
 const {NextRequest,NextResponse}=require('next/server');
-function load(file,deps){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name=>deps[name] || {},exports);return exports;}
+function load(file,deps){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name=>name==='node:async_hooks'?require(name):deps[name] || {},exports);return exports;}
 const A='10000000-0000-4000-8000-000000000001';
 for(const [file,path,selector,broadQueries] of [
  ['app/api/asset-register/export/route.ts','/api/asset-register/export',`assetIds=${A}`,['','scope=all',`assetIds=${A},20000000-0000-4000-8000-000000000002`,`assetIds=${A}&groupId=other`,`assetIds=${A}&registerId=other`]],

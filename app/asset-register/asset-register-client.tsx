@@ -6253,7 +6253,7 @@ export default function AssetRegisterClient({
   dealerRegisterBaseHref = '/asset-register',
 }: {
 
-  desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string, section?: "details" | "maintenance" | "documents" | "photos") => void; onUpload: (id: string, kind: "photos" | "documents", files: File[]) => Promise<void>; onSave: (id: string, patch: Record<string, unknown>) => Promise<void>; onRefresh: () => void; onExport: () => void };
+  desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string, section?: "details" | "maintenance" | "documents" | "photos") => void; onUpload: (id: string, kind: "photos" | "documents", files: File[]) => Promise<void>; onSave: (id: string, patch: Record<string, unknown>) => Promise<void>; onRefresh: () => void };
   showAppHeader?: boolean;
   registerManagementHref?: string;
   dealerRegisterMode?: 'dealer' | 'client';
@@ -14909,11 +14909,15 @@ export default function AssetRegisterClient({
     setIsExporting(true);
 
     try {
-      const url = buildAssetRegisterSummaryExportUrl(
+      const ownerSummaryUrl = buildAssetRegisterSummaryExportUrl(
         activeRegister?.id || activeRegisterId,
         'html',
         assetRegisters.map((register) => register.id),
       );
+      const summaryParams = new URLSearchParams(ownerSummaryUrl.split('?')[1]);
+      const url = desktopAccess
+        ? `/api/team-workspaces/${encodeURIComponent(desktopAccess.membership)}/export?${summaryParams}`
+        : ownerSummaryUrl;
       const didOpen = openCanonicalReportUrl(url);
 
       if (!didOpen) {
@@ -14941,7 +14945,7 @@ export default function AssetRegisterClient({
   }
 
   function openExportModal() {
-    if (desktopAccess) { if (desktopAccess.data.permissions.exportAssets) desktopAccess.onExport(); return; }
+    if (desktopAccess && !desktopAccess.data.permissions.exportAssets) return;
     if (!assets.length) {
       return;
     }
@@ -15036,6 +15040,15 @@ export default function AssetRegisterClient({
     overrideReportDetails?: PdfReportDetails,
     overrideEntityName = '',
   ) {
+    if (desktopAccess) {
+      if (!desktopAccess.data.permissions.exportAssets) throw new Error('Report downloads are not available for this login.');
+      const params = new URLSearchParams({ format: 'html', reportKind: 'full', entityName: exportEntityName });
+      if (overrideAssets) params.set('assetIds', overrideAssets.map(asset => asset.id).join(','));
+      if (activeRegisterId && activeRegisterId !== COMBINED_REGISTER_ID) params.set('registerId', activeRegisterId);
+      if (!openCanonicalReportUrl(`/api/team-workspaces/${encodeURIComponent(desktopAccess.membership)}/export?${params}`))
+        throw new Error('Allow pop-ups to open your report.');
+      return;
+    }
     const isCustomAssetSelection = Boolean(overrideAssets);
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
     const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
@@ -15984,9 +15997,10 @@ export default function AssetRegisterClient({
                 ref={summaryTriggerRef}
                 type="button"
                 className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
-                onClick={openSummaryModal}
-                data-access-restricted={desktopAccess ? "true" : undefined} disabled={isLoading || Boolean(desktopAccess)}
-                title={desktopAccess ? "Full summaries are managed by the account holder." : undefined}
+                onClick={desktopAccess ? handleDownloadRegisterSummary : openSummaryModal}
+                data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportAssets ? "true" : undefined}
+                disabled={isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
+                title={desktopAccess ? "Open a summary of your permitted assets." : undefined}
                 aria-haspopup="dialog"
                 aria-expanded={isSummaryModalOpen}
                 aria-controls="asset-register-summary-dialog"
@@ -21331,7 +21345,7 @@ export default function AssetRegisterClient({
                         </span>
                       </button>
 
-                      <button
+                      {!desktopAccess && <button
                         type="button"
                         className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
                         onClick={() => selectExportFormat('xlsx')}
@@ -21345,7 +21359,7 @@ export default function AssetRegisterClient({
                           <strong>XLSX workbook</strong>
                           <small>Register records in Excel.</small>
                         </span>
-                      </button>
+                      </button>}
 
                     </div>
 
@@ -21361,7 +21375,7 @@ export default function AssetRegisterClient({
                             options={[
                               { value: 'full', label: 'Full asset register' },
                               { value: 'specific', label: 'Choose specific assets' },
-                              ...PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full').map((option) => ({
+                              ...(desktopAccess ? [] : PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full')).map((option) => ({
                                 value: option.value,
                                 label: ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label,
                               })),
@@ -21382,6 +21396,7 @@ export default function AssetRegisterClient({
                               <strong>PDF report</strong>
                               <p>{pdfReportSelection === 'specific'
                                 ? 'Select the individual assets to include next.'
+                                : desktopAccess ? `Only assets you can access. ${valuesRestricted ? 'Values are excluded.' : 'Values are included.'}`
                                 : getPdfReportOption(pdfReportSelection || 'full').description}</p>
                             </div>
                           </div>
