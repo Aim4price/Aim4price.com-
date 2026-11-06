@@ -219,7 +219,7 @@
   :global(body:not(:has([data-website-canvas]))) .footerActions button { flex: 1; padding-inline: .65rem; }
 }
 
-.assistantChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; padding: .3rem 0; }
+.assistantChoices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; padding: .3rem 0; }
 .flowPanel .assistantChoice { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .8rem; min-height: 11rem; padding: 1.4rem 1rem; border-radius: 1.1rem; background: var(--app-surface-soft, #f3f8f5); transition: border-color 150ms ease, box-shadow 150ms ease; }
 .assistantChoice img { display: block; width: 3.5rem; height: 3.5rem; object-fit: contain; }
 .assistantChoice strong { font-size: 1.15rem; }
@@ -334,3 +334,30 @@
 .approval .note { font-size: .78rem; }
 .approval .actions { padding-top: 1rem; border-top: 1px solid var(--app-line, #dce7e2); justify-content: flex-end; }
 .safety[hidden] { display: none; }
+
+/* Shared card treatment for self-service and assisted connection setup. */
+.assistantLogo { display: grid; place-items: center; }
+.setupOptionIcon { width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
+.assistantLogo .setupOptionIcon { width: 3.5rem; height: 3.5rem; color: var(--app-accent, #208460); }
+.setupChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; }
+.flowPanel .setupChoice { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1rem; min-height: 11rem; padding: 1.5rem; border-radius: 1.1rem; background: var(--app-surface-soft, #f3f8f5); }
+.setupChoice strong { font-size: 1.15rem; }
+.setupChoice span { color: var(--app-muted, #60746d); font-size: .9rem; line-height: 1.5; font-weight: 500; }
+.setupChoice:disabled { opacity: .6; cursor: not-allowed; }
+.setupChoice:not(:disabled):hover { box-shadow: inset 0 0 0 1px var(--app-accent, #208460); }
+.setupChoice:focus-visible, .assistantChoice:focus-visible { outline: 3px solid var(--app-accent, #208460); outline-offset: 3px; }
+.assistedSetup { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.helpIcon { display: grid; place-items: center; padding: 1rem; border-radius: 1rem; background: var(--app-surface-soft, #f3f8f5); }
+.assistedSetup h3 { margin: 0 0 .6rem; }
+.assistedSetup p { margin: 0; line-height: 1.6; }
+.helpActions { display: flex; flex-wrap: wrap; gap: .8rem; grid-column: 1 / -1; }
+.helpActions a { color: inherit; display: inline-flex; align-items: center; justify-content: center; padding: .85rem 1.15rem; border: 1px solid var(--app-border, #d6e4de); border-radius: .85rem; font-weight: 700; text-decoration: none; }
+.helpActions a.primary { color: #fff; }
+.assistedSetup > .note { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .setupChoices { grid-template-columns: 1fr; gap: .75rem; }
+  :global(body:not(:has([data-website-canvas]))) .flowPanel .setupChoice { min-height: auto; padding: 1rem; gap: .65rem; }
+  :global(body:not(:has([data-website-canvas]))) .assistantLogo { grid-row: 1 / 3; }
+  :global(body:not(:has([data-website-canvas]))) .assistantLogo .setupOptionIcon { width: 2.75rem; height: 2.75rem; }
+  :global(body:not(:has([data-website-canvas]))) .helpActions { flex-direction: column; }
+}
