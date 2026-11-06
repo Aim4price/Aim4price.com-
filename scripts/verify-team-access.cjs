@@ -4,7 +4,8 @@ const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('pup
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const cssMaps={};
-const stubs={'components/WebsitePortal':'exports.createPortal=(children,target)=>require("react-dom").createPortal(children,target);','components/SwitchAccountButton':'module.exports=()=>null;', 'app/asset-register/asset-register-client':'module.exports=({desktopAccess:d})=>require("react").createElement("div",null,...d.data.assets.map(a=>require("react").createElement("article",{key:a.id},require("react").createElement("h2",null,a.title),require("react").createElement("button",{onClick:()=>d.onManage(a.id)},"Manage"))));', 'components/team/DesktopAccessHeader':'module.exports=()=>null;'};
+const stubs={'components/WebsitePortal':'exports.createPortal=(children,target)=>require("react-dom").createPortal(children,target);','components/SwitchAccountButton':'module.exports=()=>null;', // The real register, edits and header are exercised by verify-desktop-register.cjs.
+ 'app/asset-register/asset-register-client':'module.exports=({desktopAccess:d})=>require("react").createElement("div",null,...d.data.assets.map(a=>require("react").createElement("article",{key:a.id},require("react").createElement("h2",null,a.title),...["maintenance","documents"].map(section=>require("react").createElement("button",{key:section,onClick:()=>d.onManage(a.id,section)},section=== "maintenance"?"Maintenance":"Documents")))));' , 'components/AppHeader':'module.exports=()=>null;'};
 function cssModule(file){
  if(cssMaps[file])return cssMaps[file];
  const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
@@ -149,10 +150,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Cancel');await click('Manage');await click('Login status');await click('Remove user');await assertFits();
  await click('Remove user');await page.waitForFunction(()=>document.body.textContent.includes('No desktop users yet.'));
  assert.deepEqual(await page.evaluate(()=>window.saved),{action:'remove',id:'member-a',version:1});
- await mount('member');await page.waitForFunction(()=>document.body.textContent.includes('Landini Super 110'));await click('Manage');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);
- await click('Edit permitted details');await fillLabel('Brand','Landini updated');await click('Save changes');await page.waitForFunction(()=>window.updated);assert.deepEqual(await page.evaluate(()=>window.updated.patch),{brand:'Landini updated'});
- await page.screenshot({path:'.next/team-access-validation/member-details-desktop.png'});await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Engine service'));await click('Mark completed');await page.waitForSelector('textarea');await page.locator('textarea').fill('Changed engine oil and checked filters.');await fillLabel('Service company','Workshop');await fillLabel('Mechanic','Technician');await click('Confirm completed');await page.waitForFunction(()=>window.requests.some(r=>r.method==='POST'&&r.url.endsWith('/maintenance')));
- await click('Documents');await page.waitForFunction(()=>document.body.textContent.includes('Operator manual'));
+ await mount('member');await page.waitForFunction(()=>document.body.textContent.includes('Landini Super 110'));await click('Maintenance');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);
+ await page.waitForFunction(()=>document.body.textContent.includes('Engine service'));await click('Mark completed');await page.waitForSelector('textarea');await page.locator('textarea').fill('Changed engine oil and checked filters.');await fillLabel('Service company','Workshop');await fillLabel('Mechanic','Technician');await click('Confirm completed');await page.waitForFunction(()=>window.requests.some(r=>r.method==='POST'&&r.url.endsWith('/maintenance')));
+ await click('Done');await click('Documents');await page.waitForFunction(()=>document.body.textContent.includes('Operator manual'));
  await page.setViewport({width:390,height:844});await assertFits();await page.screenshot({path:'.next/team-access-validation/member-documents-mobile.png'});await click('Done');
  await page.evaluate(()=>{window.revoked=true;window.dispatchEvent(new Event('focus'));});await page.waitForFunction(()=>document.body.textContent.includes('revoked'));
  assert.equal(await page.evaluate(()=>document.body.textContent.includes('Landini Super 110')),false,'Revoked workspace retained assets');
@@ -204,6 +204,6 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
  await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({workspaces:[]})});window.dispatchEvent(new Event('focus'));});
  await page.waitForFunction(()=>document.body.textContent.includes('No desktop access yet'));
- assert.deepEqual(errors,[]);console.log('PASS owner permissions, scope and document selection, safe defaults, member editing and maintenance, responsive modals, and revoked workspace clearing');
+ assert.deepEqual(errors,[]);console.log('PASS owner permissions, scope and document selection, safe defaults, member maintenance and approved documents, responsive modals, and revoked workspace clearing');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
