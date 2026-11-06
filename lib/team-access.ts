@@ -26,13 +26,15 @@ type TeamGrantRow = {
     register_ids: string[];
     asset_ids: string[];
     document_ids: string[];
+    document_access?: TeamGrant['documentAccess'];
+    excluded_document_ids?: string[];
     permissions: unknown;
     expires_at: Date | string | null;
     version: number;
 };
 export function mapTeamGrant(row: TeamGrantRow): TeamGrant {
     return { managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
-        status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids,
+        status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids, documentAccess: row.document_access || 'selected', excludedDocumentIds: row.excluded_document_ids || [],
         permissions: normalizeTeamPermissions(row.permissions), expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null, version: row.version };
 }
 export async function requireTeamActor(): Promise<TeamActor> {
@@ -125,12 +127,14 @@ export async function teamRegisterGroups(scope: TeamScope, assets: Awaited<Retur
     return projectTeamGroups(await listAssetGroups(scope.grant.ownerId), assets);
 }
 export async function teamDocuments(scope: TeamScope) {
-    if (!scope.grant.documentIds.length)
+    if (scope.grant.documentAccess === 'none' || (scope.grant.documentAccess !== 'all' && !scope.grant.documentIds.length))
         return [];
     const assets = await listTeamOwnerAssets(scope.grant.ownerId);
     const allowed = new Set(assets.filter(a => teamCanAccessAsset(scope.grant, a)).map(a => a.id));
+    const selectedDocuments = new Set(scope.grant.documentIds);
+    const excludedDocuments = new Set(scope.grant.excludedDocumentIds || []);
     // Multi-asset documents must not reveal records outside the member's scope.
-    return (await listAccountDocuments(scope.grant.ownerId)).filter(d => !d.deletedAtIso && scope.grant.documentIds.includes(d.id) && d.assetLinks.length > 0 && d.assetLinks.every(a => allowed.has(a.id)));
+    return (await listAccountDocuments(scope.grant.ownerId)).filter(d => !d.deletedAtIso && (scope.grant.documentAccess === 'all' ? !excludedDocuments.has(d.id) : selectedDocuments.has(d.id)) && d.assetLinks.length > 0 && d.assetLinks.every(a => allowed.has(a.id)));
 }
 function ids(value: unknown): string[] {
     if (!Array.isArray(value) || value.length > 2000 || value.some(v => typeof v !== 'string' || !/^[a-zA-Z0-9_-]{1,80}$/.test(v)))
@@ -162,6 +166,12 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     const selected: Pick<TeamGrant, 'scope' | 'registerIds' | 'assetIds'> = { scope, registerIds, assetIds };
     if (documentIds.some(id => !documents.some(d => d.id === id && !d.deletedAtIso && d.assetLinks.length > 0 && d.assetLinks.every(a => assets.some(asset => asset.id === a.id && teamCanAccessAsset(selected, asset))))))
         throw new TeamAccessError('Approved documents must belong to assets within the selected scope.', 400);
+    const documentAccess = body.documentAccess;
+    if (documentAccess !== undefined && !['none', 'selected', 'all'].includes(String(documentAccess)))
+        throw new TeamAccessError('Choose a valid document access option.', 400);
+    const excludedDocumentIds = body.excludedDocumentIds === undefined ? null : ids(body.excludedDocumentIds);
+    if (excludedDocumentIds?.some(id => !documents.some(d => d.id === id && !d.deletedAtIso)))
+        throw new TeamAccessError('Excluded documents must belong to this account.', 400);
     const permissions = normalizeTeamPermissions(body.permissions);
     const password = typeof body.password === 'string' ? body.password : '';
     if (loginType === 'existing' && password) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
@@ -186,7 +196,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             if (!current.managed_login && passwordHash) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
             if (current.version !== body.version)
                 throw new TeamAccessError('This access changed. Refresh before saving.', 409);
-            row = (await client.query(`UPDATE team_access SET display_name=$3,scope=$4,register_ids=$5::jsonb,asset_ids=$6::jsonb,document_ids=$7::jsonb,permissions=$8::jsonb,expires_at=$9,version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 RETURNING *`, [current.id, actor.id, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt])).rows[0];
+            row = (await client.query(`UPDATE team_access SET display_name=$3,scope=$4,register_ids=$5::jsonb,asset_ids=$6::jsonb,document_ids=$7::jsonb,permissions=$8::jsonb,expires_at=$9,document_access=coalesce($10,document_access),excluded_document_ids=coalesce($11::jsonb,excluded_document_ids),version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 RETURNING *`, [current.id, actor.id, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, documentAccess ?? null, excludedDocumentIds === null ? null : JSON.stringify(excludedDocumentIds)])).rows[0];
         }
         else {
             const count = (await client.query('SELECT count(*)::int AS count FROM team_access WHERE owner_id=$1', [actor.id])).rows[0].count;
@@ -195,7 +205,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             const existing = (await client.query('SELECT id FROM team_access WHERE owner_id=$1 AND ((email=$2 AND $2 IS NOT NULL) OR (username=$3 AND $3 IS NOT NULL))', [actor.id, usernameLogin ? null : email, usernameLogin ? username : null])).rows[0];
             if (existing)
                 throw new TeamAccessError('This login already has desktop access. Edit or reactivate that entry.', 409);
-            row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at,username) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9,$10) RETURNING *`, [actor.id, usernameLogin ? null : email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, usernameLogin ? username : null])).rows[0];
+            row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at,username,document_access,excluded_document_ids) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9,$10,$11,$12::jsonb) RETURNING *`, [actor.id, usernameLogin ? null : email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, usernameLogin ? username : null, documentAccess ?? 'selected', JSON.stringify(excludedDocumentIds || [])])).rows[0];
         }
         const existingLogin = (await client.query('SELECT id FROM "user" WHERE lower(email)=$1 ORDER BY id LIMIT 1', [email])).rows[0];
         if (!body.id && loginType === 'existing' && !existingLogin) throw new TeamAccessError('No Aim4price account is registered with this email. Check the email or choose Create desktop login.', 400);
@@ -212,7 +222,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
         }
         const grant = mapTeamGrant(row);
         if (grant.managedLogin && passwordHash) await auditTeam(client, actor, grant, body.id ? 'Desktop password reset' : 'Desktop login created');
-        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Desktop user added', null, { permissions, scope, registerIds, assetIds, documentIds, expiresAt });
+        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Desktop user added', null, { permissions, scope, registerIds, assetIds, documentIds, documentAccess: grant.documentAccess, excludedDocumentIds: grant.excludedDocumentIds, expiresAt });
         await client.query('COMMIT');
         return grant;
     }

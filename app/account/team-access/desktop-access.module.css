@@ -224,3 +224,28 @@
   inset:0 .45rem 0 auto; margin:auto 0; transform:none;
   width:3.8rem; height:2.25rem; padding:.25rem; line-height:1;
 }
+
+/* Native disclosure groups keep the permissions editor light and keyboard accessible. */
+.permissionIntro { margin:0; color:var(--app-muted,#63766f); line-height:1.5; font-size:.88rem; }
+.presetGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
+.preset { display:flex; flex-direction:column; gap:.35rem; text-align:left; border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; padding:.9rem 1rem; color:var(--app-text,#153c31); background:var(--app-surface-soft,#f2f6f4); font:inherit; cursor:pointer; }
+.preset strong { font-size:1rem; }
+.preset small { font-size:.78rem; line-height:1.45; color:var(--app-muted,#63766f); }
+.preset[aria-pressed=true] { border-color:var(--app-accent,#28815f); background:var(--app-success-soft,#e8f2ed); box-shadow:inset 0 0 0 1px var(--app-accent,#28815f); }
+.accessSummary { display:flex; flex-wrap:wrap; gap:.4rem 1rem; justify-content:space-between; align-items:center; padding:.85rem 1rem; background:var(--app-success-soft,#e8f2ed); border-radius:.9rem; font-size:.85rem; }
+.accessSummary span { color:var(--app-muted,#63766f); }
+.permissionGroups,.documentPanel { display:grid; gap:.75rem; }
+.permissionGroup { border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; overflow:hidden; }
+.permissionGroup summary { cursor:pointer; padding:1rem; font-size:.95rem; }
+.permissionGroup summary span { float:right; font-size:.8rem; color:var(--app-muted,#63766f); margin-left:.5rem; }
+.permissionGroup > p { padding:0 1rem 1rem; }
+.permissionOptions { display:grid; gap:.5rem; padding:0 .75rem .75rem; }
+.refined .permissionOptions .permission { margin:0; padding:.8rem; }
+.permissionOptions .permission span,.documentList .permission span { display:grid; gap:.25rem; }
+.permissionOptions small,.documentList small { color:var(--app-muted,#63766f); font-size:.8rem; line-height:1.4; font-weight:400; }
+.documentModes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
+.documentList { display:grid; gap:.5rem; max-height:20rem; overflow:auto; scrollbar-width:auto; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .presetGrid,
+ :global(:where(html:not(:has([data-website-canvas])))) .documentModes { grid-template-columns:1fr; }
+}

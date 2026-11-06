@@ -125,7 +125,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('input[placeholder="DD/MM/YYYY"]',el=>el.value),expiry.split('-').reverse().join('/'));
  await click('Open calendar');await page.waitForSelector('dialog[open]');await click('Close calendar');
  assert.equal(await page.$eval('input[placeholder="DD/MM/YYYY"]',el=>el.value),expiry.split('-').reverse().join('/'));
- await click('Continue');await click('Workshop');
+ await click('Continue');await click('Manager');
+ assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),true);
+ await click('Workshop');
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),false);
  await page.screenshot({path:'.next/team-access-validation/owner-permissions-desktop.png'});
  await click('Continue');
@@ -140,8 +142,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Registers');await page.waitForSelector('dialog[open]');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Continue').disabled),false,'Confirmed selections enable continuation');
  await page.screenshot({path:'.next/team-access-validation/asset-access.png'});await click('Continue');
- await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.trim()==='Operator manual').querySelector('input').click());await assertFits();
- await click('Continue');await page.waitForFunction(()=>document.body.textContent.includes('Review access'));await page.screenshot({path:'.next/team-access-validation/review.png'});assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);await click('Create user');await page.waitForFunction(()=>window.saved);const saved=await page.evaluate(()=>window.saved);assert.equal(saved.expiresAt,`${expiry}T21:59:59.000Z`);assert.equal(saved.email,'');assert.equal(saved.username,'staff@farm');assert.equal(saved.loginType,'managed');assert.notEqual(saved.sendInvitation,true);assert.equal(saved.password,'Initial-password-123');assert.equal(saved.permissions.viewValues,false);assert.deepEqual(saved.registerIds,['register-a']);assert.deepEqual(saved.documentIds,['document-a']);
+ await click('All with exceptions');
+ await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.querySelector('strong')?.textContent.trim()==='Operator manual').querySelector('input').click());
+ assert(await page.evaluate(()=>document.body.textContent.includes('except 1 excluded')));
+ await page.screenshot({path:'.next/team-access-validation/document-exceptions.png'});
+ await click('No documents');assert.equal(await page.$$eval('input[type=checkbox]',els=>els.length),0);
+ await click('Choose documents');
+ await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.querySelector('strong')?.textContent.trim()==='Operator manual').querySelector('input').click());await assertFits();
+ await click('Continue');await page.waitForFunction(()=>document.body.textContent.includes('Review access'));await page.screenshot({path:'.next/team-access-validation/review.png'});assert.equal(await page.evaluate(()=>window.requests.filter(r=>r.method==='POST').length),0);await click('Create user');await page.waitForFunction(()=>window.saved);const saved=await page.evaluate(()=>window.saved);assert.equal(saved.expiresAt,`${expiry}T21:59:59.000Z`);assert.equal(saved.email,'');assert.equal(saved.username,'staff@farm');assert.equal(saved.loginType,'managed');assert.notEqual(saved.sendInvitation,true);assert.equal(saved.password,'Initial-password-123');assert.equal(saved.permissions.viewValues,false);assert.deepEqual(saved.registerIds,['register-a']);assert.deepEqual(saved.documentIds,['document-a']);assert.equal(saved.documentAccess,'selected');assert.deepEqual(saved.excludedDocumentIds,['document-a']);
  await page.setViewport({width:390,height:844});await click('Add user');await assertFits();await fillLabel('Name','Mobile user');await fillLabel('Username','mobile.user');await fillLabel('Initial password','Mobile-password-123');await click('Continue');await page.waitForSelector('input[type=checkbox]');await page.screenshot({path:'.next/team-access-validation/owner-permissions-mobile.png'});
  await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
  await mount('owner');await click('Manage users');await click('Manage');await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/manage-overview.png'});await page.setViewport({width:390,height:844});await assertFits();await page.screenshot({path:'.next/team-access-validation/manage-overview-mobile.png'});await page.setViewport({width:1440,height:1000});await click('Login status');await page.screenshot({path:'.next/team-access-validation/login-status.png'});await click('Remove user');

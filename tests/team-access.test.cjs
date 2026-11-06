@@ -47,7 +47,7 @@ async function setup() {
 test('permissions fail closed, dependencies are enforced, templates hide values',()=>{
  const permissions=policy.normalizeTeamPermissions({viewValues:'true',editDetails:1,manage_access:true,completeMaintenance:true});
  assert.deepEqual(permissions,policy.EMPTY_TEAM_PERMISSIONS);
- for(const template of Object.values(policy.TEAM_TEMPLATES))assert.equal(template.permissions.viewValues,false);
+ for(const [key,template] of Object.entries(policy.TEAM_TEMPLATES))assert.equal(template.permissions.viewValues,key==='manager');
 });
 test('projection omits financial data, private JSON and document links; CSV cannot restore them',()=>{
  const grant={scope:'all',registerIds:[],assetIds:[],permissions:{...policy.EMPTY_TEAM_PERMISSIONS}};
@@ -127,7 +127,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8'),TEAM_ACCESS_SCHEMA);
+ assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8'),TEAM_ACCESS_SCHEMA);
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -559,4 +559,38 @@ test('desktop branding includes only the owner logo and accessible register logo
   assert.equal(registers[0].showLogosOnRegister,true);
   assert.equal(registers[0].totalValue,0);
  }finally{await f.db.close();}
+});
+
+test('document modes and exclusions persist, enforce scope, and preserve older client saves',async()=>{
+ const f=await setup();try{
+ let grant=await f.active({documentAccess:'all',excludedDocumentIds:[docId]});
+ assert.equal(grant.documentAccess,'all');assert.deepEqual(grant.excludedDocumentIds,[docId]);
+ let scope=await f.service.loadTeamScope(grant.id);assert.deepEqual(await f.service.teamDocuments(scope),[]);
+ const newId=randomUUID();f.docs.push({...f.docs[0],id:newId,title:'New manual'});
+ assert.deepEqual((await f.service.teamDocuments(scope)).map(d=>d.id),[newId]);
+ f.docs.push({...f.docs[0],id:randomUUID(),title:'Mixed asset document',assetLinks:[{id:aId},{id:bId}]});
+ f.docs.push({...f.docs[0],id:randomUUID(),title:'Unlinked private document',assetLinks:[]});
+ assert.deepEqual((await f.service.teamDocuments(scope)).map(d=>d.id),[newId]);
+ grant=await f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version});
+ assert.equal(grant.documentAccess,'all');assert.deepEqual(grant.excludedDocumentIds,[docId]);
+ grant=await f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version,documentIds:[docId],documentAccess:'none',permissions:{uploadDocuments:true}});
+ scope=await f.service.loadTeamScope(grant.id);assert.deepEqual(await f.service.teamDocuments(scope),[]);assert.equal(scope.grant.permissions.uploadDocuments,true);
+ await assert.rejects(f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version,documentAccess:'invalid'}));
+ await assert.rejects(f.service.saveTeamGrant(owner,{...f.input,id:grant.id,version:grant.version,documentAccess:'all',excludedDocumentIds:[randomUUID()]}));
+ }finally{await f.db.close();}
+});
+test('excluded documents cannot be downloaded directly and permission updates are enforced',async()=>{
+ const f=await setup();try{
+ const grant=await f.active({documentAccess:'all',excludedDocumentIds:[docId]});const r=routes(f);const ctx={params:{membershipId:grant.id}};
+ assert.equal((await r.documents.GET(request({},'?id='+docId),ctx)).status,404);assert.equal(r.downloads,0);
+ }finally{await f.db.close();}
+});
+test('permission dependencies and summaries remain explicit',()=>{
+ const on=policy.updateTeamPermission(policy.EMPTY_TEAM_PERMISSIONS,'completeMaintenance',true);
+ assert.equal(on.viewMaintenance,true);assert.equal(on.completeMaintenance,true);
+ const off=policy.updateTeamPermission(on,'viewMaintenance',false);assert.equal(off.completeMaintenance,false);
+ assert.equal(policy.teamDocumentAccessLabel('none',12),'No document access');
+ assert.equal(policy.teamDocumentAccessLabel('all',0,2),'All in-scope documents except 2 excluded');
+ assert(policy.TEAM_TEMPLATES.manager.permissions.viewValues);
+ assert(!('manageUsers' in policy.TEAM_TEMPLATES.manager.permissions));
 });

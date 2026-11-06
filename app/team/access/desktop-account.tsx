@@ -5,12 +5,13 @@ import { useLeadDialog } from '../../../components/leads/useLeadDialog';
 import SettingsDetailIcon from '../../../components/SettingsDetailIcon';
 import QuickActionIcon, { type QuickActionIconName } from '../../account/QuickActionIcon';
 import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
-import { TEAM_PERMISSIONS, type TeamPermissions } from '../../../lib/team-access-policy';
+import { TEAM_PERMISSIONS, teamDocumentAccessLabel, type TeamDocumentAccess, type TeamPermissions } from '../../../lib/team-access-policy';
 import account from '../../account/page.module.css';
 import notifications from '../../account/notifications/page.module.css';
 import styles from './my-access.module.css';
 
 export type DesktopAccountAccess = {
+  documentAccess?: TeamDocumentAccess; excludedDocumentCount?: number;
   id: string; name: string; displayName: string; status: 'pending' | 'active';
   logoUrl?: string; accountType?: string; accountSubtype?: string;
   available: boolean; permissions: TeamPermissions; expiresAt: string | null;
@@ -86,7 +87,7 @@ export function PermissionsModal({ item, onClose }: { item: DesktopAccountAccess
               <span className={notifications.optionLabel}><SettingsDetailIcon name={permission.key === 'viewValues' ? 'costs' : permission.key.includes('Maintenance') ? 'maintenance' : permission.key.includes('Photos') ? 'image' : 'listings'} /><span>{permission.label}</span></span>
               <span className={active && item.permissions[permission.key] ? styles.allowed : styles.unavailable}>{active && item.permissions[permission.key] ? 'Allowed' : 'Not allowed'}</span>
             </div>)}</div>
-            <dl className={styles.details}><div><dt>Documents</dt><dd>{item.documentCount ? count(item.documentCount, 'approved document') : 'No documents approved'}</dd></div><div><dt>Access expires</dt><dd>{item.expiresAt ? new Intl.DateTimeFormat('en-ZA', {dateStyle:'medium', timeStyle:'short', timeZone:'Africa/Johannesburg'}).format(new Date(item.expiresAt)) + ' (South Africa)' : 'No expiry set'}</dd></div></dl>
+            <dl className={styles.details}><div><dt>Documents</dt><dd>{teamDocumentAccessLabel(item.documentAccess, item.documentCount, item.excludedDocumentCount)}</dd></div><div><dt>Access expires</dt><dd>{item.expiresAt ? new Intl.DateTimeFormat('en-ZA', {dateStyle:'medium', timeStyle:'short', timeZone:'Africa/Johannesburg'}).format(new Date(item.expiresAt)) + ' (South Africa)' : 'No expiry set'}</dd></div></dl>
             <p className={notifications.hint}>Approved documents and photos may contain prices. Contact your account holder to change your permissions.</p>
           </div>
           <div className={account.marketplaceActions}><button type="button" className={account.primaryButton} onClick={onClose}>Done</button></div>
