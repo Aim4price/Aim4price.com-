@@ -17,8 +17,9 @@ const conditionAppearance: Record<string, { description: string; tone: string; p
 };
 
 export default function AssetDetailChoiceField<T extends string>({
-  label, value, options, onChange, className = '', assetDetailEditTarget, onRequestOpen,
+  disabled = false, label, value, options, onChange, className = '', assetDetailEditTarget, onRequestOpen,
 }: {
+  disabled?: boolean;
   label: string;
   value: T | '';
   options: Array<ModalSelectOption<T>>;
@@ -32,9 +33,9 @@ export default function AssetDetailChoiceField<T extends string>({
   const selected = options.find(option => option.value === value);
   const isCondition = assetDetailEditTarget === 'condition';
   const displayOptions = isCondition ? [...options.filter(option => option.value !== ''), ...options.filter(option => option.value === '')] : options;
-  return <div className={`${fieldStyles.field} ${styles.field} ${className}`} data-asset-detail-edit-target={assetDetailEditTarget}>
+  return <div className={`${fieldStyles.field} ${styles.field} ${className}`} data-asset-detail-edit-target={assetDetailEditTarget} data-access-restricted={disabled ? "true" : undefined}>
     <span id={labelId}>{label}</span>
-    <button type="button" className={styles.trigger} aria-labelledby={labelId}
+    <button type="button" disabled={disabled} className={styles.trigger} aria-labelledby={labelId}
       aria-haspopup="dialog" aria-expanded={open} onClick={() => onRequestOpen ? onRequestOpen() : setOpen(true)}>
       <span>{selected?.label || `Choose ${label.toLowerCase()}`}</span>
       {isCondition && (

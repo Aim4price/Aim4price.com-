@@ -4667,3 +4667,6 @@
 .notificationDiscoveryDetailModal .notificationDetailActions { padding: 1.1rem 1.75rem 1.5rem; gap: 1rem; }
 .notificationDiscoveryDetailModal .notificationDetailActions button { flex: 1; min-height: 3.25rem; gap: .65rem; }
 .notificationDiscoveryDetailModal .notificationDetailActions svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Keep owner header geometry for delegated users. */
+.header [data-access-restricted="true"], .mobileMenuNav [data-access-restricted="true"] { filter: blur(3px); opacity: .65; cursor: not-allowed; user-select: none; }
