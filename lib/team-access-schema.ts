@@ -59,6 +59,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS team_access_username ON team_access(owner_id,l
 -- Support username sign-in from the main login page without a business hint.
 -- Non-unique to preserve historical business-scoped duplicates; ambiguous logins fail closed.
 CREATE INDEX IF NOT EXISTS team_access_username_lookup ON team_access(username) WHERE username IS NOT NULL;
+ALTER TABLE team_access ADD COLUMN IF NOT EXISTS document_access text NOT NULL DEFAULT 'selected' CHECK(document_access IN ('none','selected','all'));
+ALTER TABLE team_access ADD COLUMN IF NOT EXISTS excluded_document_ids jsonb NOT NULL DEFAULT '[]';
 `;
 let ready: Promise<void> | undefined;
 export function ensureTeamAccessSchema() {

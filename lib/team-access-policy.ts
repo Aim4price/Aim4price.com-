@@ -14,10 +14,29 @@ export type TeamPermission = typeof TEAM_PERMISSIONS[number]['key'];
 export type TeamPermissions = Record<TeamPermission, boolean>;
 export const EMPTY_TEAM_PERMISSIONS = Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, false])) as TeamPermissions;
 export const TEAM_TEMPLATES = {
-    viewer: { label: 'View only', permissions: { ...EMPTY_TEAM_PERMISSIONS } },
-    workshop: { label: 'Workshop', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
-    office: { label: 'Office', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
+    viewer: { label: 'View only', detail: 'Read permitted asset details.', permissions: { ...EMPTY_TEAM_PERMISSIONS } },
+    operator: { label: 'Operator', detail: 'Update usage and view photos.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewPhotos: true } },
+    workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
+    office: { label: 'Office', detail: 'Maintain records; values stay hidden.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
+    manager: { label: 'Manager', detail: 'All listed asset permissions, including values. Documents are separate.', permissions: Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, true])) as TeamPermissions },
 } as const;
+export const TEAM_PERMISSION_GROUPS = [
+    { label: 'Assets & values', keys: ['viewValues', 'editDetails', 'updateUsage'] },
+    { label: 'Maintenance', keys: ['viewMaintenance', 'completeMaintenance'] },
+    { label: 'Documents & photos', keys: ['uploadDocuments', 'viewPhotos', 'uploadPhotos'] },
+    { label: 'Downloads', keys: ['exportAssets'] },
+] as const;
+export type TeamDocumentAccess = 'none' | 'selected' | 'all';
+export function teamDocumentAccessLabel(mode: TeamDocumentAccess = 'selected', selected = 0, excluded = 0) {
+    if (mode === 'none') return 'No document access';
+    if (mode === 'all') return excluded ? `All in-scope documents except ${excluded} excluded` : 'All current and future in-scope documents';
+    return selected ? `${selected} approved document${selected === 1 ? '' : 's'}` : 'No documents approved';
+}
+export function updateTeamPermission(permissions: TeamPermissions, key: TeamPermission, enabled: boolean): TeamPermissions {
+    const next = { ...permissions, [key]: enabled };
+    if (key === 'completeMaintenance' && enabled) next.viewMaintenance = true;
+    return normalizeTeamPermissions(next);
+}
 export type TeamGrant = {
     username?: string;
     managedLogin?: boolean;
@@ -31,6 +50,8 @@ export type TeamGrant = {
     registerIds: string[];
     assetIds: string[];
     documentIds: string[];
+    documentAccess?: TeamDocumentAccess;
+    excludedDocumentIds?: string[];
     permissions: TeamPermissions;
     expiresAt: string | null;
     version: number;
