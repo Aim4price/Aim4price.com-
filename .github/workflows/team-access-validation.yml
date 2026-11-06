@@ -13,6 +13,7 @@ on:
       - 'lib/external-share-permissions.ts'
       - 'database/migrations/143-desktop-team-access.sql'
       - 'database/migrations/144-owner-managed-desktop-logins.sql'
+      - 'database/migrations/152-desktop-login-usernames.sql'
       - 'tests/team-access.test.cjs'
       - 'scripts/verify-team-access.cjs'
       - '.github/workflows/team-access-validation.yml'

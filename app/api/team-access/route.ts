@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
             grant = await saveTeamGrant(actor, body);
         else
             throw new TeamAccessError('Unsupported team action.', 400);
-        let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link and password with this person.' : 'Desktop access saved.') : 'Desktop access saved. No email sent.';
+        let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link, username and password with this person. No email sent.' : 'Desktop access saved.') : 'Desktop access saved. No email sent.';
         // Saving or reactivating access never sends email, including requests from older clients.
         if (body.action === 'send-invitation' && grant.status === 'active') {
             const link = getSiteOrigin() + '/team';

@@ -16,19 +16,19 @@ export async function POST(request: NextRequest) {
   try {
     requireBusinessOrigin(request);
     const body = await businessBody(request);
-    const email = String(body.email || '').trim().toLowerCase();
+    const identifier = String(body.username || body.email || '').trim().toLowerCase();
     const business = String(body.business || '');
     const address = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     try {
       await limitBusinessAction('desktop-login-ip:' + address, 30);
-      await limitBusinessAction('desktop-login:' + business + ':' + email, 5);
+      await limitBusinessAction('desktop-login:' + business + ':' + identifier, 5);
     } catch (error) {
       if (error instanceof Error && error.message === 'Too many requests. Please try again later.') throw new TeamAccessError('Too many sign-in attempts. Try again in an hour.', 429);
       throw error;
     }
     if ((await getAnyServerSession())?.user?.id) throw new TeamAccessError('Sign out of your current account before using a separate desktop login.', 409);
-    if (!business || business.length > 128 || email.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError('Check the business sign-in link, email and password.', 400);
-    const token = await authenticateTeamLogin(business, email, body.password);
+    if (!business || business.length > 128 || !identifier || identifier.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError('Check the business sign-in link, username and password.', 400);
+    const token = await authenticateTeamLogin(business, identifier, body.password);
     const profile = await getAccountProfile({ id: business });
     if (!['owner', 'dealer'].includes(profile.accountType) || profile.accountStatus !== 'active' || await sharingPlan(business, profile.accountType) !== 'desktop') {
       await getDb().query('DELETE FROM team_access_sessions WHERE token_hash=$1', [teamTokenHash(token)]);

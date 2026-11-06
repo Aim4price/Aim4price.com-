@@ -13,9 +13,10 @@ import { ensureTeamAccessSchema } from './team-access-schema';
 import { TeamAccessError, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
 type TeamGrantRow = {
     managed_login?: boolean;
+    username?: string | null;
     id: string;
     owner_id: string;
-    email: string;
+    email: string | null;
     display_name: string;
     member_user_id: string | null;
     status: TeamGrant['status'];
@@ -28,7 +29,7 @@ type TeamGrantRow = {
     version: number;
 };
 export function mapTeamGrant(row: TeamGrantRow): TeamGrant {
-    return { managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email, displayName: row.display_name, memberUserId: row.member_user_id,
+    return { managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
         status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids,
         permissions: normalizeTeamPermissions(row.permissions), expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null, version: row.version };
 }
@@ -62,7 +63,7 @@ export async function canManageTeamAccess(): Promise<boolean> {
     }
 }
 export async function auditTeam(client: Pick<PoolClient, 'query'>, actor: TeamActor, grant: TeamGrant, action: string, assetId: string | null = null, details: Record<string, unknown> = {}) {
-    await client.query('INSERT INTO team_access_activity(owner_id,membership_id,actor_id,actor_email,asset_id,action,details) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)', [grant.ownerId, grant.id, actor.id, actor.email, assetId, action, JSON.stringify({ ...details, targetName: grant.displayName, targetEmail: grant.email })]);
+    await client.query('INSERT INTO team_access_activity(owner_id,membership_id,actor_id,actor_email,asset_id,action,details) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb)', [grant.ownerId, grant.id, actor.id, actor.username || actor.email, assetId, action, JSON.stringify({ ...details, targetName: grant.displayName, targetEmail: grant.username || grant.email })]);
 }
 export async function loadTeamScope(membershipId: string, permission?: TeamPermission) {
     const actor = await requireTeamActor();
@@ -129,8 +130,13 @@ function ids(value: unknown): string[] {
 }
 export async function saveTeamGrant(actor: TeamActor, body: Record<string, unknown>) {
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const loginType = body.loginType;
+    if (loginType !== undefined && loginType !== 'existing' && loginType !== 'managed') throw new TeamAccessError('Choose how this person will sign in.', 400);
+    const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
+    const usernameLogin = loginType === 'managed' && (!body.id || Boolean(username));
+    if (usernameLogin && !/^[a-z0-9][a-z0-9._-]{2,39}$/.test(username)) throw new TeamAccessError('Use a username of 3–40 letters, numbers, dots, underscores or hyphens.', 400);
     const displayName = typeof body.displayName === 'string' ? body.displayName.trim() : '';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || email === actor.email || !displayName || displayName.length > 100)
+    if ((!usernameLogin && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || email === actor.email)) || !displayName || displayName.length > 100)
         throw new TeamAccessError('Enter the person’s name and their own valid email address.', 400);
     const scope = body.scope;
     if (scope !== 'all' && scope !== 'selected')
@@ -149,6 +155,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
         throw new TeamAccessError('Approved documents must belong to assets within the selected scope.', 400);
     const permissions = normalizeTeamPermissions(body.permissions);
     const password = typeof body.password === 'string' ? body.password : '';
+    if (loginType === 'existing' && password) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
     const passwordHash = password ? await hashTeamPassword(password) : null;
     const client = await getDb().connect();
     try {
@@ -158,8 +165,10 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
         let row;
         if (body.id) {
             const current = (await client.query('SELECT * FROM team_access WHERE id::text=$1 AND owner_id=$2 FOR UPDATE', [body.id, actor.id])).rows[0];
-            if (!current || current.email !== email)
+            if (!current || (current.email || '') !== email || (current.username || '') !== username)
                 throw new TeamAccessError('Team member unavailable.', 404);
+            if (loginType && (current.managed_login ? loginType !== 'managed' : loginType !== 'existing')) throw new TeamAccessError('A login type cannot be changed. Add a separate user instead.', 400);
+            if (!current.managed_login && passwordHash) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
             if (current.version !== body.version)
                 throw new TeamAccessError('This access changed. Refresh before saving.', 409);
             row = (await client.query(`UPDATE team_access SET display_name=$3,scope=$4,register_ids=$5::jsonb,asset_ids=$6::jsonb,document_ids=$7::jsonb,permissions=$8::jsonb,expires_at=$9,version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 RETURNING *`, [current.id, actor.id, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt])).rows[0];
@@ -168,13 +177,14 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             const count = (await client.query('SELECT count(*)::int AS count FROM team_access WHERE owner_id=$1', [actor.id])).rows[0].count;
             if (count >= 500)
                 throw new TeamAccessError('This account has reached its desktop user limit.', 400);
-            const existing = (await client.query('SELECT id FROM team_access WHERE owner_id=$1 AND email=$2', [actor.id, email])).rows[0];
+            const existing = (await client.query('SELECT id FROM team_access WHERE owner_id=$1 AND ((email=$2 AND $2 IS NOT NULL) OR (username=$3 AND $3 IS NOT NULL))', [actor.id, usernameLogin ? null : email, usernameLogin ? username : null])).rows[0];
             if (existing)
-                throw new TeamAccessError('This email already has desktop access. Edit or reactivate that entry.', 409);
-            row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9) RETURNING *`, [actor.id, email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt])).rows[0];
+                throw new TeamAccessError('This login already has desktop access. Edit or reactivate that entry.', 409);
+            row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at,username) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9,$10) RETURNING *`, [actor.id, usernameLogin ? null : email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, usernameLogin ? username : null])).rows[0];
         }
         const existingLogin = (await client.query('SELECT id FROM "user" WHERE lower(email)=$1 ORDER BY id LIMIT 1', [email])).rows[0];
-        if (row.managed_login || (!body.id && !existingLogin)) {
+        if (!body.id && loginType === 'existing' && !existingLogin) throw new TeamAccessError('No Aim4price account is registered with this email. Check the email or choose Create desktop login.', 400);
+        if (row.managed_login || (!body.id && (loginType === 'managed' || !existingLogin))) {
             if (!row.managed_login && !passwordHash) throw new TeamAccessError('Enter an initial password for this new desktop user.', 400);
             if (passwordHash) {
                 await client.query('INSERT INTO team_access_logins(grant_id,password_hash) VALUES($1,$2) ON CONFLICT(grant_id) DO UPDATE SET password_hash=excluded.password_hash', [row.id, passwordHash]);
@@ -183,9 +193,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             row = (await client.query("UPDATE team_access SET managed_login=true,status=CASE WHEN status='pending' THEN 'active' ELSE status END,member_user_id=NULL WHERE id=$1 RETURNING *", [row.id])).rows[0];
         } else if (row.status === 'pending' && existingLogin) {
             row = (await client.query("UPDATE team_access SET member_user_id=$2,status='active' WHERE id=$1 RETURNING *", [row.id, existingLogin.id])).rows[0];
-        } else if (body.id && !existingLogin && !row.member_user_id && passwordHash) {
-            await client.query('INSERT INTO team_access_logins(grant_id,password_hash) VALUES($1,$2)', [row.id,passwordHash]);
-            row = (await client.query("UPDATE team_access SET managed_login=true,status=CASE WHEN status='pending' THEN 'active' ELSE status END WHERE id=$1 RETURNING *", [row.id])).rows[0];
+
         }
         const grant = mapTeamGrant(row);
         if (grant.managedLogin && passwordHash) await auditTeam(client, actor, grant, body.id ? 'Desktop password reset' : 'Desktop login created');
@@ -259,7 +267,7 @@ export async function removeTeamGrant(actor: TeamActor, id: string, version: num
         await client.query('BEGIN');
         const row = (await client.query('SELECT * FROM team_access WHERE id::text=$1 AND owner_id=$2 AND version=$3 FOR UPDATE', [id, actor.id, version])).rows[0];
         if (!row) throw new TeamAccessError('Access changed or is unavailable. Refresh and try again.', 409);
-        await auditTeam(client, actor, mapTeamGrant(row), 'Desktop user removed', null, { email: row.email, displayName: row.display_name });
+        await auditTeam(client, actor, mapTeamGrant(row), 'Desktop user removed', null, { email: row.email || '', username: row.username || undefined, displayName: row.display_name });
         // Credentials and sessions cascade; activity is retained with a nullable membership link.
         await client.query('DELETE FROM team_access WHERE id=$1 AND owner_id=$2', [row.id, actor.id]);
         await client.query('COMMIT');
