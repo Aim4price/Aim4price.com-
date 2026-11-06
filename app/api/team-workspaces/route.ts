@@ -17,7 +17,7 @@ export async function GET() {
             const grant = mapTeamGrant(row);
             const profile = await getAccountProfile({ id: grant.ownerId });
             const available = ['owner', 'dealer'].includes(profile.accountType) && profile.accountStatus === 'active' && await sharingPlan(grant.ownerId, profile.accountType) === 'desktop';
-            return { available, id: grant.id, status: grant.status, name: profile.businessName || profile.displayName || 'Business workspace', permissions: grant.permissions, expiresAt: grant.expiresAt, displayName: grant.displayName, scope: grant.scope, registerCount: grant.registerIds.length, assetCount: grant.assetIds.length, documentCount: grant.documentIds.length };
+            return { available, logoUrl: available ? profile.logoUrl : '', accountType: profile.accountType, accountSubtype: profile.accountSubtype, id: grant.id, status: grant.status, name: profile.businessName || profile.displayName || 'Business workspace', permissions: grant.permissions, expiresAt: grant.expiresAt, displayName: grant.displayName, scope: grant.scope, registerCount: grant.registerIds.length, assetCount: grant.assetIds.length, documentCount: grant.documentIds.length };
         }));
         return teamJson({ email: actor.email, workspaces });
     }

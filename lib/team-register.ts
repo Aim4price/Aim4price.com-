@@ -5,6 +5,9 @@ import type { AssetRegisterSummary } from './asset-registers';
 
 export type TeamRegisterData = {
   name: string;
+  logoUrl?: string;
+  accountType?: string;
+  accountSubtype?: string;
   permissions: TeamPermissions;
   assets: TeamAsset[];
   groups?: AssetGroup[];
@@ -59,7 +62,7 @@ export function desktopRegisterSummaries(data: TeamRegisterData): AssetRegisterS
     if (!asset.registerId) continue;
     const register = registers.get(asset.registerId) || {
       id: asset.registerId, userId: '', businessName: asset.registerName, email: '', phone: '', addressLine1: '',
-      logoUrls: [], showLogosOnRegister: false, includeInCombinedTotals: asset.registerIncludedInCombinedTotals !== false, isPrimary: false, isSelected: false,
+      logoUrls: asset.registerLogoUrls || [], showLogosOnRegister: asset.registerShowLogos !== false, includeInCombinedTotals: asset.registerIncludedInCombinedTotals !== false, isPrimary: false, isSelected: false,
       assetCount: 0, totalValue: 0, totalReplacementPrice: 0, unnotedAlertCount: 0, createdAtIso: '', updatedAtIso: '',
     };
     register.assetCount++;

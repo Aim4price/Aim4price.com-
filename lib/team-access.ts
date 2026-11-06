@@ -81,7 +81,7 @@ export async function loadTeamScope(membershipId: string, permission?: TeamPermi
         throw new TeamAccessError('This business workspace is unavailable.');
     if (permission)
         assertTeamPermission(grant, permission);
-    return { actor, grant, businessName: profile.businessName || profile.displayName || 'Team workspace' };
+    return { actor, grant, accountType: profile.accountType, accountSubtype: profile.accountSubtype, logoUrl: profile.logoUrl, businessName: profile.businessName || profile.displayName || 'Team workspace' };
 }
 export type TeamScope = Awaited<ReturnType<typeof loadTeamScope>>;
 export async function requireTeamAsset(scope: TeamScope, assetId: string, client?: PoolClient): Promise<AssetRegisterItem> {
@@ -117,6 +117,8 @@ export async function teamAssetList(scope: TeamScope) {
     const assets = (await listTeamOwnerAssets(scope.grant.ownerId)).filter(a => teamCanAccessAsset(scope.grant, a));
     return assets.map(asset => ({
         ...projectTeamAsset(asset, scope.grant, registers.find(r => r.id === asset.registerId)?.businessName || 'Asset register', resolveAssetUsage({ kind: asset.kind, hours: asset.hours, lifeWorkedPercent: asset.lifeWorkedPercent, specsJson: asset.specsJson })),
+        registerLogoUrls: registers.find(r => r.id === asset.registerId)?.logoUrls || [],
+        registerShowLogos: registers.find(r => r.id === asset.registerId)?.showLogosOnRegister !== false,
         registerIncludedInCombinedTotals: registers.find(r => r.id === asset.registerId)?.includeInCombinedTotals !== false,
     }));
 }

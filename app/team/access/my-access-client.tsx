@@ -1,18 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { TEAM_PERMISSIONS, type TeamPermissions } from '../../../lib/team-access-policy';
+import AppHeader from '../../../components/AppHeader';
+import { DesktopAccount, PermissionsModal, type DesktopAccountAccess } from './desktop-account';
+import account from '../../account/page.module.css';
 import shared from '../../../components/team/team.module.css';
 import styles from './my-access.module.css';
 
-type Access = {
-  id: string; name: string; displayName: string; status: 'pending' | 'active';
-  available: boolean; permissions: TeamPermissions; expiresAt: string | null;
-  scope: 'all' | 'selected'; registerCount: number; assetCount: number; documentCount: number;
-};
-const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? '' : 's'}`;
 export default function MyAccessClient({ email, name, managed }: { email: string; name: string; managed: boolean }) {
-  const [access, setAccess] = useState<Access[]>([]);
+  const [access, setAccess] = useState<DesktopAccountAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -50,36 +46,14 @@ export default function MyAccessClient({ email, name, managed }: { email: string
       window.location.assign('/team');
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to sign out.'); setBusy(false); }
   }
-  return <main className={`${shared.page} ${styles.page}`}>
-    <header className={styles.header}>
-      <div><h1>My access</h1><p>Signed in as {name || email || 'Desktop user'}</p></div>
-      <div className={shared.actions}>{!managed && <Link className={shared.button} href="/account">My account</Link>}
-        {managed && <button className={shared.button} disabled={busy} onClick={() => void signOut()}>{busy ? 'Signing out…' : 'Sign out'}</button>}
-      </div>
-    </header>
+  const selected = access.find(item => item.id === expanded);
+  const current = access[0];
+  return <main className={account.page}>
+    <AppHeader active="account" desktopContext={managed ? {name:current?.name || 'Aim4price', logoUrl:current?.logoUrl, accountType:current?.accountType, accountSubtype:current?.accountSubtype, onSignOut:() => { if (!busy) void signOut(); }} : undefined} />
     {error && <p className={shared.error} role="alert">{error} <Link href="/team">Return to desktop sign-in</Link></p>}
-    {loading && <p role="status">Loading your access…</p>}
-    {!loading && !error && !access.length && <section className={`${shared.card} ${styles.card}`}><h2>No desktop access yet</h2><p>Ask your account holder to add you, or use the business sign-in link they shared.</p><Link className={shared.button} href="/team">Desktop sign-in</Link></section>}
-    <div className={styles.list}>{access.map(item => <section key={item.id} className={`${shared.card} ${styles.card}`}>
-      <div className={styles.cardHeader}><h2>{item.name}</h2><strong className={item.available && item.status === 'active' ? styles.active : styles.status}>{!item.available ? 'Workspace unavailable' : item.status === 'active' ? 'Active' : 'Invitation pending'}</strong></div>
-      <p className={styles.summary}>{item.scope === 'all' ? 'All assets' : [item.registerCount ? count(item.registerCount, 'register') : '', item.assetCount ? count(item.assetCount, 'asset') : ''].filter(Boolean).join(' and ') || 'No assets selected'} · Asset values {item.permissions.viewValues ? 'visible' : 'hidden'}</p>
-      <div className={styles.footer}>
-        <button className={shared.button} aria-expanded={expanded === item.id} aria-controls={`permissions-${item.id}`} onClick={() => setExpanded(expanded === item.id ? null : item.id)}>{expanded === item.id ? 'Hide permissions' : 'View permissions'}</button>
-        {item.available && <Link className={shared.primary} href={item.status === 'active' ? `/team?workspace=${encodeURIComponent(item.id)}` : '/team'}>{item.status === 'active' ? 'Open workspace' : 'Review invitation'}</Link>}
-      </div>
-      <div id={`permissions-${item.id}`} hidden={expanded !== item.id} className={styles.disclosure}>
-      <h3>Permissions for {item.name}</h3>
-      <dl className={styles.details}>
-        <div><dt>Asset access</dt><dd>{item.scope === 'all' ? 'All current and future assets' : [item.registerCount ? count(item.registerCount, 'register') + ' (including future assets)' : '', item.assetCount ? count(item.assetCount, 'individual asset') : ''].filter(Boolean).join(' and ') || 'No assets selected'}</dd></div>
-        <div><dt>Documents</dt><dd>{item.documentCount ? `${count(item.documentCount, 'approved document')} — available while linked assets remain in scope` : 'No documents approved'}</dd></div>
-        <div><dt>Access expires</dt><dd>{item.expiresAt ? new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Johannesburg' }).format(new Date(item.expiresAt)) + ' (South Africa)' : 'No expiry set'}</dd></div>
-      </dl>
-      <h3>What you can do</h3>
-      <ul className={styles.permissions}><li>View permitted asset details</li>{TEAM_PERMISSIONS.filter(p => item.permissions[p.key]).map(p => <li key={p.key}>{p.label}</li>)}</ul>
-      <p className={styles.note}>{item.permissions.viewValues ? 'Asset values are visible. Finance balances and costs are excluded.' : 'Asset values are hidden.'} Approved documents and photos may contain prices.</p>
-      <p className={styles.note}>Your account holder manages these permissions{managed ? ' and your desktop password' : ''}.</p>
-      </div>
-    </section>)}</div>
-    <p className={styles.help}>Need help? Contact your account holder.</p>
+    {loading && <p className={styles.help} role="status">Loading your access…</p>}
+    {!loading && !error && !access.length && <section className={account.shell}><section className={account.card}><h1>No desktop access yet</h1><p>Ask your account holder to add you, or use the business sign-in link they shared.</p><Link className={shared.button} href="/team">Desktop sign-in</Link></section></section>}
+    {access.map(item => <DesktopAccount key={item.id} item={item} username={name || email || 'Desktop user'} onPermissions={() => setExpanded(item.id)} />)}
+    {selected && <PermissionsModal item={selected} onClose={() => setExpanded(null)} />}
   </main>;
 }

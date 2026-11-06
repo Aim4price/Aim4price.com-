@@ -71,7 +71,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function mount(mode,width=1440){
   await page.goto('about:blank');
   await page.setViewport({width,height:1000});
-  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f8f6}button,input{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
+  await page.setContent('<style>:root{--website-design-vw:1vw;--website-design-vh:1vh;--shell-width:94%;--text-strong:#173a30}*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f8f6}button,input{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
   await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
   await page.addScriptTag({content:runtime+`;
     const permissions={viewValues:false,editDetails:true,updateUsage:true,viewMaintenance:true,completeMaintenance:true,uploadDocuments:true,viewPhotos:false,uploadPhotos:false,exportAssets:true};
@@ -80,7 +80,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     window.fetch=async(url,init={})=>{window.requests.push({url:String(url),method:init.method||'GET',body:init.body});let response;
       if(url==='/api/team-access'&&init.method==='POST'){window.saved=JSON.parse(init.body);if(window.saved.action==='save'&&window.saved.id){const {password,action,...savedMember}=window.saved;window.savedMember={...savedMember,version:savedMember.version+1};}if(window.saved.action==='remove')window.removed=true;response={ok:true};}
       else if(url==='/api/team-access')response={businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1,...window.savedMember}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
-      else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',displayName:'Workshop staff',available:true,status:'active',scope:'selected',registerCount:1,assetCount:0,documentCount:1,permissions,expiresAt:null}]};
+      else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',logoUrl:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22green%22/%3E%3C/svg%3E',accountType:'owner',displayName:'Workshop staff',available:true,status:'active',scope:'selected',registerCount:1,assetCount:0,documentCount:1,permissions,expiresAt:null}]};
       else if(window.revoked)return {ok:false,json:async()=>({error:'Team access has been revoked.'})};
       else if(String(url).endsWith('/documents'))response={documents:[{id:'document-a',title:'Operator manual',fileName:'manual.pdf',assetIds:['asset-a']}]};
       else if(String(url).includes('/maintenance'))response={records:[{id:'maintenance-a',title:'Engine service',type:'service',status:'upcoming',statusLabel:'Upcoming',notes:'Change oil',dueDate:'2026-11-01'}]};
@@ -160,46 +160,55 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await mount('member-direct');await page.waitForFunction(()=>document.body.textContent.includes('Landini Super 110'));assert(await page.$('a[href="/team/access"]'));
  for(const mode of ['access-personal','access-managed']) {
    await mount(mode);
-   await page.waitForSelector('a[href="/team?workspace=membership-a"]');
-   assert.equal(Boolean(await page.$('a[href="/account"]')),mode==='access-personal');
-   assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Sign out')),mode==='access-managed');
-   assert(await page.evaluate(()=>document.body.textContent.includes('Asset values hidden')));
-   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),true);
-   await page.focus('button[aria-expanded]');
+   await page.waitForSelector('[data-desktop-account]');
+   assert(await page.$('img[alt="Skimmelkrans Boerdery logo"]'));
+   assert.equal(await page.$$eval('[data-desktop-account] button:not(:disabled)',els=>els.map(e=>e.textContent).join(',')),'Permissions');
+   assert(await page.$eval('[data-desktop-account] button:disabled',el=>getComputedStyle(el).filter.includes('blur')));
+   await page.focus('[data-desktop-account] button:not(:disabled)');
    await page.keyboard.press('Space');
-   await page.waitForSelector('button[aria-expanded="true"]');
-   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),false);
-   assert(await page.evaluate(()=>document.body.textContent.includes('Asset values are hidden.')));
-   await page.keyboard.press('Tab');
-   await click('Hide permissions');
-   assert.equal(await page.$eval('[id^="permissions-"]',el=>el.hidden),true);
-   assert.equal(await page.evaluate(()=>document.body.textContent.includes('View asset values')),false);
-   for(const width of [1440,390]) {
+   await page.waitForSelector('[role="dialog"]');
+   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('View asset valuesNot allowed')));
+   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Edit asset detailsAllowed')));
+   assert.equal(await page.$$eval('[role="dialog"] input,[role="dialog"] [role="switch"]',els=>els.length),0,'Permissions are read-only');
+   await page.keyboard.press('ShiftLeft');await page.keyboard.press('Tab');await page.keyboard.up('ShiftLeft');
+   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').contains(document.activeElement)));
+   await page.keyboard.press('Escape');
+   await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+   assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Permissions');
+   // The normal account uses the website canvas on phones; the real Next fixture checks 430px.
+   for(const width of [1440]) {
      await page.setViewport({width,height:900});
      assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'My access fits viewport');
      await page.screenshot({path:'.next/team-access-validation/'+mode+'-'+width+'.png'});
+     await click('Permissions');await page.waitForSelector('[role="dialog"]');await assertFits();
+     await page.screenshot({path:'.next/team-access-validation/'+mode+'-permissions-'+width+'.png'});
+     await click('Done');
    }
+   await click('Permissions');
    await page.evaluate(()=>{window.fetch=async()=>({ok:false,json:async()=>({error:'Access has been revoked.'})});window.dispatchEvent(new Event('focus'));});
    await page.waitForFunction(()=>document.body.textContent.includes('Access has been revoked.'));
    assert.equal(await page.evaluate(()=>document.body.textContent.includes('Skimmelkrans Boerdery')),false);
+   assert.equal(await page.$('[role="dialog"]'),null);
  }
  await mount('access-personal');
- await page.waitForSelector('a[href="/team?workspace=membership-a"]');
+ await page.waitForSelector('[data-desktop-account]');
  await page.evaluate(()=>{
-   const base={permissions:{viewValues:true},scope:'all',registerCount:0,assetCount:0,documentCount:0,expiresAt:null};
+   const base={permissions:{viewValues:true},scope:'all',registerCount:0,assetCount:0,documentCount:0,expiresAt:null,accountType:'dealer'};
    window.fetch=async()=>({ok:true,json:async()=>({workspaces:[
      {...base,id:'pending',name:'Dealer workspace',status:'pending',available:true},
-     {...base,id:'unavailable',name:'Middleman workspace',status:'active',available:false}
+     {...base,id:'unavailable',name:'Middleman workspace',accountSubtype:'equipment-middleman',status:'active',available:false}
    ]})});window.dispatchEvent(new Event('focus'));
  });
- await page.waitForFunction(()=>document.body.textContent.includes('Invitation pending'));
- assert.equal(await page.$$eval('a',els=>els.filter(e=>e.textContent==='Open workspace').length),0);
- assert.equal(await page.$$eval('a',els=>els.filter(e=>e.textContent==='Review invitation').length),1);
- assert(await page.evaluate(()=>document.body.textContent.includes('Workspace unavailable')));
- await click('View permissions');
- assert.equal(await page.$$eval('button[aria-expanded="true"]',els=>els.length),1);
- await page.evaluate(()=>Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='View permissions').click());
- assert.equal(await page.$$eval('button[aria-expanded="true"]',els=>els.length),1);
+ await page.waitForFunction(()=>document.body.textContent.includes('Middleman workspace'));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Manage Dealer App staff')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Middleman app access')));
+ await click('Permissions');await page.waitForSelector('[role="dialog"]');
+ assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Your invitation is pending')));
+ assert.equal(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Allowed')),false);
+ await click('Done');
+ await page.$$eval('[data-desktop-account] button:not(:disabled)',buttons=>buttons[1].click());
+ await page.waitForSelector('[role="dialog"]');
+ assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('This workspace is unavailable')));
  await page.screenshot({path:'.next/team-access-validation/access-multiple.png'});
 
  await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({workspaces:[]})});window.dispatchEvent(new Event('focus'));});
