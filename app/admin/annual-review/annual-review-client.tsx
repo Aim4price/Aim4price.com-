@@ -60,7 +60,7 @@ export default function AnnualReviewClient({ live = false }: { live?: boolean })
       if (id !== generation.current) return;
       if (live && !value.available) {
         setAvailability(value.receipt ? `Your ${value.year} annual review is complete.` : 'Your first annual review opens on 1 January 2027.');
-        setData(null); return;
+        setData(null); setOpen(false); return;
       }
       setAvailability(''); setData(value); setKeepUnchanged(false); setPercent(3); setResults({}); setConfirmed(false); setProgress(0); setStep(0); setOpen(true);
     } catch (e) { if (id === generation.current) setError(e instanceof Error ? e.message : 'Unable to load review.'); }
@@ -102,6 +102,11 @@ export default function AnnualReviewClient({ live = false }: { live?: boolean })
             proposedValue: results[asset.id]?.proposedValue, replacementPrice: results[asset.id]?.replacementPrice })) }) });
       const value = await response.json();
       if (!response.ok || !value.completed) throw new Error(value.error || 'Unable to save your review. Please retry.');
+      if (value.alreadyCompleted) {
+        setData(null); setOpen(false); setResults({});
+        setAvailability(`Your ${data.year} annual review was already completed. No further changes were made. Open your asset register to see the saved values.`);
+        return;
+      }
       setConfirmed(true); setAvailability(`Your ${data.year} annual review is complete.`);
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to save your review.'); }
     finally { setSaving(false); }
@@ -146,7 +151,7 @@ export default function AnnualReviewClient({ live = false }: { live?: boolean })
           <div><dt>Value after adjustment</dt><dd>{money(newValue)}</dd></div>
         </dl><p>Both calculations use the same review year, saved inputs and current Aim4price rules. The percentage is not applied directly to asset values.</p></details></>}{complete && warnings.length > 0 && <details className={styles.calculationDetails}><summary>Calculation notes ({warnings.length})<span className={styles.disclosureMark} aria-hidden="true" /></summary><div className={styles.warningGroups}>{Array.from(warningGroups, ([message, assets]) => <section key={message}><p>{message}</p><details className={styles.affectedAssets}><summary>{assets.length} affected {assets.length === 1 ? 'asset' : 'assets'}<span className={styles.disclosureMark} aria-hidden="true" /></summary><ul>{assets.map(asset => <li key={asset.id}>{asset.title}</li>)}</ul></details></section>)}</div></details>}{excluded > 0 && <p className={styles.note}>{excluded} excluded {excluded === 1 ? 'asset stays' : 'assets stay'} unchanged.</p>}</>}
         {step === 4 && <div className={styles.confirmation}><span className={styles.heroIcon}><ReviewIcon kind={confirmed ? 'complete' : 'review'} /></span><h3>{confirmed ? 'Your review is complete.' : keepUnchanged ? 'Keep all values unchanged' : `Your adjustment: ${percent > 0 ? '+' : ''}${percent}%`}</h3><p>{live ? (confirmed ? (keepUnchanged ? 'Your choice has been recorded. All asset values are unchanged.' : 'Your values and valuation history have been updated.') : `${eligible.length} eligible assets · excl. VAT. ${keepUnchanged ? 'Confirm to finish this year without changing any values.' : 'Confirm to save these values for this year.'}`) : (confirmed ? 'Nothing has been saved.' : `Read-only review · ${eligible.length} eligible assets · excl. VAT`)}</p><div className={styles.confirmTotals}><span>Cost after adjustment<strong>{money(newReplacement)}</strong></span><span>Estimated asset value<strong>{money(newValue)}</strong></span></div>{!keepUnchanged && saleabilityCount > 0 && <p className={styles.note}>{saleabilityCount} Saleability {saleabilityCount === 1 ? 'assessment' : 'assessments'} {live && confirmed ? 'now need review.' : 'will need review when changes are saved.'}</p>}</div>}
-        {error && <p role="alert" className={styles.error}>{error}</p>}
+        {error && <div><p role="alert" className={styles.error}>{error}</p>{live && <button onClick={load} disabled={busy || saving}>Reload review</button>}</div>}
       </div>
       <footer className={`${chrome.footer} ${styles.footer}`}><button className={styles.closeAction} onClick={close} disabled={saving}>Close</button>{step > 0 && !confirmed && <button disabled={busy || saving} onClick={() => setStep(step === 3 && keepUnchanged ? 1 : step - 1)}>Back</button>}{step === 0 && <button className={styles.primary} onClick={() => setStep(1)}>Continue</button>}{step === 2 && <button className={styles.primary} onClick={calculate} disabled={busy || !eligible.length}>Review results</button>}{step === 3 && keepUnchanged && <button className={styles.primary} onClick={live ? () => setStep(4) : close}>{live ? 'Next' : 'Finish'}</button>}{step === 3 && !keepUnchanged && <button className={styles.primary} disabled={busy || !complete} onClick={() => setStep(4)}>Next</button>}{step === 4 && !confirmed && <button className={styles.primary} disabled={!complete || saving} onClick={finish}>{saving ? 'Saving…' : live ? (keepUnchanged ? 'Confirm unchanged' : 'Confirm and save') : 'Finish review'}</button>}{step === 4 && confirmed && <button className={styles.primary} onClick={close}>Done</button>}</footer>
     </dialog>

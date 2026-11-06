@@ -11,6 +11,8 @@ on:
       - 'scripts/migrate-annual-review.mjs'
       - 'tests/annual-review-live.test.cjs'
       - 'lib/asset-revaluation-save.ts'
+      - 'lib/db.ts'
+      - 'tests/annual-review-connections.test.cjs'
       - 'tests/asset-revaluation-save.test.cjs'
       - 'package.json'
       - 'app/api/admin/annual-review/**'
@@ -41,7 +43,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/annual-review-preview.test.cjs tests/annual-review-live.test.cjs tests/asset-revaluation-save.test.cjs
+      - run: node --test tests/annual-review-preview.test.cjs tests/annual-review-live.test.cjs tests/annual-review-connections.test.cjs tests/asset-revaluation-save.test.cjs
       - run: node --experimental-strip-types --test tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs tests/basic-catalogue.test.mjs tests/asset-revaluation-save.test.cjs
       - run: node scripts/verify-annual-review.cjs
       - uses: actions/upload-artifact@v4
