@@ -1,6 +1,10 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import AssetRegisterClient from '../asset-register/asset-register-client';
+import DesktopAccessHeader from '../../components/team/DesktopAccessHeader';
+import type { TeamRegisterData } from '../../lib/team-register';
+import registerStyles from '../asset-register/page.module.css';
 import TeamModal from '../../components/team/TeamModal';
 import SwitchAccountButton from '../../components/SwitchAccountButton';
 import styles from '../../components/team/team.module.css';
@@ -13,12 +17,7 @@ type Workspace = {
     permissions: TeamPermissions;
     expiresAt: string | null;
 };
-type WorkspaceData = {
-    name: string;
-    permissions: TeamPermissions;
-    assets: TeamAsset[];
-    version: number;
-};
+type WorkspaceData = TeamRegisterData;
 type Document = {
     id: string;
     title: string;
@@ -49,7 +48,7 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     initialWorkspace?: string;
 }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]), [membership, setMembership] = useState(initialWorkspace), [data, setData] = useState<WorkspaceData | null>(null);
-    const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [query, setQuery] = useState(''), [register, setRegister] = useState('');
+    const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [loading, setLoading] = useState(true);
     const [selectedId, setSelectedId] = useState('');
     const [documents, setDocuments] = useState<Document[]>([]), [maintenance, setMaintenance] = useState<Maintenance[]>([]);
     const [section, setSection] = useState<'details' | 'maintenance' | 'documents' | 'photos'>('details');
@@ -61,7 +60,9 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     const currentVersion = useRef<number | null>(null);
     const base = '/api/team-workspaces/' + encodeURIComponent(membership);
     const selected = data?.assets.find(a => a.id === selectedId);
-    const loadWorkspaces = useCallback(async () => { const response = await api('/api/team-workspaces'); setWorkspaces(response.workspaces); }, []);
+    const loadWorkspaces = useCallback(async () => { const response = await api('/api/team-workspaces'); setWorkspaces(response.workspaces);
+      const available = response.workspaces.filter((workspace: Workspace) => workspace.available && workspace.status === 'active');
+      if (available.length === 1) setMembership(current => current || available[0].id); }, []);
     useEffect(() => { void loadWorkspaces().catch(e => setError(e.message)).finally(() => setLoading(false)); }, [loadWorkspaces]);
     const refresh = useCallback(async () => {
         if (!membership)
@@ -158,20 +159,43 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     function openAsset(asset: TeamAsset) { setError(''); setNotice(''); setSection('details'); setSelectedId(asset.id); setEdit(false); setPatch({}); }
     async function upload() { if (!file || !selected)
         return; const form = new FormData(); form.set('file', file); form.set('assetId', selected.id); form.set('requestId', uploadKey.current); await api(base + '/' + section, { method: 'POST', body: form }); setFile(null); await refresh(); setNotice(section === 'documents' ? 'Document uploaded for owner review.' : 'Photo uploaded.'); }
-    return <main className={styles.page}>
-    <header className={styles.header}><div><h1>{data?.name || 'My desktop access'}</h1><p>Signed in as {email}</p></div><div className={styles.actions}><Link className={styles.button} href={managementAccount ? "/account" : "/team/access"}>{managementAccount ? "Account" : "My access"}</Link>{membership && <button className={styles.button} onClick={() => { setMembership(''); setError(''); void loadWorkspaces().catch(e => setError(e.message)); }}>Switch workspace</button>}{managed ? <button className={styles.button} onClick={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/team'); })}>Sign out</button> : <SwitchAccountButton returnTo="/team"/>}</div></header>
+    function renderAssetDetails(id: string) {
+      const asset = data?.assets.find(item => item.id === id);
+      if (!asset) return null;
+      const hidden = <span className={registerStyles.restrictedValue} aria-label="Value restricted"><span aria-hidden="true">R ••• •••</span></span>;
+      return <div className={styles.body}>
+        <dl className={styles.details}>{[['Brand',asset.brand],['Model',asset.model],['Year',asset.year],['Serial / VIN',asset.serial],['Registration',asset.registration],['Usage',`${asset.usage ?? '—'} ${asset.usageMetric}`],['Condition',asset.condition]].map(([label,value]) => <div key={String(label)}><dt>{label}</dt><dd>{value || 'Not recorded'}</dd></div>)}
+          <div><dt>Current value · excl. VAT</dt><dd>{asset.values ? money(asset.values.current) : hidden}</dd></div>
+          <div><dt>Replacement value · excl. VAT</dt><dd>{asset.values ? money(asset.values.replacement) : hidden}</dd></div>
+        </dl>
+        <div className={styles.actions}>
+          {(['maintenance','documents','photos'] as const).map(item => <button key={item} className={styles.button}
+            disabled={item === 'maintenance' ? !data?.permissions.viewMaintenance : item === 'photos' ? !(data?.permissions.viewPhotos || data?.permissions.uploadPhotos) : false}
+            onClick={() => {openAsset(asset);setSection(item);}}>{item[0].toUpperCase()+item.slice(1)}</button>)}
+          <button className={styles.button} onClick={() => openAsset(asset)}>Manage</button>
+        </div>
+      </div>;
+    }
+    return <>
+    {managed && <DesktopAccessHeader onSignOut={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/auth#login'); })}/>}
+    {!data && <main className={styles.page}>
+    <header className={styles.header}><div><h1>{membership ? 'Asset Register' : 'Choose a business'}</h1><p>Signed in as {email}</p></div><div className={styles.actions}><Link className={styles.button} href={managementAccount ? "/account" : "/team/access"}>{managementAccount ? "Account" : "My access"}</Link>{membership && <button className={styles.button} onClick={() => { setMembership(''); setError(''); void loadWorkspaces().catch(e => setError(e.message)); }}>Switch workspace</button>}{managed ? <button className={styles.button} onClick={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/team'); })}>Sign out</button> : <SwitchAccountButton returnTo="/team"/>}</div></header>
     {error && !selected && <p className={styles.error} role="alert">{error}</p>}{notice && !selected && <p className={styles.notice} role="status">{notice}</p>}
     {loading && <p role="status">Loading workspace…</p>}
     {!membership && <div className={styles.grid}>{workspaces.map(w => <article className={styles.card} key={w.id}><h2>{w.name}</h2><span className={styles.pill}>{!w.available ? "Workspace unavailable" : w.status === "active" ? "Active access" : "Ready to accept"}</span><p className={styles.muted}>{w.permissions.viewValues ? 'Asset values are visible.' : 'Asset values are hidden.'} {w.expiresAt ? `Access expires ${new Date(w.expiresAt).toLocaleDateString('en-ZA')}.` : ''}</p><p className={styles.muted}>{TEAM_PERMISSIONS.filter(p => w.permissions[p.key]).map(p => p.label).join(' · ') || 'View asset details only'}</p><button className={styles.primary} disabled={busy || !w.available} onClick={() => void act(async () => { if (w.status === 'pending')
-        await api('/api/team-workspaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: w.id }) }); setMembership(w.id); setQuery(''); setRegister(''); })}>Open workspace</button></article>)}</div>}
+        await api('/api/team-workspaces', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: w.id }) }); setMembership(w.id); })}>Open workspace</button></article>)}</div>}
     {!loading && !membership && !workspaces.length && <p className={styles.notice}>No desktop access is available. Ask your business owner to check your access.</p>}
-    {data && <><div className={styles.header}><div className={styles.actions}><span className={styles.pill}>{data.assets.length} accessible assets</span><span className={styles.pill}>{data.permissions.viewValues ? 'Values visible' : 'Values hidden'}</span></div><div className={styles.actions}><button className={styles.button} disabled={busy} onClick={() => void refresh()}>Refresh</button>{data.permissions.exportAssets && <button className={styles.button} disabled={busy} onClick={() => void act(() => download(base + '/export', 'team-assets.csv'))}>Download asset list</button>}</div></div>
-      <div className={`${styles.fields} ${styles.search}`}><input className={styles.input} type="search" aria-label="Search assets" placeholder="Search assets, brands or serial numbers…" value={query} onChange={e => setQuery(e.target.value)}/><select className={styles.select} aria-label="Filter register" value={register} onChange={e => setRegister(e.target.value)}><option value="">All accessible registers</option>{[...new Map(data.assets.map(a => [a.registerId || '', a.registerName])).entries()].map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select></div>
-      <div className={styles.list}>{data.assets.filter(a => (!register || a.registerId === register) && [a.title, a.brand, a.model, a.serial, a.registration].join(' ').toLowerCase().includes(query.toLowerCase())).map(asset => <article key={asset.id} className={`${styles.card} ${styles.asset}`}><div><h2>{asset.title}</h2><p>{asset.registerName}</p><p className={styles.muted}>{asset.year || 'Year not recorded'} · {asset.usage ?? '—'} {asset.usageMetric} · {asset.condition}</p></div><div className={styles.actions}>{asset.values && <div className={styles.values}>{money(asset.values.current)}<small>Current value · excl. VAT</small></div>}<button className={styles.button} onClick={() => openAsset(asset)}>Open asset →</button></div></article>)}</div>{!data.assets.length && <p className={styles.notice}>No assets are currently included in your access. Contact the business owner.</p>}
+    </main>}
+    {data && <>
+      {!managed && <div className={styles.actions} style={{padding:'1rem 6%'}}><Link className={styles.button} href={managementAccount ? '/account' : '/team/access'}>{managementAccount ? 'Account' : 'My access'}</Link>{workspaces.length > 1 && <button className={styles.button} onClick={() => {generation.current++;setData(null);setMembership('');setSelectedId('');}}>Switch business</button>}</div>}
+      {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice} role="status">{notice}</p>}
+      <AssetRegisterClient showAppHeader={false} desktopAccess={{data, membership, onRefresh: () => void refresh(),
+        onManage: id => {const asset = data.assets.find(item => item.id === id);if(asset) openAsset(asset);},
+        onExport: () => void act(() => download(base + '/export', 'assets.csv')), renderDetails: renderAssetDetails}}/>
     </>}
     {selected && data && <TeamModal title={selected.title} subtitle={`${selected.registerName} · ${selected.year || 'Year not recorded'} · ${selected.condition}`} onClose={() => setSelectedId('')} busy={busy}>
       <div className={styles.body}>
-        <div className={styles.tabs}>{(['details', ...(data.permissions.viewMaintenance ? ['maintenance'] : []), 'documents', ...((data.permissions.viewPhotos || data.permissions.uploadPhotos) ? ['photos'] : [])] as typeof section[]).map(s => <button key={s} className={section === s ? styles.primary : styles.button} aria-pressed={section === s} onClick={() => setSection(s)}>{s[0].toUpperCase() + s.slice(1)}</button>)}</div>
+        <div className={styles.tabs}>{(['details', 'maintenance', 'documents', 'photos'] as typeof section[]).map(s => <button key={s} className={section === s ? styles.primary : styles.button} aria-pressed={section === s} disabled={s === 'maintenance' ? !data.permissions.viewMaintenance : s === 'photos' ? !(data.permissions.viewPhotos || data.permissions.uploadPhotos) : false} onClick={() => setSection(s)}>{s[0].toUpperCase() + s.slice(1)}</button>)}</div>
         {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice} role="status">{notice}</p>}
         {section === 'details' && <><dl className={styles.details}>{[['Brand', selected.brand], ['Model', selected.model], ['Serial / VIN', selected.serial], ['Registration', selected.registration], ['Usage', `${selected.usage ?? 'Not recorded'} ${selected.usageMetric}`], ...(selected.values ? [['Current value (excl. VAT)', money(selected.values.current)], ['Replacement value (excl. VAT)', money(selected.values.replacement)], ['Insured value (excl. VAT)', money(selected.values.insured)]] : [])].map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{value || 'Not recorded'}</dd></div>)}</dl>
         {!edit && (data.permissions.editDetails || data.permissions.updateUsage) && <button className={styles.button} onClick={() => { setEdit(true); setPatch({}); }}>Edit permitted details</button>}
@@ -187,5 +211,5 @@ export default function TeamWorkspaceClient({ email, managed = false, management
         {(section === 'photos' && data.permissions.uploadPhotos || section === 'documents' && data.permissions.uploadDocuments) && <form onSubmit={e => { e.preventDefault(); void act(upload); }} style={{ marginTop: '1.4rem' }}><label className={styles.field}>{section === 'photos' ? 'Add a photo (up to 5 MB)' : 'Upload a document for owner review (up to 25 MB)'}<input className={styles.input} key={section} type="file" accept={section === 'photos' ? 'image/jpeg,image/png,image/webp' : '.pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt'} onChange={e => { setFile(e.target.files?.[0] || null); uploadKey.current = crypto.randomUUID(); }}/></label><button className={styles.primary} style={{ marginTop: '.8rem' }} disabled={busy || !file}>{busy ? 'Uploading…' : 'Upload'}</button></form>}
       </div><footer className={styles.footer}><button className={styles.primary} onClick={() => setSelectedId('')} disabled={busy}>Done</button></footer>
     </TeamModal>}
-  </main>;
+  </>;
 }

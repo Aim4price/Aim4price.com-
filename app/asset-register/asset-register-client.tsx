@@ -83,6 +83,8 @@ import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import DropdownOverlay from '../../components/DropdownOverlay';
 import AppHeader from '../../components/AppHeader';
+import { desktopRegisterAssets, desktopRegisterSummaries, projectTeamGroups, type TeamRegisterData } from '../../lib/team-register';
+import type { ReactNode } from 'react';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import AssetGroupManagerModal, {
   type AssetGroupReportFilters,
@@ -742,7 +744,7 @@ type OpenPartnerNote = {
   updatedAtIso: string;
 };
 
-type RegisterAsset = {
+export type RegisterAsset = {
   id: string;
   userId: string;
   registerId: string | null;
@@ -6244,18 +6246,26 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
 }
 
 export default function AssetRegisterClient({
+  desktopAccess,
   showAppHeader = true,
   registerManagementHref = '/asset-registers',
   dealerRegisterMode,
   dealerRegisterBaseHref = '/asset-register',
 }: {
 
+  desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string) => void; onRefresh: () => void; onExport: () => void; renderDetails: (id: string) => ReactNode };
   showAppHeader?: boolean;
   registerManagementHref?: string;
   dealerRegisterMode?: 'dealer' | 'client';
   dealerRegisterBaseHref?: string;
 } = {}) {
 
+  // The shared renderer must never call owner endpoints while displaying a delegated identity.
+  const ownerFetch: typeof globalThis.fetch = desktopAccess
+    ? async () => new Response(JSON.stringify({ ok: false, error: 'This action is managed by the account holder.' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+    : globalThis.fetch.bind(globalThis);
+  const valuesRestricted = Boolean(desktopAccess && !desktopAccess.data.permissions.viewValues);
+  const hiddenValue = <span className={styles.restrictedValue} aria-label="Value restricted"><span aria-hidden="true">R ••• •••</span></span>;
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [costBudgetStatusByAssetId, setCostBudgetStatusByAssetId] = useState<Record<string, AssetCostBudgetStatus>>({});
   const [budgetAssetIds, setBudgetAssetIds] = useState<Set<string>>(new Set());
@@ -6484,9 +6494,9 @@ export default function AssetRegisterClient({
   const [valueReviewAsset,setValueReviewAsset]=useState<RegisterAsset|null>(null);
   const [pendingValueAssets,setPendingValueAssets]=useState<string[]>([]);
   const valueReviewOpened=useRef(false);
-  async function reloadValueRequests(){try{const r=await fetch('/api/asset-register/value-requests',{cache:'no-store'});if(r.ok){const d=await r.json();setPendingValueAssets((d.requests||[]).filter((x:{status:string})=>x.status==='pending').map((x:{asset_id:string})=>x.asset_id));}}catch{}}
+  async function reloadValueRequests(){try{const r=await ownerFetch('/api/asset-register/value-requests',{cache:'no-store'});if(r.ok){const d=await r.json();setPendingValueAssets((d.requests||[]).filter((x:{status:string})=>x.status==='pending').map((x:{asset_id:string})=>x.asset_id));}}catch{}}
   useEffect(()=>{void reloadValueRequests();},[]);
-  useEffect(()=>{if(valueReviewOpened.current||isLoading)return;const p=new URLSearchParams(window.location.search);if(p.get('valueReview')!=='1')return;const asset=assets.find(a=>a.id===p.get('assetId'));if(asset){valueReviewOpened.current=true;const correction=asset.dealerAssetCorrection;if(p.get('replacementReview')&&correction?.id===p.get('replacementReview')&&correction.replacementPriceChanged){setValueReviewCorrectionId(correction.id);setValueReviewReplacement(correction.proposedReplacementPriceExVat??undefined);setValueReviewInitial('replacement');}setValueReviewAsset(asset);}},[assets,isLoading]);
+  useEffect(()=>{if(desktopAccess||valueReviewOpened.current||isLoading)return;const p=new URLSearchParams(window.location.search);if(p.get('valueReview')!=='1')return;const asset=assets.find(a=>a.id===p.get('assetId'));if(asset){valueReviewOpened.current=true;const correction=asset.dealerAssetCorrection;if(p.get('replacementReview')&&correction?.id===p.get('replacementReview')&&correction.replacementPriceChanged){setValueReviewCorrectionId(correction.id);setValueReviewReplacement(correction.proposedReplacementPriceExVat??undefined);setValueReviewInitial('replacement');}setValueReviewAsset(asset);}},[assets,isLoading]);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const revaluePreviewRequestSeqRef = useRef(0);
@@ -6524,7 +6534,7 @@ export default function AssetRegisterClient({
   const [saleabilityLoadError,setSaleabilityLoadError] = useState(false);
   useEffect(()=>{
     let active=true;
-    fetch('/api/asset-register/saleability',{credentials:'include'}).then(async response=>{
+    ownerFetch('/api/asset-register/saleability',{credentials:'include'}).then(async response=>{
       if(!response.ok)throw Error('Assessment load failed');
       const data=await response.json();
       if(active)setSavedSaleability(Object.fromEntries(data.items.map((item:{asset_id:string;assessment:SavedSaleability})=>[item.asset_id,item.assessment])));
@@ -6608,7 +6618,7 @@ export default function AssetRegisterClient({
     async function loadCostBudgetStatuses() {
       if (!cancelled) setBudgetLookupState('loading');
       try {
-        const response = await fetch('/api/my-invoices/budgets', {
+        const response = await ownerFetch('/api/my-invoices/budgets', {
           cache: 'no-store',
           credentials: 'include',
         });
@@ -7012,7 +7022,7 @@ export default function AssetRegisterClient({
         registerId: combinedScope ? null : input.registerId,
         scope: combinedScope ? 'combined' : 'register',
       };
-      const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
+      const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
         method: input.groupId ? 'PUT' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7123,7 +7133,7 @@ export default function AssetRegisterClient({
 
     try {
       const combinedScope = isCombinedRegisterView || targetGroup.registerId === null;
-      const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
+      const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7171,7 +7181,7 @@ export default function AssetRegisterClient({
     setAssetGroupError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(
+      const response = await ownerFetch(buildAssetGroupsApiUrl(
         group.id,
         isCombinedRegisterView || group.registerId === null,
       ), {
@@ -7207,7 +7217,7 @@ export default function AssetRegisterClient({
     setBusyFlagGroupId(group.id);
     setNotice(null);
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(undefined, group.registerId === null), {
+      const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, group.registerId === null), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7267,7 +7277,7 @@ export default function AssetRegisterClient({
     }
 
     try {
-      const response = await fetch('/api/asset-register', {
+      const response = await ownerFetch('/api/asset-register', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7502,7 +7512,7 @@ export default function AssetRegisterClient({
     ? registerSwitcherOptions.length > 0
     : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
-  const canUseOwnerOnlyAssetActions = true;
+  const canUseOwnerOnlyAssetActions = !desktopAccess;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions;
   const canManageAssetGroups =
     canUseOwnerOnlyAssetActions
@@ -7546,7 +7556,7 @@ export default function AssetRegisterClient({
       value: register.id,
       label: register.businessName || 'Asset Register',
       description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'}`,
-      currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
+      currentValueInclVat: valuesRestricted ? undefined : summaryValueInclVat(Number(register.totalValue) || 0),
     })),
     [assetRegisterMoveTargets],
   );
@@ -7593,7 +7603,7 @@ export default function AssetRegisterClient({
         value: register.id,
         label: register.businessName || 'Asset Register',
         description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'}`,
-        currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
+        currentValueInclVat: valuesRestricted ? undefined : summaryValueInclVat(Number(register.totalValue) || 0),
       })),
     [assetRegisters, activeRegister, activeRegisterId],
   );
@@ -7825,6 +7835,20 @@ export default function AssetRegisterClient({
   }
 
   useEffect(() => {
+    if (!desktopAccess) return;
+    const all = desktopRegisterAssets(desktopAccess.data, desktopAccess.membership);
+    const id = activeRegisterId || COMBINED_REGISTER_ID;
+    const items = id === COMBINED_REGISTER_ID ? all : all.filter(asset => asset.registerId === id);
+    setAssets(items);
+    setAssetGroups(projectTeamGroups(desktopAccess.data.groups || [], desktopAccess.data.assets.filter(asset => items.some(item => item.id === asset.id))));
+    setAssetRegisters(desktopRegisterSummaries(desktopAccess.data));
+    setActiveRegisterId(id);
+    setActiveRegister(desktopRegisterSummaries(desktopAccess.data).find(register => register.id === id) || null);
+    setIsLoading(false);
+  }, [desktopAccess?.data, desktopAccess?.membership]);
+
+  useEffect(() => {
+    if (desktopAccess) return;
     let mounted = true;
 
     // Keep old bookmarks working without reloading the register or losing deep links.
@@ -7838,7 +7862,7 @@ export default function AssetRegisterClient({
 
     async function loadAccountProfile() {
       try {
-        const profileResponse = await fetch('/api/account-profile', {
+        const profileResponse = await ownerFetch('/api/account-profile', {
           cache: 'no-store',
           credentials: 'include',
         });
@@ -7866,7 +7890,7 @@ export default function AssetRegisterClient({
         void loadAccountProfile();
 
         const registerUrl = buildAssetRegisterApiUrl(requestedRegisterId);
-        const assetsResponse = await fetch(registerUrl, {
+        const assetsResponse = await ownerFetch(registerUrl, {
           cache: 'no-store',
           credentials: 'include',
         });
@@ -7949,6 +7973,7 @@ export default function AssetRegisterClient({
   }, [hasAutomaticValueUpdates, activeRegisterId, isLoading, isRefreshingRegister]);
 
   async function handleRefreshAssetRegister(silent = false) {
+    if (desktopAccess) { desktopAccess.onRefresh(); return; }
     if (isLoading || isRefreshingRegister) return;
 
     const requestVersion = ++registerRequestVersion.current;
@@ -7958,7 +7983,7 @@ export default function AssetRegisterClient({
       const requestedRegisterId = readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
 
       const registerUrl = buildAssetRegisterApiUrl(requestedRegisterId);
-      const assetsResponse = await fetch(registerUrl, {
+      const assetsResponse = await ownerFetch(registerUrl, {
         cache: 'no-store',
         credentials: 'include',
       });
@@ -8013,6 +8038,7 @@ export default function AssetRegisterClient({
 
   function openChangeRegisterModal() {
     if (!canOpenRegisterSwitcher) {
+      if (desktopAccess) return;
       window.location.href = registerManagementHref;
       return;
     }
@@ -8037,6 +8063,18 @@ export default function AssetRegisterClient({
       return;
     }
 
+    if (desktopAccess) {
+      const all = desktopRegisterAssets(desktopAccess.data, desktopAccess.membership);
+      const visible = nextRegisterId === COMBINED_REGISTER_ID ? all : all.filter(asset => asset.registerId === nextRegisterId);
+      const ids = new Set(visible.map(asset => asset.id));
+      setAssets(visible);
+      setAssetGroups(projectTeamGroups(desktopAccess.data.groups || [], desktopAccess.data.assets.filter(asset => ids.has(asset.id))));
+      setActiveRegister(nextRegisterId === COMBINED_REGISTER_ID ? null : register);
+      setActiveRegisterId(nextRegisterId);
+      setExpandedAssetId(null);
+      closeChangeRegisterModal();
+      return;
+    }
     setChangingRegisterId(nextRegisterId);
 
     if (dealerRegisterMode) {
@@ -8053,7 +8091,7 @@ export default function AssetRegisterClient({
     }
 
     try {
-      const response = await fetch('/api/asset-registers', {
+      const response = await ownerFetch('/api/asset-registers', {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -8090,7 +8128,7 @@ export default function AssetRegisterClient({
     setAssetRegisterMoveGroupLoadError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(undefined, true), {
+      const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, true), {
         credentials: 'include',
       });
       const payload = await response.json() as AssetGroupApiResponse;
@@ -8119,7 +8157,7 @@ export default function AssetRegisterClient({
     setIsSavingMoveRegister(true);
     setMoveRegisterCreateError('');
     try {
-      const response = await fetch('/api/asset-registers', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moveRegisterDraft) });
+      const response = await ownerFetch('/api/asset-registers', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moveRegisterDraft) });
       const payload = await response.json() as AssetRegisterApiResponse;
       if (!response.ok || !payload.ok || !payload.register) throw new Error(payload.error || 'Could not create the register.');
       if (Array.isArray(payload.registers)) setAssetRegisters(payload.registers);
@@ -8136,7 +8174,7 @@ export default function AssetRegisterClient({
     setIsSavingValueInclusion(true);
     setValueInclusionError('');
     try {
-      const response = await fetch('/api/asset-register', { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetId: asset.id, includeInRegisterTotal: included }) });
+      const response = await ownerFetch('/api/asset-register', { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetId: asset.id, includeInRegisterTotal: included }) });
       const payload = await response.json();
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not save the value setting.');
       const updated = { ...asset, specsJson: { ...asset.specsJson, includeInRegisterTotal: included } };
@@ -8211,7 +8249,7 @@ export default function AssetRegisterClient({
       setAssetRegisterMoveError('');
 
       try {
-        const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
+        const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -8266,7 +8304,7 @@ export default function AssetRegisterClient({
 
     try {
       const moveUrl = '/api/asset-registers/move-assets';
-      const response = await fetch(moveUrl, {
+      const response = await ownerFetch(moveUrl, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -8365,7 +8403,7 @@ export default function AssetRegisterClient({
   }
 
   useEffect(() => {
-    if (assetMapActionHandledRef.current || isLoading || typeof window === 'undefined') return;
+    if (desktopAccess || assetMapActionHandledRef.current || isLoading || typeof window === 'undefined') return;
 
     const params = new URLSearchParams(window.location.search);
     const action = params.get('mapAction');
@@ -9543,11 +9581,11 @@ export default function AssetRegisterClient({
     );
     scrollToAssetCard(focusAssetId, true);
 
-    if (shouldOpenMarketplaceModal && matchingAsset) {
+    if (!desktopAccess && shouldOpenMarketplaceModal && matchingAsset) {
       window.setTimeout(() => {
         void openMarketplaceModal(matchingAsset);
       }, 0);
-    } else if (shouldOpenUpdateModal && matchingAsset) {
+    } else if (!desktopAccess && shouldOpenUpdateModal && matchingAsset) {
       window.setTimeout(() => openUpdater(matchingAsset), 0);
     }
 
@@ -9642,7 +9680,7 @@ export default function AssetRegisterClient({
     if (isCreatingAddAssetRegister) return;
     setIsCreatingAddAssetRegister(true);
     try {
-      const response = await fetch('/api/asset-registers', {
+      const response = await ownerFetch('/api/asset-registers', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...details, logoUrls: [], showLogosOnRegister: true }),
@@ -9995,7 +10033,7 @@ export default function AssetRegisterClient({
     }
     setIsSavingAssetSettings(true); setAssetSettingsError('');
     try {
-      const response = await fetch('/api/asset-register/revalue', {
+      const response = await ownerFetch('/api/asset-register/revalue', {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ assetId: editingAsset.id, selectedMethod: 'aim4price', advancedAssumptions: { maxLifetimeUsage: Math.round(lifetime) } }),
       });
@@ -10122,7 +10160,7 @@ export default function AssetRegisterClient({
     locationText: string;
     source: 'manual' | 'device';
   }): Promise<RegisterAsset> {
-    const response = await fetch('/api/asset-register/location', {
+    const response = await ownerFetch('/api/asset-register/location', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -10378,7 +10416,7 @@ export default function AssetRegisterClient({
     setAssetSettingsError('');
 
     try {
-      const response = await fetch('/api/asset-register', {
+      const response = await ownerFetch('/api/asset-register', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -10494,7 +10532,7 @@ export default function AssetRegisterClient({
     setAssetSettingsError('');
 
     try {
-      const response = await fetch('/api/asset-register/revalue', {
+      const response = await ownerFetch('/api/asset-register/revalue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -10696,7 +10734,7 @@ export default function AssetRegisterClient({
 
   async function loadFinanceAcquisitionDetails(asset: RegisterAsset) {
     try {
-      const response = await fetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
+      const response = await ownerFetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
       const data = await response.json().catch(() => null) as {
         ok?: boolean;
         acquisition?: { newlyAcquired?: boolean; acquisitionDate?: string; acquisitionAmountExVat?: number | null; note?: string; sourceDocumentReference?: string } | null;
@@ -10859,7 +10897,7 @@ export default function AssetRegisterClient({
         financeSettlementDate: draft.financeSettlementDate,
         financeReferenceNumber: draft.financeReferenceNumber,
       };
-      const response = await fetch('/api/asset-register/status', {
+      const response = await ownerFetch('/api/asset-register/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -10898,7 +10936,7 @@ export default function AssetRegisterClient({
     setAssetStatusError('');
 
     try {
-      const response = await fetch('/api/asset-register/status', {
+      const response = await ownerFetch('/api/asset-register/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -10911,7 +10949,7 @@ export default function AssetRegisterClient({
       }
 
       if (section === 'finance' && normalizedStatusDraft.financeBoughtWhen.trim()) {
-        const acquisitionResponse = await fetch('/api/asset-lifecycle', {
+        const acquisitionResponse = await ownerFetch('/api/asset-lifecycle', {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -11148,7 +11186,7 @@ export default function AssetRegisterClient({
 
   async function loadDealerTrackingStatus(assetId: string): Promise<DealerMaintenanceAccessSummary[]> {
     try {
-      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
+      const response = await ownerFetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -11168,6 +11206,7 @@ export default function AssetRegisterClient({
   }
 
   function openActionDialog(asset: RegisterAsset) {
+    if (desktopAccess) { desktopAccess.onManage(asset.id); return; }
     setOwnerAssetCommandPanel(null);
     if (typeof window !== 'undefined') {
       setOwnerCommandReturnLocation(`${window.location.pathname}${window.location.search}`);
@@ -11360,7 +11399,7 @@ export default function AssetRegisterClient({
         params.set('north', String(effectiveBounds.north));
       }
 
-      const response = await fetch(`/api/partners?${params.toString()}`, { cache: 'no-store', credentials: 'include' });
+      const response = await ownerFetch(`/api/partners?${params.toString()}`, { cache: 'no-store', credentials: 'include' });
       const payload = await response.json().catch(() => null);
       const data = payload as PartnerDirectoryApiResponse | null;
 
@@ -11648,7 +11687,7 @@ export default function AssetRegisterClient({
             ? selectedDealerShareAssetIds
             : activeShareAssets.map((asset) => asset.id)
           : [quoteAsset.id];
-        const response = await fetch('/api/asset-leads', {
+        const response = await ownerFetch('/api/asset-leads', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -11718,7 +11757,7 @@ export default function AssetRegisterClient({
     setDealerTrackingAccess([]);
     setNotice(null);
     try {
-      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(asset.id)}`, {
+      const response = await ownerFetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(asset.id)}`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -11898,7 +11937,7 @@ export default function AssetRegisterClient({
     }
 
     try {
-      const response = await fetch('/api/account-profile', {
+      const response = await ownerFetch('/api/account-profile', {
         cache: 'no-store',
         credentials: 'include',
       });
@@ -12032,7 +12071,7 @@ export default function AssetRegisterClient({
     });
 
     const uploadUrl = '/api/asset-register/uploads';
-    const response = await fetch(uploadUrl, {
+    const response = await ownerFetch(uploadUrl, {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -12104,7 +12143,7 @@ export default function AssetRegisterClient({
   }
 
   async function patchAssetMedia(asset: RegisterAsset, photos: string[], documents: AssetDocument[]): Promise<RegisterAsset> {
-    const response = await fetch('/api/asset-register', {
+    const response = await ownerFetch('/api/asset-register', {
       method: 'PATCH',
       credentials: 'include',
       headers: {
@@ -12194,7 +12233,7 @@ export default function AssetRegisterClient({
     setVaultDocumentsErrorByAssetId((current) => ({ ...current, [assetId]: '' }));
 
     try {
-      const response = await fetch(assetVaultDocumentsUrl(assetId), { cache: 'no-store' });
+      const response = await ownerFetch(assetVaultDocumentsUrl(assetId), { cache: 'no-store' });
       const data = await response.json() as VaultDocumentsResponse;
       if (!response.ok || !data.ok) {
         throw new Error(data.error || 'The linked documents could not be loaded.');
@@ -12621,7 +12660,7 @@ export default function AssetRegisterClient({
 
       if (editingAssetId !== null) {
         const manualAssetUrl = '/api/asset-register';
-        const response = await fetch(manualAssetUrl, {
+        const response = await ownerFetch(manualAssetUrl, {
           method: 'PUT',
           credentials: 'include',
           headers: {
@@ -12664,7 +12703,7 @@ export default function AssetRegisterClient({
         }
       } else {
         const manualAssetUrl = '/api/asset-register';
-        const response = await fetch(manualAssetUrl, {
+        const response = await ownerFetch(manualAssetUrl, {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -12774,7 +12813,7 @@ export default function AssetRegisterClient({
               : undefined,
             transferAction: disposalTransferAvailable(draft.reason) ? draft.transferAction : undefined,
           };
-      const response = await fetch(`/api/asset-register?id=${assetId}`, {
+      const response = await ownerFetch(`/api/asset-register?id=${assetId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -12920,7 +12959,7 @@ export default function AssetRegisterClient({
     setAcquisitionDetailsError('');
     setIsLoadingAcquisitionDetails(true);
     try {
-      const response = await fetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
+      const response = await ownerFetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
       const data = await response.json().catch(() => null) as {
         ok?: boolean;
         error?: string;
@@ -12947,7 +12986,7 @@ export default function AssetRegisterClient({
     setIsSavingAcquisitionDetails(true);
     setAcquisitionDetailsError('');
     try {
-      const response = await fetch('/api/asset-lifecycle', {
+      const response = await ownerFetch('/api/asset-lifecycle', {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13012,7 +13051,7 @@ export default function AssetRegisterClient({
     setIsPublishingMarketplace(true);
 
     try {
-      const response = await fetch('/api/marketplace', {
+      const response = await ownerFetch('/api/marketplace', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13324,7 +13363,7 @@ export default function AssetRegisterClient({
     setBusyRevalueAction(selectedMethod ?? null);
 
     try {
-      const response = await fetch('/api/asset-register/revalue', {
+      const response = await ownerFetch('/api/asset-register/revalue', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13411,7 +13450,7 @@ export default function AssetRegisterClient({
     setIsSavingPricingPreview(false);
 
     try {
-      const response = await fetch('/api/asset-register/revalue', {
+      const response = await ownerFetch('/api/asset-register/revalue', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13488,7 +13527,7 @@ export default function AssetRegisterClient({
     setIsSavingPricingPreview(true);
 
     try {
-      const response = await fetch('/api/asset-register/revalue', {
+      const response = await ownerFetch('/api/asset-register/revalue', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13540,7 +13579,7 @@ export default function AssetRegisterClient({
 
   async function handleMarkPartnerNoteNoted(noteId: string, assetId: string) {
     try {
-      const response = await fetch(`/api/asset-notes/${encodeURIComponent(noteId)}`, {
+      const response = await ownerFetch(`/api/asset-notes/${encodeURIComponent(noteId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13578,7 +13617,7 @@ export default function AssetRegisterClient({
     setBusyDealerCorrectionId(correction.id);
 
     try {
-      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}`, {
+      const response = await ownerFetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13644,7 +13683,7 @@ export default function AssetRegisterClient({
   async function handleDealerCorrectionRevaluationRetry(correction: DealerAssetCorrectionRequest) {
     setBusyDealerCorrectionId(correction.id);
     try {
-      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}/retry`, {
+      const response = await ownerFetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}/retry`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -13700,7 +13739,7 @@ export default function AssetRegisterClient({
     setBusyMaintenanceStatusId(maintenanceStatusId);
 
     try {
-      const response = await fetch(`/api/asset-maintenance-status/${encodeURIComponent(maintenanceStatusId)}`, {
+      const response = await ownerFetch(`/api/asset-maintenance-status/${encodeURIComponent(maintenanceStatusId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13735,7 +13774,7 @@ export default function AssetRegisterClient({
     setBusyMaintenanceAlertId(maintenanceAlertId);
 
     try {
-      const response = await fetch(`/api/maintenance/${encodeURIComponent(maintenanceAlertId)}/alert`, {
+      const response = await ownerFetch(`/api/maintenance/${encodeURIComponent(maintenanceAlertId)}/alert`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13770,7 +13809,7 @@ export default function AssetRegisterClient({
     setBusyLicenseRenewalAssetId(assetId);
 
     try {
-      const response = await fetch('/api/asset-register/license-alert', {
+      const response = await ownerFetch('/api/asset-register/license-alert', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -13807,7 +13846,7 @@ export default function AssetRegisterClient({
     setBusyIssueNoteStatusId(issueNoteStatusId);
 
     try {
-      const response = await fetch(`/api/asset-issue-notes/${encodeURIComponent(issueNoteStatusId)}`, {
+      const response = await ownerFetch(`/api/asset-issue-notes/${encodeURIComponent(issueNoteStatusId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -14074,7 +14113,7 @@ export default function AssetRegisterClient({
     }
 
     try {
-      const response = await fetch(reportUrl, {
+      const response = await ownerFetch(reportUrl, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -14385,7 +14424,7 @@ export default function AssetRegisterClient({
 
     if (format === 'xlsx') {
       try {
-        const response = await fetch(buildAssetOwnershipReportUrl(asset, filters, 'xlsx'), {
+        const response = await ownerFetch(buildAssetOwnershipReportUrl(asset, filters, 'xlsx'), {
           credentials: 'include',
           cache: 'no-store',
         });
@@ -14438,7 +14477,7 @@ export default function AssetRegisterClient({
 
   async function handleDownloadQr(asset: RegisterAsset) {
     try {
-      const response = await fetch(`/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=png&download=1`, {
+      const response = await ownerFetch(`/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=png&download=1`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -14763,6 +14802,7 @@ export default function AssetRegisterClient({
   }
 
   function openSummaryModal() {
+    if (desktopAccess) return;
     setActiveSummarySectionIndex(0);
     setIsSummaryModalOpen(true);
   }
@@ -14871,6 +14911,7 @@ export default function AssetRegisterClient({
   }
 
   function openExportModal() {
+    if (desktopAccess) { if (desktopAccess.data.permissions.exportAssets) desktopAccess.onExport(); return; }
     if (!assets.length) {
       return;
     }
@@ -15200,7 +15241,7 @@ export default function AssetRegisterClient({
       return;
     }
 
-    const response = await fetch(reportUrl, {
+    const response = await ownerFetch(reportUrl, {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -15307,7 +15348,7 @@ export default function AssetRegisterClient({
     setIsExporting(true);
 
     try {
-      const response = await fetch(reportUrl, {
+      const response = await ownerFetch(reportUrl, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -15410,7 +15451,7 @@ export default function AssetRegisterClient({
         return;
       }
 
-      const response = await fetch(reportUrl, { credentials: 'include', cache: 'no-store' });
+      const response = await ownerFetch(reportUrl, { credentials: 'include', cache: 'no-store' });
       if (!response.ok) {
         const data = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(data.error ?? `Failed to download the ${reportLabel.toLowerCase()} Excel file.`);
@@ -15537,7 +15578,7 @@ export default function AssetRegisterClient({
     setProjectionError(null);
 
     try {
-      const response = await fetch('/api/asset-register/projection', {
+      const response = await ownerFetch('/api/asset-register/projection', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -15852,7 +15893,7 @@ export default function AssetRegisterClient({
   }
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`}>
       {showAppHeader ? <AppHeader active="asset-register" brandAlignment="working-column" /> : null}
 
       <section className={styles.shell}>
@@ -15872,7 +15913,7 @@ export default function AssetRegisterClient({
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <div className={styles.businessRegisterTitleCard}>
-                <h1>{registerPageTitle}</h1>
+                <h1>{desktopAccess ? (activeRegister?.businessName || desktopAccess.data.name) : registerPageTitle}</h1>
                 {canOpenRegisterSwitcher ? (
                   <button
                     type="button"
@@ -15914,7 +15955,8 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
                 onClick={openSummaryModal}
-                disabled={isLoading}
+                disabled={isLoading || Boolean(desktopAccess)}
+                title={desktopAccess ? "Full summaries are managed by the account holder." : undefined}
                 aria-haspopup="dialog"
                 aria-expanded={isSummaryModalOpen}
                 aria-controls="asset-register-summary-dialog"
@@ -15948,7 +15990,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
                 onClick={openExportModal}
-                disabled={!assets.length || isLoading || isExporting}
+                disabled={!assets.length || isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
               >
                 <DownloadIcon className={styles.buttonIcon} />
                 <span>Download</span>
@@ -15960,7 +16002,7 @@ export default function AssetRegisterClient({
             selected={assetFilters}
             sort={assetSort}
             options={ASSET_FILTER_OPTIONS}
-            sortOptions={ASSET_SORT_OPTIONS}
+            sortOptions={valuesRestricted ? ASSET_SORT_OPTIONS.filter(option => option.value === "all") : ASSET_SORT_OPTIONS}
             onRemove={(value) => setAssetFilters((current) => current.filter((key) => key !== value))}
             onResetSort={() => setAssetSort('all')}
             onClear={clearAssetFilter}
@@ -15968,11 +16010,11 @@ export default function AssetRegisterClient({
 
           {isAssetFilterOpen ? (
             <AssetFilterDialog
-              groups={ASSET_FILTER_GROUPS}
+              groups={desktopAccess ? ASSET_FILTER_GROUPS.filter(group => group.label === "Property") : ASSET_FILTER_GROUPS}
               options={ASSET_FILTER_OPTIONS}
               selected={assetFilters}
               sort={assetSort}
-              sortOptions={ASSET_SORT_OPTIONS}
+              sortOptions={valuesRestricted ? ASSET_SORT_OPTIONS.filter(option => option.value === "all") : ASSET_SORT_OPTIONS}
               resultCount={filteredAssets.length}
               onGroupChange={selectAssetFilterGroup}
               onSortChange={setAssetSort}
@@ -15994,7 +16036,7 @@ export default function AssetRegisterClient({
                 <div className={`${styles.modalHeader} ${styles.changeRegisterModalHeader}`}>
                   <div className={styles.modalHeaderText}>
                     <h3 id="asset-register-change-title">Change asset register</h3>
-                    <p>{dealerRegisterMode ? 'Choose your dealership register or a client register.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
+                    <p>{desktopAccess ? 'Choose an asset register you have access to.' : dealerRegisterMode ? 'Choose your dealership register or a client register.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
                   </div>
 
                   <button
@@ -16022,14 +16064,14 @@ export default function AssetRegisterClient({
                     />
                   </label>
 
-                  <Link
+                  {!desktopAccess && <Link
                     href={registerManagementHref}
                     className={`${accountStyles.ghostButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>Manage</span>
-                  </Link>
+                  </Link>}
                 </div>
 
                 <div className={`${styles.changeRegisterList} ${registerPickerStyles.registerRows}`} role="group" aria-label="Available asset registers">
@@ -16047,7 +16089,7 @@ export default function AssetRegisterClient({
                           value: register.id,
                           label: register.businessName || 'Asset Register',
                           description: `${assetCountLabel}${isChangingThisRegister ? ' · Opening...' : isCurrentRegister ? ' · Current' : ''}`,
-                          currentValueInclVat: summaryValueInclVat(Number(register.totalValue) || 0),
+                          currentValueInclVat: valuesRestricted ? undefined : summaryValueInclVat(Number(register.totalValue) || 0),
                         }}
                         selected={isCurrentRegister}
                         current={isCurrentRegister}
@@ -16139,12 +16181,12 @@ export default function AssetRegisterClient({
               <div className={`${styles.summaryRow} ${styles.heroSummaryRow} ${styles.assetSummaryTrack}`}>
                 <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile}`}>
                   <div className={styles.heroSummaryHead}>
-                    <span className={styles.heroSummaryTitle}>Register value</span>
+                    <span className={styles.heroSummaryTitle}>{desktopAccess ? "Accessible value" : "Register value"}</span>
                   </div>
 
                   <div className={styles.heroSummaryValueRow}>
                     <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
-                      {money(displayedRegisterValue)}
+                      {valuesRestricted ? hiddenValue : money(displayedRegisterValue)}
                       {registerValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
                     </strong>
                   </div>
@@ -16312,7 +16354,7 @@ export default function AssetRegisterClient({
 
                   <div className={styles.heroSummaryValueRow}>
                     <strong className={`${styles.heroSummaryValue} ${styles.heroRegisterValue}`}>
-                      {money(displayedReplacementValue)}
+                      {valuesRestricted ? hiddenValue : money(displayedReplacementValue)}
                       {replacementValueVatMode === 'excluded' ? <span className={styles.heroRegisterVatSuffix}> + VAT</span> : null}
                     </strong>
                   </div>
@@ -16520,9 +16562,9 @@ export default function AssetRegisterClient({
                               <div className={styles.valueBlock}>
                                 <div className={styles.assetValueVatDisplay}>
                                   <div className={styles.assetValueVatText}>
-                                    <span className={styles.assetGroupValueLabel}>Combined value</span>
+                                    <span className={styles.assetGroupValueLabel}>{desktopAccess ? "Accessible value" : "Combined value"}</span>
                                     <div className={styles.assetValueVatAmountRow}>
-                                      <strong className={styles.assetGroupCombinedValue}>{money(displayedGroupValue)}</strong>
+                                      <strong className={styles.assetGroupCombinedValue}>{valuesRestricted ? hiddenValue : money(displayedGroupValue)}</strong>
                                       <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
                                     </div>
                                     <span>{groupVatLabel}</span>
@@ -16800,7 +16842,7 @@ export default function AssetRegisterClient({
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
                                   <div className={styles.assetValueVatAmountRow}>
-                                    <strong>{money(displayedAssetValue)}</strong>
+                                    <strong>{valuesRestricted ? hiddenValue : money(displayedAssetValue)}</strong>
                                     <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
                                   </div>
                                   <span>{assetValueVatLabel}{estimateNeedsUpdate ? ' · Previous value' : ''}</span>
@@ -16841,7 +16883,7 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
 
-                              {null}
+                              {desktopAccess && <button type="button" disabled className={`${styles.optionsButton} ${styles.cardOptionsButton}`} title="Sharing is managed by the account holder."><ShareIcon className={styles.buttonIcon}/><span>Share</span></button>}
 
                               <button
                                 type="button"
@@ -16872,7 +16914,7 @@ export default function AssetRegisterClient({
 
                         </div>
 
-                        {isExpanded ? (
+                        {isExpanded ? (desktopAccess ? <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>{desktopAccess.renderDetails(asset.id)}</div> :
                           <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>
                             {(() => {
                               const detailPhotos = getDetailPhotos(asset);
@@ -20411,7 +20453,7 @@ export default function AssetRegisterClient({
           initialAnswers={savedSaleability[saleabilityAsset.id]?.answers}
           onSave={async answers=>{
             const assetId=saleabilityAsset.id;
-            const response=await fetch('/api/asset-register/saleability',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId,answers,basis:saleabilityBasis(saleabilityAsset)})});
+            const response=await ownerFetch('/api/asset-register/saleability',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId,answers,basis:saleabilityBasis(saleabilityAsset)})});
             const data=await response.json();
             if(!response.ok)throw Error(data.error||'Could not save assessment.');
             setSavedSaleability(current=>({...current,[assetId]:data.assessment}));
@@ -21474,7 +21516,7 @@ export default function AssetRegisterClient({
                   </label>
 
                   <div className={styles.marketplaceAssetSummaryValue}>
-                    <span>Register value</span>
+                    <span>{desktopAccess ? "Accessible value" : "Register value"}</span>
                     <strong>{money(marketplaceAsset.value * (marketplaceVatIncluded ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1))}</strong>
                     <small>{marketplaceVatIncluded ? 'Incl. VAT' : 'Excl. VAT'}</small>
                   </div>

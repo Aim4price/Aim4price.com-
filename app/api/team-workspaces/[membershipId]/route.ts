@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getDb } from '../../../../lib/db';
-import { loadTeamScope, teamAssetList, lockTeamScope, auditTeam } from '../../../../lib/team-access';
+import { loadTeamScope, teamAssetList, teamRegisterGroups, lockTeamScope, auditTeam } from '../../../../lib/team-access';
 import { teamJson, teamError } from '../../../../lib/team-access-http';
 import { validateTeamPatch, TeamAccessError } from '../../../../lib/team-access-policy';
 import { updateSharedAssetDetails } from '../../../../lib/asset-register-db';
@@ -15,7 +15,8 @@ type Context = {
 export async function GET(_request: NextRequest, { params }: Context) {
     try {
         const scope = await loadTeamScope(params.membershipId);
-        return teamJson({ name: scope.businessName, permissions: scope.grant.permissions, assets: await teamAssetList(scope), version: scope.grant.version });
+        const assets = await teamAssetList(scope);
+        return teamJson({ name: scope.businessName, permissions: scope.grant.permissions, assets, groups: await teamRegisterGroups(scope, assets), version: scope.grant.version });
     }
     catch (error) {
         return teamError(error);

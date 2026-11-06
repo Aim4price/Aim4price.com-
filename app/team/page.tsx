@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { getAnyServerSession } from '../../lib/auth-session';
 import { getManagedTeamActor } from '../../lib/team-login';
@@ -11,6 +12,7 @@ export default async function Page({ searchParams }: { searchParams?: { business
   const session = await getAnyServerSession();
   const managementAccount = Boolean(session?.user && await canManageTeamAccess());
   const managed = session?.user ? null : await getManagedTeamActor();
-  const email = session?.user?.email || managed?.username || managed?.email;
+  if (managed) redirect('/asset-register');
+  const email = session?.user?.email;
   return <>{!managed && <AppHeader active="none"/>}{email ? <TeamWorkspaceClient email={email} managed={Boolean(managed)} managementAccount={managementAccount} initialWorkspace={typeof searchParams?.workspace === "string" ? searchParams.workspace : ""}/> : <TeamLogin business={typeof searchParams?.business === 'string' ? searchParams.business : ''}/>}</>;
 }

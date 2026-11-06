@@ -4,6 +4,9 @@ on:
     paths:
       - 'lib/team-access*.ts'
       - 'lib/team-login.ts'
+      - 'lib/team-register.ts'
+      - 'app/asset-register/**'
+      - 'scripts/verify-desktop-register.cjs'
       - 'app/api/team-*/**'
       - 'app/account/team-access/**'
       - 'app/team/**'
@@ -41,8 +44,11 @@ jobs:
       - run: node --test tests/team-access.test.cjs
       - run: node scripts/verify-team-access.cjs
       - run: node scripts/verify-sharing-usage.cjs
+      - run: node scripts/verify-desktop-register.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: team-access-screenshots
-          path: .next/team-access-validation
+          path: |
+            .next/team-access-validation
+            .next/desktop-validation

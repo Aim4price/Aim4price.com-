@@ -4,7 +4,7 @@ const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('pup
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const cssMaps={};
-const stubs={'components/WebsitePortal':'exports.createPortal=(children,target)=>require("react-dom").createPortal(children,target);','components/SwitchAccountButton':'module.exports=()=>null;'};
+const stubs={'components/WebsitePortal':'exports.createPortal=(children,target)=>require("react-dom").createPortal(children,target);','components/SwitchAccountButton':'module.exports=()=>null;', 'app/asset-register/asset-register-client':'module.exports=({desktopAccess:d})=>require("react").createElement("div",null,...d.data.assets.map(a=>require("react").createElement("article",{key:a.id},require("react").createElement("h2",null,a.title),require("react").createElement("button",{onClick:()=>d.onManage(a.id)},"Manage"))));', 'components/team/DesktopAccessHeader':'module.exports=()=>null;'};
 function cssModule(file){
  if(cssMaps[file])return cssMaps[file];
  const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
@@ -22,13 +22,13 @@ function cssModule(file){
   rule.selector=selector;
  });
  sheet.walkDecls('composes',decl=>{
-  const match=decl.value.match(/^(\w+) from ['"](.+)['"]$/);
+  const match=decl.value.match(/^([\w ]+) from ['"](.+)['"]$/);
   assert(match,'Unsupported CSS composition: '+decl.value);
   const dependency=path.posix.normalize(path.posix.join(path.posix.dirname(file),match[2]));
   const composed=cssModule(dependency);
   const key=decl.parent.selector.slice(prefix.length+1);
-  assert(map[key]&&composed[match[1]],'Missing composed class');
-  map[key]+=' '+composed[match[1]];
+  assert(map[key],'Missing composed class');
+  for(const name of match[1].split(' ')){assert(composed[name],'Missing composed class '+name);map[key]+=' '+composed[name];}
   decl.remove();
  });
  sheets.push(sheet.toString());modules[file]='module.exports='+JSON.stringify(map);
@@ -149,7 +149,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Cancel');await click('Manage');await click('Login status');await click('Remove user');await assertFits();
  await click('Remove user');await page.waitForFunction(()=>document.body.textContent.includes('No desktop users yet.'));
  assert.deepEqual(await page.evaluate(()=>window.saved),{action:'remove',id:'member-a',version:1});
- await mount('member');await click('Open workspace');await click('Open asset →');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);
+ await mount('member');await page.waitForFunction(()=>document.body.textContent.includes('Landini Super 110'));await click('Manage');await page.waitForSelector('[role=dialog]');await assertFits();assert.equal(await page.evaluate(()=>document.body.textContent.includes('987654')),false);
  await click('Edit permitted details');await fillLabel('Brand','Landini updated');await click('Save changes');await page.waitForFunction(()=>window.updated);assert.deepEqual(await page.evaluate(()=>window.updated.patch),{brand:'Landini updated'});
  await page.screenshot({path:'.next/team-access-validation/member-details-desktop.png'});await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Engine service'));await click('Mark completed');await page.waitForSelector('textarea');await page.locator('textarea').fill('Changed engine oil and checked filters.');await fillLabel('Service company','Workshop');await fillLabel('Mechanic','Technician');await click('Confirm completed');await page.waitForFunction(()=>window.requests.some(r=>r.method==='POST'&&r.url.endsWith('/maintenance')));
  await click('Documents');await page.waitForFunction(()=>document.body.textContent.includes('Operator manual'));

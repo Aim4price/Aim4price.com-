@@ -27,6 +27,8 @@ async function setup() {
  const login=load('lib/team-login.ts',{'node:crypto':require('node:crypto'),'node:util':require('node:util'),'next/headers':{cookies:()=>({get:()=>cookieToken?{value:cookieToken}:undefined})},'./db':{getDb:()=>pool},'./team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy});
  const service=load('lib/team-access.ts',{
   './team-login':login,
+  './asset-groups':{listAssetGroups:async()=>[]},
+  './team-register':load('lib/team-register.ts'),
   './asset-history-schema':{setAssetHistoryActor:async()=>{}},
   './db':{getDb:()=>pool},'./auth-session':{getAnyServerSession:async()=>session},
   './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business'})},
@@ -521,4 +523,19 @@ test('@business usernames and full personal emails have unambiguous sign-in rout
  }
  for(const name of ['staff@example.com','bad@@farm','@farm','staff@','staff name','staff@farm.co.za'])assert.equal(policy.isDesktopUsername(name),false);
  assert.equal(policy.isEmailLogin('person@example.com'),true);
+});
+
+test('normal register hierarchy excludes forbidden members and private owner metadata',()=>{
+ const {projectTeamGroups,desktopRegisterAssets,desktopRegisterSummaries}=load('lib/team-register.ts');
+ const visible=policy.projectTeamAsset({...asset(aId,reg1),kind:'tractor',specsJson:{secretFinance:987654,includeInRegisterTotal:false}}, {permissions:{...policy.EMPTY_TEAM_PERMISSIONS}},'Farm',{value:500,metric:'hours'});
+ const groups=[{id:'group',userId:'PRIVATE_OWNER',registerId:reg1,name:'Farm machinery',valueMode:'included_in_primary',privateNote:'PRIVATE NOTE',members:[{assetId:otherId,role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0},{assetId:aId,role:'member',relationship:'grouped',countsTowardTotal:true,sortOrder:1}],createdAtIso:'PRIVATE DATE',updatedAtIso:'PRIVATE DATE'}, {id:'hidden',members:[{assetId:bId,role:'primary'}]}];
+ const projected=projectTeamGroups(groups,[visible]);
+ assert.equal(projected.length,1);assert.deepEqual(projected[0].members.map(m=>m.assetId),[aId]);assert.equal(projected[0].valueMode,'separate');
+ const serialized=JSON.stringify(projected);assert(!serialized.includes(otherId));assert(!serialized.includes('PRIVATE'));assert(!serialized.includes('hidden'));
+ const data={name:'Farm',assets:[visible],permissions:policy.EMPTY_TEAM_PERMISSIONS,groups:projected,version:1};
+ const rendered=desktopRegisterAssets(data,'grant');assert.equal(rendered[0].value,0);assert.equal(rendered[0].kind,'tractor');assert.deepEqual(rendered[0].specsJson,{includeInRegisterTotal:false});
+ assert(!JSON.stringify(rendered).includes('987654'));assert.equal(desktopRegisterSummaries(data)[0].totalValue,0);
+ data.assets=[{...visible,values:{current:100,replacement:200,insured:150},includeInRegisterTotal:true}];
+ assert.equal(desktopRegisterSummaries(data)[0].totalValue,100);
+ assert.equal(desktopRegisterAssets(data,'grant')[0].value,100);
 });
