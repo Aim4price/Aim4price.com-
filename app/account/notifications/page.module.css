@@ -50,3 +50,18 @@
 @media (max-width: 700px) {
   :global(:where(html:not(:has([data-website-canvas])))) .options .categories { grid-template-columns:minmax(0,1fr); }
 }
+
+/* Keep notification artwork distinct without changing the row or toggle layout. */
+.options .notificationIcon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 2.15rem;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid var(--app-line, #cce1d7);
+  border-radius: .7rem;
+  background: var(--app-surface-soft, #eaf4ef);
+  color: var(--app-accent, #237457);
+  pointer-events: none;
+}
+.notificationIcon svg { display:block; width:1.35rem; height:1.35rem; }
