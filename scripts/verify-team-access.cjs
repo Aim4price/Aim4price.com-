@@ -95,6 +95,28 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function assertFits(){assert(await page.$eval('[role=dialog]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1;}),'Dialog bounds');}
  await mount('login');await fillLabel('Username','staff@farm');await fillLabel('Password','Initial-password-123');await page.evaluate(()=>{window.fetch=async(url,init)=>{window.loginRequest=JSON.parse(init.body);return {ok:false,json:async()=>({error:'Incorrect username or password.'})}}});await click('Sign in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect username or password.'));assert.deepEqual(await page.evaluate(()=>window.loginRequest),{username:'staff@farm',password:'Initial-password-123',business:'owner-a'});
  await mount('owner');await click('Manage users');await assertFits();await click('View activity');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent==='Team activity');await click('Back to users');await click('Manage');await page.waitForFunction(()=>document.querySelector('[role=dialog] h2')?.textContent === 'Manage Existing user');assert.equal(await page.$$eval('nav[aria-label="User settings"] button',els=>els.length),5);
+ // Editing actions stay visible even when all permission groups are expanded.
+ async function assertEditorControlsVisible(){
+   assert(await page.evaluate(()=>{
+     const dialog=document.querySelector('[role=dialog]');
+     const nav=dialog.querySelector('nav[aria-label="User settings"]');
+     const footer=dialog.querySelector('form > footer');
+     const bounds=dialog.getBoundingClientRect();
+     return [nav,footer].every(el=>{const r=el.getBoundingClientRect();return r.top>=bounds.top&&r.bottom<=bounds.bottom&&r.bottom<=innerHeight;});
+   }),'Navigation and save controls remain visible');
+ }
+ for(const width of [1440,390]){
+   await page.setViewport({width,height:800});await click('Permissions');
+   await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});
+   await page.evaluate(()=>{
+     document.querySelectorAll('[role=dialog] details').forEach(el=>el.open=true);
+     const body=document.querySelector('[role=dialog] form > div');body.scrollTop=body.scrollHeight;
+   });
+   await assertFits();await assertEditorControlsVisible();
+   await page.screenshot({path:'.next/team-access-validation/manage-permissions-scrolled-'+width+'.png'});
+   await click('Login details');await assertEditorControlsVisible();
+ }
+ await page.setViewport({width:1440,height:1000});
  await fillLabel('Name','Updated user');await click('Permissions');await page.waitForSelector('input[type=checkbox]');await click('Login details');assert.equal(await page.$eval('input[maxlength="100"]',el=>el.value),'Updated user');
  acceptDiscard=false;await click('All users');assert(await page.$('nav[aria-label="User settings"]'));acceptDiscard=true;
  await click('Save access');await page.waitForFunction(()=>document.body.textContent.includes('Desktop access saved.'));assert(await page.$('nav[aria-label="User settings"]'));assert.equal(await page.$eval('input[maxlength="100"]',el=>el.value),'Updated user');

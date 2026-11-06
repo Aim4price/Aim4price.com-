@@ -249,3 +249,36 @@
  :global(:where(html:not(:has([data-website-canvas])))) .presetGrid,
  :global(:where(html:not(:has([data-website-canvas])))) .documentModes { grid-template-columns:1fr; }
 }
+
+/* Keep the editor controls reachable while only its content scrolls. */
+.editorForm { display:flex; flex-direction:column; min-height:0; overflow:hidden; }
+.refined .editorBody { padding-top:1rem; padding-bottom:1.25rem; overscroll-behavior:contain; }
+.refined .settingsLayout { grid-template-columns:10.5rem minmax(0,1fr); gap:1.5rem; }
+.refined .settingsNav { position:sticky; top:0; }
+.refined .settingsContent { gap:1rem; min-height:0; }
+.refined .editorToolbar { margin-bottom:1rem; }
+.editorForm.refined > .footer { margin:0; padding:.85rem 2rem; background:var(--app-surface,#fff); }
+.refined .permissionPanel { gap:.75rem; }
+.presetGrid { grid-template-columns:repeat(5,minmax(0,1fr)); gap:.45rem; }
+.presetGrid .preset { align-items:center; justify-content:center; min-height:2.8rem; padding:.6rem .35rem; border-radius:.75rem; }
+.presetGrid .preset strong { font-size:.85rem; white-space:nowrap; }
+.presetDescription { margin:0; min-height:1.5em; color:var(--app-muted,#63766f); font-size:.82rem; line-height:1.5; }
+.permissionGroup summary { display:flex; align-items:center; gap:.5rem; padding:.8rem 1rem; list-style:none; }
+.permissionGroup summary::-webkit-details-marker { display:none; }
+.permissionGroup summary span { float:none; margin-left:auto; }
+.permissionGroup summary::after { content:''; width:.4rem; height:.4rem; flex-shrink:0; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg); margin-left:.5rem; margin-top:-.2rem; }
+.permissionGroup[open] > summary::after { transform:rotate(225deg); margin-top:.2rem; }
+.refined .statusRow { align-items:center; padding:1rem; border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; }
+.refined .statusRow:last-child { border-bottom:1px solid var(--app-line,#d8e5dd); }
+.refined .statusRow p { font-weight:400; font-size:.85rem; }
+.emptyDocuments { padding:1rem; border:1px dashed var(--app-line,#d8e5dd); border-radius:.85rem; font-size:.9rem; }
+.emptyDocuments p { margin:.4rem 0 0; color:var(--app-muted,#63766f); line-height:1.5; }
+.editorForm button:focus-visible,.editorForm summary:focus-visible { outline:3px solid var(--app-accent,#28815f); outline-offset:3px; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .settingsLayout { grid-template-columns:minmax(0,1fr); gap:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .settingsNav { z-index:1; grid-template-columns:repeat(5,max-content); overflow-x:auto; border:1px solid var(--app-line,#d8e5dd); }
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .settingsNav button { white-space:nowrap; padding:.65rem; font-size:.8rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .presetGrid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+ :global(:where(html:not(:has([data-website-canvas])))) .editorForm.refined > .footer { padding:.75rem 1.1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .statusRow { align-items:stretch; }
+}
