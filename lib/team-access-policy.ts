@@ -84,6 +84,9 @@ export type TeamAsset = {
     usage: number | null;
     usageMetric: string;
     photoCount: number;
+    kind?: string;
+    includeInRegisterTotal?: boolean;
+    registerIncludedInCombinedTotals?: boolean;
     values?: {
         current: number;
         replacement: number | null;
@@ -100,6 +103,8 @@ export function projectTeamAsset(asset: {
     serialNumber: string;
     licenseRegistrationNumber: string;
     condition: string;
+    kind?: string;
+    specsJson?: Record<string, unknown>;
     photos: string[];
     value: number;
     replacementPriceExVat: number | null;
@@ -109,7 +114,8 @@ export function projectTeamAsset(asset: {
     metric: string;
 }): TeamAsset {
     const result: TeamAsset = {
-        id: asset.id, registerId: asset.registerId, registerName, title: asset.title, brand: asset.brandName, model: asset.modelName,
+        includeInRegisterTotal: asset.specsJson?.includeInRegisterTotal !== false,
+        kind: asset.kind, id: asset.id, registerId: asset.registerId, registerName, title: asset.title, brand: asset.brandName, model: asset.modelName,
         year: asset.yearModel, serial: asset.serialNumber, registration: asset.licenseRegistrationNumber, condition: asset.condition,
         usage: usage.value, usageMetric: usage.metric, photoCount: grant.permissions.viewPhotos ? asset.photos.length : 0,
     };

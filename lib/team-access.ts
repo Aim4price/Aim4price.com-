@@ -5,6 +5,8 @@ import { setAssetHistoryActor } from './asset-history-schema';
 import { getAnyServerSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
 import { sharingPlan } from './sharing-foundation';
+import { listAssetGroups } from './asset-groups';
+import { projectTeamGroups } from './team-register';
 import { listAssetRegisters } from './asset-registers';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAccountDocuments } from './account-documents';
@@ -113,7 +115,13 @@ export async function listTeamOwnerAssets(ownerId: string) {
 export async function teamAssetList(scope: TeamScope) {
     const registers = await listAssetRegisters(scope.grant.ownerId);
     const assets = (await listTeamOwnerAssets(scope.grant.ownerId)).filter(a => teamCanAccessAsset(scope.grant, a));
-    return assets.map(asset => projectTeamAsset(asset, scope.grant, registers.find(r => r.id === asset.registerId)?.businessName || 'Asset register', resolveAssetUsage({ kind: asset.kind, hours: asset.hours, lifeWorkedPercent: asset.lifeWorkedPercent, specsJson: asset.specsJson })));
+    return assets.map(asset => ({
+        ...projectTeamAsset(asset, scope.grant, registers.find(r => r.id === asset.registerId)?.businessName || 'Asset register', resolveAssetUsage({ kind: asset.kind, hours: asset.hours, lifeWorkedPercent: asset.lifeWorkedPercent, specsJson: asset.specsJson })),
+        registerIncludedInCombinedTotals: registers.find(r => r.id === asset.registerId)?.includeInCombinedTotals !== false,
+    }));
+}
+export async function teamRegisterGroups(scope: TeamScope, assets: Awaited<ReturnType<typeof teamAssetList>>) {
+    return projectTeamGroups(await listAssetGroups(scope.grant.ownerId), assets);
 }
 export async function teamDocuments(scope: TeamScope) {
     if (!scope.grant.documentIds.length)

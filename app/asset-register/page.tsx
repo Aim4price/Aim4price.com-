@@ -1,3 +1,6 @@
+import { getAnyServerSession } from '../../lib/auth-session';
+import { getManagedTeamActor } from '../../lib/team-login';
+import TeamWorkspaceClient from '../team/team-workspace-client';
 import AnnualReviewNotice from '../../components/AnnualReviewNotice';
 import { redirect } from "next/navigation";
 import { getAccountProfile } from "../../lib/account-profile";
@@ -14,6 +17,9 @@ export default async function AssetRegisterPage({
 }: {
   searchParams?: { dealerView?: string; registerId?: string };
 }) {
+  const personal = await getAnyServerSession();
+  const managed = personal?.user ? null : await getManagedTeamActor();
+  if (managed) return <TeamWorkspaceClient email={managed.username || managed.email} managed/>;
   const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({

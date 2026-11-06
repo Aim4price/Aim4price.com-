@@ -41831,3 +41831,12 @@ button.documentOpenLink {
   scrollbar-gutter: auto;
   padding-right: .15rem !important;
 }
+
+/* Delegated users share the register layout; monetary placeholders contain no private amount. */
+.restrictedValue { display:inline-block; cursor:not-allowed; }
+.restrictedValue > span { filter:blur(7px); user-select:none; pointer-events:none; }
+.delegatedRegister .metricSummaryTile,
+.delegatedRegister .summaryBreakdownTile,
+.delegatedRegister .assetMetaRow,
+.delegatedRegister .manualValueNotice { display:none; }
+.delegatedRegister button:disabled { cursor:not-allowed; opacity:.45; }
