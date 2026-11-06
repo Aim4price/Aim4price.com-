@@ -35,6 +35,7 @@ test('blocked login visits render a switch action instead of redirecting back to
  let status='suspended',signedIn=true,accountType='owner';
  const Switch=()=>null;
  const {default:Page}=load('app/auth/page.tsx',{
+  '../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
   '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),'../../components/AppHeader':()=>null,'../../components/SwitchAccountButton':Switch,'./page.module.css':{},
   'next/navigation':{redirect:path=>{throw Error('redirect:'+path)}},
   '../../lib/account-access':{getAccountAccess:async()=>({isActive:status==='active',isAdmin:false})},

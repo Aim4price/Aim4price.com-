@@ -7,6 +7,8 @@ on:
       - 'app/api/team-*/**'
       - 'app/account/team-access/**'
       - 'app/team/**'
+      - 'app/auth/**'
+      - 'scripts/verify-sharing-usage.cjs'
       - 'components/team/**'
       - 'app/business/join/business-signup.tsx'
       - 'lib/auth-session.ts'
@@ -14,6 +16,7 @@ on:
       - 'database/migrations/143-desktop-team-access.sql'
       - 'database/migrations/144-owner-managed-desktop-logins.sql'
       - 'database/migrations/152-desktop-login-usernames.sql'
+      - 'database/migrations/153-desktop-username-lookup.sql'
       - 'tests/team-access.test.cjs'
       - 'scripts/verify-team-access.cjs'
       - '.github/workflows/team-access-validation.yml'
@@ -37,6 +40,7 @@ jobs:
       - run: npm run typecheck
       - run: node --test tests/team-access.test.cjs
       - run: node scripts/verify-team-access.cjs
+      - run: node scripts/verify-sharing-usage.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -87,6 +87,7 @@ test('free Business and Dealer account pages open the real account with invoices
  for(const role of ['business','dealer']) {
   const profile={accountType:role,accountStatus:'active',userId:'shared-user'};
   const page=load('app/account/page.tsx',{
+   '../../lib/team-login':{getManagedTeamActor:async()=>null},
    '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
    '../../lib/account-profile':{getAccountProfile:async()=>profile,getAccountScanPinStatus:async()=>{throw Error('Shared account must not load paid QR controls');}},
    '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
@@ -99,6 +100,7 @@ test('free Business and Dealer account pages open the real account with invoices
 });
 test('suspended free accounts still follow the account access block',async()=>{
  const page=load('app/account/page.tsx',{
+   '../../lib/team-login':{getManagedTeamActor:async()=>null},
   '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
   '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'suspended'})},
   '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},

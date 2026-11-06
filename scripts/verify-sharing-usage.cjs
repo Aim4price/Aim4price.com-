@@ -56,8 +56,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 (async()=>{
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true});
  try{
- const page=await browser.newPage();const requests=[],errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
- await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
+ const page=await browser.newPage();const requests=[],errors=[],logins=[];let desktopSuccess=false;page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
+ await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/team-login'||u.pathname==='/api/auth/sign-in/email'){logins.push({path:u.pathname,body:JSON.parse(r.postData())});return r.respond({status:desktopSuccess&&u.pathname==='/api/team-login'?200:401,contentType:'application/json',body:desktopSuccess?'{}':JSON.stringify({error:'Incorrect credentials',message:'Incorrect credentials'})});}if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
  const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
  await page.setViewport({width:1440,height:1000});
  async function render(module,props,url='/'){
@@ -82,7 +82,19 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const geometry=await page.evaluate(()=>['What would you like to use Aim4price for?','Which best describes your work?'].map(label=>document.querySelector('[aria-label^="'+label+'"]')?.getBoundingClientRect().top));
  assert(Math.abs(geometry[0]-geometry[1])<2,'Account type and work controls align');
  await page.screenshot({path:'/tmp/sharing-signup-alignment.png',fullPage:true});
+ // The normal login form routes usernames and personal emails to separate authenticators.
+ await render('app/auth/auth-client',{},'/auth#login');await page.waitForSelector('input[autocomplete="username"]');
+ assert.ok(await page.evaluate(()=>document.body.textContent.includes('Email address or username')));
+ await page.locator('input[autocomplete="username"]').fill('office.user');await page.locator('input[autocomplete="current-password"]').fill('Desktop-password-123');
+ await click('Forgot password?');await page.waitForFunction(()=>document.body.textContent.includes('Ask your business owner'));assert.equal(logins.length,0);assert.equal(new URL(page.url()).hash,'#login');
+ fs.mkdirSync('.next/team-access-validation',{recursive:true});await page.screenshot({path:'.next/team-access-validation/unified-login.png'});await click('Log in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect credentials'));
+ assert.deepEqual(logins.at(-1),{path:'/api/team-login',body:{username:'office.user',password:'Desktop-password-123',rememberMe:true}});
+ await page.locator('input[autocomplete="username"]').fill('person@example.test');await click('Log in');await page.waitForResponse(r=>r.url().includes('/sign-in/email'));
+ assert.equal(logins.at(-1).path,'/api/auth/sign-in/email');assert.equal(logins.at(-1).body.email,'person@example.test');
+ await page.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(n=>n.textContent==='Log in').disabled);
+ desktopSuccess=true;await page.locator('input[autocomplete="username"]').fill('office.user');await page.click('input[type="checkbox"]');
+ await Promise.all([page.waitForNavigation(),click('Log in')]);assert.equal(new URL(page.url()).pathname,'/team');assert.equal(logins.at(-1).body.rememberMe,false);
  await render('app/pricing/pricing-content',{});await page.waitForSelector('h1');assert(!await page.evaluate(()=>document.body.textContent.includes('x credits')));
- assert.deepEqual(errors,[]);console.log('PASS signup alignment, pricing copy, usage search, sign-out confirmation and request identity');
+ assert.deepEqual(errors,[]);console.log('PASS username/email login routing, desktop password help, remembered session choice, signup alignment, pricing copy and usage controls');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

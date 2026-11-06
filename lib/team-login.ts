@@ -33,7 +33,7 @@ export async function authenticateTeamLogin(business: string, identifier: string
   const client = await getDb().connect();
   try {
     await client.query('BEGIN');
-    const row = (await client.query(`SELECT g.id,l.password_hash FROM team_access g JOIN team_access_logins l ON l.grant_id=g.id WHERE g.owner_id=$1 AND (g.username=$2 OR (g.username IS NULL AND g.email=$2)) AND g.managed_login=true AND g.status='active' AND (g.expires_at IS NULL OR g.expires_at>now()) FOR UPDATE OF g,l`, [business, identifier.trim().toLowerCase()])).rows[0];
+    const row = (await client.query(`SELECT g.id,l.password_hash FROM team_access g JOIN team_access_logins l ON l.grant_id=g.id WHERE (($1<>'' AND g.owner_id=$1 AND (g.username=$2 OR (g.username IS NULL AND g.email=$2))) OR ($1='' AND g.username=$2 AND (SELECT count(*) FROM team_access WHERE username=$2)=1)) AND g.managed_login=true AND g.status='active' AND (g.expires_at IS NULL OR g.expires_at>now()) FOR UPDATE OF g,l`, [business, identifier.trim().toLowerCase()])).rows[0];
     // Equal-cost password check for unknown users; never reveal account existence here.
     const hash = row?.password_hash || '00000000000000000000000000000000:' + '0'.repeat(128);
     if (!await verifyTeamPassword(password, hash) || !row) throw new TeamAccessError('Incorrect username or password, or desktop access is unavailable.', 401);
