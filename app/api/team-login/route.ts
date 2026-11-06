@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     requireBusinessOrigin(request);
     const body = await businessBody(request);
     const identifier = String(body.username || body.email || '').trim().toLowerCase();
-    const business = String(body.business || '');
+    let business = String(body.business || '');
     const address = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
     try {
       await limitBusinessAction('desktop-login-ip:' + address, 30);
@@ -27,15 +27,20 @@ export async function POST(request: NextRequest) {
       throw error;
     }
     if ((await getAnyServerSession())?.user?.id) throw new TeamAccessError('Sign out of your current account before using a separate desktop login.', 409);
-    if (!business || business.length > 128 || !identifier || identifier.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError('Check the business sign-in link, username and password.', 400);
+    if ((!business && !/^[a-z0-9][a-z0-9._-]{2,39}$/.test(identifier)) || business.length > 128 || !identifier || identifier.length > 254 || typeof body.password !== 'string' || body.password.length > 128) throw new TeamAccessError(business ? 'Check the business sign-in link, username and password.' : 'Enter a valid desktop username and password.', 400);
     const token = await authenticateTeamLogin(business, identifier, body.password);
+    if (!business) {
+      const row = (await getDb().query('SELECT g.owner_id FROM team_access_sessions s JOIN team_access g ON g.id=s.grant_id WHERE s.token_hash=$1', [teamTokenHash(token)])).rows[0];
+      if (!row) throw new TeamAccessError('Desktop access is unavailable.', 403);
+      business = row.owner_id;
+    }
     const profile = await getAccountProfile({ id: business });
     if (!['owner', 'dealer'].includes(profile.accountType) || profile.accountStatus !== 'active' || await sharingPlan(business, profile.accountType) !== 'desktop') {
       await getDb().query('DELETE FROM team_access_sessions WHERE token_hash=$1', [teamTokenHash(token)]);
       throw new TeamAccessError('Desktop access is unavailable.', 403);
     }
     const response = teamJson({ ok: true });
-    response.cookies.set(TEAM_LOGIN_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: TEAM_LOGIN_AGE });
+    response.cookies.set(TEAM_LOGIN_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', ...(body.rememberMe === false ? {} : { maxAge: TEAM_LOGIN_AGE }) });
     return response;
   } catch (error) { return teamError(error); }
 }

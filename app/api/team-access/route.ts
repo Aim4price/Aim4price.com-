@@ -43,8 +43,13 @@ export async function POST(request: NextRequest) {
         }
         else if (body.action === 'send-invitation')
             grant = await prepareTeamAccessEmail(actor, String(body.id || ''), Number(body.version));
-        else if (body.action === 'save')
-            grant = await saveTeamGrant(actor, body);
+        else if (body.action === 'save') {
+            // New desktop users always have independent username/password credentials.
+            // Existing email-linked records can still be edited without changing identity.
+            if (!body.id && (body.loginType === 'existing' || typeof body.username !== 'string' || !body.username.trim()))
+                throw new TeamAccessError('Enter a username and password for this desktop user.', 400);
+            grant = await saveTeamGrant(actor, body.id ? body : { ...body, email: '', loginType: 'managed' });
+        }
         else
             throw new TeamAccessError('Unsupported team action.', 400);
         let warning = body.action === 'revoke' ? 'Access revoked.' : grant.managedLogin ? (body.action === 'save' && body.password ? 'Desktop password saved. Share the business sign-in link, username and password with this person. No email sent.' : 'Desktop access saved.') : 'Desktop access saved. No email sent.';

@@ -979,7 +979,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       setNotice({
         tone: "error",
         title: "Missing information",
-        text: "Enter both your email and password before logging in.",
+        text: "Enter your email address or username and password before logging in.",
       });
       return;
     }
@@ -987,6 +987,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     setIsSubmitting(true);
 
     try {
+      if (!email.includes('@')) {
+        const response = await fetch('/api/team-login', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: email, password: loginForm.password, rememberMe: loginForm.rememberMe }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Unable to log in.');
+        window.location.assign('/team');
+        return;
+      }
       const payload = await postAuth("/sign-in/email", {
         email,
         password: loginForm.password,
@@ -1571,13 +1581,14 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                 noValidate
               >
                 <label className={styles.field}>
-                  <span className={styles.label}>Email address</span>
+                  <span className={styles.label}>Email address or username</span>
                   <input
-                    type="email"
+                    type="text"
                     name="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    placeholder="name@example.com"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    placeholder="Email address or desktop username"
                     className={styles.input}
                     value={loginForm.email}
                     onChange={(event) =>
@@ -1595,7 +1606,11 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                     <button
                       type="button"
                       className={styles.inlineTextButton}
-                      onClick={() => updateHashAndMode("forgot")}
+                      onClick={() => {
+                        if (loginForm.email.trim() && !loginForm.email.includes('@')) {
+                          setNotice({ tone: "info", title: "Desktop password", text: "Ask your business owner to reset your desktop password." });
+                        } else updateHashAndMode("forgot");
+                      }}
                     >
                       Forgot password?
                     </button>

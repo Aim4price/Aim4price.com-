@@ -160,6 +160,12 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     const client = await getDb().connect();
     try {
         await client.query('BEGIN');
+        if (usernameLogin && !body.id) {
+            // Serialize the availability check across businesses, including revoked logins.
+            await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['desktop-username:' + username]);
+            if ((await client.query('SELECT id FROM team_access WHERE username=$1 LIMIT 1', [username])).rows.length)
+                throw new TeamAccessError('This username is already in use. Choose another username.', 409);
+        }
         // Serialize creation and cap account-level invitation growth.
         await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['team-access:' + actor.id]);
         let row;
