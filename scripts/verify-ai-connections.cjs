@@ -56,6 +56,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button[aria-haspopup="dialog"]');
   await page.waitForSelector('#ai-connect-panel');
   await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.querySelector('strong')?.textContent==='ChatGPT').click());
+  await page.click('button::-p-text(Connect yourself)');
   await page.waitForSelector('a[href="https://chatgpt.com/plugins/aim4price-test"]');
   assert.equal(await page.$eval('a[href="https://chatgpt.com/plugins/aim4price-test"]',e=>e.textContent),'Connect in ChatGPT');
   assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Copy address'));
@@ -83,7 +84,32 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   async function choose(name) {
     await page.evaluate(name => Array.from(document.querySelectorAll('#ai-connect-panel button')).find(button => button.querySelector('strong')?.textContent === name).click(), name);
     await page.waitForFunction(name => document.querySelector('#ai-connect-title')?.textContent === 'Connect ' + name, {}, name);
+    if (name !== 'Gemini') await page.click('button::-p-text(Connect yourself)');
   }
+  // Other is help-only; contact links carry the selection without sending anything.
+  await page.click('button::-p-text(Other)');
+  await page.waitForSelector('#ai-help-title');
+  assert.equal(await page.$('button::-p-text(Connect yourself)'), null);
+  assert.ok(await page.$eval('a[href^="https://wa.me/"]', a => new URL(a.href).searchParams.get('text').includes('assistant I use')));
+  await page.screenshot({path:path.join(evidence,'other-assisted-setup.png')});
+  await page.click('button::-p-text(Change assistant)');
+  await page.click('button::-p-text(ChatGPT)');
+  await page.waitForSelector('button::-p-text(Connect yourself)');
+  await page.screenshot({path:path.join(evidence,'connection-methods.png')});
+  await page.click('button::-p-text(Connect with help)');
+  await page.waitForSelector('#ai-help-title');
+  assert.ok(await page.$eval('a[href^="https://wa.me/"]', a => new URL(a.href).searchParams.get('text').includes('ChatGPT')));
+  for (const viewport of [{width:1280,height:650},{width:390,height:844}]) {
+    await page.setViewport(viewport);
+    await verifySetupFit('Assisted setup');
+    await page.screenshot({path:path.join(evidence,`assisted-setup-${viewport.width}.png`)});
+    await page.click('button::-p-text(Connection options)');
+    await verifySetupFit('Connection options');
+    await page.click('button::-p-text(Connect with help)');
+  }
+  await page.setViewport({width:1280,height:1000});
+  await page.click('button::-p-text(Connection options)');
+  await page.click('button::-p-text(Change assistant)');
   await choose('Gemini');
   assert.ok((await page.$eval('#ai-connect-panel', e=>e.textContent)).includes('not available yet'));
   assert.equal(await page.$('#ai-connect-panel a[target="_blank"]'), null);
@@ -148,7 +174,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
     await page.setViewport(viewport);
     await verifySetupFit('ChatGPT plugin handover');
   }
-  await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.textContent==='Change assistant').click());
+  await page.click('button::-p-text(Connection options)');
+  await page.click('button::-p-text(Change assistant)');
   await choose('Claude');
   async function verifySetupFit(label) {
     await page.waitForFunction(() => {
