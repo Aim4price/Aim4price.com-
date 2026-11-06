@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
-import { businessBody, requireBusinessOrigin } from '../../../lib/business-network-api';
+import { requireBusinessOrigin } from '../../../lib/business-network-api';
 import { loadAnnualReview, calculateAnnualPreview } from '../../../lib/annual-review-preview';
 import { annualPercentage, liveReviewYear, percentagePrice } from '../../../lib/annual-review-policy';
 import { annualReceipt, applyAnnualReview, requireAnnualYear, type AnnualConfirmation } from '../../../lib/annual-review-live';
+import { readAnnualReviewBody } from '../../../lib/annual-review-request';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const json = (value: unknown, status = 200) => NextResponse.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     requireBusinessOrigin(request);
     const user = await account();
     if (!user) return json({ error: 'Sign in with an active owner or dealer account.' }, 403);
-    const body = await businessBody(request);
+    const body = await readAnnualReviewBody(request);
     const year = requireAnnualYear(body.year);
     if (body.action === 'apply') return json(await applyAnnualReview(user.id, body as unknown as AnnualConfirmation));
     if (body.action !== 'preview' || typeof body.assetId !== 'string' || typeof body.revision !== 'string') throw new Error('Invalid review request.');

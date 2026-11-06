@@ -27,12 +27,18 @@ async function fixture() {
   await db.exec(fs.readFileSync('database/migrations/151-annual-asset-reviews.sql','utf8'));
   // Prove startup migration is repeatable.
   await db.exec(fs.readFileSync('database/migrations/151-annual-asset-reviews.sql','utf8'));
-  let failId = '', year = 2027, releases=0;
-  const query = (sql,params) => sql.includes('pg_advisory_xact_lock') ? Promise.resolve({rows:[]}) : db.query(sql,params);
+  let failId = '', year = 2027, releases=0, rollover=false, loseCommit=false, failReceipt=false;
+  const query = async (sql,params) => {
+    if(sql.includes('pg_advisory_xact_lock'))return {rows:[]};
+    if(failReceipt && sql.includes('INSERT INTO annual_asset_reviews'))throw Error('receipt storage failed');
+    const result=await db.query(sql,params);
+    if(sql==='COMMIT' && loseCommit){loseCommit=false;throw Error('connection lost after commit');}
+    return result;
+  };
   const tx = {query,release(){releases++;}};
   const pool = {query,connect:async()=>tx};
   const api = load('lib/annual-review-live.ts', {
-    './db':{getDb:()=>pool},
+    './db':{getDb:()=>pool,withDatabaseClient:async(client,work)=>{assert.equal(client,tx);return work();}},
     './asset-register-db':{prepareAssetRegisterRevaluation:async()=>{}},
     './annual-review-policy':{...policy,liveReviewYear:()=>year},
     './annual-review-preview':{loadAnnualReview:async(_email,_year,_id,userId)=>({rows:(await db.query('SELECT * FROM asset_register_items WHERE user_id=$1 ORDER BY id',[userId])).rows.map(a=>({row:{id:a.id,revision:a.revision,eligible:true,currentValue:Number(a.value),replacementPrice:a.id==='one'?100:200},includedExtras:a.id==='one'?25:0}))})},
@@ -43,11 +49,12 @@ async function fixture() {
       const value=price*.8;
       await tx.query("UPDATE asset_register_items SET value=$1,revision='v2' WHERE id=$2 AND user_id=$3",[value,input.assetId,input.userId]);
       await tx.query('INSERT INTO history VALUES($1,$2)',[input.assetId,value]);
+      if(rollover && input.assetId==='two')year=2028;
       return {newValueExVat:value,valuationRunId:42};
     }},
   });
   const input={year:2027,keepUnchanged:false,percent:3,assets:[{id:'one',revision:'v1',replacementPrice:103,proposedValue:82.4},{id:'two',revision:'v1',replacementPrice:206,proposedValue:164.8}]};
-  return {db,api,input,setFail:id=>failId=id,setYear:y=>year=y,state:async()=>({assets:(await db.query('SELECT * FROM asset_register_items ORDER BY id')).rows,history:(await db.query('SELECT * FROM history')).rows,receipts:(await db.query('SELECT * FROM annual_asset_reviews')).rows,releases})};
+  return {db,api,input,loseCommit:()=>loseCommit=true,failReceipt:()=>failReceipt=true,rollover:()=>rollover=true,setFail:id=>failId=id,setYear:y=>year=y,state:async()=>({assets:(await db.query('SELECT * FROM asset_register_items ORDER BY id')).rows,history:(await db.query('SELECT * FROM history')).rows,receipts:(await db.query('SELECT * FROM annual_asset_reviews')).rows,releases})};
 }
 test('confirmation commits all assets, history and one annual receipt; repeat is idempotent',async()=>{
   const f=await fixture();try{
@@ -94,6 +101,7 @@ test('API uses the authenticated account and never accepts a submitted owner ide
   let session={user:{id:'signed-in',email:'owner@example.com'}},allowed=true,applied=[],loaded=[],originChecked=0;
   const api=load('app/api/annual-review/route.ts',{
     'next/server':{NextResponse},
+    '../../../lib/annual-review-request':load('lib/annual-review-request.ts'),
     '../../../lib/auth-session':{getServerSession:async()=>session},
     '../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed},
     '../../../lib/business-network-api':{businessBody:r=>r.json(),requireBusinessOrigin:r=>{originChecked++;if(r.headers.get('origin')!=='https://aim4price.com')throw Error('This request must be sent from Aim4price.');}},
@@ -108,4 +116,29 @@ test('API uses the authenticated account and never accepts a submitted owner ide
   allowed=true;assert.equal((await api.POST(req())).status,200);assert.equal(applied[0][0],'signed-in');assert.equal(originChecked,4);
   await api.GET(new NextRequest('https://aim4price.com/api/annual-review?email=victim@example.com&year=2099'));
   assert.equal(loaded[0][1],2027);assert.equal(loaded[0][3],'signed-in');
+});
+
+test('crossing midnight during saving rolls back the already-written assets and history',async()=>{
+  const f=await fixture();try{
+    f.rollover();await assert.rejects(f.api.applyAnnualReview('owner',f.input),/year changed/);
+    const s=await f.state();assert.equal(s.history.length,0);assert.equal(s.receipts.length,0);
+    assert.equal(s.assets.find(a=>a.id==='one').value,'80');
+  }finally{await f.db.close();}
+});
+
+test('a lost commit acknowledgement can be retried without applying a second adjustment',async()=>{
+  const f=await fixture();try{
+    f.loseCommit();await assert.rejects(f.api.applyAnnualReview('owner',f.input),/connection lost/);
+    assert.equal((await f.state()).receipts.length,1);
+    const retry=await f.api.applyAnnualReview('owner',{...f.input,percent:10});
+    assert.equal(retry.alreadyCompleted,true);
+    const s=await f.state();assert.equal(s.history.length,2);assert.equal(s.receipts[0].adjustment_percent,'3');
+  }finally{await f.db.close();}
+});
+test('receipt storage failure rolls back all completed valuations',async()=>{
+  const f=await fixture();try{
+    f.failReceipt();await assert.rejects(f.api.applyAnnualReview('owner',f.input),/receipt storage failed/);
+    const s=await f.state();assert.equal(s.history.length,0);assert.equal(s.receipts.length,0);
+    assert.equal(s.assets.find(a=>a.id==='one').value,'80');
+  }finally{await f.db.close();}
 });

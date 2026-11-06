@@ -1,4 +1,23 @@
-import { Pool } from 'pg';
+import { Pool, type PoolClient } from 'pg';
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+const databaseScope = new AsyncLocalStorage<Pool>();
+
+/** Keep nested valuation queries on the outer transaction's connection. */
+export function withDatabaseClient<T>(client: PoolClient, work: () => Promise<T>): Promise<T> {
+  if (databaseScope.getStore()) throw new Error('Nested database scopes are not supported.');
+  const scoped = new Proxy(getDb(), {
+    get(pool, property) {
+      if (property === 'query') return client.query.bind(client);
+      if (property === 'connect' || property === 'end') {
+        return () => { throw new Error('The outer transaction owns its database connection.'); };
+      }
+      const value = Reflect.get(pool, property, pool);
+      return typeof value === 'function' ? value.bind(pool) : value;
+    },
+  });
+  return databaseScope.run(scoped, work);
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -43,6 +62,8 @@ function createPool(): Pool {
 }
 
 export function getDb(): Pool {
+  const scoped = databaseScope.getStore();
+  if (scoped) return scoped;
   if (!global.aim4pricePool) {
     global.aim4pricePool = createPool();
   }

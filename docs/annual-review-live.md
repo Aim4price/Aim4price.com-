@@ -25,3 +25,11 @@ Annual eligibility is separate from inclusion in register or combined totals. Va
 ## Validation
 
 The annual-review workflow runs calendar, input validation, ownership, transactional persistence, rollback, stale-preview, repeat-submission and unchanged-choice tests. Browser fixtures cover both admin simulation and live confirmation at desktop and mobile widths without touching production accounts.
+
+## Final reliability checks
+
+Annual batches pin all nested valuation queries to their transaction connection, so concurrent reviews do not reserve one connection and then wait for a second connection from a saturated pool. Async scopes are isolated between accounts and removed after success or failure. Schema preparation runs before asset locks.
+
+A second tab or a retry after a lost success response receives the existing completion status. The UI clears its unsaved proposal instead of presenting it as the saved result. Failed reviews offer an explicit reload action. Confirmation bodies are streamed with a 2 MB ceiling, enough for the supported 10,000 assets while rejecting oversized requests even without a Content-Length header.
+
+The regression suite covers interleaved connection scopes, rollback when the year changes during a batch, large requests, second-tab completion and reloading stale previews. No production values are changed by these checks.

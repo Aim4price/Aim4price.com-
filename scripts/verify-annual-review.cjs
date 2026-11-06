@@ -30,6 +30,7 @@ async function main() {
       if(live && r.method()==='GET' && (liveCompleted || !liveAvailable)) return r.respond({status:200,contentType:'application/json',body:JSON.stringify({available:false,year:2027,receipt:liveCompleted?{review_year:2027}:null})});
       if(live && r.method()==='POST' && JSON.parse(r.postData()).action==='apply') {
         const body=JSON.parse(r.postData());requests.push(body);
+        if(liveCompleted)return r.respond({status:200,contentType:'application/json',body:JSON.stringify({completed:true,alreadyCompleted:true,year:2027})});
         if(failSave){failSave=false;return r.respond({status:400,contentType:'application/json',body:JSON.stringify({error:'Your assets changed. Reload the review before saving.'})});}
         liveCompleted=true;
         return r.respond({status:200,contentType:'application/json',body:JSON.stringify({completed:true,year:2027})});
@@ -189,7 +190,22 @@ async function main() {
     assert.equal(requests.length,0);await click('Confirm unchanged');
     await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('All asset values are unchanged.'));
     assert.equal(requests.length,1);assert.equal(requests[0].keepUnchanged,true);
-    await click('Done');liveCompleted=false;liveAvailable=false;
+    await click('Done');
+    // A second tab completes a different choice after this tab has calculated its proposal.
+    liveCompleted=false;
+    await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('dialog[open]');
+    await click('Continue');await click('Yes, adjust prices');await click('Review results');
+    await page.waitForFunction(()=>document.querySelector('dialog').textContent.includes('2 of 2 assets calculated'));
+    await click('Next');liveCompleted=true;await click('Confirm and save');
+    await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+    assert.match(await page.$eval('main',el=>el.textContent),/already completed. No further changes were made/);
+    // A stale save can be reloaded from inside the flow without refreshing the browser.
+    liveCompleted=false;
+    await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('dialog[open]');
+    await click('Continue');await click('No, keep unchanged');await click('Next');
+    failSave=true;await click('Confirm unchanged');await click('Reload review');
+    await page.waitForFunction(()=>document.querySelector('dialog[open] #review-title')?.textContent.includes('Happy new year'));
+    await click('Close');liveCompleted=false;liveAvailable=false;
     await page.reload({waitUntil:'networkidle0'});assert.equal(await page.$('dialog[open]'),null);
     assert.match(await page.$eval('main',el=>el.textContent),/1 January 2027/);
     console.log('PASS live confirmation, failed-save retry, unchanged completion, repeat visits and prelaunch gate');
