@@ -30,13 +30,32 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  await page.waitForSelector('#asset-card-tractor-a');
  await page.$eval('#asset-card-tractor-a [aria-label="Open Asset"]',e=>e.click());
  await page.waitForFunction(()=>document.querySelector('#asset-panel-tractor-a')?.textContent.includes('SERIAL'));
- assert(await page.$eval('#asset-panel-tractor-a',e=>[...e.querySelectorAll('button')].find(b=>b.textContent==='Maintenance').disabled));
+ assert(await page.$('#asset-panel-tractor-a')); assert.equal(await page.$('header [data-access-restricted="true"]') !== null,true);
  await fs.mkdir('.next/desktop-validation',{recursive:true});await page.screenshot({path:`.next/desktop-validation/overview-${width}.png`});
  await page.$eval('#asset-card-tractor-a [data-tooltip="Manage asset"]',e=>e.click());await page.waitForSelector('[role="dialog"]');
  assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;}),'Modal fits viewport');
- assert(await page.$eval('[role="dialog"]',e=>[...e.querySelectorAll('button')].find(b=>b.textContent==='Maintenance').disabled));
+ assert(await page.$('[data-manage-action="details"]')); assert(await page.$('[data-manage-action="history"][data-access-restricted="true"]')); await page.$eval('[data-manage-action="history"]',e=>e.click()); assert(await page.$('[data-manage-action="details"]'));
  await fs.mkdir('.next/desktop-validation',{recursive:true});await page.screenshot({path:`.next/desktop-validation/register-${width}.png`});
- await page.$$eval('button',es=>es.find(e=>e.textContent==='Done').click());
+ await page.$eval('[data-manage-action="details"]',e=>e.click());
+ await page.waitForSelector('[data-asset-update-section="2"]');
+ assert(await page.$('[data-asset-update-section="3"][data-access-restricted="true"]'));
+ await page.$eval('[data-asset-update-section="2"]',e=>e.click());
+ await page.waitForSelector('[data-asset-detail-edit-target="year"] input');
+ assert.equal(await page.$eval('[data-asset-detail-edit-target="year"]',e=>e.inert),false);
+ assert(await page.$('[role="dialog"] label[inert][data-access-restricted="true"]')); assert(await page.$$eval('[role="dialog"] [data-access-restricted="true"][inert]',els=>els.some(e=>e.textContent.includes('Insured Value'))));
+ await page.screenshot({path:`.next/desktop-validation/update-${width}.png`});
+ if(width===1440){
+   const saved=page.waitForRequest(r=>r.method()==='PATCH'&&r.url().endsWith('/api/team-workspaces/membership-a'),{timeout:15000});
+   await page.focus('[data-asset-detail-edit-target="year"] input'); await page.keyboard.down('Control'); await page.keyboard.press('A'); await page.keyboard.up('Control'); await page.keyboard.type('2021'); await page.keyboard.press('Tab');
+   const payload=JSON.parse((await saved).postData()); assert.equal(payload.assetId,'tractor-a'); assert.equal(payload.patch.yearModel,2021);
+   assert.deepEqual(Object.keys(payload.patch).sort(),['brand','condition','model','title','usage','yearModel']);
+   await page.waitForNetworkIdle();
+ }
+
+ await page.$eval('[aria-label="Back to update asset menu"]',e=>e.click());
+ await page.waitForSelector('[aria-label="Close update asset menu"]');
+ await page.$eval('[aria-label="Close update asset menu"]',e=>e.click());
+ if(await page.$('[aria-label="Close asset management"]')) await page.$eval('[aria-label="Close asset management"]',e=>e.click());
  }
  await page.$eval('[aria-label="Switch Asset Register"]',e=>e.click());
  await page.waitForSelector('[aria-label="Available asset registers"]');

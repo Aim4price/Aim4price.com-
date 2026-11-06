@@ -48,6 +48,7 @@ type ActivePage =
 type BrandAlignment = 'header' | 'working-column';
 
 type AppHeaderProps = {
+  desktopContext?: { name: string; logoUrl?: string | null; onSignOut: () => void };
   active: ActivePage;
   brandAlignment?: BrandAlignment;
   signupHref?: string;
@@ -680,6 +681,7 @@ function formatDateTime(value: string | null | undefined): string {
 
 export default function AppHeader({
   active,
+  desktopContext,
   brandAlignment = 'header',
   signupHref = '/auth#signup',
   loginHref = '/auth#login',
@@ -699,13 +701,16 @@ export default function AppHeader({
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
 
-  const [session, setSession] = useState<SessionUser | null>(null);
+  const [personalSession, setSession] = useState<SessionUser | null>(null);
+  // Presentation context only: never cache or impersonate the owner session.
+  const session: SessionUser | null = desktopContext ? { id: "", name: desktopContext.name, email: "", accountType: "owner", accountSubtype: null, logoUrl: desktopContext.logoUrl } : personalSession;
+  const headerFetch: typeof globalThis.fetch = desktopContext ? async () => new Response("{}", {status: 403}) : globalThis.fetch.bind(globalThis);
   const [accountProfileLogoState, setAccountProfileLogoState] = useState<AccountProfileLogoState>({
     loaded: false,
     logoUrl: null,
   });
   const [accountProfileLogoRefreshKey, setAccountProfileLogoRefreshKey] = useState(0);
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isLoadingSession, setIsLoadingSession] = useState(!desktopContext);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -779,6 +784,7 @@ export default function AppHeader({
   }, []);
 
   useBrowserLayoutEffect(() => {
+    if (desktopContext) return;
     const cachedSession = readCachedHeaderSession();
 
     if (cachedSession !== undefined) {
@@ -815,6 +821,7 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadSession() {
+      if (desktopContext) return;
       try {
         const nextSession = await refreshCachedHeaderSession();
         if (!mounted) return;
@@ -921,7 +928,7 @@ export default function AppHeader({
       inFlight = true;
       try {
         if (showLoading) setIsLoadingNotifications(true);
-        const response = await fetch('/api/notifications', {
+        const response = await headerFetch('/api/notifications', {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -960,7 +967,7 @@ export default function AppHeader({
     function refreshCostLedgerNotifications() {
       if (!session?.id) return;
 
-      void fetch('/api/notifications', {
+      void headerFetch('/api/notifications', {
         credentials: 'include',
         cache: 'no-store',
       })
@@ -986,7 +993,7 @@ export default function AppHeader({
       ).trim();
       if (!correctionId) return;
 
-      void fetch('/api/notifications', {
+      void headerFetch('/api/notifications', {
         credentials: 'include',
         cache: 'no-store',
       })
@@ -1161,7 +1168,7 @@ export default function AppHeader({
 
     async function loadAccountLogoFromProfile() {
       try {
-        const response = await fetch('/api/account-profile', {
+        const response = await headerFetch('/api/account-profile', {
           credentials: 'include',
           cache: 'no-store',
         });
@@ -1209,7 +1216,7 @@ export default function AppHeader({
         : item,
     ));
 
-    void fetch('/api/notifications', {
+    void headerFetch('/api/notifications', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -1232,7 +1239,7 @@ export default function AppHeader({
         : item,
     ));
 
-    void fetch('/api/notifications', {
+    void headerFetch('/api/notifications', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -1263,7 +1270,7 @@ export default function AppHeader({
         : item,
     ));
 
-    void fetch('/api/notifications', {
+    void headerFetch('/api/notifications', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -1362,7 +1369,7 @@ export default function AppHeader({
     setLoadingNotificationActionId(`asset-discovery:${enquiryId}`);
 
     try {
-      const response = await fetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
+      const response = await headerFetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -1385,7 +1392,7 @@ export default function AppHeader({
     setNotificationDetailError(null);
 
     try {
-      const response = await fetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
+      const response = await headerFetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -1419,7 +1426,7 @@ export default function AppHeader({
     setNotificationDetailError(null);
 
     try {
-      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}`, {
+      const response = await headerFetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: {
@@ -1489,7 +1496,7 @@ export default function AppHeader({
     setNotificationDetailError(null);
     setNotificationDetailOutcome(null);
     try {
-      const response = await fetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
+      const response = await headerFetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -1562,7 +1569,7 @@ export default function AppHeader({
     setNotificationDetailOutcome(null);
 
     try {
-      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}/retry`, {
+      const response = await headerFetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}/retry`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -1610,11 +1617,12 @@ export default function AppHeader({
   }
 
   async function handleSignOut() {
+    if (desktopContext) { desktopContext.onSignOut(); return; }
     if (isSigningOut) return;
     setIsSigningOut(true);
 
     try {
-      await fetch('/api/admin/users', {
+      await headerFetch('/api/admin/users', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -1626,7 +1634,7 @@ export default function AppHeader({
       let signOutResponse: Response | null = null;
 
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        signOutResponse = await fetch('/api/auth/sign-out', {
+        signOutResponse = await headerFetch('/api/auth/sign-out', {
           method: 'POST',
           credentials: 'include',
           cache: 'no-store',
@@ -1644,7 +1652,7 @@ export default function AppHeader({
         throw new Error('The website session did not close.');
       }
 
-      const verificationResponse = await fetch('/api/me?scope=website', {
+      const verificationResponse = await headerFetch('/api/me?scope=website', {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -2035,10 +2043,12 @@ export default function AppHeader({
             return (
               <Link
                 key={`mobile-${session ? 'account-' : ''}${item.key}-${item.href}`}
-                href={item.href}
+                href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
                 aria-current={isActive ? 'page' : undefined}
                 className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                onClick={closeMobileMenu}
+                data-access-restricted={desktopContext && !["asset-register", "account"].includes(item.key) ? "true" : undefined}
+                aria-disabled={Boolean(desktopContext && !["asset-register", "account"].includes(item.key))}
+                onClick={event => { if(desktopContext && !["asset-register", "account"].includes(item.key)) {event.preventDefault();return;} closeMobileMenu();}}
               >
                 <MobileNavIcon page={item.key} />
                 <span className={styles.mobileMenuNavLabel}>{item.label}</span>
@@ -2385,7 +2395,7 @@ export default function AppHeader({
         <div
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${brandAlignmentClass ? styles.innerBrandAligned : ''}`}
         >
-          <Link href="/" className={`${styles.brand} ${brandAlignmentClass}`} aria-label="Go to Aim4price home">
+          <Link href={desktopContext ? "/asset-register" : "/"} className={`${styles.brand} ${brandAlignmentClass}`} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
@@ -2430,9 +2440,12 @@ export default function AppHeader({
                   return (
                     <Link
                       key={`${item.key}-${item.href}`}
-                      href={item.href}
+                      href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
                       aria-current={isActive ? 'page' : undefined}
                       draggable={false}
+                      aria-disabled={desktopContext && !["asset-register", "account"].includes(item.key) ? true : undefined}
+                      data-access-restricted={desktopContext && !["asset-register", "account"].includes(item.key) ? "true" : undefined}
+                      onClick={event => { if (desktopContext && !["asset-register", "account"].includes(item.key)) event.preventDefault(); }}
                       className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
                     >
                       {item.label}
@@ -2469,7 +2482,9 @@ export default function AppHeader({
                       aria-haspopup="dialog"
                       aria-controls={notificationOpen ? 'header-notifications-modal' : undefined}
                       aria-label={activeNotificationCount ? `Notifications, ${activeNotificationCount} active` : 'Notifications'}
-                      onClick={handleNotificationToggle}
+                      onClick={desktopContext ? undefined : handleNotificationToggle}
+                      disabled={Boolean(desktopContext)}
+                      data-access-restricted={desktopContext ? "true" : undefined}
                     >
                       <svg className={styles.notificationIcon} viewBox="0 0 24 24" aria-hidden="true">
                         <path
@@ -2536,11 +2551,13 @@ export default function AppHeader({
                               return (
                                 <Link
                                   key={item.href}
-                                  href={item.href}
+                                  href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
                                   role="menuitem"
                                   aria-current={isActive ? 'page' : undefined}
                                   className={menuLinkClassName}
-                                  onClick={closeAccountMenu}
+                                  data-access-restricted={desktopContext && !["/asset-register", "/account"].includes(item.href) ? "true" : undefined}
+                                  aria-disabled={desktopContext && !["/asset-register", "/account"].includes(item.href) ? true : undefined}
+                                  onClick={event => { if (desktopContext && !["/asset-register", "/account"].includes(item.href)) event.preventDefault(); else closeAccountMenu(); }}
                                 >
                                   <span>{item.label}</span>
                                 </Link>

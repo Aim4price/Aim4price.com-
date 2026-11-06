@@ -246,7 +246,10 @@ test('owner Manage keeps disposal and mapping inside the gated command grid with
   assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
   assert.match(ownerManage, /onClick=\{openPricingDialog\}/);
   assert.doesNotMatch(ownerManage, /canManageAssetPricing\(activeAsset\)/);
-  assert.match(ownerManage, /canUseMarketplaceActions && isMarketplaceEligible\(activeAsset\)/);
+  assert.match(ownerManage, /\(canUseMarketplaceActions \|\| desktopAccess\) && isMarketplaceEligible\(activeAsset\)/);
+  // Desktop users retain the same control but cannot activate owner-only actions.
+  assert.match(ownerManage, /data-manage-action="marketplace" data-access-restricted=\{desktopAccess \? "true" : undefined\} aria-disabled=\{Boolean\(desktopAccess\)\}/);
+  assert.match(client, /onClickCapture=\{event => \{ if \(desktopAccess &&[\s\S]*?event.preventDefault\(\); event.stopPropagation\(\)/);
   assert.match(ownerManage, /ownerCommandGrid[\s\S]*?Marketplace[\s\S]*?ownerCommandDangerAction[\s\S]*?Dispose or remove asset/);
   assert.doesNotMatch(ownerManage, /ownerCommandDangerZone/);
   assert.doesNotMatch(ownerManage, /Dealer tracking settings|Remove from marketplace/);

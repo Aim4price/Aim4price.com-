@@ -6253,7 +6253,7 @@ export default function AssetRegisterClient({
   dealerRegisterBaseHref = '/asset-register',
 }: {
 
-  desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string) => void; onRefresh: () => void; onExport: () => void; renderDetails: (id: string) => ReactNode };
+  desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string, section?: "details" | "maintenance" | "documents" | "photos") => void; onUpload: (id: string, kind: "photos" | "documents", files: File[]) => Promise<void>; onSave: (id: string, patch: Record<string, unknown>) => Promise<void>; onRefresh: () => void; onExport: () => void };
   showAppHeader?: boolean;
   registerManagementHref?: string;
   dealerRegisterMode?: 'dealer' | 'client';
@@ -6616,6 +6616,7 @@ export default function AssetRegisterClient({
     let cancelled = false;
 
     async function loadCostBudgetStatuses() {
+      if (desktopAccess) { setBudgetLookupState('ready'); return; }
       if (!cancelled) setBudgetLookupState('loading');
       try {
         const response = await ownerFetch('/api/my-invoices/budgets', {
@@ -7836,10 +7837,16 @@ export default function AssetRegisterClient({
 
   useEffect(() => {
     if (!desktopAccess) return;
+    setActiveAsset(null); setIsAssetModalOpen(false); setExpandedAssetId(null);
+  }, [desktopAccess?.data.version, desktopAccess?.membership]);
+
+  useEffect(() => {
+    if (!desktopAccess) return;
     const all = desktopRegisterAssets(desktopAccess.data, desktopAccess.membership);
     const id = activeRegisterId || COMBINED_REGISTER_ID;
     const items = id === COMBINED_REGISTER_ID ? all : all.filter(asset => asset.registerId === id);
     setAssets(items);
+    if (editingAsset) {const updated = all.find(asset => asset.id === editingAsset.id); if(updated) setAssetDraft(current => ({...current, photos: updated.photos}));}
     setAssetGroups(projectTeamGroups(desktopAccess.data.groups || [], desktopAccess.data.assets.filter(asset => items.some(item => item.id === asset.id))));
     setAssetRegisters(desktopRegisterSummaries(desktopAccess.data));
     setActiveRegisterId(id);
@@ -11206,7 +11213,6 @@ export default function AssetRegisterClient({
   }
 
   function openActionDialog(asset: RegisterAsset) {
-    if (desktopAccess) { desktopAccess.onManage(asset.id); return; }
     setOwnerAssetCommandPanel(null);
     if (typeof window !== 'undefined') {
       setOwnerCommandReturnLocation(`${window.location.pathname}${window.location.search}`);
@@ -11214,7 +11220,7 @@ export default function AssetRegisterClient({
     setValueInclusionError('');
     setActiveAsset(asset);
     setActiveDealerTrackingByAssetId((current) => ({ ...current, [asset.id]: false }));
-    void loadDealerTrackingStatus(asset.id);
+    if (!desktopAccess) void loadDealerTrackingStatus(asset.id);
   }
 
   function closeActionDialog() {
@@ -11955,9 +11961,20 @@ export default function AssetRegisterClient({
     }
   }
 
+  async function uploadDesktopFiles(kind: "photos" | "documents", files: File[]) {
+    if (!desktopAccess || !editingAsset || !files.length) return;
+    if (!(kind === 'photos' ? desktopAccess.data.permissions.uploadPhotos : desktopAccess.data.permissions.uploadDocuments)) return;
+    const setBusy = kind === 'photos' ? setIsUploadingPhotos : setIsUploadingDocuments;
+    setBusy(true);
+    try {await desktopAccess.onUpload(editingAsset.id, kind, files); setNotice({tone:'success',message:kind === 'photos' ? 'Photos uploaded.' : 'Documents uploaded for owner review.'});}
+    catch(error) {setNotice({tone:'error',message:error instanceof Error ? error.message : 'Upload failed.'});}
+    finally {setBusy(false);}
+  }
+
   function handlePhotoFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = '';
+    if (desktopAccess) {void uploadDesktopFiles("photos", selectedFiles); return;}
 
     if (!selectedFiles.length) {
       return;
@@ -12027,6 +12044,7 @@ export default function AssetRegisterClient({
   ) {
     const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = '';
+    if (desktopAccess) {void uploadDesktopFiles("documents", selectedFiles); return;}
 
     if (!selectedFiles.length) {
       return;
@@ -12304,6 +12322,18 @@ export default function AssetRegisterClient({
 
   async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>, options: AssetSubmitOptions = {}): Promise<boolean> {
     event?.preventDefault();
+    if (desktopAccess) {
+      if (!editingAsset) return false;
+      const p = desktopAccess.data.permissions;
+      const patch: Record<string, unknown> = {};
+      if (p.editDetails) Object.assign(patch, {title: assetDraft.title.trim(), brand: assetDraft.brandName.trim(), model: assetDraft.modelName.trim(), yearModel: assetDraft.yearModel === '' ? null : Number(assetDraft.yearModel), condition: assetDraft.condition});
+      if (p.updateUsage && assetDraft.usageMetric !== 'not_applicable') {const reading = assetDraft.usageMetric === 'percentage' ? assetDraft.lifeWorkedPercent : assetDraft.hours; if (String(reading).trim() !== '') patch.usage = parseUsageAmountInput(reading);}
+      if (!Object.keys(patch).length) return false;
+      setIsSavingAsset(true);
+      try { await desktopAccess.onSave(editingAsset.id, patch); assetAutosaveBaselineRef.current = options.autosaveSignature || currentAssetAutosaveSignature; return true; }
+      catch (error) {setNotice({tone:'error',message:error instanceof Error ? error.message : 'Could not save asset.'}); return false;}
+      finally {setIsSavingAsset(false);}
+    }
     const showFeedback = !options.silent;
     const destinationRegisterId = String(
       editingAsset?.registerId
@@ -15893,7 +15923,7 @@ export default function AssetRegisterClient({
   }
 
   return (
-    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`}>
+    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`} onClickCapture={event => { if (desktopAccess && (event.target as HTMLElement).closest('[data-access-restricted="true"]')) {event.preventDefault(); event.stopPropagation();} }}>
       {showAppHeader ? <AppHeader active="asset-register" brandAlignment="working-column" /> : null}
 
       <section className={styles.shell}>
@@ -15955,7 +15985,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
                 onClick={openSummaryModal}
-                disabled={isLoading || Boolean(desktopAccess)}
+                data-access-restricted={desktopAccess ? "true" : undefined} disabled={isLoading || Boolean(desktopAccess)}
                 title={desktopAccess ? "Full summaries are managed by the account holder." : undefined}
                 aria-haspopup="dialog"
                 aria-expanded={isSummaryModalOpen}
@@ -15990,7 +16020,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
                 onClick={openExportModal}
-                disabled={!assets.length || isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
+                data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportAssets ? "true" : undefined} disabled={!assets.length || isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
               >
                 <DownloadIcon className={styles.buttonIcon} />
                 <span>Download</span>
@@ -16181,7 +16211,7 @@ export default function AssetRegisterClient({
               <div className={`${styles.summaryRow} ${styles.heroSummaryRow} ${styles.assetSummaryTrack}`}>
                 <div className={`${styles.summaryTile} ${styles.registerValueTile} ${styles.heroSummaryTile} ${styles.heroRegisterTile}`}>
                   <div className={styles.heroSummaryHead}>
-                    <span className={styles.heroSummaryTitle}>{desktopAccess ? "Accessible value" : "Register value"}</span>
+                    <span className={styles.heroSummaryTitle}>Register value</span>
                   </div>
 
                   <div className={styles.heroSummaryValueRow}>
@@ -16502,9 +16532,10 @@ export default function AssetRegisterClient({
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
-                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions) ? (
+                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions || desktopAccess) ? (
                               <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
                                 <button
+                                    data-access-restricted={desktopAccess ? "true" : undefined}
                                   type="button"
                                   className={`${styles.assetFlagButton} ${styles.controlTooltip} ${Boolean(group.isFlagged) ? styles.assetFlagButtonActive : ''}`}
                                   onClick={() => void handleAssetGroupFlagToggle(group)}
@@ -16515,8 +16546,9 @@ export default function AssetRegisterClient({
                                 >
                                   <FlagIcon className={styles.assetFlagIcon} />
                                 </button>
-                                {canManageAssetGroups ? (
+                                {(canManageAssetGroups || desktopAccess) ? (
                                   <button
+                                    data-access-restricted={desktopAccess ? "true" : undefined}
                                     type="button"
                                     className={`${styles.assetGroupButton} ${styles.controlTooltip} ${styles.assetGroupButtonActive}`}
                                     onClick={() => openAssetGroupEditor(group, groupAnchorAsset)}
@@ -16562,7 +16594,7 @@ export default function AssetRegisterClient({
                               <div className={styles.valueBlock}>
                                 <div className={styles.assetValueVatDisplay}>
                                   <div className={styles.assetValueVatText}>
-                                    <span className={styles.assetGroupValueLabel}>{desktopAccess ? "Accessible value" : "Combined value"}</span>
+                                    <span className={styles.assetGroupValueLabel}>Combined value</span>
                                     <div className={styles.assetValueVatAmountRow}>
                                       <strong className={styles.assetGroupCombinedValue}>{valuesRestricted ? hiddenValue : money(displayedGroupValue)}</strong>
                                       <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
@@ -16573,8 +16605,9 @@ export default function AssetRegisterClient({
                               </div>
 
                               <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
-                                {canShareActiveRegister && !dealerRegisterMode ? (
+                                {(canShareActiveRegister || desktopAccess) && !dealerRegisterMode ? (
                                   <button
+                                    data-access-restricted={desktopAccess ? "true" : undefined}
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
                                     onClick={() => openAssetGroupShare(group)}
@@ -16587,7 +16620,7 @@ export default function AssetRegisterClient({
                                 ) : null}
 
                                 <button
-                                  type="button"
+                                    type="button"
                                   className={`${styles.expandButton} ${styles.cardViewDetailsButton} ${styles.controlTooltip}`}
                                   onClick={() => toggleAssetGroupCollapsed(group.id)}
                                   aria-expanded={!isCollapsed}
@@ -16600,8 +16633,9 @@ export default function AssetRegisterClient({
                                   <span>{isCollapsed ? 'Open' : 'Hide details'}</span>
                                 </button>
 
-                                {canManageAssetGroups ? (
+                                {(canManageAssetGroups || desktopAccess) ? (
                                   <button
+                                    data-access-restricted={desktopAccess ? "true" : undefined}
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardManageButton}`}
                                     onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
@@ -16883,7 +16917,7 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
 
-                              {desktopAccess && <button type="button" disabled className={`${styles.optionsButton} ${styles.cardOptionsButton}`} title="Sharing is managed by the account holder."><ShareIcon className={styles.buttonIcon}/><span>Share</span></button>}
+                              {desktopAccess && <button type="button" data-access-restricted="true" disabled className={`${styles.optionsButton} ${styles.cardOptionsButton}`} title="Sharing is managed by the account holder."><ShareIcon className={styles.buttonIcon}/><span>Share</span></button>}
 
                               <button
                                 type="button"
@@ -16914,7 +16948,7 @@ export default function AssetRegisterClient({
 
                         </div>
 
-                        {isExpanded ? (desktopAccess ? <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>{desktopAccess.renderDetails(asset.id)}</div> :
+                        {isExpanded ? (
                           <div className={`${styles.assetBody} ${cardLayout.body}`} id={`asset-panel-${asset.id}`}>
                             {(() => {
                               const detailPhotos = getDetailPhotos(asset);
@@ -17062,14 +17096,15 @@ export default function AssetRegisterClient({
                                         </div>
                                       )}
 
-                                      {canUseOwnerOnlyAssetActions ? (
+                                      {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
                                         <button
+                                          data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadPhotos ? "true" : undefined}
                                           type="button"
                                           className={styles.previewUploadPill}
                                           disabled={isDetailPhotoUploading}
                                           onClick={(event) => {
                                             event.stopPropagation();
-                                            triggerDetailMediaInput(asset.id, 'photo');
+                                            if(desktopAccess) desktopAccess.onManage(asset.id, 'photos'); else triggerDetailMediaInput(asset.id, 'photo');
                                           }}
                                         >
                                           <PlusIcon className={styles.buttonIcon} />
@@ -17150,7 +17185,7 @@ export default function AssetRegisterClient({
                                         )}
                                       </div>
 
-                                      <div className={styles.assetStatusDetails}>
+                                      <div className={styles.assetStatusDetails} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined} aria-label={desktopAccess ? "Restricted asset status" : undefined}>
                                         {canUseOwnerOnlyAssetActions ? (
                                           <button
                                             type="button"
@@ -17242,13 +17277,13 @@ export default function AssetRegisterClient({
                                           aria-label={`Edit replacement price for ${asset.title}`}
                                         >
                                           <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span>
-                                          <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
+                                          <strong>{valuesRestricted ? hiddenValue : readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </button>
                                       ) : (
                                         <div className={styles.assetReplacementPriceBubble}>
                                           <span className={cardLayout.detailLabel}><AssetDetailIcon kind="replacement"/>Replacement price</span>
-                                          <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
+                                          <strong>{valuesRestricted ? hiddenValue : readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
                                           <small>{assetValueVatLabel}</small>
                                         </div>
                                       )}
@@ -17258,7 +17293,7 @@ export default function AssetRegisterClient({
                                         stale={!!savedSaleability[asset.id] && savedSaleability[asset.id].basis !== saleabilityBasis(asset)}
                                         included={assetValueVatMode === 'included'}
                                         loading={saleabilityLoading}
-                                        error={saleabilityLoadError}
+                                        error={desktopAccess ? false : saleabilityLoadError}
                                         canCalculate={canUseOwnerOnlyAssetActions}
                                         onCalculate={() => { pricingReturnAssetRef.current = null; setSaleabilityAsset(asset); }}
                                       />
@@ -17274,15 +17309,15 @@ export default function AssetRegisterClient({
 
                                     <div className={cardLayout.documents}>
                                       <button type="button" className={cardLayout.openDocuments}
-                                        onClick={() => setAssetDocumentListId(asset.id)}
+                                        onClick={() => {if(desktopAccess) desktopAccess.onManage(asset.id,"documents"); else setAssetDocumentListId(asset.id);}}
                                         aria-label={`View documents for ${asset.title}`}
                                       data-tooltip="View documents" aria-haspopup="dialog">
                                         <DocumentIcon className={styles.buttonIcon} />
                                         <span>Documents</span>
                                         <span className={cardLayout.count}>{isVaultDocumentsLoading ? '…' : vaultDocumentsError ? '!' : vaultDocuments.length + detailDocuments.length}</span>
                                       </button>
-                                      {canUseOwnerOnlyAssetActions ? <button type="button" className={cardLayout.addDocument}
-                                        onClick={(event) => { event.stopPropagation(); openAssetDocumentUpload(asset); }}
+                                      {(canUseOwnerOnlyAssetActions || desktopAccess) ? <button type="button" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadDocuments ? "true" : undefined} className={cardLayout.addDocument}
+                                        onClick={(event) => { event.stopPropagation(); if(desktopAccess) desktopAccess.onManage(asset.id,"documents"); else openAssetDocumentUpload(asset); }}
                                         data-asset-return-action="add-document"
                                       data-tooltip="Add document">
                                         <PlusIcon className={styles.buttonIcon} /><span>Add document</span>
@@ -18165,6 +18200,7 @@ export default function AssetRegisterClient({
                   {ASSET_FORM_SECTION_TABS.map((section) => (
                     <button key={section.step} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${section.step === 2 ? styles.optionFeaturedButton : ''}`}
                       data-manage-action={section.step === 2 ? 'details' : section.step === 3 ? 'documents' : 'addPhotos'}
+                      data-access-restricted={desktopAccess && (section.step === 3 || (section.step === 2 && !(desktopAccess.data.permissions.editDetails || desktopAccess.data.permissions.updateUsage))) ? "true" : undefined}
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
                       {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
@@ -18262,7 +18298,7 @@ export default function AssetRegisterClient({
                         type="button"
                         className={editingAsset ? updateStyles.advancedSettingsButton : styles.manualSettingsButton}
                         onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
-                        aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
+                        data-access-restricted={desktopAccess ? 'true' : undefined} aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                         title={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                       >
                         {editingAsset ? (
@@ -18294,7 +18330,7 @@ export default function AssetRegisterClient({
 
                     <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`}>
                       <div className={styles.assetTitleRow}>
-                        <label className={`${styles.field} ${styles.manualTitleField}`}>
+                        <label className={`${styles.field} ${styles.manualTitleField}`} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                           <span>Asset title</span>
                           <input
                             value={assetDraft.title}
@@ -18311,7 +18347,7 @@ export default function AssetRegisterClient({
                       </div>
 
                       {assetFormKind === 'manual' || assetFormKind === 'property' || assetFormKind === 'stock' ? (
-                        <div className={styles.assetInsuranceClassificationCard}>
+                        <div className={styles.assetInsuranceClassificationCard} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                           <div className={styles.assetInsuranceClassificationIntro}>
                             <strong>Tell us more about this asset</strong>
                             <p>
@@ -18500,7 +18536,7 @@ export default function AssetRegisterClient({
 
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
-                          <label className={styles.field} data-asset-detail-edit-target="serial">
+                          <label className={styles.field} data-asset-detail-edit-target="serial" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                             <span>Serial / reference</span>
                             <input
                               value={assetDraft.serialNumber}
@@ -18514,7 +18550,7 @@ export default function AssetRegisterClient({
                             />
                           </label>
 
-                          <label className={styles.field}>
+                          <label className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                             <span>Brand</span>
                             <input
                               value={assetDraft.brandName}
@@ -18528,7 +18564,7 @@ export default function AssetRegisterClient({
                             />
                           </label>
 
-                          <label className={styles.field}>
+                          <label className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                             <span>Model</span>
                             <input
                               value={assetDraft.modelName}
@@ -18547,7 +18583,7 @@ export default function AssetRegisterClient({
                       {assetFormKind === 'property' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           {!isLandPropertyDraft ? (
-                            <label className={styles.field} data-asset-detail-edit-target="year">
+                            <label className={styles.field} data-asset-detail-edit-target="year" ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                               <span>{yearFieldLabel}</span>
                               <input
                                 type="number"
@@ -18566,7 +18602,7 @@ export default function AssetRegisterClient({
                             </label>
                           ) : null}
 
-                          <label className={styles.field}>
+                          <label className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                             <span className={cardLayout.detailLabel}><AssetDetailIcon kind="size"/>Size</span>
                             <input
                               type="text"
@@ -18583,7 +18619,7 @@ export default function AssetRegisterClient({
 
                           {showConditionField ? (
                             <AssetDetailChoiceField<AssetConditionValue>
-                              label="Condition"
+                              disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.editDetails)} label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
                               onChange={(nextCondition) =>
@@ -18598,20 +18634,21 @@ export default function AssetRegisterClient({
                           ) : null}
                         </div>
                       ) : assetFormKind !== 'stock' ? (
-                        <AssetDetailsFields className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} year={assetDraft.yearModel} yearLabel={yearFieldLabel} onYear={yearModel=>setAssetDraft(current=>({...current,yearModel}))} canCondition={showConditionField}
+                        <AssetDetailsFields disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.editDetails)} className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} year={assetDraft.yearModel} yearLabel={yearFieldLabel} onYear={yearModel=>setAssetDraft(current=>({...current,yearModel}))} canCondition={showConditionField}
                           usageControl={<div
                             className={`${styles.field} ${updateStyles.usageEditor}`}
                             data-asset-detail-edit-target="usage"
+                            ref={node => {if(node) node.inert = Boolean(desktopAccess && !desktopAccess.data.permissions.updateUsage);}} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.updateUsage ? "true" : undefined}
                           >
                             <AssetDetailChoiceField<AssetDraftUsageMetric>
                               label="Usage type"
                               value={assetDraft.usageMetric}
                               options={usageTypeOptions}
-                              onRequestOpen={() => setUsageTypeDialogOpen(true)}
+                              disabled={Boolean(desktopAccess)} onRequestOpen={() => {if(!desktopAccess) setUsageTypeDialogOpen(true);}}
                               onChange={() => setUsageTypeDialogOpen(true)}
                               className={updateStyles.usageTypeField}
                             />
-                            {editingAsset && isSavedAim4priceAsset(editingAsset) && !usageTypeChangeConfirmed ? (
+                            {!desktopAccess && editingAsset && isSavedAim4priceAsset(editingAsset) && !usageTypeChangeConfirmed ? (
                               <div className={updateStyles.usageReading}>
                                 <span>{usageFieldLabel}</span>
                                 <button type="button" className={advancedStyles.readingTrigger}
@@ -18620,7 +18657,7 @@ export default function AssetRegisterClient({
                                   {formatAssetSettingsUsageInput(editingAsset, settingsUsageMode) || 'Not set'}
                                 </button>
                               </div>
-                            ) : <label className={updateStyles.usageReading}>
+                            ) : <label className={updateStyles.usageReading} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.updateUsage));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.updateUsage) ? "true" : undefined}>
                               <span>{usageFieldLabel}</span>
                               {showPercentUsageField ? (
                                 <input
@@ -18656,7 +18693,7 @@ export default function AssetRegisterClient({
                             </label>}
                           </div>}
                           conditionControl={<AssetDetailChoiceField<AssetConditionValue>
-                              label="Condition"
+                              disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.editDetails)} label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
                               onChange={(nextCondition) =>
@@ -18671,7 +18708,7 @@ export default function AssetRegisterClient({
                         />
                       ) : null}
 
-                      <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`}>
+                      <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                         <AssetVatValueField
                           key={`${editingAssetId ?? 'new'}-value`}
                           onOpen={editingAsset?()=>openConfirmedValue(editingAsset,'override',true):undefined}
@@ -18720,7 +18757,7 @@ export default function AssetRegisterClient({
 
                       {showLifeWorkedPercentField ? (
                         <div className={styles.assetAuxiliaryGrid}>
-                          <label className={styles.field}>
+                          <label className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.updateUsage));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.updateUsage) ? "true" : undefined}>
                             <span>Usage %</span>
                             <input
                               type="number"
@@ -18740,7 +18777,7 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`} data-asset-detail-edit-target="notes">
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`} data-asset-detail-edit-target="notes" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                         <span>Notes</span>
                         <textarea
                           rows={3}
@@ -18851,7 +18888,7 @@ export default function AssetRegisterClient({
                 {manualAssetStep === 4 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
                     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
-                      <div className={styles.field}>
+                      <div className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !desktopAccess.data.permissions.uploadDocuments);}} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadDocuments ? "true" : undefined}>
                         <span>Other documents</span>
 
                         <div className={styles.documentUploadPanel}>
@@ -18878,7 +18915,7 @@ export default function AssetRegisterClient({
                         </div>
                       </div>
 
-                      <div className={styles.field}>
+                      <div className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !desktopAccess.data.permissions.uploadPhotos);}} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadPhotos ? "true" : undefined}>
                         <span>Photos</span>
 
                         <div className={styles.uploadPanel}>
@@ -18973,7 +19010,7 @@ export default function AssetRegisterClient({
                                 {photoItem.source === 'pending' ? <span className={styles.photoPendingBadge}>Ready</span> : null}
                               </div>
 
-                              <div className={styles.photoThumbActions}>
+                              <div className={styles.photoThumbActions} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                                 <button
                                   type="button"
                                   className={`${styles.photoMakeMainButton} ${photoItem.isMain ? styles.photoMakeMainButtonActive : ''}`}
@@ -20079,8 +20116,8 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
-                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View asset changes and corrections.</small></span></button>
-                  <button data-manage-action="details"
+                  <button data-manage-action="history" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View asset changes and corrections.</small></span></button>
+                  <button data-manage-action="details" data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails || desktopAccess.data.permissions.updateUsage || desktopAccess.data.permissions.uploadPhotos || desktopAccess.data.permissions.uploadDocuments) ? "true" : undefined}
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-update"
@@ -20098,7 +20135,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button data-manage-action="reports" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
+                  <button data-manage-action="reports" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Reports</strong>
@@ -20106,7 +20143,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <Link data-manage-action="addCosts"
+                  <Link data-manage-action="addCosts" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
                     href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   >
@@ -20117,8 +20154,8 @@ export default function AssetRegisterClient({
                     </span>
                   </Link>
 
-                  {accountProfile?.accountType === 'owner' ? (
-                    <button data-manage-action="budget"
+                  {(desktopAccess || accountProfile?.accountType === 'owner') ? (
+                    <button data-manage-action="budget" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       disabled={budgetLookupState === 'loading'}
@@ -20139,7 +20176,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canAssetReceiveFuel(activeAsset) ? (
-                    <Link data-manage-action="fuel"
+                    <Link data-manage-action="fuel" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
                       href={buildOwnerAssetPageHref('/fuel', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     >
@@ -20151,11 +20188,11 @@ export default function AssetRegisterClient({
                     </Link>
                   ) : null}
 
-                  <button data-manage-action="addMaintenance"
+                  <button data-manage-action="addMaintenance" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.viewMaintenance ? "true" : undefined}
                     type="button"
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-maintenance"
-                    onClick={() => setOwnerAssetCommandPanel('maintenance')}
+                    onClick={() => {if(desktopAccess) {desktopAccess.onManage(activeAsset.id, 'maintenance'); closeActionDialog();} else setOwnerAssetCommandPanel('maintenance');}}
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
@@ -20164,7 +20201,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${actionColours.ownerPricingAction}`} onClick={openPricingDialog}>
+                  <button data-manage-action="suggestValue" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${actionColours.ownerPricingAction}`} onClick={openPricingDialog}>
                     <TrendIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Manage pricing</strong>
@@ -20172,8 +20209,8 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  {canUseOwnerOnlyAssetActions ? (
-                    <button data-manage-action="location"
+                  {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
+                    <button data-manage-action="location" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       data-asset-return-action="manage-map-location"
@@ -20189,8 +20226,8 @@ export default function AssetRegisterClient({
                     </button>
                   ) : null}
 
-                  {canUseOwnerOnlyAssetActions ? (
-                    <button data-manage-action="qr" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
+                  {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
+                    <button data-manage-action="qr" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
                       <QrIcon className={styles.buttonIcon} />
                       <span>
                         <strong>QR code</strong>
@@ -20199,8 +20236,8 @@ export default function AssetRegisterClient({
                     </button>
                   ) : null}
 
-                  {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
-                    <button data-manage-action="marketplace" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
+                  {(canUseMarketplaceActions || desktopAccess) && isMarketplaceEligible(activeAsset) ? (
+                    <button data-manage-action="marketplace" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Marketplace</strong>
@@ -20209,11 +20246,11 @@ export default function AssetRegisterClient({
                     </button>
                   ) : null}
 
-                  {canUseOwnerOnlyAssetActions ? (
+                  {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
                     <button
                       type="button"
                       className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandAction} ${styles.ownerCommandDangerAction}`}
-                      disabled={busyDeleteId === activeAsset.id}
+                      data-access-restricted={desktopAccess ? "true" : undefined} disabled={Boolean(desktopAccess) || busyDeleteId === activeAsset.id}
                       onClick={() => handleDeleteFromDialog(activeAsset)}
                     >
                       <TrashIcon className={styles.buttonIcon} />
@@ -21516,7 +21553,7 @@ export default function AssetRegisterClient({
                   </label>
 
                   <div className={styles.marketplaceAssetSummaryValue}>
-                    <span>{desktopAccess ? "Accessible value" : "Register value"}</span>
+                    <span>Register value</span>
                     <strong>{money(marketplaceAsset.value * (marketplaceVatIncluded ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1))}</strong>
                     <small>{marketplaceVatIncluded ? 'Incl. VAT' : 'Excl. VAT'}</small>
                   </div>

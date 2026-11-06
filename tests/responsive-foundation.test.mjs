@@ -43,7 +43,9 @@ test('website sign-out stays separate from installable app sessions and verifies
   assert.match(meRoute, /websiteOnly[\s\S]*?\? await getServerSession\(\)[\s\S]*?: await getServerSession\(\{ allowDealerApp: true, allowOwnerApp: true \}\)/);
   assert.match(headerClient, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
   assert.match(headerClient, /keepalive: true/);
-  assert.match(headerClient, /fetch\('\/api\/me\?scope=website'/);
+  assert.match(headerClient, /headerFetch\('\/api\/me\?scope=website'/);
+  assert.match(headerClient, /if \(desktopContext\) \{ desktopContext.onSignOut\(\); return; \}/);
+  assert.match(headerClient, /const headerFetch:[\s\S]*?desktopContext \?[^;]*?status: 403[^;]*?globalThis.fetch.bind\(globalThis\)/);
   assert.match(headerClient, /verification\?\.signedIn !== false/);
   assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
 });

@@ -533,7 +533,7 @@ test('normal register hierarchy excludes forbidden members and private owner met
  assert.equal(projected.length,1);assert.deepEqual(projected[0].members.map(m=>m.assetId),[aId]);assert.equal(projected[0].valueMode,'separate');
  const serialized=JSON.stringify(projected);assert(!serialized.includes(otherId));assert(!serialized.includes('PRIVATE'));assert(!serialized.includes('hidden'));
  const data={name:'Farm',assets:[visible],permissions:policy.EMPTY_TEAM_PERMISSIONS,groups:projected,version:1};
- const rendered=desktopRegisterAssets(data,'grant');assert.equal(rendered[0].value,0);assert.equal(rendered[0].kind,'tractor');assert.deepEqual(rendered[0].specsJson,{includeInRegisterTotal:false});
+ const rendered=desktopRegisterAssets(data,'grant');assert.equal(rendered[0].value,0);assert.equal(rendered[0].kind,'tractor');assert.deepEqual(rendered[0].specsJson,{includeInRegisterTotal:false,usageMetric:"hours",usage_metric:"hours",usageMode:"hours",life_worked_percent:null});
  assert(!JSON.stringify(rendered).includes('987654'));assert.equal(desktopRegisterSummaries(data)[0].totalValue,0);
  data.assets=[{...visible,values:{current:100,replacement:200,insured:150},includeInRegisterTotal:true}];
  assert.equal(desktopRegisterSummaries(data)[0].totalValue,100);

@@ -33,7 +33,7 @@ export function desktopRegisterAssets(data: TeamRegisterData, membership: string
   return data.assets.map(asset => ({
     id: asset.id, userId: '', registerId: asset.registerId, registerName: asset.registerName,
     valuationRunId: null, sectorId: null, equipmentFamilyId: null, equipmentFamilyKey: '', equipmentFamilyLabel: '',
-    equipmentModelId: null, typedModelName: '', normalizedTypedModelName: '', specsJson: {includeInRegisterTotal: asset.includeInRegisterTotal !== false},
+    equipmentModelId: null, typedModelName: '', normalizedTypedModelName: '', specsJson: {includeInRegisterTotal: asset.includeInRegisterTotal !== false, usageMetric: asset.usageMetric, usage_metric: asset.usageMetric, usageMode: asset.usageMetric === "percentage" ? "percent" : asset.usageMetric, life_worked_percent: asset.usageMetric === "percentage" ? asset.usage : null},
     registerIncludedInCombinedTotals: asset.registerIncludedInCombinedTotals !== false,
     depreciationMethodUsed: '', lifeWorkedPercent: asset.usageMetric === 'percentage' ? asset.usage : null,
     lifeRemainingPercent: null, estimatedHours: null, maxLifetimeHours: null,

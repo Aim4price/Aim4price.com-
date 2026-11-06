@@ -13,7 +13,7 @@ function setup(fetcher) {
   const windowEvents = new Map(), documentEvents = new Map();
   const window = { setInterval: (fn, delay) => { assert.equal(delay,30000);timer=fn;return 1; }, clearInterval: () => {timer=null;}, addEventListener:(name,fn)=>windowEvents.set(name,fn), removeEventListener:name=>windowEvents.delete(name) };
   const document = { visibilityState:'visible', addEventListener:(name,fn)=>documentEvents.set(name,fn),removeEventListener:name=>documentEvents.delete(name) };
-  new Function('useEffect','session','pathname','notificationOpen','fetch','setNotifications','setNotificationOpen','setIsLoadingNotifications','window','document',effect)(
+  new Function('useEffect','session','pathname','notificationOpen','headerFetch','setNotifications','setNotificationOpen','setIsLoadingNotifications','window','document',effect)(
     (fn,deps)=>{dependencies=deps;cleanup=fn();},{id:'requester',accountType:'owner'},'/asset-discovery',true,
     async (_url, options)=>{calls++;signal=options.signal;assert.equal(options.cache,'no-store');return fetcher();},value=>notifications=value,()=>{},()=>{},window,document);
   return {refresh:()=>timer?.(), focus:()=>windowEvents.get('focus')?.(), document, visibility:()=>documentEvents.get('visibilitychange')?.(), cleanup:()=>cleanup(), get notifications(){return notifications;},get calls(){return calls;}, get signal(){return signal;},windowEvents,documentEvents,dependencies};
