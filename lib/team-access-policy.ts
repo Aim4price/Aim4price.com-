@@ -71,6 +71,8 @@ export function assertTeamPermission(grant: TeamGrant, permission: TeamPermissio
         throw new TeamAccessError('You do not have permission for this action.');
 }
 export type TeamAsset = {
+    registerLogoUrls?: string[];
+    registerShowLogos?: boolean;
     id: string;
     registerId: string | null;
     registerName: string;

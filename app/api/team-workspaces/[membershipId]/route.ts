@@ -16,7 +16,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
     try {
         const scope = await loadTeamScope(params.membershipId);
         const assets = await teamAssetList(scope);
-        return teamJson({ name: scope.businessName, permissions: scope.grant.permissions, assets, groups: await teamRegisterGroups(scope, assets), version: scope.grant.version });
+        return teamJson({ name: scope.businessName, logoUrl: scope.logoUrl, accountType: scope.accountType, accountSubtype: scope.accountSubtype, permissions: scope.grant.permissions, assets, groups: await teamRegisterGroups(scope, assets), version: scope.grant.version });
     }
     catch (error) {
         return teamError(error);

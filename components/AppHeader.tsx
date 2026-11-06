@@ -48,7 +48,7 @@ type ActivePage =
 type BrandAlignment = 'header' | 'working-column';
 
 type AppHeaderProps = {
-  desktopContext?: { name: string; logoUrl?: string | null; onSignOut: () => void };
+  desktopContext?: { name: string; accountType?: string; accountSubtype?: string; logoUrl?: string | null; onSignOut: () => void };
   active: ActivePage;
   brandAlignment?: BrandAlignment;
   signupHref?: string;
@@ -703,7 +703,7 @@ export default function AppHeader({
 
   const [personalSession, setSession] = useState<SessionUser | null>(null);
   // Presentation context only: never cache or impersonate the owner session.
-  const session: SessionUser | null = desktopContext ? { id: "", name: desktopContext.name, email: "", accountType: "owner", accountSubtype: null, logoUrl: desktopContext.logoUrl } : personalSession;
+  const session: SessionUser | null = desktopContext ? { id: "", name: desktopContext.name, email: "", accountType: desktopContext.accountType === "dealer" ? "dealer" : "owner", accountSubtype: desktopContext.accountSubtype || null, logoUrl: desktopContext.logoUrl } : personalSession;
   const headerFetch: typeof globalThis.fetch = desktopContext ? async () => new Response("{}", {status: 403}) : globalThis.fetch.bind(globalThis);
   const [accountProfileLogoState, setAccountProfileLogoState] = useState<AccountProfileLogoState>({
     loaded: false,

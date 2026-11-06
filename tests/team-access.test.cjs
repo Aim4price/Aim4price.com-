@@ -22,7 +22,7 @@ async function setup() {
  const query=(sql,args)=>db.query(sql,args);const client={query,release(){}};const pool={query,connect:async()=>client};
  const assets=[asset(aId,reg1),asset(bId,reg2)];
  const docs=[{id:docId,title:'Approved manual',fileName:'manual.pdf',notes:'PRIVATE NOTES',assetLinks:[{id:aId,title:'Tractor'}],deletedAtIso:null}];
- const registers=[{id:reg1,businessName:'Farm A',totalValue:987654},{id:reg2,businessName:'Farm B',totalValue:987654}];
+ const registers=[{id:reg1,businessName:'Farm A',logoUrls:['https://example.com/farm-a.png'],showLogosOnRegister:true,totalValue:987654},{id:reg2,businessName:'Farm B',totalValue:987654}];
  let cookieToken='';
  const login=load('lib/team-login.ts',{'node:crypto':require('node:crypto'),'node:util':require('node:util'),'next/headers':{cookies:()=>({get:()=>cookieToken?{value:cookieToken}:undefined})},'./db':{getDb:()=>pool},'./team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy});
  const service=load('lib/team-access.ts',{
@@ -31,7 +31,7 @@ async function setup() {
   './team-register':load('lib/team-register.ts'),
   './asset-history-schema':{setAssetHistoryActor:async()=>{}},
   './db':{getDb:()=>pool},'./auth-session':{getAnyServerSession:async()=>session},
-  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business'})},
+  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
   './sharing-foundation':{sharingPlan:async id=>id==='owner'?'desktop':'free'},
   './asset-registers':{listAssetRegisters:async id=>id==='owner'?registers:[]},
   './asset-register-db':{listAssetRegisterItems:async(id,reg)=>id==='owner'?assets.filter(a=>a.registerId===reg):[],getAssetRegisterItemById:async(id,key)=>id==='owner'?assets.find(a=>a.id===key):null},
@@ -389,7 +389,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},
   '../../../lib/team-access':f.service,
   '../../../lib/team-access-schema':{ensureTeamAccessSchema:async()=>{}},
-  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:type,accountSubtype:subtype,accountStatus:status,businessName:'Granted business'})},
+  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:type,accountSubtype:subtype,accountStatus:status,businessName:'Granted business',logoUrl:'https://example.com/owner.png',email:'private-owner@example.com',phone:'PRIVATE PHONE'})},
   '../../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
   '../../../lib/team-access-http':{teamJson:b=>b,teamError:e=>{throw e}},
   '../../../lib/business-network-api':{},
@@ -400,6 +400,9 @@ test('My access lists only the signed-in grant and projects safe summaries acros
    assert.equal(response.workspaces.length,1);
    const item=response.workspaces[0];
    assert.equal(item.id,grant.id);assert.equal(item.available,account.allowed);
+   assert.equal(item.logoUrl,account.allowed?'https://example.com/owner.png':'');
+   assert.equal(item.accountType,type);assert.equal(item.accountSubtype,subtype);
+   assert.equal(JSON.stringify(item).includes('private-owner@example.com'),false);assert.equal(JSON.stringify(item).includes('PRIVATE PHONE'),false);
    assert.equal(item.scope,'selected');assert.equal(item.registerCount,1);assert.equal(item.documentCount,1);
    assert.equal(Object.hasOwn(item,'ownerId'),false);assert.equal(Object.hasOwn(item,'documentIds'),false);
    assert.equal(JSON.stringify(response).includes(other.id),false);
@@ -538,4 +541,22 @@ test('normal register hierarchy excludes forbidden members and private owner met
  data.assets=[{...visible,values:{current:100,replacement:200,insured:150},includeInRegisterTotal:true}];
  assert.equal(desktopRegisterSummaries(data)[0].totalValue,100);
  assert.equal(desktopRegisterAssets(data,'grant')[0].value,100);
+});
+
+
+test('desktop branding includes only the owner logo and accessible register logos', async()=>{
+ const f=await setup();try {
+  const grant=await f.active();
+  const scope=await f.service.loadTeamScope(grant.id);
+  assert.equal(scope.logoUrl,'https://example.com/owner.png');
+  const assets=await f.service.teamAssetList(scope);
+  assert.equal(assets.length,1);
+  assert.deepEqual(assets[0].registerLogoUrls,['https://example.com/farm-a.png']);
+  assert.equal(assets[0].values,undefined);
+  const registers=load('lib/team-register.ts').desktopRegisterSummaries({assets});
+  assert.deepEqual(registers.map(r=>r.id),[reg1]);
+  assert.deepEqual(registers[0].logoUrls,['https://example.com/farm-a.png']);
+  assert.equal(registers[0].showLogosOnRegister,true);
+  assert.equal(registers[0].totalValue,0);
+ }finally{await f.db.close();}
 });
