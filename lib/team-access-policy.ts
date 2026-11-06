@@ -19,6 +19,7 @@ export const TEAM_TEMPLATES = {
     office: { label: 'Office', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
 } as const;
 export type TeamGrant = {
+    username?: string;
     managedLogin?: boolean;
     id: string;
     ownerId: string;
@@ -35,6 +36,7 @@ export type TeamGrant = {
     version: number;
 };
 export type TeamActor = {
+    username?: string;
     managedGrantId?: string;
     id: string;
     email: string;
@@ -55,7 +57,7 @@ export function normalizeTeamPermissions(value: unknown): TeamPermissions {
 }
 export function teamGrantIsLive(grant: TeamGrant, actor: TeamActor, now = Date.now()): boolean {
     return grant.status === 'active' && (actor.managedGrantId ? grant.managedLogin === true && grant.id === actor.managedGrantId : !grant.managedLogin && grant.memberUserId === actor.id)
-        && grant.email === actor.email.trim().toLowerCase()
+        && (actor.managedGrantId ? (grant.username || grant.email) === (actor.username || actor.email).trim().toLowerCase() : grant.email === actor.email.trim().toLowerCase())
         && (!grant.expiresAt || new Date(grant.expiresAt).getTime() > now);
 }
 export function teamCanAccessAsset(grant: Pick<TeamGrant, 'scope' | 'registerIds' | 'assetIds'>, asset: {

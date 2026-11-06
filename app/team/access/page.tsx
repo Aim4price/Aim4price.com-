@@ -13,7 +13,7 @@ export default async function MyAccessPage() {
   const session = await getAnyServerSession();
   if (session?.user && await canManageTeamAccess()) redirect('/account');
   const managed = session?.user ? null : await getManagedTeamActor();
-  const email = session?.user?.email || managed?.email;
+  const email = session?.user?.email || managed?.username || managed?.email;
   if (!email) redirect('/team');
   return <>{!managed && <AppHeader active="none" />}<MyAccessClient email={email} name={session?.user?.name || managed?.name || ''} managed={Boolean(managed)} /></>;
 }

@@ -51,6 +51,11 @@ UPDATE team_access t SET status='active',version=t.version+1,updated_at=now()
 WHERE t.status='pending' AND t.managed_login
  AND EXISTS (SELECT 1 FROM team_access_logins l WHERE l.grant_id=t.id)
  AND (t.expires_at IS NULL OR t.expires_at>now());
+-- New business logins have a username, not a personal email identity.
+-- Existing email-based logins remain valid without rewriting their credentials.
+ALTER TABLE team_access ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE team_access ADD COLUMN IF NOT EXISTS username text;
+CREATE UNIQUE INDEX IF NOT EXISTS team_access_username ON team_access(owner_id,lower(username)) WHERE username IS NOT NULL;
 `;
 let ready: Promise<void> | undefined;
 export function ensureTeamAccessSchema() {

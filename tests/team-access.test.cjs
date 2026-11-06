@@ -125,7 +125,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8'),TEAM_ACCESS_SCHEMA);
+ assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8'),TEAM_ACCESS_SCHEMA);
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -295,7 +295,7 @@ test('desktop creation and reactivation stay silent; only manual invitation send
  assert.equal(manual.status,200);assert.equal(manual.body.member.status,'active');assert.ok(!emails[0].text.includes('accept'));assert.equal(emails.length,1);assert.equal(emails[0].to,member.email);assert.ok(emails[0].text.includes('existing Aim4price account'));assert.ok(!JSON.stringify(emails).includes('Do-not-email-this-password'));
  const stale=await route.POST({body:{id:reactivated.body.member.id,version:reactivated.body.member.version,action:'send-invitation'}});
  assert.equal(stale.status,409);assert.equal(emails.length,1);
- const managed=await route.POST({body:{...f.input,email:'new@example.com',action:'save',password:'Initial-password-123',sendInvitation:true}});
+ const managed=await route.POST({body:{...f.input,email:'',username:'new.staff',loginType:'managed',action:'save',password:'Initial-password-123',sendInvitation:true}});
  assert.equal(managed.status,200);assert.equal(managed.body.member.managedLogin,true);assert.equal(emails.length,1);assert.ok(!JSON.stringify(managed).includes('Initial-password-123'));
  }finally{await f.db.close();}
 });
@@ -372,7 +372,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
  const f=await setup();
  try {
  const grant=await f.active({documentIds:[docId]});
- const other=await f.invite({email:'second@example.com',password:'Initial-password-123'});
+ const other=await f.invite({email:'',username:'second.staff',loginType:'managed',password:'Initial-password-123'});
  let type='owner',subtype='',status='active';
  const route=load('app/api/team-workspaces/route.ts',{
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},
@@ -395,7 +395,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
  }
  type='owner';status='suspended';assert.equal((await route.GET()).workspaces[0].available,false);
  status='active';
- const login=await f.login.authenticateTeamLogin('owner','second@example.com','Initial-password-123');
+ const login=await f.login.authenticateTeamLogin('owner','second.staff','Initial-password-123');
  f.setSession(null);f.setCookie(login);
  assert.equal((await route.GET()).workspaces[0].id,other.id);
  await f.db.query("UPDATE team_access SET status='revoked' WHERE id=$1",[other.id]);
@@ -450,4 +450,43 @@ test('Management account direct visits to My access return to Account before loa
   './my-access-client':()=>null,
  });
  await assert.rejects(()=>page.default(),/REDIRECT \/account/);
+});
+
+test('explicit existing-account access never creates a desktop password or silently changes login type',async()=>{
+ const f=await setup();try{
+ await assert.rejects(f.invite({loginType:'existing',email:'missing@example.com'}),/No Aim4price account/);
+ assert.equal((await f.db.query('SELECT count(*)::int AS n FROM team_access')).rows[0].n,0);
+ await assert.rejects(f.invite({loginType:'existing',password:'Must-not-be-used'}),/keep their own/);
+ const grant=await f.invite({loginType:'existing'});
+ assert.equal(grant.memberUserId,member.id);assert.equal(grant.managedLogin,false);
+ await assert.rejects(f.invite({...grant,loginType:'managed'}),/cannot be changed/);
+ await assert.rejects(f.invite({...grant,password:'Must-not-be-used'}),/keep their own/);
+ assert.equal((await f.db.query('SELECT count(*)::int AS n FROM team_access_logins')).rows[0].n,0);
+ }finally{await f.db.close();}
+});
+
+test('username logins are business-scoped, separate from personal accounts, and survive schema reruns',async()=>{
+ const f=await setup();try{
+ const input={loginType:'managed',email:'',username:'  Kuyler.Office  ',password:'Office-password-123'};
+ const grant=await f.invite(input);
+ assert.equal(grant.username,'kuyler.office');assert.equal(grant.email,'');assert.equal(grant.memberUserId,null);assert.equal(grant.managedLogin,true);
+ await assert.rejects(f.invite({...input,username:'KUYLER.OFFICE'}),/already has/);
+ for(const username of ['ab','staff@example.com','bad space','x'.repeat(41)]) await assert.rejects(f.invite({...input,username}),/username/);
+ await assert.rejects(f.invite({...input,username:'no.password',password:''}),/initial password/);
+ const second=await f.invite({...input,username:'second.office'});assert.notEqual(grant.id,second.id);
+ await f.db.exec(TEAM_ACCESS_SCHEMA);await f.db.exec(TEAM_ACCESS_SCHEMA);
+ const personal=await f.invite({loginType:'existing'});
+ f.setSession({user:member});await assert.rejects(f.service.loadTeamScope(grant.id));await f.service.loadTeamScope(personal.id);
+ const token=await f.login.authenticateTeamLogin('owner','KUYLER.OFFICE','Office-password-123');f.setSession(null);f.setCookie(token);
+ const actor=await f.service.requireTeamActor();assert.equal(actor.username,'kuyler.office');assert.equal(actor.managedGrantId,grant.id);
+ await f.service.loadTeamScope(grant.id);await assert.rejects(f.service.loadTeamScope(second.id));await assert.rejects(f.service.loadTeamScope(personal.id));await assert.rejects(f.service.requireTeamOwner());
+ await assert.rejects(f.login.authenticateTeamLogin('other','kuyler.office','Office-password-123'));
+ await assert.rejects(f.invite({...grant,loginType:'managed',username:'renamed'}),/unavailable/);
+ const updated=await f.invite({...grant,loginType:'managed',password:'New-office-password-123'});
+ assert.equal(await f.login.getManagedTeamActor(),null);
+ await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler.office','Office-password-123'));
+ f.setCookie(await f.login.authenticateTeamLogin('owner','kuyler.office','New-office-password-123'));
+ await f.service.setTeamGrantStatus(owner,updated.id,updated.version,'revoked');assert.equal(await f.login.getManagedTeamActor(),null);
+ await assert.rejects(f.login.authenticateTeamLogin('owner','kuyler.office','New-office-password-123'));
+ }finally{await f.db.close();}
 });

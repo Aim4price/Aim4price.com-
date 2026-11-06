@@ -68,7 +68,7 @@ export async function POST(request: NextRequest, { params }: Context) {
                 }
             },
             after: async (client, documentId) => {
-                await client.query(`INSERT INTO team_access_activity(id,owner_id,membership_id,actor_id,actor_email,asset_id,action,details) VALUES($1,$2,$3,$4,$5,$6,'Document uploaded',$7::jsonb)`, [key, ownerId, scope.grant.id, scope.actor.id, scope.actor.email, assetId, JSON.stringify({ documentId })]);
+                await client.query(`INSERT INTO team_access_activity(id,owner_id,membership_id,actor_id,actor_email,asset_id,action,details) VALUES($1,$2,$3,$4,$5,$6,'Document uploaded',$7::jsonb)`, [key, ownerId, scope.grant.id, scope.actor.id, scope.actor.username || scope.actor.email, assetId, JSON.stringify({ documentId })]);
             },
         });
         if (reused)
