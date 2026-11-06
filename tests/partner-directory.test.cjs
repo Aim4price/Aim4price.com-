@@ -6,7 +6,8 @@ function fixture({bounds=null,selected=[],initial=[]}={}){
  const state={partners:initial,requests:[],search:'',stage:'',location:'George'},pending=[];
  const context={quoteLocationInput:'',selectedQuoteLeadType:'replacement_quote',quotePartnerSearch:'',quoteOptionForLeadType:()=>({partnerType:'dealer'}),quoteDirectoryBoundsRef:{current:bounds},quotePartnerRequestRef:{current:0},selectedQuotePartnerIds:selected,
  setQuotePartners:v=>state.partners=typeof v==='function'?v(state.partners):v,setSelectedQuotePartnerIds:()=>{},setIsLoadingQuotePartners:()=>{},setNotice:()=>{},extractApiError:()=> 'Failed',setQuoteLocationInput:v=>state.location=v,setQuotePartnerSearch:v=>state.search=v,setDirectoryBusiness:()=>{},setQuoteDirectoryStage:v=>state.stage=v,
- fetch:(url)=>{state.requests.push(url);return new Promise(resolve=>pending.push(partners=>resolve({ok:true,json:async()=>({ok:true,partners})})));}};
+ // The extracted owner directory handlers use the guarded owner transport.
+ ownerFetch:(url)=>{state.requests.push(url);return new Promise(resolve=>pending.push(partners=>resolve({ok:true,json:async()=>({ok:true,partners})})));}};
  const actions=new Function(...Object.keys(context),code+';return {loadQuotePartners,showAllQuotePartners};')(...Object.values(context));return{...actions,state,pending};
 }
 test('directory name searches preserve area and include businesses without coordinates',async()=>{
