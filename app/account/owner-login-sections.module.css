@@ -275,21 +275,17 @@
 .desktopFlow .choice > span { min-width:0; }
 .desktopFlow .statusAction button { white-space:nowrap; }
 .desktopFlow .fields > label { gap:.45rem; }
-.desktopFlow .roleChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
+.desktopFlow .roleChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
 .desktopFlow .roleChoices.dealerRoles { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .desktopFlow .roleChoices > :last-child { grid-column:auto; }
-.desktopFlow .roleChoices .choice { position:relative; justify-content:center; text-align:center; padding:.8rem .5rem; }
-.desktopFlow .roleChoices .choice strong { font-size:.9rem; }
-.desktopFlow .roleChoices .choice input { position:absolute; opacity:0; width:1px; height:1px; }
-.desktopFlow .roleChoices .choice small { font-size:.8rem; }
+.desktopFlow .roleChoices .choice { position:relative; justify-content:flex-start; text-align:left; padding:1rem; gap:.65rem; }
+.desktopFlow .roleChoices .choice strong { font-size:1rem; }
+.desktopFlow .roleChoices .choice input { position:static; opacity:1; width:1.15rem; height:1.15rem; }
+.desktopFlow .roleChoices .choice small { font-size:.88rem; }
 .desktopFlow .roleChoices .choice[data-selected=true] { box-shadow:inset 0 0 0 1px var(--app-accent,#28815f); }
 /* Owner roles use the same left-aligned radio cards as asset access. */
 .desktopFlow .roleChoices:not(.dealerRoles) { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
 .desktopFlow .roleChoices:not(.dealerRoles) > :last-child { grid-column:1 / -1; }
-.desktopFlow .roleChoices:not(.dealerRoles) .choice { justify-content:flex-start; text-align:left; padding:1rem; gap:.65rem; }
-.desktopFlow .roleChoices:not(.dealerRoles) .choice input { position:static; opacity:1; width:1.15rem; height:1.15rem; }
-.desktopFlow .roleChoices:not(.dealerRoles) .choice strong { font-size:1rem; }
-.desktopFlow .roleChoices:not(.dealerRoles) .choice small { font-size:.88rem; }
 
 .desktopFlow .statusAction { border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; padding:1rem; margin-top:1rem; }
 .desktopFlow .statusAction:last-child { padding-bottom:1rem; }
