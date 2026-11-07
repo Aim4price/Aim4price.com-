@@ -363,3 +363,25 @@
   :global(body:not(:has([data-website-canvas]))) .flowTitle { gap: .6rem; }
   :global(body:not(:has([data-website-canvas]))) .titleLogo { width: 2rem; height: 2rem; }
 }
+
+/* A complete self-service guide, with the address beside its copy action. */
+.selfSetup { display: grid; gap: 1.1rem; }
+.selfSetup h3 { margin: 0; font-size: 1.05rem; }
+.selfSetup p { margin: .35rem 0 0; color: var(--app-muted, #60746d); font-size: .85rem; line-height: 1.5; }
+.setupStart { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.setupStart a { flex-shrink: 0; }
+.addressStep { padding: 1rem 1.2rem; border: 1px solid var(--app-border, #d6e4de); border-radius: 1rem; background: var(--app-surface-soft, #f3f8f5); }
+.addressStep .serverAddress { margin-top: .75rem; }
+.selfSetup .setupRequirement { font-size: .75rem; }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .setupStart { flex-direction: column; align-items: stretch; }
+  :global(body:not(:has([data-website-canvas]))) .flowPanel .assistantChoice { grid-template-rows: 1fr; }
+  :global(body:not(:has([data-website-canvas]))) .assistantLogo { grid-row: auto; }
+}
+
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .selfSetup { gap: .7rem; }
+  :global(body:not(:has([data-website-canvas]))) .selfSetup p { font-size: .78rem; line-height: 1.4; }
+  :global(body:not(:has([data-website-canvas]))) .addressStep { padding: .8rem; }
+  :global(body:not(:has([data-website-canvas]))) .selfSetup .setupRequirement { font-size: .7rem; }
+}
