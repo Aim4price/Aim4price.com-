@@ -1916,7 +1916,7 @@ export default function AccountClient({
                   </div>
                   <div className={styles.quickActionList}>
                     {!(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
-                    {canManageDesktopUsers && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>{isMiddlemanAccount ? "Desktop asset access" : "Desktop users"}</strong></Link>}
+                    {canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button

@@ -2,8 +2,8 @@ import { CLIENT_TEAM_PERMISSIONS, EMPTY_TEAM_PERMISSIONS, OWNER_TEAM_PERMISSIONS
 
 export type TeamAccountKind = 'owner' | 'dealer' | 'business';
 export function teamAccountKind(type: string, subtype?: string | null): TeamAccountKind | null {
-  // Existing Middleman grants retain their asset-only behavior; no client features are added.
-  if (type === 'dealer' && (subtype || '').toLowerCase().includes('middleman')) return 'owner';
+  // Middleman accounts use app access only, including accounts stored as a Dealer subtype.
+  if (type === 'dealer' && (subtype || '').toLowerCase().includes('middleman')) return null;
   return type === 'owner' || type === 'dealer' || type === 'business' ? type : null;
 }
 const preset = (label: string, detail: string, keys: readonly TeamPermission[]) => ({ label, detail, permissions: normalizeTeamPermissions({ ...EMPTY_TEAM_PERMISSIONS, ...Object.fromEntries(keys.map(key => [key, true])) }) });

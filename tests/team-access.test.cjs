@@ -34,7 +34,7 @@ async function setup(options={}) {
   './team-register':load('lib/team-register.ts'),
   './asset-history-schema':{setAssetHistoryActor:async()=>{}},
   './db':{getDb:()=>pool},'./auth-session':{getAnyServerSession:async()=>session},
-  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?(options.accountType||'owner'):user.id==='other'?'dealer':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
+  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?(options.accountType||'owner'):user.id==='other'?'dealer':'business',accountSubtype:user.id==='owner'?(options.accountSubtype||''):'',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
   './sharing-foundation':{sharingPlan:async id=>['owner','other'].includes(id)?'desktop':'free'},
   './asset-registers':{listAssetRegisters:async id=>id==='owner'?registers:[]},
   './asset-register-db':{listAssetRegisterItemsForRegisters:async(id,regs)=>id==='owner'?assets.filter(a=>regs.includes(a.registerId)):[],getAssetRegisterItemById:async(id,key)=>id==='owner'?assets.find(a=>a.id===key):null},
@@ -460,7 +460,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
   '../../../lib/team-access-http':{teamJson:b=>b,teamError:e=>{throw e}},
   '../../../lib/business-network-api':{},
  });
- for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:true},{type:'business',allowed:true}]){
+ for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:false},{type:'business',allowed:true}]){
    type=account.type;subtype=account.subtype||'';
    const response=await route.GET();
    assert.equal(response.workspaces.length,1);
@@ -676,4 +676,25 @@ test('Dealer and Business create isolated logins with an empty own-asset scope a
  const saved=await f.service.saveTeamGrant(owner,{...grant,loginType:'managed',displayName:'Updated name'});assert.equal(saved.displayName,'Updated name');assert.deepEqual(saved.clientWorkIds,[]);
  }finally{await f.db.close();}
  }
+});
+
+
+test('Middleman cannot administer desktop users or use legacy grants after account conversion',async()=>{
+ const options={accountType:'dealer',accountSubtype:''};const f=await setup(options);
+ try {
+  const grant=await f.active();
+  for(const subtype of ['middleman','machinery-middleman','MIDDLEMAN']){
+   options.accountSubtype=subtype;
+   f.setSession({user:owner});
+   assert.equal(await f.service.canManageTeamAccess(),false);
+   await assert.rejects(()=>f.service.requireTeamOwner(),/active Owner, Dealer or Business/);
+   await assert.rejects(()=>f.invite(),/Only the active desktop account holder/);
+   f.setSession({user:member});
+   await assert.rejects(()=>f.service.loadTeamScope(grant.id),/workspace is unavailable/);
+  }
+  options.accountSubtype='';options.accountType='middleman';
+  assert.equal(await f.service.teamIssuerAvailable('owner',{accountType:'middleman',accountStatus:'active'}),false);
+  options.accountType='dealer';
+  assert.equal((await f.service.loadTeamScope(grant.id)).grant.id,grant.id);
+ }finally{await f.db.close();}
 });
