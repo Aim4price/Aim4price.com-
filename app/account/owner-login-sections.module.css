@@ -180,8 +180,6 @@
 .sectionManager .choice { align-items:flex-start; gap:.65rem; padding:1rem; background:var(--app-surface-soft,#f3f6f4); }
 .sectionManager .choice input { margin:.15rem 0 0; }
 .sectionManager .choice[data-selected=true] { background:var(--app-success-soft,#e8f2ed); }
-.sectionManager .choice[data-permission-tone=maintenance] { background:color-mix(in srgb,#e89a37 9%,var(--app-surface,#fff)); }
-.sectionManager .choice[data-permission-tone=fuel] { background:color-mix(in srgb,#d96464 8%,var(--app-surface,#fff)); }
 .sectionManager .choice[data-selected=true] { border-color:var(--app-accent,#28815f); }
 .sectionManager .assetPanel .grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .sectionManager .assetPanel > .hint { margin-top:1rem; }
@@ -259,8 +257,9 @@
 .sectionManager.sectionManager .choice small { font-weight:650; }
 
 /* App login editors share the desktop flow while retaining their own permissions. */
-.desktopFlow .settingsLayout { grid-template-columns:10.5rem minmax(0,1fr); gap:1.5rem; }
-.desktopFlow .sectionNav { position:sticky; top:0; }
+.desktopFlow .settingsLayout { grid-template-columns:max-content minmax(0,1fr); gap:1.5rem; }
+.desktopFlow .sectionNav { position:sticky; top:0; min-width:11.5rem; }
+.desktopFlow .sectionNav button { white-space:nowrap; min-height:2.75rem; }
 .desktopFlow .sectionNav .backToUsers { margin-bottom:.5rem; padding-bottom:.85rem; border-radius:0; border-bottom:1px solid var(--app-line,#d8e5dd); color:var(--app-muted,#63766f); }
 .sectionHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 .desktopFlow .sectionHeading { margin-bottom:1rem; }
@@ -270,8 +269,11 @@
 .desktopFlow .settingsContent { min-height:0; padding:0; }
 .desktopFlow .settingsContent > form { gap:1rem; }
 .desktopFlow .settingsContent > form > .fields { margin-bottom:0; }
-.desktopFlow .hint,.desktopFlow .choice small { font-weight:400; font-size:.88rem; line-height:1.5; }
+.desktopFlow .hint,.desktopFlow.sectionManager .choice small { font-weight:400; font-size:.88rem; line-height:1.5; }
 .desktopFlow .fields { gap:1rem 1.25rem; }
+.desktopFlow .choice:focus-within { outline:2px solid var(--app-accent,#28815f); outline-offset:3px; }
+.desktopFlow .choice > span { min-width:0; }
+.desktopFlow .statusAction button { white-space:nowrap; }
 .desktopFlow .fields > label { gap:.45rem; }
 .desktopFlow .roleChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
 .desktopFlow .roleChoices.dealerRoles { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -294,7 +296,7 @@
 .saveFooter button:focus-visible { outline:3px solid var(--app-accent,#28815f); outline-offset:3px; }
 @media(max-width:760px) {
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .settingsLayout { grid-template-columns:minmax(0,1fr); gap:1rem; }
- :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; position:static; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; position:static; min-width:0; }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav button { white-space:nowrap; }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav .backToUsers { margin:0; padding:.6rem .85rem; border-bottom:0; border-right:1px solid var(--app-line,#d8e5dd); }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .roleChoices { grid-template-columns:1fr; }

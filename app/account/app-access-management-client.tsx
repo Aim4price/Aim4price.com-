@@ -147,13 +147,13 @@ const OWNER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
 ];
 
 const ASSET_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['assetScope']>> = [
-  { value: 'all', label: 'All assets', description: 'Includes every current and future asset.' },
-  { value: 'selected', label: 'Selected assets only', description: 'Choose the exact assets this manager may use.' },
+  { value: 'all', label: 'All assets', description: 'All current and future assets.' },
+  { value: 'selected', label: 'Selected assets only', description: 'Choose which assets they can use.' },
 ];
 
 const FUEL_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['fuelScope']>> = [
-  { value: 'all', label: 'All fuel tanks', description: 'Includes every current and future fuel tank.' },
-  { value: 'selected', label: 'Selected tanks only', description: 'Choose the exact tanks this manager may use.' },
+  { value: 'all', label: 'All fuel tanks', description: 'All current and future tanks.' },
+  { value: 'selected', label: 'Selected tanks only', description: 'Choose which tanks they can use.' },
 ];
 
 function dealerRoleLabel(value: unknown): string {
