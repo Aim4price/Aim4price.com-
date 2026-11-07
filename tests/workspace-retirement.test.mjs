@@ -27,6 +27,12 @@ test('legacy roles map to normal Business service categories only', () => {
 test('retired share URLs never fall through to an unrelated owner register', async () => {
   let allowed = true;
   const api = load('lib/owner-workspace-access.ts', {
+    './db': {},
+    './my-invoices': {},
+    './desktop-workspace': { getDesktopScope: async () => null },
+    './team-access': {},
+    './team-access-policy': load('lib/team-access-policy.ts'),
+    './team-workspace-policy': {},
     './auth-session': { getServerSession: async () => ({ user: { id: 'owner-1', name: 'Owner', email: 'owner@example.com' } }) },
     './asset-register-account-access': { getAssetRegisterAccountAccess: async () => allowed ? {} : null },
   });

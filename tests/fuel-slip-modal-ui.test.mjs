@@ -136,7 +136,7 @@ test('fuel slip filters use the Cost Ledger modal language without limiting mont
 
 test('pagination limits rendering while exports send independent filters to the full-history endpoint', () => {
   assert.match(client, /visibleFuelSlipManagerSlips\.slice\(startIndex, startIndex \+ fuelSlipLimit\)/);
-  const downloadHandler = sliceBetween(client, '<ReportDownloadFlow instantDownload compactTimeline title="Fuel slip reports"', 'historyFuelSlip ?');
+  const downloadHandler = sliceBetween(client, '<ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} instantDownload compactTimeline title="Fuel slip reports"', 'historyFuelSlip ?');
   assert.match(downloadHandler, /scopedApiUrl\('\/api\/fuel\/slips\/export'\)/);
   assert.match(downloadHandler, /filters:\{assetId:selection\.assetId,year:selection\.year,month:selection\.month/);
   assert.doesNotMatch(downloadHandler, /paginatedFuelSlipManagerSlips|recentFuelSlips|fuelSlipManagerSearchTerm/);
@@ -285,6 +285,7 @@ test('evidence upload preserves entry values and handles failure, invalid files 
     FormData: class { append() {} },
     fetch: async () => { calls++; return response; },
   };
+  context.desktop = { request: (...args) => context.fetch(...args) };
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText, context);
   await context.handleFuelEvidenceUpload({ type: 'text/plain', size: 123 });
   assert.equal(calls, 0);

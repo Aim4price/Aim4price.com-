@@ -1,3 +1,4 @@
+import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../lib/owner-workspace-access';
 import {latestTrackingPositions} from '../../../lib/asset-tracking';
 import { NextResponse } from "next/server";
 import { getServerSession } from "../../../lib/auth-session";
@@ -459,12 +460,12 @@ function mapAssetForMap(
   };
 }
 
-export async function GET() {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+export async function GET(request: Request) {
+  const resolved = await resolveOwnerWorkspaceContext(request);
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
+  const session = { user: { id: workspace.ownerUserId } };
+  const allowedIds = await getWorkspaceAssetIds(workspace);
 
   try {
     const registers = await listAssetRegisters(session.user.id);
@@ -483,7 +484,7 @@ export async function GET() {
     );
 
     const assets = registerBundles.flatMap(({ register, items }) =>
-      items.map((item) => mapAssetForMap(item, register)),
+      items.filter(item => !allowedIds || allowedIds.has(item.id)).map((item) => mapAssetForMap(item, register)),
     );
     const byAsset=await latestTrackingPositions(session.user.id);
     for(const asset of assets){
@@ -496,6 +497,10 @@ export async function GET() {
           asset.updatedAtIso=asset.lastTrackedAtIso;
         }
       }
+    }
+    if (workspace.team) for (const asset of assets) {
+      if (!workspace.team.grant.permissions.viewValues) { asset.value = 0; asset.replacementPriceExVat = null; asset.financeStatus = 'unknown'; asset.insuranceStatus = 'unknown'; }
+      if (!workspace.team.grant.permissions.viewPhotos) asset.photos = [];
     }
     const mappedAssets = assets.filter((asset) =>
       hasCoordinates(asset.lastKnownLat, asset.lastKnownLng),
@@ -512,7 +517,7 @@ export async function GET() {
 
     const registerFilters: AssetMapFilterOption[] = [
       { id: "all", label: "All Assets", registerId: null },
-      ...registerContexts.map((register) => ({
+      ...registerContexts.filter(register => !allowedIds || assets.some(asset => asset.registerId === register.id)).map((register) => ({
         id: register.id,
         label: register.label,
         registerId: register.id,

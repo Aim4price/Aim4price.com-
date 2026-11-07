@@ -313,6 +313,8 @@ test('cost entry chooser preserves record, review and asset deep links behind ow
   let accountType = 'owner';
   const dependencies = {
     'react/jsx-runtime': runtime,
+    '../../components/DesktopWorkspace': {DesktopWorkspaceProvider: () => null},
+    '../../lib/desktop-workspace': {getDesktopScope: async () => null},
     'next/navigation': {redirect: path => {throw new Error(`redirect:${path}`);}},
     '../../lib/account-access': {requireActivePageAccess: async () => ({session:{user:{id:'owner'}}})},
     '../../lib/account-profile': {getAccountProfile: async () => ({accountType})},

@@ -1,4 +1,5 @@
 'use client';
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import { createPortal } from '../../components/WebsitePortal';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -355,6 +356,7 @@ type DocumentsClientProps = {
 };
 
 export default function DocumentsClient({ initialAssetId = '', initialReturnTo = '', uploadContext }: DocumentsClientProps) {
+  const desktop = useDesktopControls();
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
   const [assets, setAssets] = useState<AssetLink[]>([]);
@@ -416,7 +418,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       if (targetView === 'recycle-bin') searchParams.set('view', 'recycle-bin');
       if (initialAssetId) searchParams.set('assetId', initialAssetId);
       const query = searchParams.size ? `?${searchParams.toString()}` : '';
-      const response = await fetch(`/api/documents${query}`, { cache: 'no-store' });
+      const response = await desktop.request(`/api/documents${query}`, { cache: 'no-store' });
       const data = await readVaultResponse(response, 'The Document Vault could not be loaded.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The Document Vault could not be loaded.');
       if (sequence !== requestSequence.current) return false;
@@ -627,6 +629,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }
 
   function openUploadModal() {
+    if (!desktop.allow('uploadDocuments')) return;
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
     uploadKeys.current.clear();
@@ -650,6 +653,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }
 
   function openEditModal(document: VaultDocument) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     returnFocusRef.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
     setEditingDocument(document);
     setDocumentExpires(Boolean(document.expiryDate));
@@ -940,7 +944,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             formData.set('notes', draft.notes.trim());
             formData.set('expiryDate', draft.expiryDate);
             formData.set('assetIds', JSON.stringify(uploadContext ? [uploadContext.asset.id] : draft.assetIds));
-            const response = await fetch('/api/documents', { method: 'POST', body: formData });
+            const response = await desktop.request('/api/documents', { method: 'POST', body: formData });
             const data = await readVaultResponse(response, `${file.name} could not be saved.`);
             if (!response.ok || !data.ok) throw new Error(data.error || `${file.name} could not be saved.`);
             uploadedCount += 1;
@@ -995,7 +999,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           });
         }
       } else {
-        const response = await fetch(`/api/documents/${encodeURIComponent(editingDocument?.id ?? '')}`, {
+        const response = await desktop.request(`/api/documents/${encodeURIComponent(editingDocument?.id ?? '')}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(draft),
@@ -1040,7 +1044,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setNotice(null);
     setModalNotice(null);
     try {
-      const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
+      const response = await desktop.request(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
       const data = await readVaultResponse(response, 'The document could not be moved.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be moved.');
 
@@ -1062,7 +1066,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setNotice(null);
     setModalNotice(null);
     try {
-      const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}?permanent=1`, { method: 'DELETE' });
+      const response = await desktop.request(`/api/documents/${encodeURIComponent(document.id)}?permanent=1`, { method: 'DELETE' });
       const data = await readVaultResponse(response, 'The document could not be permanently deleted.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be permanently deleted.');
 
@@ -1083,7 +1087,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setOperationBusy(true);
     setNotice(null);
     try {
-      const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, {
+      const response = await desktop.request(`/api/documents/${encodeURIComponent(document.id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'restore' }),
@@ -1102,7 +1106,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function renderDocumentCard(document: VaultDocument) {
     const expiry = documentExpiryState(document.expiryDate);
-    const downloadUrl = `/api/documents/${encodeURIComponent(document.id)}/download`;
+    const downloadUrl = desktop.url(`/api/documents/${encodeURIComponent(document.id)}/download`);
     const isDeleted = view === 'recycle-bin';
 
     return (
@@ -1157,7 +1161,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <DocumentFileLink href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
             <Icon name="eye" /> Preview
           </DocumentFileLink>
-          <DocumentFileLink href={`${downloadUrl}?download=1`} className={`${styles.actionButton} ${styles.downloadButton}`} download>
+          <DocumentFileLink href={`${downloadUrl}${downloadUrl.includes("?") ? "&" : "?"}download=1`} className={`${styles.actionButton} ${styles.downloadButton}`} download>
             <Icon name="download" /> Download
           </DocumentFileLink>
           {isDeleted ? (
@@ -1187,7 +1191,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const content = (
     <>
       {!uploadContext && <div ref={pageContentRef} className={styles.pageContent}>
-        <AppHeader active="documents" />
+        <>{desktop.dialog}<AppHeader active="documents" /></>
 
         <main className={styles.shell}>
           <div className={styles.vaultCanvas}>

@@ -1,4 +1,5 @@
 'use client';
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import umbrellaStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
@@ -50,6 +51,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   budgets: TrackedBudget[]; loading: boolean; error: string; onRetry: () => void;
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
+  const desktop = useDesktopControls();
   const [pageSize, setPageSize] = useState<ListPageSize>(6);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
@@ -75,7 +77,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
-      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
+      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts'))setDownloadOpen(true);}} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
     </section>
     <div className={`${ledger.invoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
@@ -118,17 +120,18 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
           <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); onEdit(selected.id); }}>
             <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><Icon kind="edit" /></i><span><strong>Edit budget &amp; alerts</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update the limit and reminders.</small></span>
           </button>
-          <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); onDelete(selected.id); }}>
+          <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); if (desktop.allow('manageBudgets')) onDelete(selected.id); }}>
             <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><Icon kind="delete" /></i><span><strong>Delete budget</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this spending budget.</small></span>
           </button>
         </div>
       </Dialog>
     ) : null}
-    {downloadOpen ? <ReportDownloadFlow title="Budget reports" allLabel="All budgets" assets={Array.from(new Map(budgets.filter(b=>b.assetId).map(b=>[b.assetId!,{...reportAssets.find(asset=>asset.id === b.assetId),id:b.assetId!,title:b.assetTitle}])).values())} lockedAssetId={scopeAssetId || undefined} budgetPeriods
+    {desktop.dialog}{downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Budget reports" allLabel="All budgets" assets={Array.from(new Map(budgets.filter(b=>b.assetId).map(b=>[b.assetId!,{...reportAssets.find(asset=>asset.id === b.assetId),id:b.assetId!,title:b.assetTitle}])).values())} lockedAssetId={scopeAssetId || undefined} budgetPeriods
       fields={[{key:'period',label:'Budget period',initial:'all',options:[{value:'all',label:'Current month and year'},{value:'monthly',label:'Current monthly budgets'},{value:'annual',label:'Current annual budgets'}]},{key:'status',label:'Budget status',initial:'all',options:[{value:'all',label:'All statuses'},{value:'attention',label:'Needs attention'},{value:'on_track',label:'Within budget'}]}]}
       onClose={()=>setDownloadOpen(false)} onDownload={async selection=>{
         const params=new URLSearchParams({format:selection.format === 'pdf' ? 'html' : 'xlsx',asset:selection.assetId,period:selection.fields.period,status:selection.fields.status});
-        const url='/api/my-invoices/budgets/report?'+params;
+        if (!desktop.allow('exportCosts')) return;
+        const url=desktop.url('/api/my-invoices/budgets/report?'+params);
         if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
         else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
       }} /> : null}

@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Enter valid fuel storage details.' }, { status: 400 });
   }
 
+  if (resolved.context.team && body.pin) return NextResponse.json({ok:false,error:'Fuel PINs are managed by the account holder.'},{status:403});
   try {
     const storage = await createFuelStorage(resolved.context.ownerUserId, body);
     const ledger = await filterFuelLedgerForWorkspace(
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       await listFuelLedger(resolved.context.ownerUserId),
     );
 
-    return NextResponse.json({ ok: true, storage, ...ledger });
+    return NextResponse.json({ ok: true, storage: resolved.context.team ? ledger.storages.find(tank=>tank.id===storage.id) : storage, ...ledger });
   } catch (error) {
     const message = errorMessage(error, 'Failed to create fuel storage.');
     return NextResponse.json({ ok: false, error: message }, { status: 400 });

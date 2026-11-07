@@ -1,3 +1,4 @@
+import { assertTeamFuelTarget } from '../../../../../lib/owner-workspace-access';
 import { NextResponse } from 'next/server';
 import { getFuelSlipTransactionById, listFuelLedger, saveFuelSlipTransaction, voidFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
 import {
@@ -35,12 +36,16 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   try {
     const existing = await getFuelSlipTransactionById(workspace.ownerUserId, slipId);
+    if (workspace.team && !existing) return NextResponse.json({ok:false,error:'Fuel entry unavailable.'},{status:404});
+    if (existing) await assertTeamFuelTarget(workspace, existing);
     if (existing?.assetId) await assertWorkspaceAssetAccess(workspace, existing.assetId);
+    await assertTeamFuelTarget(workspace, payload);
     if (String(payload.targetType ?? '').trim() === 'asset') {
       await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
     }
     const result = await saveFuelSlipTransaction(workspace.ownerUserId, {
       ...payload,
+      ...(workspace.team && existing ? {captureRequestId:undefined,offlineEventId:undefined,uploadId:existing.uploadId,documentFileUrl:existing.documentFileUrl,originalFilename:existing.originalFilename,contentType:existing.contentType,byteSize:existing.byteSize,updateAssetUsage:workspace.team.grant.permissions.updateUsage && payload.updateAssetUsage !== false,latitude:workspace.team.grant.permissions.updateLocation ? payload.latitude : existing.latitude,longitude:workspace.team.grant.permissions.updateLocation ? payload.longitude : existing.longitude,locationText:workspace.team.grant.permissions.updateLocation ? payload.locationText : existing.locationText} : {}),
       id: slipId,
       slipId,
       fuelSlipId: slipId,
@@ -55,9 +60,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return NextResponse.json({
       ok: true,
-      fuelSlip: result.fuelSlip,
-      storage: result.storage,
-      event: result.event,
+      fuelSlip: workspace.team ? ledger.recentFuelSlips.find(slip => slip.id === result.fuelSlip.id) : result.fuelSlip,
+      storage: workspace.team ? null : result.storage,
+      event: workspace.team ? null : result.event,
       pendingReview: result.pendingReview,
       message: result.message,
       ...ledger,
@@ -84,6 +89,8 @@ export async function DELETE(request: Request, context: RouteContext) {
 
   try {
     const existing = await getFuelSlipTransactionById(workspace.ownerUserId, slipId);
+    if (workspace.team && !existing) return NextResponse.json({ok:false,error:'Fuel entry unavailable.'},{status:404});
+    if (existing) await assertTeamFuelTarget(workspace, existing);
     if (existing?.assetId) await assertWorkspaceAssetAccess(workspace, existing.assetId);
     const payload = await request.json().catch(() => ({})) as Record<string, unknown>;
     await voidFuelSlipTransaction(workspace.ownerUserId, slipId, {

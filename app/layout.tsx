@@ -1,3 +1,5 @@
+import { DesktopWorkspaceProvider } from '../components/DesktopWorkspace';
+import { getDesktopScope, desktopWorkspace } from '../lib/desktop-workspace';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { APP_REQUEST_CONTEXT_SCRIPT } from '../lib/app-request-context';
@@ -56,7 +58,8 @@ export const viewport: Viewport = {
   userScalable: true,
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const desktop = await getDesktopScope().catch(() => null);
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -77,7 +80,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <HoverLabels />
         <div className="appRoot">
           <SiteWorkspaceZoom footer={<AppFooter />} operational={<AdminWorkTrackerBar />}>
-            <AppPatternBackground>{children}</AppPatternBackground>
+            <DesktopWorkspaceProvider workspace={desktop ? desktopWorkspace(desktop) : null}><AppPatternBackground>{children}</AppPatternBackground></DesktopWorkspaceProvider>
           </SiteWorkspaceZoom>
         </div>
       </body>

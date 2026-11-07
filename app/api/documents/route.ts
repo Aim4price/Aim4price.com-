@@ -1,3 +1,6 @@
+import { getDesktopScope } from '../../../lib/desktop-workspace';
+import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../lib/owner-workspace-access';
+import { teamDocuments, requireTeamAsset, lockTeamScope, auditTeam } from '../../../lib/team-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import {
@@ -27,7 +30,13 @@ function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
-async function requireAssetRegisterUser() {
+async function requireAssetRegisterUser(request: Request) {
+  const team = await getDesktopScope(new URL(request.url).searchParams.get('desktopMembershipId') || undefined);
+  if (team) {
+    const resolved = await resolveOwnerWorkspaceContext(request);
+    if (!resolved.ok) return resolved;
+    return {ok:true as const,userId:team.grant.ownerId,team,workspace:resolved.context};
+  }
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return { ok: false as const, response: unauthorized() };
 
@@ -41,7 +50,7 @@ async function requireAssetRegisterUser() {
     };
   }
 
-  return { ok: true as const, userId: session.user.id };
+  return { ok: true as const, userId: session.user.id, team:undefined, workspace:undefined };
 }
 
 function isFile(value: FormDataEntryValue | null): value is File {
@@ -97,10 +106,18 @@ function errorResponse(error: unknown, fallback: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const owner = await requireAssetRegisterUser();
+  const owner = await requireAssetRegisterUser(request);
   if (!owner.ok) return owner.response;
 
   try {
+    if (owner.team && owner.workspace) {
+      const ids = (await getWorkspaceAssetIds(owner.workspace))!;
+      const assetId = request.nextUrl.searchParams.get('assetId') || '';
+      const documents = (await teamDocuments(owner.team)).filter(doc => !assetId || doc.assetLinks.some(asset => asset.id === assetId));
+      const assets = (await listAccountDocumentAssetOptions(owner.userId)).filter(asset => ids.has(asset.id)).map(asset => ({...asset,currentValue:owner.team!.grant.permissions.viewValues ? asset.currentValue : 0}));
+      const summary = {totalDocuments:documents.length,linkedDocuments:documents.length,storageBytes:documents.reduce((sum,doc)=>sum+doc.byteSize,0),expiringSoon:documents.filter(doc=>doc.expiryDate && Date.parse(doc.expiryDate)<=Date.now()+30*86400000).length};
+      return NextResponse.json({ok:true,documents,assets,summary,selectedAsset:assets.find(asset=>asset.id===assetId)||null},{headers:{'Cache-Control':'private, no-store'}});
+    }
     const includeDeleted = request.nextUrl.searchParams.get('view') === 'recycle-bin';
     const assetId = String(request.nextUrl.searchParams.get('assetId') ?? '').trim().slice(0, 120);
     const [documents, summary, assets] = await Promise.all([
@@ -118,7 +135,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const owner = await requireAssetRegisterUser();
+  const owner = await requireAssetRegisterUser(request);
   if (!owner.ok) return owner.response;
 
   let savedUploadId = '';
@@ -148,6 +165,10 @@ export async function POST(request: NextRequest) {
       );
     }
     const assetIds = parseAssetIds(formData.get('assetIds'));
+    if (owner.team) {
+      if (!assetIds.length) return NextResponse.json({ok:false,error:'Choose at least one accessible asset.'},{status:400});
+      for (const id of assetIds) await requireTeamAsset(owner.team,id);
+    }
     const documentTypeEntry = formData.get('documentType');
     const hasDocumentType = typeof documentTypeEntry === 'string' && Boolean(documentTypeEntry.trim());
     if (assetIds.length && !hasDocumentType) {
@@ -189,8 +210,12 @@ export async function POST(request: NextRequest) {
       fileName: upload.fileName,
       contentType: upload.contentType,
       byteSize: upload.byteSize,
-    });
+    }, owner.team ? {
+      before: async client => { for (const id of [...assetIds].sort()) await lockTeamScope(client,owner.team!,id,'uploadDocuments'); },
+      after: async (client,documentId) => { await auditTeam(client,owner.team!.actor,owner.team!.grant,'Document uploaded',assetIds[0],{documentId}); },
+    } : undefined);
     savedUploadId = '';
+    if (owner.team) return NextResponse.json({ok:true,message:'Document uploaded. Its viewing access is controlled by the account holder.'},{status:201});
     const summary = await getAccountDocumentSummary(owner.userId).catch((summaryError) => {
       console.error('Aim4price Document Vault summary refresh failed after upload.', summaryError);
       return undefined;

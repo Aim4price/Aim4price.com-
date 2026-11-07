@@ -12,3 +12,11 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .details > div { grid-template-columns:1fr; gap:.25rem; }
 }
+
+.permissionGroups { display:grid; gap:12px; }
+.permissionGroup { border:1px solid var(--border-color,#d4e3dd); border-radius:16px; padding:16px; }
+.permissionGroup summary { display:flex; align-items:center; justify-content:space-between; gap:16px; cursor:pointer; }
+.permissionGroup summary::after { content:'⌄'; }
+.permissionGroup summary span { margin-left:auto; font-size:.85rem; opacity:.75; }
+.permissionGroup[open] summary { margin-bottom:16px; }
+.permissionGroup[open] summary::after { transform:rotate(180deg); }

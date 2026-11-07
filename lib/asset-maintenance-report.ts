@@ -30,6 +30,7 @@ export type AssetMaintenanceReportOptions = {
   summary: AssetMaintenanceSummary;
   records: AssetMaintenanceRecord[];
   xlsxUrl: string;
+  hideValues?: boolean;
 };
 
 type KeyValueRow = { label: string; value: string };
@@ -245,7 +246,7 @@ function buildOwnerRows(owner: AssetMaintenanceOwnerDetails): KeyValueRow[] {
   ];
 }
 
-function buildAssetRows(asset: AssetMaintenanceAssetOption | null, scope: string): KeyValueRow[] {
+function buildAssetRows(asset: AssetMaintenanceAssetOption | null, scope: string, hideValues = false): KeyValueRow[] {
   if (!asset) {
     return [
       { label: 'Report Scope', value: scope || 'All maintenance records' },
@@ -258,7 +259,7 @@ function buildAssetRows(asset: AssetMaintenanceAssetOption | null, scope: string
     { label: 'Year Model', value: asset.yearModel ? String(asset.yearModel) : '-' },
     { label: 'Usage', value: formatUsage(asset.usageReading, asset.usageMetric) },
     { label: 'Condition', value: asset.condition || '-' },
-    { label: 'Current Value', value: formatMoney(asset.value) },
+    { label: 'Current Value', value: hideValues ? 'Hidden' : formatMoney(asset.value) },
   ];
 }
 
@@ -403,7 +404,7 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
     </style>
 </head>
 <body>
-${REPORT_TOOLBAR_HTML.replace('<button type="button" class="assetReportButton"', `<a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a><button type="button" class="assetReportButton"`)}
+${!options.xlsxUrl ? REPORT_TOOLBAR_HTML : REPORT_TOOLBAR_HTML.replace('<button type="button" class="assetReportButton"', `<a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a><button type="button" class="assetReportButton"`)}
 <main class="reportPage">
   <header class="topbar">
     <div class="brand">${logo}<div><h1>${escapeHtml(reportTitle)}</h1><p>${escapeHtml(options.subtitle)}</p></div></div>
@@ -414,7 +415,7 @@ ${REPORT_TOOLBAR_HTML.replace('<button type="button" class="assetReportButton"',
     <div class="heroStatus"><span>Current Position</span><strong>${escapeHtml(primaryStatusLabel(options.summary))}</strong><p>${formatCount(options.summary.openCount)} open - ${formatCount(options.summary.doneCount)} completed</p></div>
   </section>
   <section class="detailsGrid">
-    <div class="stack"><div class="panel"><h2>Asset Details</h2>${renderRows(buildAssetRows(options.selectedAsset, options.reportScopeLabel))}</div><div class="panel"><h2>Client / Asset Owner</h2>${renderRows(buildOwnerRows(options.ownerDetails))}</div></div>
+    <div class="stack"><div class="panel"><h2>Asset Details</h2>${renderRows(buildAssetRows(options.selectedAsset, options.reportScopeLabel, options.hideValues))}</div><div class="panel"><h2>Client / Asset Owner</h2>${renderRows(buildOwnerRows(options.ownerDetails))}</div></div>
     <div class="panel"><h2>Record Summary</h2>${renderRows(summaryRows(options))}</div>
   </section>
   <section class="statusGrid"><div><span>Overdue</span><strong>${formatCount(options.summary.overdueCount)}</strong></div><div><span>Due / Due Soon</span><strong>${formatCount(options.summary.dueCount + options.summary.dueSoonCount)}</strong></div><div><span>Scheduled</span><strong>${formatCount(Math.max(0, options.summary.openCount - options.summary.dueCount - options.summary.dueSoonCount - options.summary.overdueCount))}</strong></div><div><span>Completed</span><strong>${formatCount(options.summary.doneCount)}</strong></div></section>

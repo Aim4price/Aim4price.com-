@@ -5,7 +5,7 @@ import { useLeadDialog } from '../../../components/leads/useLeadDialog';
 import SettingsDetailIcon from '../../../components/SettingsDetailIcon';
 import QuickActionIcon, { type QuickActionIconName } from '../../account/QuickActionIcon';
 import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
-import { TEAM_PERMISSIONS, teamDocumentAccessLabel, type TeamDocumentAccess, type TeamPermissions } from '../../../lib/team-access-policy';
+import { TEAM_PERMISSIONS, TEAM_PERMISSION_GROUPS, teamDocumentAccessLabel, type TeamDocumentAccess, type TeamPermissions } from '../../../lib/team-access-policy';
 import account from '../../account/page.module.css';
 import notifications from '../../account/notifications/page.module.css';
 import styles from './my-access.module.css';
@@ -83,10 +83,13 @@ export function PermissionsModal({ item, onClose }: { item: DesktopAccountAccess
           <div className={notifications.options}>
             {!active && <p role="status">{item.available ? 'Your invitation is pending. Access is not active yet.' : 'This workspace is unavailable.'}</p>}
             <div className={`${notifications.row} ${styles.permissionRow}`}><span className={notifications.optionLabel}><SettingsDetailIcon name="business" /><span>Asset access<small>{scopeLabel(item)}</small></span></span></div>
-            <div className={notifications.categories}>{TEAM_PERMISSIONS.map(permission => <div key={permission.key} className={`${notifications.row} ${styles.permissionRow}`}>
-              <span className={notifications.optionLabel}><SettingsDetailIcon name={permission.key === 'viewValues' ? 'costs' : permission.key.includes('Maintenance') ? 'maintenance' : permission.key.includes('Photos') ? 'image' : 'listings'} /><span>{permission.label}</span></span>
-              <span className={active && item.permissions[permission.key] ? styles.allowed : styles.unavailable}>{active && item.permissions[permission.key] ? 'Allowed' : 'Not allowed'}</span>
-            </div>)}</div>
+            <div className={styles.permissionGroups}>{TEAM_PERMISSION_GROUPS.map(group => <details key={group.label} className={styles.permissionGroup}>
+              <summary><strong>{group.label}</strong><span>{group.keys.filter(key => active && item.permissions[key]).length} of {group.keys.length} allowed</span></summary>
+              <div className={notifications.categories}>{group.keys.map(key => { const permission = TEAM_PERMISSIONS.find(p => p.key === key)!; return <div key={key} className={`${notifications.row} ${styles.permissionRow}`}>
+                <span className={notifications.optionLabel}><span>{permission.label}<small>{permission.detail}</small></span></span>
+                <span className={active && item.permissions[key] ? styles.allowed : styles.unavailable}>{active && item.permissions[key] ? 'Allowed' : 'Not allowed'}</span>
+              </div>; })}</div>
+            </details>)}</div>
             <dl className={styles.details}><div><dt>Documents</dt><dd>{teamDocumentAccessLabel(item.documentAccess, item.documentCount, item.excludedDocumentCount)}</dd></div><div><dt>Access expires</dt><dd>{item.expiresAt ? new Intl.DateTimeFormat('en-ZA', {dateStyle:'medium', timeStyle:'short', timeZone:'Africa/Johannesburg'}).format(new Date(item.expiresAt)) + ' (South Africa)' : 'No expiry set'}</dd></div></dl>
             <p className={notifications.hint}>Approved documents and photos may contain prices. Contact your account holder to change your permissions.</p>
           </div>

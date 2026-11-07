@@ -1,4 +1,6 @@
 'use client';
+import { useDesktopWorkspace, desktopPageAllowed, desktopUrl } from './DesktopWorkspace';
+import type { TeamPermissions } from '../lib/team-access-policy';
 import ShareModalCloseButton from './asset-register/ShareModalCloseButton';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
@@ -48,7 +50,7 @@ type ActivePage =
 type BrandAlignment = 'header' | 'working-column';
 
 type AppHeaderProps = {
-  desktopContext?: { name: string; accountType?: string; accountSubtype?: string; logoUrl?: string | null; onSignOut: () => void };
+  desktopContext?: { membershipId?: string; permissions?: TeamPermissions; name: string; accountType?: string; accountSubtype?: string; logoUrl?: string | null; onSignOut: () => void };
   active: ActivePage;
   brandAlignment?: BrandAlignment;
   signupHref?: string;
@@ -681,13 +683,17 @@ function formatDateTime(value: string | null | undefined): string {
 
 export default function AppHeader({
   active,
-  desktopContext,
+  desktopContext: suppliedDesktopContext,
   brandAlignment = 'header',
   signupHref = '/auth#signup',
   loginHref = '/auth#login',
   ctaHref,
   ctaLabel = 'Create Account',
 }: AppHeaderProps) {
+  const inheritedDesktop = useDesktopWorkspace();
+  const desktopContext = suppliedDesktopContext || (inheritedDesktop ? { ...inheritedDesktop, accountSubtype: inheritedDesktop.accountSubtype || undefined, onSignOut: () => { void fetch(inheritedDesktop.managedLogin ? '/api/team-login' : '/api/auth/sign-out', {method:inheritedDesktop.managedLogin ? 'DELETE' : 'POST'}).then(() => window.location.assign('/auth#login')); } } : undefined);
+  const desktopHref = (href: string) => desktopContext ? desktopUrl(href === '/account' ? '/team/access' : href, desktopContext.membershipId) : href;
+  const desktopAllows = (href: string) => !desktopContext || desktopPageAllowed(href, desktopContext.permissions);
   const [headerHydrated, setHeaderHydrated] = useState(false);
   useEffect(() => setHeaderHydrated(true), []);
   const primaryHref = ctaHref ?? signupHref;
@@ -2043,12 +2049,12 @@ export default function AppHeader({
             return (
               <Link
                 key={`mobile-${session ? 'account-' : ''}${item.key}-${item.href}`}
-                href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
+                href={desktopHref(item.href)}
                 aria-current={isActive ? 'page' : undefined}
                 className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                data-access-restricted={desktopContext && !["asset-register", "account"].includes(item.key) ? "true" : undefined}
-                aria-disabled={Boolean(desktopContext && !["asset-register", "account"].includes(item.key))}
-                onClick={event => { if(desktopContext && !["asset-register", "account"].includes(item.key)) {event.preventDefault();return;} closeMobileMenu();}}
+                data-access-restricted={!desktopAllows(item.href) ? "true" : undefined}
+                aria-disabled={Boolean(!desktopAllows(item.href))}
+                onClick={event => { if(!desktopAllows(item.href)) {event.preventDefault();return;} closeMobileMenu();}}
               >
                 <MobileNavIcon page={item.key} />
                 <span className={styles.mobileMenuNavLabel}>{item.label}</span>
@@ -2395,7 +2401,7 @@ export default function AppHeader({
         <div
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${brandAlignmentClass ? styles.innerBrandAligned : ''}`}
         >
-          <Link href={desktopContext ? "/asset-register" : "/"} className={`${styles.brand} ${brandAlignmentClass}`} aria-label="Go to Aim4price home">
+          <Link href={desktopHref("/")} className={`${styles.brand} ${brandAlignmentClass}`} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
@@ -2440,12 +2446,12 @@ export default function AppHeader({
                   return (
                     <Link
                       key={`${item.key}-${item.href}`}
-                      href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
+                      href={desktopHref(item.href)}
                       aria-current={isActive ? 'page' : undefined}
                       draggable={false}
-                      aria-disabled={desktopContext && !["asset-register", "account"].includes(item.key) ? true : undefined}
-                      data-access-restricted={desktopContext && !["asset-register", "account"].includes(item.key) ? "true" : undefined}
-                      onClick={event => { if (desktopContext && !["asset-register", "account"].includes(item.key)) event.preventDefault(); }}
+                      aria-disabled={!desktopAllows(item.href) ? true : undefined}
+                      data-access-restricted={!desktopAllows(item.href) ? "true" : undefined}
+                      onClick={event => { if (!desktopAllows(item.href)) event.preventDefault(); }}
                       className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
                     >
                       {item.label}
@@ -2551,13 +2557,13 @@ export default function AppHeader({
                               return (
                                 <Link
                                   key={item.href}
-                                  href={desktopContext && item.href === "/account" ? "/team/access" : item.href}
+                                  href={desktopHref(item.href)}
                                   role="menuitem"
                                   aria-current={isActive ? 'page' : undefined}
                                   className={menuLinkClassName}
-                                  data-access-restricted={desktopContext && !["/asset-register", "/account"].includes(item.href) ? "true" : undefined}
-                                  aria-disabled={desktopContext && !["/asset-register", "/account"].includes(item.href) ? true : undefined}
-                                  onClick={event => { if (desktopContext && !["/asset-register", "/account"].includes(item.href)) event.preventDefault(); else closeAccountMenu(); }}
+                                  data-access-restricted={!desktopAllows(item.href) ? "true" : undefined}
+                                  aria-disabled={!desktopAllows(item.href) ? true : undefined}
+                                  onClick={event => { if (!desktopAllows(item.href)) event.preventDefault(); else closeAccountMenu(); }}
                                 >
                                   <span>{item.label}</span>
                                 </Link>

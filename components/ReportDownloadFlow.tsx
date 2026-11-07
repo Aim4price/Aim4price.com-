@@ -14,7 +14,7 @@ type Choice = { value: string; label: string };
 type Props = {
   title: string; allLabel: string;
   assets: Array<{ id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; categoryLabel?: string }>;
-  instantDownload?: boolean; compactTimeline?: boolean; skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
+  pdfOnly?: boolean; instantDownload?: boolean; compactTimeline?: boolean; skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
   fields?: Array<{ key: string; label: string; initial: string; options: Choice[]; allAssetsOnly?: boolean }>;
   scopes?: Array<{ label: string; description: string; field: string; value: string }>;
   onClose: () => void; onDownload: (selection: ReportSelection) => void | Promise<void>;
@@ -29,7 +29,7 @@ function ScopeIcon({ kind = 'all' }: { kind?: string }) {
   </svg>;
 }
 
-export default function ReportDownloadFlow({ title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
+export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
   const [step, setStep] = useState<'scope' | 'asset' | 'timeline' | 'format'>(lockedAssetId ? (skipTimeline ? 'format' : 'timeline') : 'scope');
   const [selection, setSelection] = useState<ReportSelection>({ assetId: lockedAssetId || 'all', year: 'all', month: 'all', format: 'pdf', fields: Object.fromEntries(fields.map(field => [field.key, field.initial])) });
   const [search, setSearch] = useState('');
@@ -99,8 +99,8 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
           </>}
           {fields.filter(field=>!field.allAssetsOnly || selection.assetId === 'all').map(field=><FilterQuestion menuClassName={styles.timelineMenu} key={field.key} label={field.label} value={selection.fields[field.key]} options={field.options} onChange={value=>setSelection(s=>({...s,fields:{...s.fields,[field.key]:value}}))} />)}
         </div> : <>
-          <div className={styles.formatHeading}><strong>Choose export format</strong><span>Choose PDF or Excel.</span></div>
-          <div data-download-grid="true" aria-label="Report format">{(['pdf','xlsx'] as const).map(format=><button key={format} type="button" disabled={busy} data-download-option="true" aria-pressed={selection.format === format} onClick={()=>instantDownload ? void submit(format) : setSelection(s=>({...s,format}))}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable asset report.' : 'Selected records in Excel.'}</small></span></button>)}</div>
+          <div className={styles.formatHeading}><strong>Choose export format</strong><span>{pdfOnly ? 'Download the printable PDF report.' : 'Choose PDF or Excel.'}</span></div>
+          <div data-download-grid="true" aria-label="Report format">{(pdfOnly ? ['pdf'] as const : ['pdf','xlsx'] as const).map(format=><button key={format} type="button" disabled={busy} data-download-option="true" aria-pressed={selection.format === format} onClick={()=>instantDownload ? void submit(format) : setSelection(s=>({...s,format}))}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable asset report.' : 'Selected records in Excel.'}</small></span></button>)}</div>
         </>}
         {busy ? <p role="status">Preparing report…</p> : null}{error ? <p role="alert" className={styles.error}>{error}</p> : null}
       </div>

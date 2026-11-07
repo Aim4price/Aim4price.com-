@@ -292,7 +292,7 @@ test('Manage routes every asset to the focused map for location setup', () => {
   assert.match(coordinateGuard, /Math\.abs\(latitude\) > 90 \|\| Math\.abs\(longitude\) > 180/);
   assert.match(coordinateGuard, /return latitude !== 0 \|\| longitude !== 0/);
   assert.match(coordinateGuard, /`\/asset-map\?assetId=\$\{encodeURIComponent\(asset\.id\)\}`/);
-  assert.match(ownerManage, /window\.location\.assign\(buildFocusedAssetMapHref\(activeAsset\)\)/);
+  assert.match(ownerManage, /window\.location\.assign\(desktopUrl\(buildFocusedAssetMapHref\(activeAsset\),\s*desktopAccess\?\.membership\)\)/);
   assert.doesNotMatch(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location'/);
   assert.doesNotMatch(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
   assert.match(ownerManage, /Add a GPS location\./);

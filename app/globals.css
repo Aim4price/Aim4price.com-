@@ -522,3 +522,10 @@ html[data-background='dark'] body { background: #1d302b; }
 [data-asset-choice-surface='true'] [data-asset-choice-copy='true'] > strong {
   white-space: normal !important;
 }
+
+/* Desktop access uses the canonical page surfaces, with a small shared permission dialog. */
+.desktopPermissionBackdrop{position:fixed;inset:0;z-index:20000;display:grid;place-items:center;padding:24px;background:rgba(25,45,40,.45);backdrop-filter:blur(5px)}
+.desktopPermissionDialog{position:relative;width:min(100%,480px);padding:32px;border:1px solid #d7e4df;border-radius:24px;background:var(--surface,#fff);color:var(--text,#163c32);box-shadow:0 24px 80px #102c3233}
+.desktopPermissionDialog h2{margin:0 36px 12px 0}.desktopPermissionDialog p{line-height:1.6}.desktopPermissionDialog button{padding:12px 20px;border:1px solid #cbded5;border-radius:14px;background:#ecf5f0;color:#194d3d;font:inherit;font-weight:700;cursor:pointer}
+.desktopPermissionDialog button:first-child{position:absolute;right:16px;top:16px;padding:8px 14px}
+[data-desktop-hidden-value]{filter:blur(5px);user-select:none;pointer-events:none}

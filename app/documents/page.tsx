@@ -1,3 +1,5 @@
+import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
+import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
 import { requireActivePageAccess } from '../../lib/account-access';
@@ -9,12 +11,15 @@ export const dynamic = 'force-dynamic';
 
 type DocumentsPageProps = {
   searchParams?: {
+    desktopMembershipId?: string;
     assetId?: string | string[];
     returnTo?: string | string[];
   };
 };
 
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
+  const desktop = await getDesktopScope(searchParams?.desktopMembershipId);
+  if (desktop) return <DesktopWorkspaceProvider workspace={desktopWorkspace(desktop)}><DocumentsClient initialAssetId={readSingleSearchParam(searchParams?.assetId)} /></DesktopWorkspaceProvider>;
   const { session } = await requireActivePageAccess();
   const profile = await getAccountProfile({
     id: session.user.id,

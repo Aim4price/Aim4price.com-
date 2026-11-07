@@ -39,10 +39,11 @@ export function buildFuelSlipWorkbook(slips: FuelSlipTransaction[], baseUrl?: st
     autoFilter: { fromRow: 4, fromColumn: 1, toRow: summary.length, toColumn: 7 }, orientation: 'landscape' }, { name: 'Fuel slips', rows: [headers.map((value) => ({ value, style: 'tableHeader' })), ...rows], columns: headers.map((_, index) => [1, 4, 27].includes(index) ? 36 : 21), freezeRow: 1, autoFilter: { fromRow: 1, fromColumn: 1, toRow: rows.length + 1, toColumn: headers.length }, orientation: 'landscape' }]);
 }
 
-export function buildFuelSlipReportHtml(slips: FuelSlipTransaction[], context: { accountName?: string; logoUrl?: string; baseUrl?: string; ownerDetails?: ReturnType<typeof buildOwnerReportDetails> } = {}): string {
+export function buildFuelSlipReportHtml(slips: FuelSlipTransaction[], context: { hidePrices?: boolean; accountName?: string; logoUrl?: string; baseUrl?: string; ownerDetails?: ReturnType<typeof buildOwnerReportDetails> } = {}): string {
   const litres = slips.reduce((sum, s) => sum + (number(s.litres) ?? 0), 0);
   const total = slips.reduce((sum, s) => sum + (number(s.totalAmount) ?? 0), 0);
   return buildReportHtml({
+    hidePrices: context.hidePrices,
     title: 'Fuel slip report', subtitle: 'Selected fuel slip records',
     generatedAt: new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short' }).format(new Date()),
     ownerEmail: context.ownerDetails?.businessEmail || '', ownerDetails: context.ownerDetails || { businessName: context.accountName || '', contactDetails: '', businessEmail: '', locationAddress: '' },

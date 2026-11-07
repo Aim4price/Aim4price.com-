@@ -5,10 +5,31 @@ export const TEAM_PERMISSIONS = [
     { key: 'updateUsage', label: 'Update usage', detail: 'Increase hours, kilometres or lifetime worked.' },
     { key: 'viewMaintenance', label: 'View maintenance', detail: 'Schedules and completion details. Financial fields are excluded.' },
     { key: 'completeMaintenance', label: 'Complete maintenance', detail: 'Mark scheduled work done; cannot delete or change schedules.' },
+    { key: 'exportMaintenance', label: 'Download maintenance reports', detail: 'The owner’s maintenance PDF for accessible assets.' },
     { key: 'uploadDocuments', label: 'Upload documents', detail: 'Attach documents to accessible assets for owner review.' },
     { key: 'viewPhotos', label: 'View photos', detail: 'Photos can contain visible sensitive information.' },
     { key: 'uploadPhotos', label: 'Add photos', detail: 'Upload photos without changing or deleting existing ones.' },
-    { key: 'exportAssets', label: 'Download reports', detail: 'PDF reports and summaries of permitted assets. Values follow their viewing permission.' },
+    { key: 'viewFuel', label: 'View fuel quantities', detail: 'Fuel entries, usage and consumption for accessible assets.' },
+    { key: 'viewFuelCosts', label: 'View fuel prices', detail: 'Prices per litre, VAT and fuel amounts. Separate from asset values.' },
+    { key: 'viewFuelStorage', label: 'View fuel tanks', detail: 'All business tanks and their stock levels. Tank access is separate from asset access.' },
+    { key: 'addFuel', label: 'Add fuel entries', detail: 'Record fuel slips for accessible assets or permitted tanks.' },
+    { key: 'editFuel', label: 'Correct fuel entries', detail: 'Correct existing fuel slips within this person’s access.' },
+    { key: 'voidFuel', label: 'Void fuel entries', detail: 'Void entries while retaining their history.' },
+    { key: 'manageFuelStorage', label: 'Manage fuel tanks', detail: 'Create, edit and archive tanks. QR codes and access PINs stay with the account holder.' },
+    { key: 'exportFuel', label: 'Download fuel reports', detail: 'The owner’s fuel report, limited to accessible records. Hidden prices stay hidden.' },
+    { key: 'viewFuelDocuments', label: 'Open fuel documents', detail: 'Original slips for accessible entries, including any prices printed on them.' },
+    { key: 'viewCostDocuments', label: 'Open cost documents', detail: 'Original invoices for accessible assets, including all printed prices.' },
+    { key: 'viewBudgets', label: 'View budgets', detail: 'Budgets and spending progress for accessible assets. Includes fuel spending.' },
+    { key: 'manageBudgets', label: 'Manage budgets', detail: 'Create, change and delete budgets within this person’s asset access.' },
+    { key: 'viewCosts', label: 'View costs', detail: 'Invoices and cost-of-ownership totals for accessible assets.' },
+    { key: 'addCosts', label: 'Add cost records', detail: 'Record costs against accessible assets.' },
+    { key: 'editCosts', label: 'Edit cost records', detail: 'Correct existing cost records within their asset access.' },
+    { key: 'deleteCosts', label: 'Delete cost records', detail: 'Remove cost records for accessible assets.' },
+    { key: 'exportCosts', label: 'Download cost reports', detail: 'The owner’s cost-of-ownership PDF, using accessible assets and permitted data.' },
+    { key: 'viewMap', label: 'View asset map', detail: 'Current locations of accessible assets. Does not grant tracking-device administration.' },
+    { key: 'updateLocation', label: 'Update asset locations', detail: 'Set the current location of accessible assets.' },
+    { key: 'exportMap', label: 'Download map reports', detail: 'The owner’s map report for accessible assets. Hidden values stay hidden.' },
+    { key: 'exportAssets', label: 'Download register reports', detail: 'PDF reports and summaries of permitted assets. Values follow their viewing permission.' },
 ] as const;
 export type TeamPermission = typeof TEAM_PERMISSIONS[number]['key'];
 export type TeamPermissions = Record<TeamPermission, boolean>;
@@ -18,14 +39,27 @@ export const TEAM_TEMPLATES = {
     operator: { label: 'Operator', detail: 'Update usage and view photos.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewPhotos: true } },
     workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
     office: { label: 'Office', detail: 'Maintain records; values stay hidden.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
-    manager: { label: 'Manager', detail: 'All listed asset permissions, including values. Documents are separate.', permissions: Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, true])) as TeamPermissions },
+    manager: { label: 'Manager', detail: 'All listed permissions, including fuel, costs, maps and reports. General documents are chosen separately; fuel and cost originals are included.', permissions: Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, true])) as TeamPermissions },
 } as const;
 export const TEAM_PERMISSION_GROUPS = [
-    { label: 'Assets & values', keys: ['viewValues', 'editDetails', 'updateUsage'] },
-    { label: 'Maintenance', keys: ['viewMaintenance', 'completeMaintenance'] },
-    { label: 'Documents & photos', keys: ['uploadDocuments', 'viewPhotos', 'uploadPhotos'] },
-    { label: 'Downloads', keys: ['exportAssets'] },
+    { label: 'Asset register', keys: ['viewValues', 'editDetails', 'updateUsage', 'viewPhotos', 'uploadPhotos', 'exportAssets'] },
+    { label: 'Maintenance', keys: ['viewMaintenance', 'completeMaintenance', 'exportMaintenance'] },
+    { label: 'Fuel ledger', keys: ['viewFuel', 'viewFuelCosts', 'viewFuelStorage', 'addFuel', 'editFuel', 'voidFuel', 'manageFuelStorage', 'viewFuelDocuments', 'exportFuel'] },
+    { label: 'Costs', keys: ['viewCosts', 'addCosts', 'editCosts', 'deleteCosts', 'viewCostDocuments', 'viewBudgets', 'manageBudgets', 'exportCosts'] },
+    { label: 'Asset map', keys: ['viewMap', 'updateLocation', 'exportMap'] },
+    { label: 'Documents', keys: ['uploadDocuments'] },
 ] as const;
+/** Dependencies are explicit, shared by the editor and server, and never inferred for stored grants. */
+export const TEAM_PERMISSION_DEPENDENCIES: Partial<Record<TeamPermission, readonly TeamPermission[]>> = {
+    completeMaintenance: ['viewMaintenance'], exportMaintenance: ['viewMaintenance'],
+    viewFuelCosts: ['viewFuel'], viewFuelStorage: ['viewFuel'],
+    addFuel: ['viewFuel', 'viewFuelCosts'], editFuel: ['viewFuel', 'viewFuelCosts'], voidFuel: ['viewFuel', 'viewFuelCosts'],
+    manageFuelStorage: ['viewFuel', 'viewFuelStorage'], exportFuel: ['viewFuel'],
+    viewFuelDocuments: ['viewFuel'], viewCostDocuments: ['viewCosts'],
+    viewBudgets: ['viewCosts', 'viewFuel', 'viewFuelCosts'], manageBudgets: ['viewCosts', 'viewFuel', 'viewFuelCosts', 'viewBudgets'],
+    addCosts: ['viewCosts'], editCosts: ['viewCosts'], deleteCosts: ['viewCosts'], exportCosts: ['viewCosts'],
+    updateLocation: ['viewMap'], exportMap: ['viewMap'],
+};
 export type TeamDocumentAccess = 'none' | 'selected' | 'all';
 export function teamDocumentAccessLabel(mode: TeamDocumentAccess = 'selected', selected = 0, excluded = 0) {
     if (mode === 'none') return 'No document access';
@@ -34,7 +68,7 @@ export function teamDocumentAccessLabel(mode: TeamDocumentAccess = 'selected', s
 }
 export function updateTeamPermission(permissions: TeamPermissions, key: TeamPermission, enabled: boolean): TeamPermissions {
     const next = { ...permissions, [key]: enabled };
-    if (key === 'completeMaintenance' && enabled) next.viewMaintenance = true;
+    if (enabled) for (const required of TEAM_PERMISSION_DEPENDENCIES[key] || []) next[required] = true;
     return normalizeTeamPermissions(next);
 }
 export type TeamGrant = {
@@ -72,8 +106,8 @@ export function normalizeTeamPermissions(value: unknown): TeamPermissions {
     const result = { ...EMPTY_TEAM_PERMISSIONS };
     for (const { key } of TEAM_PERMISSIONS)
         result[key] = input[key] === true;
-    if (!result.viewMaintenance)
-        result.completeMaintenance = false;
+    for (const [key, required] of Object.entries(TEAM_PERMISSION_DEPENDENCIES))
+        if (required.some(dependency => !result[dependency])) result[key as TeamPermission] = false;
     return result;
 }
 export function teamGrantIsLive(grant: TeamGrant, actor: TeamActor, now = Date.now()): boolean {

@@ -1,4 +1,5 @@
 'use client';
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -785,6 +786,7 @@ export default function MaintenanceClient({
   initialOpenChecklists = false,
   initialReturnTo = '',
 }: MaintenanceClientProps = {}) {
+  const desktop = useDesktopControls();
   const initialFilters = filtersForInitialAsset(initialAssetId);
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [fieldManagers, setFieldManagers] = useState<FieldManagerOption[]>([]);
@@ -879,7 +881,7 @@ export default function MaintenanceClient({
       const silent = options.silent === true;
       if (!silent) setIsLoading(true);
       try {
-        const response = await fetch(buildListUrl(filters), { cache: 'no-store' });
+        const response = await desktop.request(buildListUrl(filters), { cache: 'no-store' });
         const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
 
         if (!response.ok || payload.ok === false) {
@@ -1042,6 +1044,7 @@ export default function MaintenanceClient({
   }
 
   function startChecklistWork(assetId: string, timing: 'done' | 'upcoming') {
+    if (desktop.workspace) {desktop.unavailable();return;}
     const asset = assets.find((item) => item.id === assetId);
     if (!asset) return;
     setNotice(null);
@@ -1053,6 +1056,7 @@ export default function MaintenanceClient({
   }
 
   function openAddService() {
+    if (desktop.workspace) {desktop.unavailable();return;}
     setNotice(null);
     setEditingRecordId(null);
     setDraft(null);
@@ -1075,7 +1079,7 @@ export default function MaintenanceClient({
     completeRequestInFlight.current = true;
     setIsSaving(true);
     try {
-      const response = await fetch('/api/maintenance', {
+      const response = await desktop.request('/api/maintenance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...completion, assetId: draft.assetId, maintenanceType: draft.maintenanceType, status: 'done' }),
@@ -1104,6 +1108,7 @@ export default function MaintenanceClient({
   }
 
   function openEdit(record: MaintenanceRecord) {
+    if (desktop.workspace) {desktop.unavailable();return;}
     setNotice(null);
     setEditingRecordId(record.id);
     setDraft(draftFromRecord(record));
@@ -1143,7 +1148,7 @@ export default function MaintenanceClient({
     try {
       const endpoint = editingRecordId ? `/api/maintenance/${editingRecordId}` : '/api/maintenance';
       const method = editingRecordId ? 'PATCH' : 'POST';
-      const response = await fetch(endpoint, {
+      const response = await desktop.request(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draftPayload(draft)),
@@ -1165,12 +1170,14 @@ export default function MaintenanceClient({
   }
 
   function openComplete(record: MaintenanceRecord) {
+    if (!desktop.allow('completeMaintenance')) return;
     setNotice(null);
     setRecordPendingComplete(record);
     setModalMode('complete');
   }
 
   function openQuickClear(record: MaintenanceRecord) {
+    if (!desktop.allow('completeMaintenance')) return;
     setNotice(null);
     setStopFutureRepeats(false);
     setRecordPendingQuickClear(record);
@@ -1185,7 +1192,7 @@ export default function MaintenanceClient({
     setNotice(null);
 
     try {
-      const response = await fetch(buildCompletionUrl(record.id, activeFilters), {
+      const response = await desktop.request(buildCompletionUrl(record.id, activeFilters), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1232,7 +1239,7 @@ export default function MaintenanceClient({
     setNotice(null);
 
     try {
-      const response = await fetch(buildCompletionUrl(record.id, activeFilters), {
+      const response = await desktop.request(buildCompletionUrl(record.id, activeFilters), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1270,6 +1277,7 @@ export default function MaintenanceClient({
   }
 
   function openDelete(record: MaintenanceRecord) {
+    if (desktop.workspace) {desktop.unavailable();return;}
     setNotice(null);
     setRecordPendingDelete(record);
     setModalMode('delete');
@@ -1283,7 +1291,7 @@ export default function MaintenanceClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/maintenance/${record.id}`, { method: 'DELETE' });
+      const response = await desktop.request(`/api/maintenance/${record.id}`, { method: 'DELETE' });
       const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
 
       if (!response.ok || payload.ok === false) {
@@ -1317,6 +1325,7 @@ export default function MaintenanceClient({
   }
 
   function openDownload() {
+    if (!desktop.allow('exportMaintenance')) return;
     const defaultAssetId = activeFilters.assetId !== 'all' ? activeFilters.assetId : 'all';
 
     setModalMode('download');
@@ -1324,7 +1333,7 @@ export default function MaintenanceClient({
 
   return (
     <div className={styles.page}>
-      <AppHeader active="maintenance" />
+      {desktop.dialog}<AppHeader active="maintenance" />
       <main ref={pageRef} className={styles.shell}>
         {notice ? (
           <div
@@ -1878,12 +1887,13 @@ export default function MaintenanceClient({
         </FilterFlow>
       ) : null}
 
-      {modalMode === 'download' ? <ReportDownloadFlow title="Maintenance reports" allLabel="All maintenance" assets={assets} years={records.flatMap(record=>[record.dueDate,record.completedAtIso].filter(Boolean).map(date=>String(date).slice(0,4)))}
+      {modalMode === 'download' ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Maintenance reports" allLabel="All maintenance" assets={assets} years={records.flatMap(record=>[record.dueDate,record.completedAtIso].filter(Boolean).map(date=>String(date).slice(0,4)))}
         scopes={[{label:'Upcoming maintenance',description:'Open and overdue work.',field:'status',value:'upcoming'},{label:'Completed maintenance',description:'Completed services and checks.',field:'status',value:'done'}]}
         fields={[{key:'status',label:'Maintenance status',initial:'all',options:[{value:'all',label:'All maintenance'},{value:'upcoming',label:'Upcoming maintenance'},{value:'done',label:'Completed maintenance'}]}]}
         onClose={closeModal} onDownload={async selection => {
           const scope = selection.fields.status === 'upcoming' ? 'upcoming' : selection.fields.status === 'done' ? 'done' : selection.assetId !== 'all' ? 'asset' : 'total';
           const url = new URL(buildReportUrl(scope, selection.format === 'pdf' ? 'html' : 'xlsx', {...EMPTY_FILTERS, assetId:selection.assetId}, selection.assetId), window.location.origin);
+          if (desktop.workspace) url.searchParams.set('desktopMembershipId',desktop.workspace.membershipId);
           if(selection.year !== 'all') url.searchParams.set('year', selection.year);
           if(selection.year !== 'all' && selection.month !== 'all') url.searchParams.set('month', selection.month);
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());

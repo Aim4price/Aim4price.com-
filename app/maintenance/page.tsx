@@ -1,3 +1,5 @@
+import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
+import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
 import { requireActivePageAccess } from '../../lib/account-access';
 import { getAccountProfile } from '../../lib/account-profile';
@@ -9,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 type MaintenancePageProps = {
   searchParams?: {
+    desktopMembershipId?: string;
     assetId?: string | string[];
     add?: string | string[];
     action?: string | string[];
@@ -17,6 +20,11 @@ type MaintenancePageProps = {
 };
 
 export default async function MaintenancePage({ searchParams }: MaintenancePageProps) {
+  const desktop = await getDesktopScope(searchParams?.desktopMembershipId);
+  if (desktop) {
+    if (!desktop.grant.permissions.viewMaintenance) redirect('/team/access');
+    return <DesktopWorkspaceProvider workspace={desktopWorkspace(desktop)}><MaintenanceClient initialAssetId={readSingleSearchParam(searchParams?.assetId)} /></DesktopWorkspaceProvider>;
+  }
   const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({

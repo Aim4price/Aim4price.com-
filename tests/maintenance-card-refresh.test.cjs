@@ -8,7 +8,7 @@ function harness() {
   const env = { useCallback: fn => fn, activeFilters: {}, EMPTY_SUMMARY: {},
     buildListUrl: () => '/maintenance', setIsLoading() {}, setNotice() {},
     setAssets() {}, setFieldManagers() {}, setSummary() {}, setRecords: records => applied.push(records),
-    fetch: () => new Promise(resolve => pending.push(data => resolve({ ok: true, json: async () => data }))),
+    desktop: { request: () => new Promise(resolve => pending.push(data => resolve({ ok: true, json: async () => data }))) },
   };
   const body = source.slice(source.indexOf('  const applyPayload = useCallback'),source.indexOf('  useEffect(() => {\n    void loadData(activeFilters);'));
   const code = ts.transpileModule(`exports.create = function(env) { const {${Object.keys(env).join(',')}} = env; const refreshVersion={current:0}; ${body} return { loadData, applyPayload }; }`, {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;

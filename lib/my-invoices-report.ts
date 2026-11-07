@@ -26,6 +26,7 @@ export type MyInvoicesReportOptions = {
   includeFuelSlipCosts: boolean;
   xlsxUrl: string;
   hideXlsx?: boolean;
+  hideValues?: boolean;
   budgets?: OwnershipBudget[];
   budgetInvoices?: MyInvoiceRecord[];
 };
@@ -200,7 +201,7 @@ function buildOwnerRows(ownerDetails: MyInvoicesOwnerDetails): KeyValueRow[] {
   ];
 }
 
-function buildAssetRows(asset: MyInvoiceAssetOption | null): KeyValueRow[] {
+function buildAssetRows(asset: MyInvoiceAssetOption | null, hideValues = false): KeyValueRow[] {
   if (!asset) {
     return [
       { label: 'Report Scope', value: 'All selected assets' },
@@ -214,7 +215,7 @@ function buildAssetRows(asset: MyInvoiceAssetOption | null): KeyValueRow[] {
     { label: 'Model year', value: asset.yearModel ? String(asset.yearModel) : NOT_RECORDED },
     { label: 'Usage', value: formatUsage(asset) === '-' ? NOT_RECORDED : formatUsage(asset) },
     { label: 'Condition', value: formatCondition(asset.condition) },
-    { label: 'Current value (excl. VAT)', value: formatMoney(asset.value) },
+    { label: 'Current value (excl. VAT)', value: hideValues ? 'Hidden' : formatMoney(asset.value) },
   ];
 }
 
@@ -1205,7 +1206,7 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
           <div class="assetReportMainStack">
             <section class="assetReportSection assetReportTechnical">
               <h2>Asset Details</h2>
-              ${renderRows(buildAssetRows(options.selectedAsset))}
+              ${renderRows(buildAssetRows(options.selectedAsset, options.hideValues))}
             </section>
 
             <section class="assetReportSection assetReportClientCard">

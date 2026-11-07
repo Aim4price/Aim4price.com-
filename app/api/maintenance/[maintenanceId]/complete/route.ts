@@ -1,3 +1,4 @@
+import { teamMaintenanceResponse } from '../../../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
@@ -139,6 +140,7 @@ async function currentUser() {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const desktop = await teamMaintenanceResponse(request, context.params.maintenanceId); if (desktop) return desktop;
   const user = await currentUser();
   const userId = user.id;
   const maintenanceId = context.params.maintenanceId ?? '';
@@ -172,6 +174,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const desktop = await teamMaintenanceResponse(request, context.params.maintenanceId); if (desktop) return desktop;
   const user = await currentUser();
   const userId = user.id;
   const maintenanceId = context.params.maintenanceId ?? '';

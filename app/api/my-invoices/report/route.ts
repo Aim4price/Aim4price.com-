@@ -14,7 +14,7 @@ import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
-import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
+import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext, type OwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
     }
     const resolved = sharedScope ? null : await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
     if (resolved && !resolved.ok) return resolved.response;
-    const workspace = sharedScope ? {ownerUserId:sharedScope.lead.ownerId,actorUserId:sharedScope.user.id,actorName:'',actorEmail:''} : resolved!.ok ? resolved!.context : null;
+    const workspace: OwnerWorkspaceContext | null = sharedScope ? {ownerUserId:sharedScope.lead.ownerId,actorUserId:sharedScope.user.id,actorName:'',actorEmail:''} : resolved!.ok ? resolved!.context : null;
     if (!workspace) return NextResponse.json({error:'Access denied'},{status:403});
 
     const rawFormat = request.nextUrl.searchParams.get('format');
@@ -204,6 +204,7 @@ export async function GET(request: NextRequest) {
       listMyInvoicesData(reportOwnerUserId, { assetId: filters.assetId, includeFuelSlipCosts: true }),
     ]);
     const workspaceData = await filterCostLedgerForWorkspace(workspace, unfilteredData);
+    if (workspace.team && ((filters.assetId && !workspaceData.assets.some(asset=>asset.id===filters.assetId)) || (group && !group.members.some(member=>workspaceData.assets.some(asset=>asset.id===member.assetId))))) return NextResponse.json({error:'Report assets unavailable.'},{status:404});
     const groupMemberIds = new Set(group?.members.map((member) => member.assetId) ?? []);
     const data = group
       ? {
@@ -219,7 +220,7 @@ export async function GET(request: NextRequest) {
 
     const allowedBudgetData = await filterCostLedgerForWorkspace(workspace, budgetCostData);
     const allowedAssetIds = new Set(data.assets.map(asset => asset.id));
-    const reportBudgets = budgets.filter(budget => budget.assetId && allowedAssetIds.has(budget.assetId)
+    const reportBudgets = (workspace.team && !workspace.team.grant.permissions.viewBudgets ? [] : budgets).filter(budget => budget.assetId && allowedAssetIds.has(budget.assetId)
       && (!filters.assetId || budget.assetId === filters.assetId));
     const budgetInvoices = allowedBudgetData.invoices.filter(invoice => allowedAssetIds.has(invoice.assetId)
       && (!filters.assetId || invoice.assetId === filters.assetId));
@@ -242,7 +243,8 @@ export async function GET(request: NextRequest) {
       budgetInvoices,
       includeFuelSlipCosts: filters.includeFuelSlipCosts !== false,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
-      hideXlsx: ownerAppMode,
+      hideXlsx: ownerAppMode || Boolean(workspace.team),
+      hideValues: Boolean(workspace.team && !workspace.team.grant.permissions.viewValues),
     };
 
     const extension = format;

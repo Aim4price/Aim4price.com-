@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   // Use the budget endpoint's owner, finance and asset-scope checks for every export.
-  const response = await getAuthorizedBudgets();
+  const response = await getAuthorizedBudgets(request);
   if (!response.ok) return response;
   const data = await response.json() as { budgets: TrackedBudget[] };
   const params = request.nextUrl.searchParams;

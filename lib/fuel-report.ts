@@ -27,6 +27,7 @@ type SummaryCard = {
 };
 
 export type FuelReportOptions = {
+  hidePrices?: boolean;
   assetTitle?: string;
   baseUrl?: string;
   slipSummary?: { total: number; litres: number; count: number };
@@ -599,7 +600,7 @@ export function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = options.slipSummary ? [
     { label: 'Fuel slips', value: String(options.slipSummary.count), subtext: 'Selected records' },
     { label: 'Litres', value: formatLitres(options.slipSummary.litres), subtext: 'Purchased fuel recorded' },
-    { label: 'Total incl. VAT', value: formatCurrency(options.slipSummary.total), subtext: 'Recorded amounts' },
+    { label: 'Total incl. VAT', value: options.hidePrices ? 'Hidden' : formatCurrency(options.slipSummary.total), subtext: 'Recorded amounts' },
   ] : [
     { label: 'Stock at export', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres), subtext: 'Current stock, not period closing stock' },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued), subtext: 'Issued to assets' },

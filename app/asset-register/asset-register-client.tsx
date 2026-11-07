@@ -116,6 +116,7 @@ import {
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
+import { useDesktopControls, desktopUrl } from '../../components/DesktopWorkspace';
 import { openCanonicalReportUrl } from '../../lib/report-open';
 import { selectReportLogoUrl } from '../../lib/report-branding';
 import {
@@ -4212,7 +4213,7 @@ function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '
   return `${currentUrl.pathname}?${params.toString()}`;
 }
 
-function buildOwnerAssetPageHref(
+function ownerAssetPageHref(
   pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents' | '/budgets',
   assetId: string,
   options: { add?: boolean; budgetAction?: boolean; checklists?: boolean; maintenanceAction?: 'record' | 'schedule' } = {},
@@ -6260,6 +6261,8 @@ export default function AssetRegisterClient({
   dealerRegisterBaseHref?: string;
 } = {}) {
 
+  const desktop = useDesktopControls();
+  const buildOwnerAssetPageHref = (...args: Parameters<typeof ownerAssetPageHref>) => desktopUrl(ownerAssetPageHref(...args), desktopAccess?.membership);
   // The shared renderer must never call owner endpoints while displaying a delegated identity.
   const ownerFetch: typeof globalThis.fetch = desktopAccess
     ? async () => new Response(JSON.stringify({ ok: false, error: 'This action is managed by the account holder.' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
@@ -13909,6 +13912,12 @@ export default function AssetRegisterClient({
   }
 
   async function handlePrintAssetSheet(asset: RegisterAsset) {
+    if (desktopAccess) {
+      if (!desktop.allow('exportAssets')) return;
+      void handleExportPdf('full', [asset]);
+      return;
+    }
+
     const reportWindow = externalShareReportScope === 'asset' ? null : window.open('', '_blank');
 
     if (externalShareReportScope !== 'asset' && !reportWindow) {
@@ -14105,7 +14114,8 @@ export default function AssetRegisterClient({
   }
 
   function handleOpenAssetPdfReport(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters): boolean {
-    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'html');
+    if (desktopAccess && (reportKind === 'depreciation' || !desktop.allow(reportKind === 'fuel' ? 'exportFuel' : 'exportMaintenance'))) { desktop.unavailable(); return false; }
+    const reportUrl = desktopUrl(buildAssetPdfReportUrl(asset, reportKind, filters, 'html'),desktopAccess?.membership);
     const opened = openCanonicalReportUrl(reportUrl);
     const reportLabel = assetReportLabel(reportKind);
 
@@ -14125,6 +14135,7 @@ export default function AssetRegisterClient({
   }
 
   async function handleDownloadAssetReportXlsx(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters) {
+    if (desktopAccess) { desktop.unavailable(); return; }
     const reportLabel = assetReportLabel(reportKind);
     const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'xlsx');
     const filterMeta = buildReportAttachmentFilterMeta(filters);
@@ -14174,12 +14185,13 @@ export default function AssetRegisterClient({
   }
 
   function openAssetFuelReportFilter() {
+    if (desktopAccess && !desktop.allow('exportFuel')) return;
     if (!canDownloadAssetFuelReport(reportAsset)) {
       setNotice({ tone: 'error', message: 'Fuel reports are not available for property, land or building assets.' });
       return;
     }
 
-    setAssetReportStep('fuel-format');
+    setAssetReportStep(desktopAccess ? 'fuel-filter' : 'fuel-format');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14187,7 +14199,8 @@ export default function AssetRegisterClient({
   }
 
   function openAssetMaintenanceReportFilter() {
-    setAssetReportStep('maintenance-format');
+    if (desktopAccess && !desktop.allow('exportMaintenance')) return;
+    setAssetReportStep(desktopAccess ? 'maintenance-filter' : 'maintenance-format');
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
@@ -14196,6 +14209,7 @@ export default function AssetRegisterClient({
   }
 
   function openAssetDepreciationReportFilter() {
+    if (desktopAccess) { desktop.unavailable(); return; }
     if (!canDownloadAssetDepreciationReport(reportAsset)) {
       setNotice({ tone: 'error', message: 'Depreciation logs are not available for property, land or building assets.' });
       return;
@@ -14209,7 +14223,8 @@ export default function AssetRegisterClient({
   }
 
   function openAssetOwnershipReportFilter() {
-    setAssetReportStep('ownership-format');
+    if (desktopAccess && !desktop.allow('exportCosts')) return;
+    setAssetReportStep(desktopAccess ? 'ownership-filter' : 'ownership-format');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14335,6 +14350,7 @@ export default function AssetRegisterClient({
   }
 
   async function handleDownloadIndividualAssetMap(asset: RegisterAsset) {
+    if (desktopAccess && !desktop.allow('exportMap')) return;
     if (individualAssetMapDownloadRef.current) return;
     if (!hasAssetGpsCoordinates(asset)) {
       setNotice({ tone: 'error', message: 'Add a map location to this asset first.' });
@@ -14349,7 +14365,7 @@ export default function AssetRegisterClient({
         closeAssetReportDialog();
         return;
       }
-      await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
+      await downloadAssetMapReport(desktopUrl(`/api/asset-map/report?${params.toString()}`,desktopAccess?.membership), 'pdf');
       closeAssetReportDialog();
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Unable to download the asset map.' });
@@ -14488,7 +14504,7 @@ export default function AssetRegisterClient({
       return;
     }
 
-    const opened = openCanonicalReportUrl(buildAssetOwnershipReportUrl(asset, filters, 'html'));
+    const opened = openCanonicalReportUrl(desktopUrl(buildAssetOwnershipReportUrl(asset, filters, 'html'),desktopAccess?.membership));
 
     if (!opened) {
       setNotice({
@@ -15430,7 +15446,7 @@ export default function AssetRegisterClient({
         closeAssetGroupManager();
         return;
       }
-      await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
+      await downloadAssetMapReport(desktopUrl(`/api/asset-map/report?${params.toString()}`,desktopAccess?.membership), 'pdf');
       closeAssetGroupManager();
     } catch (error) {
       setAssetGroupError(error instanceof Error ? error.message : 'Unable to download the umbrella asset map.');
@@ -15936,7 +15952,8 @@ export default function AssetRegisterClient({
   }
 
   return (
-    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`} onClickCapture={event => { if (desktopAccess && (event.target as HTMLElement).closest('[data-access-restricted="true"]')) {event.preventDefault(); event.stopPropagation();} }}>
+    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`} onClickCapture={event => { if (desktopAccess && (event.target as HTMLElement).closest('[data-access-restricted="true"]')) {event.preventDefault(); event.stopPropagation(); desktop.unavailable();} }}>
+      {desktop.dialog}
       {showAppHeader ? <AppHeader active="asset-register" brandAlignment="working-column" /> : null}
 
       <section className={styles.shell}>
@@ -20149,7 +20166,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button data-manage-action="reports" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
+                  <button data-manage-action="reports" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Reports</strong>
@@ -20157,7 +20174,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <Link data-manage-action="addCosts" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
+                  <Link data-manage-action="addCosts" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.addCosts ? "true" : undefined} aria-disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.addCosts)}
                     href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   >
@@ -20169,12 +20186,12 @@ export default function AssetRegisterClient({
                   </Link>
 
                   {(desktopAccess || accountProfile?.accountType === 'owner') ? (
-                    <button data-manage-action="budget" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
+                    <button data-manage-action="budget" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.viewBudgets ? "true" : undefined} aria-disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.viewBudgets)}
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
-                      disabled={budgetLookupState === 'loading'}
+                      disabled={!desktopAccess && budgetLookupState === 'loading'}
                       onClick={() => {
-                        if (budgetLookupState === 'error') {
+                        if (!desktopAccess && budgetLookupState === 'error') {
                           window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
                           return;
                         }
@@ -20183,14 +20200,14 @@ export default function AssetRegisterClient({
                     >
                       <MoneyBagIcon className={styles.buttonIcon} />
                       <span>
-                        <strong>{budgetLookupState === 'loading' ? 'Loading budget…' : budgetLookupState === 'error' ? 'Retry budget' : budgetAssetIds.has(activeAsset.id) ? 'Manage budget' : 'Add budget'}</strong>
+                        <strong>{desktopAccess ? 'Budgets' : budgetLookupState === 'loading' ? 'Loading budget…' : budgetLookupState === 'error' ? 'Retry budget' : budgetAssetIds.has(activeAsset.id) ? 'Manage budget' : 'Add budget'}</strong>
                         <small>{budgetLookupState === 'error' ? 'Check this asset’s budget again.' : budgetAssetIds.has(activeAsset.id) ? 'Review or change this asset’s budget.' : 'Set a spending limit for this asset.'}</small>
                       </span>
                     </button>
                   ) : null}
 
                   {canAssetReceiveFuel(activeAsset) ? (
-                    <Link data-manage-action="fuel" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
+                    <Link data-manage-action="fuel" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.addFuel ? "true" : undefined} aria-disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.addFuel)}
                       href={buildOwnerAssetPageHref('/fuel', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     >
@@ -20206,7 +20223,7 @@ export default function AssetRegisterClient({
                     type="button"
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-maintenance"
-                    onClick={() => {if(desktopAccess) {desktopAccess.onManage(activeAsset.id, 'maintenance'); closeActionDialog();} else setOwnerAssetCommandPanel('maintenance');}}
+                    onClick={() => {if(desktopAccess) {window.location.assign(buildOwnerAssetPageHref('/maintenance',activeAsset.id));} else setOwnerAssetCommandPanel('maintenance');}}
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
@@ -20224,11 +20241,11 @@ export default function AssetRegisterClient({
                   </button>
 
                   {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
-                    <button data-manage-action="location" data-access-restricted={desktopAccess ? "true" : undefined} aria-disabled={Boolean(desktopAccess)}
+                    <button data-manage-action="location" data-access-restricted={desktopAccess && !desktopAccess.data.permissions.viewMap ? "true" : undefined} aria-disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.viewMap)}
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       data-asset-return-action="manage-map-location"
-                      onClick={() => window.location.assign(buildFocusedAssetMapHref(activeAsset))}
+                      onClick={() => window.location.assign(desktopUrl(buildFocusedAssetMapHref(activeAsset),desktopAccess?.membership))}
                     >
                       <MapPinIcon className={styles.buttonIcon} />
                       <span>
@@ -20947,7 +20964,7 @@ export default function AssetRegisterClient({
                 </>
               ) : (
                 <div className={styles.assetReportOptionsGrid} data-download-grid="true">
-                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)} data-download-option="true">
+                  <button type="button" className={styles.assetReportOptionButton} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportAssets ? "true" : undefined} onClick={() => handlePrintAssetSheet(reportAsset)} data-download-option="true">
                     <AssetReportTypeIcon kind="valuation" className={styles.buttonIcon} />
                     <span>
                       <strong>Asset valuation</strong>
@@ -20955,9 +20972,9 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  {canUseOwnerOnlyAssetActions ? (
+                  {(canUseOwnerOnlyAssetActions || desktopAccess) ? (
                     <>
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter} data-download-option="true">
+                      <button type="button" className={styles.assetReportOptionButton} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportMaintenance ? "true" : undefined} onClick={openAssetMaintenanceReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="maintenance" className={styles.buttonIcon} />
                         <span>
                           <strong>Maintenance report</strong>
@@ -20966,7 +20983,7 @@ export default function AssetRegisterClient({
                       </button>
 
                       {canDownloadAssetFuelReport(reportAsset) ? (
-                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter} data-download-option="true">
+                        <button type="button" className={styles.assetReportOptionButton} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportFuel ? "true" : undefined} onClick={openAssetFuelReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="fuel" className={styles.buttonIcon} />
                           <span>
                             <strong>Fuel report</strong>
@@ -20976,7 +20993,7 @@ export default function AssetRegisterClient({
                       ) : null}
 
                       {canDownloadAssetDepreciationReport(reportAsset) ? (
-                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter} data-download-option="true">
+                        <button type="button" className={styles.assetReportOptionButton} data-access-restricted={desktopAccess ? "true" : undefined} onClick={openAssetDepreciationReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="depreciation" className={styles.buttonIcon} />
                           <span>
                             <strong>Depreciation log</strong>
@@ -20985,7 +21002,7 @@ export default function AssetRegisterClient({
                         </button>
                       ) : null}
 
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter} data-download-option="true">
+                      <button type="button" className={styles.assetReportOptionButton} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportCosts ? "true" : undefined} onClick={openAssetOwnershipReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="ownership" className={styles.buttonIcon} />
                         <span>
                           <strong>Cost of ownership</strong>
@@ -20997,7 +21014,7 @@ export default function AssetRegisterClient({
                           type="button"
                           className={styles.assetReportOptionButton}
                           disabled={isDownloadingIndividualAssetMap || !hasAssetGpsCoordinates(reportAsset)}
-                          onClick={() => void handleDownloadIndividualAssetMap(reportAsset)} data-download-option="true"
+                          data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportMap ? "true" : undefined} onClick={() => void handleDownloadIndividualAssetMap(reportAsset)} data-download-option="true"
                         >
                           <AssetReportTypeIcon kind="map" className={styles.buttonIcon} />
                           <span>

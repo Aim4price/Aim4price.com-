@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       resolved.context,
       await listFuelLedger(resolved.context.ownerUserId),
     );
-    return NextResponse.json({ ok: true, storage, ...ledger });
+    return NextResponse.json({ ok: true, storage: resolved.context.team ? ledger.storages.find(tank=>tank.id===storage.id) : storage, ...ledger });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: errorMessage(error, 'Failed to update fuel storage.') },

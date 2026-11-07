@@ -23,10 +23,14 @@ export async function GET(request: NextRequest) {
       where user_id = $1 and document_file_url = $2
     `, [workspace.context.ownerUserId, source]);
     if (!rows.rows.length) return new NextResponse('Not found', { status: 404 });
+    if (workspace.context.team) for (const row of rows.rows) {
+      if (row.asset_id) await assertWorkspaceAssetAccess(workspace.context, row.asset_id);
+      else if (!workspace.context.team.grant.permissions.viewFuelStorage) return new NextResponse('Not found', {status:404});
+    }
     let allowed = false;
     let uploadReference = source;
     for (const row of rows.rows) {
-      try { await assertWorkspaceAssetAccess(workspace.context, row.asset_id); allowed = true; uploadReference = row.upload_id || source; break; }
+      try { if (row.asset_id || !workspace.context.team?.grant.permissions.viewFuelStorage) await assertWorkspaceAssetAccess(workspace.context, row.asset_id); allowed = true; uploadReference = row.upload_id || source; break; }
       catch { /* A shared file must be attached to an asset in this workspace. */ }
     }
     if (!allowed) return new NextResponse('Not found', { status: 404 });

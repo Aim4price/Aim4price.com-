@@ -1,4 +1,5 @@
 'use client';
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import captureAttachmentStyles from '../../components/CaptureAttachment.module.css';
 import attachmentStyles from '../my-invoices/manual-cost-attachment.module.css';
@@ -1687,7 +1688,8 @@ export default function FuelClient({
     window.scrollTo({ top: 0 });
   }
 
-  const scopedApiUrl = (url: string) => url;
+  const desktop = useDesktopControls();
+  const scopedApiUrl = desktop.url;
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -1972,7 +1974,7 @@ export default function FuelClient({
 
     try {
       const ledgerUrl = costLedgerEntry ? `/api/fuel?invoiceId=${encodeURIComponent(costLedgerEntry.invoiceId)}` : '/api/fuel';
-      const response = await fetch(ledgerUrl, { credentials: 'include', cache: 'no-store' });
+      const response = await desktop.request(ledgerUrl, { credentials: 'include', cache: 'no-store' });
       const payload = (await response.json()) as FuelLedgerResponse;
       const data = payload;
 
@@ -1997,8 +1999,9 @@ export default function FuelClient({
   }
 
   async function loadCaptureRequests() {
+    if (desktop.workspace) return;
     try {
-      const response = await fetch(scopedApiUrl('/api/capture-requests?requestType=fuel_slip&active=1'), {
+      const response = await desktop.request(scopedApiUrl('/api/capture-requests?requestType=fuel_slip&active=1'), {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -2010,7 +2013,7 @@ export default function FuelClient({
   }
 
   async function retractCaptureRequest(requestId: string): Promise<void> {
-    const response = await fetch(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
+    const response = await desktop.request(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -2256,6 +2259,7 @@ export default function FuelClient({
   }, [fuelSlipMissingFields.length, fuelSlipValidationNotice]);
 
   function openCreateStorage() {
+    if (!desktop.allow('manageFuelStorage')) return;
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
     setIsStorageFuelSelectOpen(false);
@@ -2271,6 +2275,7 @@ export default function FuelClient({
   }
 
   function openEditStorage(storage: FuelLedgerStorage) {
+    if (!desktop.allow('manageFuelStorage')) return;
     setSelectedStorageId(storage.id);
     setStorageDraft(buildStorageDraft(storage));
     setIsStorageFuelSelectOpen(false);
@@ -2279,18 +2284,21 @@ export default function FuelClient({
   }
 
   function openMissingFuelEntry(storage: FuelLedgerStorage) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     setSelectedStorageId(storage.id);
     setNotice(null);
     setModalMode('missing-entry');
   }
 
   function openReconcileBalance(storage: FuelLedgerStorage) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     setSelectedStorageId(storage.id);
     setNotice(null);
     setModalMode('reconcile-balance');
   }
 
   function openPin(storage: FuelLedgerStorage) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     setSelectedStorageId(storage.id);
     setPinDraft('');
     setIsStorageFuelSelectOpen(false);
@@ -2299,6 +2307,7 @@ export default function FuelClient({
   }
 
   function openQrModal(storage: FuelLedgerStorage) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     setSelectedStorageId(storage.id);
     setCopiedScanLinkStorageId(null);
     setIsStorageFuelSelectOpen(false);
@@ -2331,6 +2340,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipModal(returnToManager = false) {
+    if (!desktop.allow('addFuel')) return;
     resetFuelSlipValidationState();
     setFuelSlipReturnToManager(returnToManager);
     setFuelSlipDraft(emptyFuelSlipDraft);
@@ -2371,6 +2381,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipReview(slip: FuelSlipRecord) {
+    if (!desktop.allow('editFuel')) return;
     resetFuelSlipValidationState();
     setFuelSlipReturnToManager(true);
     setFuelSlipDraft(buildFuelSlipDraftFromRecord(slip));
@@ -2392,6 +2403,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipDeleteConfirm(slip: FuelSlipRecord) {
+    if (!desktop.allow('voidFuel')) return;
     rememberFuelSlipManagerChildTrigger();
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
@@ -2403,13 +2415,14 @@ export default function FuelClient({
   }
 
   async function openFuelSlipHistory(slip: FuelSlipRecord) {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     rememberFuelSlipManagerChildTrigger();
     setHistoryFuelSlip(slip);
     setFuelHistoryEvents([]);
     setFuelHistoryError('');
     setIsFuelHistoryLoading(true);
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/audit?recordType=fuel_slip&recordId=${encodeURIComponent(slip.id)}`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/audit?recordType=fuel_slip&recordId=${encodeURIComponent(slip.id)}`), {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -2431,12 +2444,14 @@ export default function FuelClient({
   }
 
   function openStorageReport(storage: FuelLedgerStorage) {
+    if (!desktop.allow('exportFuel')) return;
     setReportStorage(storage);
     setNotice(null);
     setModalMode('report');
   }
 
   function openReportModal() {
+    if (!desktop.allow('exportFuel')) return;
     setReportStorage(null);
 
     setIsStorageFuelSelectOpen(false);
@@ -2500,6 +2515,7 @@ export default function FuelClient({
   }
 
   function openExclusionEditor() {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     if (!selectedExclusionAssets.length) return;
     setExclusionReason('');
     setNotice(null);
@@ -2519,7 +2535,7 @@ export default function FuelClient({
     try {
       for (const asset of selectedExclusionAssets) {
         setBusyExclusionAssetId(asset.id);
-        const response = await fetch(scopedApiUrl(`/api/fuel/exclusions/${encodeURIComponent(asset.id)}`), {
+        const response = await desktop.request(scopedApiUrl(`/api/fuel/exclusions/${encodeURIComponent(asset.id)}`), {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -2679,7 +2695,7 @@ export default function FuelClient({
 
     try {
       const isEdit = modalMode === 'edit-storage' && selectedStorage;
-      const response = await fetch(scopedApiUrl(isEdit ? `/api/fuel/storage/${selectedStorage.id}` : '/api/fuel'), {
+      const response = await desktop.request(scopedApiUrl(isEdit ? `/api/fuel/storage/${selectedStorage.id}` : '/api/fuel'), {
         method: isEdit ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2805,7 +2821,7 @@ export default function FuelClient({
       formData.append('targetType', targetType);
       formData.append('targetId', targetId);
 
-      const response = await fetch(scopedApiUrl('/api/capture-requests/fuel-slip'), {
+      const response = await desktop.request(scopedApiUrl('/api/capture-requests/fuel-slip'), {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -2934,7 +2950,7 @@ export default function FuelClient({
         extractionWarnings: fuelSlipDraft.extractionWarnings,
       };
 
-      const response = await fetch(
+      const response = await desktop.request(
         scopedApiUrl(reviewingExistingSlip ? `/api/fuel/slips/${encodeURIComponent(fuelSlipDraft.id)}` : '/api/fuel/slips'),
         {
           method: reviewingExistingSlip ? 'PATCH' : 'POST',
@@ -3011,7 +3027,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`), {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -3035,7 +3051,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${selectedStorage.id}/pin`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/storage/${selectedStorage.id}/pin`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -3103,7 +3119,7 @@ export default function FuelClient({
 
   async function handleDownloadFuelQr(storage: FuelLedgerStorage) {
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`), {
         headers: { 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' },
         credentials: 'include',
         cache: 'no-store',
@@ -3179,6 +3195,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipDownloadPanel() {
+    if (!desktop.allow('exportFuel')) return;
 
     rememberFuelSlipManagerChildTrigger();
 
@@ -3198,7 +3215,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${storage.id}/dipstick`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/storage/${storage.id}/dipstick`), {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -3219,7 +3236,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${deleteCandidateStorage.id}`), {
+      const response = await desktop.request(scopedApiUrl(`/api/fuel/storage/${deleteCandidateStorage.id}`), {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -3494,7 +3511,7 @@ export default function FuelClient({
     try {
       const body = new FormData();
       body.append('file', file);
-      const response = await fetch(scopedApiUrl('/api/fuel/slips/upload'), { method: 'POST', credentials: 'include', headers: { 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' }, body });
+      const response = await desktop.request(scopedApiUrl('/api/fuel/slips/upload'), { method: 'POST', credentials: 'include', headers: { 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' }, body });
       const result = await response.json();
       const upload = result.uploads?.[0];
       if (!response.ok || !upload?.uploadId || !upload?.url) throw new Error(result.error || 'The attachment could not be uploaded. Try again.');
@@ -3520,7 +3537,7 @@ export default function FuelClient({
         onFiles={files => { void handleFuelEvidenceUpload(files[0]); }}
       />
       {fuelSlipDraft.documentFileUrl ? <div className={attachmentStyles.fileRow}>
-        <DocumentFileLink className={attachmentStyles.fileName} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
+        <DocumentFileLink className={attachmentStyles.fileName} href={desktop.url(fuelSlipDraft.documentFileUrl)} fuelDocument={!desktop.workspace && Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached slip: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
         <button type="button" disabled={isUploadingFuelEvidence || isSaving} onClick={() => {
           setFuelEvidenceError('');
           setFuelSlipDraft(current => ({ ...current, uploadId: '', documentFileUrl: '', originalFilename: '', contentType: '', byteSize: null }));
@@ -3674,10 +3691,10 @@ export default function FuelClient({
                             </div>
                           </div>
                           <div className={styles.slipLedgerAside}>
-                            <div className={styles.slipLedgerAmount}><strong>{formatCurrency(slip.totalAmount)}</strong><span>Total amount</span></div>
+                            <div className={styles.slipLedgerAmount}><strong>{desktop.workspace && !desktop.can('viewFuelCosts') ? <span data-desktop-hidden-value aria-label="Price restricted">R ••• •••</span> : formatCurrency(slip.totalAmount)}</strong><span>Total amount</span></div>
                             <div className={styles.slipLedgerActions}>
                               {slip.documentFileUrl ? (
-                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={desktop.url(slip.documentFileUrl)} fuelDocument={!desktop.workspace} fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
                                   <OpenFileIcon className={styles.buttonIcon} />
                                   <span>Open file</span>
                                 </DocumentFileLink>
@@ -3763,7 +3780,7 @@ export default function FuelClient({
         </div>
       ) : null}
       {!costLedgerEntry ? <main className={styles.page} ref={fuelPageRef}>
-        <AppHeader active="none" />
+        <>{desktop.dialog}<AppHeader active="none" /></>
 
         <section className={styles.shell}>
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
@@ -4372,10 +4389,10 @@ export default function FuelClient({
         </FilterFlow>
       ) : null}
 
-      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow instantDownload compactTimeline title="Fuel slip reports" allLabel="All fuel slips" assets={reportAssets}
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} instantDownload compactTimeline title="Fuel slip reports" allLabel="All fuel slips" assets={reportAssets}
         fields={[{key:'capture',label:'Source / status',initial:'all',options:FUEL_SLIP_CAPTURE_FILTER_OPTIONS},{key:'storage',allAssetsOnly:true,label:'Storage tank',initial:'all',options:[{value:'all',label:'All targets'},...storages.map(storage=>({value:storage.id,label:storage.name}))]}]}
         onClose={closeFuelSlipDownloadPanel} onDownload={async selection => {
-          const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':appRealmForPath(window.location.pathname) ?? 'website'},body:JSON.stringify({format:selection.format,filters:{assetId:selection.assetId,year:selection.year,month:selection.month,capture:selection.fields.capture,storageId:selection.assetId === 'all' ? selection.fields.storage : 'all'}})});
+          const response = await desktop.request(scopedApiUrl('/api/fuel/slips/export'), {method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':appRealmForPath(window.location.pathname) ?? 'website'},body:JSON.stringify({format:selection.format,filters:{assetId:selection.assetId,year:selection.year,month:selection.month,capture:selection.fields.capture,storageId:selection.assetId === 'all' ? selection.fields.storage : 'all'}})});
           if(!response.ok) { const payload = await response.json(); throw new Error(payload.error || 'Unable to download fuel slips.'); }
           const assetName = assets.find(asset=>asset.id === selection.assetId)?.title || 'all';
           const filename = assetName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -4889,10 +4906,11 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'report' ? <ReportDownloadFlow instantDownload compactTimeline title={reportStorage ? `${reportStorage.name} report` : "Fuel reports"} allLabel={reportStorage ? "All storage records" : "All fuel records"} assets={reportAssets} years={yearOptions}
+      {modalMode === 'report' ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} instantDownload compactTimeline title={reportStorage ? `${reportStorage.name} report` : "Fuel reports"} allLabel={reportStorage ? "All storage records" : "All fuel records"} assets={reportAssets} years={yearOptions}
         fields={reportStorage ? [] : [{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
         onClose={() => reportStorage ? openManageStorageChoice(reportStorage) : dismissModal()} onDownload={async selection => {
           const url = new URL(buildReportUrl(reportStorage?.id ?? selection.fields.source,selection.year,selection.month,selection.format,),window.location.origin);
+          if (desktop.workspace) url.searchParams.set('desktopMembershipId', desktop.workspace.membershipId);
           if(selection.assetId !== 'all') url.searchParams.set('assetId',selection.assetId);
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());
           else if(!openCanonicalReportUrl(url.toString())) throw new Error('Allow pop-ups to open your report.');

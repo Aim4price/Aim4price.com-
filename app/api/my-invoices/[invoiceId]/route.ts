@@ -1,3 +1,4 @@
+import { projectTeamCostRecord } from '../../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteMyInvoice, getMyInvoiceById, updateMyInvoice, type MyInvoiceDraftInput } from '../../../../lib/my-invoices';
 import { assertWorkspaceAssetAccess, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
@@ -40,11 +41,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
+    const existing = await getMyInvoiceById(workspace.ownerUserId, context.params.invoiceId);
+    if (!existing) return NextResponse.json({ok:false,error:"Cost record unavailable."},{status:404});
+    if (workspace.team && existing.source === 'fuel_slip') return NextResponse.json({ok:false,error:'Correct fuel entries from Fuel Ledger.'},{status:403});
+    if (workspace.team) body.invoiceDocumentId = existing.invoiceDocumentId;
+    await assertWorkspaceAssetAccess(workspace, existing.assetId);
     await assertWorkspaceAssetAccess(workspace, body.assetId);
     const result = await updateMyInvoice(workspace.ownerUserId, context.params.invoiceId, body, {
-      displayName: null,
+      displayName: workspace.team ? workspace.actorName : null,
     });
-    return NextResponse.json({ ok: true, invoice: result.invoice, duplicateWarnings: result.duplicateWarnings });
+    return NextResponse.json({ ok: true, invoice: workspace.team && result.invoice ? projectTeamCostRecord(result.invoice, workspace.team.grant.permissions) : result.invoice, duplicateWarnings: workspace.team ? [] : result.duplicateWarnings });
   } catch (error) {
     console.error('Aim4price My Cost Ledger PATCH failed.', error);
     const message = errorMessage(error);
@@ -60,6 +66,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
 
   try {
     const invoice = await getMyInvoiceById(workspace.ownerUserId, context.params.invoiceId);
+    if (workspace.team && invoice?.source === 'fuel_slip') return NextResponse.json({ok:false,error:'Void fuel entries from Fuel Ledger.'},{status:403});
     if (invoice) await assertWorkspaceAssetAccess(workspace, invoice.assetId);
     const deleted = await deleteMyInvoice(workspace.ownerUserId, context.params.invoiceId);
 
