@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
-import { sharingPlan } from '../../../lib/sharing-foundation';
 import { getDb } from '../../../lib/db';
-import { requireTeamActor, acceptTeamGrant, mapTeamGrant } from '../../../lib/team-access';
+import { requireTeamActor, acceptTeamGrant, mapTeamGrant, teamIssuerAvailable } from '../../../lib/team-access';
 import { ensureTeamAccessSchema } from '../../../lib/team-access-schema';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { teamJson, teamError } from '../../../lib/team-access-http';
@@ -16,7 +15,7 @@ export async function GET() {
         const workspaces = await Promise.all(rows.map(async (row) => {
             const grant = mapTeamGrant(row);
             const profile = await getAccountProfile({ id: grant.ownerId });
-            const available = ['owner', 'dealer'].includes(profile.accountType) && profile.accountStatus === 'active' && await sharingPlan(grant.ownerId, profile.accountType) === 'desktop';
+            const available = await teamIssuerAvailable(grant.ownerId, profile);
             return { available, logoUrl: available ? profile.logoUrl : '', accountType: profile.accountType, accountSubtype: profile.accountSubtype, id: grant.id, status: grant.status, name: profile.businessName || profile.displayName || 'Business workspace', permissions: grant.permissions, expiresAt: grant.expiresAt, displayName: grant.displayName, scope: grant.scope, registerCount: grant.registerIds.length, assetCount: grant.assetIds.length, documentAccess: grant.documentAccess, excludedDocumentCount: grant.excludedDocumentIds?.length || 0, documentCount: grant.documentAccess === 'none' ? 0 : grant.documentIds.length };
         }));
         return teamJson({ email: actor.email, workspaces });

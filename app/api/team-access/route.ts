@@ -1,3 +1,4 @@
+import { listTeamClientWork } from '../../../lib/team-client-work';
 import { listAssetGroups } from '../../../lib/asset-groups';
 import { buildAppAssetDirectoryGroups } from '../../../lib/app-asset-directory';
 import { NextRequest } from 'next/server';
@@ -14,14 +15,15 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET() {
     try {
-        const { actor } = await requireTeamOwner();
+        const { actor, profile } = await requireTeamOwner();
         const [rows, registers, assets, documents, activity, groups] = await Promise.all([
             getDb().query('SELECT * FROM team_access WHERE owner_id=$1 ORDER BY created_at DESC', [actor.id]),
             listAssetRegisters(actor.id), listTeamOwnerAssets(actor.id), listAccountDocuments(actor.id),
             getDb().query('SELECT a.id,a.actor_email,a.action,a.asset_id,a.details,a.created_at,t.display_name AS target_name,t.email AS target_email FROM team_access_activity a LEFT JOIN team_access t ON t.id=a.membership_id WHERE a.owner_id=$1 ORDER BY a.created_at DESC LIMIT 100', [actor.id]),
             listAssetGroups(actor.id),
         ]);
-        return teamJson({ groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
+        const clientWork = profile.accountType === 'owner' ? [] : await listTeamClientWork(actor.id);
+        return teamJson({ clientWork: clientWork.map(work => ({id:work.id,title:work.title,client:work.client})), groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
     }
     catch (error) {
         return teamError(error);

@@ -1,3 +1,4 @@
+import { canManageTeamAccess } from '../../lib/team-access';
 import AccountDirectoryListing from '../../components/AccountDirectoryListing';
 import BusinessDetails from '../business/business-client';
 import { readBusinessAccount } from '../../lib/business-accounts';
@@ -16,6 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function AccountPage() {
   const signedIn = await getAnyServerSession();
   if (!signedIn?.user && await getManagedTeamActor()) redirect("/team/access");
+  const canManageDesktopUsers = signedIn?.user ? await canManageTeamAccess() : false;
   if (signedIn?.user) {
     const profile = await getAccountProfile(signedIn.user);
     if (profile.accountType === 'business' || await sharingPlan(signedIn.user.id, profile.accountType) === 'free') {
@@ -25,7 +27,7 @@ export default async function AccountPage() {
         {<details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business?.review.website || profile.websiteUrl || ''} evidence={business?.review.evidence || ''} email={signedIn.user.email} emailVerified={signedIn.user.emailVerified === true}/></details>}
         <AccountDirectoryListing name={profile.businessName || ''} phone={profile.phone || ''} emailVerified={signedIn.user.emailVerified === true}/>
       </div>;
-      return <AccountClient initialProfile={profile} sharedAccount sharedSettings={settings} />;
+      return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount sharedSettings={settings} />;
     }
   }
   const { session } = await requireActivePageAccess();
@@ -38,5 +40,5 @@ export default async function AccountPage() {
     getAccountScanPinStatus(session.user.id),
   ]);
 
-  return <AccountClient initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
+  return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
 }

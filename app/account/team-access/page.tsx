@@ -1,3 +1,4 @@
+import { teamAccountKind } from '../../../lib/team-account-policy';
 import Link from 'next/link';
 import AppHeader from '../../../components/AppHeader';
 import { getAnyServerSession } from '../../../lib/auth-session';
@@ -11,14 +12,14 @@ export const metadata = { title: 'Desktop users', robots: { index: false, follow
 export default async function Page() {
     const session = await getAnyServerSession();
     let message = '';
-    let assetOnly = false;
+    let accountKind: 'owner' | 'dealer' | 'business' = 'owner';
     if (session?.user?.id) {
-        try { const { profile } = await requireTeamOwner(); assetOnly = profile.accountType === 'dealer'; }
+        try { const { profile } = await requireTeamOwner(); accountKind = teamAccountKind(profile.accountType, profile.accountSubtype)!; }
         catch (error) {
             if (!(error instanceof TeamAccessError)) throw error;
             message = error.message;
         }
-        if (!message) return <><AppHeader active="none"/><TeamAccessClient assetOnly={assetOnly} /></>;
+        if (!message) return <><AppHeader active="none"/><TeamAccessClient accountKind={accountKind} /></>;
     }
     return <><AppHeader active="none"/><main className={styles.page}><Link className={styles.button} href="/account">Back to account</Link><h1>Desktop users</h1>{!session?.user?.id ? <><p>Sign in to manage desktop access for your business.</p><Link className={styles.primary} href="/auth?returnTo=/account/team-access">Sign in</Link></> : <div className={styles.notice}><p>{message}</p><Link className={styles.button} href="/team/access">Open my access</Link></div>}</main></>;
 }

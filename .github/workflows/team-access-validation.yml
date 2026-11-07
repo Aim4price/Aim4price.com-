@@ -2,7 +2,7 @@ name: Desktop team access validation
 on:
   pull_request:
     paths:
-      - 'lib/team-access*.ts'
+      - 'lib/team-*.ts'
       - 'lib/team-login.ts'
       - 'lib/team-register.ts'
       - 'app/asset-register/**'
@@ -21,6 +21,8 @@ on:
       - 'database/migrations/152-desktop-login-usernames.sql'
       - 'database/migrations/153-desktop-username-lookup.sql'
       - 'tests/team-access.test.cjs'
+      - 'tests/team-account-access.test.cjs'
+      - 'database/migrations/155-desktop-client-work.sql'
       - 'scripts/verify-team-access.cjs'
       - '.github/workflows/team-access-validation.yml'
   workflow_dispatch:
@@ -41,7 +43,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/team-access.test.cjs
+      - run: node --test tests/team-access.test.cjs tests/team-account-access.test.cjs tests/team-workspace-permissions.test.cjs
       - run: node scripts/verify-team-access.cjs
       - run: node scripts/verify-sharing-usage.cjs
       - run: node scripts/verify-desktop-register.cjs
