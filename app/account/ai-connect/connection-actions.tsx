@@ -10,9 +10,9 @@ import { providerLogos } from './provider-logos';
 type Flow = 'connect' | 'manage';
 type SetupMethod = 'choose' | 'self' | 'help';
 
-function SetupIcon({ help = false }: { help?: boolean }) {
+function SetupIcon({ help = false, kind }: { help?: boolean; kind?: 'other' | 'email' | 'message' }) {
   return <svg className={styles.setupOptionIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d={help ? 'M4 13v-1a8 8 0 0 1 16 0v1M4 12H3v7h4v-7H4Zm16 0h1v7h-4v-7h3Zm0 7v1a2 2 0 0 1-2 2h-4' : 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2'} />
+    <path d={kind === 'other' ? 'M12 3v4m0 10v4M3 12h4m10 0h4M5.6 5.6l2.8 2.8m7.2 7.2 2.8 2.8M5.6 18.4l2.8-2.8m7.2-7.2 2.8-2.8' : kind === 'email' ? 'M3 5h18v14H3V5Zm0 1 9 7 9-7' : kind === 'message' ? 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5ZM8 10h9m-9 4h6' : help ? 'M4 13v-1a8 8 0 0 1 16 0v1M4 12H3v7h4v-7H4Zm16 0h1v7h-4v-7h3Zm0 7v1a2 2 0 0 1-2 2h-4' : 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2'} />
   </svg>;
 }
 
@@ -147,44 +147,43 @@ export default function ConnectionActions({ setup, management, count, assistantO
         role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
-          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Connect with help' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Choose where you want to ask about your Aim4price records.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
+          <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Connect with help' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Choose how you would like to contact Aim4price.' : method === 'choose' ? 'Set it up yourself or let us guide you.' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : styles.connectPanel}`}>
           {flow === 'connect' ? admin ? setup : choosingAssistant ? <div className={styles.assistantChoices}>
             {options.map(option => <button type="button" key={option.name} className={styles.assistantChoice}
-              onClick={() => { setSelectedAssistant(option.name); setMethod(option.name === 'Other' ? 'help' : 'choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>
-              <span className={styles.assistantLogo}>{option.name === 'Other' ? <SetupIcon help /> : <img src={providerLogos[option.name]} alt="" width="56" height="56" />}</span>
+              onClick={() => { setSelectedAssistant(option.name); setMethod(option.available ? 'choose' : 'help'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>
+              <span className={styles.assistantLogo}>{option.name === 'Other' ? <SetupIcon kind="other" /> : <img src={providerLogos[option.name]} alt="" width="56" height="56" />}</span>
               <strong>{option.name}</strong>
-              <span>{option.name === 'Other' ? 'Connect with help' : option.available ? 'Choose how to connect' : 'Setup help available'}</span>
+              <span>{option.name === 'Other' ? 'Tell us what you use' : option.available ? 'Self-service or assisted setup' : 'Ask about availability'}</span>
             </button>)}
           </div> : method === 'help' ? <section className={styles.assistedSetup} aria-labelledby="ai-help-title">
-            <span className={styles.helpIcon}><SetupIcon help /></span>
-            <div><h3 id="ai-help-title">Let’s connect {assistant?.name === 'Other' ? 'your assistant' : assistant?.name} together</h3>
-            <p>Contact Aim4price to arrange setup assistance. We’ll check compatibility and guide you through the connection.</p></div>
+            <div className={styles.helpIntro}><h3 id="ai-help-title">{assistant?.available ? `We’ll help you connect ${assistant.name}` : assistant?.name === 'Other' ? 'Tell us which assistant you use' : `Ask us about ${assistant?.name} setup`}</h3>
+            <p>{assistant?.available ? 'Send us a message to arrange a guided setup.' : 'We’ll check what your assistant supports and explain the next steps.'}</p></div>
             <div className={styles.helpActions}>
-              <a className={styles.primary} href={`https://wa.me/27625721650?text=${encodeURIComponent(helpMessage)}`} target="_blank" rel="noopener noreferrer">Request help on WhatsApp</a>
-              <a href={`mailto:aim4price@gmail.com?subject=${encodeURIComponent('AI connection setup help')}&body=${encodeURIComponent(helpMessage)}`}>Request help by email</a>
+              <a className={styles.contactChoice} href={`https://wa.me/27625721650?text=${encodeURIComponent(helpMessage)}`} target="_blank" rel="noopener noreferrer"><span className={styles.contactIcon}><SetupIcon kind="message" /></span><strong>WhatsApp us</strong><span>Open a prepared setup message.</span></a>
+              <a className={styles.contactChoice} href={`mailto:aim4price@gmail.com?subject=${encodeURIComponent('AI connection setup help')}&body=${encodeURIComponent(helpMessage)}`}><span className={styles.contactIcon}><SetupIcon kind="email" /></span><strong>Email us</strong><span>Send your request by email.</span></a>
             </div>
-            <p className={styles.note}>You’ll sign in and approve access yourself. Please don’t send passwords. Remote assistance can be arranged if needed.</p>
+            <p className={styles.supportNote}>We’ll agree a time if remote help is needed. You enter your own password and approve access.</p>
           </section> : method === 'choose' ? <div className={styles.setupChoices}>
             <button type="button" className={styles.setupChoice} disabled={!assistant?.available} onClick={() => changeMethod('self')}>
-              <SetupIcon /><strong>Connect yourself</strong>
-              <span>{assistant?.available ? 'Follow the setup guide at your own pace.' : 'Self-service is not available yet.'}</span>
+              <span className={styles.methodIcon}><SetupIcon /></span><strong>Connect yourself</strong>
+              <span>{assistant?.available ? 'Open the guide and approve access in your assistant.' : 'Self-service is not available yet.'}</span>
             </button>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('help')}>
-              <SetupIcon help /><strong>Connect with help</strong>
-              <span>Ask Aim4price to guide you through setup.</span>
+              <span className={styles.methodIcon}><SetupIcon help /></span><strong>Connect with help</strong>
+              <span>Arrange a guided setup with Aim4price.</span>
             </button>
           </div> : assistant?.setup : management}
 
         </div>
         <footer className={styles.dialogFooter}>
-          <p role="status">{checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : 'Access appears here after approval in your assistant.'}</p>
+          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'Both options connect your own account with read-only access.' : flow === 'connect' && !admin && method === 'help' ? 'Opening WhatsApp or email does not send your request automatically.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'After approving access, return here and select Check connection.'}</p>
           <div className={styles.footerActions}>
-          {flow === 'connect' && assistant && (method === 'choose' || assistant.name === 'Other') && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
-          {flow === 'connect' && assistant && assistant.name !== 'Other' && method !== 'choose' && <button type="button" onClick={() => changeMethod('choose')}>Connection options</button>}
+          {flow === 'connect' && assistant && (method === 'choose' || !assistant.available) && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
+          {flow === 'connect' && assistant && assistant.available && method !== 'choose' && <button type="button" onClick={() => changeMethod('choose')}>Connection options</button>}
           {(flow === 'manage' || admin || (assistant && method === 'self')) && <button type="button" disabled={checking} onClick={checkStatus}>{checking ? 'Checking…' : 'Check connection'}</button>}
           {flow === 'manage' && count === 0 && <button type="button" className={styles.primary} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); setFlow('connect'); }}>Connect assistant</button>}
           </div>
