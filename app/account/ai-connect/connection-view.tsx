@@ -90,7 +90,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <div className={styles.cardHeading}><span className={styles.permissionIcon}><img src={providerLogos.ChatGPT} alt="" width="28" height="28" /></span><h3>ChatGPT</h3></div>
         <p>{chatGptListingUrl ? "Connect your Aim4price account." : "Find the Aim4price plugin."}</p>
         <a className={styles.primary} href={chatGptListingUrl || "https://chatgpt.com/plugins?search=Aim4price"} target="_blank" rel="noopener noreferrer">{chatGptListingUrl ? "Connect in ChatGPT" : "Find Aim4price in ChatGPT"}</a>
-        {!chatGptListingUrl && <small className={styles.availabilityHint}>Plugin missing? Contact Aim4price for access.</small>}
+        {!chatGptListingUrl && <small className={styles.availabilityHint}>Can’t find Aim4price? Choose Connection options, then Connect with help.</small>}
       </div></div>
       <ul className={styles.steps}>
         <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Open Aim4price in ChatGPT</h3><p>{chatGptListingUrl ? "Install Aim4price, then choose Connect." : "Install Aim4price from the plugin directory."}</p></div></li>
