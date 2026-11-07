@@ -84,7 +84,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Save access');await page.waitForFunction(()=>window.writes.length===1);
  assert.equal(await page.evaluate(()=>window.writes[0].displayName),'Updated Owner');
  await click('Permissions');await page.waitForSelector('input[value="view_only"]');await page.click('label:has(input[value="view_only"])');await click('Save access');await page.waitForFunction(()=>window.writes.length===2);
- await click('Asset access');await page.waitForFunction(()=>document.body.textContent.includes('Which assets'));
+ await page.screenshot({path:'/tmp/owner-permissions-desktop.png'});
+ assert(await page.$$eval('input[name="owner-role"]',inputs=>{
+   const cards=inputs.map(input=>input.closest('label').getBoundingClientRect());
+   return cards.length===3&&Math.abs(cards[0].width-cards[1].width)<1&&Math.abs(cards[0].top-cards[1].top)<1&&Math.abs(cards[2].right-cards[1].right)<1;
+ }),'Owner role cards fill both columns without an empty gap');
+ await page.setViewport({width:390,height:844});await page.screenshot({path:'/tmp/owner-permissions-mobile.png'});await page.setViewport({width:1440,height:800});
+ await click('Asset access');await page.waitForSelector('input[name="owner-asset-scope"]');
  await page.click('input[name="owner-asset-scope"]:not(:checked)');await click('Save access');await page.waitForFunction(()=>window.writes.length===3);
  assert.equal(await page.evaluate(()=>window.writes[2].assetScope),'selected');
  await click('Passcode');await page.waitForSelector('input[autocomplete="new-password"]');await page.type('input[autocomplete="new-password"]','5678');await click('Save access');await page.waitForFunction(()=>window.writes.length===4);
@@ -95,3 +101,4 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.deepEqual(errors,[]);console.log('Owner flow: navigation, details, permissions, assets, passcode, footer and mobile checks passed.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
+

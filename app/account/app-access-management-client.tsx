@@ -1292,11 +1292,10 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
   const countLabel = (count: number, label: string) => `${count} ${label}${count === 1 ? '' : 's'}`;
   return (
     <section className={`${styles.accessPanel} ${ownerStyles.assetPanel}`} aria-label="Owner App asset access">
-      <fieldset className={ownerStyles.fields} disabled={saving}>
-        <legend className={ownerStyles.hint}>Which assets can this person access?</legend>
+      <fieldset className={ownerStyles.fields} disabled={saving} aria-label="Asset access">
         <div className={ownerStyles.choices}>{ASSET_SCOPE_OPTIONS.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings.assetScope === option.value}>
           <input type="radio" name="owner-asset-scope" checked={settings.assetScope === option.value} onChange={() => setSettings(current => current ? { ...current, assetScope: option.value } : current)} />
-          <span><strong>{option.label}</strong><small>{option.value === 'all' ? 'Include all current and future assets.' : 'Choose umbrellas, registers or individual assets.'}</small></span>
+          <span><strong>{option.label}</strong><small>{option.description}</small></span>
         </label>)}</div>
       </fieldset>
 

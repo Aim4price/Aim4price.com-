@@ -264,6 +264,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
      await card('Fuel tank access');await page.waitForFunction(()=>document.body.textContent.includes('Choose fuel tanks'));await card('Choose fuel tanks');await page.waitForSelector('dialog[open]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Fuel tank access');await click('‹ Back');
    } else {
      assert.equal(await page.$$eval('input[type="radio"]',els=>els.length),kind==='dealer'?4:2);
+     assert(await page.$$eval('input[type="radio"]',els=>els.every(el=>getComputedStyle(el).opacity==='1' && el.getBoundingClientRect().width>=16 && getComputedStyle(el.closest('label')).textAlign==='left')), 'Business roles use visible radios and left-aligned cards');
      if(kind!=='field') {
        assert(await page.$$eval('input[type="radio"]',els=>els[0].closest('label').getBoundingClientRect().top===els[1].closest('label').getBoundingClientRect().top), 'Business app roles should use two columns');
        assert(await page.$eval('button[type="submit"]',el=>el.getBoundingClientRect().bottom<=innerHeight), 'Save action should fit on screen');
