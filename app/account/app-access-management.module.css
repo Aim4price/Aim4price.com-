@@ -1460,3 +1460,6 @@
 :global([data-login-settings]) .modal .directoryList::-webkit-scrollbar { width:12px; }
 :global([data-login-settings]) .modal .directoryList::-webkit-scrollbar-thumb { background:var(--app-muted,#829a92); border:3px solid var(--app-surface,#fff); border-radius:12px; }
 :global([data-login-settings]) .modal .accessMessage { margin-top:1rem; font-size:.88rem; font-weight:620; line-height:1.5; }
+
+.ownerFooterSlot:empty { display:none; }
+.ownerFooterSlot { min-width:0; }

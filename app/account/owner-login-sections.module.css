@@ -257,3 +257,45 @@
 .sectionManager .pickerCards .card { padding:.65rem 1rem; }
 .sectionManager .assetPanel > .hint { margin:.8rem 0; }
 .sectionManager.sectionManager .choice small { font-weight:650; }
+
+/* Owner App follows the desktop access editor without changing app permissions. */
+.desktopFlow .settingsLayout { grid-template-columns:10.5rem minmax(0,1fr); gap:1.5rem; }
+.desktopFlow .sectionNav { position:sticky; top:0; }
+.desktopFlow .sectionNav .backToUsers { margin-bottom:.5rem; padding-bottom:.85rem; border-radius:0; border-bottom:1px solid var(--app-line,#d8e5dd); color:var(--app-muted,#63766f); }
+.sectionHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.desktopFlow .sectionHeading { margin-bottom:1rem; }
+.desktopFlow .sectionHeading .sectionTitle { margin:0; }
+.desktopFlow .status { padding:.3rem .65rem; border-radius:2rem; background:var(--app-surface-soft,#edf1ef); font-size:.8rem; white-space:nowrap; }
+.desktopFlow .status[data-active=true] { background:var(--app-success-soft,#e8f2ed); }
+.desktopFlow .settingsContent { min-height:0; padding:0; }
+.desktopFlow .settingsContent > form { gap:1rem; }
+.desktopFlow .settingsContent > form > .fields { margin-bottom:0; }
+.desktopFlow .hint,.desktopFlow .choice small { font-weight:400; font-size:.88rem; line-height:1.5; }
+.desktopFlow .fields { gap:1rem 1.25rem; }
+.desktopFlow .fields > label { gap:.45rem; }
+.desktopFlow .roleChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
+.desktopFlow .roleChoices > :last-child { grid-column:auto; }
+.desktopFlow .roleChoices .choice { position:relative; justify-content:center; text-align:center; padding:.8rem .5rem; }
+.desktopFlow .roleChoices .choice strong { font-size:.9rem; }
+.desktopFlow .roleChoices .choice input { position:absolute; opacity:0; width:1px; height:1px; }
+.desktopFlow .roleChoices .choice small { font-size:.8rem; }
+.desktopFlow .roleChoices .choice[data-selected=true] { box-shadow:inset 0 0 0 1px var(--app-accent,#28815f); }
+.desktopFlow .statusAction { border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; padding:1rem; margin-top:1rem; }
+.desktopFlow .statusAction:last-child { padding-bottom:1rem; }
+.desktopFlow .statusAction p { font-weight:400; font-size:.85rem; }
+.desktopFlow .statusAction button { flex-shrink:0; }
+.desktopFlow .pickerCards .card { background:var(--app-surface-soft,#f2f6f4); padding:.85rem 1rem; }
+.desktopFlow .assetPanel > .fields > legend { margin-bottom:.75rem; }
+.saveFooter { display:flex; align-items:center; justify-content:flex-end; gap:1rem; padding:.85rem 2rem; margin:0; border-top:1px solid var(--app-line,#d8e5dd); background:var(--app-surface,#fff); }
+.saveHint { margin-right:auto; font-size:.85rem; font-weight:650; color:var(--app-muted,#63766f); }
+.saveFooter button { font:inherit; font-weight:650; min-height:44px; border:1px solid transparent; border-radius:.8rem; padding:.8rem 1.1rem; cursor:pointer; background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); }
+.saveFooter button:disabled { background:var(--app-surface-soft,#edf1ef); color:var(--app-muted,#63766f); border-color:var(--app-line,#d8e5dd); cursor:not-allowed; }
+.saveFooter button:focus-visible { outline:3px solid var(--app-accent,#28815f); outline-offset:3px; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .settingsLayout { grid-template-columns:minmax(0,1fr); gap:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav { grid-template-columns:repeat(6,max-content); overflow-x:auto; position:static; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav button { white-space:nowrap; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav .backToUsers { margin:0; padding:.6rem .85rem; border-bottom:0; border-right:1px solid var(--app-line,#d8e5dd); }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .roleChoices { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .saveFooter { padding:.75rem 1.1rem; flex-wrap:wrap; }
+}
