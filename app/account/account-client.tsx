@@ -19,6 +19,7 @@ import AccountInvoices from "./account-invoices";
 import AppHeader from "../../components/AppHeader";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
+import notificationStyles from "./notifications/page.module.css";
 
 type NoticeTone = "success" | "error";
 type AccountNotice = {
@@ -2726,26 +2727,26 @@ export default function AccountClient({
         >
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard} ${styles.polishedSettingsModal}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard} ${styles.notificationModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-participation-modal-title"
             tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
-            <AccountModalScroller>
+            <div className={styles.accountModalScrollContent}>
               <div className={styles.modalHeader}>
                 <h2 id="discovery-participation-modal-title">
                   Discovery participation
                 </h2>
                 <p>
-                  Choose whether your eligible assets may participate while you
-                  browse other participating owners&apos; assets.
+                  Choose whether your eligible assets appear in Discovery.
                 </p>
                 <button
                   type="button"
                   className={styles.modalCloseButton}
                   onClick={closeActionModal}
+                  disabled={isSavingProfile}
                   aria-label="Close Discovery participation"
                   data-modal-close="true"
                 >
@@ -2753,38 +2754,71 @@ export default function AccountClient({
                 </button>
               </div>
 
-              <ModalInlineNotice notice={actionModalNotice} />
-
-              <form className={`${styles.modalForm} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
-                <label
-                  className={styles.toggleField}
-                >
-                  <input
-                    type="checkbox"
-                    checked={profileDraft.discoveryParticipationEnabled}
-                    onChange={(event) =>
+              <form
+                className={`${styles.compactEditForm} ${notificationStyles.form}`}
+                aria-busy={isSavingProfile}
+                onSubmit={handleProfileSubmit}
+              >
+                <div className={notificationStyles.options}>
+                  <ModalInlineNotice notice={actionModalNotice} />
+                  <button
+                    type="button"
+                    className={notificationStyles.row}
+                    role="switch"
+                    aria-checked={profileDraft.discoveryParticipationEnabled}
+                    aria-labelledby="discovery-participation-label"
+                    aria-describedby="discovery-participation-description"
+                    disabled={isSavingProfile}
+                    onClick={() =>
                       setProfileDraft((current) => ({
                         ...current,
-                        discoveryParticipationEnabled: event.target.checked,
+                        discoveryParticipationEnabled: !current.discoveryParticipationEnabled,
                       }))
                     }
-                  />
-                  <span>
-                    <strong><SettingsDetailIcon name="discovery" />Participate in Discovery</strong>
-                    <small>
-                      When enabled, all eligible Aim4price assets participate.
-                      Your own assets remain hidden from you.
-                    </small>
-                  </span>
-                </label>
+                  >
+                    <span className={notificationStyles.optionLabel}>
+                      <span className={notificationStyles.notificationIcon}>
+                        <SettingsDetailIcon name="discovery" />
+                      </span>
+                      <span>
+                        <span id="discovery-participation-label">Participate in Discovery</span>
+                        <small id="discovery-participation-description">
+                          All your eligible assets participate. Your own assets stay hidden from you.
+                        </small>
+                      </span>
+                    </span>
+                    <span
+                      className={profileDraft.discoveryParticipationEnabled ? notificationStyles.on : notificationStyles.off}
+                      aria-hidden="true"
+                    >
+                      {profileDraft.discoveryParticipationEnabled ? "On" : "Off"}
+                    </span>
+                  </button>
 
-                <div className={styles.confirmBox}>
-                  <strong><SettingsDetailIcon name="lock" />Private information stays locked.</strong>
-                  <p>
-                    Photos and contact details are released only after you
-                    approve an enquiry. Turning this off immediately removes
-                    your assets and revokes Discovery-only access.
-                  </p>
+                  <div className={notificationStyles.categories}>
+                    <div className={`${notificationStyles.row} ${styles.discoveryInfoRow}`}>
+                      <span className={notificationStyles.optionLabel}>
+                        <span className={notificationStyles.notificationIcon}>
+                          <SettingsDetailIcon name="lock" />
+                        </span>
+                        <span>
+                          Private information stays locked
+                          <small>Photos and contact details are shared only after you approve an enquiry.</small>
+                        </span>
+                      </span>
+                    </div>
+                    <div className={`${notificationStyles.row} ${styles.discoveryInfoRow}`}>
+                      <span className={notificationStyles.optionLabel}>
+                        <span className={notificationStyles.notificationIcon}>
+                          <SettingsDetailIcon name="discovery" />
+                        </span>
+                        <span>
+                          When you turn it off
+                          <small>Once saved, your assets are removed and Discovery-only access is revoked.</small>
+                        </span>
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className={styles.marketplaceActions}>
@@ -2805,7 +2839,7 @@ export default function AccountClient({
                   </button>
                 </div>
               </form>
-            </AccountModalScroller>
+            </div>
           </section>
         </div>
       ) : null}
@@ -3061,4 +3095,5 @@ export default function AccountClient({
     </main>
   );
 }
+
 
