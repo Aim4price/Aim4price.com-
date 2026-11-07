@@ -74,29 +74,32 @@ function SharedInformation({ examples = false, admin = false }: { examples?: boo
   </div>;
 }
 
+const setupLinks: Record<string, string> = {
+  ChatGPT: 'https://chatgpt.com/plugins',
+  Claude: 'https://claude.ai/customize/connectors?modal=add-custom-connector',
+  Gemini: 'https://gemini.google.com/customize/connectors',
+};
+
 export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [], chatGptListingUrl }: ConnectionViewProps) {
   const admin = audience === 'admin';
   const accessDuration = admin ? 'Access lasts 24 hours.' : 'Your assistant stays connected until you disconnect it.';
   const makeSetup = (selectedProvider?: string) => <>
-    {selectedProvider && !signInHref && !providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? <div className={styles.empty}>
-      <h3>{selectedProvider} connection is not available yet</h3>
-      <p>{selectedProvider === 'Gemini' ? 'Gemini setup is planned. We will enable it after regional availability and the Aim4price connection have been verified.' : 'We will enable this option once its Aim4price connection is configured and tested.'}</p>
-    </div> : signInHref ? <div className={styles.empty}>
-      <h3>Sign in to get started</h3>
-      <p>Use the Aim4price account you want to connect.</p>
+    {signInHref ? <div className={styles.empty}>
+      <h3>Sign in to get started</h3><p>Use the Aim4price account you want to connect.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
-    </div> : resource && selectedProvider === 'ChatGPT' && !admin ? <div className={`${styles.setupLayout} ${styles.chatGptSetup}`}>
-      <div className={styles.providerGrid}><div className={styles.permission}>
-        <div className={styles.cardHeading}><span className={styles.permissionIcon}><img src={providerLogos.ChatGPT} alt="" width="28" height="28" /></span><h3>ChatGPT</h3></div>
-        <p>{chatGptListingUrl ? "Connect your Aim4price account." : "Find the Aim4price plugin."}</p>
-        <a className={styles.primary} href={chatGptListingUrl || "https://chatgpt.com/plugins?search=Aim4price"} target="_blank" rel="noopener noreferrer">{chatGptListingUrl ? "Connect in ChatGPT" : "Find Aim4price in ChatGPT"}</a>
-        {!chatGptListingUrl && <small className={styles.availabilityHint}>Can’t find Aim4price? Choose Connection options, then Connect with help.</small>}
-      </div></div>
-      <ul className={styles.steps}>
-        <li><span className={styles.stepIcon}><Icon kind="link" /></span><div><h3>Open Aim4price in ChatGPT</h3><p>{chatGptListingUrl ? "Install Aim4price, then choose Connect." : "Install Aim4price from the plugin directory."}</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="shield" /></span><div><h3>Sign in and approve</h3><p>Approve read-only access to your account.</p></div></li>
-        <li><span className={styles.stepIcon}><Icon kind="chat" /></span><div><h3>Ask about your records</h3><p>Select Aim4price in your chat and ask a question.</p></div></li>
-      </ul>
+    </div> : resource && selectedProvider && !admin ? <div className={styles.selfSetup}>
+      <div className={styles.setupStart}>
+        <div><h3>1. Open {selectedProvider} setup</h3><p>{selectedProvider === 'ChatGPT' ? 'Choose Add, then add a custom MCP server.' : selectedProvider === 'Claude' ? 'Add a custom connector named Aim4price.' : 'Look for the option to add a custom connector.'}</p></div>
+        <a className={styles.primary} href={setupLinks[selectedProvider]} target="_blank" rel="noopener noreferrer">Open {selectedProvider} setup</a>
+      </div>
+      <section className={styles.addressStep} aria-label="Connection address">
+        <h3>2. Add the connection address</h3>
+        <p>Name it Aim4price. Paste this into the MCP server URL field.</p>
+        <ServerAddress resource={resource} />
+      </section>
+      <div className={styles.setupFinish}><h3>3. Sign in and approve</h3><p>Choose OAuth if asked. Sign in to Aim4price and approve read-only access.</p></div>
+      {selectedProvider === 'ChatGPT' && chatGptListingUrl && <a href={chatGptListingUrl} target="_blank" rel="noopener noreferrer">Already have access to our plugin? Install Aim4price instead.</a>}
+      <p className={styles.setupRequirement}>{providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? 'Missing an option or asked for credentials? Return to Connection options and contact Aim4price Admin.' : 'Aim4price Admin still needs to configure this provider before you can finish connecting. You can view the setup guide here, or choose Connection options to contact us.'}</p>
     </div> : resource ? <>
       <SetupGuide manual={<>
         <p>Private setup requires OAuth credentials and a callback registered by Aim4price. The server address alone is not enough. Setup administrators enter credentials in the assistant’s secure configuration, never in chat.</p>

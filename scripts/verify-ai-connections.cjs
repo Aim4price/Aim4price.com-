@@ -58,8 +58,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.querySelector('strong')?.textContent==='ChatGPT').click());
   await page.click('button::-p-text(Connect yourself)');
   await page.waitForSelector('a[href="https://chatgpt.com/plugins/aim4price-test"]');
-  assert.equal(await page.$eval('a[href="https://chatgpt.com/plugins/aim4price-test"]',e=>e.textContent),'Connect in ChatGPT');
-  assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Copy address'));
+  assert.equal(await page.$eval('a[href="https://chatgpt.com/plugins/aim4price-test"]',e=>e.textContent),'Already have access to our plugin? Install Aim4price instead.');
+  assert.ok((await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Copy address'));
   await page.screenshot({path:path.join(evidence,'owner-published-handover.png')});
   await render(base,true);
   // The launcher must keep the Owner App Users dimensions, without compact overrides.
@@ -84,7 +84,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   async function choose(name) {
     await page.evaluate(name => Array.from(document.querySelectorAll('#ai-connect-panel button')).find(button => button.querySelector('strong')?.textContent === name).click(), name);
     await page.waitForFunction(name => document.querySelector('#ai-connect-title')?.textContent === 'Connect ' + name, {}, name);
-    if (name !== 'Gemini') await page.click('button::-p-text(Connect yourself)');
+    await page.click('button::-p-text(Connect yourself)');
   }
   // Other is help-only; contact links carry the selection without sending anything.
   await page.click('button::-p-text(Other)');
@@ -96,7 +96,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button::-p-text(ChatGPT)');
   await page.waitForSelector('button::-p-text(Connect yourself)');
   await page.screenshot({path:path.join(evidence,'connection-methods.png')});
-  await page.click('button::-p-text(Connect with help)');
+  await page.click('button::-p-text(Connect with Aim4price Admin)');
   await page.waitForSelector('#ai-help-title');
   assert.ok(await page.$eval('a[href^="https://wa.me/"]', a => new URL(a.href).searchParams.get('text').includes('ChatGPT')));
   for (const viewport of [{width:1280,height:650},{width:390,height:844}]) {
@@ -105,20 +105,22 @@ const evidence=path.join(root,'.next/ai-connection-validation');
     await page.screenshot({path:path.join(evidence,`assisted-setup-${viewport.width}.png`)});
     await page.click('button::-p-text(Connection options)');
     await verifySetupFit('Connection options');
-    await page.click('button::-p-text(Connect with help)');
+    await page.click('button::-p-text(Connect with Aim4price Admin)');
   }
   await page.setViewport({width:1280,height:1000});
   await page.click('button::-p-text(Connection options)');
   await page.click('button::-p-text(Change assistant)');
-  await page.click('button::-p-text(Gemini)');
-  await page.waitForSelector('#ai-help-title');
-  assert.equal(await page.$eval('#ai-help-title', e=>e.textContent), 'Ask us about Gemini setup');
-  assert.equal(await page.$('button::-p-text(Connect yourself)'), null);
+  await choose('Gemini');
+  assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', a=>a.href), 'https://gemini.google.com/customize/connectors');
+  assert.ok((await page.$eval('#ai-connect-panel', e=>e.textContent)).includes('still needs to configure'));
+  await page.click('button::-p-text(Connection options)');
+  await page.click('button::-p-text(Connect with Aim4price Admin)');
   assert.ok(await page.$eval('a[href^="mailto:"]', a => decodeURIComponent(a.href).includes('Gemini')));
-  await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(button=>button.textContent==='Change assistant').click());
+  await page.click('button::-p-text(Connection options)');
+  await page.click('button::-p-text(Change assistant)');
   await choose('Claude');
   assert.equal(await page.$('a[href="https://chatgpt.com/"]'), null);
-  assert.equal(await page.$eval('a[href="https://claude.ai/"]',e=>e.textContent),'Open Claude');
+  assert.equal(await page.$eval('a[href="https://claude.ai/customize/connectors?modal=add-custom-connector"]',e=>e.textContent),'Open Claude setup');
   assert.equal(await page.$eval('[role="dialog"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
   await page.screenshot({path:path.join(evidence,'owner-provider-modal-dark.png')});
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
@@ -164,16 +166,14 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.waitForSelector('#ai-connect-panel');
   await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
-  assert.ok(await page.$$eval('#ai-connect-panel li h3, #ai-connect-panel li p', elements => elements.every(element => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    return range.getClientRects().length === 1;
-  })), 'Desktop ChatGPT instructions must fit on single lines');
+  assert.equal(await page.$eval('#ai-connect-panel code', e=>e.textContent), base.resource);
+  assert.ok(await page.$('button::-p-text(Copy address)'));
   await page.screenshot({path:path.join(evidence,'owner-connect-desktop.png')});
-  assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', e=>e.href),'https://chatgpt.com/plugins?search=Aim4price');
+  assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', e=>e.href),'https://chatgpt.com/plugins');
   assert.ok(!(await page.$eval('#ai-connect-panel',e=>e.textContent)).includes('Manual setup'));
   for (const viewport of [{width:1280,height:650},{width:390,height:844}]) {
     await page.setViewport(viewport);
+    await page.screenshot({path:path.join(evidence,`self-guide-${viewport.width}.png`)});
     await verifySetupFit('ChatGPT plugin handover');
   }
   await page.click('button::-p-text(Connection options)');
@@ -193,15 +193,9 @@ const evidence=path.join(root,'.next/ai-connection-validation');
     await page.setViewport(viewport);
     await verifySetupFit('Connection guide');
     await page.screenshot({path:path.join(evidence,`owner-setup-${viewport.width}.png`)});
-    await page.click('button::-p-text(Manual setup & connection address)');
-    await page.waitForSelector('#ai-manual-title');
-    assert.equal(await page.evaluate(()=>document.activeElement.id),'ai-manual-title');
-    assert.equal(await page.$('#ai-connect-panel a[target="_blank"]'),null);
-    await verifySetupFit('Manual setup');
-    await page.screenshot({path:path.join(evidence,`owner-manual-${viewport.width}.png`)});
-    await page.click('button::-p-text(Back to connection guide)');
-    await page.waitForSelector('#ai-connect-panel a[target="_blank"]');
-    await verifySetupFit('Restored guide');
+    assert.equal(await page.$eval('#ai-connect-panel code', e=>e.textContent), base.resource);
+    await page.click('button::-p-text(Copy address)');
+    await page.waitForFunction(()=>document.querySelector('#ai-connect-panel').textContent.includes('copy it manually') || document.querySelector('#ai-connect-panel').textContent.includes('Server address copied'));
   }
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(()=>document.documentElement.style.overflow),'');
