@@ -4015,35 +4015,12 @@
   border-radius: 0 0 1.5rem 1.5rem;
 }
 
-/* Discovery uses the same field typography and neutral surfaces as Marketplace contact. */
-.discoveryModalCard .toggleField,
-.discoveryModalCard .confirmBox {
-  padding: .85rem 1rem;
-  border: 1px solid var(--app-info-line, var(--account-line, #dce6ec));
-  border-radius: .92rem;
-  background: var(--app-surface, var(--account-surface, #fff));
-  font-family: inherit;
-  font-weight: 400;
-  color: var(--app-info, #20313b);
+/* Discovery shares notification rows; explanatory cards are not controls. */
+.discoveryModalCard .discoveryInfoRow {
+  cursor: default;
+  align-items: flex-start;
 }
-.discoveryModalCard .toggleField strong,
-.discoveryModalCard .confirmBox strong {
-  font-family: inherit;
-  color: var(--app-text, #405950);
-  font-size: .7rem;
-  font-weight: 850;
-  line-height: 1.4;
-  letter-spacing: .045em;
-  text-transform: uppercase;
-}
-.discoveryModalCard .toggleField small,
-.discoveryModalCard .confirmBox p {
-  font: inherit;
-  color: var(--app-info, #20313b);
-  line-height: 1.35;
-  letter-spacing: normal;
-}
-.discoveryModalCard .modalForm { margin-top: 0; gap: 1rem; }
+.discoveryInfoRow > span { align-items: flex-start; }
 
 /* The password dialog's close control, reusable in other modal headers. */
 .modalCloseButton.passwordModalCloseButton {
@@ -4335,3 +4312,4 @@
 }
 /* The step indicator already names the section; avoid repeating it above the fields. */
 .businessDetailsModalCard.polishedSettingsModal .modalSectionHeading { display: none; }
+
