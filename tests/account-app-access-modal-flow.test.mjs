@@ -37,7 +37,7 @@ test('shared access flows preserve each app login type and its existing controls
   assert.match(shared, /Owner \/ Manager/);
   assert.match(shared, /Operations/);
   assert.match(shared, /FieldManagerAccessPanel/);
-  assert.match(shared, /Save changes/);
+  assert.match(shared, /Save access/);
   const sections = await read('app/account/owner-login-sections.tsx');
   assert.match(sections, /Deactivate/);
   assert.match(sections, /Activate/);
@@ -186,3 +186,4 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   assert.match(shared, /if \(event\.key === 'Escape' && !document\.querySelector\('dialog\[open\]'\) && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
   assert.match(shared, /\}, \[open\]\);/);
 });
+

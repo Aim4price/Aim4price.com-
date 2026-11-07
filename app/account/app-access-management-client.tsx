@@ -840,11 +840,9 @@ function AppAccessManagement({ kind, configOverride }: {
       setDraft(emptyDraft(config));
       setShowCreatePassword(false);
       setCreateUsernameError('');
-      if (kind === 'owner') {
-        setSelectedId(created.id);
-        setOwnerDirty(false);
-        setActiveFlow('manage');
-      } else setActiveFlow(null);
+      setSelectedId(created.id);
+      setOwnerDirty(false);
+      setActiveFlow('manage');
       setNotice({ tone: 'success', message: config.createSuccess });
     } catch (error) {
       const message = error instanceof Error ? error.message : `Failed to create ${config.itemLabel}.`;
@@ -1072,7 +1070,7 @@ function AppAccessManagement({ kind, configOverride }: {
         title={businessSettingsOpen ? 'Business login settings' : selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
         description={businessSettingsOpen ? 'One business ID for your app logins.' : selectedRecord ? selectedRecord.username : 'Choose a person to manage.'}
         compact={Boolean(selectedRecord)}
-        ownerEditor={kind === 'owner' && Boolean(selectedRecord) && !businessSettingsOpen}
+        ownerEditor={Boolean(selectedRecord) && !businessSettingsOpen}
 
         wide
         closeDisabled={Boolean(busyId || deletingId || namespaceBusy || ownerAccessBusy)}
@@ -1112,7 +1110,7 @@ function AppAccessManagement({ kind, configOverride }: {
             ) : null}
           </section>
         ) : <OwnerLoginSections
-          desktopFlow={kind === 'owner'}
+          desktopFlow
           sectionNavigation
           businessLoginLayout={businessLoginLayout}
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
@@ -1210,7 +1208,7 @@ function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, o
           <input type="radio" name={`field-${section}-scope`} checked={settings[scopeKey] === option.value} onChange={() => setSettings(current => current ? { ...current, [scopeKey]: option.value } : current)}/>
           <span><strong>{option.label}</strong><small>{option.description}</small></span>
         </label>)}</div>
-        {settings[scopeKey] === 'selected' ? <div className={ownerStyles.grid}>{(section === 'fuel' ? [
+        {settings[scopeKey] === 'selected' ? <div className={ownerStyles.pickerCards}>{(section === 'fuel' ? [
           { key: 'fuelStorageIds' as const, title: 'Choose fuel tanks', icon: 'box' },
         ] : [
           { key: 'groupIds' as const, title: 'Umbrellas', icon: 'umbrella' },
@@ -1225,7 +1223,7 @@ function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, o
       : settings.assetIds.length || settings.groupIds.length ? `${settings.assetIds.length} individual assets and ${settings.groupIds.length} umbrellas selected.` : 'No assets selected. This person will have no asset access.'}</p> : null}
     {picker ? <OwnerAccessPicker compact title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'assetIds' ? 'Choose assets' : 'Choose fuel tanks'} description={picker === 'groupIds' ? 'Includes current and future linked assets.' : 'Choose access for this login.'} selected={settings[picker]} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'assetIds' ? assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind })) : storages.map(storage => ({ id: storage.id, title: storage.name, detail: storage.locationLabel }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/> : null}
     {message ? <p role="status" className={styles.accessMessage}>{message}</p> : null}
-    <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} disabled={saving || JSON.stringify(settings) === savedSettings.current} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save changes'}</button></footer>
+    <LoginSaveFooter dirty={JSON.stringify(settings) !== savedSettings.current}><button type="button" className={ownerStyles.primary} disabled={saving || JSON.stringify(settings) === savedSettings.current} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save access'}</button></LoginSaveFooter>
   </section>;
 }
 
@@ -1355,5 +1353,6 @@ export function OwnerAppAccessManagement() {
 export function FieldManagerAppAccessManagement() {
   return <AppAccessManagement kind="field" />;
 }
+
 
 

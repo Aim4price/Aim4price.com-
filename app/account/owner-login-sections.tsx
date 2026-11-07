@@ -121,8 +121,8 @@ export default function OwnerLoginSections(props: Props) {
         <div className={styles.statusAction}><div><strong>{record.isActive ? 'Deactivate login' : 'Activate login'}</strong><p>{record.isActive ? 'Stop sign-in access. You can activate it again later.' : 'Allow this person to sign in again.'}</p></div><button type="button" disabled={busy} onClick={props.onToggle}><AccessSectionIcon name="power"/>{record.isActive ? 'Deactivate' : 'Activate'}</button></div>
         <div className={styles.statusAction}><div><strong>Delete login</strong><p>Permanently remove this login.</p></div><button type="button" className={styles.danger} disabled={busy} onClick={props.onDelete}><AccessSectionIcon name="delete"/>Delete</button></div>
       </> : <form id={formId} onSubmit={save}>
-        {props.desktopFlow && section === 'details' && <p className={styles.hint}>Use these details in the Owner App. Give each person their own login.</p>}
-        {props.desktopFlow && section === 'permissions' && <p className={styles.hint}>Choose what this person can do. Set their asset access separately.</p>}
+        {props.desktopFlow && section === 'details' && <p className={styles.hint}>Use these details to sign in to the app. Give each person their own login.</p>}
+        {props.desktopFlow && section === 'permissions' && <p className={styles.hint}>Choose what this person can do.{props.renderAssetAccess ? ' Set their asset access separately.' : ''}</p>}
         <fieldset disabled={busy} className={`${styles.fields} ${section === 'details' ? styles.detailsGrid : ''}`}>
           {section === 'details' ? <>
             <label>Display name<span className={styles.inputIcon}><AccessSectionIcon name="details"/><input value={name} onChange={e => setName(e.target.value)} required /></span></label>
@@ -141,3 +141,4 @@ export default function OwnerLoginSections(props: Props) {
     </div></div>
   </div>;
 }
+

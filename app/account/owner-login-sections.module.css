@@ -258,7 +258,7 @@
 .sectionManager .assetPanel > .hint { margin:.8rem 0; }
 .sectionManager.sectionManager .choice small { font-weight:650; }
 
-/* Owner App follows the desktop access editor without changing app permissions. */
+/* App login editors share the desktop flow while retaining their own permissions. */
 .desktopFlow .settingsLayout { grid-template-columns:10.5rem minmax(0,1fr); gap:1.5rem; }
 .desktopFlow .sectionNav { position:sticky; top:0; }
 .desktopFlow .sectionNav .backToUsers { margin-bottom:.5rem; padding-bottom:.85rem; border-radius:0; border-bottom:1px solid var(--app-line,#d8e5dd); color:var(--app-muted,#63766f); }
@@ -274,6 +274,7 @@
 .desktopFlow .fields { gap:1rem 1.25rem; }
 .desktopFlow .fields > label { gap:.45rem; }
 .desktopFlow .roleChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem; }
+.desktopFlow .roleChoices.dealerRoles { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .desktopFlow .roleChoices > :last-child { grid-column:auto; }
 .desktopFlow .roleChoices .choice { position:relative; justify-content:center; text-align:center; padding:.8rem .5rem; }
 .desktopFlow .roleChoices .choice strong { font-size:.9rem; }
@@ -293,9 +294,11 @@
 .saveFooter button:focus-visible { outline:3px solid var(--app-accent,#28815f); outline-offset:3px; }
 @media(max-width:760px) {
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .settingsLayout { grid-template-columns:minmax(0,1fr); gap:1rem; }
- :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav { grid-template-columns:repeat(6,max-content); overflow-x:auto; position:static; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:max-content; overflow-x:auto; position:static; }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav button { white-space:nowrap; }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .sectionNav .backToUsers { margin:0; padding:.6rem .85rem; border-bottom:0; border-right:1px solid var(--app-line,#d8e5dd); }
  :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .roleChoices { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .desktopFlow .roleChoices.dealerRoles { grid-template-columns:1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .saveFooter { padding:.75rem 1.1rem; flex-wrap:wrap; }
 }
+
