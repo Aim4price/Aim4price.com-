@@ -1,4 +1,5 @@
 'use client';
+import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -160,8 +161,8 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     function openAsset(asset: TeamAsset) { setError(''); setNotice(''); setSection('details'); setSelectedId(asset.id);   }
     async function upload() { if (!file || !selected)
         return; const form = new FormData(); form.set('file', file); form.set('assetId', selected.id); form.set('requestId', uploadKey.current); await api(base + '/' + section, { method: 'POST', body: form }); setFile(null); await refresh(); setNotice(section === 'documents' ? 'Document uploaded for owner review.' : 'Photo uploaded.'); }
-    return <>
-    {managed && <AppHeader active="asset-register" brandAlignment="working-column" desktopContext={{name:data?.name || "Aim4price", logoUrl:data?.logoUrl, accountType:data?.accountType, accountSubtype:data?.accountSubtype, onSignOut:() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/auth#login'); })}}/>}
+    return <DesktopWorkspaceProvider workspace={data ? {membershipId:membership,managedLogin:managed,name:data.name,accountType:data.accountType || "owner",accountSubtype:data.accountSubtype,logoUrl:data.logoUrl,permissions:data.permissions,displayName:email} : null}>
+    {(managed || data) && <AppHeader active="asset-register" brandAlignment="working-column" desktopContext={{membershipId:membership || undefined, permissions:data?.permissions, name:data?.name || "Aim4price", logoUrl:data?.logoUrl, accountType:data?.accountType, accountSubtype:data?.accountSubtype, onSignOut:() => void act(async () => { await api(managed ? '/api/team-login' : '/api/auth/sign-out', { method: managed ? 'DELETE' : 'POST' }); window.location.assign('/auth#login'); })}}/>}
     {!data && <main className={styles.page}>
     <header className={styles.header}><div><h1>{membership ? 'Asset Register' : 'Choose a business'}</h1><p>Signed in as {email}</p></div><div className={styles.actions}><Link className={styles.button} href={managementAccount ? "/account" : "/team/access"}>{managementAccount ? "Account" : "My access"}</Link>{membership && <button className={styles.button} onClick={() => { setMembership(''); setError(''); void loadWorkspaces().catch(e => setError(e.message)); }}>Switch workspace</button>}{managed ? <button className={styles.button} onClick={() => void act(async () => { await api('/api/team-login', { method: 'DELETE' }); window.location.assign('/team'); })}>Sign out</button> : <SwitchAccountButton returnTo="/team"/>}</div></header>
     {error && !selected && <p className={styles.error} role="alert">{error}</p>}{notice && !selected && <p className={styles.notice} role="status">{notice}</p>}
@@ -190,5 +191,5 @@ export default function TeamWorkspaceClient({ email, managed = false, management
         {(section === 'photos' && data.permissions.uploadPhotos || section === 'documents' && data.permissions.uploadDocuments) && <form onSubmit={e => { e.preventDefault(); void act(upload); }} style={{ marginTop: '1.4rem' }}><label className={styles.field}>{section === 'photos' ? 'Add a photo (up to 5 MB)' : 'Upload a document for owner review (up to 25 MB)'}<input className={styles.input} key={section} type="file" accept={section === 'photos' ? 'image/jpeg,image/png,image/webp' : '.pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt'} onChange={e => { setFile(e.target.files?.[0] || null); uploadKey.current = crypto.randomUUID(); }}/></label><button className={styles.primary} style={{ marginTop: '.8rem' }} disabled={busy || !file}>{busy ? 'Uploading…' : 'Upload'}</button></form>}
       </div>
     </AssetAccessSettingsDialog>}
-  </>;
+  </DesktopWorkspaceProvider>;
 }

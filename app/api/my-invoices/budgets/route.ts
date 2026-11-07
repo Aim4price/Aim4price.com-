@@ -1,3 +1,4 @@
+import { teamBudgetResponse } from '../../../../lib/team-budget-access';
 import { NextResponse } from 'next/server';
 import {
   createCostBudget,
@@ -93,7 +94,8 @@ function budgetError(error: unknown): NextResponse {
   );
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const desktop = await teamBudgetResponse(request); if (desktop) return desktop;
   const access = await getBudgetAccess();
   if (access instanceof NextResponse) return access;
 
@@ -111,6 +113,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const desktop = await teamBudgetResponse(request); if (desktop) return desktop;
   const access = await getBudgetAccess();
   if (access instanceof NextResponse) return access;
 

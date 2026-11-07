@@ -1,3 +1,5 @@
+import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
+import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
 import { requireActivePageAccess } from '../../lib/account-access';
 import { getAccountProfile } from '../../lib/account-profile';
@@ -10,6 +12,7 @@ export const dynamic = 'force-dynamic';
 
 type MyInvoicesPageProps = {
   searchParams?: {
+    desktopMembershipId?: string;
     view?: string | string[];
     invoiceId?: string | string[];
     budgetId?: string | string[];
@@ -22,6 +25,11 @@ type MyInvoicesPageProps = {
 };
 
 export default async function MyInvoicesPage({ searchParams }: MyInvoicesPageProps) {
+  const desktop = await getDesktopScope(searchParams?.desktopMembershipId);
+  if (desktop) {
+    if (!desktop.grant.permissions.viewCosts) redirect('/team/access');
+    return <DesktopWorkspaceProvider workspace={desktopWorkspace(desktop)}><MyInvoicesClient initialAssetId={readSingleSearchParam(searchParams?.assetId)} initialOpenAdd={desktop.grant.permissions.addCosts && (readSingleSearchParam(searchParams?.add) === '1' || readSingleSearchParam(searchParams?.action) === 'add')} initialReturnTo={normalizeInternalReturnPath(searchParams?.returnTo)} /></DesktopWorkspaceProvider>;
+  }
   const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({

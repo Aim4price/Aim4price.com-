@@ -1,3 +1,5 @@
+import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
+import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from "next/navigation";
 import { requireActivePageAccess } from "../../lib/account-access";
 import { getAccountProfile } from "../../lib/account-profile";
@@ -10,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 type FuelPageProps = {
   searchParams?: {
+    desktopMembershipId?: string;
     view?: string | string[];
     assetId?: string | string[];
     add?: string | string[];
@@ -19,6 +22,11 @@ type FuelPageProps = {
 };
 
 export default async function FuelPage({ searchParams }: FuelPageProps) {
+  const desktop = await getDesktopScope(searchParams?.desktopMembershipId);
+  if (desktop) {
+    if (!desktop.grant.permissions.viewFuel) redirect('/team/access');
+    return <DesktopWorkspaceProvider workspace={desktopWorkspace(desktop)}><FuelClient initialAssetId={readSingleSearchParam(searchParams?.assetId)} initialOpenAdd={desktop.grant.permissions.addFuel && (readSingleSearchParam(searchParams?.add) === '1' || readSingleSearchParam(searchParams?.action) === 'add')} initialReturnTo={normalizeInternalReturnPath(searchParams?.returnTo)} addedByLabel={desktop.grant.displayName} /></DesktopWorkspaceProvider>;
+  }
   const { session } = await requireActivePageAccess();
 
   const profile = await getAccountProfile({

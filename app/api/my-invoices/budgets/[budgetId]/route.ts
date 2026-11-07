@@ -1,3 +1,4 @@
+import { teamBudgetResponse } from '../../../../../lib/team-budget-access';
 import { NextResponse } from 'next/server';
 import {
   deleteCostBudget,
@@ -86,6 +87,7 @@ async function findVisibleBudget(access: OwnerAppAccess, budgetId: string): Prom
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
+  const desktop = await teamBudgetResponse(request, params.budgetId); if (desktop) return desktop;
   const access = await getBudgetAccess();
   if (access instanceof NextResponse) return access;
 
@@ -113,6 +115,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 }
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
+  const desktop = await teamBudgetResponse(_request, params.budgetId); if (desktop) return desktop;
   const access = await getBudgetAccess();
   if (access instanceof NextResponse) return access;
 

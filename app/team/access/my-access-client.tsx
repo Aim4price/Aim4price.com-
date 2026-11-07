@@ -49,7 +49,7 @@ export default function MyAccessClient({ email, name, managed }: { email: string
   const selected = access.find(item => item.id === expanded);
   const current = access[0];
   return <main className={account.page}>
-    <AppHeader active="account" desktopContext={managed ? {name:current?.name || 'Aim4price', logoUrl:current?.logoUrl, accountType:current?.accountType, accountSubtype:current?.accountSubtype, onSignOut:() => { if (!busy) void signOut(); }} : undefined} />
+    <AppHeader active="account" desktopContext={managed ? {membershipId:current?.id, permissions:current?.permissions, name:current?.name || 'Aim4price', logoUrl:current?.logoUrl, accountType:current?.accountType, accountSubtype:current?.accountSubtype, onSignOut:() => { if (!busy) void signOut(); }} : undefined} />
     {error && <p className={shared.error} role="alert">{error} <Link href="/team">Return to desktop sign-in</Link></p>}
     {loading && <p className={styles.help} role="status">Loading your access…</p>}
     {!loading && !error && !access.length && <section className={account.shell}><section className={account.card}><h1>No desktop access yet</h1><p>Ask your account holder to add you, or use the business sign-in link they shared.</p><Link className={shared.button} href="/team">Desktop sign-in</Link></section></section>}

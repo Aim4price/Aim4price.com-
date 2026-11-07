@@ -1,3 +1,5 @@
+import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../../lib/owner-workspace-access';
+import { restrictTeamReportItems } from '../../../../lib/team-report-policy';
 import {latestTrackingPositions} from '../../../../lib/asset-tracking';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextResponse } from "next/server";
@@ -2398,14 +2400,15 @@ export async function GET(request: Request) {
   const shareToken = new URL(request.url).searchParams.get("shareToken");
   const session = await getServerSession(shareToken ? {requireActive:false,allowDealerApp:true,allowOwnerApp:true} : undefined);
 
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  const resolved = shareToken ? null : await resolveOwnerWorkspaceContext(request);
+  if (resolved && !resolved.ok) return resolved.response;
+  const workspace = resolved?.ok ? resolved.context : null;
+  if (!workspace && !session?.user?.id) return unauthorized();
 
   try {
     const url = new URL(request.url);
-    let reportOwnerId = session.user.id;
-    let reportOwnerEmail = asText(session.user.email);
+    let reportOwnerId = workspace?.ownerUserId || session!.user.id;
+    let reportOwnerEmail = asText(workspace?.team ? '' : session?.user.email);
     if (shareToken) {
       if ([...url.searchParams.keys()].some(key=>!['shareToken','assetId','format'].includes(key)) || url.searchParams.getAll('assetId').length !== 1) return NextResponse.json({error:'Shared map reports require one shared asset.'},{status:403});
       try {
@@ -2430,7 +2433,15 @@ export async function GET(request: Request) {
     }
 
     const scopedResult = await loadScopedMappedAssets(reportOwnerId, url);
+    const allowedIds = workspace ? await getWorkspaceAssetIds(workspace) : null;
+    scopedResult.assets = scopedResult.assets.filter(asset => !allowedIds || allowedIds.has(asset.item.id));
+    if (workspace?.team) scopedResult.assets = scopedResult.assets.map(asset => ({...asset, item: restrictTeamReportItems([asset.item], workspace.team!.grant.permissions, [])[0]}));
+    if (workspace?.team && !scopedResult.assets.length) return NextResponse.json({error:'No accessible mapped assets match this report.'},{status:404});
     const printableAssets = scopedResult.assets.map(toPrintableAsset);
+    if (workspace?.team && !workspace.team.grant.permissions.viewValues) for (const asset of printableAssets) {
+      asset.currentValueRaw = null; asset.replacementValueRaw = null; asset.insuredValueRaw = null;
+      asset.currentValue = 'Hidden'; asset.replacementValue = 'Hidden'; asset.insuredValue = 'Hidden'; asset.financed = 'Hidden'; asset.insured = 'Hidden';
+    }
     const now = new Date();
 
     if (format === "xlsx") {

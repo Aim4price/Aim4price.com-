@@ -1,4 +1,5 @@
 "use client";
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import LeadPhotoViewerModal from '../../components/LeadPhotoViewerModal';
 import AssetMapAssetDialog from '../../components/asset-register/AssetMapAssetDialog';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
@@ -673,6 +674,7 @@ function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
 }
 
 export default function AssetMapClient() {
+  const desktop = useDesktopControls();
   const [assetPickerOpen, setAssetPickerOpen] = useState(false);
   const [locationDialog,setLocationDialog]=useState<{asset:AssetMapItem;view:'update'|'history'|'tracking'|'more'}|null>(null);
   const [photoViewer,setPhotoViewer]=useState<{assetId:string;title:string;urls:string[];index:number}|null>(null);
@@ -764,7 +766,7 @@ export default function AssetMapClient() {
       }
 
       try {
-        const response = await fetch("/api/asset-map", {
+        const response = await desktop.request("/api/asset-map", {
           credentials: "include",
           cache: "no-store",
           signal: controller.signal,
@@ -1499,6 +1501,7 @@ export default function AssetMapClient() {
   }
 
   function openExportModal() {
+    if (!desktop.allow('exportMap')) return;
     setExportRegisterId(selectedRegisterId);
     setExportFormat("pdf");
     setExportStep("format");
@@ -1557,7 +1560,9 @@ export default function AssetMapClient() {
     setIsDownloading(true);
     setNotice(null);
     try {
-      await downloadAssetMapReport(href, format);
+      if (!desktop.allow('exportMap')) return;
+      if (desktop.workspace && format !== 'pdf') { desktop.unavailable(); return; }
+      await downloadAssetMapReport(desktop.url(href), format);
       closeExportModal();
     } catch (error) {
       closeExportModal();
@@ -1623,15 +1628,15 @@ export default function AssetMapClient() {
       {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Tracking device" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel assetId={locationDialog.asset.id}/></AssetAccessSettingsDialog>}
       {locationDialog?.view==='more'&&<AssetAccessSettingsDialog locationLayout title="Location options" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <div className={cardActions.options}>
-          <button type="button" data-tone="green" onClick={()=>setLocationDialog({...locationDialog,view:'update'})}><span className={cardActions.optionIcon} aria-hidden="true"><MapIcon/></span><span><strong>Update location</strong><small>Save a position manually</small></span></button>
+          <button type="button" data-tone="green" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}><span className={cardActions.optionIcon} aria-hidden="true"><MapIcon/></span><span><strong>Update location</strong><small>Save a position manually</small></span></button>
           <a data-tone="blue" href={buildGoogleMapsHref(locationDialog.asset)||'#'} target="_blank" rel="noreferrer"><span className={cardActions.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 3-6.5 18-3.8-7.7L3 9.5 21 3Z"/><path d="m10.7 13.3 4-4"/></svg></span><span><strong>Open Google Maps</strong><small>View this saved position</small></span></a>
           <Link data-tone="amber" href={buildAssetRegisterHref(locationDialog.asset)}><span className={cardActions.optionIcon} aria-hidden="true"><RegisterIcon/></span><span><strong>Open asset register</strong><small>View the full asset details</small></span></Link>
         </div>
       </AssetAccessSettingsDialog>}
       {locationDialog?.view==='history' &&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <AssetLocationEditor trackingAssetId={locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
-          const response=await fetch('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
+        <AssetLocationEditor trackingAssetId={desktop.workspace ? undefined : locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
+          const response=await desktop.request('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
           setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));
           setSearch('');
@@ -1640,7 +1645,7 @@ export default function AssetMapClient() {
           closeLocationDialog();
         }}/>
       </AssetAccessSettingsDialog>}
-      <AppHeader active="asset-register" />
+      {desktop.dialog}<AppHeader active="asset-register" />
 
       <section className={styles.shell}>
         <article
@@ -1655,7 +1660,7 @@ export default function AssetMapClient() {
             <div className={styles.topActions}>
               <div className={styles.topActionButtons}>
                 <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.addAssetAction}`} aria-haspopup="dialog"
-                  disabled={dataStatus !== 'ready'} onClick={event => { locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
+                  disabled={dataStatus !== 'ready'} onClick={event => { if (!desktop.allow('updateLocation')) return; locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
                   <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12Z"/><path d="M9 9h6m-3-3v6"/></svg>
                   <span>Add asset to map</span>
                 </button>
@@ -2071,8 +2076,8 @@ export default function AssetMapClient() {
                         {selectedAsset.trackingStatus&&<small>Phone contact: {selectedAsset.lastTrackingContactAtIso?formatDate(selectedAsset.lastTrackingContactAtIso):'Not received yet'}</small>}</div>
                       </div>
                       <div className={cardActions.primaryRow}>
-                        <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><LocationHistoryIcon/><span>Routes &amp; history</span></button>
-                        <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'tracking'});}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg><span>Tracking device</span></button>
+                        <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{if (desktop.workspace) {desktop.unavailable();return;} locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><LocationHistoryIcon/><span>Routes &amp; history</span></button>
+                        <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{if (desktop.workspace) {desktop.unavailable();return;} locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'tracking'});}}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg><span>Tracking device</span></button>
                         <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'more'});}}><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>More</span></button>
                       </div>
                     </div>
@@ -2193,7 +2198,7 @@ export default function AssetMapClient() {
                     type="button"
                     className={`${styles.exportOption} ${exportFormat === "xlsx" ? styles.exportOptionActive : ""}`}
                     onClick={() => chooseExportFormat("xlsx")}
-                    aria-pressed={exportFormat === "xlsx"} data-download-option="true"
+                    disabled={Boolean(desktop.workspace)} aria-pressed={exportFormat === "xlsx"} data-download-option="true"
                   >
                     <span className={styles.exportGraphic} data-download-icon="true">
                       <img

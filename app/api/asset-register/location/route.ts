@@ -1,3 +1,7 @@
+import { getDesktopScope } from '../../../../lib/desktop-workspace';
+import { resolveOwnerWorkspaceContext, assertWorkspaceAssetAccess } from '../../../../lib/owner-workspace-access';
+import { auditTeam } from '../../../../lib/team-access';
+import { getDb } from '../../../../lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { recordAdminUsageEventSafely } from '../../../../lib/admin-usage-events';
@@ -73,6 +77,26 @@ function normalizeLocationSource(value: unknown): 'manual' | 'device' {
 }
 
 export async function POST(request: NextRequest) {
+  const desktop = await getDesktopScope(new URL(request.url).searchParams.get('desktopMembershipId') || undefined);
+  if (desktop) {
+    const resolved = await resolveOwnerWorkspaceContext(request);
+    if (!resolved.ok) return resolved.response;
+    try {
+      const body = await request.json();
+      if (!body || typeof body !== 'object') throw new Error('Enter a valid location.');
+      await assertWorkspaceAssetAccess(resolved.context, body.assetId);
+      const latitude = normalizeRequiredNumber(body.latitude), longitude = normalizeRequiredNumber(body.longitude);
+      const accuracy = normalizeGpsAccuracy(body.gpsAccuracyMeters);
+      if (latitude === null || longitude === null || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180 || !accuracy.ok) throw new Error('Enter valid coordinates.');
+      const item = await updateAssetRegisterItemLocation(desktop.grant.ownerId, {
+        assetId: String(body.assetId), latitude, longitude, gpsAccuracyMeters: accuracy.value,
+        actorName: desktop.grant.displayName, clientCapturedAt: asText(body.clientCapturedAt) || null,
+        locationText: normalizeLocationText(body.locationText) || null, source: normalizeLocationSource(body.source),
+      });
+      await auditTeam(getDb(), desktop.actor, desktop.grant, 'Location updated', item.id);
+      return NextResponse.json({ok:true,item:{id:item.id,lastKnownLat:item.lastKnownLat,lastKnownLng:item.lastKnownLng,lastKnownLocationText:item.lastKnownLocationText,updatedAtIso:item.updatedAtIso}});
+    } catch { return NextResponse.json({ok:false,error:'The location could not be saved with your current access.'},{status:403}); }
+  }
   const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {

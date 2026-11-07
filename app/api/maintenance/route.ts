@@ -1,3 +1,4 @@
+import { teamMaintenanceResponse } from '../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import {
@@ -62,6 +63,7 @@ async function currentUserId() {
 }
 
 export async function GET(request: NextRequest) {
+  const desktop = await teamMaintenanceResponse(request); if (desktop) return desktop;
   const userId = await currentUserId();
 
   if (!userId) {
@@ -78,6 +80,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const desktop = await teamMaintenanceResponse(request); if (desktop) return desktop;
   const userId = await currentUserId();
 
   if (!userId) {

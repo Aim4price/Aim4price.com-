@@ -1,3 +1,4 @@
+import { projectTeamCostRecord } from '../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   createMyInvoice,
@@ -85,9 +86,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (context.team && (body.source === 'fuel_slip' || body.invoiceDocumentId)) return NextResponse.json({ok:false,error:'Create a manual cost record. Fuel entries and original documents use their own permissions.'},{status:403});
     await assertWorkspaceAssetAccess(context, body.assetId);
     const result = await createMyInvoice(context.ownerUserId, body, {
-      displayName: null,
+      displayName: context.team ? context.actorName : null,
     });
     const data = await filterCostLedgerForWorkspace(
       context,
@@ -96,8 +98,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      invoice: result.invoice,
-      duplicateWarnings: result.duplicateWarnings,
+      invoice: context.team && result.invoice ? projectTeamCostRecord(result.invoice, context.team.grant.permissions) : result.invoice,
+      duplicateWarnings: context.team ? [] : result.duplicateWarnings,
       ...data,
     });
   } catch (error) {

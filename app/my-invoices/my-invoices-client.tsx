@@ -1,4 +1,5 @@
 'use client';
+import { useDesktopControls } from '../../components/DesktopWorkspace';
 import dynamic from 'next/dynamic';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import InvoiceDropIcon from './InvoiceDropIcon';
@@ -1048,11 +1049,12 @@ export default function MyInvoicesClient({
       ? '/api/dealer/cost'
       : '/api/my-invoices';
   const captureApiRoot = dealerMode ? '/api/dealer/capture-requests' : '/api/capture-requests';
-  const accountScopedUrl = (url: string) => url;
+  const desktop = useDesktopControls();
+  const accountScopedUrl = desktop.url;
   const shouldShowAppHeader = !sharedFlow && (showAppHeader ?? !dealerMode);
-  const canManageInvoiceDropCodes = !dealerMode && !sharedFlow;
-  const canRetractCaptureRequests = !dealerMode && !sharedFlow;
-  const canManageBudgets = !dealerMode && !sharedFlow;
+  const canManageInvoiceDropCodes = !desktop.workspace && !dealerMode && !sharedFlow;
+  const canRetractCaptureRequests = !desktop.workspace && !dealerMode && !sharedFlow;
+  const canManageBudgets = !dealerMode && !sharedFlow && desktop.can('viewBudgets');
   const [assets, setAssets] = useState<AssetOption[]>(sharedFlow ? [sharedFlow.asset] : []);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -1346,7 +1348,7 @@ export default function MyInvoicesClient({
 
     async function loadInvoiceDropCode() {
       try {
-        const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
+        const response = await desktop.request(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
           credentials: 'include',
           cache: 'no-store',
         });
@@ -2091,7 +2093,7 @@ export default function MyInvoicesClient({
   }, [usageMetricDropdownOpen]);
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
-    const response = await fetch(accountScopedUrl(buildInvoiceListUrl(filters, apiRoot)), { cache: 'no-store' });
+    const response = await desktop.request(accountScopedUrl(buildInvoiceListUrl(filters, apiRoot)), { cache: 'no-store' });
     const payload = (await response.json()) as InvoicesResponse;
     const data = payload;
 
@@ -2124,7 +2126,7 @@ export default function MyInvoicesClient({
   }
 
   async function fetchCostBudgetData(): Promise<{ budgets: CostBudgetProgress[]; assets: AssetOption[] }> {
-    const response = await fetch('/api/my-invoices/budgets', {
+    const response = await desktop.request('/api/my-invoices/budgets', {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -2168,6 +2170,7 @@ export default function MyInvoicesClient({
   }
 
   function openCreateBudget(requestedAssetId?: unknown) {
+    if (!desktop.allow('manageBudgets')) return;
     budgetManagerReturnFocusRef.current = 'add';
     setBudgetManagerNotice(null);
     const candidateAssetId = typeof requestedAssetId === 'string' ? requestedAssetId : budgetLaunchAssetId || activeFilters.assetId;
@@ -2184,6 +2187,7 @@ export default function MyInvoicesClient({
   }
 
   function openEditBudget(budget: CostBudgetProgress) {
+    if (!desktop.allow('manageBudgets')) return;
     budgetManagerReturnFocusRef.current = budget.id;
     setBudgetManagerNotice(null);
     setEditingBudgetId(budget.id);
@@ -2328,7 +2332,7 @@ export default function MyInvoicesClient({
           ? `/api/my-invoices/budgets/${encodeURIComponent(editingBudgetId)}`
           : '/api/my-invoices/budgets';
         try {
-          const response = await fetch(endpoint, {
+          const response = await desktop.request(endpoint, {
             method: editingBudgetId ? 'PATCH' : 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
@@ -2431,7 +2435,7 @@ export default function MyInvoicesClient({
     setBudgetDeleteError('');
 
     try {
-      const response = await fetch(`/api/my-invoices/budgets/${encodeURIComponent(budgetId)}`, {
+      const response = await desktop.request(`/api/my-invoices/budgets/${encodeURIComponent(budgetId)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -2656,7 +2660,7 @@ export default function MyInvoicesClient({
     setRevealedInvoiceDropCode('');
 
     try {
-      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
+      const response = await desktop.request(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
         method: 'POST',
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -2693,7 +2697,7 @@ export default function MyInvoicesClient({
     setInvoiceDropCodeMessage('');
 
     try {
-      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
+      const response = await desktop.request(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -2719,7 +2723,7 @@ export default function MyInvoicesClient({
     setInvoiceDropCodeMessage('');
 
     try {
-      const response = await fetch(
+      const response = await desktop.request(
         `/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}?reveal=1`,
         { credentials: 'include', cache: 'no-store' },
       );
@@ -2777,6 +2781,7 @@ export default function MyInvoicesClient({
   const sourceDraftsRef = useRef<Partial<Record<InvoiceSource, { assetId: string; draft: InvoiceDraft }>>>({});
   const recurringDraftStartedRef = useRef(false);
   function openAddInvoiceModal(assetId = '') {
+    if (!desktop.allow('addCosts')) return;
     sourceDraftsRef.current = {};
     recurringDraftStartedRef.current = false;
     const normalizedAssetId = assetId.trim();
@@ -2803,6 +2808,7 @@ export default function MyInvoicesClient({
   }
 
   function startFlow(source: InvoiceSource) {
+    if (desktop.workspace && source === 'automatic') { desktop.unavailable(); return; }
     if (sourceDraftsRef.current[draft.source]) {
       sourceDraftsRef.current[draft.source] = { assetId: selectedAssetId, draft };
     }
@@ -2832,6 +2838,7 @@ export default function MyInvoicesClient({
   }
 
   function startRecurringCommitment() {
+    if (desktop.workspace) { desktop.unavailable(); return; }
     if (recurringDraftStartedRef.current) { setFlow('recurring'); return; }
     recurringDraftStartedRef.current = true;
     const presetAssetIds = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
@@ -2964,7 +2971,7 @@ export default function MyInvoicesClient({
     }
     setIsSaving(true);
     try {
-      const response = await fetch(accountScopedUrl('/api/recurring-commitments'), {
+      const response = await desktop.request(accountScopedUrl('/api/recurring-commitments'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3093,6 +3100,7 @@ export default function MyInvoicesClient({
   }
 
   function openDownloadModal() {
+    if (!desktop.allow('exportCosts')) return;
 
     setOpenFilterDropdown(null);
     setDownloadOpen(true);
@@ -3110,7 +3118,7 @@ export default function MyInvoicesClient({
     formData.append('source', source);
     formData.append('file', file);
 
-    const response = await fetch(accountScopedUrl(`${apiRoot}/upload`), {
+    const response = await desktop.request(accountScopedUrl(`${apiRoot}/upload`), {
       method: 'POST',
       body: formData,
     });
@@ -3141,7 +3149,7 @@ export default function MyInvoicesClient({
       formData.append('file', await prepareInvoiceUpload(automaticUploadPages));
       formData.append('note', captureNote.trim());
 
-      const response = await fetch(accountScopedUrl(`${captureApiRoot}/invoice`), {
+      const response = await desktop.request(accountScopedUrl(`${captureApiRoot}/invoice`), {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -3237,7 +3245,7 @@ export default function MyInvoicesClient({
         sharedFlow.onSaved('Cost record saved to the asset.');
         return;
       }
-      const response = await fetch(accountScopedUrl(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot), {
+      const response = await desktop.request(accountScopedUrl(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot), {
         method: editingInvoiceId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -3285,6 +3293,7 @@ export default function MyInvoicesClient({
   }
 
   function editInvoice(invoice: InvoiceRecord) {
+    if (!desktop.allow('editCosts')) return;
     if (invoice.source === 'fuel_slip') { setFuelCostInvoiceId(invoice.id); return; }
     setNotice(null);
     setSelectedAssetId(invoice.assetId);
@@ -3305,6 +3314,7 @@ export default function MyInvoicesClient({
   }
 
   function openDeleteInvoiceDialog(invoice: InvoiceRecord) {
+    if (!desktop.allow('deleteCosts')) return;
     setNotice(null);
     setDeleteCandidateInvoice(invoice);
   }
@@ -3322,7 +3332,7 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
-      const response = await fetch(accountScopedUrl(`${apiRoot}/${invoiceId}`), { method: 'DELETE' });
+      const response = await desktop.request(accountScopedUrl(`${apiRoot}/${invoiceId}`), { method: 'DELETE' });
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
@@ -3368,7 +3378,7 @@ export default function MyInvoicesClient({
   }
 
   async function replyToCaptureRequest(request: CaptureRequestStatusItem, message: string) {
-    const response = await fetch(`${captureApiRoot}/${encodeURIComponent(request.id)}`, {
+    const response = await desktop.request(`${captureApiRoot}/${encodeURIComponent(request.id)}`, {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -3383,7 +3393,7 @@ export default function MyInvoicesClient({
   async function fetchCaptureRequests(): Promise<CaptureRequestStatusItem[] | null> {
     try {
       const url = accountScopedUrl(`${captureApiRoot}?requestType=invoice&active=1`);
-      const response = await fetch(url, { credentials: 'include', cache: 'no-store' });
+      const response = await desktop.request(url, { credentials: 'include', cache: 'no-store' });
       const data = (await response.json()) as CaptureRequestResponse;
       return response.ok && data.ok ? data.requests ?? [] : null;
     } catch {
@@ -3393,7 +3403,7 @@ export default function MyInvoicesClient({
   }
 
   async function retractCaptureRequest(requestId: string): Promise<void> {
-    const response = await fetch(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
+    const response = await desktop.request(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -3433,7 +3443,7 @@ export default function MyInvoicesClient({
 
   return (
     <main className={sharedFlow ? styles.sharedCostFlow : `${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
-      {shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
+      {desktop.dialog}{shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
       {!sharedFlow && <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
@@ -5028,10 +5038,10 @@ export default function MyInvoicesClient({
         </FilterFlow>
       ) : null}
 
-      {!dealerMode && downloadOpen ? <ReportDownloadFlow title="Cost reports" allLabel="All costs" assets={assets}
+      {!dealerMode && downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Cost reports" allLabel="All costs" assets={assets}
         fields={[{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
         onClose={closeDownloadModal} onDownload={async selection => {
-          const url = buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true', );
+          const url = accountScopedUrl(buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true'));
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
           else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
         }} /> : null}

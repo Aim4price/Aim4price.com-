@@ -30,7 +30,7 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  await page.waitForSelector('[data-desktop-account]');
  assert(await page.$eval('[data-desktop-account] img',image=>image.complete&&image.naturalWidth>0),'Owner account logo loaded');
  assert(await page.$('header img[src="'+logo+'"]'),'Header receives owner logo');
- assert(await page.$('header a[href="/team/access"][aria-current="page"]'),'Account navigation is selected');
+ assert(await page.$('header a[href^="/team/access"][aria-current="page"]'),'Account navigation is selected');
  assert.equal(await page.$$eval('[data-desktop-account] button:not(:disabled)',buttons=>buttons.map(b=>b.textContent).join(',')),'Permissions');
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Account canvas fits viewport');
  await fs.mkdir('.next/desktop-validation',{recursive:true});await page.screenshot({path:`.next/desktop-validation/account-${width}.png`});
@@ -54,7 +54,7 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  await fs.mkdir('.next/desktop-validation',{recursive:true});await page.screenshot({path:`.next/desktop-validation/overview-${width}.png`});
  await page.$eval('#asset-card-tractor-a [data-tooltip="Manage asset"]',e=>e.click());await page.waitForSelector('[role="dialog"]');
  assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1;}),'Modal fits viewport');
- assert(await page.$('[data-manage-action="details"]')); assert(await page.$('[data-manage-action="history"][data-access-restricted="true"]')); await page.$eval('[data-manage-action="history"]',e=>e.click()); assert(await page.$('[data-manage-action="details"]'));
+ assert(await page.$('[data-manage-action="details"]')); assert(await page.$('[data-manage-action="history"][data-access-restricted="true"]')); await page.$eval('[data-manage-action="history"]',e=>e.click()); assert(await page.$('[data-manage-action="details"]')); await page.waitForSelector('.desktopPermissionDialog'); await page.keyboard.press('Escape');
  await fs.mkdir('.next/desktop-validation',{recursive:true});await page.screenshot({path:`.next/desktop-validation/register-${width}.png`});
  await page.$eval('[data-manage-action="details"]',e=>e.click());
  await page.waitForSelector('[data-asset-update-section="2"]');

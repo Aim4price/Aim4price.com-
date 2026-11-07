@@ -1,3 +1,4 @@
+import { getDesktopScope } from '../../../../../../lib/desktop-workspace';
 import { NextResponse } from 'next/server';
 import { getDealerCostRequestContext } from '../../../../../../lib/dealer-cost-request';
 import {
@@ -49,11 +50,13 @@ export async function GET(request: Request, context: RouteContext) {
         documentId,
       });
       if (upload) {
+        if (workspace.context.team && upload.document.source === 'fuel_slip' && !workspace.context.team.grant.permissions.viewFuelDocuments) return new NextResponse('Not found',{status:404});
         await assertWorkspaceAssetAccess(workspace.context, upload.document.assetId);
         return downloadResponse(upload);
       }
     }
 
+    if (await getDesktopScope(new URL(request.url).searchParams.get('desktopMembershipId') || undefined)) return new NextResponse('Not found', {status:404});
     const dealer = await getDealerCostRequestContext();
     if (dealer) {
       const upload = await getInvoiceDocumentUploadForActor({

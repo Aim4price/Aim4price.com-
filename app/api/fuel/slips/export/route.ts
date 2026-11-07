@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   try { payload = await request.json(); } catch {
     return NextResponse.json({ error: 'Invalid export request.' }, { status: 400 });
   }
+  if (resolved.context.team && payload?.format !== 'pdf') return NextResponse.json({error:'Desktop reports are available as PDF only.'},{status:403});
   const filters = parseFuelSlipReportFilters(payload?.filters);
   const idsValid = Array.isArray(payload?.ids) && payload.ids.length > 0 && payload.ids.length <= 10000 && payload.ids.every(id=>typeof id === 'string');
   if (!payload || !['pdf', 'xlsx'].includes(String(payload.format)) || (payload.filters !== undefined ? !filters : !idsValid)) {
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
       )
       : '';
     const context = profile ? {
+      hidePrices: Boolean(workspace.team && !workspace.team.grant.permissions.viewFuelCosts),
       baseUrl: request.url,
       ownerDetails: buildOwnerReportDetails(profile, { name: workspace.actorName, email: workspace.actorEmail }),
       accountName: profile.businessName || profile.displayName || profile.name,

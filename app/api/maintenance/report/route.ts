@@ -1,3 +1,5 @@
+import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
+import { filterTeamMaintenance } from '../../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
@@ -150,12 +152,11 @@ function reportScopeLabel(scope: ReportScope, selectedAsset: AssetMaintenanceAss
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ requireActive: true });
-  const userId = session?.user?.id ?? '';
-
-  if (!session || !userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to export maintenance reports.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request);
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
+  const userId = workspace.ownerUserId;
+  const session = {user:{id:userId,name:workspace.team ? '' : workspace.actorName,email:workspace.team ? '' : workspace.actorEmail}};
 
   try {
     const scope = parseScope(request.nextUrl.searchParams.get('scope'));
@@ -177,7 +178,7 @@ export async function GET(request: NextRequest) {
     const groupMemberAssetIds = group
       ? group.members.map((member) => member.assetId)
       : null;
-    const [data, profile, rawLogoUrl] = await Promise.all([
+    const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
       listAssetMaintenanceData(
         userId,
         group ? { ...filters, assetId: null } : filters,
@@ -189,6 +190,8 @@ export async function GET(request: NextRequest) {
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
       getAssetRegisterReportLogoUrl(userId, group?.registerId, filters.assetId),
     ]);
+    const data = await filterTeamMaintenance(workspace,unfilteredData);
+    if (workspace.team && ((filters.assetId && !data.assets.some(asset=>asset.id===filters.assetId)) || (group && !group.members.some(member=>data.assets.some(asset=>asset.id===member.assetId))))) return NextResponse.json({error:'Report assets unavailable.'},{status:404});
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const groupMemberIds = groupMemberAssetIds ? new Set(groupMemberAssetIds) : null;
     const scopedRecords = groupMemberIds
@@ -220,7 +223,8 @@ export async function GET(request: NextRequest) {
       selectedAsset,
       summary: calculateAssetMaintenanceSummary(records),
       records,
-      xlsxUrl: buildFormatUrl(request, 'xlsx'),
+      xlsxUrl: workspace.team ? '' : buildFormatUrl(request, 'xlsx'),
+      hideValues: Boolean(workspace.team && !workspace.team.grant.permissions.viewValues),
     };
 
     const filename = `${slugify(`${scopeLabel}-${assetLabel}`)}.${format}`;

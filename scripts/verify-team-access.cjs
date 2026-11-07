@@ -197,8 +197,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    await page.focus('[data-desktop-account] button:not(:disabled)');
    await page.keyboard.press('Space');
    await page.waitForSelector('[role="dialog"]');
-   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('View asset valuesNot allowed')));
-   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Edit asset detailsAllowed')));
+   assert(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="dialog"] div')).some(el=>el.textContent.startsWith('View asset values')&&el.textContent.endsWith('Not allowed'))));
+   assert(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="dialog"] div')).some(el=>el.textContent.startsWith('Edit asset details')&&el.textContent.endsWith('Allowed'))));
    assert.equal(await page.$$eval('[role="dialog"] input,[role="dialog"] [role="switch"]',els=>els.length),0,'Permissions are read-only');
    await page.keyboard.press('ShiftLeft');await page.keyboard.press('Tab');await page.keyboard.up('ShiftLeft');
    assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').contains(document.activeElement)));

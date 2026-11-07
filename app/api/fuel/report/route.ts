@@ -1,3 +1,4 @@
+import { teamFuelEventVisible, projectTeamFuelEvent } from '../../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -43,14 +44,14 @@ export async function GET(request: NextRequest) {
     ]);
     const ledger = await filterFuelLedgerForWorkspace(workspace, unfilteredLedger);
     const accessibleEvents = workspaceAssetIds
-      ? unfilteredEvents.filter((event) => !event.assetId || workspaceAssetIds.has(event.assetId))
+      ? unfilteredEvents.filter(event => teamFuelEventVisible(event, workspaceAssetIds, workspace.team!.grant.permissions)).map(event => projectTeamFuelEvent(event, workspace.team!.grant.permissions, workspace.team!.grant.id))
       : unfilteredEvents;
 
     const selectedAsset = assetId ? ledger.assets.find(asset=>asset.id === assetId) : null;
     if (assetId && !selectedAsset) return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
     const events = assetId ? accessibleEvents.filter(event=>event.assetId === assetId) : accessibleEvents;
 
-    if (storageId && !storage) {
+    if (storageId && (!storage || (workspace.team && !workspace.team.grant.permissions.viewFuelStorage))) {
       return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
     }
 
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     }).format(new Date());
     const storageName = storage ? storage.name : includeFuelSlips ? 'All storage units + slips' : 'All storage units';
     const storageFuelType = storage ? storage.fuelType.toUpperCase() : 'All fuel types';
-    const storageCode = storage ? storage.publicFuelStorageCode : includeFuelSlips ? 'All storage QR codes + slips' : 'All storage QR codes';
+    const storageCode = storage ? (workspace.team ? '' : storage.publicFuelStorageCode) : includeFuelSlips ? 'All storage QR codes + slips' : 'All storage QR codes';
     const title = selectedAsset ? `${selectedAsset.title} Fuel Report` : storage ? `${storage.name} Fuel Report` : includeFuelSlips ? 'Fuel Ledger Report' : 'Fuel Storage Report';
     const subtitle = selectedAsset ? `${selectedAsset.title} · ${dateRange.label}. Fuel issued to this asset; storage balances do not apply.` : storage
       ? includeFuelSlips
@@ -115,7 +116,7 @@ export async function GET(request: NextRequest) {
       storageCount: storage ? 1 : ledger.summary.totalStorageUnits,
       eventCount: events.length,
       events,
-      xlsxUrl: buildFormatUrl(request, 'xlsx'),
+      xlsxUrl: workspace.team ? '' : buildFormatUrl(request, 'xlsx'),
     };
     const filenameDate = new Date().toISOString().slice(0, 10);
     const baseFileName = `${slugifyFileSegment(title)}-${filenameDate}`;

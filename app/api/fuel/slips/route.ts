@@ -1,3 +1,4 @@
+import { assertTeamFuelTarget } from '../../../../lib/owner-workspace-access';
 import { NextResponse } from 'next/server';
 import { listFuelLedger, saveFuelSlipTransaction } from '../../../../lib/fuel-ledger';
 import {
@@ -23,11 +24,14 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (workspace.team && ['id','slipId','fuelSlipId','captureRequestId','offlineEventId','uploadId','documentFileUrl'].some(key=>payload[key])) return NextResponse.json({ok:false,error:'Use a new manual fuel entry without an existing file or record reference.'},{status:403});
+    await assertTeamFuelTarget(workspace, payload);
     if (String(payload.targetType ?? '').trim() === 'asset') {
       await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
     }
     const result = await saveFuelSlipTransaction(workspace.ownerUserId, {
       ...payload,
+      ...(workspace.team ? {updateAssetUsage:workspace.team.grant.permissions.updateUsage && payload.updateAssetUsage !== false,latitude:workspace.team.grant.permissions.updateLocation ? payload.latitude : null,longitude:workspace.team.grant.permissions.updateLocation ? payload.longitude : null,locationText:workspace.team.grant.permissions.updateLocation ? payload.locationText : ''} : {}),
       auditActorUserId: workspace.actorUserId,
       auditActorName: workspace.actorName,
       auditActorEmail: workspace.actorEmail,
@@ -39,9 +43,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      fuelSlip: result.fuelSlip,
-      storage: result.storage,
-      event: result.event,
+      fuelSlip: workspace.team ? ledger.recentFuelSlips.find(slip => slip.id === result.fuelSlip.id) : result.fuelSlip,
+      storage: workspace.team ? null : result.storage,
+      event: workspace.team ? null : result.event,
       pendingReview: result.pendingReview,
       message: result.message,
       ...ledger,
