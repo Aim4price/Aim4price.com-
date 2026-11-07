@@ -59,10 +59,12 @@ test('vault metadata is owner-scoped and file bytes stay in the existing upload 
 });
 
 test('download proves document ownership before resolving shared upload bytes', () => {
-  const ownershipCheck = downloadRoute.indexOf('getAccountDocumentUploadReference(session.user.id, documentId)');
+  const ownershipCheck = downloadRoute.indexOf('getAccountDocumentUploadReference(userId, documentId)');
   const byteRead = downloadRoute.indexOf('resolveAssetRegisterUploadBytes(reference.uploadId)');
 
   assert.ok(ownershipCheck >= 0, 'expected an owner-scoped metadata lookup');
+  assert.match(downloadRoute, /const userId = desktop\?\.grant\.ownerId \|\| session\?\.user\?\.id/);
+  assert.ok(downloadRoute.indexOf('await teamDocuments(desktop)') < ownershipCheck, 'desktop document permission is checked before the owner lookup');
   assert.ok(byteRead > ownershipCheck, 'upload bytes must be resolved only after ownership');
   assert.match(downloadRoute, /Cache-Control': 'private, no-store'/);
   assert.doesNotMatch(client, /\/api\/asset-register\/uploads\//);
@@ -382,4 +384,45 @@ test('upload document notes stay contained inside the details panel', () => {
   assert.match(styles, /\.uploadWizardFields\s*\{[^}]*min-height:\s*0;[^}]*height:\s*auto;[^}]*display:\s*block;[^}]*overflow:\s*visible/);
   assert.match(styles, /\.uploadWizardFields \.formGrid\s*\{[^}]*min-height:\s*0;[^}]*margin:\s*0/);
   assert.match(styles, /\.uploadWizardFields \.notesField textarea\s*\{[^}]*box-sizing:\s*border-box;[^}]*display:\s*block;[^}]*min-height:\s*6\.5rem/);
+});
+
+test('vault downloads authorize owner or approved desktop document before reading bytes', async () => {
+  const { default: ts } = await import('typescript');
+  let desktop = null, session = { user: { id: 'owner' } }, approved = [], allowedAccount = true;
+  let references = [], byteReads = 0;
+  const dependencies = {
+    'next/server': { NextResponse: Response },
+    '../../../../../lib/desktop-workspace': { getDesktopScope: async () => desktop },
+    '../../../../../lib/team-access': { teamDocuments: async () => approved },
+    '../../../../../lib/auth-session': { getServerSession: async () => session },
+    '../../../../../lib/asset-register-account-access': { getAssetRegisterAccountAccess: async () => allowedAccount },
+    '../../../../../lib/account-documents': { getAccountDocumentUploadReference: async (ownerId, documentId) => {
+      references.push([ownerId, documentId]);
+      return documentId === 'known' ? { uploadId: 'upload', fileName: 'record.pdf' } : null;
+    } },
+    '../../../../../lib/asset-register-uploads': { resolveAssetRegisterUploadBytes: async () => {
+      byteReads++;
+      return {status:'ok',upload:{data:Buffer.from('pdf'),mimeType:'application/pdf',sizeBytes:3,disposition:'inline'}};
+    } },
+  };
+  const output = {};
+  const code = ts.transpileModule(downloadRoute, {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+  new Function('require','exports',code)(name => { assert.ok(name in dependencies, name); return dependencies[name]; }, output);
+  const request = new Request('https://example.com/api/documents/known/download');
+  request.nextUrl = new URL(request.url);
+  const get = id => output.GET(request, {params:{documentId:id}});
+  assert.equal((await get('known')).status,200);
+  assert.deepEqual(references,[['owner','known']]); assert.equal(byteReads,1);
+  assert.equal((await get('missing')).status,404); assert.equal(byteReads,1);
+  allowedAccount = false;
+  assert.equal((await get('known')).status,403); assert.equal(byteReads,1);
+  desktop = {grant:{ownerId:'delegated-owner'}}; session = {user:{id:'unrelated-personal-account'}};
+  const previousLookups = references.length;
+  assert.equal((await get('known')).status,404);
+  assert.equal(references.length,previousLookups); assert.equal(byteReads,1);
+  approved = [{id:'known'}];
+  assert.equal((await get('known')).status,200);
+  assert.deepEqual(references.at(-1),['delegated-owner','known']); assert.equal(byteReads,2);
+  desktop = null; session = null;
+  assert.equal((await get('known')).status,401); assert.equal(byteReads,2);
 });
