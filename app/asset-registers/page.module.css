@@ -4242,7 +4242,63 @@
 .accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) small { color:var(--app-muted, #64746a) !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
 .accountRegisterModal.accountRegisterModal :is(.exportGraphic,.exportChoiceGraphic) { width:3rem !important; height:3rem !important; min-width:3rem !important; border-radius:.9rem !important; }
 .accountRegisterModal.accountRegisterModal .manageActionPanel { padding:0 0 1rem !important; background:transparent !important; }
-.accountRegisterModal.accountRegisterModal .manageActionButton { min-height:3.5rem !important; padding:.75rem !important; border-radius:1rem !important; font-size:1rem !important; }
+/* Match the Fuel Slip Tracking toolbar without changing the register action grid. */
+.accountRegisterModal.accountRegisterModal .manageActionButton {
+ min-width:0;
+ min-height:clamp(3.62rem, calc(var(--website-design-vw, 1vw) * 4.45), 4.08rem) !important;
+ padding:0 clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.45rem) !important;
+ border-width:1px;
+ border-radius:clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.22rem) !important;
+ font-family:var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+ font-size:clamp(.98rem, calc(var(--website-design-vw, 1vw) * 1.15), 1.08rem) !important;
+ font-weight:860;
+ line-height:1;
+ letter-spacing:-.015em;
+ gap:.55rem;
+}
+.accountRegisterModal .manageActionIcon { width:1.05rem; height:1.05rem; stroke-width:2; }
+.accountRegisterModal .manageEditAction {
+ color:var(--app-warning, #7a3f0c);
+ border-color:var(--app-warning-line, #dc8c4a);
+ background:linear-gradient(180deg, var(--app-surface, #fffaf6), var(--app-warning-soft, #fff3e8));
+}
+.accountRegisterModal .manageEditAction:hover:not(:disabled) {
+ color:var(--app-warning, #7a3f0c);
+ border-color:var(--app-warning-line, #c97834);
+ background:linear-gradient(180deg, var(--app-surface, #fff), var(--app-warning-soft, #ffe9d7));
+}
+.accountRegisterModal .manageSummaryAction {
+ color:var(--app-info, #164578);
+ border-color:var(--app-info-line, #91bbf1);
+ background:linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #f0f7ff));
+}
+.accountRegisterModal .manageSummaryAction:hover:not(:disabled) {
+ color:var(--app-info, #164578);
+ border-color:var(--app-info-line, #6daee8);
+ background:linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #e7f3fd));
+}
+.accountRegisterModal .manageDownloadAction {
+ color:#fff;
+ border-color:#0f6248;
+ background:linear-gradient(180deg, #197454, #0f5840);
+ box-shadow:0 14px 26px rgba(25,116,84,.2), inset 0 1px 0 rgba(255,255,255,.18);
+}
+.accountRegisterModal .manageDownloadAction:hover:not(:disabled) {
+ color:#fff;
+ border-color:#0b4b37;
+ background:linear-gradient(180deg, #218462, #0b4b37);
+ box-shadow:0 18px 32px rgba(25,116,84,.25), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.accountRegisterModal .manageQrAction {
+ color:var(--app-muted, #4b5963);
+ border-color:var(--app-line, #aeb9c0);
+ background:linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #edf1f3));
+}
+.accountRegisterModal .manageActionButton:focus-visible {
+ outline:3px solid var(--app-accent, #197454);
+ outline-offset:3px;
+}
+
 .accountRegisterModal.accountRegisterModal .assetMovePanel { padding:1rem 0 0 !important; background:transparent !important; }
 .accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) { display:flex !important; align-items:center !important; gap:.65rem !important; padding:0 1rem !important; min-height:3.2rem !important; border:1px solid var(--app-info-line, #d8e2ec) !important; border-radius:.92rem !important; background:var(--app-surface, #fff) !important; }
 .accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) .searchIcon { position:static !important; transform:none !important; flex:0 0 1rem; }
