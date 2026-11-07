@@ -10,7 +10,7 @@ const account=load('lib/team-account-policy.ts',{'./team-access-policy':policy})
 const clients=load('lib/team-client-policy.ts',{'./team-access-policy':policy});
 test('Owner presets and existing grants gain no client capabilities; unsupported account types fail closed',()=>{
  assert.equal(account.teamAccountKind('finance'),null);
- assert.equal(account.teamAccountKind('dealer','machinery-middleman'),'owner');
+ assert.equal(account.teamAccountKind('dealer','machinery-middleman'),null);
  assert.equal(account.teamTemplates('owner'),policy.TEAM_TEMPLATES);
  for(const template of Object.values(policy.TEAM_TEMPLATES))for(const p of policy.CLIENT_TEAM_PERMISSIONS)assert.equal(template.permissions[p.key],false);
  const forged=account.accountTeamPermissions(Object.fromEntries(policy.TEAM_PERMISSIONS.map(p=>[p.key,true])),'owner');
