@@ -154,7 +154,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
           <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{method === 'help' ? <SetupIcon help /> : providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Aim4price Admin' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Let’s get your assistant connected, together.' : method === 'choose' ? 'Set it up yourself or let us guide you.' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Let’s get your assistant connected, together.' : method === 'choose' ? 'How would you like to get connected?' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : styles.connectPanel}`}>
@@ -174,18 +174,18 @@ export default function ConnectionActions({ setup, management, count, assistantO
             <div className={styles.supportNote}><SupportIcon kind="shield" /><div><strong>You stay in control</strong><p>You sign in and approve access yourself. We’ll arrange remote help if needed.</p></div></div>
           </section> : method === 'choose' ? <div className={styles.setupChoices}>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('self')}>
-              <span className={styles.methodIcon}><SetupIcon /></span><strong>Connect yourself</strong>
-              <span>Open setup, copy the address and follow the guide.</span>
+              <span className={styles.methodIcon}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 8h18M7 5.5h.01M10 5.5h.01m-1 7-2 2 2 2m6-4 2 2-2 2" /></svg></span><strong>Connect yourself</strong>
+              <span>Follow the guide using your own AI account.</span><span className={styles.methodAction}>Open setup guide</span>
             </button>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('help')}>
               <span className={styles.methodIcon}><SetupIcon help /></span><strong>Connect with Aim4price Admin</strong>
-              <span>Arrange a guided setup with Aim4price.</span>
+              <span>Ask our team to guide you through setup.</span><span className={styles.methodAction}>Contact our team</span>
             </button>
           </div> : assistant?.setup : management}
 
         </div>
         <footer className={styles.dialogFooter}>
-          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'Both options connect your own account with read-only access.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'After approving access, return here and select Check connection.'}</p>
+          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'You approve read-only access to your own account.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'After approving access, return here and select Check connection.'}</p>
           <div className={styles.footerActions}>
           {flow === 'connect' && assistant && (method === 'choose' || assistant.name === 'Other') && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
           {flow === 'connect' && assistant && assistant.name !== 'Other' && method !== 'choose' && <button type="button" onClick={() => changeMethod('choose')}>Connection options</button>}
