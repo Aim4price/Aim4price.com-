@@ -282,3 +282,15 @@
  :global(:where(html:not(:has([data-website-canvas])))) .editorForm.refined > .footer { padding:.75rem 1.1rem; }
  :global(:where(html:not(:has([data-website-canvas])))) .refined .statusRow { align-items:stretch; }
 }
+
+/* Bring the section into view immediately, without a separate toolbar row. */
+.sectionHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.sectionHeading h3 { margin:0; }
+.refined .settingsNav .backToUsers { margin-bottom:.5rem; padding-bottom:.85rem; border-radius:0; border-bottom:1px solid var(--app-line,#d8e5dd); color:var(--app-muted,#63766f); }
+.refined .settingsContent { gap:.85rem; }
+.refined .documentModes .preset { padding:.8rem; border-radius:.8rem; }
+.refined .documentModes .preset strong { font-size:.9rem; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .settingsNav { grid-template-columns:repeat(6,max-content); }
+ :global(:where(html:not(:has([data-website-canvas])))) .refined .settingsNav .backToUsers { margin:0; padding:.65rem; border-bottom:0; border-right:1px solid var(--app-line,#d8e5dd); }
+}
