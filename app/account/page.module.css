@@ -4128,6 +4128,25 @@
 
 .billingModal .invoiceList { gap:1rem; }
 
+/* Invoice history follows the Notifications header, scroll area and footer. */
+.billingModal.billingModal {
+  width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),52rem) !important;
+  max-height:calc(var(--website-visible-height,100dvh) - 3rem) !important;
+  display:flex; flex-direction:column; padding:0 !important; overflow:hidden !important;
+}
+.billingModal.billingModal .modalHeader { flex:0 0 auto; margin:2rem 2rem 0 !important; padding:0 3.75rem 1.25rem 0 !important; }
+.billingScrollBody { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:1.3rem 2rem; }
+.billingModal.billingModal .modalActions { position:static; flex:0 0 auto; margin:0 !important; padding:1rem 2rem 1.6rem !important; }
+.billingModal .ghostButton,.billingModal .invoiceListToolbar button { background:var(--app-info-soft,#f2f5f8); border:1px solid var(--app-info-line,#d2dfea); color:var(--app-text,#17362c); border-radius:1rem; min-height:3rem; font-weight:700; }
+.billingModal .invoiceFold,.billingModal .invoiceFoldToggle { background:var(--app-surface,#fff); color:var(--app-text,#17362c); border-color:var(--app-line,#d5e1da); }
+.billingModal .invoiceFoldToggle:hover { background:var(--app-surface-soft,#f3f8f5); }
+@media(max-width:600px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .billingModal.billingModal { width:calc(100vw - 1rem) !important; max-height:calc(100dvh - 1rem) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .billingModal.billingModal .modalHeader { margin:1.25rem 1.25rem 0 !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .billingScrollBody { padding:1rem 1.25rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .billingModal.billingModal .modalActions { padding:1rem 1.25rem !important; }
+}
+
 .billingModal .accountModalScrollRail { background:#edf4ef; }
 .billingModal .accountModalScrollThumb { background:#669581; }
 .invoiceListToolbar {
@@ -4312,4 +4331,5 @@
 }
 /* The step indicator already names the section; avoid repeating it above the fields. */
 .businessDetailsModalCard.polishedSettingsModal .modalSectionHeading { display: none; }
+
 

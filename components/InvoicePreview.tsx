@@ -52,13 +52,25 @@ export function InvoicePreview({ id, number, draft = false, busy = false, action
       </header>
       <div className={styles.document}>
         {error ? <div className={styles.message} role="alert"><p>{error}</p><button onClick={() => setAttempt(value => value + 1)}>Try again</button></div> : !ready ? <p className={styles.message} role="status">Preparing invoice preview…</p> : null}
-        {html ? <iframe title="Aim4price invoice document" sandbox="" srcDoc={html} onLoad={() => setReady(true)} className={styles.frame} /> : null}
+        {html ? <iframe title="Aim4price invoice document" sandbox="" srcDoc={html.replace('</head>', `<style>
+/* The sandboxed document cannot inherit the application's modal scrollbar. */
+html { scrollbar-width:auto; scrollbar-color:#648e7d #edf3ef; }
+@supports selector(::-webkit-scrollbar) {
+ html { scrollbar-color:auto; }
+ ::-webkit-scrollbar { width:18px; height:18px; }
+ ::-webkit-scrollbar-track { background:#edf3ef; border:2px solid transparent; background-clip:padding-box; border-radius:999px; margin:8px; }
+ ::-webkit-scrollbar-thumb { background:#648e7d; border:2px solid transparent; background-clip:padding-box; border-radius:999px; min-height:56px; min-width:56px; }
+ ::-webkit-scrollbar-thumb:hover { background-color:#3f735d; }
+ ::-webkit-scrollbar-thumb:active { background-color:#285840; }
+ ::-webkit-scrollbar-corner { background:transparent; }
+}
+</style></head>`)} onLoad={() => setReady(true)} className={styles.frame} /> : null}
       </div>
       {actionError ? <p className={styles.actionError} role="alert">{actionError}</p> : null}
       <footer className={styles.footer}>
         <span>{draft ? 'Draft · No payment due until issued' : 'No VAT applicable'}</span>
         <div><button className={styles.secondary} disabled={busy} onClick={onClose}>{draft ? 'Back to billing' : 'Close'}</button>
-          {ready && !error ? <a className={styles.secondary} href={`/api/billing/invoices/${id}?format=pdf`} download>{draft?'Download draft PDF':'Download PDF'}</a> : <button className={styles.secondary} disabled>{draft?'Download draft PDF':'Download PDF'}</button>}
+          {ready && !error ? <a className={draft ? styles.secondary : styles.primary} href={`/api/billing/invoices/${id}?format=pdf`} download>{draft?'Download draft PDF':'Download PDF'}</a> : <button className={draft ? styles.secondary : styles.primary} disabled>{draft?'Download draft PDF':'Download PDF'}</button>}
           {draft && onIssueWithoutEmail ? <button className={styles.secondary} disabled={!ready || Boolean(error) || busy} onClick={onIssueWithoutEmail}>Issue & download PDF</button> : null}
           {draft && onIssue ? <button className={styles.primary} disabled={!ready || Boolean(error) || busy} onClick={onIssue}>{busy?'Issuing…':'Issue & email'}</button> : null}
         </div>
@@ -71,3 +83,4 @@ export default function InvoicePreviewButton({ id, number, className }: { id: st
   const [open, setOpen] = useState(false);
   return <><button className={className} onClick={() => setOpen(true)}>View invoice</button>{open ? <InvoicePreview id={id} number={number} onClose={() => setOpen(false)} /> : null}</>;
 }
+

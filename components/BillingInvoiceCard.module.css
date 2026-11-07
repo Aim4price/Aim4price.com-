@@ -21,3 +21,10 @@
 @media(max-width:560px){:global(html:not(:has([data-website-canvas]))) .header,:global(html:not(:has([data-website-canvas]))) .body,:global(html:not(:has([data-website-canvas]))) .footer{padding:18px}:global(html:not(:has([data-website-canvas]))) .body{grid-template-columns:1fr;gap:22px}:global(html:not(:has([data-website-canvas]))) .header{flex-wrap:wrap}:global(html:not(:has([data-website-canvas]))) .balance strong{font-size:26px}}
 
 .embedded { border:0; border-radius:0; }
+
+
+/* Match account modal actions, including the invoice preview launcher. */
+.button { min-height:3rem; padding:.75rem 1.1rem; border-radius:1rem; font-size:1rem; font-weight:700; background:linear-gradient(180deg,#1a5a45,#124233); }
+.card { background:var(--app-surface,#fff); color:var(--app-text,#173c32); border-color:var(--app-line,#d8e4dd); }
+.footer { background:var(--app-surface-soft,#f8fbf9); flex-wrap:wrap; }
+.balance span,.details dt,.footer>span { color:var(--app-muted,#647b6f); }

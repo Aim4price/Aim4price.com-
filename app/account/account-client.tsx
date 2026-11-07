@@ -2124,17 +2124,17 @@ export default function AccountClient({
             role="dialog" aria-modal="true" aria-labelledby="invoices-modal-title"
             aria-describedby="invoices-modal-description" tabIndex={-1}
             onClick={(event) => event.stopPropagation()}>
-            <AccountModalScroller label="Invoice list">
+            
               <div className={styles.modalHeader}>
                 <h2 id="invoices-modal-title">Your invoices</h2>
                 <p id="invoices-modal-description">View your invoices and recorded payments.</p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices" data-modal-close="true">×</button>
               </div>
-              <AccountInvoices />
+              <div className={styles.billingScrollBody}><AccountInvoices /></div>
               <div className={styles.modalActions}>
                 <button type="button" className={styles.ghostButton} onClick={closeActionModal}>Close</button>
               </div>
-            </AccountModalScroller>
+            
           </section>
         </div>
       ) : null}
@@ -3095,5 +3095,6 @@ export default function AccountClient({
     </main>
   );
 }
+
 
 
