@@ -1,5 +1,5 @@
 /** Explicit allow-lists: never pass owner records or their arbitrary JSON to team clients. */
-export const TEAM_PERMISSIONS = [
+export const OWNER_TEAM_PERMISSIONS = [
     { key: 'viewValues', label: 'View asset values', detail: 'Current, replacement and insured values. No finance balances or costs.' },
     { key: 'editDetails', label: 'Edit asset details', detail: 'Title, brand, model, year and condition.' },
     { key: 'updateUsage', label: 'Update usage', detail: 'Increase hours, kilometres or lifetime worked.' },
@@ -31,6 +31,13 @@ export const TEAM_PERMISSIONS = [
     { key: 'exportMap', label: 'Download map reports', detail: 'The owner’s map report for accessible assets. Hidden values stay hidden.' },
     { key: 'exportAssets', label: 'Download register reports', detail: 'PDF reports and summaries of permitted assets. Values follow their viewing permission.' },
 ] as const;
+export const CLIENT_TEAM_PERMISSIONS = [
+    { key: 'viewClientWork', label: 'View assigned client work', detail: 'Selected enquiries and assets shared with this business. Does not grant access to other client assets.' },
+    { key: 'viewClientContacts', label: 'View client contact details', detail: 'Contact details supplied with the selected enquiries.' },
+    { key: 'viewClientValues', label: 'View shared client values', detail: 'Only values the client included. Separate from values of business-owned assets.' },
+    { key: 'manageClientEnquiries', label: 'Update enquiry status', detail: 'Accept, quote or decline selected enquiries. Cannot close, delete or re-share them.' },
+] as const;
+export const TEAM_PERMISSIONS = [...OWNER_TEAM_PERMISSIONS, ...CLIENT_TEAM_PERMISSIONS] as const;
 export type TeamPermission = typeof TEAM_PERMISSIONS[number]['key'];
 export type TeamPermissions = Record<TeamPermission, boolean>;
 export const EMPTY_TEAM_PERMISSIONS = Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, false])) as TeamPermissions;
@@ -39,7 +46,7 @@ export const TEAM_TEMPLATES = {
     operator: { label: 'Operator', detail: 'Update usage and view photos.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewPhotos: true } },
     workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
     office: { label: 'Office', detail: 'Maintain records; values stay hidden.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
-    manager: { label: 'Manager', detail: 'All listed permissions, including fuel, costs, maps and reports. General documents are chosen separately; fuel and cost originals are included.', permissions: Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, true])) as TeamPermissions },
+    manager: { label: 'Manager', detail: 'All listed permissions, including fuel, costs, maps and reports. General documents are chosen separately; fuel and cost originals are included.', permissions: { ...EMPTY_TEAM_PERMISSIONS, ...Object.fromEntries(OWNER_TEAM_PERMISSIONS.map(p => [p.key, true])) } as TeamPermissions },
 } as const;
 export const TEAM_PERMISSION_GROUPS = [
     { label: 'Asset register', keys: ['viewValues', 'editDetails', 'updateUsage', 'viewPhotos', 'uploadPhotos', 'exportAssets'] },
@@ -51,6 +58,7 @@ export const TEAM_PERMISSION_GROUPS = [
 ] as const;
 /** Dependencies are explicit, shared by the editor and server, and never inferred for stored grants. */
 export const TEAM_PERMISSION_DEPENDENCIES: Partial<Record<TeamPermission, readonly TeamPermission[]>> = {
+    viewClientContacts: ['viewClientWork'], viewClientValues: ['viewClientWork'], manageClientEnquiries: ['viewClientWork'],
     completeMaintenance: ['viewMaintenance'], exportMaintenance: ['viewMaintenance'],
     viewFuelCosts: ['viewFuel'], viewFuelStorage: ['viewFuel'],
     addFuel: ['viewFuel', 'viewFuelCosts'], editFuel: ['viewFuel', 'viewFuelCosts'], voidFuel: ['viewFuel', 'viewFuelCosts'],
@@ -72,6 +80,7 @@ export function updateTeamPermission(permissions: TeamPermissions, key: TeamPerm
     return normalizeTeamPermissions(next);
 }
 export type TeamGrant = {
+    clientWorkIds?: string[];
     username?: string;
     managedLogin?: boolean;
     id: string;

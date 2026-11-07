@@ -11,13 +11,15 @@ import desktopStyles from './desktop-access.module.css';
 import ownerStyles from '../owner-login-sections.module.css';
 import { AccessSectionIcon } from '../owner-login-sections';
 const styles = { ...teamStyles, ...desktopStyles };
-import { isDesktopUsername, TEAM_PERMISSIONS, TEAM_PERMISSION_GROUPS, TEAM_TEMPLATES, updateTeamPermission, teamDocumentAccessLabel, type TeamDocumentAccess, EMPTY_TEAM_PERMISSIONS, teamCanAccessAsset, type TeamGrant, type TeamPermissions } from '../../../lib/team-access-policy';
+import { teamTemplates, teamPermissionGroups, type TeamAccountKind } from '../../../lib/team-account-policy';
+import { isDesktopUsername, TEAM_PERMISSIONS, updateTeamPermission, teamDocumentAccessLabel, type TeamDocumentAccess, EMPTY_TEAM_PERMISSIONS, teamCanAccessAsset, type TeamGrant, type TeamPermissions } from '../../../lib/team-access-policy';
 function LoginFieldIcon({ kind }: { kind: 'person' | 'email' | 'lock' | 'clock' }) {
     return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       {kind === 'person' ? <><circle cx="12" cy="7" r="3.5"/><path d="M5 21v-3a7 7 0 0 1 14 0v3"/></> : kind === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></> : kind === 'lock' ? <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></> : <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>}
     </svg>;
 }
 type Data = {
+    clientWork: {id:string;title:string;client:string}[];
     businessId: string;
     groups?: { id: string; name: string; memberAssetIds: string[]; memberCount: number }[];
     members: TeamGrant[];
@@ -50,6 +52,7 @@ type Data = {
     }[];
 };
 type Draft = {
+    clientWorkIds: string[];
     id?: string;
     version?: number;
     email: string;
@@ -68,9 +71,13 @@ type Draft = {
     expiresAt: string;
 };
 const countLabel = (count: number, label: string) => `${count} ${label}${count === 1 ? '' : 's'}`;
-const fresh = (): Draft => ({ email: '', username: '', loginType: 'managed', displayName: '', scope: 'selected', registerIds: [], assetIds: [], documentIds: [], documentAccess: 'selected', excludedDocumentIds: [], permissions: { ...EMPTY_TEAM_PERMISSIONS }, expiresAt: '' });
-const memberDraft = (member: TeamGrant): Draft => ({ ...member, documentAccess: member.documentAccess || 'selected', excludedDocumentIds: member.excludedDocumentIds || [], loginType: member.managedLogin ? 'managed' : 'existing', permissions: { ...member.permissions }, expiresAt: member.expiresAt ? member.expiresAt.slice(0, 10) : '' });
-export default function TeamAccessClient({ assetOnly = false }: { assetOnly?: boolean }) {
+const fresh = (): Draft => ({ clientWorkIds: [], email: '', username: '', loginType: 'managed', displayName: '', scope: 'selected', registerIds: [], assetIds: [], documentIds: [], documentAccess: 'selected', excludedDocumentIds: [], permissions: { ...EMPTY_TEAM_PERMISSIONS }, expiresAt: '' });
+const memberDraft = (member: TeamGrant): Draft => ({ ...member, clientWorkIds: member.clientWorkIds || [], documentAccess: member.documentAccess || 'selected', excludedDocumentIds: member.excludedDocumentIds || [], loginType: member.managedLogin ? 'managed' : 'existing', permissions: { ...member.permissions }, expiresAt: member.expiresAt ? member.expiresAt.slice(0, 10) : '' });
+export default function TeamAccessClient({ accountKind = 'owner' }: { accountKind?: TeamAccountKind }) {
+    const commercial = accountKind !== 'owner';
+    const templates = teamTemplates(accountKind);
+    const permissionGroups = teamPermissionGroups(accountKind);
+    const [clientSearch, setClientSearch] = useState('');
     const [data, setData] = useState<Data | null>(null), [draft, setDraft] = useState<Draft | null>(null), [tab, setTab] = useState('Person');
     const [activityOpen, setActivityOpen] = useState(false);
     const [picker, setPicker] = useState<'registers' | 'assets' | 'umbrellas' | null>(null);
@@ -111,22 +118,22 @@ export default function TeamAccessClient({ assetOnly = false }: { assetOnly?: bo
     const member = data?.members.find(m => m.id === draft?.id);
     const dirty = Boolean(draft && (draft.id ? member && JSON.stringify(memberDraft(member)) !== JSON.stringify(draft) : JSON.stringify(draft) !== JSON.stringify(fresh())));
     function closeEditor() { if (!dirty || window.confirm('Discard unsaved changes?')) setDraft(null); }
-    const settingsTabs = [{ id: 'Person', label: 'Login details' }, { id: 'Permissions', label: 'Permissions' }, { id: 'Assets', label: 'Asset access' }, { id: 'Documents', label: 'Documents' }, { id: 'Status', label: 'Login status' }];
-    const permissionSummary = draft ? Object.values(TEAM_TEMPLATES).find(t => TEAM_PERMISSIONS.every(p => t.permissions[p.key] === draft.permissions[p.key]))?.label || 'Custom access' : '';
+    const settingsTabs = [{ id: 'Person', label: 'Login details' }, { id: 'Permissions', label: 'Permissions' }, { id: 'Assets', label: 'Asset access' }, ...(commercial ? [{id:'Clients',label:'Client work'}] : []), { id: 'Documents', label: 'Documents' }, { id: 'Status', label: 'Login status' }];
+    const permissionSummary = draft ? Object.values(templates).find(t => TEAM_PERMISSIONS.every(p => t.permissions[p.key] === draft.permissions[p.key]))?.label || 'Custom access' : '';
     const assetSummary = draft?.scope === 'all' ? 'All current and future assets' : [draft?.registerIds.length ? countLabel(draft.registerIds.length, 'register') : '', draft?.assetIds.length ? countLabel(draft.assetIds.length, 'individual asset') : ''].filter(Boolean).join(' · ') || 'No assets selected';
     const documentSummary = draft ? teamDocumentAccessLabel(draft.documentAccess, draft.documentIds.length, draft.excludedDocumentIds.length) : '';
     const selectedDocs = draft?.documentIds.filter(id => allowedDocs.some(d => d.id === id)) || [];
     const usernameLogin = draft?.loginType === 'managed' && (!draft.id || Boolean(draft.username));
     const personValid = Boolean(draft?.loginType && draft.displayName.trim() && (usernameLogin ? isDesktopUsername(draft.username || '') : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(draft.email)) && (draft.loginType === 'existing' || ((draft.id && !draft.password) || (draft.password && draft.password.length >= 10 && draft.password.length <= 128))) && (!draft.expiresAt || new Date(draft.expiresAt + 'T21:59:59.000Z').getTime() > Date.now()));
-    const assetsValid = draft?.scope === 'all' || Boolean(draft?.registerIds.length || draft?.assetIds.length);
-    const steps = ['Person', 'Permissions', 'Assets', 'Documents', 'Review'];
-    const stageTitle = tab === 'Person' ? 'Login details' : tab === 'Assets' ? 'Asset access' : tab === 'Review' ? 'Review access' : tab;
+    const assetsValid = commercial || draft?.scope === 'all' || Boolean(draft?.registerIds.length || draft?.assetIds.length);
+    const steps = ['Person', 'Permissions', 'Assets', ...(commercial ? ['Clients'] : []), 'Documents', 'Review'];
+    const stageTitle = tab === 'Person' ? 'Login details' : tab === 'Assets' ? 'Asset access' : tab === 'Clients' ? 'Client work' : tab === 'Review' ? 'Review access' : tab;
     function status(m: TeamGrant) { return m.expiresAt && new Date(m.expiresAt) < new Date() ? 'Expired' : m.status === 'active' ? 'Active' : m.status === 'revoked' ? 'Inactive' : 'Login setup needed'; }
     const icon = (name: string) => <span className={styles.smallIcon}><AccessSectionIcon name={name}/></span>;
     return <main className={baseStyles.shell}>
     <Link className={baseStyles.backButton} href="/account">Back to account</Link>
     <section className={accessStyles.launcher} aria-labelledby="desktop-users-title">
-      <div className={accessStyles.launcherIntro}><h1 id="desktop-users-title">Desktop users</h1><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p>{assetOnly && <p>Desktop access covers assets owned by this account. It does not include leads, parts, marketplace management or account settings.</p>}</div>
+      <div className={accessStyles.launcherIntro}><h1 id="desktop-users-title">Desktop users</h1><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p>{commercial && <p>Choose business-owned assets and client work separately. Client sharing limits still apply.</p>}</div>
       <div className={accessStyles.actionGrid}>
         <button type="button" aria-label="Add user" className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew}`} disabled={!data || busy} onClick={() => open()}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 4v16M4 12h16"/></svg></span><span className={accessStyles.actionCopy}><strong>Add user</strong><small>Add a person and choose their access.</small></span></button>
         <button type="button" aria-label="Manage users" className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage}`} disabled={!data || busy} onClick={() => setManaging(true)}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></svg></span><span className={accessStyles.actionCopy}><strong>Manage users</strong><small>Review permissions or remove access.</small></span><span className={accessStyles.actionMeta}><span className={accessStyles.countPill}>{data ? data.members.length : '…'}</span></span></button>
@@ -167,19 +174,28 @@ export default function TeamAccessClient({ assetOnly = false }: { assetOnly?: bo
       </>}
       {tab === 'Permissions' && <div className={styles.permissionPanel}>
         <p className={styles.permissionIntro}>Choose a starting role, then open each page to adjust access.</p>
-        <div className={styles.presetGrid}>{Object.entries(TEAM_TEMPLATES).map(([key, t]) => <button type="button" className={styles.preset} aria-pressed={permissionSummary === t.label} onClick={() => setDraft({ ...draft, permissions: { ...t.permissions } })} key={key} title={t.detail}><strong>{t.label}</strong></button>)}</div>
-        <p className={styles.presetDescription}>{Object.values(TEAM_TEMPLATES).find(t => t.label === permissionSummary)?.detail || 'Custom permissions for this person.'}</p>
+        <div className={styles.presetGrid}>{Object.entries(templates).map(([key, t]) => <button type="button" className={styles.preset} aria-pressed={permissionSummary === t.label} onClick={() => setDraft({ ...draft, permissions: { ...t.permissions } })} key={key} title={t.detail}><strong>{t.label}</strong></button>)}</div>
+        <p className={styles.presetDescription}>{Object.values(templates).find(t => t.label === permissionSummary)?.detail || 'Custom permissions for this person.'}</p>
         <div className={styles.accessSummary} role="status"><strong>{permissionSummary}</strong><span>{draft.permissions.viewValues ? 'Asset values visible' : 'Asset values hidden'} · {draft.documentAccess === 'none' ? 'No document access' : draft.documentAccess === 'all' ? 'Document exceptions set separately' : 'Only approved documents'}</span></div>
-        <div className={styles.permissionGroups}>{TEAM_PERMISSION_GROUPS.map((group) => <details className={styles.permissionGroup} key={group.label}>
+        <div className={styles.permissionGroups}>{permissionGroups.map((group) => <details className={styles.permissionGroup} key={group.label}>
           <summary><strong>{group.label}</strong><span>{group.keys.filter(key => draft.permissions[key]).length} of {group.keys.length} allowed</span></summary>
           <div className={styles.permissionOptions}>{group.keys.map(key => { const permission = TEAM_PERMISSIONS.find(p => p.key === key)!; return <label className={styles.permission} data-selected={draft.permissions[key]} key={key}><input type="checkbox" checked={draft.permissions[key]} onChange={e => setDraft({ ...draft, permissions: updateTeamPermission(draft.permissions, key, e.target.checked) })}/><span><strong>{permission.label}</strong><small>{permission.detail}</small></span></label>; })}</div>
         </details>)}</div>
         <details className={styles.permissionGroup}><summary><strong>Home, Marketplace &amp; account</strong><span>Browse &amp; account rules</span></summary><p className={styles.permissionIntro}>Home, Value Asset and Marketplace browsing are available to all desktop users. Saving valuations, publishing listings, sharing or deleting assets, billing, user administration and tracking-device setup remain with the account holder. Manager enables the listed permissions; it does not transfer account ownership.</p></details>
       </div>}
       {tab === 'Assets' && <div className={styles.assetAccess}>
+        {commercial && <p className={styles.permissionIntro}>Assets owned by this business. Leave the selection empty for client-work-only access.</p>}
         {<div className={styles.grid}>{(['all', 'selected'] as const).map(scope => <button type="button" className={`${styles.assetCard} ${scope === 'all' ? accessStyles.actionButtonNew : accessStyles.actionButtonManage}`} aria-pressed={draft.scope === scope} key={scope} onClick={() => { setDraft({ ...draft, scope }); }}><span className={styles.assetCardIcon} aria-hidden="true"><AccessSectionIcon name={scope === 'all' ? 'box' : 'assets'}/></span><span><strong>{scope === 'all' ? 'All assets' : 'Selected assets only'}</strong><small>{scope === 'all' ? 'All current and future assets.' : 'Select umbrellas, registers or assets.'}</small></span></button>)}</div>}
         {draft.scope === 'selected' && <><div className={styles.templates}>{[{key:'umbrellas', title:'Umbrellas', icon:'umbrella', text:'Add their current assets.'},{key:'registers',title:'Registers',icon:'assets',text:'Includes future assets.'},{key:'assets',title:'Choose assets',icon:'box',text:'Select individual assets.'}].map(item => <button type="button" className={`${styles.assetCard} ${item.key === 'registers' ? accessStyles.actionButtonManage : accessStyles.actionButtonNew}`} key={item.key} onClick={() => setPicker(item.key as 'umbrellas' | 'registers' | 'assets')}><span className={styles.assetCardIcon} aria-hidden="true"><AccessSectionIcon name={item.icon}/></span><span><strong>{item.title}</strong><small>{item.text}</small></span></button>)}</div></>}
-        <p className={styles.assetSelectionSummary} data-selected={assetsValid} role="status">{assetsValid ? <><strong>Access selected</strong><span>{assetSummary}</span></> : 'Choose the assets this person can access.'}</p>
+        <p className={styles.assetSelectionSummary} data-selected={assetsValid} role="status">{(draft.scope === 'all' || draft.registerIds.length > 0 || draft.assetIds.length > 0) ? <><strong>Access selected</strong><span>{assetSummary}</span></> : commercial ? 'No business-owned assets selected.' : 'Choose the assets this person can access.'}</p>
+      </div>}
+      {tab === 'Clients' && <div className={styles.documentPanel}>
+        <p className={styles.permissionIntro}>Choose the enquiries and shared assets this person may see. New client work stays private until selected. Client permissions can never exceed the original share.</p>
+        <div className={styles.accessSummary} role="status"><strong>{draft.clientWorkIds.length} selected</strong><span>{draft.permissions.viewClientWork ? 'Client work enabled' : 'Enable View assigned client work under Permissions to make this selection available.'}</span></div>
+        <label className={styles.field}>Search client work<input className={styles.input} type="search" value={clientSearch} onChange={e => setClientSearch(e.target.value)} placeholder="Search client or asset"/></label>
+        <div className={styles.documentList}>{(data.clientWork || []).filter(work => `${work.client} ${work.title}`.toLowerCase().includes(clientSearch.toLowerCase())).map(work => <label className={styles.permission} key={work.id} data-selected={draft.clientWorkIds.includes(work.id)}><input type="checkbox" checked={draft.clientWorkIds.includes(work.id)} onChange={e => setDraft({...draft,clientWorkIds:e.target.checked ? [...draft.clientWorkIds,work.id] : draft.clientWorkIds.filter(id => id !== work.id)})}/><span><strong>{work.title}</strong><small>{work.client}</small></span></label>)}</div>
+        {!(data.clientWork || []).length && <p className={styles.muted}>No client work is currently shared with this business.</p>}
+        {draft.clientWorkIds.some(id => !(data.clientWork || []).some(work => work.id === id)) && <p className={styles.notice}>Some selected work is no longer available. <button type="button" className={styles.button} onClick={() => setDraft({...draft,clientWorkIds:draft.clientWorkIds.filter(id => (data.clientWork || []).some(work => work.id === id))})}>Remove unavailable selections</button></p>}
       </div>}
       {tab === 'Documents' && <div className={styles.documentPanel}>
         <p className={styles.permissionIntro}>Choose which documents this person can open and download.</p>
@@ -194,7 +210,7 @@ export default function TeamAccessClient({ assetOnly = false }: { assetOnly?: bo
         <p className={styles.permissionIntro}>Prices printed inside approved documents remain visible. Documents linked to assets outside this person's access stay unavailable.</p>
       </div>}
       {tab === 'Review' && <div className={styles.review}>
-        {[{title:'Login details',value:draft.displayName,detail:(draft.username || draft.email) + (draft.loginType === 'existing' ? ' · Existing Aim4price account' : ' · Separate desktop login'),tab:'Person'}, {title:'Permissions',value:permissionSummary,detail:`${TEAM_PERMISSIONS.filter(p => draft.permissions[p.key]).length} permissions enabled · Values ${draft.permissions.viewValues ? 'visible' : 'hidden'}`,tab:'Permissions'}, {title:'Asset access',value:assetSummary,detail:'Access is limited to this business.',tab:'Assets'}, {title:'Documents',value:documentSummary,detail:draft.expiresAt ? `Access expires ${draft.expiresAt.split('-').reverse().join('/')} at the end of the day (South Africa).` : 'No expiry date.',tab:'Documents'}].map(item => <div key={item.title}><span><small>{item.title}</small><strong>{item.value}</strong><span>{item.detail}</span></span><button type="button" className={styles.button} aria-label={`Edit ${item.title.toLowerCase()}`} onClick={() => setTab(item.tab)}>Edit</button></div>)}
+        {[{title:'Login details',value:draft.displayName,detail:(draft.username || draft.email) + (draft.loginType === 'existing' ? ' · Existing Aim4price account' : ' · Separate desktop login'),tab:'Person'}, {title:'Permissions',value:permissionSummary,detail:`${TEAM_PERMISSIONS.filter(p => draft.permissions[p.key]).length} permissions enabled · Values ${draft.permissions.viewValues ? 'visible' : 'hidden'}`,tab:'Permissions'}, {title:'Asset access',value:assetSummary,detail:'Access is limited to this business.',tab:'Assets'}, ...(commercial ? [{title:'Client work',value:`${draft.clientWorkIds.length} selected`,detail:draft.permissions.viewClientWork ? 'Original client sharing limits apply.' : 'Client work is switched off.',tab:'Clients'}] : []), {title:'Documents',value:documentSummary,detail:draft.expiresAt ? `Access expires ${draft.expiresAt.split('-').reverse().join('/')} at the end of the day (South Africa).` : 'No expiry date.',tab:'Documents'}].map(item => <div key={item.title}><span><small>{item.title}</small><strong>{item.value}</strong><span>{item.detail}</span></span><button type="button" className={styles.button} aria-label={`Edit ${item.title.toLowerCase()}`} onClick={() => setTab(item.tab)}>Edit</button></div>)}
         <p className={styles.muted}>{draft.loginType === 'managed' ? 'No email is sent. Share the sign-in link, username and password yourself.' : 'No email is sent. Share the workspace link yourself, or choose Send access email under Login status.'}</p>
       </div>}
       </div></div></div>

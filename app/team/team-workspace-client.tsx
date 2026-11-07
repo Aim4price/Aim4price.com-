@@ -1,4 +1,5 @@
 'use client';
+import ClientWork from './client-work';
 import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -51,6 +52,7 @@ export default function TeamWorkspaceClient({ email, managed = false, management
 }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]), [membership, setMembership] = useState(initialWorkspace), [data, setData] = useState<WorkspaceData | null>(null);
     const [error, setError] = useState(''), [notice, setNotice] = useState(''), [busy, setBusy] = useState(false), [loading, setLoading] = useState(true);
+    const [workspacePage, setWorkspacePage] = useState<'assets' | 'clients'>('assets');
     const [selectedId, setSelectedId] = useState('');
     const [documents, setDocuments] = useState<Document[]>([]), [maintenance, setMaintenance] = useState<Maintenance[]>([]);
     const [section, setSection] = useState<'details' | 'maintenance' | 'documents' | 'photos'>('details');
@@ -174,10 +176,11 @@ export default function TeamWorkspaceClient({ email, managed = false, management
     {data && <>
       {!managed && <div className={styles.actions} style={{padding:'1rem 6%'}}><Link className={styles.button} href={managementAccount ? '/account' : '/team/access'}>{managementAccount ? 'Account' : 'My access'}</Link>{workspaces.length > 1 && <button className={styles.button} onClick={() => {generation.current++;setData(null);setMembership('');setSelectedId('');}}>Switch business</button>}</div>}
       {error && <p className={styles.error} role="alert">{error}</p>}{notice && <p className={styles.notice} role="status">{notice}</p>}
-      <AssetRegisterClient showAppHeader={false} desktopAccess={{data, membership, onRefresh: () => void refresh(),
+      {data.permissions.viewClientWork && <nav className={styles.actions} aria-label="Workspace pages" style={{padding:'1rem 6%'}}><button type="button" className={workspacePage === 'assets' ? styles.primary : styles.button} aria-current={workspacePage === 'assets' ? 'page' : undefined} onClick={() => setWorkspacePage('assets')}>Business assets</button><button type="button" className={workspacePage === 'clients' ? styles.primary : styles.button} aria-current={workspacePage === 'clients' ? 'page' : undefined} onClick={() => {setSelectedId('');setWorkspacePage('clients');}}>Client work</button></nav>}
+      {workspacePage === 'clients' && data.permissions.viewClientWork ? <ClientWork membership={membership} version={data.version}/> : <AssetRegisterClient showAppHeader={false} desktopAccess={{data, membership, onRefresh: () => void refresh(),
         onManage: (id, target = "details") => {const asset = data.assets.find(item => item.id === id);if(asset) {openAsset(asset);setSection(target);}},
         onUpload: async (id, kind, files) => {for(const file of files) {const form = new FormData();form.set('file',file);form.set('assetId',id);form.set('requestId',crypto.randomUUID());await api(base+'/'+kind,{method:'POST',body:form});} await refresh();},
-        onSave: async (id, patch) => {await api(base, {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({assetId:id,patch})}); await refresh();}}}/>
+        onSave: async (id, patch) => {await api(base, {method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({assetId:id,patch})}); await refresh();}}}/>}
     </>}
     {selected && data && <AssetAccessSettingsDialog title={section === 'maintenance' ? 'Maintenance' : section === 'photos' ? 'Photos' : 'Documents'} assetTitle={selected.title} documentsLayout onClose={() => {if(!busy)setSelectedId('');}} footer={<button className={registerStyles.primaryButton} onClick={() => setSelectedId('')} disabled={busy}>Done</button>}>
       <div className={styles.body}>

@@ -1,3 +1,6 @@
+import { teamAccountKind, accountTeamPermissions } from './team-account-policy';
+import { businessWorkspaceSummary } from './business-workspaces';
+import { listTeamClientWork } from './team-client-work';
 import { getManagedTeamActor, hashTeamPassword } from './team-login';
 import type { PoolClient } from 'pg';
 import { getDb } from './db';
@@ -14,6 +17,7 @@ import { resolveAssetUsage } from './asset-usage';
 import { ensureTeamAccessSchema } from './team-access-schema';
 import { TeamAccessError, isDesktopUsername, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
 type TeamGrantRow = {
+    client_work_ids?: string[];
     managed_login?: boolean;
     username?: string | null;
     id: string;
@@ -33,7 +37,7 @@ type TeamGrantRow = {
     version: number;
 };
 export function mapTeamGrant(row: TeamGrantRow): TeamGrant {
-    return { managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
+    return { clientWorkIds: row.client_work_ids || [], managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
         status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids, documentAccess: row.document_access || 'selected', excludedDocumentIds: row.excluded_document_ids || [],
         permissions: normalizeTeamPermissions(row.permissions), expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null, version: row.version };
 }
@@ -49,12 +53,21 @@ export async function requireTeamActor(): Promise<TeamActor> {
         throw new TeamAccessError('This account is suspended.', 403);
     return { id: session.user.id, email: session.user.email.trim().toLowerCase(), emailVerified: session.user.emailVerified === true, name: session.user.name };
 }
+export async function teamIssuerAvailable(id: string, profile: {accountType: string; accountSubtype?: string | null; accountStatus: string}) {
+    const kind = teamAccountKind(profile.accountType, profile.accountSubtype);
+    if (!kind || profile.accountStatus !== 'active' || await sharingPlan(id, profile.accountType) !== 'desktop') return false;
+    if (kind === 'business') {
+        const workspace = await businessWorkspaceSummary(id);
+        return Boolean(workspace && workspace.role === 'owner' && !workspace.suspended);
+    }
+    return true;
+}
 export async function requireTeamOwner() {
     const actor = await requireTeamActor();
     if (actor.managedGrantId) throw new TeamAccessError('Only the business owner can manage desktop users.');
     const profile = await getAccountProfile(actor);
-    if (!['owner', 'dealer'].includes(profile.accountType) || profile.accountStatus !== 'active' || await sharingPlan(actor.id, profile.accountType) !== 'desktop')
-        throw new TeamAccessError('Team access requires an active Owner or Dealer desktop account.');
+    if (!await teamIssuerAvailable(actor.id, profile))
+        throw new TeamAccessError('Team access requires an active Owner, Dealer or Business desktop account managed by its account holder.');
     await ensureTeamAccessSchema();
     return { actor, profile };
 }
@@ -79,8 +92,9 @@ export async function loadTeamScope(membershipId: string, permission?: TeamPermi
     if (!teamGrantIsLive(grant, actor))
         throw new TeamAccessError('Team access has expired, changed or been revoked.');
     const profile = await getAccountProfile({ id: grant.ownerId });
-    if (!['owner', 'dealer'].includes(profile.accountType) || profile.accountStatus !== 'active' || await sharingPlan(grant.ownerId, profile.accountType) !== 'desktop')
+    if (!await teamIssuerAvailable(grant.ownerId, profile))
         throw new TeamAccessError('This business workspace is unavailable.');
+    grant.permissions = accountTeamPermissions(grant.permissions, teamAccountKind(profile.accountType, profile.accountSubtype)!);
     if (permission)
         assertTeamPermission(grant, permission);
     return { actor, grant, accountType: profile.accountType, accountSubtype: profile.accountSubtype, logoUrl: profile.logoUrl, businessName: profile.businessName || profile.displayName || 'Team workspace' };
@@ -142,6 +156,17 @@ function ids(value: unknown): string[] {
     return [...new Set(value)];
 }
 export async function saveTeamGrant(actor: TeamActor, body: Record<string, unknown>) {
+    const issuerProfile = await getAccountProfile(actor);
+    if (actor.managedGrantId || !await teamIssuerAvailable(actor.id, issuerProfile)) throw new TeamAccessError('Only the active desktop account holder can manage users.');
+    const kind = teamAccountKind(issuerProfile.accountType, issuerProfile.accountSubtype)!;
+    const clientWorkIds = body.clientWorkIds === undefined && body.id ? null : body.clientWorkIds === undefined ? [] : body.clientWorkIds;
+    if (clientWorkIds !== null && (!Array.isArray(clientWorkIds) || clientWorkIds.length > 500 || clientWorkIds.some(id => typeof id !== 'string' || !/^(lead:[0-9a-f-]{36}|share:[0-9a-f]{64})$/.test(id)))) throw new TeamAccessError('Choose valid client work.', 400);
+    if (kind === 'owner' && Array.isArray(clientWorkIds) && clientWorkIds.length) throw new TeamAccessError('Client work is available to Dealer and Business accounts.', 400);
+    if (Array.isArray(clientWorkIds) && clientWorkIds.length) {
+        const available = await listTeamClientWork(actor.id);
+        if (clientWorkIds.some(id => !available.some(work => work.id === id))) throw new TeamAccessError('Some client work is no longer shared with this business. Refresh the selection.', 400);
+    }
+
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const loginType = body.loginType;
     if (loginType !== undefined && loginType !== 'existing' && loginType !== 'managed') throw new TeamAccessError('Choose how this person will sign in.', 400);
@@ -155,7 +180,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     if (scope !== 'all' && scope !== 'selected')
         throw new TeamAccessError('Choose an asset scope.', 400);
     const registerIds = ids(body.registerIds), assetIds = ids(body.assetIds), documentIds = ids(body.documentIds);
-    if (scope === 'selected' && !registerIds.length && !assetIds.length)
+    if (kind === 'owner' && scope === 'selected' && !registerIds.length && !assetIds.length)
         throw new TeamAccessError('Select at least one register or asset.', 400);
     const expiresAt = body.expiresAt ? new Date(String(body.expiresAt)) : null;
     if (expiresAt && (!Number.isFinite(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()))
@@ -172,7 +197,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     const excludedDocumentIds = body.excludedDocumentIds === undefined ? null : ids(body.excludedDocumentIds);
     if (excludedDocumentIds?.some(id => !documents.some(d => d.id === id && !d.deletedAtIso)))
         throw new TeamAccessError('Excluded documents must belong to this account.', 400);
-    const permissions = normalizeTeamPermissions(body.permissions);
+    const permissions = accountTeamPermissions(body.permissions, kind);
     const password = typeof body.password === 'string' ? body.password : '';
     if (loginType === 'existing' && password) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
     const passwordHash = password ? await hashTeamPassword(password) : null;
@@ -207,6 +232,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
                 throw new TeamAccessError('This login already has desktop access. Edit or reactivate that entry.', 409);
             row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at,username,document_access,excluded_document_ids) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9,$10,$11,$12::jsonb) RETURNING *`, [actor.id, usernameLogin ? null : email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, usernameLogin ? username : null, documentAccess ?? 'selected', JSON.stringify(excludedDocumentIds || [])])).rows[0];
         }
+        if (clientWorkIds !== null) row = (await client.query('UPDATE team_access SET client_work_ids=$2::jsonb WHERE id=$1 RETURNING *', [row.id, JSON.stringify([...new Set(clientWorkIds as string[])])])).rows[0];
         const existingLogin = (await client.query('SELECT id FROM "user" WHERE lower(email)=$1 ORDER BY id LIMIT 1', [email])).rows[0];
         if (!body.id && loginType === 'existing' && !existingLogin) throw new TeamAccessError('No Aim4price account is registered with this email. Check the email or choose Create desktop login.', 400);
         if (row.managed_login || (!body.id && (loginType === 'managed' || !existingLogin))) {

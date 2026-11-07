@@ -74,21 +74,22 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.setContent('<style>:root{--website-design-vw:1vw;--website-design-vh:1vh;--shell-width:94%;--text-strong:#173a30}*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#f4f8f6}button,input{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
   await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
   await page.addScriptTag({content:runtime+`;
-    const permissions={viewValues:false,editDetails:true,updateUsage:true,viewMaintenance:true,completeMaintenance:true,uploadDocuments:true,viewPhotos:false,uploadPhotos:false,exportAssets:true};
+    const permissions={viewClientWork:${mode==='client-member'},manageClientEnquiries:${mode==='client-member'},viewValues:false,editDetails:true,updateUsage:true,viewMaintenance:true,completeMaintenance:true,uploadDocuments:true,viewPhotos:false,uploadPhotos:false,exportAssets:true};
     const asset={id:'asset-a',registerId:'register-a',registerName:'Skimmelkrans Boerdery',title:'Landini Super 110',brand:'Landini',model:'Super 110',year:2024,serial:'VIN123',registration:'ABC123',condition:'good',usage:2741,usageMetric:'hours',photoCount:0};
     window.requests=[];window.revoked=false;window.showValues=false;
     window.fetch=async(url,init={})=>{window.requests.push({url:String(url),method:init.method||'GET',body:init.body});let response;
       if(url==='/api/team-access'&&init.method==='POST'){window.saved=JSON.parse(init.body);if(window.saved.action==='save'&&window.saved.id){const {password,action,...savedMember}=window.saved;window.savedMember={...savedMember,version:savedMember.version+1};}if(window.saved.action==='remove')window.removed=true;response={ok:true};}
-      else if(url==='/api/team-access')response={businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1,...window.savedMember}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
+      else if(url==='/api/team-access')response={clientWork:[{id:'lead:11111111-1111-4111-8111-111111111111',title:'Client tractor',client:'Client A'}],businessId:'owner-a',groups:[{id:'umbrella-a',name:'Workshop fleet',memberAssetIds:['asset-a'],memberCount:1}],members:window.removed?[]:[{id:'member-a',ownerId:'owner-a',email:'existing@example.com',displayName:'Existing user',status:'active',scope:'all',registerIds:[],assetIds:[],documentIds:[],permissions,expiresAt:null,version:1,...window.savedMember}],registers:[{id:'register-a',name:'Skimmelkrans Boerdery'}],assets:[{id:'asset-a',registerId:'register-a',title:'Landini Super 110'}],documents:[{id:'document-a',title:'Operator manual',assetIds:['asset-a']}],activity:[]};
       else if(url==='/api/team-workspaces')response={workspaces:[{id:'membership-a',name:'Skimmelkrans Boerdery',logoUrl:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22green%22/%3E%3C/svg%3E',accountType:'owner',displayName:'Workshop staff',available:true,status:'active',scope:'selected',registerCount:1,assetCount:0,documentCount:1,permissions,expiresAt:null}]};
       else if(window.revoked)return {ok:false,json:async()=>({error:'Team access has been revoked.'})};
+      else if(String(url).endsWith('/client-work'))response={items:[{id:'lead:11111111-1111-4111-8111-111111111111',title:'Client tractor',client:'Client A',status:'sent',kind:'enquiry',canRespond:true,assets:[]}]};
       else if(String(url).endsWith('/documents'))response={documents:[{id:'document-a',title:'Operator manual',fileName:'manual.pdf',assetIds:['asset-a']}]};
       else if(String(url).includes('/maintenance'))response={records:[{id:'maintenance-a',title:'Engine service',type:'service',status:'upcoming',statusLabel:'Upcoming',notes:'Change oil',dueDate:'2026-11-01'}]};
       else if(init.method==='PATCH'){window.updated=JSON.parse(init.body);response={ok:true};}
       else response={name:'Skimmelkrans Boerdery',permissions:{...permissions,viewValues:window.showValues},assets:[window.showValues?{...asset,values:{current:987654,replacement:1234567,insured:999999}}:asset],version:window.showValues?2:1};
       return {ok:true,json:async()=>response};
     };
-    ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('${mode.startsWith('access')?'app/team/access/my-access-client':mode==='login'?'components/team/TeamLogin':mode==='owner'?'app/account/team-access/team-access-client':'app/team/team-workspace-client'}').default,{email:'staff@example.com',name:'Workshop staff',managed:${mode==='access-managed'},managementAccount:${mode==='member-management'},initialWorkspace:${JSON.stringify(mode==='member-direct'?'membership-a':'')},business:'owner-a'}));`});
+    ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('${mode.startsWith('access')?'app/team/access/my-access-client':mode==='login'?'components/team/TeamLogin':['owner','dealer','business'].includes(mode)?'app/account/team-access/team-access-client':'app/team/team-workspace-client'}').default,{accountKind:${JSON.stringify(mode==='dealer'?'dealer':mode==='business'?'business':'owner')},email:'staff@example.com',name:'Workshop staff',managed:${mode==='access-managed'},managementAccount:${mode==='member-management'},initialWorkspace:${JSON.stringify(mode==='member-direct'?'membership-a':'')},business:'owner-a'}));`});
  }
  async function click(text){await page.waitForFunction(t=>Array.from(document.querySelectorAll('button')).some(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)),{},text);await page.evaluate(t=>Array.from(document.querySelectorAll('button')).find(b=>!b.disabled&&(b.textContent.trim()===t||b.getAttribute('aria-label')===t||b.querySelector('strong')?.textContent.trim()===t)).click(),text);}
  async function fillLabel(label,value){await page.evaluate((label)=>{const node=Array.from(document.querySelectorAll('label')).find(l=>l.childNodes[0]?.textContent.trim()===label);node.querySelector('input,textarea').setAttribute('data-fill','true');},label);await page.locator('[data-fill=true]').fill(value);await page.$eval('[data-fill=true]',e=>e.removeAttribute('data-fill'));}
@@ -243,6 +244,23 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
  await page.evaluate(()=>{window.fetch=async()=>({ok:true,json:async()=>({workspaces:[]})});window.dispatchEvent(new Event('focus'));});
  await page.waitForFunction(()=>document.body.textContent.includes('No desktop access yet'));
+ // Dealer and Business use the same editor; client scope is separate from own assets.
+ for (const kind of ['dealer','business']) {
+   await mount(kind);await click('Manage users');await click('Manage');await click('Permissions');
+   await click(kind === 'dealer' ? 'Sales' : 'Staff');
+   assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Client work')));
+   await click('Client work');await page.waitForFunction(()=>document.querySelector('[role="dialog"]').textContent.includes('Client tractor'));
+   await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(el=>el.textContent.includes('Client tractor')).querySelector('input').click());
+   await click('Save access');await page.waitForFunction(()=>window.saved?.clientWorkIds?.length===1);
+   assert.equal(await page.evaluate(()=>window.saved.permissions.viewClientWork),true);
+   assert.equal(await page.evaluate(()=>window.saved.permissions.viewClientValues),false);
+   assert.deepEqual(await page.evaluate(()=>window.saved.clientWorkIds),['lead:11111111-1111-4111-8111-111111111111']);
+   for(const width of [1440,390]) {await page.setViewport({width,height:800});await click('Permissions');await assertFits();await assertEditorControlsVisible();await page.evaluate(async()=>{await Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{})))});await page.screenshot({path:'.next/team-access-validation/'+kind+'-permissions-'+width+'.png'});}
+ }
+ await mount('client-member');await page.waitForFunction(()=>document.body.textContent.includes('Client work'));await click('Client work');
+ await page.waitForFunction(()=>document.body.textContent.includes('Client tractor'));
+ await page.evaluate(()=>{window.revoked=true;window.dispatchEvent(new Event('focus'));});
+ await page.waitForFunction(()=>!document.body.textContent.includes('Client tractor'));
  assert.deepEqual(errors,[]);console.log('PASS owner permissions, scope and document selection, safe defaults, member maintenance and approved documents, responsive modals, and revoked workspace clearing');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});

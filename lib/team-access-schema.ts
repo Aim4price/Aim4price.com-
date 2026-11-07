@@ -61,6 +61,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS team_access_username ON team_access(owner_id,l
 CREATE INDEX IF NOT EXISTS team_access_username_lookup ON team_access(username) WHERE username IS NOT NULL;
 ALTER TABLE team_access ADD COLUMN IF NOT EXISTS document_access text NOT NULL DEFAULT 'selected' CHECK(document_access IN ('none','selected','all'));
 ALTER TABLE team_access ADD COLUMN IF NOT EXISTS excluded_document_ids jsonb NOT NULL DEFAULT '[]';
+-- Existing desktop users gain no client access.
+ALTER TABLE team_access ADD COLUMN IF NOT EXISTS client_work_ids jsonb NOT NULL DEFAULT '[]';
 `;
 let ready: Promise<void> | undefined;
 export function ensureTeamAccessSchema() {

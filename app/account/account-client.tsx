@@ -92,6 +92,7 @@ type ScanPinApiResponse = {
 };
 
 type AccountClientProps = {
+  canManageDesktopUsers?: boolean;
   sharedAccount?: boolean;
   sharedSettings?: ReactNode;
   initialProfile?: AccountProfile | null;
@@ -584,6 +585,7 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
 }
 
 export default function AccountClient({
+  canManageDesktopUsers = false,
   sharedAccount = false,
   sharedSettings,
   initialProfile = null,
@@ -1914,7 +1916,7 @@ export default function AccountClient({
                   </div>
                   <div className={styles.quickActionList}>
                     {!(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
-                    {(isOwnerAccount || isDealerAccount) && !sharedAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>{isMiddlemanAccount ? "Desktop asset access" : "Desktop users"}</strong></Link>}
+                    {canManageDesktopUsers && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>{isMiddlemanAccount ? "Desktop asset access" : "Desktop users"}</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button

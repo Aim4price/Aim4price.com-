@@ -13,7 +13,7 @@ const member={id:'member',email:'staff@example.com',emailVerified:true,name:'Wor
 const owner={id:'owner',email:'owner@example.com',emailVerified:true,name:'Owner'};
 const aId=randomUUID(), bId=randomUUID(),otherId=randomUUID(),reg1=randomUUID(),reg2=randomUUID(),docId=randomUUID();
 const asset=(id,registerId)=>({id,registerId,title:'Tractor',brandName:'Brand',modelName:'Model',yearModel:2024,serialNumber:'SERIAL',licenseRegistrationNumber:'ABC',condition:'good',photos:['/api/asset-register/uploads/private-photo'],value:987654,replacementPriceExVat:1234567,insuredValueExVat:999999,specsJson:{marketPrice:888888,financeBalance:777777},financeNote:'FINANCIAL SECRET',note:'PRIVATE NOTE',documents:['PRIVATE INVOICE'],hours:500,userId:'owner'});
-async function setup() {
+async function setup(options={}) {
  const db=new PGlite();await db.exec('CREATE TABLE "user"(id text primary key,email text); INSERT INTO "user" VALUES (\'owner\',\'owner@example.com\'),(\'member\',\'staff@example.com\'),(\'other\',\'other@example.com\'); CREATE TABLE asset_register_items(id uuid primary key,user_id text,register_id uuid);');await db.exec(TEAM_ACCESS_SCHEMA);
  await db.exec("CREATE TABLE asset_maintenance_records(id text,user_id text,asset_id uuid,status text)");
  await db.query("INSERT INTO asset_maintenance_records VALUES('maintenance','owner',$1,'upcoming')",[aId]);
@@ -26,13 +26,16 @@ async function setup() {
  let cookieToken='';
  const login=load('lib/team-login.ts',{'node:crypto':require('node:crypto'),'node:util':require('node:util'),'next/headers':{cookies:()=>({get:()=>cookieToken?{value:cookieToken}:undefined})},'./db':{getDb:()=>pool},'./team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy});
  const service=load('lib/team-access.ts',{
+  './team-account-policy':load('lib/team-account-policy.ts',{'./team-access-policy':policy}),
+  './business-workspaces':{businessWorkspaceSummary:async()=>({role:'owner',suspended:false})},
+  './team-client-work':{listTeamClientWork:async()=>[]},
   './team-login':login,
   './asset-groups':{listAssetGroups:async()=>[]},
   './team-register':load('lib/team-register.ts'),
   './asset-history-schema':{setAssetHistoryActor:async()=>{}},
   './db':{getDb:()=>pool},'./auth-session':{getAnyServerSession:async()=>session},
-  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?'owner':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
-  './sharing-foundation':{sharingPlan:async id=>id==='owner'?'desktop':'free'},
+  './account-profile':{getAccountProfile:async user=>({accountType:user.id==='owner'?(options.accountType||'owner'):user.id==='other'?'dealer':'business',accountStatus:user.id==='owner'&&!ownerActive?'suspended':'active',businessName:'Private business',logoUrl:'https://example.com/owner.png'})},
+  './sharing-foundation':{sharingPlan:async id=>['owner','other'].includes(id)?'desktop':'free'},
   './asset-registers':{listAssetRegisters:async id=>id==='owner'?registers:[]},
   './asset-register-db':{listAssetRegisterItemsForRegisters:async(id,regs)=>id==='owner'?assets.filter(a=>regs.includes(a.registerId)):[],getAssetRegisterItemById:async(id,key)=>id==='owner'?assets.find(a=>a.id===key):null},
   './account-documents':{listAccountDocuments:async id=>id==='owner'?docs:[]},
@@ -127,7 +130,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal(fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8'),TEAM_ACCESS_SCHEMA);
+ assert.equal((fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8')+fs.readFileSync('database/migrations/155-desktop-client-work.sql','utf8')).replace(/\n+/g,'\n').trim(),TEAM_ACCESS_SCHEMA.replace(/\n+/g,'\n').trim());
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -138,6 +141,7 @@ function routes(f, options = {}) {
  const handlers={
   'next/server':{NextResponse},
   '../../../lib/team-access':f.service,
+  '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../../lib/team-access':f.service,
   '../../../../../lib/team-access':f.service,
  };
@@ -345,6 +349,7 @@ test('desktop creation and reactivation stay silent; only manual invitation send
  const json=(body,status=200)=>({body,status});
  const route=load('app/api/team-access/route.ts',{
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
+  '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},'../../../lib/team-access-policy':policy,
   '../../../lib/asset-groups':{},'../../../lib/app-asset-directory':{},'../../../lib/asset-registers':{},'../../../lib/account-documents':{},
   '../../../lib/business-network-api':{requireBusinessOrigin:()=>{},businessBody:async r=>r.body},
@@ -401,6 +406,7 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  f.setSession({user:owner});await f.invite();
  const route=load('app/api/team-access/route.ts',{
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
+  '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../lib/team-access-http':{teamJson:body=>({body,status:200}),teamError:e=>({body:{error:e.message},status:e.status||500})},'../../../lib/team-access-policy':policy,
   '../../../lib/asset-registers':{listAssetRegisters:async()=>[{id:reg1,businessName:'Farm A'}]},'../../../lib/account-documents':{listAccountDocuments:async()=>f.docs},
   '../../../lib/asset-groups':{listAssetGroups:async id=>{assert.equal(id,owner.id);return [{id:'group-a',name:'Fleet',members:[{assetId:aId,role:'primary'},{assetId:otherId,role:'member'}]},{id:'foreign',name:'Hidden',members:[{assetId:otherId,role:'primary'}]}]}},
@@ -447,13 +453,14 @@ test('My access lists only the signed-in grant and projects safe summaries acros
  const route=load('app/api/team-workspaces/route.ts',{
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},
   '../../../lib/team-access':f.service,
+  '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../lib/team-access-schema':{ensureTeamAccessSchema:async()=>{}},
   '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:type,accountSubtype:subtype,accountStatus:status,businessName:'Granted business',logoUrl:'https://example.com/owner.png',email:'private-owner@example.com',phone:'PRIVATE PHONE'})},
   '../../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
   '../../../lib/team-access-http':{teamJson:b=>b,teamError:e=>{throw e}},
   '../../../lib/business-network-api':{},
  });
- for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:true},{type:'business',allowed:false}]){
+ for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:true},{type:'business',allowed:true}]){
    type=account.type;subtype=account.subtype||'';
    const response=await route.GET();
    assert.equal(response.workspaces.length,1);
@@ -479,6 +486,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
 test('Account sends managed staff to My access without reading the main account profile',async()=>{
  let session=null,managed={id:'desktop:grant',email:'staff@example.com'},profileReads=0,managedReads=0;
  const page=load('app/account/page.tsx',{
+  '../../lib/team-access':{canManageTeamAccess:async()=>false},
   '../../components/AccountDirectoryListing':()=>null,
   '../business/business-client':()=>null,
   '../../lib/business-accounts':{},'../business/page.module.css':{},
@@ -652,4 +660,20 @@ test('permission dependencies and summaries remain explicit',()=>{
  assert.equal(policy.teamDocumentAccessLabel('all',0,2),'All in-scope documents except 2 excluded');
  assert(policy.TEAM_TEMPLATES.manager.permissions.viewValues);
  assert(!('manageUsers' in policy.TEAM_TEMPLATES.manager.permissions));
+});
+test('Dealer and Business create isolated logins with an empty own-asset scope and explicit client permissions',async()=>{
+ for(const accountType of ['dealer','business']){
+ const f=await setup({accountType});try{
+ f.setSession({user:owner});assert.equal((await f.service.requireTeamOwner()).profile.accountType,accountType);
+ const grant=await f.invite({loginType:'managed',email:'',username:'desk.'+accountType,password:'Desktop-password-123',scope:'selected',registerIds:[],assetIds:[],clientWorkIds:[],permissions:{viewClientWork:true,viewClientContacts:true}});
+ assert.deepEqual(grant.clientWorkIds,[]);assert.equal(grant.permissions.viewClientWork,true);assert.equal(grant.permissions.viewClientValues,false);
+ f.setSession(null);f.setCookie(await f.login.authenticateTeamLogin('owner',grant.username,'Desktop-password-123'));
+ const scope=await f.service.loadTeamScope(grant.id);assert.deepEqual(await f.service.teamAssetList(scope),[]);
+ await assert.rejects(()=>f.service.requireTeamOwner(),/Only the business owner/);
+ await assert.rejects(()=>f.service.saveTeamGrant(scope.actor,{...f.input}),/account holder/);
+ f.setSession({user:owner});
+ await assert.rejects(()=>f.invite({clientWorkIds:['lead:'+randomUUID()]}),/no longer shared/);
+ const saved=await f.service.saveTeamGrant(owner,{...grant,loginType:'managed',displayName:'Updated name'});assert.equal(saved.displayName,'Updated name');assert.deepEqual(saved.clientWorkIds,[]);
+ }finally{await f.db.close();}
+ }
 });
