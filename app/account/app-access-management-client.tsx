@@ -1,7 +1,7 @@
 'use client';
 
 import OwnerAccessPicker from './owner-access-picker';
-import { AccessSectionIcon } from './owner-login-sections';
+import { AccessSectionIcon, LoginFooterContext, LoginSaveFooter } from './owner-login-sections';
 import OwnerLoginSections from './owner-login-sections';
 import ownerStyles from './owner-login-sections.module.css';
 import {
@@ -436,6 +436,7 @@ function AppAccessModal({
   children,
   footer,
   compact = false,
+  ownerEditor = false,
 }: {
   open: boolean;
   title: string;
@@ -447,7 +448,9 @@ function AppAccessModal({
   children: ReactNode;
   footer?: ReactNode;
   compact?: boolean;
+  ownerEditor?: boolean;
 }) {
+  const [footerTarget, setFooterTarget] = useState<HTMLDivElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -506,7 +509,8 @@ function AppAccessModal({
             ×
           </button>
         </header>
-        <div className={styles.modalBody}>{children}</div>
+        <LoginFooterContext.Provider value={ownerEditor ? footerTarget : null}><div className={styles.modalBody}>{children}</div></LoginFooterContext.Provider>
+        {ownerEditor && <div ref={setFooterTarget} className={styles.ownerFooterSlot} />}
         {footer ? <footer className={styles.editorFooter}>{footer}</footer> : null}
       </section>
     </div>
@@ -836,7 +840,11 @@ function AppAccessManagement({ kind, configOverride }: {
       setDraft(emptyDraft(config));
       setShowCreatePassword(false);
       setCreateUsernameError('');
-      setActiveFlow(null);
+      if (kind === 'owner') {
+        setSelectedId(created.id);
+        setOwnerDirty(false);
+        setActiveFlow('manage');
+      } else setActiveFlow(null);
       setNotice({ tone: 'success', message: config.createSuccess });
     } catch (error) {
       const message = error instanceof Error ? error.message : `Failed to create ${config.itemLabel}.`;
@@ -1064,6 +1072,7 @@ function AppAccessManagement({ kind, configOverride }: {
         title={businessSettingsOpen ? 'Business login settings' : selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
         description={businessSettingsOpen ? 'One business ID for your app logins.' : selectedRecord ? selectedRecord.username : 'Choose a person to manage.'}
         compact={Boolean(selectedRecord)}
+        ownerEditor={kind === 'owner' && Boolean(selectedRecord) && !businessSettingsOpen}
 
         wide
         closeDisabled={Boolean(busyId || deletingId || namespaceBusy || ownerAccessBusy)}
@@ -1103,6 +1112,7 @@ function AppAccessManagement({ kind, configOverride }: {
             ) : null}
           </section>
         ) : <OwnerLoginSections
+          desktopFlow={kind === 'owner'}
           sectionNavigation
           businessLoginLayout={businessLoginLayout}
           key={selectedRecord.id} record={selectedRecord} busy={isSelectedBusy || ownerAccessBusy}
@@ -1294,7 +1304,7 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
 
       {settings.assetScope === 'selected' ? <>
         <div className={ownerStyles.pickerCards}>{([
-          { key: 'groupIds', title: 'Umbrella', icon: 'umbrella', text: 'Current and future linked assets.' },
+          { key: 'groupIds', title: 'Umbrellas', icon: 'umbrella', text: 'Current and future linked assets.' },
           { key: 'registerIds', title: 'Registers', icon: 'assets', text: 'Current and future register assets.' },
           { key: 'assetIds', title: 'Choose assets', icon: 'box', text: 'Select individual assets.' },
         ] as const).map(choice => <button type="button" className={ownerStyles.card} key={choice.key} disabled={saving} onClick={() => setPicker(choice.key)}><span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><span>{choice.text}</span><small>{(settings[choice.key] ?? []).length} selected</small></span></button>)}</div>
@@ -1303,9 +1313,9 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
       </> : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <footer className={ownerStyles.footer}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving || JSON.stringify(settings) === savedSettings.current}>
-        {saving ? 'Saving…' : 'Save changes'}
-      </button></footer>
+      <LoginSaveFooter dirty={JSON.stringify(settings) !== savedSettings.current}><button type="button" className={ownerStyles.primary} onClick={() => void saveAccess()} disabled={saving || JSON.stringify(settings) === savedSettings.current}>
+        {saving ? 'Saving…' : 'Save access'}
+      </button></LoginSaveFooter>
     </section>
   );
 }

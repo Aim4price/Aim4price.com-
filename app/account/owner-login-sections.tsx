@@ -1,11 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './owner-login-sections.module.css';
+
+// The modal owns the footer so long asset lists cannot scroll Save out of view.
+export const LoginFooterContext = createContext<HTMLElement | null>(null);
+export function LoginSaveFooter({ dirty, children }: { dirty: boolean; children: ReactNode }) {
+  const target = useContext(LoginFooterContext);
+  const footer = <footer className={target ? styles.saveFooter : styles.footer}>
+    {target && <span className={styles.saveHint} role="status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span>}{children}
+  </footer>;
+  return target ? createPortal(footer, target) : footer;
+}
 
 type Section = 'overview' | 'details' | 'permissions' | 'assets' | 'passcode' | 'status' | 'fuel';
 type RecordInfo = { id: string; displayName: string; username: string; accessRole?: string; isActive: boolean; lastLoginAtIso: string | null; updatedAtIso: string };
 type Props = {
+  desktopFlow?: boolean;
   businessLoginLayout?: boolean;
   sectionNavigation?: boolean;
   record: RecordInfo; busy: boolean; accountName: string | null; passwordMinimum: number; passwordMaximum: number;
@@ -29,6 +41,7 @@ export function AccessSectionIcon({ name }: { name: string }) {
 function date(value: string | null) { return value ? new Date(value).toLocaleString('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }) : 'Never'; }
 export default function OwnerLoginSections(props: Props) {
   const { record, busy } = props;
+  const formId = useId();
   const roleOptions = props.roleOptions ?? roles;
   const currentRole = props.currentRole ?? record.accessRole;
   const passwordLabel = props.passwordLabel ?? 'Passcode';
@@ -87,13 +100,13 @@ export default function OwnerLoginSections(props: Props) {
   ];
   if (props.businessLoginLayout || props.sectionNavigation) cards.push({ id: 'status', title: 'Login status', text: 'Activate, deactivate or remove this login.', value: record.isActive ? 'Active' : 'Inactive' });
   const title = section === 'status' ? 'Manage login status' : cards.find(c => c.id === section)?.title;
-  return <div className={`${styles.manager} ${styles.ownerManager} ${props.businessLoginLayout ? styles.dealerManager : ''} ${props.sectionNavigation ? styles.sectionManager : ''}`}>
-    <div className={styles.toolbar}>
+  return <div className={`${styles.manager} ${styles.ownerManager} ${props.businessLoginLayout ? styles.dealerManager : ''} ${props.sectionNavigation ? styles.sectionManager : ''} ${props.desktopFlow ? styles.desktopFlow : ''}`}>
+    {!props.desktopFlow && <div className={styles.toolbar}>
       {props.sectionNavigation ? <button type="button" onClick={back} disabled={busy}>All logins</button> : section === 'overview' ? <button type="button" onClick={back} disabled={busy}>‹ All logins</button> : <button type="button" disabled={busy} onClick={() => { if (!(dirty || props.hasUnsavedChanges) || window.confirm('Discard unsaved changes?')) open('overview'); }}>‹ Back</button>}
       <span className={styles.status} data-active={record.isActive}>{record.isActive ? 'Active' : 'Inactive'}</span>
-    </div>
+    </div>}
     <div className={props.sectionNavigation ? styles.settingsLayout : undefined}>
-    {props.sectionNavigation ? <nav className={styles.sectionNav} aria-label="Login settings">{cards.map(card => <button key={card.id} type="button" aria-current={section === card.id ? 'page' : undefined} disabled={busy} onClick={() => navigate(card.id)}>{card.title}</button>)}</nav> : null}
+    {props.sectionNavigation ? <nav className={styles.sectionNav} aria-label="Login settings">{props.desktopFlow && <button type="button" className={styles.backToUsers} onClick={back} disabled={busy}>All users</button>}{cards.map(card => <button key={card.id} type="button" aria-current={section === card.id ? 'page' : undefined} disabled={busy} onClick={() => navigate(card.id)}>{card.title}</button>)}</nav> : null}
     <div className={props.sectionNavigation ? styles.settingsContent : undefined} key={props.sectionNavigation ? section : 'content'}>
     {section === 'overview' ? <>
       <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>Manage access</h3>
@@ -102,25 +115,27 @@ export default function OwnerLoginSections(props: Props) {
       </button>)}</div>
       {!props.businessLoginLayout ? <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button> : null}
     </> : <>
-      <h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{title}</h3>
+      <div className={styles.sectionHeading}><h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{props.desktopFlow && section === 'status' ? 'Login status' : title}</h3>{props.desktopFlow && <span className={styles.status} data-active={record.isActive}>{record.isActive ? 'Active' : 'Inactive'}</span>}</div>
       {section === 'fuel' ? props.renderFuelAccess?.(afterAccessSaved) : section === 'permissions' && props.renderPermissions ? props.renderPermissions(afterAccessSaved) : section === 'assets' ? currentRole === 'admin' ? <div className={`${styles.info} ${styles.fullAccess}`}><strong>Full access to all assets</strong><button type="button" onClick={() => open('permissions')}>Change permissions</button></div> : props.renderAssetAccess?.(afterAccessSaved) : section === 'status' ? <>
         <dl className={styles.history}><div><dt><AccessSectionIcon name="clock"/>Last login</dt><dd>{date(record.lastLoginAtIso)}</dd></div><div><dt><AccessSectionIcon name="clock"/>Last updated</dt><dd>{date(record.updatedAtIso)}</dd></div></dl>
         <div className={styles.statusAction}><div><strong>{record.isActive ? 'Deactivate login' : 'Activate login'}</strong><p>{record.isActive ? 'Stop sign-in access. You can activate it again later.' : 'Allow this person to sign in again.'}</p></div><button type="button" disabled={busy} onClick={props.onToggle}><AccessSectionIcon name="power"/>{record.isActive ? 'Deactivate' : 'Activate'}</button></div>
         <div className={styles.statusAction}><div><strong>Delete login</strong><p>Permanently remove this login.</p></div><button type="button" className={styles.danger} disabled={busy} onClick={props.onDelete}><AccessSectionIcon name="delete"/>Delete</button></div>
-      </> : <form onSubmit={save}>
+      </> : <form id={formId} onSubmit={save}>
+        {props.desktopFlow && section === 'details' && <p className={styles.hint}>Use these details in the Owner App. Give each person their own login.</p>}
+        {props.desktopFlow && section === 'permissions' && <p className={styles.hint}>Choose what this person can do. Set their asset access separately.</p>}
         <fieldset disabled={busy} className={`${styles.fields} ${section === 'details' ? styles.detailsGrid : ''}`}>
           {section === 'details' ? <>
             <label>Display name<span className={styles.inputIcon}><AccessSectionIcon name="details"/><input value={name} onChange={e => setName(e.target.value)} required /></span></label>
             <label>Username<span className={styles.inputIcon}><AccessSectionIcon name="login"/><input value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))} required minLength={3} autoCapitalize="none" autoComplete="off" spellCheck={false}/></span></label>
             <p className={styles.hint}>This is an app username, not an email address.</p>
             {props.accountName && !username.toLowerCase().endsWith(`@${props.accountName.toLowerCase()}`) ? props.sectionNavigation ? <div className={styles.usernameSuggestion}><p className={styles.hint}>Use your business login ID.</p><button type="button" onClick={() => setUsername(`${username.split('@')[0]}@${props.accountName}`)}>Use {username.split('@')[0]}@{props.accountName}</button></div> : <button type="button" onClick={() => setUsername(`${username.split('@')[0]}@${props.accountName}`)}>Use business username</button> : null}
-          </> : section === 'permissions' ? <div className={`${styles.choices} ${props.businessLoginLayout ? styles.dealerRoles : ''}`}>{roleOptions.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={props.businessLoginLayout && option.value === 'sales' ? 'sales' : props.businessLoginLayout && option.value === 'parts' ? 'box' : props.businessLoginLayout && option.value === 'technician' ? 'tools' : option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
+          </> : section === 'permissions' ? <div className={`${styles.choices} ${props.desktopFlow ? styles.roleChoices : ''} ${props.businessLoginLayout ? styles.dealerRoles : ''}`}>{roleOptions.map(option => <label key={option.value} className={styles.choice} data-selected={role === option.value}><input type="radio" name="owner-role" value={option.value} checked={role === option.value} onChange={() => setRole(option.value)}/><span className={styles.roleIcon}><AccessSectionIcon name={props.businessLoginLayout && option.value === 'sales' ? 'sales' : props.businessLoginLayout && option.value === 'parts' ? 'box' : props.businessLoginLayout && option.value === 'technician' ? 'tools' : option.value === 'view_only' ? 'eye' : option.value === 'operations' ? 'tools' : 'permissions'}/></span><span><strong>{option.label}</strong><small>{option.text}</small></span></label>)}</div> : <>
             <label>New {passwordLabel.toLowerCase()}<div className={`${styles.password} ${styles.inputIcon}`}><AccessSectionIcon name="passcode"/><input type={showPasscode ? 'text' : 'password'} value={passcode} onChange={e => setPasscode(e.target.value)} required minLength={props.passwordMinimum} maxLength={props.passwordMaximum} autoComplete="new-password"/><button type="button" aria-label={`${showPasscode ? 'Hide' : 'Show'} ${passwordLabel.toLowerCase()}`} aria-pressed={showPasscode} onClick={() => setShowPasscode(!showPasscode)}>{props.sectionNavigation ? (showPasscode ? 'Hide' : 'Show') : <AccessSectionIcon name="eye"/>}</button></div></label>
             <p className={styles.hint}>Use at least {props.passwordMinimum} characters. Share the new {passwordLabel.toLowerCase()} with this person.</p>
           </>}
         </fieldset>
         {error ? <p role="alert" className={styles.error}>{error}</p> : null}
-        <footer className={styles.footer}><button type="submit" className={styles.primary} disabled={busy || !dirty || ((props.businessLoginLayout || props.sectionNavigation) && section === 'passcode' && passcode.length < props.passwordMinimum)}>{busy ? 'Saving…' : 'Save changes'}</button></footer>
+        <LoginSaveFooter dirty={dirty}><button form={formId} type="submit" className={styles.primary} disabled={busy || !dirty || ((props.businessLoginLayout || props.sectionNavigation) && section === 'passcode' && passcode.length < props.passwordMinimum)}>{busy ? 'Saving…' : props.desktopFlow ? 'Save access' : 'Save changes'}</button></LoginSaveFooter>
       </form>}
     </>}
     </div></div>
