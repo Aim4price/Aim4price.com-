@@ -17,7 +17,7 @@ const discoveryPage = read("app/asset-discovery/page.tsx");
 const discoveryRoute = read("app/api/asset-discovery/route.ts");
 const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const marketplaceEntry = read("app/marketplace/page.tsx");
-const ownerAppHome = read("app/owner-app/page.tsx");
+const ownerAppMore = read("app/owner-app/more/page.tsx");
 const photoViewer = read("components/LeadPhotoViewerModal.tsx");
 const dealerCss = read("app/dealer/dealer.module.css");
 const dealerDiscoveryPage = read("app/dealer/discovery/page.tsx");
@@ -354,9 +354,9 @@ test("approved notification opens the matching Discovery card", () => {
   assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
 });
 
-test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
-  assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/discovery['"]/);
-  assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/marketplace['"]/);
+test("Owner App More keeps separate Discovery and Marketplace destinations", () => {
+  assert.match(ownerAppMore, /href:\s*['"]\/owner-app\/discovery['"]/);
+  assert.match(ownerAppMore, /href:\s*['"]\/owner-app\/marketplace['"]/);
 });
 
 test("desktop Discovery no longer exposes renewal filter controls", () => {

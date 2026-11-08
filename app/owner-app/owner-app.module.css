@@ -3557,3 +3557,27 @@
 
 .ownerPhotoViewerCard {padding-top:3.6rem;max-height:calc(100dvh - 24px);overflow:auto;}
 .ownerPhotoViewerCard img {height:min(65dvh,760px);max-height:calc(100dvh - 220px);object-fit:contain;}
+
+/* Owner App phone controls: neutral navigation, clear actions, readable inputs. */
+.homeButton.homeButton { background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border-color: var(--app-line, #d4e3da); box-shadow: none; }
+.assetMirrorOptionsAction.assetMirrorOptionsAction { background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border-color: var(--app-line, #d4e3da); }
+.searchResultCount { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 0; font-size: .9rem; color: var(--app-muted, #617469); }
+.searchResultCount button { min-height: 44px; padding: 8px 12px; background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border: 1px solid var(--app-line, #d4e3da); border-radius: 12px; font: inherit; cursor: pointer; }
+.assetQuickMeta { margin: 8px 0 12px; color: var(--app-muted, #617469); font-size: .95rem; font-weight: 500; line-height: 1.5; }
+.mobileAssetSummary .detailPhotoStage { max-height: 280px; }
+.mobileAssetSummary .detailPhoto { max-height: 280px; }
+.mobileAssetSummary .detailIdentity h1 { font-size: clamp(1.4rem, 5vw, 2rem); font-weight: 750; line-height: 1.25; }
+.mobileAssetSummary .detailValueSummary { margin-top: 16px; }
+@media (max-width: 640px) {
+  .field input, .field select, .field textarea, .assetSearchField input { font-size: 16px; min-height: 48px; }
+  .field textarea { min-height: 96px; }
+  .mobileAssetSummary .detailPhotoStage, .mobileAssetSummary .detailPhoto { max-height: 190px; }
+  .mobileAssetSummary .detailPhotoPlaceholder { min-height: 100px; }
+  .assetsHeader { padding-bottom: 8px; min-height: 52px; }
+  .navButton, .logoutButton { min-height: 46px; font-weight: 650; box-shadow: none; }
+  .managerAssetCard h2 { font-size: 1.1rem; font-weight: 700; line-height: 1.35; }
+  .managerAssetMetaGrid.ownerAssetMetaStack { gap: 6px; }
+  .managerAssetMetaGrid.ownerAssetMetaStack > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .managerAssetMetaGrid.ownerAssetMetaStack strong { text-align: right; font-weight: 600; }
+  .primaryButton, .secondaryButton, .assetMirrorAction { min-height: 48px; font-weight: 650; }
+}

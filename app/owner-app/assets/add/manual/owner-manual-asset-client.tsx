@@ -17,6 +17,7 @@ export default function OwnerManualAssetClient() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [usageMetric, setUsageMetric] = useState('hours');
   const [currentValue, setCurrentValue] = useState('');
   const [replacementPrice, setReplacementPrice] = useState('');
 
@@ -93,7 +94,8 @@ export default function OwnerManualAssetClient() {
           </label>
           <label className={styles.field}>
             <span>Register</span>
-            <select name="registerId" required>
+            <select name="registerId" required defaultValue="">
+              <option value="" disabled>Choose register</option>
               {registers.map((register) => <option key={register.id} value={register.id}>{register.businessName}</option>)}
             </select>
           </label>
@@ -116,12 +118,13 @@ export default function OwnerManualAssetClient() {
           <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="replacementPriceExVat" value={replacementPrice} onValueChange={setReplacementPrice} required /></span></label>
           <label className={styles.field}>
             <span>Usage type</span>
-            <select name="usageMetric">
+            <select name="usageMetric" value={usageMetric} onChange={(event) => setUsageMetric(event.target.value)}>
               <option value="hours">Hours</option>
               <option value="km">Kilometres</option>
+              <option value="not_applicable">Not applicable</option>
             </select>
           </label>
-          <label className={styles.field}><span>Current usage</span><input name="hours" inputMode="decimal" /></label>
+          <label className={styles.field}><span>Current usage</span><input name="hours" type="number" min="0" step="any" inputMode="decimal" disabled={usageMetric === 'not_applicable'} placeholder={usageMetric === 'not_applicable' ? 'Not applicable' : undefined} /></label>
           <label className={styles.field}>
             <span>Condition</span>
             <select name="condition" defaultValue="">

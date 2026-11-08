@@ -14,7 +14,7 @@ type LocationState = 'checking' | 'ready' | 'error';
 
 type FuelLocationModalProps = {
   subject: string;
-  recordLabel?: 'fuel record' | 'service';
+  recordLabel?: 'fuel record' | 'service' | 'problem report';
   onReady: (coordinates: FuelLocationCoordinates) => void;
   onCancel: () => void;
 };

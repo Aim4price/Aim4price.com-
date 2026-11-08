@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
 import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import styles from './owner-app.module.css';
+import mobile from './owner-mobile.module.css';
 
 type NotificationsResponse = {
   ok?: boolean;
@@ -12,7 +13,7 @@ type NotificationsResponse = {
   needsActionCount?: number;
 };
 
-export default function OwnerNotificationsLink({ viewerId }: { viewerId: string }) {
+export default function OwnerNotificationsLink({ viewerId, compact = false }: { viewerId: string; compact?: boolean }) {
   const [activeCount, setActiveCount] = useState(0);
 
   const loadActiveCount = useCallback(async (signal?: AbortSignal) => {
@@ -54,6 +55,11 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, [loadActiveCount, viewerId]);
+
+  if (compact) return <Link className={mobile.bell} href="/owner-app/notifications" prefetch={false} aria-label={`Notifications${activeCount ? `, ${activeCount} active` : ''}`}>
+    <AppHomeIcon name="notifications" />
+    {activeCount > 0 ? <span className={mobile.badge}>{activeCount > 99 ? '99+' : activeCount}</span> : null}
+  </Link>;
 
   return (
     <Link className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href="/owner-app/notifications" prefetch={false}>

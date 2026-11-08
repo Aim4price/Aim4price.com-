@@ -6,8 +6,9 @@ import { useState, type ReactNode } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
 
-export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction, backDisabled = false, className = '', trailingAction }: {
+export default function OwnerAppNav({ showBack = true, showSignOut = false, backHref = '/owner-app', backLabel = 'Home', backAction, backDisabled = false, className = '', trailingAction }: {
   showBack?: boolean;
+  showSignOut?: boolean;
   backHref?: string;
   backLabel?: string;
   backAction?: () => void;
@@ -55,11 +56,11 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
             </Link>
           ) : null}
         </>
-      ) : (
+      ) : showSignOut ? (
         <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
-      )}
+      ) : null}
       {trailingAction ? <div style={{marginLeft: 'auto', display: 'flex'}}>{trailingAction}</div> : null}
     </header>
   );

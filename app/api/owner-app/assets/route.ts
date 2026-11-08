@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Current usage cannot be negative.' }, { status: 400 });
   }
 
-  const usageMetric = text(body.usageMetric).toLowerCase() === 'km' ? 'km' : 'hours';
+  const usageMetric = text(body.usageMetric).toLowerCase() === 'not_applicable' ? 'not_applicable' : text(body.usageMetric).toLowerCase() === 'km' ? 'km' : 'hours';
 
   try {
     const item = await createManualAssetRegisterItem(access.ownerUserId, {
@@ -146,10 +146,13 @@ export async function POST(request: NextRequest) {
       photos: [],
       documents: [],
       yearModel: normalizedYearModel,
-      hours,
-      usageMetric,
+      hours: usageMetric === 'not_applicable' ? null : hours,
+      usageMetric: usageMetric === 'not_applicable' ? null : usageMetric,
       lifeWorkedPercent: null,
       specsJson: {
+        usageTypeConfirmed: true,
+        usageApplicable: usageMetric !== 'not_applicable',
+        usage_applicable: usageMetric !== 'not_applicable',
         usageMetric,
         usage_metric: usageMetric,
         selectedUsageMode: usageMetric,

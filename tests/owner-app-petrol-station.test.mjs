@@ -6,18 +6,11 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-test('Owner operations centers the simplified Maintenance and Fuel launcher', async () => {
-  const [operations, styles] = await Promise.all([
-    source('app/owner-app/operations/page.tsx'),
-    source('app/owner-app/owner-app.module.css'),
-  ]);
-
-  assert.doesNotMatch(operations, /Choose option/);
-  assert.match(operations, /styles\.operationsLandingContent/);
-  assert.match(operations, /styles\.operationsLandingLauncher/);
-  assert.match(operations, /styles\.operationChoiceCard/);
-  assert.match(styles, /\.operationsLandingContent,[\s\S]*?align-content: center/);
-  assert.match(styles, /\.operationChoiceCard/);
+test('Owner Work groups fuel, maintenance and problems with labelled icons', async () => {
+  const operations = await source('app/owner-app/operations/page.tsx');
+  assert.match(operations, /<OwnerIcon name=\{tool.icon\}/);
+  assert.match(operations, /<strong>\{tool.title\}<\/strong><small>\{tool.detail\}/);
+  assert.match(operations, /title: 'Report problem'/);
 });
 
 test('Fuel first asks for storage tank or petrol station', async () => {

@@ -8,6 +8,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const MANAGE_SECTIONS = new Set<OwnerAssetManageSection>([
+  'usage',
   'details',
   'activity',
   'reports',

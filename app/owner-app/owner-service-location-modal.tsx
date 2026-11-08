@@ -4,6 +4,7 @@ import FuelLocationModal, { type FuelLocationCoordinates } from '../../component
 import { saveFieldManagerServiceLocation } from '../../lib/field-manager-location-session';
 
 type OwnerServiceLocationModalProps = {
+  recordLabel?: 'service' | 'problem report';
   assetTitle: string;
   assetId: string;
   publicAssetCode: string;
@@ -14,6 +15,7 @@ type OwnerServiceLocationModalProps = {
 
 export default function OwnerServiceLocationModal({
   assetTitle,
+  recordLabel = 'service',
   assetId,
   publicAssetCode,
   redirectTo,
@@ -31,7 +33,7 @@ export default function OwnerServiceLocationModal({
     });
 
     if (!saved) {
-      onError('Your location was found but could not be prepared for this service. Please retry.');
+      onError(`Your location was found but could not be prepared for this ${recordLabel}. Please retry.`);
       onCancel();
       return;
     }
@@ -42,7 +44,7 @@ export default function OwnerServiceLocationModal({
   return (
     <FuelLocationModal
       subject={assetTitle}
-      recordLabel="service"
+      recordLabel={recordLabel}
       onReady={handleReady}
       onCancel={onCancel}
     />

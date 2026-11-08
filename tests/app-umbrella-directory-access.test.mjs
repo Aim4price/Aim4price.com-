@@ -151,7 +151,7 @@ async function renderDirectory(role, assets, groups) {
 }
 
 for (const role of ['owner', 'field']) {
-  test(`${role} search opens matching umbrellas before assets and preserves search on back`, async () => {
+  test(`${role} search finds grouped and standalone assets and restores browsing`, async () => {
     const assets = [
       { id: 'tractor', title: 'Massey Ferguson 4708', serialNumber: 'MF123', usage: null, usageLabel: 'Not captured' },
       { id: 'other', title: 'Trailer', usage: null, usageLabel: 'Not captured' },
@@ -166,15 +166,23 @@ for (const role of ['owner', 'field']) {
     const cards = () => render().filter((node) => node.type === 'article');
     const click = (label) => render().find((node) => node.type === 'button' && node.props.children === label).props.onClick();
     search('Massey');
-    assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
-    assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
-    click('Open');
-    assert.deepEqual(cards().map((node) => node.key), ['tractor']);
-    assert.match(cards()[0].props.className, /assetDirectorySearchMatch/);
-    const nav = render().find((node) => node.props['aria-label'] === 'Asset directory navigation');
-    assert.equal(nav.props.children.type, 'button');
-    click('Back to umbrellas');
-    assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
+    if (role === 'owner') {
+      assert.deepEqual(cards().map((node) => node.key), ['tractor', 'standalone']);
+      assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
+      click('Clear search');
+      assert.deepEqual(cards().map((node) => node.key), ['farm', 'yard', undefined, 'standalone']);
+      search('Massey');
+    } else {
+      assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
+      assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
+      click('Open');
+      assert.deepEqual(cards().map((node) => node.key), ['tractor']);
+      assert.match(cards()[0].props.className, /assetDirectorySearchMatch/);
+      const nav = render().find((node) => node.props['aria-label'] === 'Asset directory navigation');
+      assert.equal(nav.props.children.type, 'button');
+      click('Back to umbrellas');
+      assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
+    }
     search('missing');
     assert.equal(cards().length, 0);
     assert.ok(render().some((node) => node.props.children === 'No assets match this search.'));
@@ -183,7 +191,7 @@ for (const role of ['owner', 'field']) {
     click('View all assets');
     assert.deepEqual(cards().map((node) => node.key), ['tractor', 'other', 'standalone']);
     search('MF123');
-    assert.deepEqual(cards().map((node) => node.key), ['farm']);
+    assert.deepEqual(cards().map((node) => node.key), role === 'owner' ? ['tractor'] : ['farm']);
   });
 
   test(`${role} search still supports accounts without umbrellas`, async () => {
