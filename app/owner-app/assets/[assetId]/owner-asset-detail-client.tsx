@@ -948,7 +948,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
           <div className={styles.detailHeroBody}>
             <div className={styles.detailIdentity}>
-              <h1><BalancedHeadingText text={draft.title} /></h1>
+              <h1 tabIndex={0} title={draft.title}><BalancedHeadingText text={draft.title} /></h1>
               <p className={styles.assetQuickMeta}>{[draft.serialNumber, usageText].filter(Boolean).join(' · ')}</p>
             </div>
 
@@ -956,7 +956,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               {permissions.includes('operate') ? <>
                 <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="record" /><strong>Record work</strong></Link>
                 <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1`} prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
-                <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><OwnerIcon name="calendar" /><strong>Schedule maintenance</strong></Link>
+                <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><OwnerIcon name="calendar" /><strong>Schedule work</strong></Link>
               </> : null}
               {permissions.includes('manage_assets') ? <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage`} prefetch={false}><OwnerIcon name="usage" /><strong>Update usage</strong></Link> : null}
             </nav>
@@ -981,7 +981,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
                 prefetch={false}
               >
-                View details
+                Details
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}
@@ -1067,7 +1067,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
           <div className={styles.detailHeroBody}>
             <div className={styles.detailIdentity}>
-              <h1><BalancedHeadingText text={draft.title} /></h1>
+              <h1 tabIndex={0} title={draft.title}><BalancedHeadingText text={draft.title} /></h1>
             </div>
 
             <div className={styles.detailValueSummary}>
@@ -1284,7 +1284,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         {renewalUpdateBanner}
         <section className={styles.manageAssetIdentity}>
           <div className={styles.manageAssetIdentityCopy}>
-            <h1><BalancedHeadingText text={draft.title} /></h1>
+            <h1 tabIndex={0} title={draft.title}><BalancedHeadingText text={draft.title} /></h1>
             {manageMeta ? <p>{manageMeta}</p> : null}
           </div>
         </section>

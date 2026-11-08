@@ -39,3 +39,27 @@
 .bottomTab { min-width: 0; }
 @media (hover: hover) { .tile:hover, .row:hover, .count:hover { border-color: var(--app-accent, #377354); } }
 @media (max-width: 360px) { .row { gap: 12px; padding: 14px; } .row > svg { padding: 8px; } }
+
+/* Phone refinement: keep labels concise and surfaces consistent. */
+.dashboard { gap: 22px; }
+.intro h1 { font-size: clamp(1.25rem, 5vw, 1.75rem); letter-spacing: -.025em; }
+.intro h1, .sectionTitle, .row strong, .row small, .intro p { white-space: nowrap; }
+.intro, .row span { min-width: 0; }
+.intro p, .row small { overflow-x: auto; max-width: 100%; }
+.grid { gap: 10px; }
+.tile { gap: 10px; min-height: 92px; padding: 14px; border-radius: 15px; box-shadow: 0 2px 8px rgb(16 54 38 / 3%); }
+.tile strong { font-size: clamp(.78rem, 3.5vw, .94rem); white-space: nowrap; letter-spacing: -.015em; }
+.tile svg { width: 23px; height: 23px; }
+.row { gap: 12px; padding: 14px; min-height: 78px; border-radius: 15px; box-shadow: 0 2px 8px rgb(16 54 38 / 3%); }
+.row strong { font-size: .94rem; }
+.row small { font-size: .8rem; line-height: 1.4; }
+.row > svg { padding: 9px; border-radius: 11px; }
+.count { padding: 16px; border-radius: 15px; }
+.count strong { font-size: 1.7rem; }
+.count span { font-size: .82rem; white-space: nowrap; }
+.bottomTab { border-radius: 11px; }
+@media (max-width: 360px) {
+  .row { padding: 12px; gap: 10px; }
+  .row small { font-size: .75rem; }
+  .tile { padding: 12px; }
+}

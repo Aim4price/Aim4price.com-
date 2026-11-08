@@ -29,7 +29,7 @@ export default async function OwnerAppHome() {
       <section><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={mobile.grid} aria-label="Owner tools">
         {tools.map(tool => <Link className={mobile.tile} key={tool.href} href={tool.href} prefetch={false}><OwnerIcon name={tool.icon} /><strong>{tool.label}</strong></Link>)}
       </nav></section>
-      <Link className={mobile.row} href="/owner-app/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Prepare for offline work</strong><small>Save your available work before heading out.</small></span></Link>
+      <Link className={mobile.row} href="/owner-app/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Offline work</strong><small>Save work before heading out.</small></span></Link>
     </div>
   </main>;
 }

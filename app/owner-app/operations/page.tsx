@@ -11,10 +11,10 @@ export default async function OwnerOperationsPage() {
   const access = await requireOwnerAppPageAccess();
   if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
   const tools = [
-    { title: 'Add fuel', detail: 'Record fuel from a tank or petrol station.', icon: 'fuel', href: '/owner-app/operations/fuel' },
-    { title: 'Record work', detail: 'Add a completed check, service or repair.', icon: 'record', href: '/owner-app/operations/maintenance' },
-    { title: 'Report problem', detail: 'Capture an issue that needs attention.', icon: 'problem', href: '/owner-app/report-problem' },
-    { title: 'Upcoming work', detail: 'See schedules and work needing attention.', icon: 'calendar', href: '/owner-app/attention' },
+    { title: 'Add fuel', detail: 'Tank or petrol station.', icon: 'fuel', href: '/owner-app/operations/fuel' },
+    { title: 'Record work', detail: 'Checks, services and repairs.', icon: 'record', href: '/owner-app/operations/maintenance' },
+    { title: 'Report problem', detail: 'Log an issue with an asset.', icon: 'problem', href: '/owner-app/report-problem' },
+    { title: 'Upcoming work', detail: 'View due and upcoming work.', icon: 'calendar', href: '/owner-app/attention' },
   ];
   return <main className={`${styles.page} ${styles.operationsPage}`}>
     <OwnerAppNav />
