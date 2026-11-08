@@ -58,7 +58,10 @@ test('Owner App roles have simple, server-enforced permission presets', () => {
   assert.match(ownerAccess, /operations: \['view', 'operate'\]/);
   assert.match(ownerAccess, /view_only: \['view'\]/);
   assert.match(ownerAccess, /ownerAppCan/);
-  assert.match(ownerHome, /TOOLS\.filter\(\(tool\) => !tool\.permission \|\| ownerAppCan/);
+  assert.match(ownerHome, /const canOperate = ownerAppCan\(access, 'operate'\)/);
+  assert.match(ownerHome, /const canManage = ownerAppCan\(access, 'manage_assets'\)/);
+  assert.match(ownerHome, /\.\.\.\(canOperate \? \[/);
+  assert.match(ownerHome, /\.\.\.\(canManage \? \[/);
   assert.match(ownerAssets, /mode === 'assets' && canAddAssets/);
   assert.match(ownerManagePage, /if \(!canOpen\) redirect/);
 });
