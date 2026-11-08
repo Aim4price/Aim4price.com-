@@ -365,3 +365,17 @@
 
 .assetCard[data-asset-choice-row] { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; font: inherit; cursor: pointer; }
 .assetChoiceNext { display: grid; place-items: center; width: 2rem; height: 2rem; border: 1px solid currentColor; border-radius: 50%; color: var(--app-text, #15392f); font-size: 1.5rem; }
+
+/* Match Owner navigation and inputs without changing the Field Manager variant. */
+:global([data-app-shell='owner']) .shell { width: min(calc(100% - var(--owner-page-gutter, 32px)), 720px); gap: 16px; }
+:global([data-app-shell='owner']) .stepCard { min-height: 0; padding: 20px; border-radius: 18px; gap: 20px; }
+:global([data-app-shell='owner']) .heading h1 { font-size: clamp(1.5rem, 5.5vw, 1.9rem); font-weight: 750; line-height: 1.25; }
+:global([data-app-shell='owner']) .heading p { font-weight: 500; line-height: 1.5; }
+:global([data-app-shell='owner']) .field > span { font-size: .86rem; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.4; }
+:global([data-app-shell='owner']) .progressCard { border-radius: 16px; box-shadow: none; }
+:global([data-app-shell='owner']) .progressCard strong { font-weight: 650; line-height: 1.4; }
+:global([data-app-shell='owner']) :is(.searchField input, .field input, .field textarea) { font-size: 1rem; font-weight: 500; border-radius: 12px; }
+:global([data-app-shell='owner']) :is(.searchField input, .field input) { min-height: 48px; }
+:global([data-app-shell='owner']) .assetCard { border-radius: 16px; padding: 16px; gap: 10px; box-shadow: none; }
+:global([data-app-shell='owner']) :is(.primaryButton, .secondaryButton) { font-weight: 650; line-height: 1.4; min-height: 48px; }
+@media (max-width: 360px) { :global([data-app-shell='owner']) .stepCard { padding: 16px; } }

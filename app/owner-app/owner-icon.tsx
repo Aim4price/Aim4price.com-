@@ -1,5 +1,8 @@
 import type { CSSProperties } from 'react';
 const paths: Record<string, string> = {
+  account: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
+  add: 'M12 5v14 M5 12h14',
+  edit: 'M14 5l5 5 M3 21l5-1L21 7a2.1 2.1 0 0 0-4-4L4 16Z',
   home: 'M3 10 12 3l9 7v11h-6v-7H9v7H3Z',
   assets: 'M12 2 3 7v10l9 5 9-5V7Z M3 7l9 5 9-5 M12 12v10',
   work: 'M14.7 6.3a5.5 5.5 0 0 0-7 7L2.9 18.1a2.1 2.1 0 0 0 3 3l4.8-4.8a5.5 5.5 0 0 0 7-7l-3 3-3-3Z',
