@@ -29,7 +29,7 @@
 /* Keep odd action counts balanced and long labels inside their touch target. */
 .grid > .tile:last-child:nth-child(odd) { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 64px; }
 .grid:empty { display: none; }
-.tile strong, .row strong, .count span { overflow-wrap: anywhere; }
+.tile strong, .row strong, .row small, .count span { overflow-wrap: break-word; word-break: normal; text-wrap: pretty; }
 .row strong { line-height: 1.4; }
 .row > svg { width: 24px; height: 24px; padding: 10px; box-sizing: content-box; border-radius: 12px; background: var(--app-surface-soft, #edf5f0); }
 .count { min-width: 0; }

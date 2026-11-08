@@ -15,10 +15,10 @@ export default async function OwnerAppHome() {
   const tools = [
     ...(canOperate ? [
       { label: 'Add fuel', icon: 'fuel', href: '/owner-app/operations/fuel' },
-      { label: 'Record maintenance', icon: 'work', href: '/owner-app/operations/maintenance' },
+      { label: 'Record work', icon: 'record', href: '/owner-app/operations/maintenance' },
       { label: 'Report problem', icon: 'problem', href: '/owner-app/report-problem' },
     ] : []),
-    { label: 'Find an asset', icon: 'assets', href: '/owner-app/assets' },
+    { label: 'Find an asset', icon: 'search', href: '/owner-app/assets' },
     ...(canManage ? [{ label: 'Add asset', icon: 'add', href: '/owner-app/assets/add' }] : []),
   ];
   return <main className={`${styles.page} ${styles.homePage}`}>

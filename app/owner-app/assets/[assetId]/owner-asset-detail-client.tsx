@@ -954,7 +954,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
             <nav className={mobile.grid} aria-label="Quick asset actions">
               {permissions.includes('operate') ? <>
-                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="work" /><strong>Record work</strong></Link>
+                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="record" /><strong>Record work</strong></Link>
                 <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1`} prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
                 <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><OwnerIcon name="calendar" /><strong>Schedule maintenance</strong></Link>
               </> : null}
@@ -1079,7 +1079,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
             <div className={styles.assetMirrorDetails}>
               <section className={styles.assetMirrorMediaSection}>
-                <h2><BalancedHeadingText text="Photos and saved documents" /></h2>
+                <h2><BalancedHeadingText text="Photos & documents" /></h2>
 
                 {photoCount > 1 ? (
                   <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
@@ -1113,7 +1113,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
                 <div className={styles.assetDocumentPanel}>
                   <div className={styles.assetDocumentPanelHeading}>
-                    <span aria-hidden="true">▤</span>
+                    <OwnerIcon name="document" />
                     <strong>Documents</strong>
                     <small>{draft.documents.length} saved</small>
                   </div>
@@ -1143,7 +1143,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               </section>
 
               <section className={styles.assetMirrorValuesSection}>
-                <h2><BalancedHeadingText text="Saved asset details and values" /></h2>
+                <h2><BalancedHeadingText text="Details & values" /></h2>
 
                 <Link className={styles.assetDetailsEditLink} href={`${manageBase}/details`} prefetch={false}>
                   <div className={styles.assetMirrorDetailGrid}>
