@@ -141,21 +141,21 @@ function disposalAmountLabel(reason: DisposalDraft['reason']): string {
   return 'Disposal amount';
 }
 
-const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; tone?: 'danger' }> = [
-  { id: 'details', group: 'asset', title: 'Update asset' },
-  { id: 'pricing', group: 'asset', title: 'Manage pricing' },
-  { id: 'location', group: 'asset', title: 'Location' },
-  { id: 'media', group: 'asset', title: 'Photos & documents' },
-  { id: 'usage', group: 'asset', title: 'Update usage' },
-  { id: 'reports', group: 'records', title: 'Reports' },
-  { id: 'activity', group: 'records', title: 'Activity' },
-  { id: 'maintenance', group: 'records', title: 'Schedule maintenance' },
-  { id: 'dealer-tracking', group: 'records', title: 'Dealer tracking' },
-  { id: 'finance', group: 'records', title: 'Finance' },
-  { id: 'insurance', group: 'records', title: 'Insurance' },
-  { id: 'licence', group: 'records', title: 'Licence' },
-  { id: 'marketplace', group: 'selling', title: 'Marketplace' },
-  { id: 'delete', group: 'removal', title: 'Delete asset', tone: 'danger' },
+const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; icon: string; tone?: 'danger' }> = [
+  { id: 'details', icon: 'edit', group: 'asset', title: 'Update asset' },
+  { id: 'pricing', icon: 'valuation', group: 'asset', title: 'Manage pricing' },
+  { id: 'location', icon: 'location', group: 'asset', title: 'Location' },
+  { id: 'media', icon: 'camera', group: 'asset', title: 'Photos & documents' },
+  { id: 'usage', icon: 'usage', group: 'asset', title: 'Update usage' },
+  { id: 'reports', icon: 'document', group: 'records', title: 'Reports' },
+  { id: 'activity', icon: 'history', group: 'records', title: 'Activity' },
+  { id: 'maintenance', icon: 'calendar', group: 'records', title: 'Schedule work' },
+  { id: 'dealer-tracking', icon: 'work', group: 'records', title: 'Dealer tracking' },
+  { id: 'finance', icon: 'finance', group: 'records', title: 'Finance' },
+  { id: 'insurance', icon: 'shield', group: 'records', title: 'Insurance' },
+  { id: 'licence', icon: 'licence', group: 'records', title: 'Licence' },
+  { id: 'marketplace', icon: 'marketplace', group: 'selling', title: 'Marketplace' },
+  { id: 'delete', icon: 'trash', group: 'removal', title: 'Delete asset', tone: 'danger' },
 ];
 
 const MANAGE_GROUPS: Array<{ id: OwnerAssetManageGroup; title: string }> = [
@@ -974,21 +974,21 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/options`}
                 prefetch={false}
               >
-                Share
+                <OwnerIcon name="share" />Share
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
                 prefetch={false}
               >
-                Details
+                <OwnerIcon name="document" />Details
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage`}
                 prefetch={false}
               >
-                Manage
+                <OwnerIcon name="settings" />Manage
               </Link>
             </div>
 
@@ -1147,10 +1147,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
                 <Link className={styles.assetDetailsEditLink} href={`${manageBase}/details`} prefetch={false}>
                   <div className={styles.assetMirrorDetailGrid}>
-                    <div><span>Serial / VIN</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
-                    <div><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
-                    <div><span>Usage</span><strong>{usageText}</strong></div>
-                    <div><span>Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
+                    <div><span><OwnerIcon name="serial" />Serial / VIN</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
+                    <div><span><OwnerIcon name="calendar" />Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
+                    <div><span><OwnerIcon name="usage" />Usage</span><strong>{usageText}</strong></div>
+                    <div><span><OwnerIcon name="shield" />Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
                   </div>
                   <small>Open asset details ›</small>
                 </Link>
@@ -1323,11 +1323,11 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                           }}
                         />
                         <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => managePhotoInputRef.current?.click()}>
-                          <span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-photo' ? 'Adding photos…' : 'Add photos'}</strong></span>
+                          <OwnerIcon name="camera" /><span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-photo' ? 'Adding photos…' : 'Add photos'}</strong></span>
                           <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
                         </button>
                         <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => manageDocumentInputRef.current?.click()}>
-                          <span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-document' ? 'Adding document…' : 'Add document'}</strong></span>
+                          <OwnerIcon name="document" /><span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-document' ? 'Adding document…' : 'Add document'}</strong></span>
                           <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
                         </button>
                       </>
@@ -1341,6 +1341,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                         prefetch={false}
                         className={`${styles.manageButton} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
                       >
+                        <OwnerIcon name={item.icon} />
                         <span className={styles.manageButtonCopy}>
                           <strong>{item.id === 'maintenance' && upcomingMaintenance
                             ? hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule active' : 'Maintenance scheduled'
