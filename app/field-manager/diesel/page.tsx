@@ -10,11 +10,12 @@ export default function FieldManagerFuelPage() {
     <main className={`${styles.mobilePage} ${styles.homePage}`}>
       <section className={styles.fuelChoiceShell}>
         <header className={styles.fuelChoiceNav} aria-label="Field Manager fuel controls">
-          <FieldManagerNavLink href="/field-manager" label="Back" />
+          <FieldManagerNavLink href="/field-manager/work" label="Back" />
           <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
         </header>
 
         <div className={styles.fuelChoiceContent}>
+          <section className={styles.flowIntro}><h1>Add fuel</h1><p>Select the source of your fuel.</p></section>
           <nav className={styles.fuelChoiceList} aria-label="Fuel source">
             <Link className={styles.fuelChoiceCard} href="/field-manager/diesel/storage" prefetch={false}>
               <span className={styles.fuelChoiceIcon} aria-hidden="true">

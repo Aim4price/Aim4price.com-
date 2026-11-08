@@ -1,0 +1,27 @@
+name: Field Manager mobile navigation validation
+on:
+  pull_request:
+    paths:
+      - 'app/field-manager/**'
+      - 'app/api/field-manager/**'
+      - 'app/scan/**'
+      - 'tests/field-manager-mobile-navigation.test.mjs'
+      - 'tests/field-manager-owner-parity.test.mjs'
+      - 'tests/app-umbrella-directory-access.test.mjs'
+      - '.github/workflows/field-mobile-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/field-manager-mobile-navigation.test.mjs tests/field-manager-owner-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/notification-viewer-scope.test.mjs tests/app-theme.test.mjs tests/role-app-responsive.test.mjs tests/separate-app-sessions.test.mjs tests/app-account-isolation.test.mjs

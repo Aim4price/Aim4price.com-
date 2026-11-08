@@ -37,9 +37,9 @@
 }
 
 .homeLink {
-  border-color: var(--app-danger-line, rgba(198, 55, 55, 0.24));
-  background: linear-gradient(180deg, var(--app-danger-soft, #fff8f8) 0%, var(--app-danger-soft, #fde8e8) 100%);
-  color: var(--app-danger, #9b3030);
+  border-color: var(--app-line, #d4e3da);
+  background: var(--app-surface-soft, #eef5f0);
+  color: var(--app-text, #173c2e);
   box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
@@ -54,3 +54,8 @@
     font-size: 0.86rem;
   }
 }
+
+/* Neutral navigation matches the Owner App; red remains for destructive actions. */
+.navLink { min-height: 46px; border-radius: 12px; font-weight: 650; box-shadow: none; }
+.homeLink { border-color: var(--app-line, #d4e3da); background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); box-shadow: none; }
+.navLink:focus-visible, .homeLink:focus-visible { outline: 3px solid var(--app-accent, #377354); outline-offset: 3px; box-shadow: none; }

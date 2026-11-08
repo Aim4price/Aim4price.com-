@@ -137,16 +137,16 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
   );
   const hasSearch = Boolean(search.trim());
   const directoryAssets = useMemo(() => {
-    if (showAllAssets || !groups.length) return filteredAssets;
+    if (hasSearch || showAllAssets || !groups.length) return filteredAssets;
     if (selectedGroup) return filteredAssets.filter((asset) => selectedGroupAssetIds.has(asset.id));
     return filteredAssets.filter((asset) => !groupByAssetId.has(asset.id));
-  }, [filteredAssets, groupByAssetId, groups.length, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  }, [filteredAssets, groupByAssetId, groups.length, selectedGroup, selectedGroupAssetIds, showAllAssets, hasSearch]);
   const matchingAssetIds = useMemo(() => new Set(filteredAssets.map((asset) => asset.id)), [filteredAssets]);
   const matchingGroups = useMemo(
     () => hasSearch ? groups.filter((group) => group.memberAssetIds.some((id) => matchingAssetIds.has(id))) : groups,
     [groups, hasSearch, matchingAssetIds],
   );
-  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets;
+  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets && !hasSearch;
 
   useEffect(() => {
     void loadFieldManagerAssets();
@@ -331,6 +331,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
                       type="button"
                       className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
                       onClick={() => setSelectedGroupId(group.id)}
+                      aria-label={`Open ${group.name}`}
                     >
                       Open
                     </button>

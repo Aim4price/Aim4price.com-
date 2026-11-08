@@ -2,9 +2,9 @@
 
 import FieldManagerSettings from './field-manager-settings';
 import { useEffect, useState } from 'react';
-import { clearCachedHeaderSession } from '../../lib/header-session-cache';
-import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
-import launcherStyles from '../../components/AppHomeLauncher.module.css';
+import Link from 'next/link';
+import OwnerIcon from '../owner-app/owner-icon';
+import mobile from './mobile.module.css';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -42,6 +42,8 @@ function extractError(payload: { error?: string } | null, fallback: string): str
 export default function FieldManagerHomeClient() {
   const [hasManagerAccess, setHasManagerAccess] = useState(false);
   const [overviewCount, setOverviewCount] = useState<number | null>(null);
+  const [upcomingCount, setUpcomingCount] = useState<number | null>(null);
+  const [displayName, setDisplayName] = useState('');
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,6 +97,7 @@ export default function FieldManagerHomeClient() {
       }
 
       setHasManagerAccess(true);
+      setDisplayName(payload.manager.displayName);
       void loadOverviewCount();
       void loadNotificationCount();
     } catch (error) {
@@ -114,9 +117,11 @@ export default function FieldManagerHomeClient() {
 
       if (!response.ok || !payload?.ok || !payload.summary) return;
 
-      const count = Number(payload.summary.totalCount);
+      const count = Number(payload.summary.needsAttentionCount);
       if (Number.isFinite(count) && count >= 0) {
         setOverviewCount(Math.floor(count));
+        const upcoming = Number(payload.summary.comingUpCount);
+        setUpcomingCount(Number.isFinite(upcoming) && upcoming >= 0 ? Math.floor(upcoming) : null);
       }
     } catch {
       // The Overview count is optional; the home actions remain available if it cannot load.
@@ -141,106 +146,32 @@ export default function FieldManagerHomeClient() {
     }
   }
 
-  async function handleLogout() {
-    await fetch('/api/field-manager/login', {
-      method: 'DELETE',
-      credentials: 'include',
-      cache: 'no-store',
-    }).catch(() => undefined);
-    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-field-session'); channel.postMessage('lock'); channel.close(); }
-    clearCachedHeaderSession();
-    window.location.replace('/field-manager/login');
-  }
-
   return (
-    <main className={`${styles.mobilePage} ${styles.homePage}`}>
-      <section className={`${styles.assetsShell} ${styles.homeShell}`}>
+    <main className={styles.mobilePage}>
+      <section className={`${styles.assetsShell} ${styles.dashboardShell}`}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <FieldManagerSettings />
-          <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Sign out
-          </button>
+          {hasManagerAccess ? <Link className={mobile.bell} href="/field-manager/notifications" aria-label={notificationCount ? `Notifications, ${notificationCount} unread` : 'Notifications'} prefetch={false}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
+            {notificationCount ? <span className={mobile.badge} aria-hidden="true">{notificationCount > 99 ? '99+' : notificationCount}</span> : null}
+          </Link> : null}
         </header>
-
-        {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
+        {notice ? <div className={styles.errorNotice} role="alert">{notice}<button type="button" className={styles.mobilePrimaryButton} onClick={() => void loadSession()}>Retry</button></div> : null}
         {isLoading ? <p className={styles.mobileEmpty}>Opening Field Manager…</p> : null}
-
-        {!isLoading && hasManagerAccess ? (
-          <section className={styles.homeCard} aria-label="Field Manager actions">
-            <div className={`${styles.homeActionGrid} ${launcherStyles.list}`}>
-              <button
-                type="button"
-                className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                aria-label={
-                  notificationCount && notificationCount > 0
-                    ? `Notifications, ${notificationCount} unread`
-                    : 'Notifications'
-                }
-                onClick={() => window.location.assign('/field-manager/notifications')}
-              >
-                <AppHomeIcon name="notifications" />
-                <strong>Notifications</strong>
-                <span className={launcherStyles.end}>
-                  {notificationCount && notificationCount > 0 ? (
-                    <span className={`${styles.homeActionBadge} ${launcherStyles.badge}`} aria-hidden="true">
-                      {notificationCount > 99 ? '99+' : notificationCount}
-                    </span>
-                  ) : null}
-                  <AppHomeChevron />
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                aria-label={
-                  overviewCount && overviewCount > 0
-                    ? `Overview, ${overviewCount} ${overviewCount === 1 ? 'item' : 'items'}`
-                    : 'Overview'
-                }
-                onClick={() => window.location.assign('/field-manager/overview')}
-              >
-                <AppHomeIcon name="overview" />
-                <strong>Overview</strong>
-                <span className={launcherStyles.end}>
-                  {overviewCount && overviewCount > 0 ? (
-                    <span className={`${styles.homeActionBadge} ${launcherStyles.badge}`} aria-hidden="true">
-                      {overviewCount > 99 ? '99+' : overviewCount}
-                    </span>
-                  ) : null}
-                  <AppHomeChevron />
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                onClick={() => window.location.assign('/field-manager/assets')}
-              >
-                <AppHomeIcon name="operations" />
-                <strong>Maintenance</strong>
-                <AppHomeChevron />
-              </button>
-
-              <button type="button" className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                onClick={() => window.location.assign('/field-manager/report-problem')}>
-                <AppHomeIcon name="report-problem" />
-                <strong>Report Problem</strong>
-                <AppHomeChevron />
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                onClick={() => window.location.assign('/field-manager/diesel')}
-              >
-                <AppHomeIcon name="fuel" />
-                <strong>Fuel</strong>
-                <AppHomeChevron />
-              </button>
-            </div>
-          </section>
-        ) : null}
+        {!isLoading && hasManagerAccess ? <div className={styles.dashboardBody}>
+          <section className={mobile.intro}><h1>Your work. Your day.</h1><p>{displayName}</p></section>
+          <section aria-label="Your overview"><h2 className={mobile.sectionTitle}>Your overview</h2><div className={mobile.counts}>
+            <Link className={mobile.count} href="/field-manager/overview" prefetch={false}><strong>{overviewCount ?? '—'}</strong><span>Needs attention</span></Link>
+            <Link className={mobile.count} href="/field-manager/overview?range=upcoming" prefetch={false}><strong>{upcomingCount ?? '—'}</strong><span>Upcoming</span></Link>
+          </div></section>
+          <section aria-label="Field Manager actions"><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={mobile.grid}>
+            <Link className={mobile.tile} href="/field-manager/diesel" prefetch={false}><OwnerIcon name="fuel" /><strong>Add fuel</strong></Link>
+            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="work" /><strong>Maintenance</strong></Link>
+            <Link className={mobile.tile} href="/field-manager/report-problem" prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
+            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="assets" /><strong>Find an asset</strong></Link>
+          </nav></section>
+          <Link className={mobile.row} href="/field-manager/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Prepare for offline work</strong><small>Save your available work before heading out.</small></span></Link>
+        </div> : null}
       </section>
     </main>
   );
