@@ -11,7 +11,7 @@ test('Owner App gives daily work direct entries with a shared Work destination',
     source('app/owner-app/page.tsx'), source('app/owner-app/operations/page.tsx'), source('app/owner-app/owner-bottom-nav.tsx'),
   ]);
   assert.match(home, /label: 'Add fuel'/);
-  assert.match(home, /label: 'Record maintenance'/);
+  assert.match(home, /label: 'Record work'/);
   assert.match(home, /label: 'Report problem'/);
   assert.match(operations, /ownerAppCan\(access, 'operate'\)/);
   for (const route of ['/owner-app/operations/maintenance', '/owner-app/operations/fuel', '/owner-app/report-problem']) assert.ok(operations.includes(route));

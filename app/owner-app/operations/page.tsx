@@ -11,8 +11,8 @@ export default async function OwnerOperationsPage() {
   const access = await requireOwnerAppPageAccess();
   if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
   const tools = [
-    { title: 'Fuel', detail: 'Record fuel from a tank or petrol station.', icon: 'fuel', href: '/owner-app/operations/fuel' },
-    { title: 'Maintenance', detail: 'Record completed checks, services or repairs.', icon: 'work', href: '/owner-app/operations/maintenance' },
+    { title: 'Add fuel', detail: 'Record fuel from a tank or petrol station.', icon: 'fuel', href: '/owner-app/operations/fuel' },
+    { title: 'Record work', detail: 'Add a completed check, service or repair.', icon: 'record', href: '/owner-app/operations/maintenance' },
     { title: 'Report problem', detail: 'Capture an issue that needs attention.', icon: 'problem', href: '/owner-app/report-problem' },
     { title: 'Upcoming work', detail: 'See schedules and work needing attention.', icon: 'calendar', href: '/owner-app/attention' },
   ];
