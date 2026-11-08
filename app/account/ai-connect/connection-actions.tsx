@@ -16,9 +16,9 @@ function SetupIcon({ help = false, kind }: { help?: boolean; kind?: 'other' | 'e
   </svg>;
 }
 
-function SupportIcon({ kind }: { kind: 'whatsapp' | 'email' | 'shield' }) {
+function SupportIcon({ kind }: { kind: 'whatsapp' | 'email' | 'shield' | 'guide' | 'support' }) {
   return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {kind === 'whatsapp' ? <><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.3-4.8a8.5 8.5 0 1 1 16.2-4Z" /><path d="m8.4 7.2 1.5 2.5-1 1.1a8 8 0 0 0 3.3 3.3l1.1-1 2.5 1.5c-.3 1.4-1.2 2-2.4 1.6-3.2-1-5.6-3.4-6.6-6.6-.4-1.2.2-2.1 1.6-2.4Z" /></> : kind === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></> : <><path d="m12 3 8 3v6c0 4-5 7.5-8 9-3-1.5-8-5-8-9V6l8-3Z" /><path d="m8 12 2.5 2.5L16 9" /></>}
+    {kind === 'guide' ? <><path d="M12 5.5C9.2 3.8 6.2 3.5 3 4.5v15c3.2-1 6.2-.7 9 1 2.8-1.7 5.8-2 9-1v-15c-3.2-1-6.2-.7-9 1Z" /><path d="M12 5.5v15M6 8h3M6 11h3m6-3h3m-3 3h3" /></> : kind === 'support' ? <><path d="M4 13v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="11" width="4" height="7" rx="2" /><rect x="17" y="11" width="4" height="7" rx="2" /><path d="M19 18v1a2 2 0 0 1-2 2h-4" /><path d="M10 21h3" /></> : kind === 'whatsapp' ? <><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.3-4.8a8.5 8.5 0 1 1 16.2-4Z" /><path d="m8.4 7.2 1.5 2.5-1 1.1a8 8 0 0 0 3.3 3.3l1.1-1 2.5 1.5c-.3 1.4-1.2 2-2.4 1.6-3.2-1-5.6-3.4-6.6-6.6-.4-1.2.2-2.1 1.6-2.4Z" /></> : kind === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></> : <><path d="m12 3 8 3v6c0 4-5 7.5-8 9-3-1.5-8-5-8-9V6l8-3Z" /><path d="m8 12 2.5 2.5L16 9" /></>}
   </svg>;
 }
 
@@ -153,7 +153,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
-          <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{method === 'help' ? <SetupIcon help /> : providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Aim4price Admin' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
+          <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{method === 'help' ? <SupportIcon kind="support" /> : providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Aim4price Admin' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
           <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Let’s get your assistant connected, together.' : method === 'choose' ? 'How would you like to get connected?' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
@@ -174,12 +174,12 @@ export default function ConnectionActions({ setup, management, count, assistantO
             <div className={styles.supportNote}><SupportIcon kind="shield" /><div><strong>You stay in control</strong><p>You sign in and approve access yourself. We’ll arrange remote help if needed.</p></div></div>
           </section> : method === 'choose' ? <div className={styles.setupChoices}>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('self')}>
-              <span className={styles.methodIcon}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 8h18M7 5.5h.01M10 5.5h.01m-1 7-2 2 2 2m6-4 2 2-2 2" /></svg></span><strong>Connect yourself</strong>
-              <span>Follow the guide using your own AI account.</span><span className={styles.methodAction}>Open setup guide</span>
+              <span className={styles.methodIcon}><SupportIcon kind="guide" /></span><strong>Connect yourself</strong>
+              <span>Copy the connection address and follow the steps.</span><span className={styles.methodAction}>Open setup guide</span>
             </button>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('help')}>
-              <span className={styles.methodIcon}><SetupIcon help /></span><strong>Connect with Aim4price Admin</strong>
-              <span>Ask our team to guide you through setup.</span><span className={styles.methodAction}>Contact our team</span>
+              <span className={styles.methodIcon}><SupportIcon kind="support" /></span><strong>Connect with Aim4price Admin</strong>
+              <span>Arrange a guided setup with our team.</span><span className={styles.methodAction}>Contact our team</span>
             </button>
           </div> : assistant?.setup : management}
 
