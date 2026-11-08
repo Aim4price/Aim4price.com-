@@ -952,7 +952,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <p className={styles.assetQuickMeta}>{[draft.serialNumber, usageText].filter(Boolean).join(' · ')}</p>
             </div>
 
-            <nav className={mobile.grid} aria-label="Quick asset actions">
+            <nav className={`${mobile.grid} ${mobile.assetActions}`} aria-label="Quick asset actions">
               {permissions.includes('operate') ? <>
                 <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="record" /><strong>Record work</strong></Link>
                 <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1`} prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>

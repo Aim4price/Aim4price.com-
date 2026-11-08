@@ -63,3 +63,8 @@
   .row small { font-size: .75rem; }
   .tile { padding: 12px; }
 }
+
+/* Centre the asset's quick actions independently of the Home dashboard. */
+.assetActions > .tile { align-items: center; justify-content: center; text-align: center; gap: 9px; min-height: 92px; }
+.assetActions > .tile strong { white-space: normal; text-wrap: balance; line-height: 1.4; }
+.assetActions > .tile:last-child:nth-child(odd) { justify-content: center; }
