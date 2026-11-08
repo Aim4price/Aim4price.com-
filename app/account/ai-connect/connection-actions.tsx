@@ -18,7 +18,7 @@ function SetupIcon({ help = false, kind }: { help?: boolean; kind?: 'other' | 'e
 
 function SupportIcon({ kind }: { kind: 'whatsapp' | 'email' | 'shield' | 'guide' | 'support' }) {
   return <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {kind === 'guide' ? <><path d="M12 5.5C9.2 3.8 6.2 3.5 3 4.5v15c3.2-1 6.2-.7 9 1 2.8-1.7 5.8-2 9-1v-15c-3.2-1-6.2-.7-9 1Z" /><path d="M12 5.5v15M6 8h3M6 11h3m6-3h3m-3 3h3" /></> : kind === 'support' ? <><path d="M4 13v-2a8 8 0 0 1 16 0v2" /><rect x="3" y="11" width="4" height="7" rx="2" /><rect x="17" y="11" width="4" height="7" rx="2" /><path d="M19 18v1a2 2 0 0 1-2 2h-4" /><path d="M10 21h3" /></> : kind === 'whatsapp' ? <><path d="M20.5 11.7a8.5 8.5 0 0 1-12.6 7.5L3 20.5l1.3-4.8a8.5 8.5 0 1 1 16.2-4Z" /><path d="m8.4 7.2 1.5 2.5-1 1.1a8 8 0 0 0 3.3 3.3l1.1-1 2.5 1.5c-.3 1.4-1.2 2-2.4 1.6-3.2-1-5.6-3.4-6.6-6.6-.4-1.2.2-2.1 1.6-2.4Z" /></> : kind === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></> : <><path d="m12 3 8 3v6c0 4-5 7.5-8 9-3-1.5-8-5-8-9V6l8-3Z" /><path d="m8 12 2.5 2.5L16 9" /></>}
+    {kind === 'guide' ? <><rect x="5" y="3" width="14" height="18" rx="3" /><path d="m8 8 1 1 2-2m2 1h3m-8 5 1 1 2-2m2 1h3M8 18h8" /></> : kind === 'support' ? <><path d="M4 14v-3a8 8 0 0 1 16 0v3M20 17v1a3 3 0 0 1-3 3h-3" /><rect x="3" y="11" width="4" height="7" rx="2" /><rect x="17" y="11" width="4" height="7" rx="2" /><path d="M11 21h3" /></> : kind === 'whatsapp' ? <><path d="M21 11.5a9 9 0 0 1-13.3 7.9L3 21l1.5-4.7A9 9 0 1 1 21 11.5Z" /><path strokeWidth="1.5" d="m8 7 1.5 2.5-1 1a8 8 0 0 0 4 4l1-1L16 15c-.4 1.5-1.6 1.8-3 1.2a12 12 0 0 1-6.2-6.2C6.2 8.6 6.5 7.4 8 7Z" /></> : kind === 'email' ? <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m3.5 6.5 7.3 5.8a2 2 0 0 0 2.4 0l7.3-5.8" /></> : <><path d="m12 3 8 3v6c0 4-5 7.5-8 9-3-1.5-8-5-8-9V6l8-3Z" /><path d="m8 12 2.5 2.5L16 9" /></>}
   </svg>;
 }
 
@@ -154,7 +154,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
           <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{method === 'help' ? <SupportIcon kind="support" /> : providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Aim4price Admin' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Let’s get your assistant connected, together.' : method === 'choose' ? 'How would you like to get connected?' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Personal help with your AI connection.' : method === 'choose' ? 'How would you like to get connected?' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : styles.connectPanel}`}>
@@ -166,20 +166,20 @@ export default function ConnectionActions({ setup, management, count, assistantO
             </button>)}
           </div> : method === 'help' ? <section className={styles.assistedSetup} aria-labelledby="ai-help-title">
             <div className={styles.helpIntro}><h3 id="ai-help-title">{assistant?.available ? `We’ll help you connect ${assistant.name}` : assistant?.name === 'Other' ? 'Which assistant would you like to connect?' : `Ask us about ${assistant?.name} setup`}</h3>
-            <p>{assistant?.available ? 'Choose WhatsApp or email to arrange your setup.' : 'Mention the assistant in your message. We’ll check compatibility and guide you.'}</p></div>
+            <p>{assistant?.available ? 'Choose WhatsApp or email to arrange your setup.' : 'We’ll check compatibility and help you get started.'}</p></div>
             <div className={styles.helpActions}>
               <a className={styles.contactChoice} href={`https://wa.me/27625721650?text=${encodeURIComponent(helpMessage)}`} target="_blank" rel="noopener noreferrer"><span className={styles.contactIcon}><SupportIcon kind="whatsapp" /></span><strong>WhatsApp</strong><span>Start a chat with our team.</span><span className={styles.contactAction}>Open WhatsApp</span></a>
               <a className={styles.contactChoice} href={`mailto:aim4price@gmail.com?subject=${encodeURIComponent('AI connection setup help')}&body=${encodeURIComponent(helpMessage)}`}><span className={styles.contactIcon}><SupportIcon kind="email" /></span><strong>Email</strong><span>Send us your setup request.</span><span className={styles.contactAction}>Write an email</span></a>
             </div>
-            <div className={styles.supportNote}><SupportIcon kind="shield" /><div><strong>You stay in control</strong><p>You sign in and approve access yourself. We’ll arrange remote help if needed.</p></div></div>
+            <div className={styles.supportNote}><SupportIcon kind="shield" /><div><strong>You stay in control</strong><p>You sign in and approve access. Remote help is available.</p></div></div>
           </section> : method === 'choose' ? <div className={styles.setupChoices}>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('self')}>
               <span className={styles.methodIcon}><SupportIcon kind="guide" /></span><strong>Connect yourself</strong>
-              <span>Copy the connection address and follow the steps.</span><span className={styles.methodAction}>Open setup guide</span>
+              <span>Follow the simple setup guide.</span><span className={styles.methodAction}>Open setup guide</span>
             </button>
             <button type="button" className={styles.setupChoice} onClick={() => changeMethod('help')}>
               <span className={styles.methodIcon}><SupportIcon kind="support" /></span><strong>Connect with Aim4price Admin</strong>
-              <span>Arrange a guided setup with our team.</span><span className={styles.methodAction}>Contact our team</span>
+              <span>Let our team guide you.</span><span className={styles.methodAction}>Contact our team</span>
             </button>
           </div> : assistant?.setup : management}
 
