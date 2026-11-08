@@ -3697,3 +3697,41 @@
   .appShell :is(.panel, .section, .detailHeroBody) { padding: 16px; }
   .appShell .assetMirrorActions { grid-template-columns: 1fr; }
 }
+
+/* Owner phone cards: more usable title width, quieter detail rows and even actions. */
+.appShell .managerAssetCard { padding: 16px; gap: 14px; box-shadow: 0 3px 12px rgb(16 54 38 / 4%); }
+.appShell .managerAssetCard h2,
+.appShell .manageAssetIdentity h1,
+.appShell .detailIdentity h1 {
+  width: 100%; max-width: 100%; min-width: 0;
+  white-space: nowrap; overflow-x: auto; overflow-y: hidden;
+  text-wrap: nowrap; overflow-wrap: normal;
+  scrollbar-width: thin;
+  font-size: clamp(.88rem, 3.7vw, 1.15rem);
+  font-weight: 700; line-height: 1.5; letter-spacing: -.025em;
+}
+.appShell .detailIdentity { min-width: 0; width: 100%; gap: 5px; }
+.appShell .manageAssetIdentity h1:focus-visible,
+.appShell .detailIdentity h1:focus-visible,
+.appShell .managerAssetCard h2:focus-visible { outline: 2px solid var(--app-accent, #377354); outline-offset: 3px; border-radius: 4px; }
+.appShell .assetDirectoryUmbrellaCard { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+.appShell .assetDirectoryUmbrellaCard h2 { grid-column: 1 / -1; text-align: left; }
+.appShell .assetDirectoryUmbrellaCard > p { grid-column: 1; grid-row: 2; align-self: center; font-size: .8rem; }
+.appShell .assetDirectoryUmbrellaCard > button { grid-column: 2; grid-row: 2; min-width: 70px; }
+.appShell .managerAssetMetaGrid.ownerAssetMetaStack { gap: 0; padding: 2px 12px; border: 1px solid var(--app-line, #d4e3da); border-radius: 12px; background: var(--app-surface-soft, #edf5f0); }
+.appShell .managerAssetMetaGrid.ownerAssetMetaStack > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; box-sizing: border-box; padding: 8px 0; border: 0; border-radius: 0; background: transparent; }
+.appShell .managerAssetMetaGrid.ownerAssetMetaStack > div + div { border-top: 1px solid var(--app-line, #d4e3da); }
+.appShell .managerAssetMetaGrid.ownerAssetMetaStack span { margin: 0; font-size: .7rem; font-weight: 650; letter-spacing: .035em; }
+.appShell .managerAssetMetaGrid.ownerAssetMetaStack strong { font-size: .84rem; font-weight: 600; text-align: right; }
+.appShell .detailHeroBody { padding: 16px; gap: 14px; min-width: 0; }
+.appShell .assetQuickMeta { font-size: .8rem; font-weight: 500; }
+.appShell .assetMirrorActions { gap: 8px; }
+.appShell .assetMirrorAction { white-space: nowrap; font-size: .84rem; border-radius: 12px; }
+.appShell .detailValueSummary { border-radius: 14px; padding: 14px 12px; gap: 5px; }
+.appShell .detailValueSummary > small { font-size: .72rem; white-space: nowrap; }
+.appShell .mobileAssetSummary { border-radius: 18px; }
+@media (max-width: 360px) {
+  .appShell .detailHeroBody { padding: 12px; }
+  .appShell .assetMirrorActions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .appShell .assetMirrorAction { padding-inline: 6px; font-size: .8rem; }
+}
