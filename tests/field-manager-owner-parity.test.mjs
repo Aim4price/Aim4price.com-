@@ -57,16 +57,19 @@ test('Field Manager petrol station reuses the Owner flow with Field Manager endp
   assert.match(upload, /userId: access\.session\.ownerUserId/);
 });
 
-test('Petrol station asset information is stacked as Serial, Year, and Usage', () => {
+test('Petrol station asset choices include serial, year and usage', () => {
   const client = source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
   const styles = source('app/owner-app/operations/fuel/petrol-station/page.module.css');
 
-  assert.match(client, /<span>Serial \/ VIN<\/span>[\s\S]*<span>Year<\/span>[\s\S]*<span>Usage<\/span>/);
+  assert.match(client, /<AssetPickerDetail/);
+  assert.match(client, /<AssetSerialNumber value=\{asset.serialNumber\}/);
+  assert.match(client, /Year Model: \{yearDisplayText\(asset\)\}/);
+  assert.match(client, /Usage: \{usageDisplayText\(asset\)\}/);
   assert.match(styles, /\.assetMetaGrid\s*\{\s*display:\s*grid;\s*gap:/s);
   assert.doesNotMatch(styles, /\.assetMetaGrid\s*\{[^}]*grid-template-columns:/s);
 });
 
-test('Home uses the Owner light-red treatment when paired with Back', () => {
+test('Home uses the Owner neutral treatment when paired with Back', () => {
   const nav = source('app/field-manager/field-manager-nav-link.tsx');
   const navStyles = source('app/field-manager/field-manager-nav-link.module.css');
   const fuelChoice = source('app/field-manager/diesel/page.tsx');
@@ -76,7 +79,8 @@ test('Home uses the Owner light-red treatment when paired with Back', () => {
 
   assert.match(nav, /tone\?: 'default' \| 'home'/);
   assert.match(nav, /tone === 'home' \? styles\.homeLink/);
-  assert.match(navStyles, /\.homeLink\s*\{[\s\S]*background: linear-gradient\(180deg, #fff8f8 0%, #fde8e8 100%\);[\s\S]*color: #9b3030;/);
+  assert.match(navStyles, /background: #eef5f0/);
+  assert.match(navStyles, /color: #173c2e/);
 
   for (const pairedScreen of [fuelChoice, storageChoice, petrolStation]) {
     assert.match(pairedScreen, /label="Home" tone="home"/);
@@ -89,6 +93,6 @@ test('Home uses the Owner light-red treatment when paired with Back', () => {
 test('Field Manager home calls the asset workflow Maintenance', () => {
   const home = source('app/field-manager/field-manager-home-client.tsx');
 
-  assert.match(home, /onClick=\{\(\) => window\.location\.assign\('\/field-manager\/assets'\)\}[\s\S]*?<strong>Maintenance<\/strong>/);
+  assert.match(home, /href="\/field-manager\/assets"[\s\S]*?<strong>Maintenance<\/strong>/);
   assert.doesNotMatch(home, /Manage Assets/);
 });

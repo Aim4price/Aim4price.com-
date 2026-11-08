@@ -2927,3 +2927,41 @@
 .assetDirectorySection > .assetList { padding-bottom: 0; }
 .assetCard.assetDirectoryUmbrellaCard { gap: 12px; padding: 16px; }
 .assetDirectoryUmbrellaCard > .assetDirectoryCount { margin: 0; }
+
+/* Field Manager uses the same content rhythm as the Owner App. */
+.appShell .mobilePage { --field-page-gutter: 32px; box-sizing: border-box; }
+.appShell:has(> [data-field-bottom-space]) > main { min-height: calc(100dvh - 63px - max(8px, env(safe-area-inset-bottom))); }
+.appShell :is(.assetsShell, .overviewShell, .fuelChoiceShell, .fuelFlowShell, .maintenanceShell) { width: min(calc(100% - var(--field-page-gutter, 32px)), 720px); box-sizing: border-box; }
+.appShell .assetsHeader { min-height: 46px; margin-bottom: 0; padding: 0 0 16px; gap: 12px; }
+.appShell .dashboardShell { min-height: 0; display: grid; align-content: start; gap: 8px; }
+.dashboardBody { display: grid; gap: 24px; }
+.dashboardShell .assetsHeader { justify-content: space-between; }
+.appShell :is(.assetsHeader h1, .overviewIntro h1, .maintenanceIntro h1, .flowIntro h1) { margin: 0; font-size: clamp(1.5rem, 5.5vw, 1.9rem); font-weight: 750; letter-spacing: -.035em; line-height: 1.25; }
+.flowIntro { display: grid; gap: 8px; }
+.flowIntro p { margin: 0; color: var(--app-muted, #617469); font-size: .95rem; line-height: 1.5; }
+.appShell :is(.assetCard, .overviewCard, .maintenanceCard, .searchCard) { border-radius: 18px; box-shadow: none; }
+.appShell :is(.assetTopRow h2, .overviewCard h3) { font-size: 1.05rem; font-weight: 700; line-height: 1.4; letter-spacing: -.015em; }
+.appShell :is(.searchField input, .overviewSearch input) { min-height: 48px; font-size: 1rem; font-weight: 500; border-radius: 12px; }
+.appShell :is(.mobilePrimaryButton, .logoutButton, .assetOpenButton, .overviewOpenButton) { min-height: 48px; padding: 10px 16px; font-size: .94rem; font-weight: 650; line-height: 1.4; box-shadow: none; }
+.appShell .logoutButton { width: auto; min-width: 96px; }
+.appShell .assetDirectory { gap: 20px; }
+.appShell .assetCard.assetDirectoryUmbrellaCard { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 16px; align-items: center; text-align: left; }
+.appShell .assetDirectoryUmbrellaCard .assetTopRow { grid-column: 1; }
+.appShell .assetDirectoryUmbrellaCard :is(h2, .assetDirectoryCount) { text-align: left; }
+.appShell .assetDirectoryUmbrellaCard .assetDirectoryCount { grid-column: 1; font-weight: 500; }
+.appShell .assetDirectoryUmbrellaCard .assetOpenButton { grid-column: 2; grid-row: 1 / 3; min-width: 68px; width: auto; min-height: 44px; padding: 10px 12px; border-radius: 12px; font-size: .85rem; }
+.appShell .fuelChoiceContent { flex: 0 0 auto; min-height: 0; display: grid; align-content: start; padding: 8px 0 24px; gap: 24px; }
+.appShell .fuelChoiceList { width: 100%; }
+.appShell .fuelChoiceCard { min-height: 76px; padding: 16px; border-radius: 16px; box-shadow: none; }
+.appShell .fuelChoiceCopy strong { font-size: 1rem; font-weight: 650; line-height: 1.4; text-align: left; }
+.appShell :is(.locationGateCard, .overviewConfirmCard) { max-height: calc(100dvh - 36px); overflow-y: auto; overscroll-behavior: contain; }
+.appShell :is(.mobilePrimaryButton, .logoutButton, .assetOpenButton, .overviewOpenButton):focus-visible { outline: 3px solid var(--app-accent, #377354); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .appShell .mobilePage :is(input, select, textarea) { font-size: 1rem; }
+  .appShell .assetMetaGrid { grid-template-columns: 1fr; gap: 8px; }
+  .appShell .assetMetaGrid > div { display: flex; align-items: baseline; justify-content: space-between; min-height: 44px; gap: 12px; }
+  .appShell .assetMetaGrid strong { text-align: right; font-weight: 600; }
+}
+@media (max-width: 360px) { .appShell .mobilePage { --field-page-gutter: 24px; } .dashboardBody { gap: 20px; } }
+
+.appShell .fuelChoiceShell { min-height: 0; }

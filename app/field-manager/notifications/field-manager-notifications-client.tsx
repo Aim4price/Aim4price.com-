@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../owner-app/owner-app.module.css';
+import polish from './polish.module.css';
 import NotificationSettingsModal from '../../../components/NotificationSettingsModal';
 
 type NotificationView = 'active' | 'history';
@@ -166,7 +167,7 @@ export default function FieldManagerNotificationsClient() {
   const viewTitle = activeView === 'active' ? 'Active' : 'History';
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${polish.page}`}>
       <header className={`${styles.assetsHeader} ${styles.assetsHeaderSingle}`} aria-label="Field Manager notification controls">
         <Link className={styles.navButton} href="/field-manager" prefetch={false}>Home</Link>
         <div style={{ marginLeft: 'auto', display: 'flex' }}><NotificationSettingsModal app="field" /></div>

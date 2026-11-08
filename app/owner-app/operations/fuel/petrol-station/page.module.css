@@ -1,3 +1,15 @@
+/* Field Manager fuel forms follow its app gutters and the Owner visual rhythm. */
+:global([data-app-shell='field']) .shell { width: 100%; gap: 16px; }
+:global([data-app-shell='field']) .stepCard { min-height: 0; padding: 20px; border-radius: 18px; gap: 20px; }
+:global([data-app-shell='field']) .heading h1 { font-size: clamp(1.5rem, 5.5vw, 1.9rem); font-weight: 750; line-height: 1.25; }
+:global([data-app-shell='field']) .heading p { font-weight: 500; line-height: 1.5; }
+:global([data-app-shell='field']) .field > span { font-size: .86rem; font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.4; }
+:global([data-app-shell='field']) .progressCard { border-radius: 16px; box-shadow: none; }
+:global([data-app-shell='field']) :is(.searchField input, .field input, .field textarea) { font-size: 1rem; font-weight: 500; border-radius: 12px; }
+:global([data-app-shell='field']) :is(.searchField input, .field input) { min-height: 48px; }
+:global([data-app-shell='field']) .assetCard { border-radius: 16px; padding: 16px; gap: 10px; box-shadow: none; }
+@media (max-width: 360px) { :global([data-app-shell='field']) .stepCard { padding: 16px; } }
+
 .shell {
   width: min(calc(100% - 24px), 480px);
   display: grid;

@@ -2,6 +2,8 @@ import AppSessionKeeper from '../app-session-keeper';
 import FieldManagerOfflineEntry from './field-manager-offline-entry';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import FieldManagerBottomNav from './field-manager-bottom-nav';
+import styles from './page.module.css';
 
 export const metadata: Metadata = {
   applicationName: 'Aim4price Farm Manager App',
@@ -28,6 +30,6 @@ export const viewport: Viewport = {
 };
 
 export default function FieldManagerLayout({ children }: { children: ReactNode }) {
-  return <><AppSessionKeeper appRoot="/field-manager" /><FieldManagerOfflineEntry />{children}</>;
+  return <div data-app-shell="field" className={styles.appShell} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/field-manager" /><FieldManagerOfflineEntry />{children}<FieldManagerBottomNav /></div>;
 }
 

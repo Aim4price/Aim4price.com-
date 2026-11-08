@@ -4081,3 +4081,12 @@
 .fieldManagerMobileSurface .nativeActionCard .actionTextBlock { min-width:0; align-items:flex-start; text-align:left; }
 .fieldManagerMobileSurface .nativeActionCard strong { font-size:1rem; line-height:1.3; white-space:normal; }
 .fieldManagerMobileSurface .nativeActionCard small { font-size:.85rem; line-height:1.4; font-weight:400; white-space:normal; }
+
+/* Scope Field Manager polish to its authenticated app wrapper. */
+:global([data-app-shell='field']) .shell { width: min(calc(100% - 32px), 720px); gap: 16px; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface :is(.assetOpenedCard, .editorCard, .actionCard, .pinCard) { border-radius: 18px; box-shadow: none; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface :is(.fieldManagerAssetTitleBlock h1, .stepTitleBlock h2) { font-size: clamp(1.5rem, 5.5vw, 1.9rem); font-weight: 750; line-height: 1.25; letter-spacing: -.035em; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface .actionCard strong { font-size: 1rem; font-weight: 650; line-height: 1.4; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface .field :is(input, textarea, select) { font-size: 1rem; font-weight: 500; min-height: 48px; border-radius: 12px; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface .field span { font-weight: 600; }
+@media (max-width: 360px) { :global([data-app-shell='field']) .shell { width: calc(100% - 24px); } }
