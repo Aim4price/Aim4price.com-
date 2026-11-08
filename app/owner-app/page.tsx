@@ -19,7 +19,7 @@ export default async function OwnerAppHome() {
       { label: 'Report problem', icon: 'problem', href: '/owner-app/report-problem' },
     ] : []),
     { label: 'Find an asset', icon: 'assets', href: '/owner-app/assets' },
-    ...(canManage ? [{ label: 'Add asset', icon: 'valuation', href: '/owner-app/assets/add' }] : []),
+    ...(canManage ? [{ label: 'Add asset', icon: 'add', href: '/owner-app/assets/add' }] : []),
   ];
   return <main className={`${styles.page} ${styles.homePage}`}>
     <OwnerAppNav showBack={false} trailingAction={<OwnerNotificationsLink viewerId={access.ownerAppUserId ?? access.ownerUserId} compact />} />

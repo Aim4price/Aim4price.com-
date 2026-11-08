@@ -297,12 +297,13 @@ export default function OwnerAssetsClient({
               <div className={styles.managerAssetList}>
                 {matchingGroups.map((group) => (
                   <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
-                    <h2><BalancedHeadingText text={group.name} /></h2>
+                    <h2>{group.name}</h2>
                     <p>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
                     <button
                       type="button"
                       className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
                       onClick={() => setSelectedGroupId(group.id)}
+                      aria-label={`Open ${group.name}`}
                     >
                       Open
                     </button>

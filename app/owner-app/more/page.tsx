@@ -11,7 +11,7 @@ const tools: { label: string; detail: string; icon: string; href: string; permis
   { label: 'Discover Assets', detail: 'Explore assets and request owner access.', icon: 'discovery', href: '/owner-app/discovery' },
   { label: 'Marketplace', detail: 'Browse adverts and manage your listings.', icon: 'marketplace', href: '/owner-app/marketplace', permission: 'manage_marketplace' },
   { label: 'Offline work', detail: 'Prepare and open saved work.', icon: 'offline', href: '/owner-app/offline.html' },
-  { label: 'Account', detail: 'Your access and sign-in details.', icon: 'assets', href: '/owner-app/account' },
+  { label: 'Account', detail: 'Your access and sign-in details.', icon: 'account', href: '/owner-app/account' },
 ];
 export default async function OwnerMorePage() {
   const access = await requireOwnerAppPageAccess();
