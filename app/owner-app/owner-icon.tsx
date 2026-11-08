@@ -1,6 +1,16 @@
 import type { CSSProperties } from 'react';
 const paths: Record<string, string> = {
   notifications: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
+  share: 'M9 11l6-4 M9 13l6 4 M9 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M21 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0 M21 19a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  serial: 'M4 7V4h3 M17 4h3v3 M20 17v3h-3 M7 20H4v-3 M8 8v8 M11 8v8 M14 8v8 M17 8v8',
+  shield: 'M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z M8 12l3 3 5-6',
+  finance: 'M3 9h18L12 3Z M5 10v9 M10 10v9 M14 10v9 M19 10v9 M3 21h18',
+  licence: 'M3 5h18v14H3Z M7 9h3 M7 13h3 M14 9h3 M14 13h3',
+  location: 'M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0 M15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+  camera: 'M3 7h4l2-3h6l2 3h4v14H3Z M16 13a4 4 0 1 1-8 0 4 4 0 0 1 8 0',
+  history: 'M3 4v6h6 M3 10a9 9 0 1 1 1 8 M12 7v5l3 2',
+  trash: 'M3 6h18 M9 6V3h6v3 M5 6l1 15h12l1-15 M10 10v7 M14 10v7',
+  settings: 'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
   account: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
   search: 'M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0 M15 15l6 6',
   record: 'M9 4H5v17h14V4h-4 M9 3h6v4H9Z M8 14l3 3 5-6',

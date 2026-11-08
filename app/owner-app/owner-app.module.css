@@ -3560,7 +3560,7 @@
 
 /* Owner App phone controls: neutral navigation, clear actions, readable inputs. */
 .homeButton.homeButton { background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border-color: var(--app-line, #d4e3da); box-shadow: none; }
-.assetMirrorOptionsAction.assetMirrorOptionsAction { background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border-color: var(--app-line, #d4e3da); }
+
 .searchResultCount { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 0; font-size: .9rem; color: var(--app-muted, #617469); }
 .searchResultCount button { min-height: 44px; padding: 8px 12px; background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border: 1px solid var(--app-line, #d4e3da); border-radius: 12px; font: inherit; cursor: pointer; }
 .assetQuickMeta { margin: 8px 0 12px; color: var(--app-muted, #617469); font-size: .95rem; font-weight: 500; line-height: 1.5; }
@@ -3734,4 +3734,40 @@
   .appShell .detailHeroBody { padding: 12px; }
   .appShell .assetMirrorActions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .appShell .assetMirrorAction { padding-inline: 6px; font-size: .8rem; }
+}
+
+/* Asset Register visual language, sized for the Owner App. */
+.appShell .assetMirrorOptionsAction.assetMirrorOptionsAction {
+  color: #723b0d; border-color: #c87534;
+  background: linear-gradient(180deg, #fffaf5, #fff0e3);
+}
+.appShell .assetMirrorOptionsAction.assetMirrorOptionsAction:hover { color: #723b0d; border-color: #a95b1d; background: linear-gradient(180deg, #fff7f0, #ffe2ca); }
+.appShell .assetMirrorAction { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.appShell .assetMirrorAction > svg { width: 17px; height: 17px; flex-shrink: 0; }
+.appShell .assetMirrorDetailGrid > div { grid-template-columns: minmax(128px, 1fr) minmax(0, 1fr); gap: 0; min-height: 54px; border-color: var(--app-info-line, #d5e2ef); }
+.appShell .assetMirrorDetailGrid > div > span { gap: 8px; padding: 10px; border-right: 1px solid var(--app-info-line, #d5e2ef); background: var(--app-info-soft, #f3f7fa); font-size: .8rem; font-weight: 650; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.appShell .assetMirrorDetailGrid > div > span svg { width: 20px; height: 20px; padding: 5px; box-sizing: content-box; flex-shrink: 0; border-radius: 8px; color: var(--app-accent, #176c52); background: var(--app-surface-soft, #e7f2ec); }
+.appShell .assetMirrorDetailGrid > div > strong { padding: 10px; font-size: .85rem; font-weight: 650; }
+.appShell .assetMirrorStatusGrid > a { min-height: 58px; grid-template-columns: minmax(0, 1fr) 46px; align-items: center; padding: 7px 8px 7px 12px; gap: 8px; border-color: var(--app-info-line, #d5e2ef); box-shadow: none; }
+.appShell .assetMirrorStatusCopy { padding: 0; background: transparent; gap: 3px; }
+.appShell .assetMirrorStatusCopy > span { font-size: .88rem !important; font-weight: 650 !important; letter-spacing: 0 !important; text-transform: none; }
+.appShell .assetMirrorStatusCopy > small { font-size: .7rem; font-weight: 500; color: var(--app-muted, #667c89); }
+.appShell .assetMirrorStatusGrid .assetMirrorStatusMark { width: 44px; height: 42px; min-height: 42px; align-self: center; border: 0; border-radius: 10px; font-size: 1.35rem; font-weight: 700; }
+.appShell .assetMirrorStatusGrid .assetMirrorStatusMarkYes { background: var(--app-surface-soft, #e8f6ef); color: var(--app-accent, #15804c); }
+.appShell .assetMirrorStatusGrid .assetMirrorStatusMarkNo { background: var(--app-danger-soft, #fdf0f1); color: var(--app-danger, #bf3545); }
+.appShell .assetMirrorStatusGrid .assetMirrorStatusMarkUnknown { background: var(--app-warning-soft, #fff6e5); color: var(--app-warning, #936315); }
+.appShell .assetMirrorStatusGrid .assetMirrorStatusMarkNotApplicable { background: var(--app-info-soft, #eef2f5); color: var(--app-muted, #596b79); font-size: .75rem; }
+.appShell .assetMirrorSecondaryGrid > a > span { text-transform: none; letter-spacing: 0; font-weight: 650; }
+.appShell .manageButton { justify-content: start; gap: 12px; }
+.appShell .manageButton > svg { width: 20px; height: 20px; padding: 7px; box-sizing: content-box; flex-shrink: 0; border-radius: 9px; color: var(--app-accent, #176c52); background: var(--app-surface-soft, #e7f2ec); }
+.appShell .manageButtonCopy { flex: 1; }
+.appShell .manageButtonCopy strong { font-size: .88rem; }
+.appShell .manageButtonDanger > svg { color: var(--app-danger, #bf3545); background: var(--app-danger-soft, #fdf0f1); }
+.appShell .assetMirrorMediaSection, .appShell .assetMirrorValuesSection { border-color: var(--app-info-line, #d5e2ef); background: var(--app-surface, #fff); }
+:global(html[data-app-theme='dark']) .appShell .assetMirrorOptionsAction.assetMirrorOptionsAction { color: #f1c49f; background: #47372a; border-color: #a97850; }
+:global(html[data-app-theme='dark']) .appShell .assetMirrorOptionsAction.assetMirrorOptionsAction:hover { background: #56402e; border-color: #c08b60; }
+@media (max-width: 360px) {
+  .appShell .assetMirrorAction { gap: 4px; font-size: .76rem; }
+  .appShell .assetMirrorAction > svg { width: 15px; height: 15px; }
+  .appShell .assetMirrorDetailGrid > div { grid-template-columns: minmax(120px, 1fr) minmax(0, 1fr); }
 }
