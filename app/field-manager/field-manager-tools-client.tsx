@@ -35,13 +35,13 @@ export default function FieldManagerToolsClient({ view }: { view: 'work' | 'more
     window.location.replace('/field-manager/login');
   }
   const tools = view === 'work' ? [
-    { title: 'Fuel', detail: 'Record fuel from a tank or petrol station.', icon: 'fuel', href: '/field-manager/diesel' },
-    { title: 'Maintenance', detail: 'Record work on your assigned assets.', icon: 'work', href: '/field-manager/assets' },
-    { title: 'Report problem', detail: 'Capture an issue that needs attention.', icon: 'problem', href: '/field-manager/report-problem' },
-    { title: 'Upcoming work', detail: 'See schedules and work needing attention.', icon: 'calendar', href: '/field-manager/overview' },
+    { title: 'Add fuel', detail: 'Tank or petrol station.', icon: 'fuel', href: '/field-manager/diesel' },
+    { title: 'Record work', detail: 'Checks, services and repairs.', icon: 'record', href: '/field-manager/assets' },
+    { title: 'Report problem', detail: 'Log an issue with an asset.', icon: 'problem', href: '/field-manager/report-problem' },
+    { title: 'Upcoming work', detail: 'View due and upcoming work.', icon: 'calendar', href: '/field-manager/overview' },
   ] : [
-    { title: 'Offline work', detail: 'Prepare and open saved work.', icon: 'offline', href: '/field-manager/offline.html' },
-    { title: 'Notifications', detail: 'Review updates for your assigned work.', icon: 'calendar', href: '/field-manager/notifications' },
+    { title: 'Offline work', detail: 'Save work for offline use.', icon: 'offline', href: '/field-manager/offline.html' },
+    { title: 'Notifications', detail: 'Updates for your assigned work.', icon: 'notifications', href: '/field-manager/notifications' },
   ];
   return <main className={styles.mobilePage}><section className={`${styles.assetsShell} ${styles.dashboardShell}`}>
     <header className={styles.assetsHeader} aria-label="Field Manager account controls">

@@ -31,13 +31,17 @@ test('only exact app roots and their descendants receive an app theme', () => {
   for (const path of ['/', '/account/owner-app', '/marketplace']) assert.equal(api.appThemeRoot(path), null);
 });
 
-test('pre-paint theme works for direct links and defaults safely when storage is blocked', () => {
+test('every app starts light unless an explicit dark preference is readable', () => {
   for (const root of ['owner-app', 'dealer', 'middleman', 'field-manager']) {
     for (const blocked of [false, true]) {
-      const state = runtime({ blocked, saved: { ['aim4price-app-theme:' + root]: 'dark' } });
-      state.context.location = { pathname: '/' + root + '/assets' };
-      vm.runInContext(state.api.APP_THEME_SCRIPT, state.context);
-      assert.equal(state.document.documentElement.dataset.appTheme, 'dark');
+      for (const saved of [null, 'light', 'dark', 'invalid']) {
+        const state = runtime({ blocked, saved: { ['aim4price-app-theme:' + root]: saved } });
+        state.context.location = { pathname: '/' + root + '/assets' };
+        vm.runInContext(state.api.APP_THEME_SCRIPT, state.context);
+        const expected = !blocked && saved === 'dark' ? 'dark' : 'light';
+        assert.equal(state.document.documentElement.dataset.appTheme, expected);
+        assert.equal(state.api.readAppTheme(root), expected);
+      }
     }
   }
 });
@@ -65,7 +69,7 @@ test('storage failures retain the current-session choice and external resets cle
   assert.equal(document.documentElement.dataset.appTheme, 'dark');
   api.clearAppThemeMemory('field-manager');
   api.applyAppTheme('field-manager');
-  assert.equal(document.documentElement.dataset.appTheme, 'dark');
+  assert.equal(document.documentElement.dataset.appTheme, 'light');
 });
 
 test('offline entry uses the same pre-paint preference and caches its theme stylesheet', () => {
@@ -73,8 +77,8 @@ test('offline entry uses the same pre-paint preference and caches its theme styl
   const worker = readFileSync(new URL('../public/app-offline/worker.js', import.meta.url), 'utf8');
   const config = readFileSync(new URL('../public/app-offline/config.mjs', import.meta.url), 'utf8');
   const entry = readFileSync(new URL('../public/app-offline/offline.mjs', import.meta.url), 'utf8');
-  assert.ok(worker.includes("'-offline-shell-v8'"));
-  assert.ok(config.includes("'-offline-shell-v8'"));
+  assert.ok(worker.includes("'-offline-shell-v9'"));
+  assert.ok(config.includes("'-offline-shell-v9'"));
   assert.ok(entry.includes('cacheName: config.cache'));
   for (const root of ['owner-app', 'field-manager', 'dealer', 'middleman']) {
     const html = readFileSync(new URL('../public/' + root + '/offline.html', import.meta.url), 'utf8');

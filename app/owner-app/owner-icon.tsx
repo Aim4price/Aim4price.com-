@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 const paths: Record<string, string> = {
+  notifications: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
   account: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M4 21v-2a8 8 0 0 1 16 0v2',
   search: 'M19 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0 M15 15l6 6',
   record: 'M9 4H5v17h14V4h-4 M9 3h6v4H9Z M8 14l3 3 5-6',
