@@ -166,11 +166,11 @@ export default function FieldManagerHomeClient() {
           </div></section>
           <section aria-label="Field Manager actions"><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={mobile.grid}>
             <Link className={mobile.tile} href="/field-manager/diesel" prefetch={false}><OwnerIcon name="fuel" /><strong>Add fuel</strong></Link>
-            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="work" /><strong>Maintenance</strong></Link>
+            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="record" /><strong>Record work</strong></Link>
             <Link className={mobile.tile} href="/field-manager/report-problem" prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
-            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="assets" /><strong>Find an asset</strong></Link>
+            <Link className={mobile.tile} href="/field-manager/assets" prefetch={false}><OwnerIcon name="search" /><strong>Find an asset</strong></Link>
           </nav></section>
-          <Link className={mobile.row} href="/field-manager/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Prepare for offline work</strong><small>Save your available work before heading out.</small></span></Link>
+          <Link className={mobile.row} href="/field-manager/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Offline work</strong><small>Save work before heading out.</small></span></Link>
         </div> : null}
       </section>
     </main>

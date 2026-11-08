@@ -2965,3 +2965,21 @@
 @media (max-width: 360px) { .appShell .mobilePage { --field-page-gutter: 24px; } .dashboardBody { gap: 20px; } }
 
 .appShell .fuelChoiceShell { min-height: 0; }
+
+/* Match the Owner App phone cards without changing Field Manager workflows. */
+.appShell .dashboardBody { gap: 22px; }
+.appShell .assetCard { padding: 16px; gap: 14px; box-shadow: 0 3px 12px rgb(16 54 38 / 4%); }
+.appShell .assetTopRow, .appShell .assetTopRow > div { min-width: 0; width: 100%; }
+.appShell .assetTopRow h2 { width: 100%; max-width: 100%; min-width: 0; white-space: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; text-wrap: nowrap; overflow-wrap: normal; font-size: clamp(.88rem, 3.7vw, 1.15rem); font-weight: 700; line-height: 1.5; letter-spacing: -.025em; }
+.appShell .assetTopRow h2:focus-visible { outline: 2px solid var(--app-accent, #377354); outline-offset: 3px; border-radius: 4px; }
+.appShell .assetCard.assetDirectoryUmbrellaCard { gap: 8px 12px; }
+.appShell .assetDirectoryUmbrellaCard .assetTopRow { grid-column: 1 / -1; }
+.appShell .assetDirectoryUmbrellaCard .assetDirectoryCount { grid-column: 1; grid-row: 2; align-self: center; font-size: .8rem; }
+.appShell .assetDirectoryUmbrellaCard .assetOpenButton { grid-column: 2; grid-row: 2; min-width: 70px; }
+.appShell .assetMetaGrid { grid-template-columns: 1fr; gap: 0; padding: 2px 12px; border: 1px solid var(--app-line, #d4e3da); border-radius: 12px; background: var(--app-surface-soft, #edf5f0); }
+.appShell .assetMetaGrid > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; box-sizing: border-box; padding: 8px 0; border: 0; border-radius: 0; background: transparent; }
+.appShell .assetMetaGrid > div + div { border-top: 1px solid var(--app-line, #d4e3da); }
+.appShell .assetMetaGrid span { margin: 0; font-size: .7rem; font-weight: 650; letter-spacing: .035em; }
+.appShell .assetMetaGrid strong { font-size: .84rem; font-weight: 600; text-align: right; }
+.appShell :is(.assetOpenButton, .overviewOpenButton, .logoutButton) { border-radius: 12px; white-space: nowrap; }
+.appShell .fuelChoiceCard { border-radius: 15px; box-shadow: 0 2px 8px rgb(16 54 38 / 3%); }

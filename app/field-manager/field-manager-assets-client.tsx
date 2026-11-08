@@ -247,7 +247,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
       <article key={asset.id} className={`${styles.assetCard} ${hasSearch && matchingAssetIds.has(asset.id) ? styles.assetDirectorySearchMatch : ''}`}>
         <div className={styles.assetTopRow}>
           <div>
-            <h2>{asset.title}</h2>
+            <h2 tabIndex={0} title={asset.title}>{asset.title}</h2>
           </div>
         </div>
 
@@ -325,7 +325,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
               <div className={styles.assetList}>
                 {matchingGroups.map((group) => (
                   <article key={group.id} className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
-                    <div className={styles.assetTopRow}><div><h2>{group.name}</h2></div></div>
+                    <div className={styles.assetTopRow}><div><h2 tabIndex={0} title={group.name}>{group.name}</h2></div></div>
                     <p className={styles.assetDirectoryCount}>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
                     <button
                       type="button"

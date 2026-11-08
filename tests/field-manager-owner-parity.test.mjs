@@ -90,9 +90,9 @@ test('Home uses the Owner neutral treatment when paired with Back', () => {
   assert.doesNotMatch(assets, /label="Home" tone="home"/);
 });
 
-test('Field Manager home calls the asset workflow Maintenance', () => {
+test('Field Manager home calls the asset workflow Record work', () => {
   const home = source('app/field-manager/field-manager-home-client.tsx');
 
-  assert.match(home, /href="\/field-manager\/assets"[\s\S]*?<strong>Maintenance<\/strong>/);
+  assert.match(home, /href="\/field-manager\/assets"[\s\S]*?<strong>Record work<\/strong>/);
   assert.doesNotMatch(home, /Manage Assets/);
 });

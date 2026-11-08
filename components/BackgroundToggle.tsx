@@ -8,7 +8,7 @@ function isDark() { return document.documentElement.dataset.background === 'dark
 function subscribe(onChange: () => void) {
   function storage(event: StorageEvent) {
     if (event.key !== BACKGROUND_PREFERENCE_KEY && event.key !== null) return;
-    document.documentElement.dataset.background = event.newValue === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.background = event.newValue === 'dark' ? 'dark' : 'light';
     onChange();
   }
   window.addEventListener(CHANGE_EVENT, onChange);
@@ -20,7 +20,7 @@ function subscribe(onChange: () => void) {
 }
 
 export default function BackgroundToggle({ className, iconClassName, styledTooltip = false }: { className?: string; iconClassName?: string; styledTooltip?: boolean }) {
-  const dark = useSyncExternalStore(subscribe, isDark, () => true);
+  const dark = useSyncExternalStore(subscribe, isDark, () => false);
   function toggle() {
     const next = isDark() ? 'light' : 'dark';
     document.documentElement.dataset.background = next;
