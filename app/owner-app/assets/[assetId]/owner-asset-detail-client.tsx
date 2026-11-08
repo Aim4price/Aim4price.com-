@@ -19,6 +19,8 @@ import { buildAssetSheetReportHtml, type AssetSheetPayload } from '../../../../l
 import type { GeneralSaleabilityInput } from '../../../../lib/saleability';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
+import OwnerIcon from '../../owner-icon';
+import mobile from '../../owner-mobile.module.css';
 import styles from '../../owner-app.module.css';
 import OwnerAssetOptionsClient from './owner-asset-options-client';
 import OwnerAssetReportPicker from './owner-asset-report-picker';
@@ -88,7 +90,7 @@ type TransferReceipt = {
 };
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
-export type OwnerAssetManageSection = 'details' | 'activity' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
+export type OwnerAssetManageSection = 'usage' | 'details' | 'activity' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
 export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future' | 'saleability';
 type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
@@ -144,6 +146,7 @@ const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetMan
   { id: 'pricing', group: 'asset', title: 'Manage pricing' },
   { id: 'location', group: 'asset', title: 'Location' },
   { id: 'media', group: 'asset', title: 'Photos & documents' },
+  { id: 'usage', group: 'asset', title: 'Update usage' },
   { id: 'reports', group: 'records', title: 'Reports' },
   { id: 'activity', group: 'records', title: 'Activity' },
   { id: 'maintenance', group: 'records', title: 'Schedule maintenance' },
@@ -905,7 +908,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       <div className={styles.wideContent}>
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
         {renewalUpdateBanner}
-        <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard}`}>
+        <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard} ${styles.mobileAssetSummary}`}>
           <div className={styles.detailPhotoStage}>
             {primaryPhoto ? (
               <button
@@ -946,7 +949,17 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <div className={styles.detailHeroBody}>
             <div className={styles.detailIdentity}>
               <h1><BalancedHeadingText text={draft.title} /></h1>
+              <p className={styles.assetQuickMeta}>{[draft.serialNumber, usageText].filter(Boolean).join(' · ')}</p>
             </div>
+
+            <nav className={mobile.grid} aria-label="Quick asset actions">
+              {permissions.includes('operate') ? <>
+                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="work" /><strong>Record work</strong></Link>
+                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1`} prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
+                <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><OwnerIcon name="calendar" /><strong>Schedule maintenance</strong></Link>
+              </> : null}
+              {permissions.includes('manage_assets') ? <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage`} prefetch={false}><OwnerIcon name="usage" /><strong>Update usage</strong></Link> : null}
+            </nav>
 
             <div className={styles.detailValueSummary}>
               <span>Aim4price value</span>
@@ -1364,6 +1377,15 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       </section>
 
       {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+
+      {section === 'usage' ? <form className={`${styles.section} ${styles.editorSection}`} onSubmit={(event) => { event.preventDefault(); void saveAsset(); }}>
+        <p className={styles.assetQuickMeta}>Enter the latest reading for this asset.</p>
+        {usageMetric === 'not_applicable' ? <p>Usage does not apply to this asset.</p> : <label className={styles.field}>
+          <span>{usageMetric === 'percentage' ? 'Percentage worked' : usageMetric === 'km' ? 'Kilometres' : 'Hours'}</span>
+          <input type="number" inputMode="decimal" min="0" max={usageMetric === 'percentage' ? 100 : undefined} step="any" required value={(usageMetric === 'percentage' ? draft.lifeWorkedPercent : draft.hours) ?? ''} onChange={(event) => update(usageMetric === 'percentage' ? 'lifeWorkedPercent' : 'hours', event.target.value === '' ? null : Number(event.target.value))} />
+        </label>}
+        <div className={styles.actions}><button type="submit" className={styles.primaryButton} disabled={saving || Boolean(actionBusy) || usageMetric === 'not_applicable'}>{saving ? 'Saving…' : 'Save usage'}</button></div>
+      </form> : null}
 
       {section === 'details' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Update asset', 'Edit the asset details, usage and values.')}

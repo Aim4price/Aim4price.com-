@@ -6,27 +6,17 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
-  const [home, operations, styles] = await Promise.all([
-    source('app/owner-app/page.tsx'),
-    source('app/owner-app/operations/page.tsx'),
-    source('app/owner-app/owner-app.module.css'),
+test('Owner App gives daily work direct entries with a shared Work destination', async () => {
+  const [home, operations, nav] = await Promise.all([
+    source('app/owner-app/page.tsx'), source('app/owner-app/operations/page.tsx'), source('app/owner-app/owner-bottom-nav.tsx'),
   ]);
-
-  assert.match(home, /label: 'Maintenance & Fuel'/);
-  assert.match(home, /href: '\/owner-app\/operations'/);
-  assert.doesNotMatch(operations, /Choose option/);
-  assert.match(operations, /styles\.operationsLandingContent/);
-  assert.match(operations, /styles\.operationsLandingLauncher/);
-  assert.doesNotMatch(operations, /Choose what you want to record\./);
-  assert.doesNotMatch(operations, /Record services, repairs|Record fuel from/);
-  assert.match(operations, /href="\/owner-app\/operations\/maintenance"/);
-  assert.match(operations, /href="\/owner-app\/operations\/fuel"/);
-  assert.match(operations, /href="\/owner-app\/operations\/maintenance"[\s\S]*?<path d="M14\.7 6\.3[\s\S]*?<strong>Maintenance<\/strong>/);
-  assert.doesNotMatch(operations, /m14\.5 6\.5 3-3/);
-  assert.match(styles, /\.operationsLandingContent,[\s\S]*?align-content: center/);
-  assert.match(styles, /\.operationsLandingLauncher,[\s\S]*?margin: 0 auto/);
-  assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard,[\s\S]*?min-height: 78px/);
+  assert.match(home, /label: 'Add fuel'/);
+  assert.match(home, /label: 'Record maintenance'/);
+  assert.match(home, /label: 'Report problem'/);
+  assert.match(operations, /ownerAppCan\(access, 'operate'\)/);
+  for (const route of ['/owner-app/operations/maintenance', '/owner-app/operations/fuel', '/owner-app/report-problem']) assert.ok(operations.includes(route));
+  assert.match(nav, /permissions.includes\('operate'\)/);
+  assert.match(nav, /label: 'Work', href: '\/owner-app\/operations'/);
 });
 
 test('maintenance selection uses Overview typography, stacked asset cards and the standard location modal', async () => {
@@ -49,7 +39,8 @@ test('maintenance selection uses Overview typography, stacked asset cards and th
   assert.match(assetList, /styles\.ownerAssetMetaStack/);
   assert.match(assetList, /<OwnerServiceLocationModal/);
   assert.match(serviceModal, /<FuelLocationModal/);
-  assert.match(serviceModal, /recordLabel="service"/);
+  assert.match(serviceModal, /recordLabel = 'service'/);
+  assert.match(serviceModal, /recordLabel=\{recordLabel\}/);
   assert.match(serviceModal, /saveFieldManagerServiceLocation/);
   assert.match(locationModal, /recordLabel = 'fuel record'/);
   assert.match(balancedHeading, /\^\(\?:19\|20\)\\d\{2\}\$/);

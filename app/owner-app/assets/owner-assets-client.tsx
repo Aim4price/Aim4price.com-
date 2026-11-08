@@ -127,16 +127,16 @@ export default function OwnerAssetsClient({
   );
   const hasSearch = Boolean(query.trim());
   const directoryItems = useMemo(() => {
-    if (showAllAssets || !groups.length) return filteredItems;
+    if (hasSearch || showAllAssets || !groups.length) return filteredItems;
     if (selectedGroup) return filteredItems.filter((asset) => selectedGroupAssetIds.has(asset.id));
     return filteredItems.filter((asset) => !groupByAssetId.has(asset.id));
-  }, [filteredItems, groupByAssetId, groups.length, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  }, [filteredItems, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
   const matchingAssetIds = useMemo(() => new Set(filteredItems.map((asset) => asset.id)), [filteredItems]);
   const matchingGroups = useMemo(
     () => hasSearch ? groups.filter((group) => group.memberAssetIds.some((id) => matchingAssetIds.has(id))) : groups,
     [groups, hasSearch, matchingAssetIds],
   );
-  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets;
+  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets && !hasSearch;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -283,6 +283,7 @@ export default function OwnerAssetsClient({
         </section>
       ) : null}
 
+      {hasSearch && !loading && !error ? <p role="status" className={styles.searchResultCount}>{directoryItems.length} matching {directoryItems.length === 1 ? 'asset' : 'assets'} <button type="button" onClick={() => { setQuery(''); returnToDirectory(); }}>Clear search</button></p> : null}
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
       {actionError ? <div className={styles.errorNotice}>{actionError}</div> : null}
       {loading ? <div className={styles.loading}>Loading your assets…</div> : null}
@@ -343,6 +344,7 @@ export default function OwnerAssetsClient({
       {locationGate ? (
         <OwnerServiceLocationModal
           {...locationGate}
+          recordLabel={mode === 'problem' ? 'problem report' : 'service'}
           onCancel={() => setLocationGate(null)}
           onError={setActionError}
         />

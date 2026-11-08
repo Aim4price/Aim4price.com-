@@ -1,0 +1,28 @@
+name: Owner App mobile navigation validation
+on:
+  pull_request:
+    paths:
+      - 'app/owner-app/**'
+      - 'app/api/owner-app/**'
+      - 'components/FuelLocationModal.tsx'
+      - 'tests/owner-mobile-*.test.mjs'
+      - 'tests/owner-app-operations.test.mjs'
+      - 'tests/owner-app-petrol-station.test.mjs'
+      - 'tests/app-umbrella-directory-access.test.mjs'
+      - '.github/workflows/owner-mobile-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/owner-mobile-*.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs
