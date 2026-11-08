@@ -439,3 +439,29 @@
   :global(body:not(:has([data-website-canvas]))) .setupChoice .methodAction,
   :global(body:not(:has([data-website-canvas]))) .contactChoice .contactAction { margin-top: .35rem; padding: .55rem .8rem; }
 }
+
+/* A consistent numbered guide keeps each action beside its instructions. */
+.selfSetup { gap: .65rem; }
+.setupStart, .setupFinish, .addressStep { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: .85rem; padding: .8rem 1rem; border-radius: 1rem; }
+.setupStart { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; background: var(--app-surface-soft, #f3f8f5); }
+.guideNumber { display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border: 1px solid var(--app-border, #d6e4de); border-radius: .7rem; background: #fff; color: #17684f; font-size: .9rem; font-weight: 750; }
+.addressStep { background: #f4f7fb; border-color: #d9e3ee; }
+.addressStep .guideNumber { color: #345e85; border-color: #d9e3ee; }
+.addressContent { min-width: 0; }
+.selfSetup h3 { font-size: 1rem; line-height: 1.4; }
+.selfSetup p { font-size: .8rem; }
+.addressStep .serverAddress { gap: .5rem; }
+.addressStep .code { font-family: inherit; font-size: .82rem; }
+.serverAddress button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; flex-shrink: 0; }
+.serverAddress button svg { flex-shrink: 0; }
+.selfSetup .setupRequirement { margin: 0; padding: .4rem 1rem 0; border-top: 1px solid var(--app-border, #d6e4de); }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .setupStart { grid-template-columns: auto minmax(0, 1fr); }
+  :global(body:not(:has([data-website-canvas]))) .setupStart > a { grid-column: 2; justify-self: start; }
+  :global(body:not(:has([data-website-canvas]))) .setupStart,
+  :global(body:not(:has([data-website-canvas]))) .setupFinish,
+  :global(body:not(:has([data-website-canvas]))) .addressStep { padding: .5rem; gap: .6rem; }
+  :global(body:not(:has([data-website-canvas]))) .guideNumber { width: 1.7rem; height: 1.7rem; }
+  :global(body:not(:has([data-website-canvas]))) .addressStep .serverAddress { display: grid; grid-template-columns: minmax(0, 1fr); }
+  :global(body:not(:has([data-website-canvas]))) .addressStep .serverAddress button { justify-self: start; }
+}

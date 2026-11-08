@@ -112,7 +112,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button::-p-text(Change assistant)');
   await choose('Gemini');
   assert.equal(await page.$eval('#ai-connect-panel a[target="_blank"]', a=>a.href), 'https://gemini.google.com/customize/connectors');
-  assert.ok((await page.$eval('#ai-connect-panel', e=>e.textContent)).includes('still needs to configure'));
+  assert.ok((await page.$eval('#ai-connect-panel', e=>e.textContent)).includes('This provider needs Aim4price Admin setup.'));
   await page.click('button::-p-text(Connection options)');
   await page.click('button::-p-text(Connect with Aim4price Admin)');
   assert.ok(await page.$eval('a[href^="mailto:"]', a => decodeURIComponent(a.href).includes('Gemini')));

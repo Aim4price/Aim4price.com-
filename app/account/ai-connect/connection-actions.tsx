@@ -154,7 +154,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
           <h2 className={styles.flowTitle} id={`ai-${flow}-title`}>{flow === 'connect' && assistant && <span className={styles.titleLogo}>{method === 'help' ? <SupportIcon kind="support" /> : providerLogos[assistant.name] ? <img src={providerLogos[assistant.name]} alt="" width="32" height="32" /> : <SetupIcon kind="other" />}</span>}{flow === 'connect' ? choosingAssistant ? 'Choose your assistant' : assistant ? method === 'help' ? 'Aim4price Admin' : `Connect ${assistant.name}` : 'Connect your assistant' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Personal help with your AI connection.' : method === 'choose' ? 'How would you like to get connected?' : 'Follow these steps, then return here to check your connection.' : 'View active connections or stop their access.'}</p>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : choosingAssistant ? 'Which AI assistant would you like to use with Aim4price?' : method === 'help' ? 'Personal help with your AI connection.' : method === 'choose' ? 'How would you like to get connected?' : 'Connect your account in three simple steps.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`} data-modal-close="true">×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel} ${flow === 'manage' ? styles.managePanel : styles.connectPanel}`}>
@@ -185,7 +185,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
 
         </div>
         <footer className={styles.dialogFooter}>
-          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'You approve read-only access to your own account.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'After approving access, return here and select Check connection.'}</p>
+          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'You approve read-only access to your own account.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'Approved access? Select Check connection.'}</p>
           <div className={styles.footerActions}>
           {flow === 'connect' && assistant && (method === 'choose' || assistant.name === 'Other') && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
           {flow === 'connect' && assistant && assistant.name !== 'Other' && method !== 'choose' && <button type="button" onClick={() => changeMethod('choose')}>Connection options</button>}
@@ -207,9 +207,9 @@ export function ServerAddress({ resource }: { resource: string }) {
         await navigator.clipboard.writeText(resource);
         setMessage('Server address copied.');
       } catch {
-        setMessage('Select the server address above to copy it manually.');
+        setMessage('Select the address to copy it manually.');
       }
-    }}>Copy address</button>
+    }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" /></svg>Copy address</button>
     {message && <p role="status">{message}</p>}
   </div>;
 }

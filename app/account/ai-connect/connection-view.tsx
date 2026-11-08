@@ -89,17 +89,17 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
     </div> : resource && selectedProvider && !admin ? <div className={styles.selfSetup}>
       <div className={styles.setupStart}>
-        <div><h3>1. Open {selectedProvider} setup</h3><p>{selectedProvider === 'ChatGPT' ? 'Choose Add, then add a custom MCP server.' : selectedProvider === 'Claude' ? 'Add a custom connector named Aim4price.' : 'Look for the option to add a custom connector.'}</p></div>
+        <span className={styles.guideNumber}>1</span><div><h3>Open {selectedProvider} setup</h3><p>{selectedProvider === 'ChatGPT' ? 'Choose Add, then add a custom MCP server.' : selectedProvider === 'Claude' ? 'Add a custom connector named Aim4price.' : 'Look for the option to add a custom connector.'}</p></div>
         <a className={styles.primary} href={setupLinks[selectedProvider]} target="_blank" rel="noopener noreferrer">Open {selectedProvider} setup</a>
       </div>
       <section className={styles.addressStep} aria-label="Connection address">
-        <h3>2. Add the connection address</h3>
-        <p>Name it Aim4price. Paste this into the MCP server URL field.</p>
-        <ServerAddress resource={resource} />
+        <span className={styles.guideNumber}>2</span><div className={styles.addressContent}><h3>Add Aim4price</h3>
+        <p>Name your connector <strong>Aim4price</strong> and paste this into the MCP server URL field.</p>
+        <ServerAddress resource={resource} /></div>
       </section>
-      <div className={styles.setupFinish}><h3>3. Sign in and approve</h3><p>Choose OAuth if asked. Sign in to Aim4price and approve read-only access.</p></div>
+      <div className={styles.setupFinish}><span className={styles.guideNumber}>3</span><div><h3>Sign in and approve</h3><p>Choose OAuth if asked, then approve read-only access to your Aim4price account.</p></div></div>
       {selectedProvider === 'ChatGPT' && chatGptListingUrl && <a href={chatGptListingUrl} target="_blank" rel="noopener noreferrer">Already have access to our plugin? Install Aim4price instead.</a>}
-      <p className={styles.setupRequirement}>{providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? 'Missing an option or asked for credentials? Return to Connection options and contact Aim4price Admin.' : 'Aim4price Admin still needs to configure this provider before you can finish connecting. You can view the setup guide here, or choose Connection options to contact us.'}</p>
+      <p className={styles.setupRequirement}>{providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? 'Need help? Choose Connection options to contact Aim4price Admin.' : 'This provider needs Aim4price Admin setup. Choose Connection options to contact us.'}</p>
     </div> : resource ? <>
       <SetupGuide manual={<>
         <p>Private setup requires OAuth credentials and a callback registered by Aim4price. The server address alone is not enough. Setup administrators enter credentials in the assistant’s secure configuration, never in chat.</p>
