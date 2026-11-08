@@ -3,6 +3,7 @@ import AppOfflineEntry from '../../components/AppOfflineEntry';
 import AppSessionKeeper from '../app-session-keeper';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import styles from './owner-app.module.css';
 
 export const metadata: Metadata = {
   applicationName: 'Aim4price Owner',
@@ -28,6 +29,6 @@ export const viewport: Viewport = {
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {
-  return <div data-app-shell="owner" style={{ display: 'contents' }}><AppSessionKeeper appRoot="/owner-app" /><AppOfflineEntry appRoot="/owner-app" worker="/owner-app-sw.js" />{children}<OwnerBottomNav /></div>;
+  return <div data-app-shell="owner" className={styles.appShell} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/owner-app" /><AppOfflineEntry appRoot="/owner-app" worker="/owner-app-sw.js" />{children}<OwnerBottomNav /></div>;
 }
 

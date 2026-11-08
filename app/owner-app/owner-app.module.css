@@ -3581,3 +3581,119 @@
   .managerAssetMetaGrid.ownerAssetMetaStack strong { text-align: right; font-weight: 600; }
   .primaryButton, .secondaryButton, .assetMirrorAction { min-height: 48px; font-weight: 650; }
 }
+
+/* A shared visual rhythm for Owner screens, scoped away from other apps. */
+.appShell .page,
+.appShell .module {
+  --owner-page-gutter: 32px;
+  --owner-content-gap: 20px;
+}
+
+/* The spacer and fixed bar occupy the same height. Short pages need no extra scroll. */
+.appShell:has(> [data-owner-bottom-space]) > :is(.page, .module) {
+  min-height: calc(100dvh - 63px - max(8px, env(safe-area-inset-bottom)));
+}
+
+.appShell .assetsHeader {
+  width: min(calc(100% - var(--owner-page-gutter)), 720px);
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 0 0 16px;
+  gap: 12px;
+}
+.appShell :is(.content, .wideContent, .overviewContent, .notificationContent) {
+  width: min(calc(100% - var(--owner-page-gutter)), 720px);
+}
+.appShell :is(.navButton, .logoutButton) {
+  min-height: 46px;
+  border-radius: 12px;
+  font-size: .9rem;
+  font-weight: 650;
+  box-shadow: none;
+}
+.appShell .assetsHeaderSingle .navButton,
+.appShell .assetsHeaderSignOut .logoutButton { width: auto; min-width: 96px; }
+.appShell :is(.hero h1, .ownerPageIntro .ownerPageTitle, .manageAssetIdentity h1, .flowIntro h1, .taskIdentity h1) {
+  font-size: clamp(1.5rem, 5.5vw, 1.9rem);
+  font-weight: 750;
+  line-height: 1.25;
+  letter-spacing: -.035em;
+}
+.appShell .hero { padding: 8px 0 4px; gap: 8px; }
+.appShell .hero p { font-weight: 500; }
+.appShell .ownerPageIntro { padding-inline: 0; }
+.appShell :is(.button, .primaryButton, .secondaryButton, .dangerButton, .smallButton, .addAssetButton) {
+  min-height: 48px;
+  padding-block: 10px;
+  font-size: .94rem;
+  font-weight: 650;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.appShell :is(.field input, .field select, .field textarea, .assetSearchField input) {
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.appShell .field textarea { min-height: 104px; }
+.appShell .field > span:not(.currencyInput),
+.appShell .fieldLabel { font-size: .86rem; font-weight: 600; line-height: 1.4; }
+.appShell .formGrid { gap: 18px 16px; }
+.appShell :is(.panel, .section) { padding: 20px; border-radius: 18px; }
+.appShell .assetListToolbar { padding: 12px; gap: 10px; border-radius: 16px; box-shadow: none; }
+.appShell .assetDirectory { gap: 20px; }
+.appShell .managerAssetCard { border-radius: 18px; box-shadow: none; }
+.appShell .managerAssetCard h2 { font-weight: 700; line-height: 1.4; font-size: 1.05rem; letter-spacing: -.015em; }
+.appShell .assetDirectoryUmbrellaCard {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  align-items: center;
+  justify-items: stretch;
+  text-align: left;
+  padding: 16px;
+  background: var(--app-surface, #fff);
+}
+.appShell .assetDirectoryUmbrellaCard h2 { grid-column: 1; text-align: left; text-wrap: pretty; }
+.appShell .assetDirectoryUmbrellaCard > p { grid-column: 1; text-align: left; font-weight: 500; }
+.appShell .assetDirectoryUmbrellaCard > button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  width: auto;
+  min-width: 68px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: .85rem;
+  font-weight: 650;
+  box-shadow: none;
+}
+.appShell .assetDirectoryAllCard { gap: 10px; background: var(--app-surface-soft, #edf5f0); }
+.appShell .assetDirectoryAllCard > p { font-weight: 500; }
+.appShell .fuelSourceContent { flex: 0 0 auto; align-content: start; padding: 8px 0 24px; gap: 24px; }
+.appShell .fuelSourceLauncher { width: 100%; }
+.appShell .operationChoiceCard { min-height: 76px; border-radius: 16px; padding: 16px; box-shadow: none; }
+.appShell .operationChoiceCopy strong { font-size: 1rem; font-weight: 650; line-height: 1.4; text-align: left; }
+.appShell .detailHeroBody { padding: 20px; gap: 16px; }
+.appShell .mobileAssetSummary .detailPhoto { object-fit: contain; }
+.appShell .mobileAssetSummary .detailValueSummary { margin-top: 0; }
+.appShell .manageButton { min-height: 52px; padding: 14px 16px; }
+.appShell .manageButtonCopy strong { font-weight: 650; line-height: 1.4; }
+.appShell .manageGroup { border-radius: 16px; box-shadow: none; }
+.appShell .manageGroup > h2 { font-size: .78rem; font-weight: 650; letter-spacing: .04em; }
+.appShell .manageAssetIdentity p { font-weight: 500; line-height: 1.5; }
+.appShell .assetMirrorActions { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.appShell .assetMirrorAction { min-height: 48px; padding: 10px 8px; font-size: .88rem; font-weight: 650; line-height: 1.35; box-shadow: none; }
+.appShell :is(.navButton, .logoutButton, .button, .primaryButton, .secondaryButton, .smallButton, .assetMirrorAction, .addAssetButton):focus-visible {
+  outline: 3px solid var(--app-accent, #377354);
+  outline-offset: 3px;
+}
+@media (min-width: 600px) {
+  .appShell .assetListToolbar { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+}
+@media (max-width: 360px) {
+  .appShell .page, .appShell .module { --owner-page-gutter: 24px; }
+  .appShell :is(.panel, .section, .detailHeroBody) { padding: 16px; }
+  .appShell .assetMirrorActions { grid-template-columns: 1fr; }
+}

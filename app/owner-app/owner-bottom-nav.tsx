@@ -27,7 +27,7 @@ export default function OwnerBottomNav() {
     { id: 'more', label: 'More', href: '/owner-app/more' },
   ];
   return <>
-    <div className={styles.bottomSpace} aria-hidden="true" />
+    <div className={styles.bottomSpace} data-owner-bottom-space aria-hidden="true" />
     <nav className={styles.bottomNav} aria-label="Owner App navigation">
       {tabs.map(item => <Link key={item.id} href={item.href} prefetch={false} aria-current={section === item.id ? 'page' : undefined} className={styles.bottomTab}>
         <OwnerIcon name={item.id} /><span>{item.label}</span>

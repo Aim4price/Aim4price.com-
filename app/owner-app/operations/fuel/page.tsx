@@ -15,6 +15,7 @@ export default async function OwnerFuelPage() {
     <main className={`${styles.page} ${styles.homePage} ${styles.operationsPage}`}>
       <OwnerAppNav backHref="/owner-app/operations" backLabel="Back" />
       <div className={`${styles.content} ${styles.operationsContent} ${styles.fuelSourceContent}`}>
+        <section className={styles.hero}><h1>Add fuel</h1><p>Select the source of your fuel.</p></section>
         <nav
           className={`${styles.operationLauncher} ${styles.fuelSourceLauncher}`}
           aria-label="Fuel source"
