@@ -26,7 +26,7 @@ test('hard deletion removes invoice data atomically, retires identifiers, and sc
   const alerts=await notifications.listBillingNotifications('owner');assert.deepEqual(alerts.map(x=>x.id),['billing-invoice:'+paid.id]);assert.equal(alerts[0].href,'/billing');assert.equal(alerts[0].category,'billing');
   assert.deepEqual((await notifications.listBillingNotifications('other')).map(x=>x.id),['billing-invoice:'+other.id]);
   const empty=new Proxy({},{get:()=>async()=>[]});const surfaceDeps=Object.fromEntries(['./dealer-problem-notifications','./maintenance-reminders','./asset-value-requests','./fuel-ledger','./asset-discovery','./partner-access','./asset-maintenance','./dealer-asset-corrections','./dealer-maintenance-tracker','./dealer-costs','./capture-requests','./cost-budgets','./marketplace-sourcing-requests'].map(name=>[name,empty]));
-  const surface=load('lib/notifications.ts',{...surfaceDeps,'./db':{getDb:()=>({query:async()=>({rows:[]})})},'./billing-notifications':notifications});
+  const surface=load('lib/notifications.ts',{...surfaceDeps,'./notification-copy':load('lib/notification-copy.ts'),'./db':{getDb:()=>({query:async()=>({rows:[]})})},'./billing-notifications':notifications});
   assert.deepEqual((await surface.listComputedHeaderNotifications({userId:'owner',accountType:'insurance'})).map(x=>x.id),['billing-invoice:'+paid.id],'the account bell includes billing events');
 
   await pg.query('insert into aim4price_billing_payments(id,invoice_id,amount_cents,payment_date,reference,actor_id) values($1,$2,39900,\'2026-09-27\',\'mistake\',\'admin\')',[randomUUID(),paid.id]);
