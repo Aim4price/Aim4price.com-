@@ -18,6 +18,9 @@ export default function OwnerManualAssetClient() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
   const [usageMetric, setUsageMetric] = useState('hours');
+  const [assetKind, setAssetKind] = useState('equipment');
+  const [propertySubtype, setPropertySubtype] = useState('building');
+  const replacementRequired = assetKind !== 'stock' && !(assetKind === 'property' && propertySubtype === 'land');
   const [currentValue, setCurrentValue] = useState('');
   const [replacementPrice, setReplacementPrice] = useState('');
 
@@ -101,7 +104,8 @@ export default function OwnerManualAssetClient() {
           </label>
           <label className={styles.field}>
             <span>Asset type</span>
-            <select name="kind" defaultValue="equipment">
+            <select name="kind" value={assetKind} onChange={event => setAssetKind(event.target.value)}>
+              <option value="tractor">Tractor</option>
               <option value="equipment">Equipment</option>
               <option value="vehicle">Vehicle</option>
               <option value="property">Property / Land / Building</option>
@@ -110,21 +114,28 @@ export default function OwnerManualAssetClient() {
               <option value="manual">Furniture, appliances &amp; electronics</option>
             </select>
           </label>
+          {assetKind === 'property' ? <label className={styles.field}>
+            <span>Property type</span>
+            <select name="propertyAssetSubtype" value={propertySubtype} onChange={event => setPropertySubtype(event.target.value)}>
+              <option value="building">Building</option><option value="land">Land</option>
+            </select>
+          </label> : null}
           <label className={styles.field}><span>Make</span><input name="brandName" /></label>
           <label className={styles.field}><span>Model</span><input name="modelName" /></label>
           <label className={styles.field}><span>Year model / year built</span><input name="yearModel" inputMode="numeric" /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input name="serialNumber" /></label>
           <label className={styles.field}><span>Current value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="value" value={currentValue} onValueChange={setCurrentValue} required /></span></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="replacementPriceExVat" value={replacementPrice} onValueChange={setReplacementPrice} required /></span></label>
+          <label className={styles.field}><span>Replacement price excl. VAT{replacementRequired ? '' : ' (optional)'}</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="replacementPriceExVat" value={replacementPrice} onValueChange={setReplacementPrice} required={replacementRequired} /></span></label>
           <label className={styles.field}>
             <span>Usage type</span>
             <select name="usageMetric" value={usageMetric} onChange={(event) => setUsageMetric(event.target.value)}>
               <option value="hours">Hours</option>
               <option value="km">Kilometres</option>
+              <option value="percentage">Percentage worked</option>
               <option value="not_applicable">Not applicable</option>
             </select>
           </label>
-          <label className={styles.field}><span>Current usage</span><input name="hours" type="number" min="0" step="any" inputMode="decimal" disabled={usageMetric === 'not_applicable'} placeholder={usageMetric === 'not_applicable' ? 'Not applicable' : undefined} /></label>
+          <label className={styles.field}><span>{usageMetric === 'percentage' ? 'Percentage worked' : 'Current usage'}</span><input key={usageMetric} name="hours" required={usageMetric === 'percentage'} type="number" min="0" max={usageMetric === 'percentage' ? '100' : undefined} step="any" inputMode="decimal" disabled={usageMetric === 'not_applicable'} placeholder={usageMetric === 'not_applicable' ? 'Not applicable' : undefined} /></label>
           <label className={styles.field}>
             <span>Condition</span>
             <select name="condition" defaultValue="">

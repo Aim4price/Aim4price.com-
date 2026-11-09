@@ -1,4 +1,6 @@
 'use client';
+
+import { fuelGaugeError } from '../../../../../lib/fuel-gauge';
 import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../../../lib/fuel-work-choice-options';
 import FuelWorkField from '../../../../../components/FuelWorkField';
 import AssetPickerDetail from '../../../../../components/AssetPickerDetail';
@@ -144,8 +146,8 @@ export default function PetrolStationFuelClient({
   const [search, setSearch] = useState('');
   const [usageReading, setUsageReading] = useState('');
   const [usageNotApplicable, setUsageNotApplicable] = useState(false);
-  const [fuelBefore, setFuelBefore] = useState('0');
-  const [fuelAfter, setFuelAfter] = useState('100');
+  const [fuelBefore, setFuelBefore] = useState('');
+  const [fuelAfter, setFuelAfter] = useState('');
   const [fuelType, setFuelType] = useState<FuelType>('diesel');
   const [litres, setLitres] = useState('');
   const [totalAmount, setTotalAmount] = useState('');
@@ -240,8 +242,8 @@ export default function PetrolStationFuelClient({
 
   function selectAsset(asset: FuelAsset) {
     setAssetId(asset.id);
-    setFuelBefore(String(asset.fuelPercent ?? 0));
-    setFuelAfter(String(Math.max(asset.fuelPercent ?? 0, 100)));
+    setFuelBefore('');
+    setFuelAfter('');
     setUsageReading('');
     setUsageNotApplicable(!hasMeter(asset));
     setSearch('');
@@ -264,9 +266,8 @@ export default function PetrolStationFuelClient({
       if ((numberValue(litres) ?? 0) <= 0) return 'Enter litres greater than 0.';
       if ((numberValue(totalAmount) ?? 0) <= 0) return 'Enter the total amount paid.';
     }
-    if (step === 'after' && Number(clampFuel(fuelAfter)) < Number(clampFuel(fuelBefore))) {
-      return 'The fuel level after filling cannot be lower than before filling.';
-    }
+    if (step === 'before') return fuelGaugeError(fuelBefore);
+    if (step === 'after') return fuelGaugeError(fuelBefore, fuelAfter);
     if (step === 'activity') {
       if (stationName.trim().length < 2) return 'Enter the petrol station name.';
       if (activityText.trim().length < 2) return 'Describe the work this fuel is for.';
@@ -300,7 +301,7 @@ export default function PetrolStationFuelClient({
   }
 
   async function saveFuelCost() {
-    const validationError = validateStep();
+    const validationError = validateStep() || fuelGaugeError(fuelBefore, fuelAfter);
     if (validationError) {
       setNotice(validationError);
       return;
@@ -427,9 +428,10 @@ export default function PetrolStationFuelClient({
     const percent = clampFuel(value);
     return (
       <div className={styles.fuelGauge}>
-        <strong>{percent}%</strong>
+        <strong>{value === '' ? 'Choose level' : `${percent}%`}</strong>
         <span>Asset fuel gauge</span>
         <input
+          aria-label="Asset fuel level"
           type="range"
           min="0"
           max="100"
@@ -440,11 +442,11 @@ export default function PetrolStationFuelClient({
         />
         <div className={styles.gaugeScale}><span>Empty</span><span>Full</span></div>
         <div className={styles.quickGrid}>
-          {[25, 50, 75, 100].map((option) => (
+          {[0, 25, 50, 75, 100].map((option) => (
             <button
               key={option}
               type="button"
-              className={percent === String(option) ? styles.quickActive : ''}
+              className={value !== '' && percent === String(option) ? styles.quickActive : ''}
               onClick={() => onChange(String(option))}
             >
               {option}%

@@ -1,4 +1,4 @@
-import { listAssetMaintenanceRecords } from './asset-maintenance';
+import { assetMaintenanceRecordProcedureKind, listAssetMaintenanceRecords } from './asset-maintenance';
 import { getDb } from './db';
 
 export type AssetActivityItem = {
@@ -8,6 +8,7 @@ export type AssetActivityItem = {
   detail: string;
   actorName: string;
   occurredAtIso: string;
+  sourceScanEventId?: string | null;
 };
 
 type ScanRow = {
@@ -16,6 +17,8 @@ type ScanRow = {
   activity_text: string | null;
   work_area_text: string | null;
   hours: string | number | null;
+  asset_usage_reading?: string | number | null;
+  asset_usage_metric?: string | null;
   condition: string | null;
   note: string | null;
   location_text: string | null;
@@ -49,6 +52,7 @@ function text(value: unknown): string {
 }
 
 function number(value: unknown): number | null {
+  if (value === null || value === undefined || text(value) === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -73,7 +77,9 @@ function reasonLabel(value: string): string {
 async function listScanActivity(assetId: string): Promise<AssetActivityItem[]> {
   const result = await getDb().query<ScanRow>(
     `select id::text, operator_name, activity_text, work_area_text, hours, condition, note,
-            location_text, created_at::text
+            location_text, created_at::text,
+            to_jsonb(asset_scan_events)->>'asset_usage_reading' as asset_usage_reading,
+            to_jsonb(asset_scan_events)->>'asset_usage_metric' as asset_usage_metric
        from public.asset_scan_events
       where asset_id = $1::uuid
         and fuel_storage_event_id is null
@@ -92,7 +98,10 @@ async function listScanActivity(assetId: string): Promise<AssetActivityItem[]> {
         : /^checked\b/i.test(note)
           ? 'Check recorded'
           : 'Asset update recorded';
-    const hours = number(row.hours);
+    const reading = number(row.asset_usage_reading ?? row.hours);
+    const metric = text(row.asset_usage_metric);
+    const usage = metric === 'none' || reading === null ? ''
+      : `${reading.toLocaleString('en-ZA')} ${metric === 'percentage' ? '% worked' : metric === 'km' ? 'km' : metric === 'hours' ? 'hours' : '(usage reading)'}`;
     return {
       id: `work:${row.id}`,
       kind: 'work',
@@ -100,7 +109,7 @@ async function listScanActivity(assetId: string): Promise<AssetActivityItem[]> {
       detail: sentence([
         text(row.activity_text),
         text(row.work_area_text),
-        hours === null ? '' : `${hours.toLocaleString('en-ZA')} hours`,
+        usage,
         text(row.condition),
         note,
         text(row.location_text),
@@ -180,8 +189,9 @@ async function listMaintenanceActivity(ownerUserId: string, assetId: string): Pr
   return records.map((record) => ({
     id: `maintenance:${record.id}`,
     kind: 'maintenance' as const,
+    sourceScanEventId: record.status === 'done' ? record.sourceScanEventId : null,
     title: record.status === 'done'
-      ? `${record.maintenanceType === 'checkup' ? 'Checkup' : 'Service'} completed`
+      ? `${assetMaintenanceRecordProcedureKind(record) === 'repaired' ? 'Repair' : assetMaintenanceRecordProcedureKind(record) === 'checked' ? 'Checkup' : 'Service'} completed`
       : record.status === 'cancelled'
         ? 'Maintenance cancelled'
         : 'Maintenance scheduled',
@@ -204,7 +214,15 @@ export async function listAssetActivity(ownerUserId: string, assetId: string): P
     listLifecycleActivity(ownerUserId, assetId).catch(() => []),
   ]);
 
-  return sources.flat().sort((left, right) => {
+  // A completed job can have both a scan and a maintenance record. Join only
+  // explicit source links; two jobs on the same asset/date remain separate.
+  const scans = new Map(sources[0].map(item => [item.id, item]));
+  const linkedScans = new Set(sources[2].flatMap(item => item.sourceScanEventId ? [`work:${item.sourceScanEventId}`] : []));
+  const activity = sources.flat().filter(item => !linkedScans.has(item.id)).map(item => {
+    const scan = item.sourceScanEventId ? scans.get(`work:${item.sourceScanEventId}`) : undefined;
+    return scan ? { ...item, detail: sentence([item.detail, scan.detail]), actorName: item.actorName || scan.actorName } : item;
+  });
+  return activity.sort((left, right) => {
     const leftTime = new Date(left.occurredAtIso).getTime();
     const rightTime = new Date(right.occurredAtIso).getTime();
     return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);

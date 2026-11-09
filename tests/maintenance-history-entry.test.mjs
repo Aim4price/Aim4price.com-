@@ -11,6 +11,7 @@ function route(session = { user: { id: 'owner-1' } }) {
   const source = readFileSync(new URL('../app/api/maintenance/route.ts', import.meta.url), 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   new Function('require', 'exports', code)((name) => {
+    if (name.endsWith('/team-maintenance')) return { teamMaintenanceResponse: async () => null };
     if (name.endsWith('/auth-session')) return { getServerSession: async () => session };
     if (name.endsWith('/asset-maintenance')) return {
       recordStandaloneAssetMaintenanceCompletion: async (owner, input) => { calls.push({ kind: 'history', owner, input }); return { id: 'saved', status: 'done' }; },

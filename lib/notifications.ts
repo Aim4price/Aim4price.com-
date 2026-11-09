@@ -1,3 +1,4 @@
+import { maintenanceTaskTitle } from './notification-copy';
 import { listDealerProblemNotifications } from './dealer-problem-notifications';
 import {listMaintenanceReminderNotifications} from './maintenance-reminders';
 import {listValueRequests} from './asset-value-requests';
@@ -586,7 +587,7 @@ async function listOwnerRecurringMaintenanceNotifications(userId: string): Promi
         category: 'maintenance',
         tone: 'info',
         title: 'Next maintenance scheduled',
-        body: `${record.title} for ${record.assetTitle} was scheduled automatically. ${maintenanceDueText(record)}`,
+        body: `${maintenanceTaskTitle(record)} for ${record.assetTitle} was scheduled automatically. ${maintenanceDueText(record)}`,
         href: `/owner-app/assets/${encodeURIComponent(record.assetId)}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
         createdAtIso: isoFallback(record.createdAtIso),
         assetId: record.assetId,

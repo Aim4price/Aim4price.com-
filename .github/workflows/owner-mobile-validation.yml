@@ -5,6 +5,14 @@ on:
       - 'app/owner-app/**'
       - 'app/api/owner-app/**'
       - 'lib/owner-asset-location.ts'
+      - 'lib/asset-activity.ts'
+      - 'lib/owner-notification-inbox.ts'
+      - 'lib/notification-copy.ts'
+      - 'lib/notifications.ts'
+      - 'lib/maintenance-reminders.ts'
+      - 'lib/fuel-gauge.ts'
+      - 'lib/asset-fuel-eligibility.ts'
+      - 'tests/asset-fuel-eligibility.test.mjs'
       - 'app/field-manager/field-manager-diesel-client.tsx'
       - 'app/field-manager/assets/**/maintenance/field-manager-maintenance-client.tsx'
       - 'app/fuel-scan/**/fuel-scan-client.tsx'
@@ -30,4 +38,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/owner-mobile-*.test.mjs tests/owner-top-navigation.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs
+      - run: node --test tests/owner-mobile-*.test.mjs tests/owner-top-navigation.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs tests/asset-fuel-eligibility.test.mjs
