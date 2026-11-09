@@ -3810,8 +3810,8 @@
   gap: 10px;
   padding: max(8px, env(safe-area-inset-top)) 0 12px;
   margin-bottom: 4px;
-  background: var(--app-page, #f7faf8);
-  border-bottom: 1px solid var(--app-line, #dce7e0);
+  background: transparent;
+  border-bottom: none;
 }
 .topNavigation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
 .appShell .topNavigation > .navButton { width: 100%; min-width: 0; max-width: none; min-height: 46px; margin: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
