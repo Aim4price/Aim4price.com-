@@ -106,30 +106,40 @@ export async function POST(request: NextRequest) {
   const title = text(body.title);
   const value = positiveNumber(body.value);
   const replacementPriceExVat = positiveNumber(body.replacementPriceExVat);
+  const assetKind = kind(body.kind);
+  const propertyAssetSubtype = text(body.propertyAssetSubtype).toLowerCase();
+  const replacementNotApplicable = assetKind === 'stock' || (assetKind === 'property' && propertyAssetSubtype === 'land');
+  const usageMetric = text(body.usageMetric).toLowerCase() || 'hours';
+  if (!['hours', 'km', 'percentage', 'not_applicable'].includes(usageMetric)) {
+    return NextResponse.json({ ok: false, error: 'Choose a valid usage type.' }, { status: 400 });
+  }
   const requestedYearModel = text(body.yearModel);
   const normalizedYearModel = yearModel(body.yearModel);
   const requestedHours = text(body.hours);
   const hours = nonNegativeNumber(body.hours);
+  const percentage = requestedHours ? Number(body.hours) : null;
 
-  if (!title || value === null || replacementPriceExVat === null) {
+  if (!title || value === null || (!replacementNotApplicable && replacementPriceExVat === null)) {
     return NextResponse.json(
-      { ok: false, error: 'Asset name, current value and replacement price are required.' },
+      { ok: false, error: replacementNotApplicable ? 'Asset name and current value are required.' : 'Asset name, current value and replacement price are required.' },
       { status: 400 },
     );
   }
   if (requestedYearModel && normalizedYearModel === null) {
     return NextResponse.json({ ok: false, error: 'Enter a valid year model.' }, { status: 400 });
   }
-  if (requestedHours && hours === null) {
-    return NextResponse.json({ ok: false, error: 'Current usage cannot be negative.' }, { status: 400 });
+  if (usageMetric !== 'not_applicable' && requestedHours && hours === null) {
+    return NextResponse.json({ ok: false, error: 'Enter a valid, non-negative usage reading.' }, { status: 400 });
   }
 
-  const usageMetric = text(body.usageMetric).toLowerCase() === 'not_applicable' ? 'not_applicable' : text(body.usageMetric).toLowerCase() === 'km' ? 'km' : 'hours';
+  if (usageMetric === 'percentage' && (percentage === null || !Number.isFinite(percentage) || percentage < 0 || percentage > 100)) {
+    return NextResponse.json({ ok: false, error: 'Percentage worked must be between 0 and 100.' }, { status: 400 });
+  }
 
   try {
     const item = await createManualAssetRegisterItem(access.ownerUserId, {
       registerId: text(body.registerId) || null,
-      kind: kind(body.kind),
+      kind: assetKind,
       title,
       value,
       replacementPriceExVat,
@@ -146,10 +156,11 @@ export async function POST(request: NextRequest) {
       photos: [],
       documents: [],
       yearModel: normalizedYearModel,
-      hours: usageMetric === 'not_applicable' ? null : hours,
-      usageMetric: usageMetric === 'not_applicable' ? null : usageMetric,
-      lifeWorkedPercent: null,
+      hours: usageMetric === 'hours' || usageMetric === 'km' ? hours : null,
+      usageMetric: usageMetric === 'hours' || usageMetric === 'km' ? usageMetric : null,
+      lifeWorkedPercent: usageMetric === 'percentage' ? percentage : null,
       specsJson: {
+        ...(assetKind === 'property' && ['land', 'building'].includes(propertyAssetSubtype) ? { propertyAssetSubtype } : {}),
         usageTypeConfirmed: true,
         usageApplicable: usageMetric !== 'not_applicable',
         usage_applicable: usageMetric !== 'not_applicable',

@@ -487,21 +487,23 @@ export default function FieldManagerMaintenanceClient({
               </section>
             ) : null}
 
-            {maintenanceRecords.length ? (
-              <section className={styles.maintenanceScheduleSection} aria-labelledby="maintenance-schedules-title">
+            {['upcoming', 'history'].map(group => {
+              const records = maintenanceRecords.filter(record => group === 'upcoming' ? record.status === 'upcoming' : record.status !== 'upcoming');
+              return records.length ? (
+              <section key={group} className={styles.maintenanceScheduleSection} aria-labelledby={`maintenance-${group}-title`}>
                 <div className={styles.maintenanceScheduleHeading}>
                   <div>
                     <span>Maintenance</span>
-                    <h2 id="maintenance-schedules-title">Current schedules</h2>
+                    <h2 id={`maintenance-${group}-title`}>{group === 'upcoming' ? 'Current schedules' : 'Maintenance history'}</h2>
                   </div>
-                  <strong>{maintenanceRecords.length}</strong>
+                  <strong>{records.length}</strong>
                 </div>
                 <div className={styles.maintenanceScheduleList}>
-                  {maintenanceRecords.map((record) => {
+                  {records.map((record) => {
                     const isFocused = focusedMaintenanceId === record.id;
                     const isRecurringSchedule = Boolean(record.recurringEnabled || record.generatedFromMaintenanceId);
                     const isDone = record.status === 'done';
-                    const isUpcomingRecurringSchedule = isRecurringSchedule && !isDone;
+                    const isUpcomingRecurringSchedule = isRecurringSchedule && record.status === 'upcoming';
                     const isUpdating = actionMaintenanceId === record.id;
                     return (
                       <MaintenanceDetailsCard
@@ -514,12 +516,12 @@ export default function FieldManagerMaintenanceClient({
                       >
                         <div className={styles.maintenanceScheduleLabels}>
                           <span className={isUpcomingRecurringSchedule ? styles.maintenanceScheduleRecurringLabel : ''}>
-                            {isDone ? 'Maintenance completed' : isRecurringSchedule ? 'Recurring schedule' : maintenanceTypeLabel(record.maintenanceType)}
+                            {isDone ? 'Completed work' : record.status === 'cancelled' ? 'Maintenance cancelled' : isRecurringSchedule ? 'Recurring schedule' : maintenanceTypeLabel(record.maintenanceType)}
                           </span>
                           <strong>{record.computedStatusLabel}</strong>
                         </div>
                         {record.title?.trim() ? <h3>{record.title}</h3> : null}
-                        <p>{ownerMaintenanceDueLabel(record)}</p>
+                        <p>{isDone ? record.completedAtIso ? `Completed ${new Date(record.completedAtIso).toLocaleDateString('en-ZA')}` : 'Completion date not saved' : ownerMaintenanceDueLabel(record)}</p>
                         <div id={`app-maintenance-details-${record.id}`} hidden={expandedRecordId !== record.id}>
                         <small>Type: {maintenanceTypeLabel(record.maintenanceType)}</small>
                         {record.completedAtIso ? <small>Completed: {new Date(record.completedAtIso).toLocaleDateString('en-ZA')}</small> : null}
@@ -564,7 +566,8 @@ export default function FieldManagerMaintenanceClient({
                   })}
                 </div>
               </section>
-            ) : null}
+            ) : null;
+            })}
 
             {!upcomingMaintenance ? (
               <section className={styles.maintenanceCard}>

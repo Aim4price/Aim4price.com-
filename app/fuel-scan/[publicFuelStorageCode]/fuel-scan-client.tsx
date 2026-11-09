@@ -1,4 +1,6 @@
 'use client';
+
+import { fuelGaugeError } from '../../../lib/fuel-gauge';
 import FuelWorkField from '../../../components/FuelWorkField';
 import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../lib/fuel-work-choice-options';
 
@@ -132,7 +134,7 @@ type FuelScanClientProps = {
   ownerAppReturnTo?: string | null;
 };
 
-const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
+const QUICK_FUEL_OPTIONS = [0, 25, 50, 75, 100] as const;
 const TOTAL_SCAN_PAGES = 9;
 const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'litres', 'filledFuel', 'work', 'notes'];
 const FUEL_OFFLINE_KINDS: OfflineMutationKind[] = ['fuel-ledger-issue', 'fuel-ledger-refill', 'fuel-ledger-dipstick'];
@@ -523,9 +525,8 @@ export default function FuelScanClient({
     const asset = assets.find((entry) => entry.id === assetId);
     if (!asset) return;
 
-    const currentFuelPercent = asset.fuelPercent !== null ? String(asset.fuelPercent) : '0';
-    setAssetFuelPercentBefore(currentFuelPercent);
-    setAssetFuelPercentAfter(currentFuelPercent);
+    setAssetFuelPercentBefore('');
+    setAssetFuelPercentAfter('');
     setAssetUsageReading('');
     setUsageNotApplicable(!assetHasMeter(asset));
   }, [assetId, assets]);
@@ -651,13 +652,9 @@ export default function FuelScanClient({
       }
     }
 
-    if (issueStep === 'filledFuel') {
-      const beforeNumber = Number(fuelPercentText(assetFuelPercentBefore));
-      const afterNumber = Number(fuelPercentText(assetFuelPercentAfter));
-
-      if (afterNumber < beforeNumber) {
-        throw new Error('The fuel level after filling cannot be lower than the level before filling.');
-      }
+    if (issueStep === 'beforeFuel' || issueStep === 'filledFuel') {
+      const gaugeError = fuelGaugeError(assetFuelPercentBefore, issueStep === 'filledFuel' ? assetFuelPercentAfter : undefined);
+      if (gaugeError) throw new Error(gaugeError);
     }
 
     if (issueStep === 'work') {
@@ -782,9 +779,8 @@ export default function FuelScanClient({
         throw new Error('Enter the litres issued.');
       }
 
-      if (Number(fuelPercentText(assetFuelPercentAfter)) < Number(fuelPercentText(assetFuelPercentBefore))) {
-        throw new Error('The fuel level after filling cannot be lower than the level before filling.');
-      }
+      const gaugeError = fuelGaugeError(assetFuelPercentBefore, assetFuelPercentAfter);
+      if (gaugeError) throw new Error(gaugeError);
 
       const operatorNameForSave = isAuthenticatedAppMode
         ? operatorName.trim() || (isOwnerAppMode ? 'Owner' : 'Field Manager')
@@ -1103,11 +1099,12 @@ export default function FuelScanClient({
     return (
       <div className={styles.fuelSliderBlock}>
         <div className={styles.fuelValueRow}>
-          <strong>{currentFuelPercent}%</strong>
+          <strong>{value === '' ? 'Choose level' : `${currentFuelPercent}%`}</strong>
           <span>Asset fuel gauge</span>
         </div>
         <div className={styles.sliderTrackWrap}>
           <input
+            aria-label="Asset fuel level"
             type="range"
             min="0"
             max="100"
@@ -1129,7 +1126,7 @@ export default function FuelScanClient({
             <button
               type="button"
               key={option}
-              className={`${styles.quickFuelButton} ${currentFuelPercent === String(option) ? styles.quickFuelButtonActive : ''}`}
+              className={`${styles.quickFuelButton} ${value !== '' && currentFuelPercent === String(option) ? styles.quickFuelButtonActive : ''}`}
               onClick={() => onChange(String(option))}
               disabled={isSaving}
             >

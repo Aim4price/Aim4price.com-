@@ -1,3 +1,7 @@
+export function maintenanceTaskTitle(record: { title?: string | null; maintenanceType?: string }): string {
+  return record.title?.trim() || (record.maintenanceType === 'checkup' ? 'Checkup' : record.maintenanceType === 'repair' ? 'Repair' : 'Service');
+}
+
 /** Correct known system-generated historical wording without changing event identity or read state. */
 export function normalizeNotificationCopy<T extends {id: string; title: string; body: string}>(item: T): T {
   let {title, body} = item;
@@ -51,6 +55,10 @@ export function normalizeNotificationCopy<T extends {id: string; title: string; 
   if (item.id.startsWith('license-renewal:') && title === 'License renewal upcoming') {
     title = item.id.endsWith(':overdue') ? 'Licence renewal overdue'
       : item.id.endsWith(':due') ? 'Licence renewal due today' : 'Licence renewal due soon';
+  }
+  if (/^(?:app-event:)?maintenance(?:-reminder|-recurring)?:/.test(item.id)) {
+    body = body.replace(/:\s*\.\s*/, ': Maintenance. ')
+      .replace(/^\s*for /, 'Maintenance for ');
   }
   return {...item, title, body};
 }
