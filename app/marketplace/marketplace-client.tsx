@@ -468,11 +468,11 @@ function isListingTitleMetaPart(value: string): boolean {
     return true;
   }
 
-  if (/^\d+(?:\.\d+)?%\s*worked$/.test(part)) {
+  if (/^\d+(?:\.\d+)?%\s*(?:worked)?$/.test(part)) {
     return true;
   }
 
-  return ['excellent', 'good', 'fair', 'used', 'serious wear', 'requires attention'].includes(part);
+  return ['excellent', 'good', 'fair', 'used', 'serious wear', 'requires attention', 'year unknown', 'year not set', 'usage not set', 'condition not set'].includes(part);
 }
 
 function cleanListingTitleMeta(value: string): string {
@@ -501,7 +501,7 @@ function listingDisplayTitle(listing: MarketplaceListing): string {
     `${String(listing.brandName ?? '').trim()} ${String(listing.modelName ?? '').trim()}`.trim() ||
     'Marketplace listing';
 
-  return cleanListingTitleMeta(rawTitle) || 'Marketplace listing';
+  return cleanListingTitleMeta(rawTitle.replace(/^year (?:unknown|not set)\s+/i, '')) || 'Marketplace listing';
 }
 
 function getListingNote(listing: MarketplaceListing): string {
@@ -563,7 +563,9 @@ function formatLocation(listing: MarketplaceListing): string {
   const province = String(listing.province ?? '').trim();
 
   if (area && province) {
-    return `${area}, ${province}`;
+    const locationParts = area.split(',').map(part => part.trim());
+    const alreadyIncluded = locationParts.some(part => part.replace(/\s+(?:za|south africa)$/i, '').toLowerCase() === province.toLowerCase());
+    return alreadyIncluded ? area : `${area}, ${province}`;
   }
 
   return area || province || 'South Africa';
@@ -579,6 +581,7 @@ function formatPercent(value: number): string {
 }
 
 function getListingWorkedPercent(listing: MarketplaceListing): number | null {
+  if (listing.lifeWorkedPercent == null || String(listing.lifeWorkedPercent).trim() === '') return null;
   const direct = Number(listing.lifeWorkedPercent);
 
   if (Number.isFinite(direct)) {
@@ -2989,7 +2992,7 @@ export default function MarketplaceClient({
       ) : null}
 
       {compactAppMode ? (
-        <section className={dealerStyles.marketplaceDealerToolbar} aria-label="Dealer Marketplace controls">
+        <section className={dealerStyles.marketplaceDealerToolbar} aria-label="Marketplace controls">
           <div className={dealerStyles.marketplaceModeTabs} role="group" aria-label="Marketplace view">
             <button
               type="button"
@@ -3372,7 +3375,7 @@ export default function MarketplaceClient({
                       <h3>{listingDisplayTitle(listing)}</h3>
                       <p className={styles.cardLocation}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg><span>{formatLocation(listing)}</span></p>
                       <p className={styles.cardMeta}>
-                        {listing.yearModel || 'Year N/A'} · {formatUsage(listing)} ·{' '}
+                        {listing.yearModel || 'Year not saved'} · {formatUsage(listing)} ·{' '}
                         {formatConditionLabel(conditionKey)}
                       </p>
                     </div>
@@ -3383,7 +3386,7 @@ export default function MarketplaceClient({
                 );
               })}
             </div>
-          ) : (
+          ) : !isLoadingListings && !listingLoadError ? (
             <article className={`${styles.emptyState} ${showroomMode ? styles.showroomEmptyState : ''}`}>
               {showroomHasNoInventory ? (
                 <>
@@ -3403,16 +3406,16 @@ export default function MarketplaceClient({
                     {showroomMode
                       ? 'Try a broader search or clear the filters to see all available machinery.'
                       : compactAppMode && dealerListingView === 'mine'
-                        ? 'Create a listing from Valuation.'
+                        ? 'Add details manually, use a saved asset or value an asset first.'
                         : 'Try another search, category, condition or location.'}
                   </p>
-                  <button type="button" onClick={clearFilters}>
-                    {showroomMode ? 'Clear filters' : 'Reset marketplace'}
+                  <button type="button" onClick={compactAppMode && dealerListingView === 'mine' ? handleCreateListingClick : clearFilters}>
+                    {compactAppMode && dealerListingView === 'mine' ? 'New listing' : showroomMode ? 'Clear filters' : 'Reset marketplace'}
                   </button>
                 </>
               )}
             </article>
-          )}
+          ) : null}
 
           {visible.length > 0 ? (
             <ListPagination label="Marketplace listing pages" page={normalizedCurrentPage} pageCount={totalPages}

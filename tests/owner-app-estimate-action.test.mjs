@@ -9,7 +9,7 @@ const ownerStyles = read('app/owner-app/owner-app.module.css');
 test('Owner App exposes the estimate update from both asset value summaries', () => {
   assert.equal(ownerAsset.match(/renderEstimateUpdateAction\(\)/g)?.length, 2);
   assert.match(ownerAsset, /const renderEstimateUpdateAction = \(\) => estimateNeedsUpdate \?/);
-  assert.match(ownerAsset, /Update estimate[\s\S]*?<\/button>[\s\S]*?: null;/);
+  assert.match(ownerAsset, /Retry update[\s\S]*?Update now[\s\S]*?<\/button>[\s\S]*?: null;/);
   assert.match(ownerAsset, /fetch\('\/api\/asset-register\/revalue'/);
   assert.match(ownerAsset, /onClick=\{\(\) => void requestRevalue\(false\)\}/);
 });

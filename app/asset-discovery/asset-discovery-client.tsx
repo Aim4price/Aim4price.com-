@@ -1460,7 +1460,7 @@ export default function AssetDiscoveryClient({
           <div className={styles.compactExpandedTop}>
             <div>
               <span>Asset details</span>
-              <p>Review the available information before requesting access.</p>
+              <p>{asset.enquiryStatus === "approved" ? "Access approved. View the asset and owner contact details." : asset.enquiryStatus === "pending" ? "Your request is awaiting the owner’s response." : "Request access to view private photos and contact details."}</p>
             </div>
             {renderEnquiryControl(asset)}
           </div>
@@ -1691,7 +1691,7 @@ export default function AssetDiscoveryClient({
     return (
       <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
         <div className={styles.discoveryTitleRow}>
-          <h1>{advertised ? "Recently advertised" : compactAppMode ? "Discovery" : "Discover Assets"}</h1>
+          <h1>{advertised ? "Recently advertised" : "Discover Assets"}</h1>
           {allowRecentAdverts ? (
             <WorkspaceViewSwitch
               label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}
