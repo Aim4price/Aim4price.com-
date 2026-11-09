@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/owner-app-apple-icon.png?v=2', sizes: '180x180', type: 'image/png' }],
   },
-  appleWebApp: { capable: true, title: 'Aim4price Owner', statusBarStyle: 'black-translucent' },
+  appleWebApp: { capable: true, title: 'Aim4price Owner', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   userScalable: true,
   viewportFit: 'cover',
-  themeColor: '#000000',
+  themeColor: '#f6faf7',
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {

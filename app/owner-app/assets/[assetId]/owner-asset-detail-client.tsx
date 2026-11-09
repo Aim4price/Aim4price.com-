@@ -4,6 +4,7 @@ import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION
 import AppMaintenanceActions from '../../../../components/AppMaintenanceActions';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
+import { assetLocationDraft, hasLocationChanges, validLocationCoordinates, type LocationDraft } from '../../../../lib/owner-asset-location';
 
 import { legacyValuationRecoveryReason } from '../../../../lib/asset-register-legacy-valuation';
 import Link from 'next/link';
@@ -374,13 +375,20 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [transferReceipt, setTransferReceipt] = useState<TransferReceipt | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
 
-  const hasUnsavedChanges = view === 'section' && Boolean(draft && baseline.current && JSON.stringify(draft) !== JSON.stringify(baseline.current));
+  const hasUnsavedChanges = view === 'section' && Boolean(draft && baseline.current && (
+    JSON.stringify(draft) !== JSON.stringify(baseline.current) ||
+    (section === 'location' && hasLocationChanges(assetLocationDraft(baseline.current), location))
+  ));
   useEffect(() => {
     if (!hasUnsavedChanges) return;
     const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
     const onClick = (event: MouseEvent) => {
-      const link = (event.target as HTMLElement).closest?.('a[href]');
-      if (link && !window.confirm('Discard your unsaved changes?')) { event.preventDefault(); event.stopPropagation(); }
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
+      if (!link || link.target === '_blank' || link.hasAttribute('download') || /^(mailto:|tel:)/i.test(link.href)) return;
+      const destination = new URL(link.href, window.location.href);
+      if (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash) return;
+      if (!window.confirm('Discard your unsaved changes?')) { event.preventDefault(); event.stopPropagation(); }
     };
     window.addEventListener('beforeunload', beforeUnload);
     document.addEventListener('click', onClick, true);
@@ -485,11 +493,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     setRegisterName(payload.register?.businessName ?? 'Asset register');
     setOwnerContext(payload.ownerContext ?? null);
     setMaintenance(payload.maintenance ?? []);
-    setLocation({
-      locationText: payload.item.lastKnownLocationText || '',
-      latitude: payload.item.lastKnownLat === null ? '' : String(payload.item.lastKnownLat),
-      longitude: payload.item.lastKnownLng === null ? '' : String(payload.item.lastKnownLng),
-    });
+    setLocation(assetLocationDraft(payload.item));
   }
 
   const hasAutomaticValueUpdate = Boolean(draft && automaticValuationPending(draft.specsJson));
@@ -1840,8 +1844,6 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
   );
 }
 
-type LocationDraft = { locationText: string; latitude: string; longitude: string };
-
 function LocationSection({ draft, location, setLocation, action, busy }: {
   draft: Asset;
   location: LocationDraft;
@@ -1855,9 +1857,14 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
-  const hasCoordinates = location.latitude.trim() !== '' && location.longitude.trim() !== '' &&
-    Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude));
-  const mapsHref = hasCoordinates ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : '';
+  const savedLocation = assetLocationDraft(draft);
+  const hasSavedCoordinates = validLocationCoordinates(savedLocation);
+  const hasCoordinates = validLocationCoordinates(location);
+  const locationChanged = hasLocationChanges(savedLocation, location);
+  const mapsHref = hasSavedCoordinates ? `https://www.google.com/maps?q=${savedLocation.latitude},${savedLocation.longitude}` : '';
+  const [locationSource, setLocationSource] = useState<'manual' | 'device'>('manual');
+  const deviceRequest = useRef(0);
+  useEffect(() => () => { deviceRequest.current += 1; }, []);
 
   useEffect(() => {
     if (mode !== 'map' || !mapElementRef.current) return undefined;
@@ -1887,14 +1894,14 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
       const map = L.map(mapElementRef.current).setView(center, hasCoordinates ? 13 : 5);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {referrerPolicy: "strict-origin",  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
       mapRef.current = map;
-      const setPoint = (lat: number, lng: number) => {
+      const setPoint = (lat: number, lng: number, updateDraft = true) => {
         if (!markerRef.current) {
           markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(map);
           markerRef.current.on('dragend', () => { const point = markerRef.current.getLatLng(); setLocation((current) => ({ ...current, latitude: point.lat.toFixed(6), longitude: point.lng.toFixed(6) })); });
         } else markerRef.current.setLatLng([lat, lng]);
-        setLocation((current) => ({ ...current, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+        if (updateDraft) setLocation((current) => ({ ...current, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
       };
-      if (hasCoordinates) setPoint(savedLat, savedLng);
+      if (hasCoordinates) setPoint(savedLat, savedLng, false);
       map.on('click', (event: any) => setPoint(event.latlng.lat, event.latlng.lng));
       window.setTimeout(() => map.invalidateSize(), 0);
     }).catch((cause) => setLocationError(cause instanceof Error ? cause.message : 'The location map could not be loaded.'));
@@ -1911,13 +1918,16 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
     setLocationError('');
     if (!navigator.geolocation) { setLocationError('GPS is not available in this browser.'); return; }
     setDeviceBusy(true);
+    const request = ++deviceRequest.current;
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const next = { ...location, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) };
-        setLocation(next);
-        void action({ action: 'location', ...next, source: 'device' }, 'Device location saved.').finally(() => setDeviceBusy(false));
+        if (request !== deviceRequest.current) return;
+        setLocation((current) => ({ ...current, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) }));
+        setLocationSource('device');
+        setMode('manual');
+        setDeviceBusy(false);
       },
-      (error) => { setDeviceBusy(false); setLocationError(error.code === 1 ? 'Location permission was denied.' : 'Your location could not be found.'); },
+      (error) => { if (request !== deviceRequest.current) return; setDeviceBusy(false); setLocationError(error.code === 1 ? 'Location permission was denied.' : 'Your location could not be found.'); },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
     );
   }
@@ -1927,24 +1937,25 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
       <p className={styles.editorIntro}>Save this asset’s position from the device, GPS coordinates or the map.</p>
       <div className={styles.locationCurrentCard}>
         <span>Saved location</span>
-        <strong>{hasCoordinates ? `${location.latitude}, ${location.longitude}` : 'No GPS coordinates saved'}</strong>
+        <strong>{hasSavedCoordinates ? `${savedLocation.latitude}, ${savedLocation.longitude}` : 'No GPS coordinates saved'}</strong>
         <small>Last scanned: {dateTime(draft.lastScannedAtIso)}</small>
         {mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer">Open in Maps</a> : null}
       </div>
       <div className={styles.locationChoiceGrid}>
-        <button type="button" onClick={useDeviceLocation} disabled={busy || deviceBusy}><strong>{deviceBusy ? 'Finding location…' : 'Use this device'}</strong><small>Save the phone or computer GPS position.</small></button>
-        <button type="button" onClick={() => setMode('manual')} className={mode === 'manual' ? styles.locationChoiceActive : ''}><strong>Enter GPS</strong><small>Type latitude and longitude manually.</small></button>
-        <button type="button" onClick={() => setMode('map')} className={mode === 'map' ? styles.locationChoiceActive : ''}><strong>Choose on map</strong><small>Tap the exact position on a map.</small></button>
+        <button type="button" onClick={useDeviceLocation} disabled={busy || deviceBusy}><strong>{deviceBusy ? 'Finding location…' : 'Use this device'}</strong><small>Find your position, then review and save it.</small></button>
+        <button type="button" onClick={() => { setLocationSource('manual'); setMode('manual'); }} disabled={busy || deviceBusy} className={mode === 'manual' ? styles.locationChoiceActive : ''}><strong>Enter GPS</strong><small>Type latitude and longitude manually.</small></button>
+        <button type="button" onClick={() => { setLocationSource('manual'); setMode('map'); }} disabled={busy || deviceBusy} className={mode === 'map' ? styles.locationChoiceActive : ''}><strong>Choose on map</strong><small>Tap the exact position on a map.</small></button>
       </div>
+      {mode !== 'current' && locationChanged ? <p role="status" className={styles.mapHint}>Unsaved location changes. Review the position and save when ready.</p> : null}
       {mode === 'manual' ? <div className={styles.locationEditor}>
-        <div className={styles.formGrid}><label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} placeholder="Farm, branch, camp or address" /></label><label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} /></label><label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} /></label></div>
-        <button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void action({ action: 'location', ...location, source: 'manual' }, 'Location updated.')}>Save GPS location</button>
+        <div className={styles.formGrid}><label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} placeholder="Farm, branch, camp or address" /></label><label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => { setLocationSource('manual'); setLocation((current) => ({ ...current, latitude: event.target.value })); }} /></label><label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => { setLocationSource('manual'); setLocation((current) => ({ ...current, longitude: event.target.value })); }} /></label></div>
+        <button type="button" className={styles.primaryButton} disabled={busy || deviceBusy || !hasCoordinates || !locationChanged} onClick={() => void action({ action: 'location', ...location, source: locationSource }, 'Location updated.')}>Save GPS location</button>
       </div> : null}
       {mode === 'map' ? <div className={styles.locationEditor}>
         <label className={styles.field}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} placeholder="Farm, branch, camp or address" /></label>
         <div ref={mapElementRef} className={styles.locationMap} aria-label="Choose the asset position on the map" />
         <p className={styles.mapHint}>Tap the map or drag the marker to choose the asset position.</p>
-        <button type="button" className={styles.primaryButton} disabled={busy || !hasCoordinates} onClick={() => void action({ action: 'location', ...location, source: 'manual' }, 'Map location saved.')}>Save map position</button>
+        <button type="button" className={styles.primaryButton} disabled={busy || deviceBusy || !hasCoordinates || !locationChanged} onClick={() => void action({ action: 'location', ...location, source: 'manual' }, 'Map location saved.')}>Save map position</button>
       </div> : null}
       {locationError ? <div className={styles.errorNotice}>{locationError}</div> : null}
     </section>

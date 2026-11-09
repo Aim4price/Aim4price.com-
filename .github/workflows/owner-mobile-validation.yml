@@ -4,6 +4,11 @@ on:
     paths:
       - 'app/owner-app/**'
       - 'app/api/owner-app/**'
+      - 'lib/owner-asset-location.ts'
+      - 'app/field-manager/field-manager-diesel-client.tsx'
+      - 'app/field-manager/assets/**/maintenance/field-manager-maintenance-client.tsx'
+      - 'app/fuel-scan/**/fuel-scan-client.tsx'
+      - 'tests/owner-top-navigation.test.mjs'
       - 'components/FuelLocationModal.tsx'
       - 'tests/owner-mobile-*.test.mjs'
       - 'tests/owner-app-operations.test.mjs'
@@ -25,4 +30,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/owner-mobile-*.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs
+      - run: node --test tests/owner-mobile-*.test.mjs tests/owner-top-navigation.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs

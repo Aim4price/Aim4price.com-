@@ -5,6 +5,7 @@ import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../lib/fue
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../components/FuelLocationModal';
 import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
+import OwnerAppNav from '../../owner-app/owner-app-nav';
 import styles from './page.module.css';
 import {
   createOfflineClientEventId,
@@ -1547,11 +1548,8 @@ export default function FuelScanClient({
   return (
     <main className={scanPageClassName}>
       <div className={styles.scanShell}>
-        {isAuthenticatedAppMode ? (
-          <header
-            className={styles.fieldManagerDetailHeader}
-            aria-label={isOwnerAppMode ? 'Owner fuel navigation' : 'Field Manager fuel navigation'}
-          >
+        {isOwnerAppMode ? <OwnerAppNav backHref={appReturnHref} /> : isAuthenticatedAppMode ? (
+          <header className={styles.fieldManagerDetailHeader} aria-label="Field Manager fuel navigation">
             <FieldManagerNavLink href={appReturnHref} label="Back" />
           </header>
         ) : null}
