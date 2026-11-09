@@ -7,6 +7,7 @@ import DateInput from '../../../../../components/DateInput';
 import { useEffect, useState, type FormEvent } from 'react';
 import { resolveAssetUsage } from '../../../../../lib/asset-usage';
 import FieldManagerNavLink from '../../../field-manager-nav-link';
+import OwnerAppNav from '../../../../owner-app/owner-app-nav';
 import styles from '../../../page.module.css';
 
 type MaintenanceType = 'service' | 'checkup';
@@ -431,9 +432,11 @@ export default function FieldManagerMaintenanceClient({
   return (
     <main className={`${styles.mobilePage} ${styles.maintenancePage}`}>
       <section className={`${styles.assetsShell} ${styles.maintenanceShell}`}>
-        <header className={styles.assetsHeader} aria-label={`${mode === 'owner' ? 'Owner' : 'Field Manager'} maintenance navigation`}>
-          <FieldManagerNavLink href={assetHref} label="Back" />
-        </header>
+        {mode === 'owner' ? <OwnerAppNav backHref={assetHref} /> : (
+          <header className={styles.assetsHeader} aria-label="Field Manager maintenance navigation">
+            <FieldManagerNavLink href={assetHref} label="Back" />
+          </header>
+        )}
 
         {loading ? <p className={styles.mobileEmpty}>Opening maintenance scheduling…</p> : null}
         {notice ? (

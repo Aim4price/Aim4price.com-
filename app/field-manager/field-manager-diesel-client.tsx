@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import FieldManagerNavLink from './field-manager-nav-link';
+import OwnerAppNav from '../owner-app/owner-app-nav';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -195,16 +196,12 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager fuel controls'}>
-          {ownerAppMode ? (
-            <FieldManagerNavLink href="/owner-app/operations/fuel" label="Back" />
-          ) : (
-            <>
-              <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
-              <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
-            </>
-          )}
-        </header>
+        {ownerAppMode ? <OwnerAppNav backHref="/owner-app/operations/fuel" /> : (
+          <header className={styles.assetsHeader} aria-label="Field Manager fuel controls">
+            <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
+            <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
+          </header>
+        )}
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
 

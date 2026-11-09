@@ -13,8 +13,8 @@ export function GET() {
     scope: '/owner-app',
     display: 'standalone',
     orientation: 'any',
-    background_color: '#000000',
-    theme_color: '#000000',
+    background_color: '#f6faf7',
+    theme_color: '#f6faf7',
     categories: ['business', 'productivity'],
     launch_handler: { client_mode: 'navigate-new' },
     icons: [
