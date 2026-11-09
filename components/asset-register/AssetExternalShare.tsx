@@ -183,7 +183,7 @@ export function AssetShareDestinationPicker({
     <div className={`${choiceStyles.grid} ${choiceStyles.pickerGrid} ${choiceStyles.destinationGrid}`}>
       <button type="button" className={choiceStyles.card} data-tone="link" onClick={onSendLink} disabled={disabled}>
         <span className={choiceStyles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span>
-        <span className={choiceStyles.copy}><strong>Send link</strong><small>Copy a link to this asset</small></span>
+        <span className={choiceStyles.copy}><strong>Copy link</strong><small>Copy a link to share this asset</small></span>
       </button>
       <button type="button" className={choiceStyles.card} onClick={onInside} disabled={disabled}>
         <span className={choiceStyles.icon}><Aim4priceIcon /></span>
