@@ -26,7 +26,7 @@ export default async function OwnerAppHome() {
     <div className={mobile.dashboard}>
       <section className={mobile.intro}><h1>Your assets. Your day.</h1><p>{access.displayName}</p></section>
       <OwnerHomeAttention />
-      <section><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={mobile.grid} aria-label="Owner tools">
+      <section><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={`${mobile.grid} ${mobile.assetActions}`} aria-label="Owner tools">
         {tools.map(tool => <Link className={mobile.tile} key={tool.href} href={tool.href} prefetch={false}><OwnerIcon name={tool.icon} /><strong>{tool.label}</strong></Link>)}
       </nav></section>
       <Link className={mobile.row} href="/owner-app/offline.html" prefetch={false}><OwnerIcon name="offline" /><span><strong>Offline work</strong><small>Save work before heading out.</small></span></Link>
