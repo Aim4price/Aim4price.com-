@@ -3819,3 +3819,25 @@
 .topUtilities { display: flex; align-items: center; gap: 12px; width: 100%; }
 .appShell .topUtilities > .logoutButton, .topTrailingAction { margin-left: auto; }
 .topTrailingAction { display: flex; }
+
+/* Readable titles and consistent account/directory information. */
+.appShell .managerAssetCard h2,
+.appShell .manageAssetIdentity h1,
+.appShell .detailIdentity h1 {
+  white-space: normal;
+  overflow: visible;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.appShell .section dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin: 18px 0; }
+.appShell .section dt { color: var(--app-muted, #62796e); }
+.appShell .section dd { margin: 0; text-align: right; font-weight: 650; }
+.appShell .assetDirectoryNav { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.appShell .assetDirectoryNav strong { text-align: right; line-height: 1.35; }
+
+@media (max-width: 720px) {
+  .appShell .assetMirrorDetails { display: flex; flex-direction: column; }
+  .appShell .assetMirrorValuesSection { order: 0; }
+  .appShell .assetMirrorMediaSection { order: 1; }
+}

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
+const ownerLoginSections = await readFile(new URL('../app/account/owner-login-sections.tsx', import.meta.url), 'utf8');
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const [
   fieldManager,
@@ -41,7 +42,9 @@ test('Field Manager passwords are hash-only and reset sessions', () => {
   assert.doesNotMatch(fieldManager, /savedPassword/);
   assert.match(fieldManager, /drop column if exists password_display/);
   assert.doesNotMatch(fieldManagerUi, /savedPassword|Saved password/);
-  assert.match(fieldManagerUi, /Leave blank to keep the current/);
+  assert.match(fieldManagerUi, /import OwnerLoginSections/);
+  assert.match(ownerLoginSections, /changes = \{ password: passcode \}/);
+  assert.match(ownerLoginSections, /section === 'passcode'/);
   assert.match(migration, /DROP COLUMN IF EXISTS password_display/);
   assert.match(fieldManager, /session_version = session_version \+ case/);
   assert.match(fieldManagerSession, /manager\.sessionVersion !== claims\.sessionVersion/);

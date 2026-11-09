@@ -46,7 +46,7 @@ export default async function OwnerMaintenanceWorkPage({ params, searchParams }:
       ownerAppOperatorName={access.displayName}
       ownerAppScheduledMaintenanceId={maintenanceId || null}
       ownerAppScheduledMaintenanceType={maintenanceType}
-      ownerAppReturnTo={searchParams?.reportProblem === '1' ? '/owner-app/report-problem' : returnTo || '/owner-app/operations/maintenance'}
+      ownerAppReturnTo={searchParams?.reportProblem === '1' ? '/owner-app/report-problem' : returnTo || `/owner-app/assets/${encodeURIComponent(params.assetId)}`}
     />
   );
 }
