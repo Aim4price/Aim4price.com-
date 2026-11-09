@@ -3856,3 +3856,41 @@
 @media (prefers-reduced-motion: reduce) {
   .appShell :is(button, a) { transition: none; }
 }
+
+/* Keep the selected asset type in the flow so it cannot overlap step headings. */
+.module [class*='appValuation'] [class*='equipmentStageTopSolo'] {
+  position: static !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 12px !important;
+}
+
+.module [class*='appValuation'] [class*='selectedSummaryPill'],
+.module [class*='appValuation'] [class*='basicIdentityIntro'] {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* Group related copy without stretching short messages over a full card. */
+.module [class*='dealerMarketplaceSurface'] [class*='emptyState'] {
+  min-height: 0;
+  align-content: center;
+  gap: 12px;
+  padding: 32px 20px;
+}
+
+.module [class*='dealerMarketplaceSurface'] [class*='emptyState'] h2,
+.module [class*='dealerMarketplaceSurface'] [class*='emptyState'] p {
+  margin: 0;
+}
+
+.module [class*='dealerMarketplaceSurface'] [class*='emptyState'] button {
+  margin-top: 4px;
+  min-height: 44px;
+}
+
+.module [class*='compactAppSurface'] [class*='discoveryDetailRow'] {
+  gap: 6px !important;
+  padding: 12px 16px !important;
+}
