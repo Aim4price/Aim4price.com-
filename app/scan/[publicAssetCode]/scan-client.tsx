@@ -3070,7 +3070,7 @@ export default function ScanClient({
       : activeEditor === "photos" && !draft.photoUrls.length
         ? "Add photos"
         : activeEditor === "notes" && !draft.note.trim()
-          ? "Add note"
+          ? reportProblemMode ? "Describe the problem" : "Add note"
           : activeEditor === "service" && !draft.serviceMode
             ? "Choose type"
             : activeEditor === "service" && !hasServiceSelection
@@ -3090,7 +3090,7 @@ export default function ScanClient({
                       draft.serviceMode === "repaired") &&
                     !showServiceDetailsStep
                   ? "Next"
-                  : reportProblemMode && activeEditor === "notes" ? "Report Problem"
+                  : reportProblemMode && activeEditor === "notes" ? "Report problem"
                   : isFieldManagerMode ? (activeEditor === "service" ? "Save maintenance" : activeEditor === "usage" ? "Save reading" : activeEditor === "photos" ? "Save photos" : "Save note") : "Add update";
   const selectedSharePartner = useMemo(
     () =>

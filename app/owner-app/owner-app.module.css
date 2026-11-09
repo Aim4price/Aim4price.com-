@@ -3525,8 +3525,8 @@
   padding: 14px 12px;
 }
 .managerAssetCard.assetDirectorySearchMatch {
-  border: 2px solid #d94b4b;
-  box-shadow: 0 0 0 2px rgba(217, 75, 75, 0.16);
+  border: 1px solid var(--app-accent, #65a98a);
+  box-shadow: 0 2px 8px rgb(16 54 38 / 5%);
 }
 
 /* Keep chooser spacing consistent without stacking list and section gutters. */
@@ -3840,4 +3840,19 @@
   .appShell .assetMirrorDetails { display: flex; flex-direction: column; }
   .appShell .assetMirrorValuesSection { order: 0; }
   .appShell .assetMirrorMediaSection { order: 1; }
+}
+
+/* Clear touch targets and keyboard focus without changing the shared palette. */
+.appShell .mediaItem button { min-width: 44px; min-height: 44px; font-size: 1.25rem; }
+.appShell .mediaItem:has(> a) { padding-right: 52px; min-height: 56px; }
+.appShell :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid var(--app-accent, #65a98a);
+  outline-offset: 3px;
+}
+.appShell .field > small { color: var(--app-muted, #62796e); font-size: .8rem; line-height: 1.45; }
+.appShell .assetDirectoryNav { flex-wrap: wrap; }
+.appShell .assetDirectoryNav strong { flex: 1; min-width: 140px; overflow-wrap: anywhere; }
+.appShell .assetDirectoryUmbrellaCard > button { display: inline-flex; align-items: center; justify-content: center; }
+@media (prefers-reduced-motion: reduce) {
+  .appShell :is(button, a) { transition: none; }
 }

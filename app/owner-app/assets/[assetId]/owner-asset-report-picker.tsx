@@ -299,10 +299,11 @@ export default function OwnerAssetReportPicker({
             </label>
             <label className={styles.field}>
               <span>Month</span>
-              <select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}>
+              <select aria-describedby={year === 'all' ? 'report-month-help' : undefined} value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}>
                 <option value="all">All months</option>
                 {months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}
               </select>
+              {year === 'all' ? <small id="report-month-help">Choose a year to filter by month.</small> : null}
             </label>
           </>
         ) : null}

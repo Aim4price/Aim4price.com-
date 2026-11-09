@@ -75,10 +75,10 @@ function yearDisplayText(asset: Asset): string {
 }
 
 function usageDisplayText(asset: Asset): string {
-  if (asset.usageMetric === 'not_applicable') return 'Unknown';
+  if (asset.usageMetric === 'not_applicable') return 'Not applicable';
   if (asset.usage === null) return 'Not captured';
   const value = asset.usage.toLocaleString('en-ZA');
-  if (asset.usageMetric === 'percentage') return `${value}%`;
+  if (asset.usageMetric === 'percentage') return `${value}% worked`;
   return `${value} ${asset.usageMetric}`;
 }
 
@@ -133,11 +133,12 @@ export default function OwnerAssetsClient({
     const terms = normalizedQuery.split(/\s+/).filter(Boolean);
     const compactQuery = normalizedQuery.replace(/[^a-z0-9]/g, '');
     return items.filter((asset) => {
-      const haystack = searchHaystack(asset);
+      const groupNames = groups.filter(group => group.memberAssetIds.includes(asset.id)).map(group => group.name).join(' ').toLowerCase();
+      const haystack = `${searchHaystack(asset)} ${groupNames}`;
       const compactHaystack = haystack.replace(/[^a-z0-9]/g, '');
       return terms.every((term) => haystack.includes(term)) || Boolean(compactQuery && compactHaystack.includes(compactQuery));
     });
-  }, [items, query]);
+  }, [items, query, groups]);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === selectedGroupId) ?? null,
@@ -156,10 +157,10 @@ export default function OwnerAssetsClient({
     if (selectedGroup) return filteredItems.filter((asset) => selectedGroupAssetIds.has(asset.id));
     return filteredItems.filter((asset) => !groupByAssetId.has(asset.id));
   }, [filteredItems, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
-  const matchingAssetIds = useMemo(() => new Set(filteredItems.map((asset) => asset.id)), [filteredItems]);
+  const matchingAssetIds = useMemo(() => new Set(filteredItems.map(asset => asset.id)), [filteredItems]);
   const matchingGroups = useMemo(
-    () => hasSearch ? groups.filter((group) => group.memberAssetIds.some((id) => matchingAssetIds.has(id))) : groups,
-    [groups, hasSearch, matchingAssetIds],
+    () => hasSearch ? groups.filter(group => query.trim().toLowerCase().split(/\s+/).every(term => group.name.toLowerCase().includes(term))) : groups,
+    [groups, hasSearch, query],
   );
   const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets && !hasSearch;
 
@@ -267,7 +268,7 @@ export default function OwnerAssetsClient({
             onClick={() => void handleOpenMaintenance(asset)}
             disabled={openingAssetId !== null}
           >
-            {openingAssetId === asset.id ? 'Opening…' : mode === 'problem' ? 'Report Problem' : 'Record work'}
+            {openingAssetId === asset.id ? 'Opening…' : mode === 'problem' ? 'Report problem' : 'Record work'}
           </button>
         ) : (
           <Link
@@ -292,8 +293,8 @@ export default function OwnerAssetsClient({
               setQuery(event.target.value);
               returnToDirectory();
             }}
-            placeholder="Search asset, model, reg or serial"
-            aria-label="Search assets"
+            placeholder="Search assets or groups"
+            aria-label="Search assets or groups"
             autoComplete="off"
           />
         </div>
@@ -316,12 +317,12 @@ export default function OwnerAssetsClient({
       {actionError ? <div className={styles.errorNotice}>{actionError}</div> : null}
       {loading ? <div className={styles.loading}>Loading your assets…</div> : null}
       {!loading && !error && !items.length ? <div className={styles.empty}>No assets have been added yet.</div> : null}
-      {!loading && !error && items.length > 0 && !directoryItems.length && (!showDirectoryHome || !matchingGroups.length) ? <div className={styles.empty}>No assets match this search.</div> : null}
+      {!loading && !error && items.length > 0 && !directoryItems.length && !matchingGroups.length ? <div className={styles.empty}>No assets match this search.</div> : null}
 
       {!loading && !error ? (
         <div className={styles.assetDirectory}>
-          {showDirectoryHome ? (
-            <section className={styles.assetDirectorySection} aria-label="Umbrellas">
+          {showDirectoryHome || (hasSearch && matchingGroups.length > 0) ? (
+            <section className={styles.assetDirectorySection} aria-label="Asset groups">
               <div className={styles.managerAssetList}>
                 {!hasSearch ? (
                   <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
@@ -343,7 +344,7 @@ export default function OwnerAssetsClient({
                     <button
                       type="button"
                       className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                      onClick={() => setSelectedGroupId(group.id)}
+                      onClick={() => { setQuery(''); setShowAllAssets(false); setSelectedGroupId(group.id); }}
                       aria-label={`Open ${group.name}`}
                     >
                       Open
@@ -359,7 +360,7 @@ export default function OwnerAssetsClient({
             <section className={styles.assetDirectorySection} aria-label={mode === 'maintenance' ? 'Assets available for maintenance' : 'Owner assets'}>
               {showDirectoryHome ? (
                 <div className={styles.assetDirectoryHeading}>
-                  <span>Not inside an umbrella</span>
+                  <span>Not in a group</span>
                   <h2>Other assets</h2>
                 </div>
               ) : null}

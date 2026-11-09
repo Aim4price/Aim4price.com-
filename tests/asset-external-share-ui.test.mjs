@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('Share Asset opens Send link, inside and outside Aim4price choices before sharing', async () => {
+test('Share Asset opens Copy link, inside and outside Aim4price choices before sharing', async () => {
   const [client, component] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetExternalShare.tsx', import.meta.url), 'utf8'),
@@ -14,7 +14,7 @@ test('Share Asset opens Send link, inside and outside Aim4price choices before s
   assert.equal((client.match(/<AssetExternalShare/g) ?? []).length, 2);
   assert.match(client, /onInside=\{\(\) => setAssetShareDestination\('inside'\)\}/);
   assert.match(client, /onOutside=\{\(\) => \{ directoryShareReturnRef\.current = null; setExternalBusinessRecipient\(null\); setDirectoryShareAssetIds\(null\); setAssetShareDestination\('outside'\); \}\}/);
-  assert.match(component, /<strong>Send link<\/strong>/);
+  assert.match(component, /<strong>Copy link<\/strong>/);
   assert.match(component, /<strong>Inside Aim4price<\/strong>/);
   assert.match(component, /<strong>Outside Aim4price<\/strong>/);
 });
@@ -132,6 +132,6 @@ test('inside choices remain compact while the simplified outside layout has bala
   assert.match(componentStyles, /\.sendButton \{[\s\S]*?min-height: 3\.75rem/);
   assert.match(componentStyles, /\.whatsappButton \{[\s\S]*?#25d366[\s\S]*?#128c7e/);
   assert.match(componentStyles, /\.whatsappButton \.sendIcon svg \{[\s\S]*?width: 1\.72rem;[\s\S]*?height: 1\.72rem/);
-  assert.match(component, /tabIndex=\{0\}[\s\S]*?aria-label="External asset details message preview"/);
+  assert.match(component, /<textarea[^>]*aria-label="External asset details message"[^>]*onChange=/);
 });
 
