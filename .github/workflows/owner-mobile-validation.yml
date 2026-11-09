@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'app/owner-app/**'
+      - 'app/valuation/**'
+      - 'components/ValuationResultTour.tsx'
+      - 'components/valuation-result-tour.module.css'
+      - 'components/SaleabilityModal.tsx'
+      - 'components/saleability-modal.module.css'
+      - 'scripts/verify-owner-valuation-mobile.cjs'
       - 'app/api/owner-app/**'
       - 'lib/owner-asset-location.ts'
       - 'lib/asset-activity.ts'
@@ -39,3 +45,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/owner-mobile-*.test.mjs tests/owner-top-navigation.test.mjs tests/owner-app-operations.test.mjs tests/owner-app-petrol-station.test.mjs tests/owner-app-share-parity.test.mjs tests/app-umbrella-directory-access.test.mjs tests/owner-register-access.test.mjs tests/asset-fuel-eligibility.test.mjs
+      - name: Walk through Owner valuation at phone widths
+        run: |
+          for width in 320 393 430; do
+            VIEWPORT_WIDTH=$width node scripts/verify-owner-valuation-mobile.cjs || exit 1
+          done
