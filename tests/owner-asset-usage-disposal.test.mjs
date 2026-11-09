@@ -19,18 +19,18 @@ test('usage supports a deliberate not-applicable state', () => {
 test('Owner App offers hours, percentage, and not applicable', () => {
   assert.match(ownerClientSource, /<option value="hours">Hours<\/option>/);
   assert.match(ownerClientSource, /<option value="percentage">% worked<\/option>/);
-  assert.match(ownerClientSource, /<option value="not_applicable">Not applicable<\/option>/);
+  assert.match(ownerClientSource, /<option value="not_applicable">Unknown<\/option>/);
   assert.match(ownerClientSource, /usageApplicable: false/);
 });
 
 test('desktop Update Asset offers the same compact usage choices and defaults property to N/A', () => {
   assert.match(assetRegisterSource, /label="Usage type"/);
-  assert.match(assetRegisterSource, /onRequestOpen=\{\(\) => setUsageTypeDialogOpen\(true\)\}/);
+  assert.match(assetRegisterSource, /onRequestOpen=\{\(\) => \{if\(!desktopAccess\) setUsageTypeDialogOpen\(true\);\}\}/);
   assert.match(usageDialogSource, /value: 'percentage', label: 'Percentage'/);
   assert.match(usageDialogSource, /value: 'not_applicable', label: 'Unknown'/);
   assert.match(usageDialogSource, /Confirm change/);
   assert.match(assetRegisterSource, /nextKind === 'property'[\s\S]*\? 'not_applicable'/);
-  assert.match(ownerAssetListSource, /asset\.usageMetric === 'not_applicable'.*'Not applicable'/);
+  assert.match(ownerAssetListSource, /asset\.usageMetric === 'not_applicable'.*'Unknown'/);
 });
 
 test('Owner App removal records a lifecycle reason instead of directly deleting', () => {

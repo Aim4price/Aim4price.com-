@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import BalancedHeadingText from '../balanced-heading';
 import OwnerServiceLocationModal from '../owner-service-location-modal';
 import styles from '../owner-app.module.css';
@@ -75,7 +75,7 @@ function yearDisplayText(asset: Asset): string {
 }
 
 function usageDisplayText(asset: Asset): string {
-  if (asset.usageMetric === 'not_applicable') return 'Not applicable';
+  if (asset.usageMetric === 'not_applicable') return 'Unknown';
   if (asset.usage === null) return 'Not captured';
   const value = asset.usage.toLocaleString('en-ZA');
   if (asset.usageMetric === 'percentage') return `${value}%`;
@@ -96,11 +96,36 @@ export default function OwnerAssetsClient({
   const [groups, setGroups] = useState<AssetGroupSummary[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [showAllAssets, setShowAllAssets] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const scrollRestored = useRef(false);
+  const directoryKey = `owner-directory-${mode}`;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [openingAssetId, setOpeningAssetId] = useState<string | null>(null);
   const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(directoryKey) || 'null');
+      if (saved && !initialQuery) { setQuery(saved.query || ''); setSelectedGroupId(saved.group || null); setShowAllAssets(Boolean(saved.all)); }
+    } catch { /* Storage is optional. */ }
+    setRestored(true);
+  }, [directoryKey, initialQuery]);
+  useEffect(() => {
+    if (!restored) return;
+    try { sessionStorage.setItem(directoryKey, JSON.stringify({ query, group: selectedGroupId, all: showAllAssets })); } catch { /* Storage is optional. */ }
+  }, [restored, directoryKey, query, selectedGroupId, showAllAssets]);
+
+  useEffect(() => {
+    if (loading || !restored || scrollRestored.current) return;
+    scrollRestored.current = true;
+    let frame = 0;
+    try { const y = Number(sessionStorage.getItem(`${directoryKey}-scroll`) || 0); frame = requestAnimationFrame(() => window.scrollTo(0, y)); } catch { /* Storage is optional. */ }
+    const remember = () => { try { sessionStorage.setItem(`${directoryKey}-scroll`, String(window.scrollY)); } catch { /* Storage is optional. */ } };
+    document.addEventListener('click', remember, true);
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('click', remember, true); };
+  }, [loading, restored, directoryKey]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -141,8 +166,8 @@ export default function OwnerAssetsClient({
   useEffect(() => {
     const controller = new AbortController();
 
-    async function loadAssets() {
-      setLoading(true);
+    async function loadAssets(silent = false) {
+      if (!silent) setLoading(true);
       setError('');
       try {
         const response = await fetch('/api/owner-app/assets', {
@@ -170,7 +195,10 @@ export default function OwnerAssetsClient({
     }
 
     void loadAssets();
-    return () => controller.abort();
+    const refresh = () => { if (document.visibilityState === 'visible') void loadAssets(true); };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { controller.abort(); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
   }, []);
 
   async function handleOpenMaintenance(asset: Asset) {
@@ -279,7 +307,7 @@ export default function OwnerAssetsClient({
 
       {!loading && !error && groups.length > 0 && (selectedGroup || showAllAssets) ? (
         <section className={styles.assetDirectoryNav} aria-label="Asset directory navigation">
-          <button type="button" onClick={returnToDirectory}>Back to umbrellas</button>
+          <button type="button" onClick={returnToDirectory}>All groups</button><strong>{selectedGroup?.name || 'All assets'}</strong>
         </section>
       ) : null}
 
@@ -295,6 +323,19 @@ export default function OwnerAssetsClient({
           {showDirectoryHome ? (
             <section className={styles.assetDirectorySection} aria-label="Umbrellas">
               <div className={styles.managerAssetList}>
+                {!hasSearch ? (
+                  <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
+                    <h2>All assets</h2>
+                    <p>View every physical asset in one list.</p>
+                    <button
+                      type="button"
+                      className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                      onClick={() => setShowAllAssets(true)}
+                    >
+                      View all assets
+                    </button>
+                  </article>
+                ) : null}
                 {matchingGroups.map((group) => (
                   <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
                     <h2 title={group.name}>{group.name}</h2>
@@ -309,19 +350,7 @@ export default function OwnerAssetsClient({
                     </button>
                   </article>
                 ))}
-                {!hasSearch ? (
-                  <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
-                    <h2>All assets</h2>
-                    <p>View every physical asset in one list.</p>
-                    <button
-                      type="button"
-                      className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                      onClick={() => setShowAllAssets(true)}
-                    >
-                      View all assets
-                    </button>
-                  </article>
-                ) : null}
+
               </div>
             </section>
           ) : null}

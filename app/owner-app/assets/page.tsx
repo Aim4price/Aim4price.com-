@@ -12,6 +12,7 @@ export default async function OwnerAssetsPage({ searchParams }: { searchParams?:
   return (
     <main className={styles.page}>
       <OwnerAppNav />
+      <div className={styles.content}><section className={styles.hero}><h1>Assets</h1><p>Find an asset or open a group.</p></section></div>
       <OwnerAssetsClient initialQuery={initialQuery} canAddAssets={ownerAppCan(access, 'manage_assets')} />
     </main>
   );

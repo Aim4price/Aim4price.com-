@@ -135,6 +135,7 @@ export type CreateManualAssetInput = {
 };
 
 export type UpdateAssetRegisterItemInput = {
+  expectedUpdatedAtIso?: string;
   assetId: string;
   kind: AssetRegisterItemKind;
   title: string;
@@ -3185,6 +3186,10 @@ export async function updateAssetRegisterItem(
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');
+  }
+
+  if (input.expectedUpdatedAtIso && existing.updatedAtIso !== input.expectedUpdatedAtIso) {
+    throw new Error('ASSET_EDIT_CONFLICT');
   }
 
   const now = new Date();

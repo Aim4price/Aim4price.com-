@@ -353,6 +353,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 }) {
   const managePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const manageDocumentInputRef = useRef<HTMLInputElement | null>(null);
+  const baseline = useRef<Asset | null>(null);
   const [draft, setDraft] = useState<Asset | null>(null);
   const [registers, setRegisters] = useState<Register[]>([]);
   const [registerName, setRegisterName] = useState('');
@@ -372,6 +373,19 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [disposalWizardStep, setDisposalWizardStep] = useState<DisposalWizardStep>(1);
   const [transferReceipt, setTransferReceipt] = useState<TransferReceipt | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
+
+  const hasUnsavedChanges = view === 'section' && Boolean(draft && baseline.current && JSON.stringify(draft) !== JSON.stringify(baseline.current));
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    const onClick = (event: MouseEvent) => {
+      const link = (event.target as HTMLElement).closest?.('a[href]');
+      if (link && !window.confirm('Discard your unsaved changes?')) { event.preventDefault(); event.stopPropagation(); }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    document.addEventListener('click', onClick, true);
+    return () => { window.removeEventListener('beforeunload', beforeUnload); document.removeEventListener('click', onClick, true); };
+  }, [hasUnsavedChanges]);
 
   const photoCount = draft?.photos.length ?? 0;
   const safePhotoIndex = photoCount ? Math.min(photoIndex, photoCount - 1) : 0;
@@ -465,6 +479,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
   function applyDetail(payload: DetailResponse) {
     if (!payload.item) return;
+    baseline.current = payload.item;
     setDraft(payload.item);
     setRegisters(payload.registers ?? []);
     setRegisterName(payload.register?.businessName ?? 'Asset register');
@@ -480,15 +495,18 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const hasAutomaticValueUpdate = Boolean(draft && automaticValuationPending(draft.specsJson));
   useEffect(() => {
     // Only refresh the summary: never overwrite an unsaved editing draft.
-    if (!hasAutomaticValueUpdate || view !== 'summary' || actionBusy) return;
+    if (!['summary', 'details'].includes(view) || actionBusy) return;
     const controller = new AbortController();
     let refreshing = false;
-    const timer = window.setInterval(() => {
+    const refresh = () => {
       if (document.visibilityState !== 'visible' || refreshing) return;
       refreshing = true;
       void loadDetail(true, controller.signal).finally(() => { refreshing = false; });
-    }, 5000);
-    return () => { controller.abort(); window.clearInterval(timer); };
+    };
+    const timer = window.setInterval(refresh, hasAutomaticValueUpdate ? 5000 : 60000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { controller.abort(); window.clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
   }, [hasAutomaticValueUpdate, view, actionBusy, assetId]);
 
   async function loadDetail(silent = false, signal?: AbortSignal) {
@@ -575,6 +593,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     setDraft((current) => current ? { ...current, specsJson: { ...current.specsJson, [key]: value } } : current);
   }
   function updateUsageMetric(metric: AssetUsageMetric) {
+    if (draft && resolveAssetUsage(draft).metric !== metric && !window.confirm('Change usage type? Enter a reading in the new unit; the old reading will not be converted.')) return;
     setDraft((current) => {
       if (!current) return current;
 
@@ -582,8 +601,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         return {
           ...current,
           hours: null,
+          lifeWorkedPercent: null,
           specsJson: {
             ...current.specsJson,
+            usageMetric: 'percentage', usage_metric: 'percentage', usageUnit: 'percentage', usage_unit: 'percentage',
             usageMode: 'percent',
             usage_mode: 'percent',
             usageBasis: 'percent',
@@ -622,6 +643,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       return {
         ...current,
         lifeWorkedPercent: null,
+        hours: null,
         specsJson: {
           ...current.specsJson,
           usageMetric: metric,
@@ -663,7 +685,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       }).metric;
       const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, {
         method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...draft, usageMetric, allowUsageDecrease }),
+        body: JSON.stringify({ ...draft, usageMetric, allowUsageDecrease, expectedUpdatedAtIso: baseline.current?.updatedAtIso, usageTypeChangeConfirmed: baseline.current ? resolveAssetUsage(baseline.current).metric !== usageMetric : false }),
       });
       const payload = await response.json().catch(() => null) as DetailResponse | null;
       if (payload?.requiresUsageConfirmation && !allowUsageDecrease) {
@@ -854,7 +876,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     specsJson: draft.specsJson,
   });
   const usageMetric = resolvedUsage.metric;
-  const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
+  const usageText = resolvedUsage.metric === 'not_applicable' ? 'Unknown' : formatResolvedAssetUsage(resolvedUsage, 'Not saved');
   const estimateNeedsUpdate = estimateNeedsAutomaticUpdate(draft);
   const renderEstimateUpdateAction = () => estimateNeedsUpdate ? (
     <div>
@@ -1078,69 +1100,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             </div>
 
             <div className={styles.assetMirrorDetails}>
-              <section className={styles.assetMirrorMediaSection}>
-                <h2><BalancedHeadingText text="Photos & documents" /></h2>
 
-                {photoCount > 1 ? (
-                  <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
-                    {draft.photos.map((photo, index) => (
-                      <button
-                        type="button"
-                        key={`${photo}-${index}`}
-                        className={`${styles.detailPhotoThumbButton} ${index === safePhotoIndex ? styles.detailPhotoThumbButtonActive : ''}`}
-                        onClick={() => setPhotoIndex(index)}
-                        aria-label={`Show asset photo ${index + 1}`}
-                        aria-pressed={index === safePhotoIndex}
-                      >
-                        <img src={photo} alt={`${draft.title} thumbnail ${index + 1}`} />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className={styles.detailMediaActions}>
-                  <label className={styles.detailUploadButton}>
-                    <span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : photoCount ? 'Add photos' : 'Upload photos'}</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      multiple
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)}
-                      disabled={Boolean(actionBusy)}
-                    />
-                  </label>
-                </div>
-
-                <div className={styles.assetDocumentPanel}>
-                  <div className={styles.assetDocumentPanelHeading}>
-                    <OwnerIcon name="document" />
-                    <strong>Documents</strong>
-                    <small>{draft.documents.length} saved</small>
-                  </div>
-                  {draft.documents.length ? (
-                    <div className={styles.assetDocumentLinks}>
-                      {draft.documents.map((document, index) => (
-                        <a key={document.id || `${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer">
-                          <span>{document.fileName || `Document ${index + 1}`}</span>
-                          <span aria-hidden="true">↗</span>
-                        </a>
-                      ))}
-                    </div>
-                  ) : (
-                    <p>No documents have been saved for this asset.</p>
-                  )}
-                  <label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}>
-                    <span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span>
-                    <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
-                      multiple
-                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)}
-                      disabled={Boolean(actionBusy)}
-                    />
-                  </label>
-                </div>
-              </section>
 
               <section className={styles.assetMirrorValuesSection}>
                 <h2><BalancedHeadingText text="Details & values" /></h2>
@@ -1213,6 +1173,70 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   {draft.marketplaceStatus === 'live' ? (
                     <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
                   ) : null}
+                </div>
+              </section>
+
+              <section className={styles.assetMirrorMediaSection}>
+                <h2><BalancedHeadingText text="Photos & documents" /></h2>
+
+                {photoCount > 1 ? (
+                  <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
+                    {draft.photos.map((photo, index) => (
+                      <button
+                        type="button"
+                        key={`${photo}-${index}`}
+                        className={`${styles.detailPhotoThumbButton} ${index === safePhotoIndex ? styles.detailPhotoThumbButtonActive : ''}`}
+                        onClick={() => setPhotoIndex(index)}
+                        aria-label={`Show asset photo ${index + 1}`}
+                        aria-pressed={index === safePhotoIndex}
+                      >
+                        <img src={photo} alt={`${draft.title} thumbnail ${index + 1}`} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className={styles.detailMediaActions}>
+                  <label className={styles.detailUploadButton}>
+                    <span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : photoCount ? 'Add photos' : 'Upload photos'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)}
+                      disabled={Boolean(actionBusy)}
+                    />
+                  </label>
+                </div>
+
+                <div className={styles.assetDocumentPanel}>
+                  <div className={styles.assetDocumentPanelHeading}>
+                    <OwnerIcon name="document" />
+                    <strong>Documents</strong>
+                    <small>{draft.documents.length} saved</small>
+                  </div>
+                  {draft.documents.length ? (
+                    <div className={styles.assetDocumentLinks}>
+                      {draft.documents.map((document, index) => (
+                        <a key={document.id || `${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer">
+                          <span>{document.fileName || `Document ${index + 1}`}</span>
+                          <span aria-hidden="true">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>No documents have been saved for this asset.</p>
+                  )}
+                  <label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}>
+                    <span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                      multiple
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)}
+                      disabled={Boolean(actionBusy)}
+                    />
+                  </label>
                 </div>
               </section>
             </div>
@@ -1381,7 +1405,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
       {section === 'usage' ? <form className={`${styles.section} ${styles.editorSection}`} onSubmit={(event) => { event.preventDefault(); void saveAsset(); }}>
         <p className={styles.assetQuickMeta}>Enter the latest reading for this asset.</p>
-        {usageMetric === 'not_applicable' ? <p>Usage does not apply to this asset.</p> : <label className={styles.field}>
+        {usageMetric === 'not_applicable' ? <p>No usage reading is available for this asset.</p> : <label className={styles.field}>
           <span>{usageMetric === 'percentage' ? 'Percentage worked' : usageMetric === 'km' ? 'Kilometres' : 'Hours'}</span>
           <input type="number" inputMode="decimal" min="0" max={usageMetric === 'percentage' ? 100 : undefined} step="any" required value={(usageMetric === 'percentage' ? draft.lifeWorkedPercent : draft.hours) ?? ''} onChange={(event) => update(usageMetric === 'percentage' ? 'lifeWorkedPercent' : 'hours', event.target.value === '' ? null : Number(event.target.value))} />
         </label>}
@@ -1399,8 +1423,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Year model / year built</span><input inputMode="numeric" value={draft.yearModel ?? ''} onChange={(event) => update('yearModel', event.target.value ? Number(event.target.value) : null)} /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label>
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
-          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">% worked</option><option value="not_applicable">Not applicable</option></select></label>
-          {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : usageMetric === 'not_applicable' ? <label className={styles.field}><span>Current usage</span><input value="Not applicable" disabled readOnly /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
+          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">% worked</option><option value="not_applicable">Unknown</option></select></label>
+          {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : usageMetric === 'not_applicable' ? <label className={styles.field}><span>Current usage</span><input value="Unknown" disabled readOnly /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
           <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.value || ''} onValueChange={(value) => update('value', parseCurrencyInput(value) ?? 0)} /></span></label>
           <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.replacementPriceExVat ?? ''} onValueChange={(value) => update('replacementPriceExVat', parseCurrencyInput(value))} /></span></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>

@@ -142,10 +142,17 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
   try { body = await request.json() as Record<string, unknown>; }
   catch { return NextResponse.json({ ok: false, error: 'Invalid asset details.' }, { status: 400 }); }
 
+  const expectedUpdatedAtIso = text(body.expectedUpdatedAtIso || body.updatedAtIso);
+  if (!expectedUpdatedAtIso || expectedUpdatedAtIso !== existing.updatedAtIso) {
+    return NextResponse.json({ ok: false, error: 'This asset has changed. Reopen it to load the latest details before saving.', conflict: true }, { status: 409 });
+  }
+  const incomingSpecs = { ...asRecord(existing.specsJson), ...asRecord(body.specsJson) };
+  const nextKind = existing.valuationRunId ? existing.kind : kind(body.kind, existing.kind);
+  const replacementNotApplicable = nextKind === 'stock' || (nextKind === 'property' && text(incomingSpecs.propertyAssetSubtype ?? incomingSpecs.property_asset_subtype) === 'land') || boolean(incomingSpecs.replacementPriceNotApplicable ?? incomingSpecs.replacement_price_not_applicable);
   const title = text(body.title);
   const value = Math.round(Number(body.value) || 0);
-  const replacementPriceExVat = numberOrNull(body.replacementPriceExVat) ?? existing.replacementPriceExVat;
-  if (!title || value <= 0 || !replacementPriceExVat || replacementPriceExVat <= 0) {
+  const replacementPriceExVat = replacementNotApplicable ? numberOrNull(body.replacementPriceExVat) : numberOrNull(body.replacementPriceExVat) ?? existing.replacementPriceExVat;
+  if (!title || value <= 0 || (!replacementNotApplicable && (!replacementPriceExVat || replacementPriceExVat <= 0))) {
     return NextResponse.json({ ok: false, error: 'Asset name, current value and replacement price are required.' }, { status: 400 });
   }
 
@@ -206,6 +213,8 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
   try {
     await updateAssetRegisterItem(access.ownerUserId, {
       assetId: params.assetId,
+      expectedUpdatedAtIso,
+      usageTypeChangeConfirmed: boolean(body.usageTypeChangeConfirmed),
       kind: kind(body.kind, existing.kind),
       title,
       value,
@@ -242,6 +251,8 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
     return detail ? NextResponse.json({ ok: true, ...detail }) : notFound();
   } catch (error) {
     const code = error instanceof Error ? error.message : '';
+    if (code === 'ASSET_EDIT_CONFLICT') return NextResponse.json({ ok: false, error: 'This asset has changed. Reopen it to load the latest details before saving.', conflict: true }, { status: 409 });
+    if (code === 'USAGE_TYPE_READING_REQUIRED') return NextResponse.json({ ok: false, error: 'Enter a valid reading for the new usage type.' }, { status: 400 });
     if (code === 'USAGE_READING_CANNOT_DECREASE' || code === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
       return NextResponse.json({ ok: false, error: 'The usage reading is lower than the saved reading. Confirm the correction before saving.', requiresUsageConfirmation: true }, { status: 409 });
     }

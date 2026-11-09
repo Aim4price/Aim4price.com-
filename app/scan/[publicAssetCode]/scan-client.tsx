@@ -1,4 +1,5 @@
 "use client";
+import OwnerAppNav from '../../owner-app/owner-app-nav';
 import type { AssetPart } from '../../../lib/asset-parts';
 import AppMaintenanceActions from '../../../components/AppMaintenanceActions';
 import { useAssetChecklistItems } from '../../../lib/use-asset-checklist-items';
@@ -3189,7 +3190,7 @@ export default function ScanClient({
   return (
     <main className={pageClassName}>
       <div className={styles.shell}>
-        {isFieldManagerMode ? (
+        {ownerAppMode ? <OwnerAppNav backHref={appReturnHref} /> : isFieldManagerMode ? (
           <header
             className={styles.fieldManagerDetailHeader}
             aria-label={ownerAppMode ? "Owner maintenance navigation" : "Field Manager asset navigation"}
