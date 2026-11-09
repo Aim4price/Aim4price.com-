@@ -215,7 +215,7 @@ export default function OwnerAssetsClient({
   function renderAssetCard(asset: Asset) {
     return (
       <article key={asset.id} className={`${styles.managerAssetCard} ${hasSearch && matchingAssetIds.has(asset.id) ? styles.assetDirectorySearchMatch : ''}`}>
-        <h2 tabIndex={0} title={asset.title}><BalancedHeadingText text={asset.title} /></h2>
+        <h2 title={asset.title}><BalancedHeadingText text={asset.title} /></h2>
 
         <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
           <div>
@@ -297,7 +297,7 @@ export default function OwnerAssetsClient({
               <div className={styles.managerAssetList}>
                 {matchingGroups.map((group) => (
                   <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
-                    <h2 tabIndex={0} title={group.name}>{group.name}</h2>
+                    <h2 title={group.name}>{group.name}</h2>
                     <p>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
                     <button
                       type="button"
