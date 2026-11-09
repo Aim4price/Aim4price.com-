@@ -54,11 +54,11 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
     if (!active) return;
     const target = document.querySelector<HTMLElement>(`[data-value-tour="${available[index].target}"]`);
     if (!target) {setActive(false); return;}
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    target.scrollIntoView({behavior:reduced ? 'instant' : 'smooth', block:'center'});
+    const focus = websiteVisibleViewport().width <= 640 ? target.querySelector<HTMLElement>('[data-value-tour-focus]') ?? target : target;
+    focus.scrollIntoView({behavior:'instant', block:websiteVisibleViewport().width <= 640 ? 'start' : 'center'});
     let frame = 0;
     function measure() {
-      let r = websiteLogicalRect(target!.getBoundingClientRect());
+      let r = websiteLogicalRect(focus.getBoundingClientRect());
       const viewport = websiteVisibleViewport();
       const w = viewport.width, h = viewport.height;
       const ch = card.current?.offsetHeight ?? 300;
@@ -76,7 +76,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
       const clampTop = (top:number) => Math.max(16, Math.min(h-ch-16, top));
       let left = Math.max(16, Math.min(w-cw-16, r.left));
       let top:number;
-      let spotlightBottom = Math.min(h-8,r.bottom+6);
+      let showSpotlight = r.top >= 0 && r.bottom <= h;
       // Prefer the side: keep the value, details and action being explained clear.
       if (r.right+gap+cw <= w-16) {
         left=r.right+gap; top=clampTop(r.top+(r.height-ch)/2);
@@ -87,12 +87,12 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
       } else if (r.top-gap-ch >= 16) {
         top=r.top-gap-ch;
       } else {
-        // On short screens dock the explanation and keep the spotlight above it.
+        // If both cannot fit, show the explanation without a misleading partial highlight.
         top=Math.max(16,h-ch-16);
-        spotlightBottom=Math.min(spotlightBottom,top-gap);
+        showSpotlight=false;
       }
       const spotlightTop=Math.max(8,r.top-6);
-      setBox({top:spotlightTop,left:Math.max(8,r.left-6),width:Math.min(w-16,r.width+12),height:Math.max(0,spotlightBottom-spotlightTop)});
+      setBox(showSpotlight ? {top:spotlightTop,left:Math.max(8,r.left-6),width:Math.min(w-16,r.width+12),height:r.bottom+6-spotlightTop} : null);
       setPosition({top,left});
     }
     const schedule = () => {cancelAnimationFrame(frame); frame=requestAnimationFrame(measure);};
@@ -112,7 +112,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
         <span>Explain my value</span>
       </button>
     </div>
-    <dialog ref={dialog} className={styles.overlay} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>{event.preventDefault();close();}} onKeyDown={event=>{
+    <dialog ref={dialog} className={styles.overlay} data-spotlight={Boolean(box)} aria-labelledby="value-tour-title" aria-describedby="value-tour-description" onCancel={event=>{event.preventDefault();close();}} onKeyDown={event=>{
       if(event.key !== 'Tab') return;
       const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
       const first=buttons[0],last=buttons[buttons.length-1];
@@ -120,7 +120,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
       else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first?.focus();}
     }}>
       {active ? <>
-        <div className={styles.spotlight} style={box ?? {inset:0}} aria-hidden="true"/>
+        {box ? <div className={styles.spotlight} style={box} aria-hidden="true"/> : null}
         <div ref={card} className={styles.card} style={position}>
           <div className={styles.top}><span className={styles.stepLabel}>Step {index+1} of {available.length}<strong>{available[index].label}</strong></span><button type="button" data-modal-close="true" aria-label="Close dialog" title="Close explanation" onClick={close} /></div>
           <div className={styles.progress} aria-hidden="true">{available.map((step, stepIndex)=><span key={step.target} data-complete={stepIndex <= index || undefined}/>)}</div>
