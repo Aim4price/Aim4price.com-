@@ -15926,3 +15926,11 @@
   :global(:where(html:not(:has([data-website-canvas])))) .finalSaveScrollBody { padding: 18px; gap: 18px; }
   :global(:where(html:not(:has([data-website-canvas])))) .finalSaveReview.finalSaveReview .finalSaveActions { padding: 14px 18px; }
 }
+
+/* Keep phone walkthrough targets below the persistent app navigation. */
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .page [data-value-tour],
+  :global(:where(html:not(:has([data-website-canvas])))) .page [data-value-tour-focus] {
+    scroll-margin-top: 80px;
+  }
+}

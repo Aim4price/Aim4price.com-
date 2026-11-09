@@ -7607,9 +7607,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.yearDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              {!compactAppMode ? (
+              {(!compactAppMode || ownerAppMode) ? (
                 <>
-                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('year')}<span>{getAssetNounTitle(selectedSector)} manufacturing year</span></h3>
+                  <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('year')}<span>{ownerAppMode ? 'Manufacturing year' : `${getAssetNounTitle(selectedSector)} manufacturing year`}</span></h3>
                   <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Select the manufacturing year.</p>
                 </>
               ) : null}
@@ -7815,7 +7815,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.usageDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              {!compactAppMode ? (
+              {(!compactAppMode || ownerAppMode) ? (
                 <>
                   <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('usage')}<span>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</span></h3>
                   <p className={`${styles.detailsModalText} ${modalStyles.description}`}>
@@ -8063,7 +8063,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
-                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>Condition</span></h3> : null}
+                  {(!compactAppMode || ownerAppMode) ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>Condition</span></h3> : null}
                 </div>
                 <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
               </div>
@@ -8203,7 +8203,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.conditionOptionsModal} ${advancedCondition ? styles.conditionProgressiveModal : styles.conditionBasicModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
-                {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</span></h3> : null}
+                {(!compactAppMode || ownerAppMode) ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('condition')}<span>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</span></h3> : null}
               </div>
               <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
             </div>
@@ -8307,7 +8307,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.popularityModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
-                {!compactAppMode ? (
+                {(!compactAppMode || ownerAppMode) ? (
                   <>
                     <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('popularity')}<span>Popularity</span></h3>
                   </>
@@ -8387,7 +8387,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
-                  {!compactAppMode ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3> : null}
+                  {(!compactAppMode || ownerAppMode) ? <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3> : null}
                 </div>
                 <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={() => setActiveDetailsModal(null)} aria-label="Close" data-modal-close="true">×</button>
               </div>
@@ -8450,7 +8450,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.detailsModal} ${modalStyles.surface} ${styles.specChoiceModal} ${styles.extrasDetailModal} ${styles.extrasEditorModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
-                {!compactAppMode ? (
+                {(!compactAppMode || ownerAppMode) ? (
                   <>
                     <h3 data-estimate-modal-title className={styles.detailsModalTitle}>{renderDetailIcon('extras')}<span>Extras</span></h3>
                     <p className={`${styles.detailsModalText} ${modalStyles.description}`}>Add fitted extras and their replacement prices.</p>
@@ -8657,7 +8657,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           >
             {renderDetailIcon('year', yearStepComplete)}
             <span className={styles.specStepContent}>
-              <strong>{compactAppMode ? 'Manufacturing year' : `${getAssetNounTitle(selectedSector)} manufacturing year`}</strong>
+              <strong>{compactAppMode ? 'Manufacturing year' : `${ownerAppMode ? 'Manufacturing year' : `${getAssetNounTitle(selectedSector)} manufacturing year`}`}</strong>
               <small>{yearStepComplete ? getYearAnswerLabel() : compactAppMode ? 'Choose the year.' : 'Choose the manufacturing year to start.'}</small>
             </span>
             <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose year'}</span>
@@ -9277,7 +9277,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 ...(advancedShowLifetimeInput ? ['Expected lifetime — total hours or kilometres.'] : []),
               ]} /></div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
-            <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
+            <div data-value-tour-focus className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
               {headlineValue !== null ? (
                 <div className={`${styles.resultVatToggle} ${styles.resultVatToggleInline}`} role="group" aria-label="VAT display mode">
@@ -9448,7 +9448,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; const base = basicEstimateActive ? Math.max(0, price - basicExtraReplacementPriceExVat) : price; setReplacementRangeAnchor(null); setFinalReplacementDraft(String(getVatDisplayValue(base, vatDisplayMode))); setReplacementPanelOpen(true); }}>
                 Adjust
               </button>
-              <div className={styles.resultReplacementAmount}>
+              <div data-value-tour-focus className={styles.resultReplacementAmount}>
                   <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
                   <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
                 </div>
@@ -9491,7 +9491,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {renderDetailIcon('usage')}
               <div><h3>Realistic Market Value</h3><p>Likely selling value</p></div>
             </div>
-            <button type="button" aria-label={currentMarketPrice !== null ? 'Update Realistic Market Value' : 'Calculate Realistic Market Value'} onClick={() => setSaleabilityOpen(true)}>{currentMarketPrice !== null ? 'Update' : 'Calculate'}</button>
+            <button data-value-tour-focus type="button" aria-label={currentMarketPrice !== null ? 'Update Realistic Market Value' : 'Calculate Realistic Market Value'} onClick={() => setSaleabilityOpen(true)}>{currentMarketPrice !== null ? 'Update' : 'Calculate'}</button>
             <div className={styles.resultReplacementAmount}>
               {currentMarketPrice !== null ? <strong className={styles.marketResultAmount}>{money(getVatDisplayValue(currentMarketPrice, vatDisplayMode))}</strong> : <strong className={styles.marketNotCalculated}>Not calculated yet</strong>}
               <small>{currentMarketPrice !== null ? headlineVatLabel : 'Calculate for your selling circumstances'}</small>

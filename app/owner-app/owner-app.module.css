@@ -3983,3 +3983,206 @@
     justify-self: start !important;
   }
 }
+
+  .module.module [class*='appValuation'] [class*='detailsModalHeader'] > div {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+  }
+/* Owner dialog titles and close buttons share one header row at every width. */
+.module.module [class*='appValuation'] [class*='detailsModalHeader'] {
+  grid-template-columns: minmax(0, 1fr) 44px !important;
+  justify-items: stretch !important;
+}
+.module.module [class*='appValuation'] [class*='detailsModalHeader'] [data-modal-close] {
+  align-self: start !important;
+  justify-self: end !important;
+}
+.module.module [class*='appValuation'] [data-estimate-modal-title] {
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+/* Phone valuation: one readable flow, with navigation outside the content. */
+@media (max-width: 640px) {
+  .module.module [class*='appValuation'] [class*='wizardHeader'],
+  .module.module [class*='appValuation'] [class*='wizardFooter'] {
+    position: static !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='estimateModeGrid'],
+  .module.module [class*='appValuation'] [class*='dealerAssessmentOptions'],
+  .module.module [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='choiceGrid'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='estimateModeGrid'] [class*='sectorBigCard'] {
+    min-height: 0 !important;
+    opacity: 1;
+  }
+
+  .module.module [class*='appValuation'] [class*='estimateModeGrid'] [class*='sectorBigCardContent'] {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 38px 18px 20px !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='estimateModeGrid'] [class*='estimateModeDescription'] {
+    color: #fff !important;
+    font-size: .9rem !important;
+    line-height: 1.5 !important;
+    max-width: 32ch !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalOverlay'] {
+    align-items: center !important;
+    padding: 12px !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModal']:not([class*='Overlay']):not([class*='Backdrop']):not([class*='Header']):not([class*='Title']):not([class*='Text']):not([class*='Actions']) {
+    width: 100% !important;
+    max-height: calc(100dvh - 24px) !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+    gap: 12px !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalHeader'] {
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 0 12px !important;
+    min-height: 44px !important;
+  }
+
+  .module.module [class*='appValuation'] [data-estimate-modal-title] {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+    overflow-wrap: normal !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalTitle'] [class*='detailIcon'] {
+    display: none;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalActions'] {
+    position: static !important;
+    padding: 12px 0 0 !important;
+    gap: 10px !important;
+  }
+
+  .module.module [class*='appValuation'] button[class*='dealerAssessmentOption'] {
+    min-height: 76px !important;
+    padding: 12px 36px 12px 12px !important;
+    gap: 12px !important;
+  }
+
+
+  .module.module [class*='appValuation'] [class*='extraEntry'] > label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .module.module [class*='appValuation'] [class*='extraEntry'] input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .module.module [class*='appValuation'] [class*='replacementNoticeActions'] {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='replacementNoticeActions'] button {
+    width: 100% !important;
+    margin: 0 !important;
+    white-space: normal;
+  }
+
+  .module.module [class*='appValuation'] [class*='replacementVatToggle'] button {
+    font-size: .8rem !important;
+    padding-inline: 8px !important;
+    white-space: nowrap;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalText'] {
+    font-size: .875rem !important;
+    line-height: 1.45 !important;
+  }
+  .module.module [class*='appValuation'] [class*='basicExtraFields'] {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .module.module [class*='appValuation'] [class*='basicExtraFields'] input {
+    width: 100% !important;
+    min-width: 0;
+  }
+
+  .module.module [class*='appValuation'] [class*='detailsModalHeader'] h3,
+  .module.module [class*='appValuation'] [class*='detailsModalHeader'] p {
+    margin: 0 !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='basicExtraFields'] > label:first-child {
+    grid-column: 1 / -1;
+  }
+  .module.module [class*='appValuation'] [class*='resultFinalActions'] {
+    min-height: 0 !important;
+    height: auto !important;
+    gap: 16px !important;
+  }
+  .module.module [class*='appValuation'] [class*='resultFinalActionsCopy'] {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .module.module [class*='appValuation'] [aria-labelledby='saleability-title'] {
+    width: calc(100% - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+  .module.module [class*='appValuation'] [aria-labelledby='saleability-title'] h2,
+  .module.module [class*='appValuation'] [aria-labelledby='market-save-title'] h2 {
+    font-size: 1.25rem !important;
+    line-height: 1.3 !important;
+  }
+  .module.module [class*='appValuation'] [id='market-save-description'] {
+    font-size: .9rem !important;
+    line-height: 1.5 !important;
+    font-weight: 400 !important;
+  }
+  .module.module [class*='appValuation'] [class*='marketSaveCopy'] strong {
+    font-size: .95rem !important;
+    line-height: 1.35 !important;
+  }
+  .module.module [class*='appValuation'] [class*='marketSaveCopy'] > span {
+    font-size: .85rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .module.module [class*='appValuation'] [class*='extrasEditorBody'] {
+    padding: 12px 0 !important;
+    scrollbar-gutter: auto;
+  }
+  .module.module [class*='appValuation'] [class*='basicExtrasGrid'] button {
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    padding: 14px !important;
+    gap: 6px 10px !important;
+  }
+  .module.module [class*='appValuation'] [class*='primaryExtraEntry'],
+  .module.module [class*='appValuation'] [class*='extraEntry'] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .module.module [class*='appValuation'] [class*='primaryExtraEntry'] label,
+  .module.module [class*='appValuation'] [class*='extraEntry'] label,
+  .module.module [class*='appValuation'] [class*='extrasEditorModal'] [class*='removeExtra'] {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    grid-template-rows: auto !important;
+  }
+  .module.module [class*='appValuation'] [class*='extrasEditorModal'] [class*='removeExtra'] {
+    justify-self: end;
+  }
+}
