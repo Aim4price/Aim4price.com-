@@ -43,9 +43,11 @@
 /* Phone refinement: keep labels concise and surfaces consistent. */
 .dashboard { gap: 22px; }
 .intro h1 { font-size: clamp(1.25rem, 5vw, 1.75rem); letter-spacing: -.025em; }
-.intro h1, .sectionTitle, .row strong, .row small, .intro p { white-space: nowrap; }
+.intro h1, .sectionTitle, .row strong, .row small, .intro p { white-space: normal; overflow-wrap: break-word; }
 .intro, .row span { min-width: 0; }
-.intro p, .row small { overflow-x: auto; max-width: 100%; }
+.intro p, .row small { max-width: 100%; }
+.dashboard.intro { gap: 6px; }
+.dashboard.intro h1 { margin-bottom: 0; }
 .grid { gap: 10px; }
 .tile { gap: 10px; min-height: 92px; padding: 14px; border-radius: 15px; box-shadow: 0 2px 8px rgb(16 54 38 / 3%); }
 .tile strong { font-size: clamp(.78rem, 3.5vw, .94rem); white-space: nowrap; letter-spacing: -.015em; }
