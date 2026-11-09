@@ -3019,7 +3019,6 @@
   gap: 1rem !important;
 }
 .compactAppSurface.compactAppSurface .discoveryCardLabels,
-.compactAppSurface.compactAppSurface .dealerAssetMeta,
 .compactAppSurface.compactAppSurface .recentAdvertByline,
 .compactAppSurface.compactAppSurface .assetActionRow {
   display: flex !important;
@@ -3306,5 +3305,21 @@
 .discoveryTitleRow h1 {
   min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Keep summary facts together; wrap whole facts rather than stacking every word. */
+.compactAppSurface.compactAppSurface .dealerAssetMeta {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: .4rem 1rem;
+  margin: .5rem 0 .75rem;
+}
+.compactAppSurface .dealerAssetMeta > span { white-space: nowrap; }
+
+.compactAppSurface .discoveryTitleRow h1 {
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 5), 1.75rem);
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }

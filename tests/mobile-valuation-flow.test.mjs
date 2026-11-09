@@ -15,7 +15,7 @@ test('Owner and Dealer continue to share one valuation client with app-only pres
   assert.match(ownerPage, /<ValuationClient ownerAppMode\b[^>]*\/>/);
   assert.match(dealerPage, /<ValuationClient dealerAppMode \/>/);
   assert.match(client, /styles\.appValuation/);
-  assert.match(client, /Estimate \{step\} of \{WIZARD_STEPS\.length\}/);
+  assert.match(client, /Step \{step\} of \{WIZARD_STEPS\.length\}/);
   assert.match(client, /compactAppMode \? item\.step : complete \? '✓' : item\.step/);
   assert.match(client, /!compactAppMode \? \([\s\S]*?styles\.stepperLabel/);
   assert.match(appStyles, /stepperLabel[^\{]*\{[\s\S]*?display: none !important/);

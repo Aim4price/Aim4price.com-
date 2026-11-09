@@ -6166,6 +6166,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.estimateChoiceIcon}>{renderEstimateChoiceIcon('advanced')}</span>
                   <strong className={styles.sectorLabel}>Advanced</strong>
                   <span className={styles.estimateModeDescription}>Exact models and exact replacement prices.</span>
+                  {!breakdownAccess ? <span className={styles.estimateModeDescription}>Not available for this account. Choose Basic to continue.</span> : null}
                 </span>
               </span>
             </button>
@@ -9643,7 +9644,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div className={styles.wizardHeader}>
                 {compactAppMode ? (
                   <div className={styles.mobileStepSummary} aria-live="polite">
-                    <span>Estimate {step} of {WIZARD_STEPS.length}</span>
+                    <span>Step {step} of {WIZARD_STEPS.length}</span>
                   </div>
                 ) : null}
                 <div className={styles.stepper}>
