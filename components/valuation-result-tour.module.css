@@ -41,7 +41,3 @@
   :global(:where(html:not(:has([data-website-canvas])))) .card { padding:16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .card p { font-size:.875rem; line-height:1.45; }
 }
-@media (max-width:640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) :global([data-value-tour]),
-  :global(:where(html:not(:has([data-website-canvas])))) :global([data-value-tour-focus]) { scroll-margin-top:80px; }
-}
