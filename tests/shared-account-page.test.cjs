@@ -88,6 +88,7 @@ test('free Business and Dealer account pages open the real account with invoices
   const profile={accountType:role,accountStatus:'active',userId:'shared-user'};
   const page=load('app/account/page.tsx',{
    '../../lib/team-login':{getManagedTeamActor:async()=>null},
+   '../../lib/team-access':{canManageTeamAccess:async()=>false},
    '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
    '../../lib/account-profile':{getAccountProfile:async()=>profile,getAccountScanPinStatus:async()=>{throw Error('Shared account must not load paid QR controls');}},
    '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
@@ -95,12 +96,13 @@ test('free Business and Dealer account pages open the real account with invoices
    'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},
    './account-client':{default:'AccountClient'},
   });
-  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.ok(result.props.sharedSettings);
+  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.equal(result.props.canManageDesktopUsers,false);assert.ok(result.props.sharedSettings);
  }
 });
 test('suspended free accounts still follow the account access block',async()=>{
  const page=load('app/account/page.tsx',{
    '../../lib/team-login':{getManagedTeamActor:async()=>null},
+   '../../lib/team-access':{canManageTeamAccess:async()=>false},
   '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
   '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'suspended'})},
   '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
