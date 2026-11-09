@@ -64,7 +64,7 @@ const replacementModalError='',setReplacementModalError=()=>{},setVatDisplayMode
 const calculateGenericWithReplacementPrice=async value=>{setApplied({replacement:value});};
 const calculateTractorWithReplacementPrice=async()=>{};
 
-const resultState={kind:'generic'},compactAppMode=false,dealerStyles={},selectedUsageDisplayUnit=unit;
+const resultState={kind:'generic'},compactAppMode=false,ownerAppMode=false,dealerStyles={},selectedUsageDisplayUnit=unit;
 const getResultUsageMetricType=()=>unit,getUsageLifetimeDefault=()=>unit==='km'?350000:16000;
 const ADVANCED_LIFETIME_KM_MIN=1,ADVANCED_LIFETIME_HOURS_MIN=1,ADVANCED_LIFETIME_KM_MAX=2000000,ADVANCED_LIFETIME_HOURS_MAX=50000;
 const advancedRecalculateLoading=false,replacementRecalculateLoading=false,advancedError='',setMessage=()=>{},setActiveDetailsModal=()=>{},usageNumber=5000,usageAmount='5000',setUsageModalMode=()=>{},setUsageLifetimeOverride=()=>{},saveUsageAnswer=()=>{};
