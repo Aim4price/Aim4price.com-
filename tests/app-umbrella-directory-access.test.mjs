@@ -51,7 +51,7 @@ test('Owner and Field Manager asset directories adapt only when umbrellas exist'
     assert.match(client, /View all assets/);
     assert.doesNotMatch(client, /Umbrella: \{assetGroup\.name\}/);
     assert.match(client, /styles\.assetDirectorySearchMatch/);
-    assert.match(client, /Back to umbrellas/);
+    assert.match(client, client === ownerClient ? /All groups/ : /Back to umbrellas/);
     assert.doesNotMatch(client, /Organised assets/);
   }
   assert.match(ownerRoute, /buildAppAssetDirectoryGroups\(assetGroups, visibleItems\.map/);
@@ -112,7 +112,7 @@ async function renderDirectory(role, assets, groups) {
     ? 'app/owner-app/assets/owner-assets-client.tsx'
     : 'app/field-manager/field-manager-assets-client.tsx';
   const state = role === 'owner'
-    ? ['', assets, groups, null, false, false]
+    ? ['', assets, groups, null, false, true, false]
     : [assets, groups, null, false, '', null, false];
   let cursor = 0;
   const react = {
@@ -121,6 +121,7 @@ async function renderDirectory(role, assets, groups) {
       if (!(index in state)) state[index] = initial;
       return [state[index], (value) => { state[index] = value; }];
     },
+    useRef: (initial) => ({ current: initial }),
     useMemo: (compute) => compute(),
     useEffect() {},
   };
@@ -170,7 +171,7 @@ for (const role of ['owner', 'field']) {
       assert.deepEqual(cards().map((node) => node.key), ['tractor', 'standalone']);
       assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
       click('Clear search');
-      assert.deepEqual(cards().map((node) => node.key), ['farm', 'yard', undefined, 'standalone']);
+      assert.deepEqual(cards().map((node) => node.key), [undefined, 'farm', 'yard', 'standalone']);
       search('Massey');
     } else {
       assert.deepEqual(cards().map((node) => node.key), ['tractor', 'standalone']);
@@ -185,6 +186,8 @@ for (const role of ['owner', 'field']) {
     assert.ok(cards().every((node) => !node.props.className.includes('assetDirectorySearchMatch')));
     click('View all assets');
     assert.deepEqual(cards().map((node) => node.key), ['tractor', 'other', 'standalone']);
+    click(role === 'owner' ? 'All groups' : 'Back to umbrellas');
+    assert.deepEqual(cards().map((node) => node.key), role === 'owner' ? [undefined, 'farm', 'yard', 'standalone'] : ['farm', 'yard', undefined, 'standalone']);
     search('MF123');
     assert.deepEqual(cards().map((node) => node.key), ['tractor']);
   });
