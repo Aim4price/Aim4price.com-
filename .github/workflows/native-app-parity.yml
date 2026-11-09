@@ -1,0 +1,57 @@
+name: Native app layout and flow parity
+on:
+  pull_request:
+    paths:
+      - 'app/dealer/**'
+      - 'app/middleman/**'
+      - 'app/field-manager/**'
+      - 'app/owner-app/**'
+      - 'app/valuation/**'
+      - 'components/app-flow.module.css'
+      - 'components/ValuationResultTour.tsx'
+      - 'components/valuation-result-tour.module.css'
+      - 'components/SaleabilityModal.tsx'
+      - 'components/saleability-modal.module.css'
+      - 'lib/dealer-app-access.ts'
+      - 'scripts/verify-native-app-homes.cjs'
+      - 'scripts/verify-owner-valuation-mobile.cjs'
+      - 'tests/app-navigation-parity.test.mjs'
+      - '.github/workflows/native-app-parity.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/app-navigation-parity.test.mjs tests/field-manager-mobile-navigation.test.mjs tests/mobile-valuation-flow.test.mjs tests/owner-top-navigation.test.mjs
+      - name: Check real home components on phones and desktop
+        run: |
+          for mode in field-manager dealer middleman; do
+            for width in 320 393 1280; do
+              APP_MODE=$mode VIEWPORT_WIDTH=$width node scripts/verify-native-app-homes.cjs || exit 1
+            done
+          done
+      - name: Complete Dealer and Middleman valuation flows
+        run: |
+          for mode in dealer middleman; do
+            for width in 320 393 1280; do
+              APP_MODE=$mode VIEWPORT_WIDTH=$width node scripts/verify-owner-valuation-mobile.cjs || exit 1
+            done
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-app-layout-screenshots
+          path: |
+            /tmp/parity-home-*.png
+            /tmp/parity-directory-*.png
+            /tmp/value-real-*.png

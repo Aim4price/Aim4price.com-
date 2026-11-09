@@ -14,6 +14,7 @@ export default function FieldManagerNavLink({
 }: FieldManagerNavLinkProps) {
   return (
     <Link
+      data-field-legacy-nav
       className={`${styles.navLink} ${tone === 'home' ? styles.homeLink : ''}`}
       href={href}
       aria-label={label}

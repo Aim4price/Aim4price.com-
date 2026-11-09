@@ -4,6 +4,7 @@ on:
     paths:
       - 'app/owner-app/**'
       - 'app/valuation/**'
+      - 'components/app-flow.module.css'
       - 'components/ValuationResultTour.tsx'
       - 'components/valuation-result-tour.module.css'
       - 'components/SaleabilityModal.tsx'

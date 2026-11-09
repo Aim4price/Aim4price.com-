@@ -4,7 +4,7 @@ import Link from 'next/link';
 import AppSettings from '../../components/AppSettings';
 import NotificationSettingsModal from '../../components/NotificationSettingsModal';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './dealer.module.css';
@@ -18,9 +18,8 @@ type DealerNavProps = {
 };
 
 export default function DealerNav({
-  backHref = '/dealer',
-  backLabel = 'Home',
-  showBack,
+  backHref,
+  backLabel = 'Back',
   onBack,
   backDisabled = false,
 }: DealerNavProps) {
@@ -29,31 +28,21 @@ export default function DealerNav({
   const pathname = realPathname.replace(/^\/middleman(?=\/|$)/, '/dealer');
   const appHref = (href: string) => href.replace(/^\/dealer(?=\/|$)/, appRoot);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const router = useRouter();
   const isLeadsPage = pathname.startsWith('/dealer/leads');
   const isMaintenancePage = pathname.startsWith('/dealer/maintenance');
-  const resolvedShowBack = showBack ?? pathname !== appRoot;
-  const isMaintenanceDetail = pathname.startsWith('/dealer/maintenance/');
-  const isInventoryDetail = pathname.startsWith('/dealer/inventory/');
-  const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail
-    ? '/dealer/maintenance'
-    : backHref === '/dealer' && isInventoryDetail
-      ? '/dealer/inventory'
-      : backHref;
-  const resolvedBackLabel = backLabel === 'Home' && isMaintenanceDetail
-    ? 'Maintenance'
-    : backLabel === 'Home' && isInventoryDetail
-      ? 'Asset Register'
-      : backLabel;
-  const backIsHome = resolvedShowBack && resolvedBackHref === '/dealer' && resolvedBackLabel === 'Home';
-  const navLayoutClass = backIsHome
-    ? styles.navSingle
-    : resolvedShowBack
-      ? styles.navPair
-      : styles.navSignOut;
-  const workspaceSurfaceClass = isLeadsPage || isMaintenancePage
-    ? `${styles.navLeadsSurface} ${styles.navUnifiedSurface}`
-    : '';
-
+  const workspaceSurfaceClass = isLeadsPage || isMaintenancePage ? `${styles.navLeadsSurface} ${styles.navUnifiedSurface}` : '';
+  const isHome = pathname === '/dealer';
+  const appName = appRoot === '/middleman' ? 'Middleman' : 'Dealer';
+  const fallbackHref = pathname.startsWith('/dealer/maintenance/') ? '/dealer/maintenance'
+    : pathname.startsWith('/dealer/inventory/') ? '/dealer/inventory' : '/dealer';
+  function goBack() {
+    if (backDisabled) return;
+    if (onBack) { onBack(); return; }
+    if (backHref) { router.push(appHref(backHref)); return; }
+    if (window.history.length > 1) router.back();
+    else router.replace(appHref(fallbackHref));
+  }
   if (pathname === '/dealer/login' || (pathname === '/dealer/valuation' && !onBack)) return null;
 
   async function signOut() {
@@ -68,39 +57,22 @@ export default function DealerNav({
   }
 
   return (
-    <header
-      className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
-      aria-label="Dealer App navigation"
-    >
-      {pathname === appRoot ? <AppSettings offlineHref={`${appRoot}/offline.html`} /> : null}
-      {resolvedShowBack ? (
-        <>
-          {onBack ? (
-            <button type="button" className={styles.navButton} onClick={onBack} disabled={backDisabled}>
-              {resolvedBackLabel}
-            </button>
-          ) : (
-            <Link className={styles.navButton} href={appHref(resolvedBackHref)} prefetch={false} aria-label={resolvedBackLabel}>
-              <span>{resolvedBackLabel}</span>
-            </Link>
-          )}
-          {!backIsHome ? (
-            <Link className={`${styles.signOut} ${styles.homeButton}`} href={appRoot} prefetch={false} aria-label="Dealer App home">
-              Home
-            </Link>
-          ) : null}
-        </>
-      ) : (
-        <button
-          type="button"
-          className={styles.signOut}
-          onClick={() => void signOut()}
-          disabled={isSigningOut}
-        >
-          {isSigningOut ? 'Signing out…' : 'Sign out'}
+    <header className={`${styles.nav} ${styles.navPair} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`} aria-label={`${appName} App navigation`}>
+      <nav className={styles.topNavigation} aria-label="Page navigation">
+        <button type="button" className={styles.navButton} onClick={goBack} disabled={backDisabled} aria-label="Back" title={backLabel === 'Back' ? undefined : backLabel}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7" /></svg>
+          <span>Back</span>
         </button>
-      )}
-      {pathname === '/dealer/notifications' ? <div style={{marginLeft:'auto',display:'flex'}}><NotificationSettingsModal app={appRoot === '/middleman' ? 'middleman' : 'dealer'} /></div> : null}
+        <Link className={`${styles.navButton} ${styles.homeButton}`} href={appRoot} prefetch={false} aria-label={appRoot === '/middleman' ? 'Middleman App home' : 'Dealer App home'}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-6v-7H9v7H3Z" /></svg>
+          <span>Home</span>
+        </Link>
+      </nav>
+      {isHome ? <div className={styles.topUtilities}>
+        <AppSettings offlineHref={`${appRoot}/offline.html`} />
+        <button type="button" className={styles.signOut} onClick={() => void signOut()} disabled={isSigningOut}>{isSigningOut ? 'Signing out…' : 'Sign out'}</button>
+      </div> : null}
+      {pathname === '/dealer/notifications' ? <div className={styles.topUtilities}><NotificationSettingsModal app={appRoot === '/middleman' ? 'middleman' : 'dealer'} /></div> : null}
     </header>
   );
 }

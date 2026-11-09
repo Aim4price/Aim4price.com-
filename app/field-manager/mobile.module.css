@@ -63,3 +63,9 @@
   .row small { font-size: .75rem; }
   .tile { padding: 12px; }
 }
+
+/* Owner-style centred actions and natural wrapping instead of sideways text scrolling. */
+.tile { align-items: center; justify-content: center; text-align: center; }
+.grid > .tile:last-child:nth-child(odd) { justify-content: center; }
+.intro h1, .sectionTitle, .row strong, .row small, .intro p, .tile strong, .count span { white-space: normal; overflow-wrap: break-word; text-wrap: pretty; }
+.intro p, .row small { overflow: visible; }

@@ -169,7 +169,7 @@ export default function FieldManagerNotificationsClient() {
   return (
     <main className={`${styles.page} ${polish.page}`}>
       <header className={`${styles.assetsHeader} ${styles.assetsHeaderSingle}`} aria-label="Field Manager notification controls">
-        <Link className={styles.navButton} href="/field-manager" prefetch={false}>Home</Link>
+        <Link data-field-legacy-nav className={styles.navButton} href="/field-manager" prefetch={false}>Home</Link>
         <div style={{ marginLeft: 'auto', display: 'flex' }}><NotificationSettingsModal app="field" /></div>
       </header>
       <div className={`${styles.content} ${styles.notificationContent}`}>
