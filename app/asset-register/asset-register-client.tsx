@@ -16510,6 +16510,8 @@ export default function AssetRegisterClient({
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${styles.toolbarRefreshButton}`}
+                data-tooltip="Refresh the register to show the latest asset updates."
+                data-tooltip-style="description"
                 onClick={() => void handleRefreshAssetRegister()}
                 disabled={isLoading || isRefreshingRegister}
               >
@@ -16521,6 +16523,8 @@ export default function AssetRegisterClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.toolbarUmbrellaButton}`}
+                  data-tooltip="Group related assets together under an umbrella."
+                  data-tooltip-style="description"
                   onClick={openCreateAssetGroupManager}
                 >
                   <UmbrellaIcon className={styles.buttonIcon} />
@@ -16529,7 +16533,13 @@ export default function AssetRegisterClient({
               ) : null}
 
               {canAddAssetsToActiveRegister ? (
-                <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`}
+                  onClick={openAddAssetChoiceModal}
+                  data-tooltip="Add a new asset to your asset register."
+                  data-tooltip-style="description"
+                >
                   <PlusIcon className={styles.buttonIcon} />
                   <span>Add Asset</span>
                 </button>
