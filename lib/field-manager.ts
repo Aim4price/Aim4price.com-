@@ -1,3 +1,4 @@
+import { operationalAssetSql } from './operational-asset';
 import { maintenanceIdentity, type MaintenanceIdentity } from './maintenance-catalogue';
 import { assetDisplayTitle } from './asset-display-title';
 import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
@@ -1220,7 +1221,7 @@ export async function ensureFieldManagerAssetPublicCodes(
               and nullif(trim(coalesce(to_jsonb(vr)->>'user_id', '')), '') = $1
           )
         )
-        and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
+        and ${operationalAssetSql('a')}
         and nullif(trim(coalesce(a.public_asset_code, '')), '') is null
     `,
     [normalizedOwnerUserId],
@@ -1258,7 +1259,7 @@ export async function listFieldManagerAssets(
             or nullif(trim(coalesce(vr.user_id, '')), '') = $1
           )
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
-          and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
+          and ${operationalAssetSql('a')}
           and (
             (select scope from access_state) = 'all'
             or exists (
@@ -1323,7 +1324,7 @@ export async function getFieldManagerAssetForOpen(input: {
       ${fieldManagerAssetSelect(`
         where a.id::text = $1
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
-          and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
+          and ${operationalAssetSql('a')}
           and (
             (select scope from access_state) = 'all'
             or exists (
@@ -1427,7 +1428,7 @@ export async function validateFieldManagerScanAsset(input: {
           inner join public.asset_group_members member on member.group_id = asset_group.id and member.asset_id = $2::uuid
           where group_access.field_manager_id = $1::uuid
         )
-      ) as allowed
+      ) and exists (select 1 from public.asset_register_items a where a.id = $2::uuid and ${operationalAssetSql('a')}) as allowed
     `,
     [input.managerId, resolvedOwner.assetId, input.ownerUserId],
   );

@@ -1,3 +1,4 @@
+import { fuelScanSelectableAssets } from '../../../../../lib/fuel-scan-assets';
 import { getFuelWorkChoices } from '../../../../../lib/fuel-work-choices';
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeFuelStorageScanAccess, getFuelScanPayload, getFuelStoragePublicPreview } from '../../../../../lib/fuel-ledger';
@@ -66,6 +67,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({
       ok: true,
       ...payload,
+      assets: await fuelScanSelectableAssets(access, payload.assets),
       workChoices: (await getFuelWorkChoices(access.ownerUserId)).choices,
       accessMode: access.accessMode,
       fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,

@@ -1,6 +1,7 @@
 'use client';
+import AppAssetChoice from '../../components/AppAssetChoice';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import FieldManagerNavLink from './field-manager-nav-link';
 import FieldManagerServiceLocationModal from './field-manager-service-location-modal';
 import styles from './page.module.css';
@@ -109,6 +110,7 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
 }
 
 export default function FieldManagerAssetsClient({ reportProblemMode = false }: { reportProblemMode?: boolean }) {
+  const loadVersion = useRef(0);
   const [assets, setAssets] = useState<FieldManagerAssetSummary[]>([]);
   const [groups, setGroups] = useState<AssetGroupSummary[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -149,7 +151,11 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
   const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets && !hasSearch;
 
   useEffect(() => {
-    void loadFieldManagerAssets();
+    const refresh = () => { void loadFieldManagerAssets(); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('pageshow', refresh);
+    return () => { loadVersion.current += 1; window.removeEventListener('focus', refresh); window.removeEventListener('pageshow', refresh); };
   }, []);
 
   useEffect(() => {
@@ -159,7 +165,10 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
   }, [notice]);
 
   async function loadFieldManagerAssets() {
+    const version = ++loadVersion.current;
     setIsLoading(true);
+    setAssets([]);
+    setGroups([]);
 
     try {
       const sessionResponse = await fetch('/api/field-manager/session', {
@@ -192,12 +201,13 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
         throw new Error(extractError(assetsPayload, 'Failed to load assets.'));
       }
 
+      if (version !== loadVersion.current) return;
       setAssets(assetsPayload.assets ?? []);
       setGroups(assetsPayload.groups ?? []);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Failed to load assets.');
+      if (version === loadVersion.current) setNotice(error instanceof Error ? error.message : 'Failed to load assets.');
     } finally {
-      setIsLoading(false);
+      if (version === loadVersion.current) setIsLoading(false);
     }
   }
 
@@ -244,37 +254,11 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
     const isOpening = openingAssetId === asset.id;
 
     return (
-      <article key={asset.id} className={`${styles.assetCard} ${hasSearch && matchingAssetIds.has(asset.id) ? styles.assetDirectorySearchMatch : ''}`}>
-        <div className={styles.assetTopRow}>
-          <div>
-            <h2 tabIndex={0} title={asset.title}>{asset.title}</h2>
-          </div>
-        </div>
-
-        <div className={`${styles.assetMetaGrid} ${styles.assetMetaGridVertical}`}>
-          <div>
-            <span>Serial / VIN</span>
-            <strong>{serialDisplayText(asset)}</strong>
-          </div>
-          <div>
-            <span>Year</span>
-            <strong>{formatYearModel(asset)}</strong>
-          </div>
-          <div>
-            <span>Usage</span>
-            <strong>{asset.usageLabel}</strong>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
-          onClick={() => void handleOpenAsset(asset)}
-          disabled={Boolean(openingAssetId)}
-        >
-          {isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open'}
-        </button>
-      </article>
+      <AppAssetChoice key={asset.id} title={asset.title}
+        details={`${formatYearModel(asset)} · ${asset.usageLabel}`}
+        serial={serialDisplayText(asset)}
+        action={isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open asset'}
+        onClick={() => void handleOpenAsset(asset)} disabled={Boolean(openingAssetId)} />
     );
   }
 

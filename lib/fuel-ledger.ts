@@ -1,3 +1,4 @@
+import { isOperationalAsset, operationalAssetSql } from './operational-asset';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { assetCanReceiveFuel } from './asset-fuel-eligibility';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -377,6 +378,7 @@ type FuelAssetRow = {
   plate_label: string | null;
   public_asset_code: string | null;
   qr_status: string | null;
+  lifecycle_state?: string | null;
   hours: string | number | null;
   life_worked_percent: string | number | null;
   fuel_percent: string | number | null;
@@ -1466,7 +1468,7 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     selectedMethod: asText(row.selected_method ?? specs.selectedMethod ?? specs.selected_method),
     currentValue: normalizeMoneyValue(row.current_value ?? specs.currentValue ?? specs.current_value ?? specs.valuationValue ?? specs.valuation_value),
     canReceiveFuel: inferAssetCanReceiveFuel(row),
-    isActive: (asText(row.qr_status) || 'active').toLowerCase() === 'active',
+    isActive: isOperationalAsset({ qrStatus: row.qr_status, lifecycleState: row.lifecycle_state }),
     usageMetric: inferAssetUsageMetric(row),
     workUseExcluded: Boolean(row.work_use_excluded),
     workUseExclusionReason: asText(row.work_use_exclusion_reason),
@@ -2659,6 +2661,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         to_jsonb(a)->>'plate_label' as plate_label,
         to_jsonb(a)->>'public_asset_code' as public_asset_code,
         coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+        to_jsonb(a)->>'lifecycle_state' as lifecycle_state,
         a.hours,
         coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
         to_jsonb(a)->>'fuel_percent' as fuel_percent,
@@ -2686,7 +2689,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
       left join public.fuel_asset_exclusions fae
         on fae.user_id = a.user_id and fae.asset_register_item_id = a.id
       where a.user_id = $1
-        and coalesce(to_jsonb(a)->>'qr_status', 'active') <> 'deleted'
+        and ${operationalAssetSql('a')}
       order by lower(coalesce(a.title, '')), a.id::text
     `,
     [userId],
@@ -3875,6 +3878,7 @@ export async function recordFuelAssetIssue(
           to_jsonb(a)->>'plate_label' as plate_label,
           to_jsonb(a)->>'public_asset_code' as public_asset_code,
           coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+          to_jsonb(a)->>'lifecycle_state' as lifecycle_state,
           a.hours,
           coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
           to_jsonb(a)->>'fuel_percent' as fuel_percent,
@@ -4393,6 +4397,7 @@ export async function recordMissingFuelAssetIssue(
           to_jsonb(a)->>'plate_label' as plate_label,
           to_jsonb(a)->>'public_asset_code' as public_asset_code,
           coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+          to_jsonb(a)->>'lifecycle_state' as lifecycle_state,
           a.hours,
           coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
           to_jsonb(a)->>'fuel_percent' as fuel_percent,
@@ -5324,6 +5329,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             to_jsonb(a)->>'plate_label' as plate_label,
             to_jsonb(a)->>'public_asset_code' as public_asset_code,
             coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+            to_jsonb(a)->>'lifecycle_state' as lifecycle_state,
             a.hours,
             coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
             to_jsonb(a)->>'fuel_percent' as fuel_percent,
