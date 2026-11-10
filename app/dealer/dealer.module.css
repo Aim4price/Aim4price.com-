@@ -3813,3 +3813,48 @@
   height: 26px !important;
   color: var(--app-warning, #d4a62a) !important;
 }
+
+/* Match the Owner navigation while retaining app-specific destinations. */
+.nav.nav {
+  position: sticky;
+  top: 0;
+  left: auto;
+  transform: none;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(calc(100% - 32px), 720px);
+  margin: 0 auto;
+  padding: max(8px, env(safe-area-inset-top)) 0 12px;
+  gap: 10px;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  backdrop-filter: none;
+}
+.topNavigation { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; }
+.topNavigation .navButton { width: 100%; max-width: none; min-width: 0; min-height: 46px; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 10px 14px; font-size: .9rem; font-weight: 650; line-height: 1.4; border-radius: 12px; }
+.topNavigation svg { flex-shrink: 0; }
+.topUtilities { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topUtilities .signOut { margin-left: auto; min-height: 44px; }
+.homeShell.homeShell { min-height: 0; padding-top: 12px; }
+.homeContent.homeContent { align-content: start; width: min(100%, 720px); }
+.homeContent .homeLauncher { width: 100%; gap: 12px; }
+.homeLaunchCard.homeLaunchCard { min-height: 76px; padding: 16px; border-radius: 16px; gap: 12px; }
+.homeLaunchCard strong { white-space: normal; overflow-wrap: break-word; line-height: 1.4; }
+.homeLaunchChevron { display: none; }
+.module :is(input, select, textarea) { min-width: 0; }
+@media (max-width: 640px) {
+  .module :is(input, select, textarea) { font-size: 1rem; }
+  .homeLaunchCard.homeLaunchCard { padding: 14px; }
+}
+
+/* App manage actions use the same centred icon/label layout as Owner assets. */
+.dealerLayout [data-manage-action] { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; min-width: 0; }
+.dealerLayout [data-manage-action] > span { min-width: 0; text-align: center; }
+.dealerLayout [data-manage-action] :is(strong, small) { white-space: normal; overflow-wrap: break-word; line-height: 1.4; }
+
+@media (max-width: 360px) {
+  .dealerLayout nav[aria-label$='bottom navigation'] span { font-size: .7rem; }
+}

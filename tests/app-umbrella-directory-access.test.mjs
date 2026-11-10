@@ -165,7 +165,7 @@ for (const role of ['owner', 'field']) {
     const render = await renderDirectory(role, assets, groups);
     const search = (value) => render().find((node) => node.type === 'input').props.onChange({ target: { value } });
     const cards = () => render().filter((node) => node.type === 'article');
-    const click = (label) => render().find((node) => node.type === 'button' && node.props.children === label).props.onClick();
+    const click = (label) => render().find((node) => node.type === 'button' && (node.props['aria-label'] ?? node.props.children) === label).props.onClick();
     search('Massey');
     if (role === 'owner') {
       assert.deepEqual(cards().map((node) => node.key), ['tractor', 'standalone']);

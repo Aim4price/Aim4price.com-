@@ -345,8 +345,9 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
                       type="button"
                       className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
                       onClick={() => setShowAllAssets(true)}
+                      aria-label="View all assets"
                     >
-                      View all assets
+                      Open
                     </button>
                   </article>
                 ) : null}

@@ -1,3 +1,5 @@
+import DealerBottomNav from './dealer-bottom-nav';
+import flowStyles from '../../components/app-flow.module.css';
 import AppOfflineEntry from '../../components/AppOfflineEntry';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
@@ -40,9 +42,10 @@ export default function DealerLayout({ children }: { children: ReactNode }) {
     <>
       <DealerSessionKeeper />
       <AppOfflineEntry appRoot="/dealer" worker="/dealer-sw.js" />
-      <div className={styles.dealerLayout} data-app-shell="dealer">
+      <div className={`${styles.dealerLayout} ${flowStyles.surface}`} data-app-shell="dealer">
         <DealerNav />
         <div className={styles.patternPageContent}>{children}</div>
+        <DealerBottomNav />
       </div>
     </>
   );

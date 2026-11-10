@@ -4090,3 +4090,6 @@
 :global([data-app-shell='field']) .fieldManagerMobileSurface .field :is(input, textarea, select) { font-size: 1rem; font-weight: 500; min-height: 48px; border-radius: 12px; }
 :global([data-app-shell='field']) .fieldManagerMobileSurface .field span { font-weight: 600; }
 @media (max-width: 360px) { :global([data-app-shell='field']) .shell { width: calc(100% - 24px); } }
+
+:global([data-app-shell='field']) .fieldManagerMobileSurface .nativeActionCard { flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+:global([data-app-shell='field']) .fieldManagerMobileSurface .nativeActionCard .actionTextBlock { text-align: center; }

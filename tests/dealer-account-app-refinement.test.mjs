@@ -23,7 +23,7 @@ test('Dealer App home mirrors the Owner App launcher without dropping dealer too
   assert.match(source, /label: 'Overview'/);
   assert.match(source, /label: 'Leads'/);
   assert.match(source, /label: 'Maintenance'/);
-  assert.match(source, /label: 'Value My Asset'/);
+  assert.match(source, /label: 'Value Asset'/);
   assert.match(source, /label: 'Discover Assets'/);
   assert.match(source, /label: 'Client Costs'/);
   assert.match(source, /label: 'Marketplace'/);
@@ -34,7 +34,7 @@ test('Dealer App home mirrors the Owner App launcher without dropping dealer too
 test('Dealer App top controls follow the Owner App back, home and sign-out flow', () => {
   const source = read('app/dealer/dealer-nav.tsx');
   const styles = read('app/dealer/dealer.module.css');
-  assert.match(source, /backIsHome/);
+  assert.match(source, /function goBack\(\)/);
   assert.match(source, /styles\.navPair/);
   assert.match(source, /Dealer App home/);
   assert.doesNotMatch(source, /navBrand|navArrow/);

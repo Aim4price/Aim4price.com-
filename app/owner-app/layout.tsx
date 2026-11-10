@@ -1,3 +1,4 @@
+import flowStyles from '../../components/app-flow.module.css';
 import OwnerBottomNav from './owner-bottom-nav';
 import AppOfflineEntry from '../../components/AppOfflineEntry';
 import AppSessionKeeper from '../app-session-keeper';
@@ -29,6 +30,6 @@ export const viewport: Viewport = {
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {
-  return <div data-app-shell="owner" className={styles.appShell} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/owner-app" /><AppOfflineEntry appRoot="/owner-app" worker="/owner-app-sw.js" />{children}<OwnerBottomNav /></div>;
+  return <div data-app-shell="owner" className={`${styles.appShell} ${flowStyles.surface}`} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/owner-app" /><AppOfflineEntry appRoot="/owner-app" worker="/owner-app-sw.js" />{children}<OwnerBottomNav /></div>;
 }
 

@@ -1,3 +1,4 @@
+import FieldManagerTopNav from './field-manager-top-nav';
 import AppSessionKeeper from '../app-session-keeper';
 import FieldManagerOfflineEntry from './field-manager-offline-entry';
 import type { Metadata, Viewport } from 'next';
@@ -30,6 +31,6 @@ export const viewport: Viewport = {
 };
 
 export default function FieldManagerLayout({ children }: { children: ReactNode }) {
-  return <div data-app-shell="field" className={styles.appShell} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/field-manager" /><FieldManagerOfflineEntry />{children}<FieldManagerBottomNav /></div>;
+  return <div data-app-shell="field" className={styles.appShell} style={{ display: 'contents' }}><AppSessionKeeper appRoot="/field-manager" /><FieldManagerOfflineEntry /><FieldManagerTopNav />{children}<FieldManagerBottomNav /></div>;
 }
 
