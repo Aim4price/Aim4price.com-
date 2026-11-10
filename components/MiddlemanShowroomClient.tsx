@@ -435,13 +435,13 @@ export function MiddlemanShowroomManager({
         <p>Your adverts, hosted by Aim4price. One link to share.</p>
         <div className={styles.heroActions}>
           <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button>
-          <button type="button" className={styles.secondaryButton} disabled={!showroom.isPublic} title={showroom.isPublic ? 'Share showroom' : 'Make your showroom public in Edit showroom to share it'} onClick={() => { setMessage(''); setShareShowroomOpen(true); }}><ShowroomManageActionIcon name="link" />Share showroom</button>
+          <button type="button" className={styles.secondaryButton} disabled={!showroom.isPublic} title={showroom.isPublic ? (ownerAccount ? undefined : 'Share showroom') : 'Make your showroom public in Edit showroom to share it'} onClick={() => { setMessage(''); setShareShowroomOpen(true); }} data-tooltip={ownerAccount ? 'Share one link to all your live adverts.' : undefined} data-tooltip-style="description"><ShowroomManageActionIcon name="link" />Share showroom</button>
           {showroom.isPublic ? (
             <button type="button" className={`${styles.secondaryButton} ${styles.openShowroomButton} ${showroomIntroSeen ? '' : styles.showroomPulse}`} aria-haspopup="dialog" onClick={(event) => {
               manageTriggerRef.current = event.currentTarget;
               setShowroomIntroSeen(true);
               setShowroomIntroOpen(true);
-            }}>
+            }} data-tooltip={ownerAccount ? 'View your showroom as customers see it.' : undefined} data-tooltip-style="description">
               <ShowroomManageActionIcon name="marketplace" /> Open showroom
             </button>
           ) : null}
@@ -493,7 +493,7 @@ export function MiddlemanShowroomManager({
                           setManageListingTarget(listing);
                         }}
                         disabled={busyListingId === listing.id}
-                      >
+                       data-tooltip={ownerAccount ? 'Edit, preview, share or remove this advert.' : undefined} data-tooltip-style="description">
                         Manage advert
                       </button>
                     </div>
@@ -992,5 +992,6 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
     </div>
   );
 }
+
 
 

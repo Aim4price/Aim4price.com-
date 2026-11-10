@@ -3480,7 +3480,7 @@ export default function MyInvoicesClient({
               type="button"
               className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionAdd}`}
               onClick={() => openAddInvoiceModal()}
-            >
+             data-tooltip="Record a cost or upload an invoice for an asset." data-tooltip-style="description">
               <span className={styles.plusMark} aria-hidden="true">+</span>
               <span>Add Cost</span>
             </button>
@@ -3503,7 +3503,7 @@ export default function MyInvoicesClient({
                   : assets.length
                     ? 'Invoice Drop'
                     : 'Invoice Drop, add a saved asset first'}
-              >
+               data-tooltip="Let suppliers upload invoices using a code, without access to your asset records." data-tooltip-style="description">
                 <ContributionIcon />
                 <span className={styles.costActionCopy}>
                   <span>Invoice Drop</span>
@@ -3516,7 +3516,7 @@ export default function MyInvoicesClient({
               type="button"
               className={`${styles.primaryButton} ${styles.costActionButton} ${styles.costActionDownload}`}
               onClick={openDownloadModal}
-            >
+             data-tooltip="Download your cost records." data-tooltip-style="description">
               <DownloadIcon />
               <span>Download</span>
             </button>
@@ -3556,7 +3556,7 @@ export default function MyInvoicesClient({
               </button>
             </div>
           ) : (
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel}>
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel} data-tooltip="Filter cost records to narrow your search." data-tooltip-style="description">
               <FilterIcon className={styles.buttonIcon} />
               <span>Filter</span>
               {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
@@ -5624,3 +5624,4 @@ export default function MyInvoicesClient({
     </main>
   );
 }
+

@@ -1990,7 +1990,7 @@ export default function AccountClient({
                         type="button"
                         className={styles.quickActionButton}
                         onClick={openDiscoveryEditor}
-                      >
+                       data-tooltip="Choose whether your eligible assets appear in Discovery." data-tooltip-style="description">
                         <QuickActionIcon name="discovery" />
                         <strong>Discovery settings</strong>
                       </button>
@@ -3097,6 +3097,7 @@ export default function AccountClient({
     </main>
   );
 }
+
 
 
 
