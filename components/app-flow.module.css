@@ -579,3 +579,57 @@
   .surface.surface [class*='appValuation'] [class*='replacementNoticeDisclaimer'] { font-size: .78rem !important; line-height: 1.45 !important; margin: 0 !important; }
   .surface.surface [class*='appValuation'] [class*='replacementNoticeActions'] { padding-top: 0 !important; margin: 0 !important; }
 }
+
+/* Compact result and follow-up dialogs in the native mobile valuation flow. */
+@media (max-width:640px) {
+  .surface.surface [class*='appValuation'] [class*='resultHero']:not([class*='resultHeroHeader']):not([class*='resultHeroHeading']):not([class*='resultHeroTopline']) { padding:16px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultHeroHeader'] { gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultMachineTitle'] { margin:0 !important; font-size:1rem !important; }
+  .surface.surface [class*='appValuation'] [class*='resultValueLine'] { gap:12px !important; margin:8px 0 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultFactsGrid'] { padding-top:16px !important; margin-top:16px !important; gap:16px 12px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultFactCard'] { padding:4px !important; gap:6px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultConditionNote'] { font-size:.75rem !important; line-height:1.35 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultFinalActions'] { padding:16px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultFinalActionsButtons'] { padding:0 !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultFinalActionsButtons'] > button { padding:12px !important; min-height:64px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultActionCopy'] { text-align:left !important; gap:4px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultActionCopy'] strong { font-size:.95rem !important; line-height:1.35 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultActionCopy'] small { font-size:.8rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [class*='priceComparisonCard'] { padding:16px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultReplacementHeading'] p { font-size:.8rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultLifetimeRow'] { padding:14px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultLifetimeLabel'] { gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='resultLifetimeLabel'] strong { font-size:.9rem !important; line-height:1.35 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultLifetimeLabel'] p { font-size:.85rem !important; margin:4px 0 0 !important; }
+  .surface.surface [class*='appValuation'] [class*='resultDisclaimer'] { padding-top:14px !important; margin-top:0 !important; font-size:.75rem !important; line-height:1.45 !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementPriceDialog'] { padding:16px !important; gap:12px !important; width:calc(100% - 24px) !important; max-height:calc(100dvh - 24px) !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementInputActions'] { display:grid !important; grid-template-columns:1fr 2fr !important; gap:10px !important; padding-top:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementInputActions'] button { min-width:0 !important; min-height:46px !important; padding:10px !important; font-size:.85rem !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveHeader'] { padding:16px 60px 16px 16px !important; gap:8px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveHeader'] h2 { font-size:1.25rem !important; line-height:1.3 !important; margin:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveHeader'] p { font-size:.9rem !important; line-height:1.45 !important; margin:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveScrollBody'] { padding:14px 16px !important; gap:14px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveSummaryGrid'] { gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveSummaryCard'] { padding:12px !important; gap:6px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveSummaryCard'] strong { font-size:1.5rem !important; line-height:1.2 !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveActions'] { display:grid !important; grid-template-columns:1fr 1.5fr !important; padding:12px 16px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveActions'] button { min-height:46px !important; padding:10px !important; font-size:.9rem !important; min-width:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='marketSaveChoices'] { gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='marketSaveOption'] { padding:14px 12px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='marketSaveNote'] { font-size:.8rem !important; line-height:1.4 !important; margin:12px 0 0 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='header'] { margin:0 !important; padding-bottom:12px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='header'] p { font-size:.85rem !important; white-space:normal !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='body'] { padding:12px 0 !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='question'] { margin:0 !important; font-size:1rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='choiceGrid'] { grid-template-columns:1fr !important; gap:8px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] button[class*='choice'] { min-height:56px !important; padding:10px 12px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='choiceIcon'] { width:34px !important; height:34px !important; flex-shrink:0 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='choiceText'] strong { font-size:.95rem !important; line-height:1.35 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='choiceText'] small { font-size:.8rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='actions'] { padding-top:12px !important; margin-top:0 !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='actions'] button { min-height:44px !important; padding:10px 14px !important; font-size:.9rem !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='resultHero'] { padding:14px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='easeCard'] { padding:14px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='easeNote'] { font-size:.8rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='sellingSummary'] { padding:12px !important; gap:10px !important; }
+}
