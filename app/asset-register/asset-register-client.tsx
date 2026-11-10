@@ -16003,6 +16003,8 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.secondaryButton} ${styles.headerShareButton}`}
                   onClick={openRegisterShareModal}
+                  data-tooltip="Share multiple assets at once."
+                  data-tooltip-style="description"
                   disabled={!assets.length || isLoading || isExporting}
                 >
                   <ShareIcon className={styles.buttonIcon} />
@@ -16017,7 +16019,8 @@ export default function AssetRegisterClient({
                 onClick={desktopAccess ? handleDownloadRegisterSummary : openSummaryModal}
                 data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportAssets ? "true" : undefined}
                 disabled={isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
-                title={desktopAccess ? "Open a summary of your permitted assets." : undefined}
+                data-tooltip={desktopAccess ? "Get a quick overview of your permitted assets." : "Get a quick overview of the assets in this register."}
+                data-tooltip-style="description"
                 aria-haspopup="dialog"
                 aria-expanded={isSummaryModalOpen}
                 aria-controls="asset-register-summary-dialog"
@@ -16036,6 +16039,8 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.secondaryButton} ${styles.filterTriggerButton} ${hasActiveAssetFilter ? styles.filterTriggerButtonActive : ''} ${isAssetFilterOpen ? styles.filterTriggerButtonOpen : ''}`}
                   onClick={() => setIsAssetFilterOpen(true)}
+                  data-tooltip="Filter assets to narrow your search."
+                  data-tooltip-style="description"
                   disabled={isLoading}
                   aria-haspopup="dialog"
                   aria-expanded={isAssetFilterOpen}
@@ -16051,6 +16056,8 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
                 onClick={openExportModal}
+                data-tooltip="Download all or selected assets as Excel or PDF."
+                data-tooltip-style="description"
                 data-access-restricted={desktopAccess && !desktopAccess.data.permissions.exportAssets ? "true" : undefined} disabled={!assets.length || isLoading || isExporting || Boolean(desktopAccess && !desktopAccess.data.permissions.exportAssets)}
               >
                 <DownloadIcon className={styles.buttonIcon} />
