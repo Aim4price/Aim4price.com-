@@ -28,6 +28,7 @@ type SummaryCard = {
 
 export type FuelReportOptions = {
   hidePrices?: boolean;
+  consumptionUnavailableReason?: string;
   assetTitle?: string;
   baseUrl?: string;
   slipSummary?: { total: number; litres: number; count: number };
@@ -523,7 +524,7 @@ function renderFuelEventTable(events: FuelReportEvent[], baseUrl?: string): stri
     const details = [
       { label: 'Storage', value: event.storageName || '-' },
       { label: 'Gauge increase', value: eventGaugeIncrease(event) },
-      { label: 'Estimated fuel remaining before refill', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
+      { label: 'Estimated fuel left in asset before filling', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
       { label: 'Operator', value: asText(event.operatorName) || '-' },
       { label: 'Activity', value: eventWorkActivityLabel(event) },
       { label: 'Work Area', value: eventWorkAreaLabel(event) },
@@ -587,7 +588,7 @@ function renderFuelEventTable(events: FuelReportEvent[], baseUrl?: string): stri
         <thead>
           <tr>
             <th>Date / time</th><th>Movement</th><th>Asset / target</th>
-            <th>Litres recorded</th><th>Hours / km</th><th>Storage balance</th><th>Fuel gauge</th>
+            <th>Litres recorded</th><th>Hours / km</th><th>Storage balance</th><th>Asset fuel gauge</th>
           </tr>
         </thead>
         ${rowGroups}
@@ -595,6 +596,102 @@ function renderFuelEventTable(events: FuelReportEvent[], baseUrl?: string): stri
     </div>
   `;
 }
+
+export type FuelConsumptionSummary = {
+  metric: 'km' | 'hours';
+  litres: number;
+  usage: number;
+  intervals: number;
+  average: number;
+};
+
+/** Only complete full-to-full intervals within the supplied period are measured.
+ * The starting fill is excluded; all subsequent partial fills are included.
+ * Invalid records break the chain instead of silently understating fuel use.
+ */
+export function calculateFuelConsumption(events: FuelLedgerEvent[]): FuelConsumptionSummary[] {
+  const issues = events.filter(event => event.eventType === 'asset_issue');
+  const assetIds = new Set(issues.map(event => event.assetId));
+  if (assetIds.size !== 1 || !issues[0]?.assetId) return [];
+  const dated = issues.map(event => {
+    const slip = event.sourceType === 'fuel_slip';
+    const dateOnly = slip ? !event.fuelSlipDocumentTime : event.isLateEntry && !event.issueTimeRecorded;
+    const date = slip ? event.fuelSlipDocumentDate : event.isLateEntry ? event.issueDate : '';
+    const value = slip || (event.isLateEntry && dateOnly)
+      ? `${date}T${slip && event.fuelSlipDocumentTime ? event.fuelSlipDocumentTime : '00:00:00'}+02:00`
+      : event.isLateEntry ? event.issueAtIso : event.createdAtIso;
+    return { event, time: Date.parse(value), dateOnly };
+  });
+  // Without a date we cannot know which interval contains the unplaced fuel.
+  if (dated.some(item => !Number.isFinite(item.time))) return [];
+  dated.sort((a, b) => a.time - b.time);
+  const day = (time: number) => new Date(time + 2 * 3600000).toISOString().slice(0, 10);
+  const ambiguous = new Set<number>();
+  const days = new Map<string, typeof dated>();
+  for (const item of dated) {
+    const key = day(item.time);
+    days.set(key, [...(days.get(key) || []), item]);
+  }
+  for (const items of days.values()) {
+    if (items.length > 1 && items.some(item => item.dateOnly)) items.forEach(item => ambiguous.add(item.time));
+  }
+  for (let index = 1; index < dated.length; index++) {
+    if (dated[index].time === dated[index - 1].time) ambiguous.add(dated[index].time);
+  }
+  const totals = new Map<'km' | 'hours', FuelConsumptionSummary>();
+  let anchor: { reading: number; metric: 'km' | 'hours' } | null = null;
+  let previousReading: number | null = null;
+  let pendingLitres = 0;
+  for (const { event, time } of dated) {
+    const metric = event.assetUsageMetric;
+    const reading = event.assetUsageReading;
+    const valid = !ambiguous.has(time) && (metric === 'km' || metric === 'hours')
+      && typeof reading === 'number' && Number.isFinite(reading) && reading >= 0
+      && Number.isFinite(event.litres) && event.litres > 0
+      && !event.fuelSlipReviewRequired && event.fuelSlipExtractionStatus !== 'needs_review';
+    if (!valid) {
+      anchor = null; previousReading = null; pendingLitres = 0;
+      continue;
+    }
+    // The checks above establish the numeric reading and supported unit.
+    const currentReading = reading as number;
+    const currentMetric = metric as 'km' | 'hours';
+    if (anchor && (anchor.metric !== currentMetric || (previousReading !== null && currentReading <= previousReading))) {
+      anchor = null; pendingLitres = 0;
+    }
+    if (anchor) pendingLitres += event.litres;
+    if (event.assetFuelPercentAfter === 100) {
+      if (anchor) {
+        const usage = currentReading - anchor.reading;
+        const total = totals.get(currentMetric) || { metric: currentMetric, litres: 0, usage: 0, intervals: 0, average: 0 };
+        total.litres += pendingLitres;
+        total.usage += usage;
+        total.intervals++;
+        total.average = total.litres / total.usage * (currentMetric === 'km' ? 100 : 1);
+        totals.set(currentMetric, total);
+      }
+      anchor = { reading: currentReading, metric: currentMetric };
+      pendingLitres = 0;
+    }
+    previousReading = currentReading;
+  }
+  return [...totals.values()];
+}
+
+function fuelConsumptionRows(options: FuelReportOptions): KeyValueRow[] {
+  if (!options.assetTitle || options.slipSummary) return [];
+  if (options.consumptionUnavailableReason) return [{ label: 'Average consumption', value: options.consumptionUnavailableReason }];
+  const totals = calculateFuelConsumption(options.events);
+  if (!totals.length) return [{ label: 'Average consumption', value: 'Not enough valid full-to-full records in this period. Record litres, km or hours, and full refills.' }];
+  return totals.flatMap(total => [
+    { label: `Average consumption (${total.metric === 'km' ? 'L/100 km' : 'L/hour'})`, value: formatNumber(total.average) },
+    { label: total.metric === 'km' ? 'Distance covered' : 'Hours covered', value: `${formatNumber(total.usage)} ${total.metric}` },
+    { label: `Fuel counted (${total.metric})`, value: formatLitres(total.litres) },
+    { label: `Valid refill intervals (${total.metric})`, value: String(total.intervals) },
+  ]);
+}
+
+const FUEL_CONSUMPTION_NOTE = 'Uses complete full-to-full intervals within the selected period, including partial fills and fuel excluded from work use. The starting fill, unfinished intervals and intervals with invalid readings are not counted. Missing or incorrect refills can distort the average.';
 
 export function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = options.slipSummary ? [
@@ -1368,6 +1465,7 @@ export function buildReportHtml(options: FuelReportOptions): string {
             <section class="assetReportSection">
               <h2>Fuel Summary</h2>
               ${renderRows(cards.map((card) => ({ label: card.label, value: `${card.value} - ${card.subtext}` })), 'No fuel summary available.')}
+              ${options.assetTitle && !options.slipSummary ? `<h2>Fuel Consumption</h2>${renderRows(fuelConsumptionRows(options), '')}<p class="assetReportDisclaimer">${escapeHtml(FUEL_CONSUMPTION_NOTE)}</p>` : ''}
             </section>
 
             <section class="assetReportSection assetReportClientCard">
@@ -1384,8 +1482,8 @@ export function buildReportHtml(options: FuelReportOptions): string {
 
             <section class="assetReportSideCard fuelReadingGuide">
               <h2>Gauge readings</h2>
-              <p>Before and after values are recorded tank-gauge readings. For example, 50% to 100% shows a 50% fill of the tank.</p>
-              <p>Estimated fuel remaining before refill is shown only when the tank was filled to 100%. It uses the litres added and the starting gauge reading; it is an estimate, not a measured tank balance.</p>
+              <p>Before and after values are recorded asset-tank gauge readings. Storage balance refers to the separate storage tank. For example, 50% to 100% shows a 50% fill of the tank.</p>
+              <p>Estimated fuel left in asset before filling is shown only when the asset tank was filled to 100%. It uses the litres added and the starting gauge reading; it is an estimate, not a measured tank balance.</p>
               <p>Fuel issued is not a measurement of fuel consumed on a particular job.</p>
             </section>
           </aside>
@@ -1489,9 +1587,15 @@ export function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     ],
   ];
 
+  if (options.assetTitle && !options.slipSummary) {
+    summaryRows.push([], [styled('Fuel Consumption', 'tableHeader')]);
+    for (const row of fuelConsumptionRows(options)) summaryRows.push([styled(row.label, 'metaLabel'), styled(row.value, 'metaValue')]);
+    summaryRows.push([styled('Calculation basis', 'metaLabel'), styled(FUEL_CONSUMPTION_NOTE, 'note')]);
+  }
+
   const movementHeader = [
     'Issued on (SAST)', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
-    'Estimated Fuel Remaining Before Refill (L)', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
+    'Estimated Fuel Left in Asset Before Filling (L)', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On (SAST)', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Entry note', 'Notes',
     'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status', 'Serial / VIN', 'Register / plate ID',

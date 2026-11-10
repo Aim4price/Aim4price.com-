@@ -17,7 +17,7 @@ function loadReportHelpers() {
   assert.notEqual(start, -1, 'report helper start marker must exist');
   assert.notEqual(end, -1, 'report helper end marker must exist');
 
-  const helperSource = `${reportRoute.slice(start, end)}\nmodule.exports = { buildReportHtml, calculateAssetDieselBeforeFill, eventIssuedDateTime, eventWorkActivityLabel, eventWorkAreaLabel, renderFuelEventTable, eventGaugeIncrease, assetDieselBeforeFillFormula };`;
+  const helperSource = `${reportRoute.slice(start, end)}\nmodule.exports = { buildReportHtml, calculateFuelConsumption, calculateAssetDieselBeforeFill, eventIssuedDateTime, eventWorkActivityLabel, eventWorkAreaLabel, renderFuelEventTable, eventGaugeIncrease, assetDieselBeforeFillFormula };`;
   const output = ts.transpileModule(helperSource, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
@@ -141,7 +141,7 @@ test('PDF fuel entries use seven readable columns and preserve every detail unde
   assert.match(html, /2[\s,]?108[,.]6 L to 2[\s,]?048[,.]3 L/);
   assert.match(html, /25% to 100%/);
   assert.match(html, /75% · Filled to full/);
-  assert.match(html, /Estimated fuel remaining before refill/);
+  assert.match(html, /Estimated fuel left in asset before filling/);
   assert.match(html, /Transport workers to town/);
   assert.match(html, /Skimmelkrans Boerdery/);
   assert.match(html, /GPS -34\.024051, 22\.383678/);
@@ -279,4 +279,61 @@ test('recorded issue dates remain distinct without late-entry labels', () => {
   assert.match(html, /16 Aug 2026/);
   assert.match(html, /GPS not recorded/);
   assert.match(html, /Paper log captured later/);
+});
+
+function consumptionEvents(rows) {
+  return rows.map((row, index) => fuelEvent({
+    id: `fill-${index}`, createdAtIso: `2026-08-${String(index + 1).padStart(2, '0')}T10:00:00Z`,
+    assetUsageReading: 1000 + index * 100, litres: 10, ...row,
+  }));
+}
+
+test('consumption excludes the first fill, includes partial fills, and weights by distance', () => {
+  const records = consumptionEvents([
+    { litres: 90 }, { litres: 5, assetFuelPercentAfter: 60 },
+    { litres: 15 }, { litres: 40, assetUsageReading: 1600, workUseExcluded: true },
+    { litres: 20, assetUsageReading: 1700, assetFuelPercentAfter: 80 },
+  ]);
+  assert.deepEqual(helpers.calculateFuelConsumption(records.reverse()), [{ metric: 'km', litres: 60, usage: 600, intervals: 2, average: 10 }]);
+});
+
+test('hour consumption uses litres per hour and cannot mix assets or meter units', () => {
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([
+    { assetUsageMetric: 'hours', assetUsageReading: 10 },
+    { assetUsageMetric: 'hours', assetUsageReading: 15, litres: 20 },
+  ])), [{ metric: 'hours', litres: 20, usage: 5, intervals: 1, average: 4 }]);
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{}, { assetId: 'other' }])), []);
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{}, { assetUsageMetric: 'hours' }])), []);
+});
+
+test('invalid records break intervals and later full fills establish a new baseline', () => {
+  for (const invalid of [
+    { assetUsageReading: null }, { assetUsageReading: 1000 }, { assetUsageReading: 900 },
+    { assetUsageMetric: '' }, { litres: 0 }, { litres: NaN },
+    { fuelSlipReviewRequired: true }, { fuelSlipExtractionStatus: 'needs_review' },
+  ]) {
+    const result = helpers.calculateFuelConsumption(consumptionEvents([{}, invalid, {}, {}]));
+    assert.equal(result.length, 1);
+    // A reset full fill may anchor the next interval; invalid data never contributes fuel.
+    assert.ok(result[0].intervals >= 1);
+    assert.ok(Number.isFinite(result[0].average));
+    assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{}, invalid])), []);
+  }
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{}, { createdAtIso: '' }, {}])), []);
+});
+
+test('document and late issue dates take precedence over upload dates', () => {
+  const records = consumptionEvents([
+    { sourceType: 'fuel_slip', fuelSlipDocumentDate: '2026-01-01', fuelSlipDocumentTime: '', createdAtIso: '2026-10-01T10:00:00Z' },
+    { isLateEntry: true, issueDate: '2026-01-05', issueTimeRecorded: false, createdAtIso: '2026-09-01T10:00:00Z' },
+  ]);
+  assert.equal(helpers.calculateFuelConsumption(records)[0].average, 10);
+  records[1].issueDate = '2026-01-01';
+  assert.deepEqual(helpers.calculateFuelConsumption(records), []);
+});
+
+test('partial-only and unknown-unit history never fabricate consumption', () => {
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{ assetFuelPercentAfter: 75 }, { assetFuelPercentAfter: 80 }])), []);
+  assert.deepEqual(helpers.calculateFuelConsumption(consumptionEvents([{ assetUsageMetric: '' }, { assetUsageMetric: '' }])), []);
+  assert.deepEqual(helpers.calculateFuelConsumption([]), []);
 });

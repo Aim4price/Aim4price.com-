@@ -98,6 +98,9 @@ export async function GET(request: NextRequest) {
     const reportOptions: FuelReportOptions = {
       baseUrl: request.url,
       assetTitle: selectedAsset?.title,
+      consumptionUnavailableReason: storageId || !includeFuelSlips
+        ? 'Select all storage units and include fuel slips to calculate consumption.'
+        : undefined,
       title,
       subtitle,
       generatedAt,
