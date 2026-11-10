@@ -108,12 +108,12 @@ export default function MoveAssetDestinationPicker(props: Props) {
           <input ref={searchRef} className={styles.search} type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={isUmbrella ? 'Search umbrellas or registers...' : 'Search asset registers...'} aria-label={isUmbrella ? 'Search umbrellas' : 'Search asset registers'} disabled={props.busy} />
           </div>
           {!isUmbrella && props.onCreateRegister ? (
-            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateRegister?.(); }} disabled={props.busy}>
+            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateRegister?.(); }} disabled={props.busy || props.loading}>
               <span aria-hidden="true">+</span> Add register
             </button>
           ) : null}
           {isUmbrella && props.canUseUmbrellas && props.onCreateUmbrella ? (
-            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateUmbrella?.(); }} disabled={props.busy}>
+            <button type="button" className={styles.addUmbrella} onClick={() => { setSearch(''); props.onCreateUmbrella?.(); }} disabled={props.busy || props.loading}>
               <span aria-hidden="true">+</span> Add umbrella
             </button>
           ) : null}

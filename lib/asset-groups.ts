@@ -238,9 +238,22 @@ async function detachAssetsFromOtherGroups(
   }
 }
 
+// Use the same live-membership rule for move choices and submission validation.
+// to_jsonb keeps this compatible with databases predating lifecycle_state.
+const LIVE_MOVE_MEMBER_SQL = `
+  asset.user_id = asset_group.user_id
+  and coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'
+  and exists (
+    select 1 from public.asset_registers register
+    where register.id = asset.register_id and register.user_id = asset_group.user_id
+  )
+  and (asset_group.register_id is null or asset_group.register_id = asset.register_id)
+`;
+
 export async function listAssetGroups(
   userId: string,
   registerId?: string | null,
+  destinationsOnly = false,
 ): Promise<AssetGroup[]> {
   await ensureAssetRegisterTables();
   const db = getDb();
@@ -274,10 +287,17 @@ export async function listAssetGroups(
 
   const groupIds = groupResult.rows.map((row) => row.id);
   const memberResult = await db.query<AssetGroupMemberRow>(
-    `select group_id::text, asset_id::text, role, relationship, counts_toward_total, sort_order
-       from public.asset_group_members
-       where group_id = any($1::uuid[])
-       order by group_id, case when role = 'primary' then 0 else 1 end, sort_order, created_at, asset_id`,
+    `select member.group_id::text, member.asset_id::text, member.role, member.relationship,
+            member.counts_toward_total, member.sort_order
+       from public.asset_group_members member
+       ${destinationsOnly ? `
+         inner join public.asset_groups asset_group on asset_group.id = member.group_id
+         inner join public.asset_register_items asset on asset.id = member.asset_id
+       ` : ''}
+       where member.group_id = any($1::uuid[])
+         ${destinationsOnly ? `and ${LIVE_MOVE_MEMBER_SQL}` : ''}
+       order by member.group_id, case when member.role = 'primary' then 0 else 1 end,
+                member.sort_order, member.created_at, member.asset_id`,
     [groupIds],
   );
 
@@ -479,6 +499,17 @@ export async function moveAssetToGroup(
     const targetGroup = lockedGroups.rows.find((group) => group.id === targetGroupId);
 
     if (!targetGroup) throw new Error('ASSET_GROUP_NOT_FOUND');
+    const liveTarget = await client.query(
+      `select 1
+       from public.asset_groups asset_group
+       inner join public.asset_group_members member on member.group_id = asset_group.id
+       inner join public.asset_register_items asset on asset.id = member.asset_id
+       where asset_group.id = $1::uuid and asset_group.user_id = $2
+         and ${LIVE_MOVE_MEMBER_SQL}
+       limit 1`,
+      [targetGroupId, userId],
+    );
+    if (!liveTarget.rows.length) throw new Error('ASSET_GROUP_NOT_FOUND');
     if (!isCombinedScope && cleanText(targetGroup.register_id) !== registerId) {
       throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
     }

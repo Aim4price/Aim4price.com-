@@ -120,8 +120,11 @@ export async function GET(request: NextRequest) {
           request,
           resolved.context.ownerUserId,
         );
-    const groups = await listWorkspaceGroups(resolved.context, registerId);
-    return NextResponse.json({ ok: true, groups });
+    const destinationsOnly = request.nextUrl.searchParams.get('destinations') === '1';
+    const groups = destinationsOnly
+      ? await listAssetGroups(resolved.context.ownerUserId, registerId, true)
+      : await listWorkspaceGroups(resolved.context, registerId);
+    return NextResponse.json({ ok: true, groups }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     return errorResponse(error);
   }
