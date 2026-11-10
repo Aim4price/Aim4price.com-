@@ -1867,6 +1867,26 @@ function RefreshIcon({ className }: IconProps) {
   );
 }
 
+function ManageValuesIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M4 7h3m4 0h9M4 17h9m4 0h3" />
+      <circle cx="9" cy="7" r="2" />
+      <circle cx="15" cy="17" r="2" />
+    </svg>
+  );
+}
+
 function RecalculateIcon({ className }: IconProps) {
   return (
     <svg
@@ -20499,7 +20519,7 @@ export default function AssetRegisterClient({
                 {activeAsset.registerIncludedInCombinedTotals === false ? <p>This register is excluded from combined totals.</p> : null}
               </> : null}
               <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid} ${actionColours.pricing} ${actionColours.ownerPricing}`} data-manage-actions>
-                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Values and price history.</small></span></button>
+                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><ManageValuesIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Values and price history.</small></span></button>
                 <button data-manage-action="suggestValue"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
