@@ -283,8 +283,8 @@
 .desktopFlow .roleChoices .choice input { position:static; opacity:1; width:1.15rem; height:1.15rem; }
 .desktopFlow .roleChoices .choice small { font-size:.88rem; }
 .desktopFlow .roleChoices .choice[data-selected=true] { box-shadow:inset 0 0 0 1px var(--app-accent,#28815f); }
-/* Owner roles use the same left-aligned radio cards as asset access. */
-.desktopFlow .roleChoices:not(.dealerRoles) { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
+/* Full-width owner roles keep their descriptions readable on one desktop line. */
+.desktopFlow .roleChoices:not(.dealerRoles) { grid-template-columns:minmax(0,1fr); gap:.75rem; }
 .desktopFlow .roleChoices:not(.dealerRoles) > :last-child { grid-column:1 / -1; }
 
 .desktopFlow .statusAction { border:1px solid var(--app-line,#d8e5dd); border-radius:1rem; padding:1rem; margin-top:1rem; }
