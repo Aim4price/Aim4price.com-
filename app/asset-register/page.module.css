@@ -41971,5 +41971,5 @@ button.documentOpenLink {
 }
 
 @media (max-width: 620px) {
-  .paperworkPanel .paperworkSectionHeader > button { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .paperworkPanel .paperworkSectionHeader > button { width: 100%; }
 }
