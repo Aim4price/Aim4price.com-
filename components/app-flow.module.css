@@ -633,3 +633,52 @@
   .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='easeNote'] { font-size:.8rem !important; line-height:1.4 !important; }
   .surface.surface [class*='appValuation'] [aria-labelledby='saleability-title'] [class*='sellingSummary'] { padding:12px !important; gap:10px !important; }
 }
+
+/* Focused phone refinements: comparable choices and less nested spacing. */
+@media (max-width:640px) {
+  .surface.surface [class*='appValuation'] [class*='basicLevelGrid'] { grid-auto-rows:1fr; }
+  .surface.surface [class*='appValuation'] [class*='basicLevelCard'] { min-height:78px !important; padding:12px 34px 12px 12px !important; gap:4px 12px !important; }
+  .surface.surface [class*='appValuation'] [class*='specificationLevelIcon'] svg { width:22px !important; height:22px !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalStars'] { grid-template-columns:repeat(5,minmax(0,1fr)) !important; gap:6px !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalStarButton'] { grid-column:auto !important; min-width:0 !important; min-height:60px !important; padding:8px 4px !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalStarGlyph'] { font-size:0 !important; line-height:1 !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalStarGlyph']::before { content:'★'; font-size:20px; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalSummary'] > span { font-size:.75rem !important; letter-spacing:.04em !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityScaleLabels'] { display:flex !important; justify-content:space-between !important; gap:8px !important; font-size:.75rem !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityScaleLabels'] > span { flex:1; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalPanel'] { gap:16px !important; padding:14px !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasEditorBody'] { padding:0 !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasVatBar'] { gap:8px !important; margin:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasVatBar'] > span { font-size:.85rem !important; }
+  .surface.surface [class*='appValuation'] [class*='basicExtrasGrid'] button { min-height:60px !important; }
+  .surface.surface [class*='appValuation'] [class*='basicExtrasGrid'] button :is(strong,[class*='choiceCardNote']) { justify-self:start !important; width:100% !important; text-align:left !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasEditorModal'] [class*='field'] { gap:6px !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasEditorModal'] input { min-height:44px !important; padding:10px 12px !important; font-size:1rem !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementSliderReadout'] { padding:16px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementSliderReadout'] > span:first-child { font-size:.9rem !important; line-height:1.4 !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementEditableAmount'] { gap:4px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementEditableAmount'] input { font-size:1.6rem !important; min-height:44px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementSliderReadout'] small { font-size:.8rem !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostParts'] { padding:14px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostParts'] dt { font-size:.85rem !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostParts'] dd { font-size:1.1rem !important; white-space:nowrap; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostTotal'] { padding:14px !important; gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostTotal'] > span { font-size:.95rem !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementCostTotal'] strong { font-size:1.5rem !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeModal'] { gap:16px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeIntro'] { display:grid !important; gap:14px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeIntro'] p { margin:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeDisclaimer'] { display:block; padding-top:12px; border-top:1px solid #ead7d3; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeActions'] { gap:10px !important; padding-top:4px !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasEditorModal'] [class*='moneyField'] input { padding-left:36px !important; }
+  .surface.surface [class*='appValuation'] [class*='extrasVatBar'] { margin-bottom:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementHeading'] { gap:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementHelpButton'] { margin-top:12px !important; margin-bottom:0 !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementNoticeActions'] { margin-top:14px !important; }
+
+}
+
+@media (max-width:340px) {
+  .surface.surface [class*='appValuation'] [class*='popularityModalPanel'] { padding:10px !important; }
+  .surface.surface [class*='appValuation'] [class*='popularityModalStars'] { gap:4px !important; }
+}
