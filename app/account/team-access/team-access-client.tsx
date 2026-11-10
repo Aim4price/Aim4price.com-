@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import accessStyles from '../app-access-management.module.css';
 import baseStyles from '../dealer-app/page.module.css';
+import { assetAccessChoice, type AssetAccessOption } from '../../../lib/asset-access-choice';
 import AssetAccessPicker from './asset-access-picker';
 import DateInput from '../../../components/DateInput';
 import TeamModal from '../../../components/team/TeamModal';
@@ -27,11 +28,7 @@ type Data = {
         id: string;
         name: string;
     }[];
-    assets: {
-        id: string;
-        title: string;
-        registerId: string | null;
-    }[];
+    assets: AssetAccessOption[];
     documents: {
         id: string;
         title: string;
@@ -217,7 +214,7 @@ export default function TeamAccessClient({ accountKind = 'owner' }: { accountKin
       {tab !== 'Status' && <footer className={styles.footer}>{!draft.id && <button className={styles.button} type="button" onClick={() => tab === 'Person' ? closeEditor() : setTab(steps[steps.indexOf(tab) - 1])} disabled={busy}>{tab === 'Person' ? 'Cancel' : 'Previous step'}</button>}{!draft.id && tab !== 'Review' ? <button type="button" className={styles.primary} disabled={busy || (tab === 'Person' && !personValid) || (tab === 'Assets' && !assetsValid)} onClick={() => setTab(steps[steps.indexOf(tab) + 1])}>Continue</button> : <><span className={styles.saveHint} role="status">{dirty ? 'Unsaved changes' : 'All changes saved'}</span><button type="submit" className={styles.primary} disabled={busy || !personValid || !assetsValid || Boolean(draft.id && !dirty)}>{busy ? 'Saving…' : draft.id ? 'Save access' : 'Create user'}</button></>}</footer>}
       </form>
     </TeamModal>}
-    {picker && draft && data && <AssetAccessPicker kind={picker} options={picker === 'umbrellas' ? (data.groups || []).map(g => ({id:g.id,title:g.name,detail:'Current assets only',count:g.memberCount})) : picker === 'registers' ? data.registers.map(r => ({id:r.id,title:r.name,detail:'Includes future assets',count:data.assets.filter(a => a.registerId === r.id).length})) : data.assets.map(a => ({id:a.id,title:a.title,detail:data.registers.find(r => r.id === a.registerId)?.name}))} selected={picker === 'umbrellas' ? [] : picker === 'registers' ? draft.registerIds : draft.assetIds} onClose={() => setPicker(null)} onConfirm={ids => { setDraft({ ...draft, ...(picker === 'umbrellas' ? {assetIds:[...new Set([...draft.assetIds, ...(data.groups || []).filter(g => ids.includes(g.id)).flatMap(g => g.memberAssetIds)])]} : picker === 'registers' ? {registerIds:ids} : {assetIds:ids}) }); setPicker(null); }}/>}
+    {picker && draft && data && <AssetAccessPicker kind={picker} options={picker === 'umbrellas' ? (data.groups || []).map(g => ({id:g.id,title:g.name,detail:'Current assets only',count:g.memberCount})) : picker === 'registers' ? data.registers.map(r => ({id:r.id,title:r.name,detail:'Includes future assets',count:data.assets.filter(a => a.registerId === r.id).length})) : data.assets.map(a => assetAccessChoice({ ...a, registerName: data.registers.find(r => r.id === a.registerId)?.name }))} selected={picker === 'umbrellas' ? [] : picker === 'registers' ? draft.registerIds : draft.assetIds} onClose={() => setPicker(null)} onConfirm={ids => { setDraft({ ...draft, ...(picker === 'umbrellas' ? {assetIds:[...new Set([...draft.assetIds, ...(data.groups || []).filter(g => ids.includes(g.id)).flatMap(g => g.memberAssetIds)])]} : picker === 'registers' ? {registerIds:ids} : {assetIds:ids}) }); setPicker(null); }}/>}
     {activityOpen && data && <TeamModal ownerStyle title="Team activity" subtitle="Changes to your desktop users and their access." onClose={() => setActivityOpen(false)}><div className={`${styles.body} ${styles.refined}`}><div className={styles.activity}>{data.activity.map(a => <article key={a.id}>{icon('clock')}<div><strong>{a.action}</strong><p>{a.details?.targetName || a.target_name || a.details?.displayName || a.details?.targetEmail || a.target_email || a.details?.email || 'Team member'}{a.asset_id ? ` · ${data.assets.find(asset => asset.id === a.asset_id)?.title || 'Asset record'}` : ''}</p><small>By {a.actor_email}{a.details?.fields?.length ? ` · ${a.details.fields.join(', ')}` : ''}</small></div><time>{new Date(a.created_at).toLocaleString('en-ZA', {timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'})}</time></article>)}{!data.activity.length && <div className={styles.empty}>{icon('clock')}<strong>No team activity yet.</strong></div>}</div></div><footer className={styles.footer}><button type="button" className={styles.button} onClick={() => setActivityOpen(false)}>Back to users</button></footer></TeamModal>}
     {confirm && <TeamModal ownerStyle title={confirmAction === 'remove' ? 'Remove desktop user?' : 'Revoke access?'} subtitle={confirm.username || confirm.email} onClose={() => setConfirm(null)} busy={busy}><div className={`${styles.body} ${styles.refined}`}><p>{confirmAction === 'remove' ? 'Remove this person from your desktop users and end their access to this business. Their Aim4price account, business records and activity history will be kept. To give access again, add them as a new user.' : 'This person will lose access to this business workspace. You can reactivate their access later.'}</p>{error && <p className={styles.error} role="alert">{error}</p>}</div><footer className={styles.footer}><button className={styles.button} onClick={() => setConfirm(null)} disabled={busy}>Cancel</button><button className={styles.danger} onClick={() => void submit({ action: confirmAction, id: confirm.id, version: confirm.version })} disabled={busy}>{busy ? 'Saving…' : confirmAction === 'remove' ? 'Remove user' : 'Revoke access'}</button></footer></TeamModal>}
   </main>;
