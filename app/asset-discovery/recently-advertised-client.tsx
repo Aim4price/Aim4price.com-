@@ -597,7 +597,7 @@ export default function RecentlyAdvertisedClient({
 
         <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
           <div className={styles.discoveryMediaColumn}>
-            <RecentAdvertGallery key={advert.id} id={advert.id} title={advert.title}
+            <RecentAdvertGallery compact={compactAppMode} key={advert.id} id={advert.id} title={advert.title}
               urls={advertiserIdentityVisible && advert.status === "available" ? (advert.imageUrls?.length ? advert.imageUrls : advert.imageUrl ? [advert.imageUrl] : []) : []} />
           </div>
 
@@ -907,7 +907,7 @@ export default function RecentlyAdvertisedClient({
             type="search"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search equipment, advertiser, location or condition"
+            placeholder={compactAppMode ? "Search recent adverts" : "Search equipment, advertiser, location or condition"}
             aria-label="Search recently advertised equipment"
           />
           {searchInput ? (

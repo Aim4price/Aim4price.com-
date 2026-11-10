@@ -41,6 +41,7 @@ function add(file){
  });
 }
 const entry='app/asset-discovery/asset-discovery-client';add(entry);
+const fontCSS="@font-face{font-family:DiscoveryFixture;src:url(data:font/woff;base64,"+fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64')+") format('woff');font-weight:100 900;} :root{--font-body:DiscoveryFixture;--font-heading:DiscoveryFixture} body{font-family:DiscoveryFixture,Arial,sans-serif!important}";
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -59,17 +60,17 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
    const url=request.url(),respond=body=>request.respond({contentType:'application/json',body:JSON.stringify(body)});
    if(url.includes('/recently-advertised'))return respond({ok:true,canContactAdvertisers:true,adverts:[{...asset,id:'advert-1',title:'Toyota Hilux',area:'George, Western Cape',advertiserName:'Test advertiser',advertiserType:'business',status:'available',statusLabel:'Available',publishedAtIso:'2026-10-18T00:00:00Z',priceExVat:275000,imageUrl:'',imageUrls:[],marketplaceHref:null,contactEligible:false,description:'Saved advert details'}]});
    if(url.includes('/api/asset-discovery')&&!url.includes('/assets/'))return respond({ok:true,access:{accountType:'dealer',canBrowse:true,canContact:true,participationEnabled:true},assets:[{...asset,...(approved?{enquiryId:'enquiry-1',enquiryStatus:'approved'}:{})}],pagination:{page:1,pageSize:10,totalItems:1,totalPages:1,rangeStart:1,rangeEnd:1},summary:{totalAssets:1,typeCount:1,provinceCount:1}});
-   if(url.includes('/assets/'))return fail?request.respond({status:500,contentType:'application/json',body:'{"ok":false,"error":"Fixture details unavailable"}'}):respond({ok:true,details:{asset,photosUnlocked:approved,contactUnlocked:approved,photoUrls:approved?['data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="green"/></svg>']:[],ownerContact:null,accessSource:approved?'approved_enquiry':null}});
+   if(url.includes('/assets/'))return fail?request.respond({status:500,contentType:'application/json',body:'{"ok":false,"error":"Fixture details unavailable"}'}):respond({ok:true,details:{asset,photosUnlocked:approved,contactUnlocked:approved,photoUrls:approved?['data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="green"/></svg>']:[],ownerContact:approved?{businessName:'Test equipment owner',phone:'0123456789',email:'owner@example.test',location:'George, Western Cape'}:null,accessSource:approved?'approved_enquiry':null}});
    if(url.startsWith('data:'))return request.continue();
    if(url==='https://discovery.test/')return request.respond({contentType:'text/html',body:'<html><body></body></html>'});
    return request.abort();
   });
   async function open(width,compact=false){
    await page.setViewport({width,height:900});await page.goto('https://discovery.test/');
-   await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div><div id="aim4price-website-overlays"></div>');
+   await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+fontCSS+fs.readFileSync(path.join(root,'app/modal-scrollbars.css'),'utf8')+sheets.join('\n')+'</style><div id="app"></div><div id="aim4price-website-overlays"></div>');
    await page.evaluate(value=>{window.compact=value;},compact);
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});
-   await page.waitForSelector('button[aria-label="Open Toyota Hilux details"]');
+   await page.waitForSelector('[data-discovery-card] button[aria-expanded]');
   }
   for(const [width,compact] of [[1440,false],[390,true],[320,true]]){
    approved=false;fail=false;await open(width,compact);
@@ -80,6 +81,9 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
    assert.equal(await page.$eval('#discovery-details-fixture-1 [class*="discoveryLockedMedia"] strong', e=>e.textContent), 'Private photos');
    if(compact){
     await page.waitForSelector('[role="dialog"]');
+    assert(await page.$eval('[class*="appDetailsOverlay"]',e=>{const r=e.getBoundingClientRect();return r.left===0&&Math.abs(r.width-innerWidth)<1;}),'Overlay covers the entire viewport');
+    assert(await page.$eval('[role="dialog"]',e=>{const r=e.getBoundingClientRect();return Math.abs(r.left-(innerWidth-r.right))<2;}),'Detail panel is centered');
+    assert(await page.$eval('[class*="appDetailsScroll"]',e=>getComputedStyle(e).scrollbarWidth==='thin'),'App scrollbar remains thin with shared modal styles');
     assert(await page.$eval('[class*="appDetailsScroll"]',e=>{e.scrollTop=e.scrollHeight;const r=e.getBoundingClientRect();return getComputedStyle(e).overflowY==='auto'&&r.top>=0&&r.bottom<=innerHeight;}),'App details scroll inside the viewport');
     await page.screenshot({path:path.join(evidence,'discovery-'+width+'.png'),fullPage:false});
     await page.click('button[aria-label="Close asset details"]');
@@ -133,6 +137,15 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   fail=true;await open(1440);await page.click('button[aria-label="Open Toyota Hilux details"]');
   await page.waitForFunction(()=>document.querySelector('#discovery-details-fixture-1')?.textContent.includes('Fixture details unavailable'));
   await page.click('button[aria-label="Close Toyota Hilux details"]');assert.equal(await page.$('#discovery-details-fixture-1'),null);
+  fail=false;approved=true;asset.brand='New Holland';asset.model='TT4.90 4WD Openstation';
+  await open(390,true);await page.setViewport({width:390,height:700});
+  await page.click('[data-discovery-card] button[aria-expanded]');
+  await page.waitForSelector('[class*="discoveryInlineContact"]');
+  assert(await page.$eval('[role="dialog"]',e=>{const r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&e.scrollWidth<=e.clientWidth;}),'Long title fits on a short phone');
+  await page.screenshot({path:path.join(evidence,'long-title-390.png')});
+  await page.$eval('[class*="appDetailsScroll"]',e=>e.scrollTop=e.scrollHeight);
+  await page.screenshot({path:path.join(evidence,'contact-390.png')});
+  await page.click('button[aria-label="Close asset details"]');
   assert.deepEqual(errors,[]);console.log('PASS nested photos, Escape and dismissible failed details');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
