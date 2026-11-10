@@ -474,7 +474,7 @@ export default function PetrolStationFuelClient({
           <div className={styles.assetList} data-asset-choice-surface="true" data-asset-choice-list="true">
             {visibleAssets.map((asset) => (
               <AppAssetChoice key={asset.id} title={assetName(asset)}
-                details={<>{yearDisplayText(asset)} · {usageDisplayText(asset)}<br />{asset.assetTypeLabel || 'Saved asset'}</>}
+                year={yearDisplayText(asset)} usage={usageDisplayText(asset)}
                 serial={asset.serialNumber} onClick={() => selectAsset(asset)} />
             ))}
             {!visibleAssets.length && !isLoading ? <p className={styles.empty}>No matching fuel assets.</p> : null}

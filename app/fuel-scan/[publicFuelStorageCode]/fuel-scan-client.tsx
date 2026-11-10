@@ -1345,7 +1345,7 @@ export default function FuelScanClient({
 
               return (
                 <AppAssetChoice key={asset.id} title={displayName}
-                  details={`${assetYearText(asset)} · ${assetUsageText(asset)}`}
+                  year={assetYearText(asset)} usage={assetUsageText(asset)}
                   serial={assetSerialText(asset)} onClick={() => chooseAsset(asset.id)} disabled={isSaving} />
               );
             })}
