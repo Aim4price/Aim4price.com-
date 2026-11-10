@@ -18240,7 +18240,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -18292,7 +18292,7 @@ export default function AssetRegisterClient({
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
                       {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
-                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Manage asset paperwork.' : 'Manage documents and photos.'}</small></span>
+                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Finance, insurance and licensing.' : 'Manage documents and photos.'}</small></span>
                     </button>
                   ))}
                 </div>
@@ -18885,6 +18885,7 @@ export default function AssetRegisterClient({
 
                 {manualAssetStep === 3 ? (
                   <AssetPaperworkFields
+                    showReturnAction={Boolean(editingAsset) && assetStatusQuickOrigin !== 'detail-card'}
                     assetStatusDraft={assetStatusDraft}
                     assetStatusEditView={assetStatusEditView}
                     assetLicenseApplicable={assetLicenseApplicable}
@@ -18906,6 +18907,7 @@ export default function AssetRegisterClient({
                                   <small>Agreements, statements or settlement letters</small>
                                 </div>
                                 <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <DocumentIcon className={styles.buttonIcon} />
                                   <span>{isUploadingDocuments ? 'Adding documents...' : 'Add finance documents'}</span>
                                   <input
                                     type="file"
@@ -18924,6 +18926,7 @@ export default function AssetRegisterClient({
                                   <small>Policy schedules, certificates or claims paperwork</small>
                                 </div>
                                 <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <DocumentIcon className={styles.buttonIcon} />
                                   <span>{isUploadingDocuments ? 'Adding documents...' : 'Add insurance documents'}</span>
                                   <input
                                     type="file"
@@ -18942,6 +18945,7 @@ export default function AssetRegisterClient({
                                   <small>Current or older licensing papers</small>
                                 </div>
                                 <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <DocumentIcon className={styles.buttonIcon} />
                                   <span>{isUploadingDocuments ? 'Adding documents...' : 'Add licence documents'}</span>
                                   <input
                                     type="file"
@@ -22039,6 +22043,7 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+
 
 
 

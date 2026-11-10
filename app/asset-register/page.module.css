@@ -41844,3 +41844,132 @@ button.documentOpenLink {
 .delegatedRegister [data-access-restricted="true"] > * { pointer-events:none; }
 .delegatedRegister label[data-access-restricted="true"] { pointer-events:none; }
 .delegatedRegister .assetStatusGroup, .delegatedRegister .assetMetaRow, .delegatedRegister .assetMarketDetail { filter:blur(4px); pointer-events:none; user-select:none; }
+
+
+/* Paperwork uses the shared modal controls, with a compact overview and clear categories. */
+.assetFormModal.assetUpdateModal.paperworkOverviewModal {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.paperworkOverviewModal .manualStepScrollBody,
+.paperworkOverviewModal .manualStepForm {
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+}
+
+.paperworkPanel .paperworkIntro {
+  margin: 0 0 0.25rem;
+  color: var(--app-text, #244c40);
+  font-size: 0.94rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.assetFormModal .paperworkPanel .assetStatusHubGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.assetFormModal .paperworkPanel .assetStatusHubCard,
+.paperworkPanel .assetStatusHubCard {
+  align-items: flex-start;
+  justify-content: flex-start !important;
+  gap: 0.7rem !important;
+  padding: 1.2rem !important;
+  min-height: 0 !important;
+  border-radius: 1.15rem !important;
+}
+
+.assetFormModal .paperworkPanel .assetStatusHubCard::after {
+  content: none;
+}
+
+.paperworkPanel .assetStatusHubCard:focus-visible {
+  outline: 3px solid var(--app-accent, #21825e);
+  outline-offset: 3px;
+}
+
+.paperworkPanel .assetStatusHubCard:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+.paperworkPanel .paperworkIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--app-line, #c7e3d8);
+  border-radius: 0.95rem;
+  color: var(--app-accent, #176a50);
+  background: var(--app-surface-soft, #e8f5ef);
+}
+
+.paperworkPanel .paperworkIcon[data-section='license'] {
+  color: var(--app-info, #25638d);
+  background: var(--app-info-soft, #eaf3fb);
+  border-color: var(--app-info-line, #cfdfed);
+}
+
+.paperworkPanel .paperworkIcon svg { width: 1.55rem; height: 1.55rem; }
+
+.paperworkPanel .paperworkDescription,
+.paperworkPanel .paperworkSectionCopy p {
+  display: block;
+  margin: 0;
+  color: var(--app-text, #35574b);
+  font-size: 0.9rem;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.assetFormModal .paperworkPanel .assetStatusHubCard .paperworkStatus,
+.paperworkPanel .assetStatusHubCard .paperworkStatus {
+  margin-top: auto;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--app-line, #d2e3dc);
+  border-radius: 0.65rem;
+  background: var(--app-surface-soft, #f0f7f4);
+  color: var(--app-text, #244c40);
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+.paperworkPanel .paperworkSectionHeader {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 0.2rem 0 1rem;
+  border-bottom: 1px solid var(--app-line, #d2e3dc);
+}
+
+.paperworkSectionCopy { flex: 1 1 14rem; min-width: 0; }
+.paperworkSectionCopy strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1.2rem;
+  color: var(--app-text, #123e30);
+}
+
+/* Keep the completion action available while scrolling long paperwork forms. */
+.paperworkPanel .assetStatusSubActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 0.5rem;
+  padding: 0.8rem 0 !important;
+  border-top: 1px solid var(--app-line, #d2e3dc);
+  background: var(--app-surface, #fff);
+}
+
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .paperworkPanel .paperworkSectionHeader > button { width: 100%; }
+}

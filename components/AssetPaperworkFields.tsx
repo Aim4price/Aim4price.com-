@@ -61,8 +61,22 @@ const FINANCE_TYPE_OPTIONS: Array<{ value: string; label: string; description: s
 ];
 
 type Section = 'finance' | 'insurance' | 'license';
+const PAPERWORK_SECTIONS: Record<Section, { label: string; description: string }> = {
+  finance: { label: 'Finance', description: 'Purchase details, finance and repayments.' },
+  insurance: { label: 'Insurance', description: 'Cover, policy details and renewal dates.' },
+  license: { label: 'Licence', description: 'Registration, renewal dates and papers.' },
+};
+
+function PaperworkIcon({section}: {section: Section}) {
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    {section === 'finance' ? <><path d="m3 9 9-6 9 6M4 10h16M5 10v8m5-8v8m4-8v8m5-8v8M3 21h18M3 18h18" /></>
+      : section === 'insurance' ? <><path d="M12 3 4 6v6c0 4 4 7 8 9 4-2 8-5 8-9V6l-8-3Z" /><path d="m8 12 3 3 5-6" /></>
+      : <><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="8" cy="11" r="2" /><path d="M5 16c1-3 5-3 6 0m3-6h4m-4 4h4" /></>}
+  </svg>;
+}
+
 type Props = {
- assetStatusDraft: AssetStatusDraft; assetStatusEditView: Section | 'hub'; assetLicenseApplicable: boolean;
+ showReturnAction?: boolean; assetStatusDraft: AssetStatusDraft; assetStatusEditView: Section | 'hub'; assetLicenseApplicable: boolean;
  openAssetStatusEditView: (section:Section)=>void;
  updateAssetStatusDraftField: <K extends keyof AssetStatusDraft>(key:K,value:AssetStatusDraft[K])=>void;
  setAssetFinanceStatus:(value:FinanceStatusChoice)=>void; setAssetFinanceType:(value:string)=>void;
@@ -72,49 +86,44 @@ type Props = {
  summaries:Record<Section,string>; documentControls?:Partial<Record<Section,ReactNode>>; bulkFinanceControl?:ReactNode;
 };
 
-export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditView,assetLicenseApplicable,openAssetStatusEditView,updateAssetStatusDraftField,setAssetFinanceStatus,setAssetFinanceType,setAssetInsuranceStatus,setAssetLicenseStatus,handleInsuredValueChange,formatRegisterValueInput,finishAssetStatusSection,isSavingAssetStatus,assetStatusError,summaries,documentControls,bulkFinanceControl}:Props) {
+export default function AssetPaperworkFields({showReturnAction = false,assetStatusDraft,assetStatusEditView,assetLicenseApplicable,openAssetStatusEditView,updateAssetStatusDraftField,setAssetFinanceStatus,setAssetFinanceType,setAssetInsuranceStatus,setAssetLicenseStatus,handleInsuredValueChange,formatRegisterValueInput,finishAssetStatusSection,isSavingAssetStatus,assetStatusError,summaries,documentControls,bulkFinanceControl}:Props) {
  const [assetStatusAdvancedOpen,setAssetStatusAdvancedOpen]=useState(false);
  useEffect(()=>setAssetStatusAdvancedOpen(false),[assetStatusEditView]);
- return <section data-asset-paperwork className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
+ return <section data-asset-paperwork className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard} ${styles.paperworkPanel}`}>
                     {assetStatusEditView === 'hub' ? (
-                      <div className={styles.assetStatusHubGrid}>
-                        <button
-                          type="button"
-                          className={styles.assetStatusHubCard}
-                          onClick={() => openAssetStatusEditView('finance')}
-                        >
-                          <strong>Finance</strong>
-                          <small>{summaries.finance}</small>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.assetStatusHubCard}
-                          onClick={() => openAssetStatusEditView('insurance')}
-                        >
-                          <strong>Insurance</strong>
-                          <small>{summaries.insurance}</small>
-                        </button>
-
-                        {assetLicenseApplicable ? (
-                          <button
-                            type="button"
-                            className={styles.assetStatusHubCard}
-                            onClick={() => openAssetStatusEditView('license')}
-                          >
-                            <strong>License</strong>
-                            <small>{summaries.license}</small>
-                          </button>
-                        ) : null}
+                      <>
+                        <p className={styles.paperworkIntro}>Keep this asset’s finance, insurance and licensing details together. Choose a section to view or update it.</p>
+                        <div className={styles.assetStatusHubGrid}>
+                          {(['finance', 'insurance', 'license'] as const)
+                            .filter(section => section !== 'license' || assetLicenseApplicable)
+                            .map(section => (
+                              <button key={section} type="button" className={styles.assetStatusHubCard}
+                                onClick={() => openAssetStatusEditView(section)} disabled={isSavingAssetStatus}>
+                                <span className={styles.paperworkIcon} data-section={section}><PaperworkIcon section={section} /></span>
+                                <strong>{PAPERWORK_SECTIONS[section].label}</strong>
+                                <span className={styles.paperworkDescription}>{PAPERWORK_SECTIONS[section].description}</span>
+                                <small className={styles.paperworkStatus}>{summaries[section]}</small>
+                              </button>
+                            ))}
+                        </div>
+                      </>
+                    ) : (
+                      <div data-paperwork-header className={styles.paperworkSectionHeader}>
+                        <span className={styles.paperworkIcon} data-section={assetStatusEditView}><PaperworkIcon section={assetStatusEditView} /></span>
+                        <div className={styles.paperworkSectionCopy}>
+                          <strong>{PAPERWORK_SECTIONS[assetStatusEditView].label}</strong>
+                          <p>{PAPERWORK_SECTIONS[assetStatusEditView].description}</p>
+                        </div>
+                        {showReturnAction ? <button type="button" className={styles.secondaryButton}
+                          disabled={isSavingAssetStatus} onClick={() => void finishAssetStatusSection(assetStatusEditView)}>
+                          {isSavingAssetStatus ? 'Saving...' : 'Back to paperwork'}
+                        </button> : null}
                       </div>
-                    ) : null}
+                    )}
+                    {assetStatusError ? <p role="alert" className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
                     {assetStatusEditView === 'finance' ? (
                       <div className={styles.assetStatusFocusedForm}>
-                        <div data-paperwork-header className={styles.assetStatusFocusedHeader}>
-                          <strong>Finance</strong>
-                        </div>
-
                         <div className={styles.assetStatusEditGrid}>
                           <ModalSelect<FinanceStatusChoice>
                             label="Finance status"
@@ -277,8 +286,8 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
                           </>
                         ) : null}
 
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
                         <div className={styles.assetStatusSubActions}>
                           <button
                             type="button"
@@ -294,10 +303,6 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
 
                     {assetStatusEditView === 'insurance' ? (
                       <div className={styles.assetStatusFocusedForm}>
-                        <div data-paperwork-header className={styles.assetStatusFocusedHeader}>
-                          <strong>Insurance</strong>
-                        </div>
-
                         <div className={styles.assetStatusEditGrid}>
                           <ModalSelect<AssetStatusChoice>
                             label="Insurance status"
@@ -362,8 +367,8 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
                           ) : null}
                         </div>
 
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
                         <div className={styles.assetStatusSubActions}>
                           <button
                             type="button"
@@ -379,13 +384,9 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
 
                     {assetStatusEditView === 'license' && assetLicenseApplicable ? (
                       <div className={styles.assetStatusFocusedForm}>
-                        <div data-paperwork-header className={styles.assetStatusFocusedHeader}>
-                          <strong>License</strong>
-                        </div>
-
                         <div className={styles.assetStatusEditGrid}>
                           <ModalSelect<AssetStatusChoice>
-                            label="License status"
+                            label="Licence status"
                             value={assetStatusDraft.licenseStatus}
                             options={QUICK_LICENSE_STATUS_OPTIONS}
                             onChange={setAssetLicenseStatus}
@@ -413,7 +414,7 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
                               </label>
 
                               <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>License note <small>(optional)</small></span>
+                                <span>Licence note <small>(optional)</small></span>
                                 <textarea
                                   value={assetStatusDraft.licenseNote}
                                   onChange={(event) => updateAssetStatusDraftField('licenseNote', event.target.value)}
@@ -427,8 +428,8 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
                           ) : null}
                         </div>
 
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
                         <div className={styles.assetStatusSubActions}>
                           <button
                             type="button"
@@ -443,3 +444,4 @@ export default function AssetPaperworkFields({assetStatusDraft,assetStatusEditVi
                     ) : null}
                   </section>;
 }
+
