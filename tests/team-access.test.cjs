@@ -348,6 +348,7 @@ test('desktop creation and reactivation stay silent; only manual invitation send
  f.setSession({user:{...owner,emailVerified:false}});const emails=[];
  const json=(body,status=200)=>({body,status});
  const route=load('app/api/team-access/route.ts',{
+  '../../../lib/asset-usage':load('lib/asset-usage.ts'),
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
   '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},'../../../lib/team-access-policy':policy,
@@ -405,6 +406,7 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  const f=await setup();try{
  f.setSession({user:owner});await f.invite();
  const route=load('app/api/team-access/route.ts',{
+  '../../../lib/asset-usage':load('lib/asset-usage.ts'),
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
   '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
   '../../../lib/team-access-http':{teamJson:body=>({body,status:200}),teamError:e=>({body:{error:e.message},status:e.status||500})},'../../../lib/team-access-policy':policy,
@@ -414,6 +416,10 @@ test('desktop directory returns only owned umbrella assets and names the affecte
   '../../../lib/business-network-api':{},'../../../lib/business-network':{},'../../../lib/email':{},
  });
  const result=await route.GET();assert.equal(result.status,200);
+ assert.deepEqual(result.body.assets.map(a=>Object.keys(a).sort()),result.body.assets.map(()=>['id','title','registerId','kind','yearModel','serialNumber','usage','usageMetric'].sort()));
+ const pickerAsset=result.body.assets.find(a=>a.id===aId);
+ assert.equal(pickerAsset.yearModel,2024);assert.equal(pickerAsset.serialNumber,'SERIAL');
+ assert.equal(pickerAsset.usage,500);assert.equal(pickerAsset.usageMetric,'hours');
  assert.equal(result.body.groups.length,1);assert.deepEqual(result.body.groups[0].memberAssetIds,[aId]);
  assert.equal(result.body.activity[0].details.targetEmail,member.email);
  assert.equal(result.body.activity[0].details.targetName,'Workshop staff');
