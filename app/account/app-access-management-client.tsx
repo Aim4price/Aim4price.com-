@@ -1,6 +1,6 @@
 'use client';
 
-import OwnerAccessPicker from './owner-access-picker';
+import OwnerAccessPicker, { type AccessChoice } from './owner-access-picker';
 import { AccessSectionIcon, LoginFooterContext, LoginSaveFooter } from './owner-login-sections';
 import OwnerLoginSections from './owner-login-sections';
 import ownerStyles from './owner-login-sections.module.css';
@@ -102,7 +102,18 @@ type ManagerAccessSettings = {
 
 type AssetAccessSettings = Pick<ManagerAccessSettings, 'assetScope' | 'assetIds' | 'groupIds'> & { registerIds?: string[] };
 
-type AssetAccessOption = { id: string; title: string; kind: string; registerId?: string | null };
+type AssetAccessOption = { id: string; title: string; kind: string; registerId?: string | null; registerName?: string; yearModel?: number | null; serialNumber?: string; usage?: number | null; usageMetric?: 'hours' | 'km' | 'percentage' | 'not_applicable' };
+function assetAccessChoice(asset: AssetAccessOption): AccessChoice {
+  const usage = typeof asset.usage === 'number' && asset.usageMetric && asset.usageMetric !== 'not_applicable'
+    ? `Usage: ${asset.usage.toLocaleString('en-ZA')}${asset.usageMetric === 'percentage' ? '%' : ` ${asset.usageMetric}`}` : '';
+  return {
+    id: asset.id, title: asset.title,
+    detail: [asset.kind ? asset.kind.charAt(0).toUpperCase() + asset.kind.slice(1) : 'Asset', asset.registerName].filter(Boolean).join(' · '),
+    meta: [asset.yearModel ? `Year Model: ${asset.yearModel}` : '', usage].filter(Boolean).join(' · '),
+    serialNumber: asset.serialNumber,
+  };
+}
+
 type AssetGroupAccessOption = {
   id: string;
   name: string;
@@ -1221,7 +1232,7 @@ function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, o
     {section !== 'permissions' && settings[scopeKey] === 'selected' ? <p className={ownerStyles.hint} aria-live="polite">{section === 'fuel'
       ? settings.fuelStorageIds.length ? `${settings.fuelStorageIds.length} fuel tank${settings.fuelStorageIds.length === 1 ? '' : 's'} selected.` : 'No fuel tanks selected. This person will have no fuel tank access.'
       : settings.assetIds.length || settings.groupIds.length ? `${settings.assetIds.length} individual assets and ${settings.groupIds.length} umbrellas selected.` : 'No assets selected. This person will have no asset access.'}</p> : null}
-    {picker ? <OwnerAccessPicker compact title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'assetIds' ? 'Choose assets' : 'Choose fuel tanks'} description={picker === 'groupIds' ? 'Includes current and future linked assets.' : 'Choose access for this login.'} selected={settings[picker]} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'assetIds' ? assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind })) : storages.map(storage => ({ id: storage.id, title: storage.name, detail: storage.locationLabel }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/> : null}
+    {picker ? <OwnerAccessPicker standardAssets={picker === 'assetIds'} compact title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'assetIds' ? 'Choose assets' : 'Choose fuel tanks'} description={picker === 'groupIds' ? 'Includes current and future linked assets.' : 'Choose access for this login.'} selected={settings[picker]} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'assetIds' ? assets.map(assetAccessChoice) : storages.map(storage => ({ id: storage.id, title: storage.name, detail: storage.locationLabel }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/> : null}
     {message ? <p role="status" className={styles.accessMessage}>{message}</p> : null}
     <LoginSaveFooter dirty={JSON.stringify(settings) !== savedSettings.current}><button type="button" className={ownerStyles.primary} disabled={saving || JSON.stringify(settings) === savedSettings.current} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save access'}</button></LoginSaveFooter>
   </section>;
@@ -1306,7 +1317,7 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
           { key: 'assetIds', title: 'Choose assets', icon: 'box', text: 'Select individual assets.' },
         ] as const).map(choice => <button type="button" className={ownerStyles.card} key={choice.key} disabled={saving} onClick={() => setPicker(choice.key)}><span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><span>{choice.text}</span><small>{(settings[choice.key] ?? []).length} selected</small></span></button>)}</div>
         <p className={ownerStyles.hint} aria-live="polite">{countLabel(settings.groupIds.length, 'umbrella')} · {countLabel((settings.registerIds ?? []).length, 'register')} · {countLabel(settings.assetIds.length, 'individual asset')} · {countLabel(includedCount, 'asset')} included</p>
-        {picker ? <OwnerAccessPicker compact key={picker} title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'registerIds' ? 'Choose registers' : 'Choose assets'} description={picker === 'assetIds' ? 'Choose individual assets for this login.' : 'Includes current and future assets.'} selected={settings[picker] ?? []} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'registerIds' ? registers.map(register => ({ id: register.id, title: register.name, detail: `${assets.filter(asset => asset.registerId === register.id).length} assets` })) : assets.map(asset => ({ id: asset.id, title: asset.title, detail: asset.kind }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/>: null}
+        {picker ? <OwnerAccessPicker standardAssets={picker === 'assetIds'} compact key={picker} title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'registerIds' ? 'Choose registers' : 'Choose assets'} description={picker === 'assetIds' ? 'Choose individual assets for this login.' : 'Includes current and future assets.'} selected={settings[picker] ?? []} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'registerIds' ? registers.map(register => ({ id: register.id, title: register.name, detail: `${assets.filter(asset => asset.registerId === register.id).length} assets` })) : assets.map(assetAccessChoice)} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/>: null}
       </> : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}

@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest, { params }: { params: { manager
     return NextResponse.json({
       ok: true,
       settings,
-      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind })),
+      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind, yearModel: asset.yearModel, serialNumber: asset.serialNumber, registerName: asset.registerName, usage: asset.usage, usageMetric: asset.usageMetric })),
       groups: buildAppAssetDirectoryGroups(assetGroups, assetData.items.map((asset) => asset.id)),
       storages: storages.map((storage) => ({ id: storage.id, name: storage.name, locationLabel: storage.locationLabel })),
     });

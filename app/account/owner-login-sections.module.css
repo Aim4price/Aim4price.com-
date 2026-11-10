@@ -309,3 +309,10 @@
  :global(:where(html:not(:has([data-website-canvas])))) .saveFooter { padding:.75rem 1.1rem; flex-wrap:wrap; }
 }
 
+
+/* Asset access uses the ledger chooser; native checkboxes retain keyboard selection. */
+.standardAssetPicker [data-asset-choice-row] { position:relative; cursor:pointer; }
+.standardAssetPicker [data-asset-choice-row]:has(input:focus-visible) {
+  outline:2px solid var(--app-accent,#28815f); outline-offset:2px;
+}
+.standardAssetPicker::backdrop { background:rgba(12,24,35,.42); backdrop-filter:blur(12px) saturate(.9); }
