@@ -37,7 +37,7 @@ export async function GET(_request: NextRequest, { params }: { params: { userId:
       ok: true,
       settings,
       registers: registers.map(register => ({ id: register.id, name: register.businessName })),
-      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind, registerId: asset.registerId })),
+      assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind, yearModel: asset.yearModel, serialNumber: asset.serialNumber, registerName: asset.registerName, usage: asset.usage, usageMetric: asset.usageMetric, registerId: asset.registerId })),
       groups: buildAppAssetDirectoryGroups(assetGroups, assetData.items.map((asset) => asset.id)),
     });
   } catch (error) {

@@ -63,7 +63,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  let data={ok:true};let ok=true;
  if(url==='/api/account/app-login-name')data={ok:true,accountName:'skb',suggestedName:'skb'};
  else if(url==='/api/owner-app/users')data={ok:true,users};
- else if(url.endsWith('/access')){if(method==='PUT'){if(window.holdAccess)await new Promise(resolve=>window.releaseAccess=resolve);settings=body;}data={ok:true,settings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor',registerId:'register-a'}],registers:[{id:'register-a',name:'Farm register'}],groups:[{id:'farm',name:'Farm equipment',memberCount:2,memberAssetIds:['tractor']}]};}
+ else if(url.endsWith('/access')){if(method==='PUT'){if(window.holdAccess)await new Promise(resolve=>window.releaseAccess=resolve);settings=body;}data={ok:true,settings,assets:[{id:'tractor',title:'Tractor',kind:'Tractor',registerId:'register-a',registerName:'Farm register',yearModel:2017,usage:8853,usageMetric:'hours',serialNumber:'TEST-8853'}],registers:[{id:'register-a',name:'Farm register'}],groups:[{id:'farm',name:'Farm equipment',memberCount:2,memberAssetIds:['tractor']}]};}
  else if(method==='PATCH'){if(window.failSave){ok=false;data={ok:false,error:'Username is already in use.'};}else{users=users.map(u=>url.endsWith(u.id)?{...u,...body}:u);data={ok:true,user:users.find(u=>url.endsWith(u.id))};}}
  else if(method==='DELETE')users=users.filter(u=>!url.endsWith(u.id));
  return {ok,json:async()=>data};};
@@ -135,7 +135,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Asset access');await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
  await card('Registers');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
  await card('Registers');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
- await card('Choose assets');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await page.screenshot({path:'.next/owner-login-validation/asset-picker.png'});await click('Confirm selection');
+ await card('Choose assets');await page.waitForSelector('dialog[open] input[type="checkbox"]');
+ assert(await page.$eval('dialog[open]', el => el.textContent.includes('Year Model: 2017') && el.textContent.includes('Farm register') && el.textContent.includes('Serial / VIN: TEST-8853')));
+ assert(await page.$eval('dialog[open] input[type="search"]', el => getComputedStyle(el).backgroundImage !== 'none'));
+ await page.type('dialog[open] input[type="search"]','TEST-8853');
+ assert.equal(await page.$$eval('dialog[open] [data-asset-choice-row]', rows => rows.length),1);
+ await page.click('dialog[open] [data-asset-choice-row]');await page.screenshot({path:'.next/owner-login-validation/asset-picker.png'});await click('Confirm selection');
  assert(await page.evaluate(()=>document.body.textContent.includes('1 asset included')));
  await card('Umbrellas');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));await heading('Asset access');
  await page.screenshot({path:'.next/owner-login-validation/asset-access.png'});
