@@ -4783,6 +4783,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setDealerClientRegisterSearch('');
   }
 
+  useEffect(() => {
+    if (!finalSaveError) return;
+    const frame = requestAnimationFrame(() => document.getElementById('final-save-error')?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [finalSaveError]);
+
   const finalSaveRegisterWasOpen = useRef(false);
   useEffect(() => {
     if (finalSaveRegisterOpen) { finalSaveRegisterWasOpen.current = true; return; }
@@ -4920,6 +4926,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
     } else if (!canSaveToAssetRegister) {
       setError('Only Owner and Dealer accounts can save estimates to an Asset Register.');
+      return null;
+    }
+
+    if (!options.saveForMarketplace && !isDealerAccount && !conversionAssetId &&
+      (registersLoading || registerLoadError || !dealerAssetRegisters.some(register => register.id === requestedRegisterId))) {
+      setError(registerLoadError || 'Choose an asset register before saving.');
       return null;
     }
 
@@ -9598,7 +9610,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     Number.isFinite(finalSaveReplacementPrice) &&
     finalSaveReplacementPrice > 0 &&
     !finalSaveHasPendingReplacementPrice &&
-    (finalSaveIntent === 'marketplace' || isDealerAccount || ownerAppMode || Boolean(requestedRegisterId));
+    (finalSaveIntent === 'marketplace' || isDealerAccount || (!registersLoading && !registerLoadError && dealerAssetRegisters.some(register => register.id === requestedRegisterId)));
   const finalSaveTitle = finalSaveIntent === 'marketplace'
     ? 'Create advert'
     : ownerAppMode
@@ -10013,17 +10025,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {savePhotoMode === 'marketplace' ? <p>Photos from this asset’s Marketplace advert will be included.</p> : null}
               </fieldset>
               <div className={styles.finalSaveDestinationColumn}>
-              {!isDealerAccount && !ownerAppMode ? <div className={styles.finalSaveRegister}><span id="final-save-register-label">Save to</span>
+              {!isDealerAccount ? <div className={styles.finalSaveRegister}><span id="final-save-register-label">Save to</span>
                 <button id="final-save-register-trigger" type="button" className={`${styles.finalSaveRegisterControl} ${styles.finalSaveRegisterButton}`} aria-labelledby="final-save-register-label final-save-register-name" aria-haspopup="dialog" disabled={saveLoading || registersLoading || Boolean(registerLoadError)} onClick={() => setFinalSaveRegisterOpen(true)}>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M3 7V5h7l2 2h9v13H3Z" /></svg>
                   <span id="final-save-register-name">{registersLoading ? 'Loading registers…' : dealerAssetRegisters.find(register => register.id === requestedRegisterId)?.businessName || (dealerAssetRegisters.length ? 'Choose an asset register' : 'Create an asset register')}</span>
                   <svg className={styles.finalSaveRegisterChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={dealerAssetRegisters.length ? 'm9 5 7 7-7 7' : 'M12 5v14M5 12h14'} /></svg>
                 </button>
               </div> : <div className={styles.finalSaveRegister}><span>Save to</span><strong className={styles.finalSaveRegisterControl}>{ownerAppMode ? 'My Assets' : dealerSaveTargetRegisterName || 'Asset Register'}</strong></div>}
-              {!isDealerAccount && !ownerAppMode && registerLoadError ? <p className={styles.finalSaveError} role="alert">{registerLoadError}</p> : null}
+              {!isDealerAccount && registerLoadError ? <p className={styles.finalSaveError} role="alert">{registerLoadError}</p> : null}
               </div>
             </div> : null}
-            {finalSaveError ? <p className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
+            {finalSaveError ? <p id="final-save-error" className={styles.finalSaveError} role="alert">{finalSaveError}</p> : null}
 
             </div>
 
