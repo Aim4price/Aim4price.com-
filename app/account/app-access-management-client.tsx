@@ -1,6 +1,7 @@
 'use client';
 
-import OwnerAccessPicker, { type AccessChoice } from './owner-access-picker';
+import OwnerAccessPicker from './owner-access-picker';
+import { assetAccessChoice, type AssetAccessOption } from '../../lib/asset-access-choice';
 import { AccessSectionIcon, LoginFooterContext, LoginSaveFooter } from './owner-login-sections';
 import OwnerLoginSections from './owner-login-sections';
 import ownerStyles from './owner-login-sections.module.css';
@@ -101,18 +102,6 @@ type ManagerAccessSettings = {
 };
 
 type AssetAccessSettings = Pick<ManagerAccessSettings, 'assetScope' | 'assetIds' | 'groupIds'> & { registerIds?: string[] };
-
-type AssetAccessOption = { id: string; title: string; kind: string; registerId?: string | null; registerName?: string; yearModel?: number | null; serialNumber?: string; usage?: number | null; usageMetric?: 'hours' | 'km' | 'percentage' | 'not_applicable' };
-function assetAccessChoice(asset: AssetAccessOption): AccessChoice {
-  const usage = typeof asset.usage === 'number' && asset.usageMetric && asset.usageMetric !== 'not_applicable'
-    ? `Usage: ${asset.usage.toLocaleString('en-ZA')}${asset.usageMetric === 'percentage' ? '%' : ` ${asset.usageMetric}`}` : '';
-  return {
-    id: asset.id, title: asset.title,
-    detail: [asset.kind ? asset.kind.charAt(0).toUpperCase() + asset.kind.slice(1) : 'Asset', asset.registerName].filter(Boolean).join(' · '),
-    meta: [asset.yearModel ? `Year Model: ${asset.yearModel}` : '', usage].filter(Boolean).join(' · '),
-    serialNumber: asset.serialNumber,
-  };
-}
 
 type AssetGroupAccessOption = {
   id: string;

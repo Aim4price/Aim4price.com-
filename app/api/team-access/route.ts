@@ -1,3 +1,4 @@
+import { resolveAssetUsage } from '../../../lib/asset-usage';
 import { listTeamClientWork } from '../../../lib/team-client-work';
 import { listAssetGroups } from '../../../lib/asset-groups';
 import { buildAppAssetDirectoryGroups } from '../../../lib/app-asset-directory';
@@ -23,7 +24,10 @@ export async function GET() {
             listAssetGroups(actor.id),
         ]);
         const clientWork = profile.accountType === 'owner' ? [] : await listTeamClientWork(actor.id);
-        return teamJson({ clientWork: clientWork.map(work => ({id:work.id,title:work.title,client:work.client})), groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => ({ id: a.id, title: a.title, registerId: a.registerId })), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
+        return teamJson({ clientWork: clientWork.map(work => ({id:work.id,title:work.title,client:work.client})), groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => {
+            const usage = resolveAssetUsage({ kind: a.kind, hours: a.hours, lifeWorkedPercent: a.lifeWorkedPercent, specsJson: a.specsJson });
+            return { id: a.id, title: a.title, registerId: a.registerId, kind: a.kind, yearModel: a.yearModel, serialNumber: a.serialNumber, usage: usage.value, usageMetric: usage.metric };
+        }), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });
     }
     catch (error) {
         return teamError(error);
