@@ -5804,6 +5804,12 @@ function buildAssetPdfReportUrl(
     searchParams.set('maintenanceType', filters.maintenanceType);
   }
 
+  if (reportKind === 'fuel') {
+    searchParams.delete('report');
+    searchParams.set('includeFuelSlips', 'true');
+    return `/api/fuel/report?${searchParams.toString()}`;
+  }
+
   return `/api/asset-register/scan-report?${searchParams.toString()}`;
 }
 

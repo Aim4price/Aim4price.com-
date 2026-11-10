@@ -74,3 +74,44 @@ test('shared fuel and depreciation reports require all-reports access; maintenan
  assert.equal((await route.GET(new NextRequest(`https://example.test/api/asset-register/scan-report?shareToken=token&assetId=${A}&accessId=other&report=fuel`))).status,403);
  assert.equal(checks.length,count);
 });
+
+test('existing owner asset fuel links redirect to Fuel Ledger after access checks and retain filters',async()=>{
+ let authenticated=true, allowed=true;
+ const route=load('app/api/asset-register/scan-report/route.ts',{
+  'next/server':{NextResponse},
+  '../../../../lib/auth-session':{getServerSession:async()=>authenticated?{user:{id:'owner'}}:null},
+  '../../../../lib/owner-app-access':{getOwnerAppAccess:async()=>null},
+  '../../../../lib/asset-register-db':{getAssetRegisterItemById:async(owner,id)=>{assert.equal(owner,'owner');assert.equal(id,A);return allowed?{id:A,kind:'vehicle',specsJson:{}}:null;}},
+ });
+ for(const format of ['html','pdf','xlsx']) {
+  const response=await route.GET(new NextRequest(`https://example.test/api/asset-register/scan-report?assetId=${A}&report=fuel&year=2026&month=9&format=${format}`));
+  assert.equal(response.status,307);
+  const url=new URL(response.headers.get('location'));
+  assert.equal(url.pathname,'/api/fuel/report');assert.equal(url.searchParams.get('assetId'),A);
+  assert.equal(url.searchParams.get('year'),'2026');assert.equal(url.searchParams.get('month'),'9');
+  assert.equal(url.searchParams.get('format'),format);assert.equal(url.searchParams.get('includeFuelSlips'),'true');
+  assert.match(response.headers.get('cache-control'),/no-store/);
+ }
+ allowed=false;
+ assert.equal((await route.GET(new NextRequest(`https://example.test/api/asset-register/scan-report?assetId=${A}&report=fuel`))).status,404);
+ authenticated=false;
+ const denied=await route.GET(new NextRequest(`https://example.test/api/asset-register/scan-report?assetId=${A}&report=fuel`));
+ assert.equal(new URL(denied.headers.get('location')).pathname,'/auth');
+});
+
+test('asset Download Report uses the Fuel Ledger endpoint for every fuel format only',()=>{
+ const source=fs.readFileSync('app/asset-register/asset-register-client.tsx','utf8');
+ const start=source.indexOf('function buildAssetPdfReportUrl('),end=source.indexOf('\nfunction buildAssetOwnershipReportUrl',start);
+ const code=ts.transpileModule(source.slice(start,end)+'\nexports.build=buildAssetPdfReportUrl;',{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+ const exports={};new Function('exports',code)(exports);
+ for(const format of ['html','pdf','xlsx']) {
+  const url=new URL(exports.build({id:A},'fuel',{year:'2026',month:'9'},format),'https://example.test');
+  assert.equal(url.pathname,'/api/fuel/report');assert.equal(url.searchParams.get('assetId'),A);
+  assert.equal(url.searchParams.get('year'),'2026');assert.equal(url.searchParams.get('month'),'9');
+  assert.equal(url.searchParams.get('format'),format);assert.equal(url.searchParams.get('includeFuelSlips'),'true');
+ }
+ assert.match(exports.build({id:A},'maintenance'),/^\/api\/asset-register\/scan-report\?/);
+ assert.match(exports.build({id:A},'depreciation'),/^\/api\/asset-register\/scan-report\?/);
+ const all=new URL(exports.build({id:A},'fuel',{year:'all',month:'9'}),'https://example.test');
+ assert.equal(all.searchParams.has('year'),false);assert.equal(all.searchParams.has('month'),false);
+});

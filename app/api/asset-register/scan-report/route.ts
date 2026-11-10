@@ -4008,6 +4008,20 @@ export async function GET(request: NextRequest) {
     reportAssets = [singleAsset];
   }
 
+  // Existing single-asset owner links use the same source and renderer as Fuel Ledger.
+  // Keep link-sharing and umbrella authorisation on their dedicated report paths.
+  if (reportKind === 'fuel' && !groupId && !shareToken && !dealerAccessId) {
+    const canonicalUrl = new URL('/api/fuel/report', request.url);
+    canonicalUrl.searchParams.set('assetId', assetId);
+    canonicalUrl.searchParams.set('format', reportFormat);
+    canonicalUrl.searchParams.set('includeFuelSlips', 'true');
+    if (reportYear) canonicalUrl.searchParams.set('year', String(reportYear));
+    if (reportMonth) canonicalUrl.searchParams.set('month', String(reportMonth));
+    const desktopMembershipId = asText(request.nextUrl.searchParams.get('desktopMembershipId'));
+    if (desktopMembershipId) canonicalUrl.searchParams.set('desktopMembershipId', desktopMembershipId);
+    return NextResponse.redirect(canonicalUrl, { status: 307, headers: { 'Cache-Control': 'private, no-store' } });
+  }
+
   const primaryAsset = reportAssets[0];
   const combinedValue = reportAssets.reduce(
     (sum, entry) => sum + Math.round(Number(entry.selectedValueExVat ?? entry.value) || 0),
