@@ -3323,3 +3323,47 @@
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
+
+/* App browsing and independent detail sheets, shared by Owner, Dealer and Middleman. */
+.compactAppSurface.compactAppSurface { gap:16px; }
+.compactAppSurface.compactAppSurface .dealerAssetCard { padding:16px !important; border-radius:18px; }
+.compactAppSurface.compactAppSurface .dealerAssetCardHeader { gap:12px !important; }
+.compactAppSurface.compactAppSurface .assetIdentity h2 { font-size:1.1rem !important; margin:10px 0 !important; line-height:1.35; white-space:normal; overflow:visible; }
+.compactAppSurface.compactAppSurface .discoveryCardLabels { flex-direction:row !important; flex-wrap:wrap; justify-content:space-between; gap:6px 12px; font-size:.8rem; }
+.compactAppSurface.compactAppSurface .dealerAssetMeta { font-size:.85rem !important; margin:0 !important; gap:6px 12px; }
+.compactAppSurface.compactAppSurface .recentAdvertByline { flex-direction:row !important; flex-wrap:wrap; font-size:.78rem; gap:4px 8px; margin:10px 0 0; }
+.compactAppSurface.compactAppSurface .assetActionRow { flex-direction:row !important; align-items:center !important; gap:10px; }
+.compactAppSurface.compactAppSurface .assetActionRow > * { flex:1; min-height:44px !important; padding:10px 12px !important; font-size:.85rem !important; }
+.compactAppSurface.compactAppSurface .discoveryFilterRow { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
+.compactAppSurface input { font-size:16px; min-width:0; }
+.compactAppSurface .discoverySummaryBlur,.compactAppSurface .discoveryCardMuted { filter:none !important; }
+.appDetailsOverlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:12px; background:#08251cb3; backdrop-filter:blur(5px); }
+.appDetailsPanel { width:min(100%,640px); max-height:calc(var(--website-design-vh, 1dvh) * 100 - 24px); display:flex; flex-direction:column; overflow:hidden; border-radius:20px; background:var(--app-surface,#fff); color:var(--app-text,#173c31); box-shadow:0 20px 65px #001b2240; font-family:var(--font-body,Arial),sans-serif; }
+.appDetailsHeader { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--app-line,#d9e6df); }
+.appDetailsHeader h2 { margin:0; font-size:1.1rem; line-height:1.35; overflow-wrap:anywhere; }
+.appDetailsHeader button { position:static !important; flex-shrink:0; width:44px; height:44px; border:1px solid var(--app-line,#d9e6df); border-radius:12px; background:var(--app-surface-soft,#f1f7f4); color:inherit; font-size:24px; cursor:pointer; }
+.appDetailsScroll { overflow-y:auto; min-height:0; overscroll-behavior:contain; padding:16px; }
+.appDetailsOverlay.compactAppSurface .discoveryExpandedCompact { margin:0 !important; padding:0 !important; border:0 !important; box-shadow:none !important; background:transparent !important; }
+.appDetailsOverlay.compactAppSurface .compactExpandedTop { padding:0 0 14px !important; margin:0 0 14px !important; gap:12px !important; }
+.appDetailsOverlay .compactExpandedTop p { font-size:.85rem; line-height:1.5; margin:4px 0 0; }
+.appDetailsOverlay .discoveryLeadAssetBody { display:flex !important; flex-direction:column; gap:14px !important; }
+.appDetailsOverlay.compactAppSurface .discoveryDetailsGrid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:10px !important; }
+.appDetailsOverlay.compactAppSurface .discoveryDetailGroup { grid-column:auto !important; }
+.appDetailsOverlay.compactAppSurface .discoveryDetailRow { padding:10px !important; gap:4px !important; }
+.appDetailsOverlay.compactAppSurface .discoveryDetailRow > strong { font-size:.85rem !important; line-height:1.4; }
+.appDetailsOverlay .discoveryAccessNote { padding:12px !important; margin:0 !important; font-size:.85rem; }
+.appDetailsOverlay .discoveryInlineContact { gap:8px !important; }
+.appDetailsOverlay .discoveryInlineContact > div { padding:12px !important; border-radius:12px; }
+.appDetailsOverlay .discoveryInlineContact strong { font-size:.9rem !important; }
+.appDetailsOverlay .discoveryInlineContact span { font-size:.72rem !important; }
+.appDetailsOverlay .discoveryPreviewStage { min-height:150px !important; height:200px !important; }
+.appDetailsOverlay .discoveryPreviewStage img { width:100%; height:100%; object-fit:contain; }
+.appDetailsOverlay .discoveryExpandedFooter { margin-top:14px !important; padding:0 !important; }
+.appDetailsOverlay .discoveryCloseDetailsButton { min-height:44px !important; padding:10px !important; }
+.appBrowseTabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px; }
+.appBrowseTabs button { min-height:44px; padding:10px; border:1px solid var(--app-line,#cbded3); border-radius:12px; background:var(--app-surface,#fff); color:var(--app-text,#173c31); font:inherit; font-size:.85rem; font-weight:700; cursor:pointer; }
+.appBrowseTabs button[aria-pressed=true] { background:var(--app-accent,#165940); color:#fff; border-color:transparent; }
+.appDetailsOverlay [class*='emptyStage'] { height:96px !important; min-height:96px !important; aspect-ratio:auto !important; }
+.appDetailsOverlay [class*='gallery'] { padding:10px !important; border-radius:14px !important; }
+.appDetailsOverlay [class*='stage'] { max-height:230px; }
+.appDetailsOverlay [class*='unavailable'] { min-height:0 !important; padding:12px !important; }
