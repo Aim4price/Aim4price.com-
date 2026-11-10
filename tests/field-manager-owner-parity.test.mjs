@@ -10,7 +10,7 @@ test('Field Manager asset cards stay vertically stacked on phones', () => {
   const assets = source('app/field-manager/field-manager-assets-client.tsx');
   const styles = source('app/field-manager/page.module.css');
 
-  assert.match(assets, /assetMetaGridVertical/);
+  assert.match(assets, /<AppAssetChoice/);
   assert.match(styles, /\.assetMetaGridVertical\s*\{\s*grid-template-columns:\s*1fr;/s);
   assert.doesNotMatch(styles, /\.assetMetaGridVertical\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1\.35fr\)/s);
 });
@@ -61,10 +61,10 @@ test('Petrol station asset choices include serial, year and usage', () => {
   const client = source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
   const styles = source('app/owner-app/operations/fuel/petrol-station/page.module.css');
 
-  assert.match(client, /<AssetPickerDetail/);
-  assert.match(client, /<AssetSerialNumber value=\{asset.serialNumber\}/);
-  assert.match(client, /Year Model: \{yearDisplayText\(asset\)\}/);
-  assert.match(client, /Usage: \{usageDisplayText\(asset\)\}/);
+  assert.match(client, /<AppAssetChoice/);
+  assert.match(client, /serial=\{asset.serialNumber\}/);
+  assert.match(client, /yearDisplayText\(asset\)/);
+  assert.match(client, /usageDisplayText\(asset\)/);
   assert.match(styles, /\.assetMetaGrid\s*\{\s*display:\s*grid;\s*gap:/s);
   assert.doesNotMatch(styles, /\.assetMetaGrid\s*\{[^}]*grid-template-columns:/s);
 });

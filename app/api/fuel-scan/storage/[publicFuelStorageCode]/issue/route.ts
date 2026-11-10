@@ -1,7 +1,8 @@
+import { fuelScanSelectableAssets } from '../../../../../../lib/fuel-scan-assets';
 import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { fieldManagerCan } from '../../../../../../lib/field-manager';
-import { authorizeFuelStorageScanAccess, listFuelEventsForReport, recordFuelAssetIssue } from '../../../../../../lib/fuel-ledger';
+import { authorizeFuelStorageScanAccess, listFuelAssetsForUser, listFuelEventsForReport, recordFuelAssetIssue } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,6 +95,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
+    const availableAssets = await fuelScanSelectableAssets(access, await listFuelAssetsForUser(access.ownerUserId));
+    if (!availableAssets.some(asset => asset.id === assetId)) {
+      return NextResponse.json({ ok: false, error: 'This asset is no longer available for fuel entry. Refresh and choose an included asset.' }, { status: 403 });
+    }
     const operatorName = access.accessMode === 'field_manager'
       ? access.fieldManagerDisplayName ?? 'Field Manager'
       : access.accessMode === 'owner_session'

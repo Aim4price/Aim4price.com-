@@ -36,10 +36,10 @@ test('Storage tank choice opens the Owner App storage tool', async () => {
 test('Petrol station asset picker shows the full Owner asset summary', async () => {
   const client = await source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
 
-  assert.match(client, /<BalancedHeadingText text=\{assetName\(asset\)\}/);
-  assert.match(client, /<AssetSerialNumber value=\{asset.serialNumber\}/);
-  assert.match(client, /Year Model: \{yearDisplayText\(asset\)\}/);
-  assert.match(client, /Usage: \{usageDisplayText\(asset\)\}/);
+  assert.match(client, /<AppAssetChoice key=\{asset.id\} title=\{assetName\(asset\)\}/);
+  assert.match(client, /serial=\{asset.serialNumber\}/);
+  assert.match(client, /yearDisplayText\(asset\)/);
+  assert.match(client, /usageDisplayText\(asset\)/);
   assert.match(client, /lifeWorkedPercent/);
 });
 

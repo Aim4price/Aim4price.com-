@@ -1,4 +1,5 @@
 'use client';
+import AppAssetChoice from '../../../components/AppAssetChoice';
 
 import { fuelGaugeError } from '../../../lib/fuel-gauge';
 import FuelWorkField from '../../../components/FuelWorkField';
@@ -68,6 +69,7 @@ type FuelLedgerAsset = {
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   canReceiveFuel: boolean;
   workUseExcluded: boolean;
+  isActive?: boolean;
   workUseExclusionReason: string;
 };
 
@@ -314,7 +316,7 @@ export default function FuelScanClient({
   const [issueStep, setIssueStep] = useState<IssueStep>('asset');
 
   const appVisibleAssets = useMemo(
-    () => assets.filter((asset) => asset.canReceiveFuel && !asset.workUseExcluded),
+    () => assets.filter((asset) => asset.isActive !== false && asset.canReceiveFuel && !asset.workUseExcluded),
     [assets],
   );
   const selectedAsset = useMemo(() => appVisibleAssets.find((asset) => asset.id === assetId) ?? null, [appVisibleAssets, assetId]);
@@ -340,6 +342,28 @@ export default function FuelScanClient({
     if (!query) return appVisibleAssets;
     return appVisibleAssets.filter((asset) => assetSearchText(asset).includes(query));
   }, [appVisibleAssets, assetSearch]);
+
+  useEffect(() => {
+    if (!storage || scanMode !== 'fuel-assets' || issueStep !== 'asset') return;
+    let active = true;
+    let version = 0;
+    const refresh = async () => {
+      const current = ++version;
+      setAssets([]);
+      try {
+        const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}${appQueryString}`, { credentials: 'include', cache: 'no-store' });
+        const payload = await response.json() as PayloadResponse;
+        if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not refresh available assets.');
+        if (active && current === version) setAssets(payload.assets ?? []);
+      } catch (error) {
+        if (active && current === version) setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Could not refresh available assets.' });
+      }
+    };
+    void refresh();
+    window.addEventListener('focus', refresh);
+    window.addEventListener('pageshow', refresh);
+    return () => { active = false; window.removeEventListener('focus', refresh); window.removeEventListener('pageshow', refresh); };
+  }, [storage?.id, scanMode, issueStep, normalizedCode, appQueryString]);
 
   function captureLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -1320,36 +1344,9 @@ export default function FuelScanClient({
               const displayName = assetDisplayName(asset);
 
               return (
-                <article key={asset.id} className={styles.fieldManagerAssetCard}>
-                  <div className={styles.fieldManagerAssetTopRow}>
-                    <h2>{displayName}</h2>
-                  </div>
-
-                  <div className={styles.fieldManagerAssetMetaGrid}>
-                    <div>
-                      <span>Serial / VIN</span>
-                      <strong>{assetSerialText(asset)}</strong>
-                    </div>
-                    <div>
-                      <span>Year</span>
-                      <strong>{assetYearText(asset)}</strong>
-                    </div>
-                    <div>
-                      <span>Usage</span>
-                      <strong>{assetUsageText(asset)}</strong>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={styles.fieldManagerAssetOpenButton}
-                    onClick={() => chooseAsset(asset.id)}
-                    disabled={isSaving}
-                    aria-label={`Open ${displayName}`}
-                  >
-                    Open
-                  </button>
-                </article>
+                <AppAssetChoice key={asset.id} title={displayName}
+                  details={`${assetYearText(asset)} · ${assetUsageText(asset)}`}
+                  serial={assetSerialText(asset)} onClick={() => chooseAsset(asset.id)} disabled={isSaving} />
               );
             })}
             {!filteredAssets.length ? <p className={styles.emptyText}>No assets found.</p> : null}

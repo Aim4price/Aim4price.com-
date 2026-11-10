@@ -42,8 +42,8 @@ test('fuel exclusions stay manageable on desktop but are hidden from operational
   assert.match(fuelClient, /loadLedger\(\{ discardAssetsOnError: true \}\)/);
   assert.doesNotMatch(fuelClient, /styles\.workUseBadgeExcluded/);
   assert.match(missingFuelEntryModal, /asset\.canReceiveFuel && asset\.isActive !== false && !asset\.workUseExcluded/);
-  assert.match(petrolStationClient, /asset\.canReceiveFuel && !asset\.workUseExcluded/);
-  assert.match(fuelScanClient, /assets\.filter\(\(asset\) => asset\.canReceiveFuel && !asset\.workUseExcluded\)/);
+  assert.match(petrolStationClient, /asset\.isActive !== false && asset\.canReceiveFuel && !asset\.workUseExcluded/);
+  assert.match(fuelScanClient, /assets\.filter\(\(asset\) => asset\.isActive !== false && asset\.canReceiveFuel && !asset\.workUseExcluded\)/);
   assert.doesNotMatch(fuelScanClient, /isAuthenticatedAppMode \? assets\.filter/);
   assert.doesNotMatch(fuelScanClient, /styles\.workUseNotice/);
   assert.doesNotMatch(fuelScanClient, /selectedAsset\?\.workUseExcluded/);

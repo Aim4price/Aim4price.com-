@@ -1,0 +1,16 @@
+.choice {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0;
+  padding: 16px; border: 1px solid var(--app-line, #d3e1d9); border-radius: 16px;
+  background: var(--app-surface, #fff); color: var(--app-text, #173c31);
+  font: inherit; text-align: left; cursor: pointer; touch-action: manipulation;
+  box-shadow: 0 3px 12px var(--app-shadow-colour, #12352d08);
+}
+.choice:hover:not(:disabled) { border-color: var(--app-accent, #4e9473); background: var(--app-surface-soft, #f1f8f4); }
+.choice:focus-visible { outline: 3px solid var(--app-accent, #4e9473); outline-offset: 2px; }
+.choice:disabled { opacity: .55; cursor: wait; }
+.icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; background: var(--app-accent-soft, #e9f4ed); }
+.icon svg { width: 24px; height: 24px; }
+.copy { display: grid; gap: 6px; min-width: 0; }
+.copy strong { font-size: 16px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.details, .copy small { color: var(--app-muted, #63786c); font-size: 13px; font-weight: 450; line-height: 1.5; overflow-wrap: anywhere; }
+.action { color: var(--app-accent, #216347); font-size: 13px; font-weight: 650; line-height: 1.5; padding-top: 4px; }

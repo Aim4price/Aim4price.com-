@@ -1,3 +1,4 @@
+import { operationalAssetSql } from './operational-asset';
 import { isHistoricalScan } from './scan-current-inputs';
 import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { assetDisplayTitle } from './asset-display-title';
@@ -1309,7 +1310,7 @@ async function getScanAssetAccessContextForResolvedOwner(
         )
       left join account_profiles p
         on p.user_id = $2::text
-      where a.id::text = $1
+      where a.id::text = $1 and ${operationalAssetSql('a')}
       limit 1
     `,
     [resolvedOwner.assetId, resolvedOwner.ownerUserId],
@@ -1872,7 +1873,7 @@ export async function saveScanAssetEvent(
             nullif(trim(coalesce(to_jsonb(a)->>'equipment_family_id', '')), ''),
             nullif(trim(coalesce(to_jsonb(vr)->>'equipment_family_id', '')), '')
           )
-        where a.id::text = $1
+        where a.id::text = $1 and ${operationalAssetSql('a')}
           and upper(regexp_replace(coalesce(to_jsonb(a)->>'public_asset_code', ''), '\\s+', '', 'g')) = $3
         limit 1
         FOR UPDATE OF a

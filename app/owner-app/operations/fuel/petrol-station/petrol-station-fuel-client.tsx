@@ -1,10 +1,9 @@
 'use client';
+import AppAssetChoice from '../../../../../components/AppAssetChoice';
 
 import { fuelGaugeError } from '../../../../../lib/fuel-gauge';
 import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../../../lib/fuel-work-choice-options';
 import FuelWorkField from '../../../../../components/FuelWorkField';
-import AssetPickerDetail from '../../../../../components/AssetPickerDetail';
-import AssetSerialNumber from '../../../../../components/AssetSerialNumber';
 import DateInput from '../../../../../components/DateInput';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
@@ -27,6 +26,7 @@ type FuelAsset = {
   canReceiveFuel: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   workUseExcluded: boolean;
+  isActive?: boolean;
   workUseExclusionReason: string;
 };
 
@@ -189,9 +189,13 @@ export default function PetrolStationFuelClient({
   }, []);
 
   useEffect(() => {
+    if (step !== 'asset') return;
     let active = true;
+    let version = 0;
 
     async function loadAssets() {
+      const current = ++version;
+      setAssets([]);
       setIsLoading(true);
       setLoadError('');
 
@@ -214,20 +218,22 @@ export default function PetrolStationFuelClient({
           throw new Error(payload?.error || 'Failed to load assets that can receive fuel.');
         }
 
-        if (active) {
+        if (active && current === version) {
           setWorkChoices(payload.workChoices ?? DEFAULT_FUEL_WORK_CHOICES);
-          setAssets(payload.assets.filter((asset) => asset.canReceiveFuel && !asset.workUseExcluded));
+          setAssets(payload.assets.filter((asset) => asset.isActive !== false && asset.canReceiveFuel && !asset.workUseExcluded));
         }
       } catch (error) {
-        if (active) setLoadError(error instanceof Error ? error.message : 'Failed to load fuel assets.');
+        if (active && current === version) setLoadError(error instanceof Error ? error.message : 'Failed to load fuel assets.');
       } finally {
-        if (active) setIsLoading(false);
+        if (active && current === version) setIsLoading(false);
       }
     }
 
     void loadAssets();
-    return () => { active = false; };
-  }, [fieldManagerMode]);
+    window.addEventListener('focus', loadAssets);
+    window.addEventListener('pageshow', loadAssets);
+    return () => { active = false; window.removeEventListener('focus', loadAssets); window.removeEventListener('pageshow', loadAssets); };
+  }, [fieldManagerMode, step]);
 
   useEffect(() => {
     if (!receipt || !receipt.type.startsWith('image/')) {
@@ -467,15 +473,9 @@ export default function PetrolStationFuelClient({
           </label>
           <div className={styles.assetList} data-asset-choice-surface="true" data-asset-choice-list="true">
             {visibleAssets.map((asset) => (
-              <button type="button" key={asset.id} className={styles.assetCard} data-asset-choice-row="true" onClick={() => selectAsset(asset)}>
-                <span data-asset-choice-copy="true">
-                  <strong><BalancedHeadingText text={assetName(asset)} /></strong>
-                  <small data-asset-choice-meta="true">Year Model: {yearDisplayText(asset)} · Usage: {usageDisplayText(asset)}</small>
-                  <AssetPickerDetail>{asset.assetTypeLabel || 'Saved asset'}</AssetPickerDetail>
-                  <AssetSerialNumber value={asset.serialNumber} />
-                </span>
-                <span className={styles.assetChoiceNext} aria-hidden="true">›</span>
-              </button>
+              <AppAssetChoice key={asset.id} title={assetName(asset)}
+                details={<>{yearDisplayText(asset)} · {usageDisplayText(asset)}<br />{asset.assetTypeLabel || 'Saved asset'}</>}
+                serial={asset.serialNumber} onClick={() => selectAsset(asset)} />
             ))}
             {!visibleAssets.length && !isLoading ? <p className={styles.empty}>No matching fuel assets.</p> : null}
           </div>
