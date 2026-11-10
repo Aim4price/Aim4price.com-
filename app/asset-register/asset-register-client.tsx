@@ -7593,7 +7593,7 @@ export default function AssetRegisterClient({
         detailValue: group.members.length.toLocaleString('en-ZA'),
       };
     }),
-    [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
+    [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisterMoveRegisters],
   );
 
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
