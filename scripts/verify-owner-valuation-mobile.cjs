@@ -92,7 +92,15 @@ await page.type('input[placeholder="Enter price"]','460000');await click('Get my
 await page.click('[data-value-tour="replacement"] > button');await shot('replacement-edit');await click('Cancel');
 assert(await page.$$eval('[class*=resultPriceParts] dd',els=>els.length===3&&els.every(e=>e.scrollWidth<=e.clientWidth+1 && e.getBoundingClientRect().height<35)),'Replacement amounts stay on one line');
 if(appMode==='middleman') { assert(!(await page.evaluate(()=>document.body.innerText)).includes('Save to Asset Register'),'Middleman has no register action'); assert(await page.$eval('[data-result-action="create-ad"]',e=>!e.disabled),'Middleman can create an advert without a register'); }if(appMode==='owner'){await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.startsWith('Save to My Assets')).click());await shot('save-choice');
-await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Save with Ideal Value only')).click());await shot('save-review');assert(await page.$eval('[data-final-save-scroll-body]',e=>{e.scrollTop=e.scrollHeight;return e.scrollTop>0&&['auto','scroll'].includes(getComputedStyle(e).overflowY);}),'Save destinations remain reachable by scrolling');await shot('save-destination');
+await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Save with Ideal Value only')).click());await shot('save-review');assert(await page.$eval('[data-final-save-scroll-body]',e=>{
+  const overflows=e.scrollHeight>e.clientHeight+1;
+  e.scrollTop=e.scrollHeight;
+  const body=e.getBoundingClientRect(),destination=e.querySelector('#final-save-register-trigger').getBoundingClientRect();
+  return ['auto','scroll'].includes(getComputedStyle(e).overflowY)
+    && (!overflows||e.scrollTop>0)
+    && destination.top>=body.top-1&&destination.bottom<=body.bottom+1
+    && destination.top>=0&&destination.bottom<=innerHeight;
+}),'Save destination is visible, with scrolling when content overflows');await shot('save-destination');
 await page.click('#final-save-register-trigger');await page.waitForSelector('input[aria-label="Search asset registers"]');await shot('register-picker');
 await page.type('input[aria-label="Search asset registers"]','Farm register 11');
 await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Farm register 11')).click());await click('Continue');
