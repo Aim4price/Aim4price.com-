@@ -1228,7 +1228,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             onClick={() => switchView(view === 'recycle-bin' ? 'documents' : 'recycle-bin')}
             aria-pressed={view === 'recycle-bin'}
             disabled={busy || loading}
-          >
+           data-tooltip={view === 'recycle-bin' ? 'Return to your saved documents.' : 'View deleted documents recoverable for 90 days.'} data-tooltip-style="description">
             <Icon name={view === 'recycle-bin' ? 'folder' : 'trash'} />
             {view === 'recycle-bin' ? 'Back to documents' : 'Recycle Bin'}
           </button>
@@ -1239,7 +1239,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             aria-expanded={showSummary}
             aria-controls="document-vault-summary"
             disabled={loading || loadFailed || view === 'recycle-bin' || summary.totalDocuments === 0}
-          >
+           data-tooltip={showSummary ? 'Hide document totals, expiry attention and storage usage.' : 'Show document totals, expiry attention and storage usage.'} data-tooltip-style="description">
             <Icon name="archive" /> Summary
           </button>
           <button
@@ -1249,11 +1249,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             aria-expanded={showFilters}
             aria-haspopup="dialog"
             disabled={loading || loadFailed || !hasDocumentsInView}
-          >
+           data-tooltip="Filter documents by category to narrow your search." data-tooltip-style="description">
             <Icon name="filter" /> Filters
             {category !== 'all' ? <span className={styles.activeFilterText}>1 active</span> : null}
           </button>
-          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy}>
+          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy} data-tooltip="Upload documents to your account and link them to assets." data-tooltip-style="description">
             <Icon name="upload" /> Upload documents
           </button>
         </section>
@@ -1317,7 +1317,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           </label>
 
           <div className={styles.toolbarActions}>
-            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading || busy}>
+            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading || busy} data-tooltip={view === 'recycle-bin' ? 'Refresh the latest deleted documents.' : 'Refresh the latest documents.'} data-tooltip-style="description">
               <Icon name="refresh" className={loading ? styles.refreshIconActive : undefined} /> Refresh
             </button>
           </div>
@@ -1396,7 +1396,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <span>Insurance</span>
                   <span>Licences &amp; permits</span>
                 </div>
-                <button type="button" className={styles.uploadButton} onClick={openUploadModal}><Icon name="upload" /> Upload documents</button>
+                <button type="button" className={styles.uploadButton} onClick={openUploadModal} data-tooltip="Upload documents to your account and link them to assets." data-tooltip-style="description"><Icon name="upload" /> Upload documents</button>
               </>
             ) : null}
           </section>
@@ -1816,3 +1816,4 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   );
   return uploadContext ? createPortal(<div className={styles.uploadHost}>{content}</div>, document.body) : <div className={styles.page}>{content}</div>;
 }
+

@@ -1352,13 +1352,13 @@ export default function MaintenanceClient({
         </section>
 
         <section className={styles.maintenanceActions} aria-label="Maintenance actions">
-          <button className={`${styles.toolbarButton} ${styles.toolbarAddButton}`} type="button" onClick={openAddService}>
+          <button className={`${styles.toolbarButton} ${styles.toolbarAddButton}`} type="button" onClick={openAddService} data-tooltip="Add a maintenance record or schedule work for an asset." data-tooltip-style="description">
             <span className={styles.plusMark}>+</span><span>Add Maintenance</span>
           </button>
-          <button className={`${styles.toolbarButton} ${styles.toolbarChecklistsButton}`} type="button" onClick={() => { setChecklistAssetId(activeFilters.assetId === 'all' ? '' : activeFilters.assetId); setModalMode('checklists'); }}>
+          <button className={`${styles.toolbarButton} ${styles.toolbarChecklistsButton}`} type="button" onClick={() => { setChecklistAssetId(activeFilters.assetId === 'all' ? '' : activeFilters.assetId); setModalMode('checklists'); }} data-tooltip="View checklists for asset checks, services and repairs." data-tooltip-style="description">
             <ChecklistIcon /><span>Checklists</span>
           </button>
-          <button className={`${styles.toolbarButton} ${styles.primaryButton} ${styles.toolbarDownloadButton}`} type="button" onClick={openDownload}>
+          <button className={`${styles.toolbarButton} ${styles.primaryButton} ${styles.toolbarDownloadButton}`} type="button" onClick={openDownload} data-tooltip="Download your maintenance records." data-tooltip-style="description">
             <DownloadIcon /><span>Download</span>
           </button>
         </section>
@@ -1379,7 +1379,7 @@ export default function MaintenanceClient({
               </button>
             ) : null}
           </label>
-          <button className={`${styles.toolbarButton} ${styles.toolbarFilterButton}`} type="button" onClick={openFilters}>
+          <button className={`${styles.toolbarButton} ${styles.toolbarFilterButton}`} type="button" onClick={openFilters} data-tooltip="Filter maintenance records by asset, status or type." data-tooltip-style="description">
             <FilterIcon />Filter{filtersCount ? <strong>{filtersCount}</strong> : null}
           </button>
         </section>
@@ -1461,7 +1461,8 @@ export default function MaintenanceClient({
                               if (canComplete) openComplete(record);
                             }}
                             disabled={!canComplete || busyCompleteId !== null}
-                            title={canComplete ? `Record completed work for this ${typeLabel(record.maintenanceType).toLowerCase()}` : undefined}
+                            data-tooltip={canComplete ? `Record completed work for this scheduled ${typeLabel(record.maintenanceType).toLowerCase()}.` : undefined}
+                            data-tooltip-style="description"
                             aria-pressed={isDone}
                             aria-label={isDone ? `${record.assetTitle} maintenance completed` : !canComplete ? `${record.assetTitle} maintenance cancelled` : `Record ${record.maintenanceType} for ${record.assetTitle}`}
                           >
@@ -1903,6 +1904,7 @@ export default function MaintenanceClient({
     </div>
   );
 }
+
 
 
 

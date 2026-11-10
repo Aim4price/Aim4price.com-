@@ -1660,7 +1660,7 @@ export default function AssetMapClient() {
             <div className={styles.topActions}>
               <div className={styles.topActionButtons}>
                 <button type="button" className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.addAssetAction}`} aria-haspopup="dialog"
-                  disabled={dataStatus !== 'ready'} onClick={event => { if (!desktop.allow('updateLocation')) return; locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }}>
+                  disabled={dataStatus !== 'ready'} onClick={event => { if (!desktop.allow('updateLocation')) return; locationTrigger.current = event.currentTarget; setAssetPickerOpen(true); }} data-tooltip="Choose an asset and save its location on the map." data-tooltip-style="description">
                   <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-12a7 7 0 0 1 14 0c0 6-7 12-7 12Z"/><path d="M9 9h6m-3-3v6"/></svg>
                   <span>Add asset to map</span>
                 </button>
@@ -1674,7 +1674,7 @@ export default function AssetMapClient() {
                     aria-expanded={isFilterMenuOpen}
                     aria-controls={isFilterMenuOpen ? "asset-map-register-dialog" : undefined}
                     aria-label={`Filter: ${selectedFilterLabel}`}
-                  >
+                   data-tooltip="Choose which asset register to show on the map." data-tooltip-style="description">
                     <FilterIcon className={styles.buttonIcon} />
                     <span className={styles.filterControlLabel}>Filter</span>
                   </button>
@@ -1697,7 +1697,7 @@ export default function AssetMapClient() {
                   className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton} ${!mappedAssets.length ? styles.actionDisabled : ""}`}
                   onClick={openExportModal}
                   disabled={!mappedAssets.length || isLoading}
-                >
+                 data-tooltip="Download asset location and tracking reports." data-tooltip-style="description">
                   <DownloadIcon className={styles.buttonIcon} />
                   <span>Download</span>
                 </button>
@@ -2096,7 +2096,7 @@ export default function AssetMapClient() {
                     showAllVisibleAssets();
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
-                >
+                 data-tooltip="Fit all currently shown asset locations into view." data-tooltip-style="description">
                   <MapIcon className={styles.buttonIcon} />
                   <span>Show all locations</span>
                   <strong>{visibleAssets.length}</strong>
@@ -2337,4 +2337,5 @@ export default function AssetMapClient() {
     </main>
   );
 }
+
 

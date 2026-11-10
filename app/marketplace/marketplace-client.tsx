@@ -3364,7 +3364,7 @@ export default function MarketplaceClient({
                           openShareSheet(listing);
                         }}
                         aria-label="Share listing"
-                        data-tooltip="Share"
+                        data-tooltip={normalizedAccountType === 'owner' ? 'Share this marketplace listing.' : 'Share'} data-tooltip-style={normalizedAccountType === 'owner' ? 'description' : undefined}
                       >
                         <IconShare />
                       </button>
@@ -3574,7 +3574,7 @@ export default function MarketplaceClient({
               </div>
 
               <div className={styles.modalActionRow}>
-                <button type="button" className={styles.modalShareButton} data-tooltip="Share" onClick={() => openShareSheet(activeListing)}>
+                <button type="button" className={styles.modalShareButton} data-tooltip={normalizedAccountType === 'owner' ? 'Share this marketplace listing.' : 'Share'} data-tooltip-style={normalizedAccountType === 'owner' ? 'description' : undefined} onClick={() => openShareSheet(activeListing)}>
                   <IconShare />
                   Share
                 </button>
@@ -4016,3 +4016,4 @@ function CreateAdvertChoices({ titleId, middlemanMode, manualHref, registerHref,
 }
 
 export { CreateAdvertChoices };
+

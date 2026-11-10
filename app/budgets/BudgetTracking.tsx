@@ -76,8 +76,8 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1><WorkspaceViewSwitch label="Switch to Cost Ledger" href="/my-invoices?view=costs" /></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
-      <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
-      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts'))setDownloadOpen(true);}} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
+      <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready} data-tooltip={filters.status === 'attention' ? 'Show all budgets again.' : 'Show budgets that need attention.'} data-tooltip-style="description"><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
+      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts'))setDownloadOpen(true);}} disabled={!ready || !budgets.length} data-tooltip="Download your budget reports." data-tooltip-style="description"><Icon kind="download" />Download</button>
     </section>
     <div className={`${ledger.invoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
@@ -137,3 +137,4 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       }} /> : null}
   </div>;
 }
+

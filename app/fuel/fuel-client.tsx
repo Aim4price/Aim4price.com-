@@ -3799,7 +3799,7 @@ export default function FuelClient({
                       type="button"
                       className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
                       onClick={isSlipsPage ? () => openFuelSlipModal(true) : openCreateStorage}
-                    >
+                     data-tooltip={isSlipsPage ? 'Add a fuel receipt and link it to an asset.' : 'Add a storage tank to track fuel levels and movements.'} data-tooltip-style="description">
                       <PlusIcon className={styles.buttonIcon} />
                       <span>{isSlipsPage ? 'Add Fuel Slip' : 'Add Storage Tank'}</span>
                     </button>
@@ -3808,7 +3808,7 @@ export default function FuelClient({
                     type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
                     onClick={openExclusionsModal}
-                  >
+                   data-tooltip="Choose which assets count towards fuel work-use totals." data-tooltip-style="description">
                     <ExclusionIcon className={styles.buttonIcon} />
                     <span>Asset Exclusions</span>
                   </button>
@@ -3816,7 +3816,7 @@ export default function FuelClient({
                     type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
                     onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}
-                  >
+                   data-tooltip={isSlipsPage ? 'Download your fuel slip records.' : 'Download your storage tank fuel records.'} data-tooltip-style="description">
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>Download</span>
                   </button>
@@ -3839,7 +3839,7 @@ export default function FuelClient({
                     </button>
                   ) : null}
                 </label>
-                  {isSlipsPage ? <button type="button" className={styles.slipFilterButton} onClick={openFuelSlipManagerFilterPanel}>
+                  {isSlipsPage ? <button type="button" className={styles.slipFilterButton} onClick={openFuelSlipManagerFilterPanel} data-tooltip="Filter fuel slips to narrow your search." data-tooltip-style="description">
                     <FilterIcon className={styles.buttonIcon} /><span>Filter</span>
                   </button> : null}
                 </div>
@@ -3910,11 +3910,11 @@ export default function FuelClient({
 
                     {<div className={styles.storageHeaderAside}>
                       <div className={styles.unitActions}>
-                        <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving}>
+                        <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving} data-tooltip="View or download the QR code for this storage tank." data-tooltip-style="description">
                           <QrIcon className={styles.buttonIcon} />
                           <span>QR Code</span>
                         </button>
-                        <button type="button" className={`${styles.unitButton} ${styles.manageUnitButton}`} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
+                        <button type="button" className={`${styles.unitButton} ${styles.manageUnitButton}`} onClick={() => openManageStorageChoice(storage)} disabled={isSaving} data-tooltip="Update tank details, record earlier fuel issues or download records." data-tooltip-style="description">
                           <GearIcon className={styles.buttonIcon} />
                           <span>Manage</span>
                         </button>
@@ -4002,11 +4002,11 @@ export default function FuelClient({
             {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}
             <span>{isSlipsPage ? 'Switch to Storage' : 'Switch to Fuel Slips'}</span>
           </button>
-          <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
+          <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal} data-tooltip="Choose which assets count towards fuel work-use totals." data-tooltip-style="description">
             <ExclusionIcon className={styles.buttonIcon} />
             <span>Asset Exclusions</span>
           </button>
-          <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}>
+          <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal} data-tooltip={isSlipsPage ? 'Download your fuel slip records.' : 'Download your storage tank fuel records.'} data-tooltip-style="description">
             <DownloadIcon className={styles.buttonIcon} />
             <span>Reports</span>
           </button>
@@ -4314,7 +4314,7 @@ export default function FuelClient({
                       <span>Add fuel slip</span>
                     </button>
                   )}
-                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel} data-tooltip="Filter fuel slips to narrow your search." data-tooltip-style="description">
                     <FilterIcon className={styles.buttonIcon} />
                     <span>Filter</span>
                     {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
@@ -4324,7 +4324,7 @@ export default function FuelClient({
                     className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
                     onClick={openFuelSlipDownloadPanel}
                     disabled={!recentFuelSlips.length}
-                  >
+                   data-tooltip="Download your fuel slip records." data-tooltip-style="description">
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>Download</span>
                   </button>
@@ -4961,3 +4961,4 @@ export default function FuelClient({
     </>
   );
 }
+
