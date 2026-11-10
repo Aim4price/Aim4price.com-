@@ -255,9 +255,9 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
 
     return (
       <AppAssetChoice key={asset.id} title={asset.title} className={hasSearch ? styles.assetDirectorySearchMatch : undefined}
-        details={`${formatYearModel(asset)} · ${asset.usageLabel}`}
+        year={formatYearModel(asset)} usage={asset.usageLabel}
         serial={serialDisplayText(asset)}
-        action={isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open asset'}
+        action={isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open'}
         onClick={() => void handleOpenAsset(asset)} disabled={Boolean(openingAssetId)} />
     );
   }
