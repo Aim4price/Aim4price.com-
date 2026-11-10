@@ -682,3 +682,43 @@
   .surface.surface [class*='appValuation'] [class*='popularityModalPanel'] { padding:10px !important; }
   .surface.surface [class*='appValuation'] [class*='popularityModalStars'] { gap:4px !important; }
 }
+
+/* Phone result dialogs: one reachable scrolling surface and compact content. */
+@media (max-width:640px) {
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishModal'],
+  .surface.surface [class*='appValuation'] [class*='lifetimeModal'] { max-height:calc(100dvh - 24px) !important; overflow-y:auto !important; overscroll-behavior:contain; padding:16px !important; gap:16px !important; }
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishModal'] > *,
+  .surface.surface [class*='appValuation'] [class*='lifetimeModal'] > *,
+  .surface.surface [class*='appValuation'] [class*='finalSaveScrollBody'] > * { flex-shrink:0; }
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishHeader'] { padding:0 48px 12px 0 !important; gap:8px !important; }
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishHeader'] p { font-size:.9rem !important; line-height:1.5 !important; margin:0 !important; }
+  .surface.surface [class*='appValuation'] :is([class*='marketplaceTitlePreview'],[class*='marketplaceEstimateValueCard'],[class*='marketplacePublishPanel']) { padding:14px !important; gap:10px !important; }
+  .surface.surface [class*='appValuation'] :is([class*='marketplaceSummaryGrid'],[class*='marketplacePublishGrid']) { gap:12px !important; grid-template-columns:minmax(0,1fr) !important; }
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishModal'] :is(input,select,textarea) { font-size:16px !important; min-width:0; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveDetailsGrid'] { gap:16px !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveRegisterControl'] { padding:12px !important; min-height:48px !important; font-size:.95rem !important; }
+  .surface.surface [class*='appValuation'] [class*='finalSaveRegisterChevron'] { width:20px; height:20px; flex-shrink:0; }
+  .surface.surface [class*='appValuation'] [class*='resultFactsGrid'] { gap:16px !important; padding-top:16px !important; }
+  .surface.surface [class*='appValuation'] [class*='replacementEditableAmount'] { gap:8px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='pdf-options-title'] { padding:16px !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='pdf-options-title'] header p { font-size:.9rem !important; line-height:1.5 !important; margin:8px 0 0 !important; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='pdf-options-title'] [class*='body'] { padding-top:16px; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='pdf-options-title'] [class*='values'] > div { padding:12px; }
+  .surface.surface [class*='appValuation'] [aria-labelledby='pdf-options-title'] footer button { min-height:44px; padding:10px 12px; font-size:.9rem; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] { position:relative; width:100% !important; max-height:calc(100dvh - 32px) !important; display:flex !important; flex-direction:column; overflow:hidden !important; padding:16px !important; gap:12px; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] > * { flex-shrink:0; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] [class*='registerRows'] { flex:1 1 auto; min-height:0; overflow-y:auto !important; overscroll-behavior:contain; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] [class*='changeRegisterToolbar'] { flex-wrap:wrap; gap:8px; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] footer { margin:0; padding:12px 0 0; gap:8px; }
+}
+
+@media (max-width:640px) {
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] :is(header,[class*='changeRegisterToolbar'],[class*='registerRows']) { margin:0 !important; padding:0 !important; width:100% !important; }
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] header { padding-bottom:12px !important; }
+  .surface.surface [class*='appValuation'] [class*='registerRows'] button { min-height:64px !important; padding:12px !important; }
+}
+
+@media (max-width:640px) {
+  .surface.surface [class*='appValuation'] [class*='addRegisterBody'] [class*='changeRegisterToolbar'] { margin:8px 0 12px !important; }
+  .surface.surface [class*='appValuation'] [class*='marketplacePublishActions'] { margin-top:0 !important; padding-top:12px !important; gap:10px !important; }
+}
