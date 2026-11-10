@@ -3338,7 +3338,7 @@
 .compactAppSurface input { font-size:16px; min-width:0; }
 .compactAppSurface .discoverySummaryBlur,.compactAppSurface .discoveryCardMuted { filter:none !important; }
 .appDetailsOverlay { position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:12px; background:#08251cb3; backdrop-filter:blur(5px); }
-.appDetailsPanel { width:min(100%,640px); max-height:calc(100dvh - 24px); display:flex; flex-direction:column; overflow:hidden; border-radius:20px; background:var(--app-surface,#fff); color:var(--app-text,#173c31); box-shadow:0 20px 65px #001b2240; font-family:var(--font-body,Arial),sans-serif; }
+.appDetailsPanel { width:min(100%,640px); max-height:calc(var(--website-design-vh, 1dvh) * 100 - 24px); display:flex; flex-direction:column; overflow:hidden; border-radius:20px; background:var(--app-surface,#fff); color:var(--app-text,#173c31); box-shadow:0 20px 65px #001b2240; font-family:var(--font-body,Arial),sans-serif; }
 .appDetailsHeader { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--app-line,#d9e6df); }
 .appDetailsHeader h2 { margin:0; font-size:1.1rem; line-height:1.35; overflow-wrap:anywhere; }
 .appDetailsHeader button { position:static !important; flex-shrink:0; width:44px; height:44px; border:1px solid var(--app-line,#d9e6df); border-radius:12px; background:var(--app-surface-soft,#f1f7f4); color:inherit; font-size:24px; cursor:pointer; }

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal } from './WebsitePortal';
 import styles from '../app/asset-discovery/page.module.css';
 export default function DiscoveryAppDetails({ enabled, title, onClose, children }: {
     enabled: boolean;
