@@ -254,7 +254,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
     const isOpening = openingAssetId === asset.id;
 
     return (
-      <AppAssetChoice key={asset.id} title={asset.title}
+      <AppAssetChoice key={asset.id} title={asset.title} className={hasSearch ? styles.assetDirectorySearchMatch : undefined}
         details={`${formatYearModel(asset)} · ${asset.usageLabel}`}
         serial={serialDisplayText(asset)}
         action={isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open asset'}

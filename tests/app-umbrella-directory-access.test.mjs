@@ -130,8 +130,15 @@ async function renderDirectory(role, assets, groups) {
   const output = ts.transpileModule(await read(path), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
+  const choiceModule = { exports: {} };
+  const choiceCode = ts.transpileModule(await read('components/AppAssetChoice.tsx'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+  }).outputText;
+  const requireChoice = name => name === 'react/jsx-runtime' ? { jsx, jsxs: jsx } : { __esModule: true, default: styles };
+  new Function('require', 'module', 'exports', choiceCode)(requireChoice, choiceModule, choiceModule.exports);
   const module = { exports: {} };
   new Function('require', 'module', 'exports', output)((name) => {
+    if (name.endsWith('/AppAssetChoice')) return choiceModule.exports;
     if (name === 'react') return react;
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
     if (name.endsWith('.css')) return { __esModule: true, default: styles };
@@ -143,6 +150,10 @@ async function renderDirectory(role, assets, groups) {
     function visit(node) {
       if (Array.isArray(node)) return node.forEach(visit);
       if (!node || typeof node !== 'object') return;
+      if (typeof node.type === 'function') {
+        const rendered = node.type(node.props);
+        return visit({ ...rendered, key: node.key });
+      }
       nodes.push(node);
       visit(node.props.children);
     }
@@ -164,7 +175,7 @@ for (const role of ['owner', 'field']) {
     ];
     const render = await renderDirectory(role, assets, groups);
     const search = (value) => render().find((node) => node.type === 'input').props.onChange({ target: { value } });
-    const cards = () => render().filter((node) => node.type === 'article');
+    const cards = () => render().filter((node) => (node.type === 'article' || node.props['data-asset-choice-row'] === 'true'));
     const click = (label) => render().find((node) => node.type === 'button' && (node.props['aria-label'] ?? node.props.children) === label).props.onClick();
     search('Massey');
     if (role === 'owner') {
@@ -195,7 +206,7 @@ for (const role of ['owner', 'field']) {
   test(`${role} search still supports accounts without umbrellas`, async () => {
     const render = await renderDirectory(role, [{ id: 'tractor', title: 'Massey', usage: null }], []);
     render().find((node) => node.type === 'input').props.onChange({ target: { value: 'Massey' } });
-    const cards = render().filter((node) => node.type === 'article');
+    const cards = render().filter((node) => (node.type === 'article' || node.props['data-asset-choice-row'] === 'true'));
     assert.deepEqual(cards.map((node) => node.key), ['tractor']);
     assert.match(cards[0].props.className, /assetDirectorySearchMatch/);
   });
