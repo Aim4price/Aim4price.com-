@@ -1500,7 +1500,7 @@ export default function AssetDiscoveryClient({
           <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
             <div className={styles.discoveryMediaColumn}>
               {photoUrls.length ? (
-                <RecentAdvertGallery id={`discovery-${asset.id}`} title={assetDisplayName(asset)} urls={photoUrls}
+                <RecentAdvertGallery compact={compactAppMode} id={`discovery-${asset.id}`} title={assetDisplayName(asset)} urls={photoUrls}
                   onOpen={(index) => openDiscoveryPhotoModal(asset, photoUrls, index)} />
               ) : <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
                 {details.photosUnlocked ? (
@@ -1695,7 +1695,7 @@ export default function AssetDiscoveryClient({
     return (
       <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
         <div className={styles.discoveryTitleRow}>
-          <h1>{advertised ? "Recently advertised" : "Discover Assets"}</h1>
+          <h1>{compactAppMode ? "Discover assets" : advertised ? "Recently advertised" : "Discover Assets"}</h1>
           {allowRecentAdverts && !compactAppMode ? (
             <WorkspaceViewSwitch
               label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}

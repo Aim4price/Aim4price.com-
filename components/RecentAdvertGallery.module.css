@@ -18,3 +18,20 @@
 .openButton svg { width: 1.25rem; height: 1.25rem; flex: none; }
 .gallery button:focus-visible { outline: 3px solid #298159; outline-offset: -3px; }
 .nav:hover, .openButton:hover, .unavailable button:hover { background: #dceee2; border-color: #41805f; }
+
+/* The error state grows with its copy and retry control instead of cropping it. */
+.compact.gallery { padding: 0; gap: 10px; border: 0; border-radius: 14px; overflow: hidden; }
+.compact .stage { min-height: 0; max-height: none; aspect-ratio: 4 / 3; }
+.compact .emptyStage { aspect-ratio: auto; min-height: 96px; padding: 16px 12px; }
+.compact .unavailable { padding: 0; gap: 8px; }
+.compact .unavailable strong { font-size: 14px; }
+.compact .unavailable span { font-size: 13px; }
+.compact .controls { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 0 4px 4px; }
+.compact .nav { width: 44px; height: 44px; border-radius: 12px; }
+.compact .openButton { width: auto; min-height: 44px; padding: 8px 12px; gap: 6px; font-size: 13px; box-shadow: none; }
+.compact .counter { font-size: 13px; }
+.compact .openButton:disabled { opacity: .45; cursor: default; }
+.compact .controls { display: flex; flex-wrap: wrap; }
+.compact .navigation { flex: 1 0 145px; }
+.compact .openButton { flex: 1 0 110px; }
+.compact .counter { white-space: nowrap; }
