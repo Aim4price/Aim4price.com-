@@ -8,7 +8,7 @@ const stubs={
  'components/WebsitePortal':'exports.createPortal=(children)=>ReactDOM.createPortal(children,document.getElementById("aim4price-website-overlays"));',
  'components/DropdownOverlay':'exports.default=()=>null;',
  'components/WorkspacePrimitives':'exports.workspaceStyles={};exports.WorkspaceTitlePanel=({title,children})=>React.createElement("header",null,React.createElement("h1",null,title),children);',
- 'app/asset-discovery/recently-advertised-client':'exports.default=()=>null;',
+
 };
 function cssModule(file){
  const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
@@ -44,7 +44,7 @@ const entry='app/asset-discovery/asset-discovery-client';add(entry);
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const appCode='const sources='+JSON.stringify(modules)+',cache={};'+
- 'function require(name){if(name==="react")return React;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}'+
+ 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}'+
  'const Component=require('+JSON.stringify(entry)+').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{dealerAppMode:window.compact}));';
 const asset={id:'fixture-1',type:'Bakkies / LDVs',brand:'Toyota',model:'Hilux',year:'2023',usage:'140 676 km',condition:'Good',province:'Western Cape',renewalWindow:'',renewalTiming:null,enquiryId:null,enquiryStatus:null,requestAgainAtIso:null,approvedAtIso:null};
 const evidence=path.join(root,'.next/discovery-focus-validation');
@@ -57,6 +57,7 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=body=>request.respond({contentType:'application/json',body:JSON.stringify(body)});
+   if(url.includes('/recently-advertised'))return respond({ok:true,canContactAdvertisers:true,adverts:[{...asset,id:'advert-1',title:'Toyota Hilux',area:'George, Western Cape',advertiserName:'Test advertiser',advertiserType:'business',status:'available',statusLabel:'Available',publishedAtIso:'2026-10-18T00:00:00Z',priceExVat:275000,imageUrl:'',imageUrls:[],marketplaceHref:null,contactEligible:false,description:'Saved advert details'}]});
    if(url.includes('/api/asset-discovery')&&!url.includes('/assets/'))return respond({ok:true,access:{accountType:'dealer',canBrowse:true,canContact:true,participationEnabled:true},assets:[{...asset,...(approved?{enquiryId:'enquiry-1',enquiryStatus:'approved'}:{})}],pagination:{page:1,pageSize:10,totalItems:1,totalPages:1,rangeStart:1,rangeEnd:1},summary:{totalAssets:1,typeCount:1,provinceCount:1}});
    if(url.includes('/assets/'))return fail?request.respond({status:500,contentType:'application/json',body:'{"ok":false,"error":"Fixture details unavailable"}'}):respond({ok:true,details:{asset,photosUnlocked:approved,contactUnlocked:approved,photoUrls:approved?['data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="600" height="400" fill="green"/></svg>']:[],ownerContact:null,accessSource:approved?'approved_enquiry':null}});
    if(url.startsWith('data:'))return request.continue();
@@ -72,11 +73,22 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   }
   for(const [width,compact] of [[1440,false],[390,true],[320,true]]){
    approved=false;fail=false;await open(width,compact);
+   if(compact) await page.screenshot({path:path.join(evidence,'browse-'+width+'.png')});
    const trigger='button[aria-label="Open Toyota Hilux details"]';
    await page.click('[data-discovery-card] h2, [data-discovery-card] h3');
    await page.waitForSelector('#discovery-details-fixture-1 [class*="discoveryLockedMedia"]');
    assert.equal(await page.$eval('#discovery-details-fixture-1 [class*="discoveryLockedMedia"] strong', e=>e.textContent), 'Private photos');
-   assert.equal(await page.$('[role="dialog"]'),null,'details retain the inline design');
+   if(compact){
+    await page.waitForSelector('[role="dialog"]');
+    assert(await page.$eval('[class*="appDetailsScroll"]',e=>{e.scrollTop=e.scrollHeight;const r=e.getBoundingClientRect();return getComputedStyle(e).overflowY==='auto'&&r.top>=0&&r.bottom<=innerHeight;}),'App details scroll inside the viewport');
+    await page.screenshot({path:path.join(evidence,'discovery-'+width+'.png'),fullPage:false});
+    await page.click('button[aria-label="Close asset details"]');
+    assert.equal(await page.$('#discovery-details-fixture-1'),null);
+    assert.equal(await page.evaluate(()=>document.body.style.overflow),'');
+    console.log('PASS app detail sheet, scrolling and cleanup at '+width);
+    continue;
+   }
+   assert.equal(await page.$('[role="dialog"]'),null,'desktop details retain the inline design');
    const centered = await page.$eval('[class*="discoveryPreviewLocked"]', box => {
      const icon = box.querySelector('svg').getBoundingClientRect();
      const copy = box.querySelector('[class*="discoveryLockedMedia"]').getBoundingClientRect();
@@ -109,6 +121,7 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
    assert.equal((await page.$$('[inert]')).length,0);
    console.log('PASS original inline design, blurred background/upper summary, sharp details/Close and cleanup at '+width);
   }
+  approved=true;await open(390,true);await page.click('button[aria-label="Open Toyota Hilux details"]');await page.waitForSelector('button[aria-label="Open Toyota Hilux photo 1"]');await page.click('button[aria-label="Open Toyota Hilux photo 1"]');await page.waitForSelector('button[aria-label="Close asset photos"]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('button[aria-label="Close asset photos"]'));assert.ok(await page.$('#discovery-details-fixture-1'));await page.click('button[aria-label="Close asset details"]');
   approved=true;await open(1440);await page.click('button[aria-label="Open Toyota Hilux details"]');
   await page.waitForSelector('button[aria-label="Open Toyota Hilux photo 1"]');
   await page.click('button[aria-label="Open Toyota Hilux photo 1"]');await page.waitForSelector('button[aria-label="Close asset photos"]');
@@ -116,6 +129,7 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   assert.ok(await page.$('#discovery-details-fixture-1'),'closing photos keeps inline details open');
   await page.keyboard.press('Escape');
   assert.equal(await page.$('#discovery-details-fixture-1'),null);
+  await open(390,true);await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText==='Recent adverts').click());await page.waitForSelector('button[aria-label="Open Toyota Hilux advert details"]');await page.click('button[aria-label="Open Toyota Hilux advert details"]');await page.waitForSelector('#recent-advert-advert-1');await page.screenshot({path:path.join(evidence,'recent-advert-390.png')});await page.click('button[aria-label="Close asset details"]');assert.equal(await page.$('#recent-advert-advert-1'),null);
   fail=true;await open(1440);await page.click('button[aria-label="Open Toyota Hilux details"]');
   await page.waitForFunction(()=>document.querySelector('#discovery-details-fixture-1')?.textContent.includes('Fixture details unavailable'));
   await page.click('button[aria-label="Close Toyota Hilux details"]');assert.equal(await page.$('#discovery-details-fixture-1'),null);

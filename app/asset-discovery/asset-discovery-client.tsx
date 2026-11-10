@@ -1,4 +1,5 @@
 "use client";
+import DiscoveryAppDetails from '../../components/DiscoveryAppDetails';
 import ListPagination from '../../components/ListPagination';
 import WorkspaceViewSwitch from "../../components/WorkspaceViewSwitch";
 import RecentAdvertGallery from "../../components/RecentAdvertGallery";
@@ -841,6 +842,7 @@ export default function AssetDiscoveryClient({
 
   useEffect(() => {
     if (
+      compactAppMode ||
       !requestedOpenAssetId ||
       expandedAssetId !== requestedOpenAssetId
     ) {
@@ -854,10 +856,10 @@ export default function AssetDiscoveryClient({
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, [expandedAssetId, requestedOpenAssetId]);
+  }, [compactAppMode, expandedAssetId, requestedOpenAssetId]);
 
   useEffect(() => {
-    if (!expandedAssetId) return;
+    if (compactAppMode || !expandedAssetId) return;
     const details = document.getElementById(`discovery-details-${expandedAssetId}`);
     const card = details?.closest<HTMLElement>("[data-discovery-card]");
     if (!card) return;
@@ -1451,6 +1453,7 @@ export default function AssetDiscoveryClient({
 
 
     return (
+      <DiscoveryAppDetails enabled={compactAppMode} title={dealerAssetDisplayName(asset)} onClose={() => setExpandedAssetId(null)}>
       <div
         id={`discovery-details-${asset.id}`}
         className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard} ${compactAppMode ? styles.discoveryExpandedCompact : ""}`}
@@ -1640,6 +1643,7 @@ export default function AssetDiscoveryClient({
           </div>
         ) : null}
       </div>
+      </DiscoveryAppDetails>
     );
   }
 
@@ -1692,13 +1696,17 @@ export default function AssetDiscoveryClient({
       <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
         <div className={styles.discoveryTitleRow}>
           <h1>{advertised ? "Recently advertised" : "Discover Assets"}</h1>
-          {allowRecentAdverts ? (
+          {allowRecentAdverts && !compactAppMode ? (
             <WorkspaceViewSwitch
               label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}
               onClick={() => changeDiscoveryView(advertised ? "discovery" : "recently-advertised")}
             />
           ) : null}
         </div>
+        {allowRecentAdverts && compactAppMode ? <nav className={styles.appBrowseTabs} aria-label="Discovery views">
+          <button type="button" aria-pressed={!advertised} onClick={() => changeDiscoveryView('discovery')}>Available assets</button>
+          <button type="button" aria-pressed={advertised} onClick={() => changeDiscoveryView('recently-advertised')}>Recent adverts</button>
+        </nav> : null}
       </section>
     );
   }

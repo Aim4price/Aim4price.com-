@@ -1,4 +1,5 @@
 "use client";
+import DiscoveryAppDetails from '../../components/DiscoveryAppDetails';
 import ListPagination from '../../components/ListPagination';
 import RecentAdvertGallery from "../../components/RecentAdvertGallery";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
@@ -297,7 +298,7 @@ export default function RecentlyAdvertisedClient({
   const sourcingRequestRef = useRef(0);
 
   useEffect(() => {
-    if (!expandedAdvertId) return;
+    if (compactAppMode || !expandedAdvertId) return;
     const details = document.getElementById(`recent-advert-${expandedAdvertId}`);
     const card = details?.closest<HTMLElement>("[data-discovery-card]");
     if (!card) return;
@@ -550,13 +551,14 @@ export default function RecentlyAdvertisedClient({
     const canContactAdvert = advert.contactEligible && contactAccess === "allowed";
     const contactNoteId = `recent-advert-contact-note-${advert.id}`;
     const location = advertiserIdentityVisible
-      ? [clean(advert.area), clean(advert.province)]
+      ? [clean(advert.area), clean(advert.area).toLowerCase().includes(clean(advert.province).toLowerCase()) ? "" : clean(advert.province)]
           .filter(Boolean)
           .join(", ") || "Location not saved"
       : clean(advert.province) || "Location hidden";
     const visibleAdvertiserName = advertiserLabel(advert);
 
     return (
+      <DiscoveryAppDetails enabled={compactAppMode} title={advert.title} onClose={() => setExpandedAdvertId(null)}>
       <div
         id={`recent-advert-${advert.id}`}
         className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard} ${compactAppMode ? styles.discoveryExpandedCompact : ""}`}
@@ -710,6 +712,7 @@ export default function RecentlyAdvertisedClient({
           </div>
         ) : null}
       </div>
+      </DiscoveryAppDetails>
     );
   }
 
