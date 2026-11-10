@@ -92,8 +92,7 @@ const ROUTE_LABELS: Array<{
   { prefix: "/valuation", key: "valuation", label: "Get Estimate" },
   { prefix: "/account", key: "account", label: "Account" },
   { prefix: "/dealer", key: "dealer-workspace", label: "Dealer Workspace" },
-  { prefix: "/field-manager", key: "field-manager", label: "Field Manager" },
-  { prefix: "/owner-app", key: "owner-app", label: "Owner App" },
+  { prefix: "/owner-app", key: "owner-app", label: "Manager App" },
   { prefix: "/", key: "home", label: "Home" },
 ];
 

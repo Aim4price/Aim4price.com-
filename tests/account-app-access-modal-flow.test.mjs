@@ -4,12 +4,11 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Owner, Field Manager and Dealer staff access use one clear New and Manage launcher', async () => {
-  const [shared, dealer, owner, field] = await Promise.all([
+test('Manager and Dealer staff access use one clear New and Manage launcher', async () => {
+  const [shared, dealer, owner] = await Promise.all([
     read('app/account/app-access-management-client.tsx'),
     read('app/account/dealer-app/dealer-access-client.tsx'),
     read('app/account/owner-app/owner-app-access-client.tsx'),
-    read('app/account/field-manager/field-manager-client.tsx'),
   ]);
 
   assert.match(shared, /<strong>Add login<\/strong>/);
@@ -22,7 +21,6 @@ test('Owner, Field Manager and Dealer staff access use one clear New and Manage 
 
   assert.match(dealer, /<DealerAppAccessManagement middlemanMode=\{middlemanMode\} \/>/);
   assert.match(owner, /OwnerAppAccessManagement as default/);
-  assert.match(field, /FieldManagerAppAccessManagement as default/);
 });
 
 test('shared access flows preserve each app login type and its existing controls', async () => {
@@ -30,13 +28,10 @@ test('shared access flows preserve each app login type and its existing controls
 
   assert.match(shared, /listEndpoint: '\/api\/dealer\/staff'/);
   assert.match(shared, /listEndpoint: '\/api\/owner-app\/users'/);
-  assert.match(shared, /listEndpoint: '\/api\/field-managers'/);
   assert.match(shared, /roleField: 'role'/);
   assert.match(shared, /roleField: 'accessRole'/);
-  assert.match(shared, /roleField: null/);
-  assert.match(shared, /Owner \/ Manager/);
-  assert.match(shared, /Operations/);
-  assert.match(shared, /FieldManagerAccessPanel/);
+  assert.match(shared, /ManagerPermissionsPanel/);
+  assert.doesNotMatch(shared, /FieldManagerAppAccessManagement/);
   assert.match(shared, /Save access/);
   const sections = await read('app/account/owner-login-sections.tsx');
   assert.match(sections, /Deactivate/);
@@ -58,7 +53,6 @@ test('every app access page exposes an allowlisted QR install handoff', async ()
   assert.match(shared, /loginPath: '\/middleman\/login',[\s\S]*?qrApp: 'middleman'/);
   assert.match(shared, /loginPath: '\/dealer\/login',[\s\S]*?qrApp: 'dealer'/);
   assert.match(shared, /loginPath: '\/owner-app\/login',[\s\S]*?qrApp: 'owner'/);
-  assert.match(shared, /loginPath: '\/field-manager\/login',[\s\S]*?qrApp: 'field'/);
   assert.match(shared, /src=\{`\/api\/account\/app-access-qr\?app=\$\{config\.qrApp\}&v=\$\{encodeURIComponent\(config\.loginPath\)\}`\}/);
   assert.match(shared, /Scan to open or install app/);
   assert.match(shared, /source=qr&install=1/);
@@ -67,8 +61,6 @@ test('every app access page exposes an allowlisted QR install handoff', async ()
   assert.match(route, /middleman: '\/middleman\/login\?source=qr&install=1'/);
   assert.match(route, /dealer: '\/dealer\/login\?source=qr&install=1'/);
   assert.match(route, /owner: '\/owner-app\/login\?source=qr&install=1'/);
-  assert.match(route, /field: '\/field-manager\/login\?source=qr&install=1'/);
-  assert.match(route, /value === 'dealer' \|\| value === 'owner' \|\| value === 'field'/);
   assert.match(route, /status: 400/);
   assert.match(route, /QR_PROVIDER_ORIGIN = 'https:\/\/api\.qrserver\.com'/);
   assert.match(route, /url\.searchParams\.set\('format', 'png'\)/);
@@ -153,7 +145,6 @@ test('all Manage directories and access choices stay alphabetical after every up
   assert.match(shared, /setRecords\(\(current\) => sortAccessRecords\(current\.map/);
   assert.match(shared, /setAssets\(sortAccessOptions\(payload\.assets \?\? \[\], \(asset\) => asset\.title\)\)/);
   assert.match(shared, /setGroups\(sortAccessOptions\(payload\.groups \?\? \[\], \(group\) => group\.name\)\)/);
-  assert.match(shared, /setStorages\(sortAccessOptions\(payload\.storages \?\? \[\], \(storage\) => storage\.name\)\)/);
 });
 
 test('the header Manage popover always sorts visible destinations alphabetically', async () => {

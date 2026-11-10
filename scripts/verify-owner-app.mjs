@@ -98,7 +98,7 @@ for (const [pathname, shouldHandle] of [
 
 const sourceFiles = walk(root).filter((path) => /\.(?:js|mjs|ts|tsx)$/.test(path));
 const ownerAppNavigationSharedSources = new Set([
-  'app/field-manager/assets/[publicAssetCode]/maintenance/field-manager-maintenance-client.tsx',
+  'components/manager/maintenance-client.tsx',
 ]);
 for (const absolute of sourceFiles) {
   const path = relative(root, absolute).replaceAll('\\', '/');

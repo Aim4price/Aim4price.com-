@@ -1,8 +1,9 @@
+import { getDb } from '../../../../../lib/db';
+import { ownerAppCan } from '../../../../../lib/owner-app-access';
 import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAppOfflineAccess, offlineError, offlineHeaders } from '../../../../../lib/app-offline-access';
 import { ownerAppCanAccessAsset } from '../../../../../lib/owner-app-access';
-import { getFieldManagerAssetForOpen } from '../../../../../lib/field-manager';
 import { saveOfflineNote } from '../../../../../lib/app-offline-notes';
 import { saveFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
 import { getDealerTrackedAsset } from '../../../../../lib/dealer-maintenance-tracker';
@@ -37,12 +38,17 @@ export async function POST(request: NextRequest, { params }: { params: { app: st
   const p = payload as Record<string, unknown>;
   if (!/^[a-zA-Z0-9:_-]{12,160}$/.test(String(p.clientEventId || ''))) return offlineError('A stable saved update ID is required.');
   // Bind retries to the original app and actor, even when several apps use one asset.
-  const eventId = createHash('sha256').update(a.identity + ':' + p.clientEventId).digest('hex');
+  let replayIdentity = a.identity;
+  if (body.legacyIdentity) {
+    if (a.app !== 'owner' || body.legacyIdentity !== `${a.userId}:${a.actorId}` || !(await getDb().query('SELECT 1 FROM manager_user_migrations WHERE source_id=$1',[a.actorId])).rows.length) return offlineError('This saved work belongs to another login.',403);
+    replayIdentity = String(body.legacyIdentity);
+  }
+  const eventId = body.kind === 'work' && body.legacyIdentity && String(p.clientEventId).startsWith('field-offline:') ? String(p.clientEventId) : createHash('sha256').update(replayIdentity + ':' + p.clientEventId).digest('hex');
   const assetId = String(body.assetId || '');
   const code = String(body.code || '');
   const forward = (path: string, payload: unknown) => {
     const url = new URL(path, request.url);
-    url.searchParams.set(a.app === 'owner' ? 'ownerApp' : 'fieldManager', '1');
+    url.searchParams.set('ownerApp', '1');
     url.searchParams.set('assetId', assetId);
     const headers = new Headers(request.headers);
     headers.delete('content-length');
@@ -64,15 +70,15 @@ export async function POST(request: NextRequest, { params }: { params: { app: st
       }, { assetId: asset.assetId });
       return NextResponse.json({ ok: true }, { headers: offlineHeaders });
     }
-    if (a.app !== 'owner' && a.app !== 'field') return offlineError('This action is not available in this app.', 403);
+    if (a.app !== 'owner') return offlineError('This action is not available in this app.', 403);
     if (a.owner && ['work', 'fuel-issue', 'fuel-slip'].includes(String(body.kind)) && !ownerAppCanAccessAsset(a.owner, assetId)) return offlineError('This asset is no longer available to this login.', 403);
-    if (body.kind === 'work' && a.canWork) return confirmedResponse(scan(forward('/api/scan/assets/' + encodeURIComponent(code) + '/event', { ...p, clientEventId: a.app === 'field' && String(p.clientEventId).startsWith('field-offline:') ? p.clientEventId : eventId }), { params: { publicAssetCode: code } }));
+    if (body.kind === 'work' && a.canWork) return confirmedResponse(scan(forward('/api/scan/assets/' + encodeURIComponent(code) + '/event', { ...p, clientEventId: eventId }), { params: { publicAssetCode: code } }));
     if (body.kind === 'fuel-issue' && a.canFuel) return confirmedResponse(issue(forward('/api/fuel-scan/storage/' + encodeURIComponent(code) + '/issue', { ...p, assetId, clientEventId: eventId }), { params: { publicFuelStorageCode: code } }));
     if (body.kind === 'fuel-refill' && a.canRefill) return confirmedResponse(refill(forward('/api/fuel-scan/storage/' + encodeURIComponent(code) + '/refill', { ...p, clientEventId: eventId }), { params: { publicFuelStorageCode: code } }));
     if (body.kind === 'fuel-dipstick' && a.canRefill) return confirmedResponse(dipstick(forward('/api/fuel-scan/storage/' + encodeURIComponent(code) + '/dipstick', { ...p, clientEventId: eventId }), { params: { publicFuelStorageCode: code } }));
     if (body.kind === 'fuel-slip' && a.canFuel) {
+      if (!a.owner || !ownerAppCan(a.owner, 'addFuel')) return offlineError('Fuel slip entry is not enabled for this login.',403);
       if (a.owner && !ownerAppCanAccessAsset(a.owner, assetId)) return offlineError('This asset is no longer available.', 403);
-      if (a.managerId && !await getFieldManagerAssetForOpen({ ownerUserId: a.userId, managerId: a.managerId, assetId })) return offlineError('This asset is no longer available.', 403);
       const result = await saveFuelSlipTransaction(a.userId, {
         mode: 'manual', targetType: 'asset', assetId, offlineEventId: eventId,
         supplierName: p.supplierName, slipNumber: p.slipNumber, documentDate: p.documentDate,

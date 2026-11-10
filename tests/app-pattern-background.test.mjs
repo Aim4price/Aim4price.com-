@@ -14,7 +14,6 @@ const assetRegisterStyles = [
 const layouts = [
   read('app/owner-app/layout.tsx'),
   read('app/dealer/layout.tsx'),
-  read('app/field-manager/layout.tsx'),
 ];
 
 test('the root layout applies one shared pattern background across every page', () => {

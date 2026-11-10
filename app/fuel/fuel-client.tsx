@@ -3780,7 +3780,7 @@ export default function FuelClient({
         </div>
       ) : null}
       {!costLedgerEntry ? <main className={styles.page} ref={fuelPageRef}>
-        <>{desktop.dialog}<AppHeader active="none" /></>
+        <>{desktop.dialog}{!desktop.workspace?.native && <AppHeader active="none" />}</>
 
         <section className={styles.shell}>
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}

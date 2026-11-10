@@ -22,29 +22,29 @@ function errorResponse(error: unknown, fallback: string) {
 export async function PATCH(request: NextRequest, { params }: { params: { userId: string } }) {
   const ownerUserId = await requireManagingOwner();
   if (!ownerUserId) {
-    return NextResponse.json({ ok: false, error: 'Owner App access is available to active owner accounts only.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Manager App access is available to active owner accounts only.' }, { status: 403 });
   }
 
   try {
     const user = await updateOwnerAppUser(ownerUserId, params.userId, await request.json() as Record<string, unknown>);
     return NextResponse.json({ ok: true, user });
   } catch (error) {
-    console.error('Owner App user PATCH failed.', error);
-    return errorResponse(error, 'Failed to update Owner App user.');
+    console.error('Manager App user PATCH failed.', error);
+    return errorResponse(error, 'Failed to update Manager App user.');
   }
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: { userId: string } }) {
   const ownerUserId = await requireManagingOwner();
   if (!ownerUserId) {
-    return NextResponse.json({ ok: false, error: 'Owner App access is available to active owner accounts only.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Manager App access is available to active owner accounts only.' }, { status: 403 });
   }
 
   try {
     await deleteOwnerAppUser(ownerUserId, params.userId);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Owner App user DELETE failed.', error);
-    return errorResponse(error, 'Failed to delete Owner App user.');
+    console.error('Manager App user DELETE failed.', error);
+    return errorResponse(error, 'Failed to delete Manager App user.');
   }
 }

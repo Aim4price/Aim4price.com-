@@ -12,7 +12,7 @@ test('history uses the map report layout with satellite close-up, overview and c
 test('saved-location exports identify records and include safe asset photo references',()=>{
  const o={...options,registration:'CA 123',year:2020,brand:'Toyota & Co',model:'GD-6',category:'Vehicle',assetCode:'REF-42',photos:['https://www.aim4price.com/photo.jpg','javascript:alert(1)']};
  const html=report.buildLocationHistoryHtml([entry],o),xlsx=report.buildLocationHistoryWorkbook([entry],o).toString();
- for(const value of ['@font-face','/field-manager/montserrat-latin.woff','Toyota &amp; Co','GD-6','Vehicle','REF-42','Asset photo reference','photo.jpg','CA 123','2020','Record ID: e1','do not confirm'])assert.ok(html.includes(value),value);
+ for(const value of ['@font-face','/fonts/montserrat-latin.woff','Toyota &amp; Co','GD-6','Vehicle','REF-42','Asset photo reference','photo.jpg','CA 123','2020','Record ID: e1','do not confirm'])assert.ok(html.includes(value),value);
  assert.ok(!html.includes('javascript:'));assert.ok(xlsx.includes('Record ID'));assert.ok(xlsx.includes('Asset photos'));assert.ok(xlsx.includes('photo.jpg'));
 });
 test('report media embeds internal asset photos and preserves safe references on storage failure',async()=>{

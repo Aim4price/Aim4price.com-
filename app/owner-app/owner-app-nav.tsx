@@ -40,7 +40,7 @@ export default function OwnerAppNav({ showBack = true, showSignOut = false, back
   }
 
   return (
-    <header className={`${styles.assetsHeader} ${styles.persistentHeader} ${className}`} aria-label="Aim4price Owner account controls">
+    <header className={`${styles.assetsHeader} ${styles.persistentHeader} ${className}`} aria-label="Aim4price Manager account controls">
       <nav className={styles.topNavigation} aria-label="Page navigation">
         {backHref && !backAction ? (
           <Link className={styles.navButton} href={backHref} prefetch={false} aria-label="Back" title={backLabel === 'Back' ? undefined : `Back to ${backLabel}`}>
@@ -53,7 +53,7 @@ export default function OwnerAppNav({ showBack = true, showSignOut = false, back
             <span>Back</span>
           </button>
         )}
-        <Link className={`${styles.navButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
+        <Link className={`${styles.navButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Manager App home">
           <OwnerIcon name="home" /><span>Home</span>
         </Link>
       </nav>

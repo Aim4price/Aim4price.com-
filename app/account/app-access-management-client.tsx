@@ -1,5 +1,8 @@
 'use client';
 
+import ManagerPermissionsPanel from './manager-permissions-panel';
+import { managerPermissions } from '../../lib/manager-permissions';
+import { TEAM_TEMPLATES, type TeamPermissions } from '../../lib/team-access-policy';
 import OwnerAccessPicker from './owner-access-picker';
 import { assetAccessChoice, type AssetAccessOption } from '../../lib/asset-access-choice';
 import { AccessSectionIcon, LoginFooterContext, LoginSaveFooter } from './owner-login-sections';
@@ -22,12 +25,12 @@ import refinementStyles from './access-page-refinements.module.css';
 import baseStyles from './dealer-app/page.module.css';
 import styles from './app-access-management.module.css';
 
-type DirectoryKind = 'dealer' | 'owner' | 'field';
+type DirectoryKind = 'dealer' | 'owner';
 type AppQrKind = DirectoryKind | 'middleman';
 type ActiveFlow = 'new' | 'manage' | null;
 type NoticeTone = 'success' | 'error';
 type DealerStaffRole = 'owner' | 'sales' | 'parts' | 'technician';
-type OwnerAccessRole = 'admin' | 'operations' | 'view_only';
+type OwnerAccessRole = 'admin' | 'operations' | 'view_only' | keyof typeof TEAM_TEMPLATES;
 
 type AccessRecord = {
   id: string;
@@ -38,6 +41,8 @@ type AccessRecord = {
   updatedAtIso: string;
   role?: DealerStaffRole;
   accessRole?: OwnerAccessRole;
+  permissions?: TeamPermissions;
+  documentAccess?: 'none' | 'selected' | 'all'; documentIds?: string[]; excludedDocumentIds?: string[]; fuelStorageIds?: string[] | null;
 };
 
 type AccessDraft = {
@@ -203,21 +208,21 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     deleteSuccess: 'Dealer App staff login deleted.',
   },
   owner: {
-    title: 'Owner App Users',
+    title: 'Manager App Users',
     description: 'Manage your assets from your phone. Create a separate app login and choose its role and asset access.',
     newDescription: 'Create a separate app login.',
     manageDescription: 'Review permissions or deactivate a login.',
-    loginLinkLabel: 'Owner App login link',
+    loginLinkLabel: 'Manager App login link',
     loginPath: '/owner-app/login',
     qrApp: 'owner',
-    shareTitle: 'Aim4price Owner App',
-    shareText: 'Open the Aim4price Owner App here:',
+    shareTitle: 'Aim4price Manager',
+    shareText: 'Open the Aim4price Manager here:',
     listEndpoint: '/api/owner-app/users',
     itemEndpoint: (id) => `/api/owner-app/users/${encodeURIComponent(id)}`,
     listKey: 'users',
     itemKey: 'user',
-    itemLabel: 'Owner App user',
-    itemPlural: 'Owner App users',
+    itemLabel: 'Manager App user',
+    itemPlural: 'Manager App users',
     displayNameLabel: 'Display name',
     displayNamePlaceholder: 'Example: Farm owner',
     usernamePlaceholder: 'owner.name',
@@ -226,52 +231,18 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     passwordMaximum: 64,
     roleField: 'accessRole',
     roleLabel: 'Access',
-    defaultRole: 'operations',
-    roleOptions: OWNER_ROLE_OPTIONS,
+    defaultRole: 'operator',
+    roleOptions: Object.entries(TEAM_TEMPLATES).map(([value, role]) => ({ value, label: role.label, description: value === 'manager' ? 'All listed tools, values and reports.' : role.detail })),
     roleValue: (record) => record.accessRole ?? 'operations',
     roleSummary: (record) => ownerRoleLabel(record.accessRole),
-    createSuccess: 'Owner App user created.',
-    updateSuccess: 'Owner App user updated.',
-    updatePasswordSuccess: 'Owner App user updated and existing sessions revoked.',
-    activeSuccess: 'Owner App user activated.',
-    inactiveSuccess: 'Owner App user deactivated and existing sessions revoked.',
-    deleteSuccess: 'Owner App user deleted and existing sessions revoked.',
+    createSuccess: 'Manager App user created.',
+    updateSuccess: 'Manager App user updated.',
+    updatePasswordSuccess: 'Manager App user updated and existing sessions revoked.',
+    activeSuccess: 'Manager App user activated.',
+    inactiveSuccess: 'Manager App user deactivated and existing sessions revoked.',
+    deleteSuccess: 'Manager App user deleted and existing sessions revoked.',
   },
-  field: {
-    title: 'Field Manager App',
-    description: 'For managers and staff recording fuel, maintenance and problems in the field. You choose the assets, fuel storage and actions each login can access.',
-    newDescription: 'Create a separate app login.',
-    manageDescription: 'Review permissions or deactivate a login.',
-    loginLinkLabel: 'Field Manager login link',
-    loginPath: '/field-manager/login',
-    qrApp: 'field',
-    shareTitle: 'Aim4price Field Manager',
-    shareText: 'Open Aim4price Field Manager here:',
-    listEndpoint: '/api/field-managers',
-    itemEndpoint: (id) => `/api/field-managers/${encodeURIComponent(id)}`,
-    listKey: 'managers',
-    itemKey: 'manager',
-    itemLabel: 'Field Manager',
-    itemPlural: 'Field Manager logins',
-    displayNameLabel: 'Manager display name',
-    displayNamePlaceholder: 'Example: Piet Field Manager',
-    usernamePlaceholder: 'example: piet.manager',
-    passwordLabel: 'Password',
-    passwordMinimum: 6,
-    passwordMaximum: 128,
-    roleField: null,
-    roleLabel: '',
-    defaultRole: '',
-    roleOptions: [],
-    roleValue: () => '',
-    roleSummary: () => '',
-    createSuccess: 'Field Manager login created.',
-    updateSuccess: 'Field Manager login updated.',
-    updatePasswordSuccess: 'Field Manager login and password updated.',
-    activeSuccess: 'Field Manager login activated.',
-    inactiveSuccess: 'Field Manager login deactivated.',
-    deleteSuccess: 'Field Manager login deleted.',
-  },
+
 };
 
 function LoginDetailIcon({ kind }: { kind: 'person' | 'shield' | 'clock' | 'gear' }) {
@@ -1122,109 +1093,13 @@ function AppAccessManagement({ kind, configOverride }: {
           passwordLabel={config.passwordLabel}
           roleField={config.roleField ?? undefined} currentRole={config.roleValue(selectedRecord)}
           roleOptions={kind === 'owner' ? undefined : config.roleOptions.map(option => ({ value: option.value, label: option.label, text: option.description ?? '' }))}
-          renderPermissions={kind === 'field' ? onSaved => <FieldManagerAccessPanel key="permissions" managerId={selectedRecord.id} section="permissions" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : undefined}
-          renderFuelAccess={kind === 'field' ? onSaved => <FieldManagerAccessPanel key="fuel" managerId={selectedRecord.id} section="fuel" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : undefined}
-          renderAssetAccess={kind === 'dealer' ? undefined : kind === 'field' ? onSaved => <FieldManagerAccessPanel key="assets" managerId={selectedRecord.id} section="assets" onSaved={onSaved} onDirtyChange={setOwnerDirty} onBusyChange={setOwnerAccessBusy}/> : (onSaved) => <OwnerAppAssetAccessPanel userId={selectedRecord.id} onSaved={() => { setOwnerDirty(false); setNotice({ tone: 'success', message: 'Asset access saved.' }); onSaved(); }} onBusyChange={setOwnerAccessBusy} onDirtyChange={setOwnerDirty} />}
+          renderPermissions={kind === 'owner' ? onSaved => <ManagerPermissionsPanel userId={selectedRecord.id} documentAccess={selectedRecord.documentAccess} documentIds={selectedRecord.documentIds} excludedDocumentIds={selectedRecord.excludedDocumentIds} fuelStorageIds={selectedRecord.fuelStorageIds} permissions={selectedRecord.permissions ?? managerPermissions(selectedRecord.accessRole)} onSave={(changes, message) => patchRecord(selectedRecord, changes, message || 'Permissions saved.')} onDirtyChange={setOwnerDirty} onSaved={onSaved}/> : undefined}
+
+          renderAssetAccess={kind === 'dealer' ? undefined : (onSaved) => <OwnerAppAssetAccessPanel userId={selectedRecord.id} onSaved={() => { setOwnerDirty(false); setNotice({ tone: 'success', message: 'Asset access saved.' }); onSaved(); }} onBusyChange={setOwnerAccessBusy} onDirtyChange={setOwnerDirty} />}
         />}
       </AppAccessModal>
     </main>
   );
-}
-
-function FieldManagerAccessPanel({ managerId, section, onSaved, onDirtyChange, onBusyChange }: { managerId: string; section: 'permissions' | 'assets' | 'fuel'; onSaved: () => void; onDirtyChange: (dirty: boolean) => void; onBusyChange: (busy: boolean) => void }) {
-  const savedSettings = useRef('');
-  const [picker, setPicker] = useState<'groupIds' | 'assetIds' | 'fuelStorageIds' | null>(null);
-  const [settings, setSettings] = useState<ManagerAccessSettings | null>(null);
-  const [assets, setAssets] = useState<NonNullable<ManagerAccessResponse['assets']>>([]);
-  const [groups, setGroups] = useState<NonNullable<ManagerAccessResponse['groups']>>([]);
-  const [storages, setStorages] = useState<NonNullable<ManagerAccessResponse['storages']>>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
-
-  useEffect(() => {
-    let active = true;
-    void fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, { credentials: 'include', cache: 'no-store' })
-      .then(async (response) => ({ response, payload: await response.json().catch(() => null) as ManagerAccessResponse | null }))
-      .then(({ response, payload }) => {
-        if (!active) return;
-        if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
-        savedSettings.current = JSON.stringify(payload.settings);
-        setSettings(payload.settings);
-        setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
-        setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
-        setStorages(sortAccessOptions(payload.storages ?? [], (storage) => storage.name));
-      })
-      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [managerId]);
-
-  useEffect(() => { onDirtyChange(!!settings && JSON.stringify(settings) !== savedSettings.current); }, [settings, onDirtyChange]);
-  useEffect(() => { onBusyChange(loading || saving); return () => onBusyChange(false); }, [loading, saving, onBusyChange]);
-
-  async function saveAccess() {
-    if (!settings) return;
-    setSaving(true);
-    setMessage('');
-    try {
-      const response = await fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
-      const payload = await response.json().catch(() => null) as ManagerAccessResponse | null;
-      if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
-      setSettings(payload.settings);
-      savedSettings.current = JSON.stringify(payload.settings);
-      onDirtyChange(false);
-      setMessage('Changes saved.');
-      onSaved();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to save access.');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) return <div className={styles.accessPanel}><p className={styles.accessMessage}>Loading app access…</p></div>;
-  if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
-
-  const choices = section === 'fuel' ? FUEL_SCOPE_OPTIONS : ASSET_SCOPE_OPTIONS;
-  const scopeKey = section === 'fuel' ? 'fuelScope' : 'assetScope';
-  return <section className={ownerStyles.assetPanel} data-field-section={section} aria-label={`Field Manager ${section}`}>
-    <fieldset className={ownerStyles.fields} disabled={saving}>
-      {section === 'permissions' ? <div className={ownerStyles.choices}>{([
-        ['canRecordWork', 'Check, service and repair', 'tools'],
-        ['canScheduleMaintenance', 'Schedule maintenance', 'clock'],
-        ['canRecordFuel', 'Fuel assets', 'box'],
-        ['canRefillFuel', 'Refill fuel tanks', 'box'],
-      ] as const).map(([key, label, icon]) => <label key={key} className={ownerStyles.choice} data-selected={settings[key]} data-permission-tone={key === 'canRecordWork' || key === 'canScheduleMaintenance' ? 'maintenance' : 'fuel'}>
-        <input type="checkbox" checked={settings[key]} onChange={event => setSettings(current => current ? { ...current, [key]: event.target.checked } : current)}/>
-        <span className={ownerStyles.roleIcon}><AccessSectionIcon name={icon}/></span><strong>{label}</strong>
-      </label>)}</div> : <>
-        <div className={ownerStyles.choices}>{choices.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings[scopeKey] === option.value}>
-          <input type="radio" name={`field-${section}-scope`} checked={settings[scopeKey] === option.value} onChange={() => setSettings(current => current ? { ...current, [scopeKey]: option.value } : current)}/>
-          <span><strong>{option.label}</strong><small>{option.description}</small></span>
-        </label>)}</div>
-        {settings[scopeKey] === 'selected' ? <div className={ownerStyles.pickerCards}>{(section === 'fuel' ? [
-          { key: 'fuelStorageIds' as const, title: 'Choose fuel tanks', icon: 'box' },
-        ] : [
-          { key: 'groupIds' as const, title: 'Umbrellas', icon: 'umbrella' },
-          { key: 'assetIds' as const, title: 'Choose assets', icon: 'assets' },
-        ]).map(choice => <button key={choice.key} type="button" className={ownerStyles.card} onClick={() => setPicker(choice.key)}>
-          <span className={ownerStyles.icon}><AccessSectionIcon name={choice.icon}/></span><span className={ownerStyles.copy}><strong>{choice.title}</strong><small>{settings[choice.key].length} selected</small></span>
-        </button>)}</div> : null}
-      </>}
-    </fieldset>
-    {section !== 'permissions' && settings[scopeKey] === 'selected' ? <p className={ownerStyles.hint} aria-live="polite">{section === 'fuel'
-      ? settings.fuelStorageIds.length ? `${settings.fuelStorageIds.length} fuel tank${settings.fuelStorageIds.length === 1 ? '' : 's'} selected.` : 'No fuel tanks selected. This person will have no fuel tank access.'
-      : settings.assetIds.length || settings.groupIds.length ? `${settings.assetIds.length} individual assets and ${settings.groupIds.length} umbrellas selected.` : 'No assets selected. This person will have no asset access.'}</p> : null}
-    {picker ? <OwnerAccessPicker standardAssets={picker === 'assetIds'} compact title={picker === 'groupIds' ? 'Choose umbrellas' : picker === 'assetIds' ? 'Choose assets' : 'Choose fuel tanks'} description={picker === 'groupIds' ? 'Includes current and future linked assets.' : 'Choose access for this login.'} selected={settings[picker]} options={picker === 'groupIds' ? groups.map(group => ({ id: group.id, title: group.name, detail: `${group.memberCount} linked assets` })) : picker === 'assetIds' ? assets.map(assetAccessChoice) : storages.map(storage => ({ id: storage.id, title: storage.name, detail: storage.locationLabel }))} onClose={() => setPicker(null)} onConfirm={ids => { setSettings(current => current ? { ...current, [picker]: ids } : current); setPicker(null); }}/> : null}
-    {message ? <p role="status" className={styles.accessMessage}>{message}</p> : null}
-    <LoginSaveFooter dirty={JSON.stringify(settings) !== savedSettings.current}><button type="button" className={ownerStyles.primary} disabled={saving || JSON.stringify(settings) === savedSettings.current} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save access'}</button></LoginSaveFooter>
-  </section>;
 }
 
 function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange }: { userId: string; onSaved?: () => void; onBusyChange?: (busy: boolean) => void; onDirtyChange?: (dirty: boolean) => void }) {
@@ -1291,7 +1166,7 @@ function OwnerAppAssetAccessPanel({ userId, onSaved, onBusyChange, onDirtyChange
   const includedCount = new Set([...settings.assetIds, ...groups.filter(group => settings.groupIds.includes(group.id)).flatMap(group => group.memberAssetIds ?? []), ...assets.filter(asset => asset.registerId && settings.registerIds?.includes(asset.registerId)).map(asset => asset.id)]).size;
   const countLabel = (count: number, label: string) => `${count} ${label}${count === 1 ? '' : 's'}`;
   return (
-    <section className={`${styles.accessPanel} ${ownerStyles.assetPanel}`} aria-label="Owner App asset access">
+    <section className={`${styles.accessPanel} ${ownerStyles.assetPanel}`} aria-label="Manager App asset access">
       <fieldset className={ownerStyles.fields} disabled={saving} aria-label="Asset access">
         <div className={ownerStyles.choices}>{ASSET_SCOPE_OPTIONS.map(option => <label key={option.value} className={ownerStyles.choice} data-selected={settings.assetScope === option.value}>
           <input type="radio" name="owner-asset-scope" checked={settings.assetScope === option.value} onChange={() => setSettings(current => current ? { ...current, assetScope: option.value } : current)} />
@@ -1348,10 +1223,3 @@ export function DealerAppAccessManagement({ middlemanMode = false }: { middleman
 export function OwnerAppAccessManagement() {
   return <AppAccessManagement kind="owner" />;
 }
-
-export function FieldManagerAppAccessManagement() {
-  return <AppAccessManagement kind="field" />;
-}
-
-
-

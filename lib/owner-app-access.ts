@@ -1,3 +1,5 @@
+import { managerPermissions } from './manager-permissions';
+import type { TeamPermission, TeamPermissions } from './team-access-policy';
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from './account-profile';
 import { getServerSession, isOwnerAppSession } from './auth-session';
@@ -11,18 +13,14 @@ import {
 
 export type OwnerAppPermission = 'view' | 'operate' | 'manage_assets' | 'manage_finance' | 'manage_marketplace' | 'manage_access';
 
-const ROLE_PERMISSIONS: Record<OwnerAppAccessRole, readonly OwnerAppPermission[]> = {
-  admin: ['view', 'operate', 'manage_assets', 'manage_finance', 'manage_marketplace', 'manage_access'],
-  operations: ['view', 'operate'],
-  view_only: ['view'],
-};
-
 export type OwnerAppAccess = {
   ownerUserId: string;
   displayName: string;
   ownerAppUserId: string | null;
   accessRole: OwnerAppAccessRole;
   permissions: readonly OwnerAppPermission[];
+  teamPermissions: TeamPermissions;
+  fuelStorageIds: readonly string[] | null;
   viewerKey: string;
   sessionKind: 'account' | 'owner-app-user';
   assetScope: 'all' | 'selected';
@@ -44,13 +42,18 @@ export async function getOwnerAppAccess(): Promise<OwnerAppAccess | null> {
   const managedUser = ownerAppSession ? await getOwnerAppUserById(session.ownerApp.ownerAppUserId) : null;
   if (ownerAppSession && (!managedUser || !managedUser.is_active || managedUser.parent_owner_user_id !== session.user.id)) return null;
   const accessRole: OwnerAppAccessRole = ownerAppSession ? normalizeOwnerAppAccessRole(managedUser?.access_role) : 'admin';
-  const assetAccess = ownerAppSession && accessRole !== 'admin'
+  const assetAccess = ownerAppSession
     ? await getOwnerAppAssetAccessSettings(session.user.id, session.ownerApp.ownerAppUserId)
     : { assetScope: 'all' as const, assetIds: [], groupIds: [] };
   const accessibleAssetIds = ownerAppSession && assetAccess.assetScope === 'selected'
     ? await resolveOwnerAppAccessibleAssetIds(session.user.id, session.ownerApp.ownerAppUserId)
     : [];
 
+  const teamPermissions = managerPermissions(accessRole, managedUser?.permissions);
+  const isAccountHolder = !ownerAppSession || (accessRole === 'admin' && managedUser?.permissions == null && assetAccess.assetScope === 'all');
+  const permissions: OwnerAppPermission[] = ['view'];
+  if (isAccountHolder || teamPermissions.completeMaintenance || teamPermissions.recordMaintenance || teamPermissions.addFuel || teamPermissions.recordFuelIssues || teamPermissions.refillFuel || teamPermissions.updateUsage) permissions.push('operate');
+  if (isAccountHolder) permissions.push('manage_assets', 'manage_finance', 'manage_marketplace', 'manage_access');
   return {
     ownerUserId: session.user.id,
     displayName: ownerAppSession
@@ -58,7 +61,9 @@ export async function getOwnerAppAccess(): Promise<OwnerAppAccess | null> {
       : profile.businessName || profile.displayName || profile.name || 'Owner',
     ownerAppUserId: ownerAppSession ? session.ownerApp.ownerAppUserId : null,
     accessRole,
-    permissions: ROLE_PERMISSIONS[accessRole],
+    permissions,
+    teamPermissions,
+    fuelStorageIds: managedUser?.fuel_storage_ids ?? null,
     viewerKey: ownerAppSession ? `user:${session.ownerApp.ownerAppUserId}` : `account:${session.user.id}`,
     sessionKind: ownerAppSession ? 'owner-app-user' : 'account',
     assetScope: assetAccess.assetScope,
@@ -66,8 +71,9 @@ export async function getOwnerAppAccess(): Promise<OwnerAppAccess | null> {
   };
 }
 
-export function ownerAppCan(access: OwnerAppAccess, permission: OwnerAppPermission): boolean {
-  return access.permissions.includes(permission);
+export function ownerAppCan(access: OwnerAppAccess, permission: OwnerAppPermission | TeamPermission): boolean {
+  if (permission in access.teamPermissions) return access.teamPermissions[permission as TeamPermission];
+  return access.permissions.includes(permission as OwnerAppPermission);
 }
 
 export function ownerAppCanAccessAsset(access: OwnerAppAccess, assetId: unknown): boolean {
@@ -80,4 +86,8 @@ export async function requireOwnerAppPageAccess(): Promise<OwnerAppAccess> {
   const access = await getOwnerAppAccess();
   if (!access) redirect('/owner-app/login');
   return access;
+}
+
+export function managerCanAccessTank(access: OwnerAppAccess, id: string): boolean {
+  return access.teamPermissions.viewFuelStorage && (access.fuelStorageIds === null || access.fuelStorageIds.includes(id));
 }

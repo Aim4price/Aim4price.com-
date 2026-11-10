@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     ]);
     const ledger = await filterFuelLedgerForWorkspace(workspace, unfilteredLedger);
     const accessibleEvents = workspaceAssetIds
-      ? unfilteredEvents.filter(event => teamFuelEventVisible(event, workspaceAssetIds, workspace.team!.grant.permissions)).map(event => projectTeamFuelEvent(event, workspace.team!.grant.permissions, workspace.team!.grant.id))
+      ? unfilteredEvents.filter(event => (!workspace.team!.grant.fuelStorageIds || !event.storageId || workspace.team!.grant.fuelStorageIds.includes(event.storageId)) && teamFuelEventVisible(event, workspaceAssetIds, workspace.team!.grant.permissions)).map(event => projectTeamFuelEvent(event, workspace.team!.grant.permissions, workspace.team!.grant.id))
       : unfilteredEvents;
 
     const selectedAsset = assetId ? ledger.assets.find(asset=>asset.id === assetId) : null;

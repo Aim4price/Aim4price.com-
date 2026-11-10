@@ -1,3 +1,8 @@
+import { listAccountDocuments } from './account-documents';
+import { listManagerFuelStorages } from './manager-operational-assets';
+import { migrateManagerUsers } from './manager-user-migration';
+import { managerPermissions } from './manager-permissions';
+import { normalizeTeamPermissions, type TeamPermissions } from './team-access-policy';
 import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
 import { normalizeAppLogin } from './app-login-name';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
@@ -12,7 +17,7 @@ const scryptAsync = promisify(scrypt);
 export const OWNER_APP_PASSCODE_LENGTH = 4;
 export const OWNER_APP_MAX_FAILED_ATTEMPTS = 5;
 export const OWNER_APP_LOCK_MINUTES = 15;
-export type OwnerAppAccessRole = 'admin' | 'operations' | 'view_only';
+export type OwnerAppAccessRole = 'admin' | 'operations' | 'view_only' | 'viewer' | 'operator' | 'workshop' | 'office' | 'manager';
 
 type OwnerAppUserRow = {
   id: string;
@@ -23,6 +28,11 @@ type OwnerAppUserRow = {
   password_hash: string;
   is_active: boolean;
   access_role: OwnerAppAccessRole;
+  permissions: TeamPermissions | null;
+  fuel_storage_ids: string[] | null;
+  document_access: 'none' | 'selected' | 'all';
+  document_ids: string[];
+  excluded_document_ids: string[];
   session_version: number;
   failed_login_attempts: number;
   login_locked_until: string | Date | null;
@@ -38,6 +48,11 @@ export type OwnerAppUserRecord = {
   username: string;
   isActive: boolean;
   accessRole: OwnerAppAccessRole;
+  permissions: TeamPermissions;
+  fuelStorageIds: string[] | null;
+  documentAccess: 'none' | 'selected' | 'all';
+  documentIds: string[];
+  excludedDocumentIds: string[];
   sessionVersion: number;
   lastLoginAtIso: string | null;
   createdAtIso: string;
@@ -71,6 +86,9 @@ function mapOwnerAppUser(row: OwnerAppUserRow): OwnerAppUserRecord {
     username: row.username,
     isActive: Boolean(row.is_active),
     accessRole: normalizeOwnerAppAccessRole(row.access_role),
+    permissions: managerPermissions(row.access_role, row.permissions),
+    fuelStorageIds: row.fuel_storage_ids ?? null, documentAccess: row.document_access || 'none',
+    documentIds: row.document_ids || [], excludedDocumentIds: row.excluded_document_ids || [],
     sessionVersion: Number(row.session_version || 1),
     lastLoginAtIso: toIso(row.last_login_at),
     createdAtIso: toIso(row.created_at) ?? new Date().toISOString(),
@@ -102,6 +120,9 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
   await db.query('alter table public.owner_app_users add column if not exists failed_login_attempts integer not null default 0');
   await db.query('alter table public.owner_app_users add column if not exists login_locked_until timestamptz');
   await db.query(`alter table public.owner_app_users add column if not exists access_role text not null default 'operations'`);
+  await db.query('alter table public.owner_app_users add column if not exists permissions jsonb');
+  await db.query('alter table public.owner_app_users add column if not exists fuel_storage_ids uuid[]');
+  await db.query(`ALTER TABLE owner_app_users ADD COLUMN IF NOT EXISTS document_access text NOT NULL DEFAULT 'none', ADD COLUMN IF NOT EXISTS document_ids jsonb NOT NULL DEFAULT '[]', ADD COLUMN IF NOT EXISTS excluded_document_ids jsonb NOT NULL DEFAULT '[]'`);
   await db.query('create unique index if not exists idx_owner_app_users_username_normalized on public.owner_app_users(username_normalized)');
   await db.query('create index if not exists idx_owner_app_users_parent on public.owner_app_users(parent_owner_user_id, created_at desc)');
   await db.query('create index if not exists idx_owner_app_users_active on public.owner_app_users(parent_owner_user_id, is_active)');
@@ -147,6 +168,7 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
   await db.query('alter table public.owner_app_overview_dismissals drop constraint if exists owner_app_overview_dismissals_pkey');
   await db.query('create unique index if not exists idx_owner_app_overview_viewer_source on public.owner_app_overview_dismissals(parent_owner_user_id, viewer_key, source_kind, source_id)');
   await db.query('create index if not exists idx_owner_app_overview_dismissals_asset on public.owner_app_overview_dismissals(asset_register_item_id)');
+  await migrateManagerUsers();
 }
 
 export async function ensureOwnerAppTables(): Promise<void> {
@@ -169,6 +191,7 @@ export function normalizeOwnerAppUsername(value: unknown): string {
 
 export function normalizeOwnerAppAccessRole(value: unknown): OwnerAppAccessRole {
   const normalized = cleanText(value).toLowerCase().replace(/[\s-]+/g, '_');
+  if (['viewer', 'operator', 'workshop', 'office', 'manager'].includes(normalized)) return normalized as OwnerAppAccessRole;
   if (normalized === 'admin' || normalized === 'owner_admin') return 'admin';
   if (normalized === 'view_only' || normalized === 'viewer') return 'view_only';
   return 'operations';
@@ -196,6 +219,11 @@ export async function getOwnerAppAssetAccessSettings(
     group_ids: unknown;
     register_ids: unknown;
     access_role: OwnerAppAccessRole;
+  permissions: TeamPermissions | null;
+  fuel_storage_ids: string[] | null;
+  document_access: 'none' | 'selected' | 'all';
+  document_ids: string[];
+  excluded_document_ids: string[];
   }>(
     `select
       coalesce(settings.asset_scope, 'all') as asset_scope,
@@ -218,10 +246,7 @@ export async function getOwnerAppAssetAccessSettings(
     [parentOwnerUserId, ownerAppUserId],
   );
   const row = result.rows[0];
-  if (!row) throw new Error('Owner App user not found.');
-  if (normalizeOwnerAppAccessRole(row.access_role) === 'admin') {
-    return { assetScope: 'all', assetIds: [], groupIds: [], registerIds: [] };
-  }
+  if (!row) throw new Error('Manager App user not found.');
   return {
     assetScope: ownerAssetAccessScope(row.asset_scope),
     assetIds: uuidList(row.asset_ids),
@@ -263,9 +288,8 @@ export async function updateOwnerAppAssetAccessSettings(
   const current = await getOwnerAppAssetAccessSettings(parentOwnerUserId, ownerAppUserId);
   const ownerAppUser = await getOwnerAppUserById(ownerAppUserId);
   if (!ownerAppUser || ownerAppUser.parent_owner_user_id !== parentOwnerUserId) {
-    throw new Error('Owner App user not found.');
+    throw new Error('Manager App user not found.');
   }
-  if (normalizeOwnerAppAccessRole(ownerAppUser.access_role) === 'admin') return current;
 
   const assetScope = ownerAssetAccessScope(input.assetScope);
   const requestedAssetIds = uuidList(input.assetIds);
@@ -280,7 +304,11 @@ export async function updateOwnerAppAssetAccessSettings(
   const assetIds = requestedAssetIds.filter((assetId) => ownedAssetIds.has(assetId));
   const groupIds = requestedGroupIds.filter((groupId) => ownedGroupIds.has(groupId));
   const registerIds = uuidList(input.registerIds ?? current.registerIds).filter(id => registers.some(register => register.id === id));
-  const db = getDb();
+  const db = await getDb().connect();
+  try {
+  await db.query('BEGIN');
+  const locked = await db.query('SELECT id FROM owner_app_users WHERE id=$1 AND parent_owner_user_id=$2 FOR UPDATE', [ownerAppUserId,parentOwnerUserId]);
+  if (!locked.rowCount) throw new Error('Manager user not found.');
 
   await db.query(
     `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, register_ids, updated_at)
@@ -304,6 +332,9 @@ export async function updateOwnerAppAssetAccessSettings(
       [ownerAppUserId, groupIds],
     );
   }
+  await db.query('UPDATE owner_app_users SET session_version=session_version+1 WHERE id=$1 AND parent_owner_user_id=$2', [ownerAppUserId,parentOwnerUserId]);
+  await db.query('COMMIT');
+  } catch (error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
   return getOwnerAppAssetAccessSettings(parentOwnerUserId, ownerAppUserId);
 }
 
@@ -323,8 +354,8 @@ export async function verifyOwnerAppPassword(password: string, encoded: string):
 
 function validatePasscode(value: unknown): string {
   const password = typeof value === 'string' ? value : '';
-  if (password.length < 4 || password.length > 64 || !/\S/.test(password)) {
-    throw new Error('Passcode must contain between 4 and 64 characters.');
+  if (password.length < 4 || password.length > 128 || !/\S/.test(password)) {
+    throw new Error('Passcode must contain between 4 and 128 characters.');
   }
   return password;
 }
@@ -353,9 +384,9 @@ export async function createOwnerAppUser(
   try {
     const result = await withUniqueAppUsername(username, 'owner', null, undefined, async (db) => db.query<OwnerAppUserRow>(
       `insert into public.owner_app_users (
-        parent_owner_user_id, display_name, username, username_normalized, password_hash, is_active, access_role
-      ) values ($1, $2, $3, $3, $4, true, $5) returning *`,
-      [parentOwnerUserId, displayName, username, await hashOwnerAppPassword(password), accessRole],
+        parent_owner_user_id, display_name, username, username_normalized, password_hash, is_active, access_role, permissions
+      ) values ($1, $2, $3, $3, $4, true, $5, $6::jsonb) returning *`,
+      [parentOwnerUserId, displayName, username, await hashOwnerAppPassword(password), accessRole, JSON.stringify(managerPermissions(accessRole, input.permissions))],
     ));
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
@@ -375,7 +406,7 @@ export async function updateOwnerAppUser(
     [id, parentOwnerUserId],
   );
   const row = current.rows[0];
-  if (!row) throw new Error('Owner App user not found.');
+  if (!row) throw new Error('Manager App user not found.');
 
   const displayName = Object.hasOwn(input, 'displayName')
     ? cleanText(input.displayName).replace(/\s+/g, ' ').slice(0, 120)
@@ -391,7 +422,19 @@ export async function updateOwnerAppUser(
   const passwordHash = passwordChanged
     ? await hashOwnerAppPassword(validatePasscode(input.password))
     : row.password_hash;
-  const mustRevoke = username !== row.username_normalized || passwordChanged || isActive !== row.is_active || accessRole !== normalizeOwnerAppAccessRole(row.access_role);
+  const permissions = Object.hasOwn(input, 'permissions') ? normalizeTeamPermissions(input.permissions) : Object.hasOwn(input, 'accessRole') ? managerPermissions(accessRole) : managerPermissions(row.access_role, row.permissions);
+  const documentAccess = Object.hasOwn(input, 'documentAccess') ? String(input.documentAccess) : row.document_access || 'none';
+  if (!['none','selected','all'].includes(documentAccess)) throw new Error('Choose valid document access.');
+  const ownedDocuments = Object.hasOwn(input, 'documentIds') || Object.hasOwn(input, 'excludedDocumentIds') ? new Set((await listAccountDocuments(parentOwnerUserId)).map(d => d.id)) : null;
+  const documentIds = Object.hasOwn(input, 'documentIds') ? uuidList(input.documentIds).filter(id => ownedDocuments!.has(id)) : row.document_ids || [];
+  const excludedDocumentIds = Object.hasOwn(input, 'excludedDocumentIds') ? uuidList(input.excludedDocumentIds).filter(id => ownedDocuments!.has(id)) : row.excluded_document_ids || [];
+  const fuelStorageIds = Object.hasOwn(input, 'fuelStorageIds') ? input.fuelStorageIds === null ? null : uuidList(input.fuelStorageIds) : row.fuel_storage_ids;
+  if (fuelStorageIds) {
+    const owned = new Set((await listManagerFuelStorages(parentOwnerUserId)).map(t => t.id));
+    if (fuelStorageIds.some(id => !owned.has(id))) throw new Error('Choose fuel tanks belonging to this account.');
+  }
+  const scopeChanged = documentAccess !== row.document_access || JSON.stringify(documentIds) !== JSON.stringify(row.document_ids || []) || JSON.stringify(excludedDocumentIds) !== JSON.stringify(row.excluded_document_ids || []) || JSON.stringify(fuelStorageIds) !== JSON.stringify(row.fuel_storage_ids);
+  const mustRevoke = scopeChanged || JSON.stringify(permissions) !== JSON.stringify(managerPermissions(row.access_role, row.permissions)) || username !== row.username_normalized || passwordChanged || isActive !== row.is_active || accessRole !== normalizeOwnerAppAccessRole(row.access_role);
 
   try {
     const result = await withUniqueAppUsername(username, 'owner', id, row.username_normalized, (db) => db.query<OwnerAppUserRow>(
@@ -403,23 +446,12 @@ export async function updateOwnerAppUser(
         is_active = $6,
         access_role = $7,
         session_version = session_version + $8,
+        permissions = $9::jsonb, document_access=$10, document_ids=$11::jsonb, excluded_document_ids=$12::jsonb, fuel_storage_ids=$13::uuid[],
         updated_at = now()
       where id = $1::uuid and parent_owner_user_id = $2
       returning *`,
-      [id, parentOwnerUserId, displayName, username, passwordHash, isActive, accessRole, mustRevoke ? 1 : 0],
+      [id, parentOwnerUserId, displayName, username, passwordHash, isActive, accessRole, mustRevoke ? 1 : 0, JSON.stringify(permissions), documentAccess, JSON.stringify(documentIds), JSON.stringify(excludedDocumentIds), fuelStorageIds],
     ));
-    if (accessRole === 'admin') {
-      await Promise.all([
-        getDb().query(
-          `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, updated_at)
-           values ($1::uuid, 'all', now())
-           on conflict (owner_app_user_id) do update set asset_scope = 'all', updated_at = now()`,
-          [id],
-        ),
-        getDb().query('delete from public.owner_app_user_asset_access where owner_app_user_id = $1::uuid', [id]),
-        getDb().query('delete from public.owner_app_user_group_access where owner_app_user_id = $1::uuid', [id]),
-      ]);
-    }
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
     if (error?.code === '23505') throw new Error('That username is already in use.');
@@ -429,11 +461,17 @@ export async function updateOwnerAppUser(
 
 export async function deleteOwnerAppUser(parentOwnerUserId: string, id: string): Promise<void> {
   await ensureOwnerAppTables();
-  const result = await getDb().query(
-    'delete from public.owner_app_users where id = $1::uuid and parent_owner_user_id = $2',
-    [id, parentOwnerUserId],
-  );
-  if (!result.rowCount) throw new Error('Owner App user not found.');
+  const client = await getDb().connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query('delete from public.owner_app_users where id=$1::uuid and parent_owner_user_id=$2', [id,parentOwnerUserId]);
+    if (!result.rowCount) throw new Error('Manager App user not found.');
+    if ((await client.query("SELECT to_regclass('public.team_access') AS name")).rows[0]?.name) {
+      await client.query("UPDATE team_access SET status='revoked',version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 AND username=$3", [id,parentOwnerUserId,`manager:${id}`]);
+    }
+    await client.query('COMMIT');
+  } catch (error) { await client.query('ROLLBACK'); throw error; }
+  finally { client.release(); }
 }
 
 export async function findOwnerAppUserForLogin(username: string): Promise<OwnerAppUserRow | null> {

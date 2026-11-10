@@ -1645,7 +1645,7 @@ export default function AssetMapClient() {
           closeLocationDialog();
         }}/>
       </AssetAccessSettingsDialog>}
-      {desktop.dialog}<AppHeader active="asset-register" />
+      {desktop.dialog}{!desktop.workspace?.native && <AppHeader active="asset-register" />}
 
       <section className={styles.shell}>
         <article

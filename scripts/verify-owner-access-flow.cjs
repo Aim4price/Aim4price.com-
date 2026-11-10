@@ -83,16 +83,11 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const field=await page.$('input[value="Example Owner"]');await field.click({clickCount:3});await field.type('Updated Owner');
  await click('Save access');await page.waitForFunction(()=>window.writes.length===1);
  assert.equal(await page.evaluate(()=>window.writes[0].displayName),'Updated Owner');
- await click('Permissions');await page.waitForSelector('input[value="view_only"]');await page.click('label:has(input[value="view_only"])');await click('Save access');await page.waitForFunction(()=>window.writes.length===2);
+ await click('Permissions');await page.waitForSelector('[aria-label="Manager permissions"]');await click('View only');await click('Save permissions');await page.waitForFunction(()=>window.writes.length===2);
+ await click('Permissions');
+ assert.equal(await page.$$eval('[aria-label="Manager permissions"] button[aria-pressed]',buttons=>buttons.length),5);
+ assert.equal(await page.evaluate(()=>window.writes[1].permissions.viewValues),false);
  await page.screenshot({path:'/tmp/owner-permissions-desktop.png'});
- assert(await page.$$eval('input[name="owner-role"]',inputs=>{
-   const cards=inputs.map(input=>input.closest('label').getBoundingClientRect());
-   return cards.length===3&&cards.every((card,index)=>Math.abs(card.left-cards[0].left)<1&&Math.abs(card.right-cards[0].right)<1&&(index===0||card.top>=cards[index-1].bottom));
- }),'Owner role cards form aligned full-width rows');
- assert(await page.$eval('label:has(input[value="operations"]) small',description=>{
-   const range=document.createRange();range.selectNodeContents(description);
-   return range.getClientRects().length===1&&description.scrollWidth<=description.clientWidth+1;
- }),'Operations description stays on one desktop line without clipping');
  await page.setViewport({width:390,height:844});await page.screenshot({path:'/tmp/owner-permissions-mobile.png'});await page.setViewport({width:1440,height:800});
  await click('Asset access');await page.waitForSelector('input[name="owner-asset-scope"]');
  await page.click('input[name="owner-asset-scope"]:not(:checked)');await click('Save access');await page.waitForFunction(()=>window.writes.length===3);

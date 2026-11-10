@@ -7,8 +7,8 @@ import type { ReactNode } from 'react';
 import styles from './owner-app.module.css';
 
 export const metadata: Metadata = {
-  applicationName: 'Aim4price Owner',
-  title: 'Aim4price Owner',
+  applicationName: 'Aim4price Manager',
+  title: 'Aim4price Manager',
   description: 'Mobile owner access to Aim4price assets, attention items, estimates and marketplace.',
   manifest: '/owner-app/manifest.webmanifest?v=2',
   icons: {
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/owner-app-apple-icon.png?v=2', sizes: '180x180', type: 'image/png' }],
   },
-  appleWebApp: { capable: true, title: 'Aim4price Owner', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'Aim4price Manager', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

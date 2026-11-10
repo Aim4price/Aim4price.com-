@@ -11,7 +11,6 @@ test('runtime table guards use a read-only schema probe before fallback DDL', as
     read('lib/dealer-asset-corrections.ts'),
     read('lib/dealer-maintenance-tracker.ts'),
     read('lib/asset-maintenance.ts'),
-    read('lib/field-manager.ts'),
   ]);
 
   for (const source of files) {

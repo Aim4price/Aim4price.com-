@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const requestedFormat = parseFormat(request.nextUrl.searchParams.get('format'));
-    // Owner App users may open the canonical HTML print document or download
+    // Manager App users may open the canonical HTML print document or download
     // the workbook.
     const format = ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'
       ? 'pdf'

@@ -1,6 +1,6 @@
 /** Layout for the printable history report; colours come from REPORT_THEME_CSS. */
 export const LOCATION_HISTORY_REPORT_CSS = `
-@font-face { font-family: Montserrat; src: url('/field-manager/montserrat-latin.woff') format('woff'); font-style: normal; font-weight: 100 900; font-display: swap; }
+@font-face { font-family: Montserrat; src: url('/fonts/montserrat-latin.woff') format('woff'); font-style: normal; font-weight: 100 900; font-display: swap; }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: Montserrat, 'Segoe UI', Arial, sans-serif; font-size: 10px; line-height: 1.45; }
 .screenBar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; background: #fff; border-bottom: 1px solid var(--line); }

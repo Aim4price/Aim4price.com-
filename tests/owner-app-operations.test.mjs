@@ -41,7 +41,7 @@ test('maintenance selection uses Overview typography, stacked asset cards and th
   assert.match(serviceModal, /<FuelLocationModal/);
   assert.match(serviceModal, /recordLabel = 'service'/);
   assert.match(serviceModal, /recordLabel=\{recordLabel\}/);
-  assert.match(serviceModal, /saveFieldManagerServiceLocation/);
+  assert.match(serviceModal, /saveManagerServiceLocation/);
   assert.match(locationModal, /recordLabel = 'fuel record'/);
   assert.match(balancedHeading, /\^\(\?:19\|20\)\\d\{2\}\$/);
   assert.match(balancedHeading, /\\u00A0/);
@@ -94,7 +94,7 @@ test('Owner Overview only completes scheduled maintenance through recorded work'
     source('app/owner-app/operations/maintenance/[assetId]/page.tsx'),
     source('app/scan/[publicAssetCode]/scan-client.tsx'),
     source('app/api/scan/assets/[publicAssetCode]/event/route.ts'),
-    source('app/field-manager/assets/[publicAssetCode]/maintenance/field-manager-maintenance-client.tsx'),
+    source('components/manager/maintenance-client.tsx'),
     source('app/api/owner-app/assets/[assetId]/actions/route.ts'),
   ]);
 
@@ -118,14 +118,13 @@ test('Owner Overview only completes scheduled maintenance through recorded work'
   assert.doesNotMatch(ownerActions, /completeAssetMaintenanceRecord/);
 });
 
-test('Owner and Field Manager Overview Clear actions require the item-specific confirmation flow', async () => {
-  const [ownerOverview, managerOverview, confirmation] = await Promise.all([
+test('Manager Overview Clear actions require the item-specific confirmation flow', async () => {
+  const [ownerOverview, confirmation] = await Promise.all([
     source('app/owner-app/attention/owner-attention-client.tsx'),
-    source('app/field-manager/field-manager-overview-client.tsx'),
-    source('app/field-manager/overview-clear-confirmation.tsx'),
+    source('components/manager/overview-clear-confirmation.tsx'),
   ]);
 
-  for (const overview of [ownerOverview, managerOverview]) {
+  for (const overview of [ownerOverview]) {
     assert.match(overview, /setClearCandidate\(item\)/);
     assert.match(overview, /<OverviewClearConfirmation/);
     assert.doesNotMatch(overview, /onClick=\{\(\) => void handleClearItem\(item\)\}/);
@@ -176,7 +175,7 @@ test('fuel selection supports storage tanks and petrol-station costs with signed
   assert.match(fuelClient, /<FuelLocationModal/);
   assert.match(fuelClient, /No fuel PIN or name is required\./);
   assert.match(fuelAuth, /ownerAccess\.ownerUserId !== storage\.userId/);
-  assert.match(listApi, /listFieldManagerFuelStorages\(access\.ownerUserId\)/);
+  assert.match(listApi, /listManagerFuelStorages\(access\.ownerUserId\)/);
 
   for (const route of [getRoute, issueRoute, refillRoute, dipstickRoute]) {
     assert.match(route, /ownerAppHint: isOwnerAppHint/);

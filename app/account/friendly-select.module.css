@@ -171,7 +171,7 @@
   visibility: hidden;
 }
 
-/* A quiet, readable access selector for Owner App users. */
+/* A quiet, readable access selector for Manager App users. */
 .ownerSelect .label { font-size: .9rem; font-weight: 650; letter-spacing: 0; text-transform: none; color: var(--app-text, #40564e); }
 .ownerSelect .button { min-height: 3.35rem; border-radius: .9rem; background: var(--app-surface-soft, #f3f8f5); box-shadow: none; }
 .ownerSelect .button:hover { transform: none; }

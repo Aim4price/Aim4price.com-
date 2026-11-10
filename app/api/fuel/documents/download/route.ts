@@ -15,15 +15,17 @@ export async function GET(request: NextRequest) {
   try {
     // Only a file already attached to this owner's ledger may be resolved.
     // Never fetch an arbitrary URL supplied by the browser.
-    const rows = await getDb().query<{ asset_id: string | null; upload_id: string | null }>(`
-      select asset_register_item_id::text as asset_id, upload_id from public.fuel_slips
+    const rows = await getDb().query<{ asset_id: string | null; storage_id: string | null; upload_id: string | null }>(`
+      select asset_register_item_id::text as asset_id, storage_id::text as storage_id, upload_id from public.fuel_slips
       where user_id = $1 and document_file_url = $2
       union
-      select asset_register_item_id::text as asset_id, null::text as upload_id from public.fuel_storage_events
+      select asset_register_item_id::text as asset_id, storage_id::text as storage_id, null::text as upload_id from public.fuel_storage_events
       where user_id = $1 and document_file_url = $2
     `, [workspace.context.ownerUserId, source]);
     if (!rows.rows.length) return new NextResponse('Not found', { status: 404 });
     if (workspace.context.team) for (const row of rows.rows) {
+      const tanks = workspace.context.team.grant.fuelStorageIds;
+      if (row.storage_id && tanks && !tanks.includes(row.storage_id)) return new NextResponse('Not found', { status: 404 });
       if (row.asset_id) await assertWorkspaceAssetAccess(workspace.context, row.asset_id);
       else if (!workspace.context.team.grant.permissions.viewFuelStorage) return new NextResponse('Not found', {status:404});
     }

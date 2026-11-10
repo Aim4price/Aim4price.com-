@@ -20,6 +20,8 @@ export async function resolveOwnerWorkspaceContext(
     const team = await getDesktopScope(url.searchParams.get('desktopMembershipId') || undefined);
     if (team) {
       assertTeamWorkspaceRequest(team.grant.permissions, url, request.method);
+      const tankId = url.pathname.match(/^\/api\/fuel\/storage\/([^/]+)$/)?.[1] || url.searchParams.get('storageId');
+      if (tankId && tankId !== 'all' && team.grant.fuelStorageIds && !team.grant.fuelStorageIds.includes(tankId)) throw new TeamAccessError('Fuel tank unavailable.', 404);
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         const origin = request.headers.get('origin');
         if (!origin || origin !== url.origin) throw new TeamAccessError('Reload this page before saving.');
@@ -62,13 +64,16 @@ export async function getWorkspaceAssetIds(context: OwnerWorkspaceContext): Prom
 export async function filterFuelLedgerForWorkspace(context: OwnerWorkspaceContext, ledger: FuelLedgerData): Promise<FuelLedgerData> {
   if (!context.team) return ledger;
   const ids = (await getWorkspaceAssetIds(context))!;
+  const tankIds = context.team.grant.fuelStorageIds;
+  if (tankIds) ledger = { ...ledger, storages: ledger.storages.filter(t => tankIds.includes(t.id)), recentEvents: ledger.recentEvents.filter(e => !e.storageId || tankIds.includes(e.storageId)), recentFuelSlips: ledger.recentFuelSlips.filter(s => !s.storageId || tankIds.includes(s.storageId)) };
   const projected = projectTeamFuelLedger(ledger,ids,context.team.grant.permissions,context.team.grant.id);
   const totals = (await getDb().query(`SELECT
     coalesce(sum(CASE WHEN event_type='asset_issue' THEN litres ELSE 0 END),0) AS issued,
     coalesce(sum(CASE WHEN event_type IN ('opening_balance','stock_in') THEN litres ELSE 0 END),0) AS filled
     FROM fuel_storage_events WHERE user_id=$1 AND created_at>=now()-interval '30 days'
-    AND (asset_register_item_id::text=ANY($2::text[]) OR (asset_register_item_id IS NULL AND $3=true))`,
-    [context.ownerUserId,[...ids],context.team.grant.permissions.viewFuelStorage])).rows[0];
+    AND (asset_register_item_id::text=ANY($2::text[]) OR (asset_register_item_id IS NULL AND $3=true))
+    AND ($4::text[] IS NULL OR storage_id::text=ANY($4::text[]) OR storage_id IS NULL)`,
+    [context.ownerUserId,[...ids],context.team.grant.permissions.viewFuelStorage,tankIds ?? null])).rows[0];
   projected.summary.issuedLitres30Days = Number(totals?.issued || 0);
   projected.summary.filledLitres30Days = Number(totals?.filled || 0);
   return projected;
@@ -79,6 +84,6 @@ export async function filterCostLedgerForWorkspace(context: OwnerWorkspaceContex
 export async function assertTeamFuelTarget(context: OwnerWorkspaceContext, value: { [key: string]: unknown }): Promise<void> {
   if (!context.team) return;
   if (value.targetType === 'asset') await assertWorkspaceAssetAccess(context, value.assetId || value.targetId);
-  else if (value.targetType !== 'storage_tank' || !context.team.grant.permissions.viewFuelStorage)
+  else if (value.targetType !== 'storage_tank' || !context.team.grant.permissions.viewFuelStorage || (context.team.grant.fuelStorageIds && !context.team.grant.fuelStorageIds.includes(String(value.storageId || value.targetId || ''))))
     throw new TeamAccessError('This fuel target is not available.');
 }

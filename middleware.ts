@@ -4,6 +4,13 @@ import { requestAppRealm, appRealmForPath } from './lib/app-realm';
 import { isolateAppCookies, hasAppCookies } from './lib/app-cookie-isolation';
 
 export function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  if (path === '/field-manager' || path.startsWith('/field-manager/') || path === '/account/field-manager') {
+    return NextResponse.redirect(new URL(path.startsWith('/account/') ? '/account/owner-app' : '/owner-app/login', request.url), 307);
+  }
+  if (path === '/api/field-managers' || path.startsWith('/api/field-managers/') || path.startsWith('/api/field-manager/')) {
+    return NextResponse.json({ ok: false, error: 'Field Manager has moved to Aim4price Manager. Sign in again.' }, { status: 410, headers: { 'Cache-Control': 'no-store' } });
+  }
   const isAdminApi = request.nextUrl.pathname === '/api/admin' || request.nextUrl.pathname.startsWith('/api/admin/');
   if (isAdminApi && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
     && !isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) {
@@ -13,7 +20,12 @@ export function middleware(request: NextRequest) {
   // Always replace client-supplied realm hints. A realm selects a cookie; the
   // signed token and active account subtype still authorize every request.
   requestHeaders.delete('x-aim4price-app-realm');
+  requestHeaders.set('x-aim4price-request-path', path);
+  requestHeaders.set('x-aim4price-request-method', request.method);
   const realm = requestAppRealm(request.nextUrl, request.headers.get('referer'), request.headers.get('x-aim4price-client-realm'));
+  if (realm === 'owner' && path.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) {
+    return NextResponse.json({ ok: false, error: 'Invalid request origin.' }, { status: 403 });
+  }
   const cookie = request.headers.get('cookie') ?? '';
   // OAuth consent uses an ordinary HTML form; use its same-origin Origin header.
   // Preserve its real website session even when unrelated app cookies are present.

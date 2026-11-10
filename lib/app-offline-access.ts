@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { currentAppRealm } from './app-realm-server';
 import { getOwnerAppAccess, ownerAppCan, type OwnerAppAccess } from './owner-app-access';
-import { requireActiveFieldManagerSession } from './field-manager-session';
-import { fieldManagerCan } from './field-manager';
 import { getServerSession, isDealerAppSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
 import { dealerRoleCan } from './dealer-app-access';
 import { isMiddlemanAccountSubtype } from './middleman-account';
 import { isTrustedNotificationRequest } from './notification-request-origin';
-export type OfflineApp = 'owner' | 'field' | 'dealer' | 'middleman';
+export type OfflineApp = 'owner' | 'dealer' | 'middleman';
 export const offlineHeaders = { 'Cache-Control': 'private, no-store' };
 export type OfflineAccess = {
   app: OfflineApp; identity: string; userId: string; actorId: string; displayName: string;
@@ -22,20 +20,14 @@ export async function requireAppOfflineAccess(request: NextRequest, app: string)
   { ok: true; access: OfflineAccess } | { ok: false; response: NextResponse }
 > {
   const deny = (message: string, status: number) => ({ ok: false as const, response: offlineError(message, status) });
-  if (!['owner', 'field', 'dealer', 'middleman'].includes(app) || await currentAppRealm() !== app) return deny('Open offline work from the correct app.', 403);
+  if (!['owner', 'dealer', 'middleman'].includes(app) || await currentAppRealm() !== app) return deny('Open offline work from the correct app.', 403);
   let access: OfflineAccess;
   const defaults = { canWork: false, canFuel: false, canRefill: false, canShowroom: false, canLeads: false };
-  if (app === 'field') {
-    const auth = await requireActiveFieldManagerSession(request);
-    if (!auth.ok) return deny(auth.error, auth.status);
-    const s = auth.session;
-    const [canWork, canFuel, canRefill] = await Promise.all(['record_work', 'record_fuel', 'refill_fuel'].map(p => fieldManagerCan(s.managerId, p as 'record_work' | 'record_fuel' | 'refill_fuel')));
-    access = { ...defaults, app, identity: `${s.ownerUserId}:${s.managerId}`, userId: s.ownerUserId, actorId: s.managerId, managerId: s.managerId, displayName: s.displayName, canWork, canFuel, canRefill };
-  } else if (app === 'owner') {
+  if (app === 'owner') {
     const owner = await getOwnerAppAccess();
-    if (!owner) return deny('Sign in to the Owner App to sync.', 401);
+    if (!owner) return deny('Sign in to the Manager App to sync.', 401);
     access = { ...defaults, app, identity: `owner:${owner.ownerUserId}:${owner.viewerKey}`, userId: owner.ownerUserId, actorId: owner.ownerAppUserId || owner.ownerUserId, displayName: owner.displayName, owner,
-      canWork: ownerAppCan(owner, 'operate'), canFuel: ownerAppCan(owner, 'operate'), canRefill: ownerAppCan(owner, 'operate') };
+      canWork: ownerAppCan(owner, 'recordMaintenance'), canFuel: ownerAppCan(owner, 'recordFuelIssues') || ownerAppCan(owner, 'addFuel'), canRefill: ownerAppCan(owner, 'refillFuel') };
   } else {
     const session = await getServerSession({ allowDealerApp: true });
     if (!session?.user?.id) return deny('Sign in to the account that prepared offline work.', 401);

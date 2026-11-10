@@ -4,15 +4,13 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-const [assetModal, dealerAccess, ownerAccess, fieldManagerAccess, friendlySelect, focusStyles, dealerStyles, fieldManagerStyles] = await Promise.all([
+const [assetModal, dealerAccess, ownerAccess, friendlySelect, focusStyles, dealerStyles] = await Promise.all([
   read('app/asset-register/asset-register-client.tsx'),
   read('app/account/dealer-app/dealer-access-client.tsx'),
   read('app/account/owner-app/owner-app-access-client.tsx'),
-  read('app/account/field-manager/field-manager-client.tsx'),
   read('app/account/friendly-select.tsx'),
   read('app/account/access-page-refinements.module.css'),
   read('app/account/dealer-app/page.module.css'),
-  read('app/account/field-manager/page.module.css'),
 ]);
 
 test('Update Asset usage uses the friendly Aim4price selector', () => {
@@ -22,11 +20,9 @@ test('Update Asset usage uses the friendly Aim4price selector', () => {
   assert.doesNotMatch(assetModal, /className=\{styles\.assetUsageTypeSelect\}/);
 });
 
-test('Owner and Field Manager access selectors avoid browser-native menus', () => {
+test('Manager access selectors avoid browser-native menus', () => {
   assert.match(ownerAccess, /<FriendlySelect/);
-  assert.match(fieldManagerAccess, /<FriendlySelect/);
   assert.doesNotMatch(ownerAccess, /<select value=\{draft\.accessRole\}/);
-  assert.doesNotMatch(fieldManagerAccess, /<select value=\{settings\.(assetScope|fuelScope)\}/);
   assert.match(friendlySelect, /createPortal/);
   assert.match(friendlySelect, /role="listbox"/);
   assert.match(friendlySelect, /aria-selected=\{active\}/);
@@ -35,20 +31,18 @@ test('Owner and Field Manager access selectors avoid browser-native menus', () =
 test('Access pages focus one user and mute the remaining cards', () => {
   assert.match(ownerAccess, /accessStyles\.focusedCard/);
   assert.match(ownerAccess, /accessStyles\.mutedCard/);
-  assert.match(fieldManagerAccess, /accessStyles\.focusedCard/);
-  assert.match(fieldManagerAccess, /accessStyles\.mutedCard/);
   assert.match(focusStyles, /filter: blur\(1\.5px\)/);
   assert.match(focusStyles, /pointer-events: none/);
 });
 
 test('All app access cards use a larger Manage target and bottom Close action', () => {
-  for (const source of [dealerAccess, ownerAccess, fieldManagerAccess]) {
+  for (const source of [dealerAccess, ownerAccess]) {
     assert.match(source, /Manage <span aria-hidden="true">›<\/span>/);
     assert.match(source, /className=\{styles\.manageCloseButton\}/);
     assert.doesNotMatch(source, /\? 'Close' : 'Manage'/);
   }
 
-  for (const styles of [dealerStyles, fieldManagerStyles]) {
+  for (const styles of [dealerStyles]) {
     assert.match(styles, /\.manageButton[\s\S]*?min-height: 3rem/);
     assert.match(styles, /\.managerActions[\s\S]*?justify-content: flex-end/);
     assert.match(styles, /\.manageCloseButton/);

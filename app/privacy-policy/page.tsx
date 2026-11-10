@@ -111,7 +111,7 @@ export default async function PrivacyPolicyPage() {
                 operator. Contact: aim4price@gmail.com; telephone +27 62 572 1650.
               </p>
               <p>
-                This policy covers our website, Owner, Dealer, Middleman and Field Manager
+                This policy covers our website, Aim4price Manager, Dealer and Middleman
                 experiences, estimates, Asset Registers, Document Vault, budgets, costs, fuel,
                 maintenance, reports, Advert Studio, showrooms, Invoice Drop, Discovery and Marketplace,
                 and professional workspaces where enabled. It also applies to people whose
@@ -153,7 +153,7 @@ export default async function PrivacyPolicyPage() {
               <h2>3. Where information comes from</h2>
               <p>
                 We receive information from you; account owners and their authorised staff, Dealers
-                and Field Managers; professional collaborators; uploaded documents and photos;
+                and Manager users; professional collaborators; uploaded documents and photos;
                 public Invoice Drop contributors; and your use of the platform. Catalogue research,
                 public business listings and user-supplied market information may also inform the
                 service. A public business listing does not mean the business is an Aim4price
@@ -249,7 +249,7 @@ export default async function PrivacyPolicyPage() {
               <h2>5. Owner-controlled access and collaboration</h2>
               <p>
                 An owner or authorised administrator selects sharing and staff permissions.
-                Depending on those permissions, Dealers, Middlemen, Field Managers, accountants,
+                Depending on those permissions, Dealers, Middlemen, Manager users, accountants,
                 insurers, financiers or other professionals may receive relevant asset details,
                 documents, contact information or workflow history. Authorised Aim4price staff may
                 access records to provide requested capture and support, maintain the service,
@@ -448,7 +448,7 @@ export default async function PrivacyPolicyPage() {
               <h2>10.2. Offline copies, GPS and sensitive information</h2>
               <p>
                 Where enabled, offline work stores an asset snapshot and queued updates or photos on
-                the device until synchronisation or local removal. The Field Manager offline feature
+                the device until synchronisation or local removal. The Manager offline feature
                 uses a PIN-protected encrypted local copy. Other downloads, browser caches and
                 exported reports are not automatically covered by that protection. Revocation on the
                 server cannot immediately remove or lock a disconnected device's copy.

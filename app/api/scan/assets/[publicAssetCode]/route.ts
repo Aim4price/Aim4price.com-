@@ -1,8 +1,9 @@
+import { getOwnerAppAccess, ownerAppCan } from "../../../../../lib/owner-app-access";
 import { NextRequest, NextResponse } from "next/server";
 import { listAssetMaintenanceRecords } from "../../../../../lib/asset-maintenance";
 import { safeAssetOwnerError } from "../../../../../lib/asset-owner-resolver";
 import {
-  authorizeFieldManagerScanAccess,
+  retiredAppScanAccess,
   authorizeOwnerAppScanAccess,
   authorizePublicQrScanAccess,
 } from "../../../../../lib/scan-auth";
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const access = isOwnerAppHint
     ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
     : isFieldManagerHint
-    ? await authorizeFieldManagerScanAccess(
+    ? await retiredAppScanAccess(
         request,
         publicAssetCode,
         requestedAssetId,
@@ -138,7 +139,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const recentEvents = await listRecentScanEvents(access.asset.id, 8);
+  const manager = access.accessMode === "owner_session" ? await getOwnerAppAccess() : null;
+  if (access.accessMode === "owner_session" && !manager) return NextResponse.json({ ok: false, error: "Sign in again." }, { status: 401 });
+  const recentEvents = manager ? [] : await listRecentScanEvents(access.asset.id, 8);
   let openMaintenance: Array<{
     id: string;
     maintenanceType: "service" | "checkup";
@@ -154,8 +157,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }> = [];
 
   if (
-    access.accessMode === "owner_session"
-    || access.accessMode === "field_manager"
+    manager && ownerAppCan(manager, "viewMaintenance")
   ) {
     try {
       const records = await listAssetMaintenanceRecords(access.ownerUserId, {
@@ -199,7 +201,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     accessMode: access.accessMode,
     fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
     ownerAppDisplayName: access.ownerAppDisplayName ?? null,
-    asset: access.asset,
+    asset: manager ? { ...access.asset, note: '', financeStatus: 'unknown', insuranceStatus: 'unknown',
+      photos: ownerAppCan(manager, 'viewPhotos') ? access.asset.photos : [],
+      lastKnownLat: ownerAppCan(manager, 'viewMap') ? access.asset.lastKnownLat : null,
+      lastKnownLng: ownerAppCan(manager, 'viewMap') ? access.asset.lastKnownLng : null,
+      lastKnownLocationText: ownerAppCan(manager, 'viewMap') ? access.asset.lastKnownLocationText : '',
+    } : access.asset,
     recentEvents,
     openMaintenance,
   });

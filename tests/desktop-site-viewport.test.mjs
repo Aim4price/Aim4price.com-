@@ -19,7 +19,6 @@ const valuationPolishStylesPath = new URL('../app/valuation/valuation-flow-polis
 
 const protectedAppLayoutPaths = [
   new URL('../app/dealer/layout.tsx', import.meta.url),
-  new URL('../app/field-manager/layout.tsx', import.meta.url),
   new URL('../app/owner-app/layout.tsx', import.meta.url),
 ];
 

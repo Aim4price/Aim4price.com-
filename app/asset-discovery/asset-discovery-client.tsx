@@ -16,7 +16,7 @@ import {
 import LeadPhotoViewerModal from "../../components/LeadPhotoViewerModal";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
-import native_mobileStyles from "../field-manager/page.module.css";
+import native_mobileStyles from "../../components/manager/mobile.module.css";
 import styles from "./page.module.css";
 import accountStyles from "../account/page.module.css";
 import native_dealerStyles from "../dealer/dealer.module.css";

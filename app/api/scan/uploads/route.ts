@@ -1,5 +1,6 @@
+import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 import { NextRequest, NextResponse } from 'next/server';
-import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from '../../../../lib/scan-auth';
+import { retiredAppScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from '../../../../lib/scan-auth';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_PHOTOS,
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
   const access = isOwnerAppHint
     ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
     : isFieldManagerHint
-    ? await authorizeFieldManagerScanAccess(
+    ? await retiredAppScanAccess(
         request,
         publicAssetCode,
         requestedAssetId,
@@ -73,6 +74,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const manager = access.accessMode === 'owner_session' ? await getOwnerAppAccess() : null;
+  if (access.accessMode === 'owner_session' && (!manager || !ownerAppCan(manager, 'uploadPhotos'))) {
+    return NextResponse.json({ ok: false, error: 'Photo uploads are not enabled for your login.' }, { status: 403 });
+  }
   const files = formData.getAll('files').filter(isFile);
 
   if (!files.length) {

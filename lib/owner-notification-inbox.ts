@@ -18,6 +18,7 @@ function visibleToOwner(access:OwnerAppAccess,item:NotificationInboxItem) {
   if(['dealer_cost','capture','cost_budget'].includes(item.category))return ownerAppCan(access,'manage_finance');
   if(['lead','asset_discovery','marketplace_sourcing'].includes(item.category))return ownerAppCan(access,'manage_marketplace');
   if(['dealer_correction','dealer_schedule'].includes(item.category))return ownerAppCan(access,'manage_assets');
+  if (!ownerAppCan(access,'manage_assets')) return ownerAppCan(access,'viewMaintenance') && ['maintenance','maintenance_reminder','qr_scan','licensing'].includes(item.category);
   return true;
 }
 export async function listOwnerNotificationInbox(access:OwnerAppAccess):Promise<NotificationInboxItem[]> {

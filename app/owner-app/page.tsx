@@ -13,11 +13,9 @@ export default async function OwnerAppHome() {
   const canOperate = ownerAppCan(access, 'operate');
   const canManage = ownerAppCan(access, 'manage_assets');
   const tools = [
-    ...(canOperate ? [
-      { label: 'Add fuel', icon: 'fuel', href: '/owner-app/operations/fuel' },
-      { label: 'Record work', icon: 'record', href: '/owner-app/operations/maintenance' },
-      { label: 'Report problem', icon: 'problem', href: '/owner-app/report-problem' },
-    ] : []),
+    ...(ownerAppCan(access, 'addFuel') || ownerAppCan(access, 'recordFuelIssues') || ownerAppCan(access, 'refillFuel') ? [{ label: 'Add fuel', icon: 'fuel', href: '/owner-app/operations/fuel' }] : []),
+    ...(ownerAppCan(access, 'recordMaintenance') || ownerAppCan(access, 'completeMaintenance') ? [{ label: 'Record work', icon: 'record', href: '/owner-app/operations/maintenance' }] : []),
+    ...(ownerAppCan(access, 'recordMaintenance') ? [{ label: 'Report problem', icon: 'problem', href: '/owner-app/report-problem' }] : []),
     { label: 'Find an asset', icon: 'search', href: '/owner-app/assets' },
     ...(canManage ? [{ label: 'Add asset', icon: 'add', href: '/owner-app/assets/add' }] : []),
   ];
@@ -25,7 +23,7 @@ export default async function OwnerAppHome() {
     <OwnerAppNav showBack={false} trailingAction={<OwnerNotificationsLink viewerId={access.ownerAppUserId ?? access.ownerUserId} compact />} />
     <div className={mobile.dashboard}>
       <section className={mobile.intro}><h1>Your assets. Your day.</h1><p>{access.displayName}</p></section>
-      <OwnerHomeAttention />
+      {ownerAppCan(access, 'viewMaintenance') && <OwnerHomeAttention />}
       <section><h2 className={mobile.sectionTitle}>Quick actions</h2><nav className={`${mobile.grid} ${mobile.assetActions}`} aria-label="Owner tools">
         {tools.map(tool => <Link className={mobile.tile} key={tool.href} href={tool.href} prefetch={false}><OwnerIcon name={tool.icon} /><strong>{tool.label}</strong></Link>)}
       </nav></section>

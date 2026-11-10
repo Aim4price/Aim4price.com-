@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function OwnerAppAccountPage() {
   const access = await requireOwnerAppPageAccess();
-  const roleLabel = { admin: 'Owner / Admin', operations: 'Operations', view_only: 'View only' }[access.accessRole];
+  const roleLabel = { manager: 'Manager', office: 'Office', operator: 'Operator', viewer: 'View only', workshop: 'Workshop', admin: 'Owner / Admin', operations: 'Operations', view_only: 'View only' }[access.accessRole];
   return (
     <main className={styles.page}>
       <OwnerAppNav showBack={false} showSignOut />

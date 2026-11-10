@@ -1,3 +1,6 @@
+import { currentAppRealm } from './app-realm-server';
+import { managerTeamActor } from './manager-team-workspace';
+import { TeamAccessError } from './team-access-policy';
 import { cookies } from 'next/headers';
 import { TEAM_LOGIN_COOKIE } from './team-login';
 import { getAnyServerSession } from './auth-session';
@@ -5,9 +8,15 @@ import { cache } from 'react';
 import { getManagedTeamActor } from './team-login';
 import { loadTeamScope } from './team-access';
 import type { TeamPermissions } from './team-access-policy';
-export type DesktopWorkspace = { membershipId: string; managedLogin: boolean; name: string; accountType: string; accountSubtype?: string | null; logoUrl?: string | null; permissions: TeamPermissions; displayName: string };
+export type DesktopWorkspace = { native?: boolean; membershipId: string; managedLogin: boolean; name: string; accountType: string; accountSubtype?: string | null; logoUrl?: string | null; permissions: TeamPermissions; displayName: string };
 /** An explicit membership must belong to the signed-in actor. Never accept a caller-supplied owner ID. */
 export const getDesktopScope = cache(async (membershipId?: string) => {
+  if (await currentAppRealm() === 'owner') {
+    const actor = await managerTeamActor();
+    if (!actor) return null;
+    if (membershipId && membershipId !== actor.managedGrantId) throw new TeamAccessError('Workspace unavailable.');
+    return loadTeamScope(actor.managedGrantId!);
+  }
   // Most page requests are ordinary owner/public requests: no session/database lookup is needed here.
   if (!membershipId && !cookies().get(TEAM_LOGIN_COOKIE)?.value) return null;
   if (!membershipId && (await getAnyServerSession())?.user?.id) return null;

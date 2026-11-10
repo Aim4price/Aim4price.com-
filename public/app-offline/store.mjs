@@ -5,17 +5,17 @@ const encoder = new TextEncoder();
 export const MAX_PHOTOS = 4;
 export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 export const MAX_QUEUE = 100;
-async function database() {
+async function database(name = DB) {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB, 1);
+    const request = indexedDB.open(name, 1);
     request.onupgradeneeded = () => request.result.createObjectStore('vault');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(Error('Phone storage is unavailable. Nothing has been saved.'));
     request.onblocked = () => reject(Error('Close other offline work tabs and try again.'));
   });
 }
-async function storage(value, remove = false) {
-  const db = await database();
+async function storage(value, remove = false, name = DB) {
+  const db = await database(name);
   return new Promise((resolve, reject) => {
     const tx = db.transaction('vault', value !== undefined || remove ? 'readwrite' : 'readonly');
     const store = tx.objectStore('vault');
@@ -26,7 +26,8 @@ async function storage(value, remove = false) {
     catch { tx.abort(); db.close(); reject(Error('Phone storage is full or unavailable. This change has not been saved.')); }
   });
 }
-export async function hasVault() { return Boolean(await storage()); }
+const legacyDB = 'aim4price-field-offline-v1';
+export async function hasVault() { return Boolean(await storage() || (config.app === 'owner' && await storage(undefined, false, legacyDB))); }
 export async function forgetVault() { await storage(undefined, true); }
 async function keyFor(pin, salt) {
   const material = await crypto.subtle.importKey('raw', encoder.encode(pin), 'PBKDF2', false, ['deriveKey']);
@@ -41,13 +42,24 @@ export async function createVault(pin, snapshot) {
   return vault;
 }
 export async function unlockVault(pin) {
-  const stored = await storage();
+  let stored = await storage();
+  const legacy = !stored && config.app === 'owner';
+  if (legacy) stored = await storage(undefined, false, legacyDB);
   if (!stored || stored.version !== 1) throw Error('Prepare offline work while connected first.');
   const key = await keyFor(pin, stored.salt);
   let plain;
   try { plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: stored.iv }, key, stored.bytes); }
   catch { throw Error('That PIN could not unlock this offline copy.'); }
-  return { key, salt: stored.salt, data: JSON.parse(new TextDecoder().decode(plain)) };
+  const vault = { key, salt: stored.salt, data: JSON.parse(new TextDecoder().decode(plain)) };
+  if (legacy) {
+    const snapshot = await api(config.api);
+    const previousIdentity = vault.data.snapshot.identity;
+    const [owner, member] = String(previousIdentity).split(':');
+    if (!owner || !member || snapshot.identity !== `owner:${owner}:user:${member}`) throw Error('Sign in to the same Manager login to import saved field work. Nothing was changed.');
+    await saveVault(vault, { ...vault.data, snapshot, queue: vault.data.queue.map(work => ({ ...work, legacyIdentity: previousIdentity })) });
+    // Commit the new encrypted copy first. The old encrypted copy remains as a recovery backup.
+  }
+  return vault;
 }
 export async function saveVault(vault, data) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -133,7 +145,7 @@ export async function syncVault(vault, onChange = () => {}) {
       if (work.kind === 'fuel-slip' && photo?.url) Object.assign(payload, { uploadId: photo.uploadId, documentFileUrl: photo.url, originalFilename: photo.fileName, contentType: photo.contentType, byteSize: photo.byteSize });
       const result = await api(config.api + '/sync', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-aim4price-offline-identity': identity },
-        body: JSON.stringify({ kind: work.kind || 'work', assetId: work.assetId, code: work.code, payload }),
+        body: JSON.stringify({ legacyIdentity: work.legacyIdentity, kind: work.kind || 'work', assetId: work.assetId, code: work.code, payload }),
       });
       if (((work.kind || 'work') === 'work' && (!result.asset || (work.maintenance && !result.scheduledMaintenanceCompletion?.completed)))) throw Error('The server has not confirmed this work as complete. It remains saved here.');
       await saveVault(vault, { ...vault.data, queue: vault.data.queue.filter(q => q.id !== work.id), lastSynced: new Date().toISOString(), lastSyncMessage: result.pendingReview ? 'Fuel slip saved online but needs review in Fuel Ledger.' : '' });

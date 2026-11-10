@@ -230,7 +230,7 @@ async function fixtures() {
 
 (async () => {
   const reports = await fixtures();
-  const font = fs.readFileSync('public/field-manager/montserrat-latin.woff').toString('base64');
+  const font = fs.readFileSync('public/fonts/montserrat-latin.woff').toString('base64');
   for (const name of Object.keys(reports)) {
     reports[name] = reports[name].replace('</head>', '<style>@font-face{font-family:Montserrat;font-style:normal;font-weight:100 900;src:url(data:font/woff;base64,'+font+') format("woff");font-display:block}</style></head>');
   }

@@ -11,13 +11,8 @@ import {
   type ScanSafeAsset,
 } from "./scan-assets";
 import { getDb } from "./db";
-import { validateFieldManagerScanAsset } from "./field-manager";
-import {
-  getActiveFieldManagerSessionFromRequest,
-  type ActiveFieldManagerSession,
-} from "./field-manager-session";
 import { verifyScanPin } from "./scan-pin";
-import { getOwnerAppAccess, ownerAppCan } from "./owner-app-access";
+import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from "./owner-app-access";
 
 export const SCAN_SESSION_COOKIE_NAME = "aim4price_scan";
 export const SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -361,147 +356,6 @@ export async function verifyScanPinForAsset(
   };
 }
 
-async function authorizeFieldManagerAccessFromSession(
-  normalizedCode: string,
-  session: ActiveFieldManagerSession,
-  assetId?: string | null,
-): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
-  const normalizedAssetId = asText(assetId);
-
-  if (!normalizedAssetId) {
-    console.error(
-      "[scan-auth] Field Manager asset open missing selected asset id",
-      {
-        publicAssetCode: normalizedCode,
-        fieldManagerOwnerId: session.ownerUserId,
-        fieldManagerId: session.managerId,
-        route: "authorize-field-manager-session",
-      },
-    );
-    return {
-      ok: false,
-      status: 400,
-      error: FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
-  }
-
-  const manager = await validateFieldManagerScanAsset({
-    managerId: session.managerId,
-    ownerUserId: session.ownerUserId,
-    publicAssetCode: normalizedCode,
-    assetId: normalizedAssetId || null,
-  });
-
-  if (!manager || !manager.isActive) {
-    console.error("[scan-auth] Field Manager session failed asset validation", {
-      publicAssetCode: normalizedCode,
-      assetId: normalizedAssetId || null,
-      fieldManagerOwnerId: session.ownerUserId,
-      fieldManagerId: session.managerId,
-      route: "authorize-field-manager-session",
-    });
-    return {
-      ok: false,
-      status: 403,
-      error: FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
-  }
-
-  let context: ScanAssetAccessContext | null;
-
-  try {
-    context = await getScanAssetAccessContextByAssetId(normalizedAssetId, {
-      publicAssetCode: normalizedCode,
-      expectedOwnerUserId: session.ownerUserId,
-    });
-  } catch (error) {
-    const safe = safeAssetOwnerError(error, FIELD_MANAGER_OPEN_ERROR);
-    return {
-      ok: false,
-      status: safe?.status ?? 403,
-      error: safe?.error ?? FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
-  }
-
-  if (!context || !context.asset.id) {
-    return {
-      ok: false,
-      status: 404,
-      error: "Asset not found.",
-      pinRequired: false,
-    };
-  }
-
-  if (!isActiveQrStatus(context.asset.qrStatus)) {
-    return inactiveQrAccess();
-  }
-
-  if (session.ownerUserId !== context.asset.userId) {
-    console.error("[scan-auth] Field Manager session owner mismatch", {
-      publicAssetCode: normalizedCode,
-      assetId: context.asset.id,
-      resolvedAssetOwnerId: context.asset.userId,
-      fieldManagerOwnerId: session.ownerUserId,
-      fieldManagerId: session.managerId,
-      route: "authorize-field-manager-session",
-    });
-    return {
-      ok: false,
-      status: 403,
-      error: FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
-  }
-
-  return {
-    ok: true,
-    accessMode: "field_manager",
-    asset: context.asset,
-    ownerUserId: context.asset.userId,
-    fieldManagerId: session.managerId,
-    fieldManagerDisplayName: session.displayName,
-    fieldManagerSessionId: session.sessionId,
-  };
-}
-
-export async function authorizeFieldManagerScanAccess(
-  request: NextRequest,
-  publicAssetCode: string,
-  fieldManagerAssetId?: string | null,
-): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
-  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
-
-  if (!normalizedCode) {
-    return {
-      ok: false,
-      status: 404,
-      error: "Asset not found.",
-      pinRequired: false,
-    };
-  }
-
-  const activeFieldManagerSession =
-    await getActiveFieldManagerSessionFromRequest(request);
-
-  if (!activeFieldManagerSession) {
-    return {
-      ok: false,
-      status: 401,
-      error: FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
-  }
-
-  return authorizeFieldManagerAccessFromSession(
-    normalizedCode,
-    activeFieldManagerSession,
-    fieldManagerAssetId ?? null,
-  );
-}
-
 export async function authorizeOwnerAppScanAccess(
   _request: NextRequest,
   publicAssetCode: string,
@@ -515,9 +369,10 @@ export async function authorizeOwnerAppScanAccess(
 
   const ownerAccess = await getOwnerAppAccess();
   if (!ownerAccess) {
-    return { ok: false, status: 401, error: "Aim4price Owner login is required.", pinRequired: false };
+    return { ok: false, status: 401, error: "Aim4price Manager login is required.", pinRequired: false };
   }
-  if (!ownerAppCan(ownerAccess, 'operate')) {
+  if (!ownerAppCanAccessAsset(ownerAccess, normalizedAssetId)) return { ok: false, status: 404, error: 'Asset unavailable.', pinRequired: false };
+  if (!ownerAppCan(ownerAccess, 'recordMaintenance') && !ownerAppCan(ownerAccess, 'completeMaintenance') && !ownerAppCan(ownerAccess, 'updateUsage')) {
     return { ok: false, status: 403, error: "This Owner login has View only access.", pinRequired: false };
   }
 
@@ -658,11 +513,7 @@ export async function authorizeScanAccess(
   }
 
   if (options.fieldManagerHint === true) {
-    return authorizeFieldManagerScanAccess(
-      request,
-      publicAssetCode,
-      options.fieldManagerAssetId ?? null,
-    );
+    return { ok: false, status: 410, error: "Open Aim4price Manager and sign in again.", pinRequired: false };
   }
 
   return authorizePublicQrScanAccess(request, publicAssetCode);
@@ -722,4 +573,9 @@ export async function hasOwnerOrValidScanSession(
     currentPinUpdatedAtMs === claims.pinUpdatedAtMs &&
     claims.expiresAtMs > Date.now(),
   );
+}
+
+/** Old QR links fail closed instead of falling through to a different signed-in identity. */
+export async function retiredAppScanAccess(..._args: unknown[]): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  return { ok: false, status: 410, error: 'Open Aim4price Manager and sign in again.', pinRequired: false };
 }

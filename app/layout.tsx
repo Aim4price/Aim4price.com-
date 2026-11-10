@@ -68,7 +68,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: APP_REQUEST_CONTEXT_SCRIPT }} />
         <link
           rel="preload"
-          href="/field-manager/montserrat-latin.woff"
+          href="/fonts/montserrat-latin.woff"
           as="font"
           type="font/woff"
           crossOrigin="anonymous"

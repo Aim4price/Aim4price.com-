@@ -40,7 +40,7 @@ test('Dealer Staff records store and return an explicit role', () => {
 
 test('Dealer Overview uses the Owner and Field Manager overview structure and styling', () => {
   const source = read('app/dealer/overview/dealer-overview-client.tsx');
-  assert.match(source, /import overviewStyles from '\.\.\/\.\.\/field-manager\/page\.module\.css'/);
+  assert.match(source, /import overviewStyles from '\.\.\/\.\.\/\.\.\/components\/manager\/mobile\.module\.css'/);
   assert.match(source, /overviewStyles\.overviewPage/);
   assert.match(source, /overviewStyles\.overviewIntro/);
   assert.match(source, /overviewStyles\.overviewSearch/);

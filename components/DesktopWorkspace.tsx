@@ -9,9 +9,13 @@ export function DesktopWorkspaceProvider({ workspace, children }: { workspace: D
   return <Context.Provider value={workspace}>{children}</Context.Provider>;
 }
 export function desktopUrl(url: string, membershipId?: string) {
-  if (!membershipId || !url.startsWith('/') || url.startsWith('//')) return url;
+  if (!url.startsWith('/') || url.startsWith('//')) return url;
   const value = new URL(url, 'https://aim4price.invalid');
-  value.searchParams.set('desktopMembershipId', membershipId);
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/owner-app')) {
+    const pages: Record<string, string> = { '/fuel': 'workspace/fuel', '/my-invoices': 'workspace/costs', '/budgets': 'workspace/budgets', '/asset-map': 'workspace/map', '/documents': 'workspace/documents', '/maintenance': 'workspace/maintenance', '/asset-register': 'assets', '/team/access': 'more', '/account': 'more' };
+    if (pages[value.pathname]) value.pathname = '/owner-app/' + pages[value.pathname];
+  }
+  if (membershipId) value.searchParams.set('desktopMembershipId', membershipId);
   return `${value.pathname}${value.search}${value.hash}`;
 }
 export function desktopPageAllowed(path: string, permissions?: DesktopWorkspace['permissions']) {

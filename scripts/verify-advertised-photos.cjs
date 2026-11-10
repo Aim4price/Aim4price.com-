@@ -41,7 +41,7 @@ function add(file){
  });
 }
 const entry='app/asset-discovery/recently-advertised-client';add(entry);
-const fontCSS="@font-face{font-family:DiscoveryFixture;src:url(data:font/woff;base64,"+fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64')+") format('woff');font-weight:100 900;} :root{--font-body:DiscoveryFixture;--font-heading:DiscoveryFixture} body{font-family:DiscoveryFixture,Arial,sans-serif!important}";
+const fontCSS="@font-face{font-family:DiscoveryFixture;src:url(data:font/woff;base64,"+fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64')+") format('woff');font-weight:100 900;} :root{--font-body:DiscoveryFixture;--font-heading:DiscoveryFixture} body{font-family:DiscoveryFixture,Arial,sans-serif!important}";
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const appCode='const sources='+JSON.stringify(modules)+',cache={};'+

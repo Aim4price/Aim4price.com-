@@ -48,18 +48,18 @@ test('middleware strips sibling, website and support cookies and replaces forged
   });
   const cookies = 'better-auth.session_token=website; __Secure-better-auth.session_token=website; aim4price_admin_support_user_id=admin; aim4price_dealer_app_v2=dealer; aim4price_middleman_app_v1=middleman; aim4price_owner_app=owner; aim4price_field_manager=field';
   for (const [realm, ownCookie] of Object.entries({dealer:'aim4price_dealer_app_v2=dealer', middleman:'aim4price_middleman_app_v1=middleman', owner:'aim4price_owner_app=owner', field:'aim4price_field_manager=field'})) {
-    const result = middleware({ nextUrl: new URL('https://internal.example/api/marketplace'), headers: new Headers({ cookie: cookies, 'x-aim4price-client-realm': realm, 'x-aim4price-app-realm': 'dealer' }) });
+    const result = middleware({ method: 'GET', nextUrl: new URL('https://internal.example/api/marketplace'), headers: new Headers({ cookie: cookies, 'x-aim4price-client-realm': realm, 'x-aim4price-app-realm': 'dealer' }) });
     assert.equal(result.request.headers.get('x-aim4price-app-realm'), realm);
     assert.equal(result.request.headers.get('cookie'), ownCookie);
     assert.match(result.headers.get('Cache-Control'), /private, no-store/);
   }
   assert.equal(realmModule.requestAppRealm(new URL('https://example.com/api/dealer/login'), null, 'middleman'), 'dealer');
   assert.equal(realmModule.requestAppRealm(new URL('https://example.com/api/owner-app/users'), null, 'website'), null);
-  const result = middleware({ nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ 'x-aim4price-app-realm': 'middleman' }) });
+  const result = middleware({ method: 'GET', nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ 'x-aim4price-app-realm': 'middleman' }) });
   assert.equal(result.request.headers.get('x-aim4price-app-realm'), null);
-  const ambiguous = middleware({ nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ cookie: cookies }) });
+  const ambiguous = middleware({ method: 'GET', nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ cookie: cookies }) });
   assert.equal(ambiguous.request.headers.get('cookie'), '');
-  const website = middleware({ nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ cookie: cookies, 'x-aim4price-client-realm': 'website' }) });
+  const website = middleware({ method: 'GET', nextUrl: new URL('https://example.com/api/marketplace'), headers: new Headers({ cookie: cookies, 'x-aim4price-client-realm': 'website' }) });
   assert.equal(website.request.headers.get('cookie'), cookies);
 });
 
@@ -91,6 +91,7 @@ test('shared authentication and Marketplace use only the selected app account', 
     './admin-usage-events': { recordAdminUsageEventSafely: async () => {} },
     './auth': { auth: { api: { getSession: async () => website } } }, './db': { getDb: () => { throw Error('Unexpected database call'); } },
     './dealer-app-session': dealer, './owner-app-session': owner,
+    './manager-request-policy': {managerRequestAllowed:()=>true}, './manager-permissions': {managerPermissions:()=>({})}, './owner-app':{getOwnerAppUserById:async()=>({id:'owner',parent_owner_user_id:'owner',access_role:'admin'}),getOwnerAppAssetAccessSettings:async()=>({assetScope:'all'})},
   });
   let viewer;
   let publisher;
@@ -139,16 +140,14 @@ test('shared authentication and Marketplace use only the selected app account', 
   assert.equal((await route.POST({ json: async () => ({ assetId: 'asset' }) })).status, 401);
 });
 
-test('production cannot issue Owner or Field Manager tokens with development secrets', async () => {
+test('production cannot issue Manager tokens with development secrets', async () => {
   const owner = await load('lib/owner-app-session.ts', { 'next/headers': {}, './app-realm-server': {}, './account-profile': {}, './owner-app': {} });
-  const field = await load('lib/field-manager-session.ts', { './field-manager': {}, './scan-assets': {}, './account-profile': {} });
   const keys = ['NODE_ENV', 'BETTER_AUTH_SECRET', 'OWNER_APP_SECRET', 'FIELD_MANAGER_COOKIE_SECRET', 'SCAN_COOKIE_SECRET'];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   try {
     for (const key of keys) delete process.env[key];
     process.env.NODE_ENV = 'production';
     assert.throws(() => owner.createOwnerAppToken({ ownerAppUserId: 'owner', parentOwnerUserId: 'owner', version: 1 }), /secret is not configured/);
-    assert.throws(() => field.applyFieldManagerSessionCookie({ cookies: { set() {} } }, { id: 'field', ownerUserId: 'owner', username: 'field', displayName: 'Field', sessionVersion: 1 }), /secret is not configured/);
   } finally {
     for (const key of keys) saved[key] === undefined ? delete process.env[key] : process.env[key] = saved[key];
   }

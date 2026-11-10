@@ -18,6 +18,7 @@ export function teamWorkspacePermission(path: string, method: string): TeamPermi
   if (path === '/api/fuel/report') return method === 'GET' ? 'exportFuel' : null;
   if (path === '/api/fuel/documents/download') return method === 'GET' ? 'viewFuelDocuments' : null;
   if (path === '/api/fuel/slips/export') return method === 'POST' ? 'exportFuel' : null;
+  if (path === '/api/fuel/slips/upload') return method === 'POST' ? 'addFuel' : null;
   if (path === '/api/fuel/slips') return method === 'POST' ? 'addFuel' : null;
   if (/^\/api\/fuel\/slips\/[^/]+$/.test(path)) return method === 'PATCH' ? 'editFuel' : method === 'DELETE' ? 'voidFuel' : null;
   if (/^\/api\/fuel\/storage\/[^/]+$/.test(path)) return ['PATCH', 'DELETE'].includes(method) ? 'manageFuelStorage' : null;

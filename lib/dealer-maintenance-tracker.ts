@@ -824,7 +824,7 @@ export async function grantDealerMaintenanceTracking(input: {
       input.assetId,
       input.actorType,
       asText(input.actorId) || null,
-      asText(input.actorName) || (input.actorType === 'field_manager' ? 'Field Manager' : 'Owner'),
+      asText(input.actorName) || (input.actorType === 'field_manager' ? 'Manager' : 'Owner'),
       permissions.canViewLoggedProblems,
       permissions.canViewMaintenanceReports,
       permissions.canViewCostOfOwnership,

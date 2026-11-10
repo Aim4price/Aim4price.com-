@@ -18,7 +18,7 @@ import {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
 } from "../../../components/DealerMaintenanceAccessSettings";
-import FieldManagerNavLink from "../../field-manager/field-manager-nav-link";
+import FieldManagerNavLink from "../../../components/manager/manager-nav-link";
 import type { DealerMaintenancePermissions } from "../../../lib/dealer-maintenance-tracker";
 import styles from "./page.module.css";
 import {
@@ -1574,7 +1574,7 @@ export default function ScanClient({
         setAssetOpenError(
           data?.error ??
             (ownerAppMode
-              ? "Could not open this asset from your Owner App. Please go back and try again."
+              ? "Could not open this asset from your Manager App. Please go back and try again."
               : "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."),
         );
         return false;
@@ -1599,7 +1599,7 @@ export default function ScanClient({
           (response.status === 404
             ? "Asset not found."
             : ownerAppMode
-              ? "Could not open this asset from your Owner App. Please go back and try again."
+              ? "Could not open this asset from your Manager App. Please go back and try again."
               : fieldManagerMode
                 ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
               : "Scan access is not enabled yet.");

@@ -8,10 +8,10 @@ import type {
   DealerProblemPriority,
   DealerProblemWorkflowStatus,
 } from '../../../lib/dealer-overview';
-import overviewStyles from '../../field-manager/page.module.css';
+import overviewStyles from '../../../components/manager/mobile.module.css';
 import OverviewClearConfirmation, {
   type OverviewClearOutcome,
-} from '../../field-manager/overview-clear-confirmation';
+} from '../../../components/manager/overview-clear-confirmation';
 import dealerStyles from './dealer-overview.module.css';
 
 type OverviewResponse = {

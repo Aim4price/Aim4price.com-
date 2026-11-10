@@ -5,9 +5,6 @@ import test from 'node:test';
 const ownerLoginSections = await readFile(new URL('../app/account/owner-login-sections.tsx', import.meta.url), 'utf8');
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 const [
-  fieldManager,
-  fieldManagerSession,
-  fieldManagerLogin,
   fieldManagerUi,
   ownerApp,
   ownerAccess,
@@ -21,9 +18,6 @@ const [
   ownerManagePage,
   migration,
 ] = await Promise.all([
-  read('lib/field-manager.ts'),
-  read('lib/field-manager-session.ts'),
-  read('app/api/field-manager/login/route.ts'),
   read('app/account/app-access-management-client.tsx'),
   read('lib/owner-app.ts'),
   read('lib/owner-app-access.ts'),
@@ -38,43 +32,13 @@ const [
   read('database/migrations/66-owner-manager-hardening.sql'),
 ]);
 
-test('Field Manager passwords are hash-only and reset sessions', () => {
-  assert.doesNotMatch(fieldManager, /savedPassword/);
-  assert.match(fieldManager, /drop column if exists password_display/);
-  assert.doesNotMatch(fieldManagerUi, /savedPassword|Saved password/);
-  assert.match(fieldManagerUi, /import OwnerLoginSections/);
-  assert.match(ownerLoginSections, /changes = \{ password: passcode \}/);
-  assert.match(ownerLoginSections, /section === 'passcode'/);
-  assert.match(migration, /DROP COLUMN IF EXISTS password_display/);
-  assert.match(fieldManager, /session_version = session_version \+ case/);
-  assert.match(fieldManagerSession, /manager\.sessionVersion !== claims\.sessionVersion/);
-});
-
-test('Field Manager sign-in is throttled after repeated failures', () => {
-  assert.match(fieldManager, /FIELD_MANAGER_MAX_FAILED_ATTEMPTS = 5/);
-  assert.match(fieldManager, /recordFieldManagerLoginFailure/);
-  assert.match(fieldManagerLogin, /Too many incorrect attempts\. Try again in 15 minutes/);
-});
-
-test('Owner App roles have simple, server-enforced permission presets', () => {
-  assert.match(ownerApp, /OwnerAppAccessRole = 'admin' \| 'operations' \| 'view_only'/);
-  assert.match(ownerAccess, /operations: \['view', 'operate'\]/);
-  assert.match(ownerAccess, /view_only: \['view'\]/);
-  assert.match(ownerAccess, /ownerAppCan/);
-  assert.match(ownerHome, /const canOperate = ownerAppCan\(access, 'operate'\)/);
-  assert.match(ownerHome, /const canManage = ownerAppCan\(access, 'manage_assets'\)/);
-  assert.match(ownerHome, /\.\.\.\(canOperate \? \[/);
-  assert.match(ownerHome, /\.\.\.\(canManage \? \[/);
+test('Manager roles use shared granular permissions and asset gates', () => {
+  assert.match(ownerAccess, /managerPermissions\(accessRole, managedUser\?\.permissions\)/);
+  assert.match(ownerAccess, /permission in access.teamPermissions/);
+  assert.match(ownerHome, /ownerAppCan\(access, 'addFuel'\)/);
+  assert.match(ownerHome, /ownerAppCan\(access, 'recordMaintenance'\)/);
   assert.match(ownerAssets, /mode === 'assets' && canAddAssets/);
   assert.match(ownerManagePage, /if \(!canOpen\) redirect/);
-});
-
-test('Field Manager assignments cover assets, fuel tanks, and actions', () => {
-  assert.match(fieldManager, /field_manager_access_settings/);
-  assert.match(fieldManager, /field_manager_fuel_storage_access/);
-  assert.match(fieldManager, /assetScope: 'all' \| 'selected'/);
-  assert.match(fieldManager, /\[0-9a-f\]\{8\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{12\}/);
-  assert.match(fieldManager, /FieldManagerPermission = 'record_work' \| 'schedule_maintenance' \| 'record_fuel' \| 'refill_fuel'/);
 });
 
 test('Owner Overview supports per-viewer and explicit account-wide clearing', () => {
@@ -85,7 +49,7 @@ test('Owner Overview supports per-viewer and explicit account-wide clearing', ()
   assert.match(overview, /where parent_owner_user_id = \$1 and viewer_key = any\(\$2::text\[\]\)/);
   assert.match(overview, /on conflict \(parent_owner_user_id, viewer_key, source_kind, source_id\)/);
   assert.match(attentionRoute, /access\.viewerKey/);
-  assert.match(attentionRoute, /body\.clearForEveryone === true && access\.accessRole === 'admin'/);
+  assert.match(attentionRoute, /body\.clearForEveryone === true && ownerAppCan\(access, 'manage_assets'\)/);
 });
 
 test('Owner asset activity combines work, fuel, maintenance, and lifecycle history', () => {

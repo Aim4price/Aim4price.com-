@@ -6,8 +6,8 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('Overview Clear asks the correct follow-up for maintenance and problems', async () => {
   const [confirmation, styles] = await Promise.all([
-    read('app/field-manager/overview-clear-confirmation.tsx'),
-    read('app/field-manager/page.module.css'),
+    read('components/manager/overview-clear-confirmation.tsx'),
+    read('components/manager/mobile.module.css'),
   ]);
 
   assert.match(confirmation, /step.*'confirm' \| 'completion'/);
@@ -18,7 +18,7 @@ test('Overview Clear asks the correct follow-up for maintenance and problems', a
   assert.match(confirmation, /outcome: 'completed'/);
   assert.match(confirmation, /onClick=\{onCancel\}[\s\S]*?>\s*Not yet\s*</);
   assert.match(confirmation, /outcome: 'problem_done'[\s\S]*?Yes, done/);
-  assert.match(confirmation, /This clears it for the Owner and all Field Managers\./);
+  assert.match(confirmation, /This clears it for the Owner and all Manager users\./);
   assert.doesNotMatch(confirmation, /No, just clear/);
   assert.match(confirmation, /className=\{styles\.overviewConfirmClose\}[\s\S]*?onClick=\{onCancel\}[\s\S]*?disabled=\{isClearing\}[\s\S]*?aria-label="Close Overview clear confirmation"/);
   assert.match(styles, /\.overviewConfirmCard\[data-step='completion'\]/);
@@ -28,14 +28,13 @@ test('Overview Clear asks the correct follow-up for maintenance and problems', a
 });
 
 test('scheduled maintenance Not sure only dismisses while Yes records basic work and keeps recurrence', async () => {
-  const [dealerRoute, fieldRoute, ownerRoute, maintenance] = await Promise.all([
+  const [dealerRoute, ownerRoute, maintenance] = await Promise.all([
     read('app/api/dealer/overview/clear/route.ts'),
-    read('app/api/field-manager/overview/dismiss/route.ts'),
     read('app/api/owner-app/attention/route.ts'),
     read('lib/asset-maintenance.ts'),
   ]);
 
-  for (const route of [dealerRoute, fieldRoute, ownerRoute]) {
+  for (const route of [dealerRoute, ownerRoute]) {
     assert.match(route, /if \([^)]*Outcome === 'completed'\)|if \(outcome === 'completed'\)/);
     assert.match(route, /completeAssetMaintenanceRecord\(/);
     assert.match(route, /unknownMaintenanceCompletionNote\(item\.type\)/);
@@ -65,16 +64,13 @@ test('Dealer Overview uses the same maintenance and problem Clear decisions, not
   assert.doesNotMatch(notificationInbox, /recordStandaloneAssetMaintenanceCompletion|unknownMaintenanceCompletionNote/);
 });
 
-test('Overview clears can be shared across Owner and Field Manager viewers', async () => {
-  const [ownerOverview, fieldOverview, ownerRoute] = await Promise.all([
+test('Overview clears can be shared across Owner and Manager viewers', async () => {
+  const [ownerOverview, ownerRoute] = await Promise.all([
     read('lib/owner-app-overview.ts'),
-    read('lib/field-manager-overview.ts'),
     read('app/api/owner-app/attention/route.ts'),
   ]);
 
   assert.match(ownerOverview, /ALL_OVERVIEW_VIEWERS_KEY = 'everyone'/);
   assert.match(ownerOverview, /viewer_key = any\(\$2::text\[\]\)/);
-  assert.match(fieldOverview, /listOwnerAppOverviewGlobalDismissalKeys/);
-  assert.match(fieldOverview, /dismissOwnerAppOverviewSourceForEveryone\(/);
-  assert.match(ownerRoute, /body\.clearForEveryone === true && access\.accessRole === 'admin'/);
+  assert.match(ownerRoute, /body\.clearForEveryone === true && ownerAppCan\(access, 'manage_assets'\)/);
 });

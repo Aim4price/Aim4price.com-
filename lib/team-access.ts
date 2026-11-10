@@ -1,3 +1,5 @@
+import { currentAppRealm } from './app-realm-server';
+import { managerTeamActor } from './manager-team-workspace';
 import { teamAccountKind, accountTeamPermissions } from './team-account-policy';
 import { businessWorkspaceSummary } from './business-workspaces';
 import { listTeamClientWork } from './team-client-work';
@@ -17,6 +19,7 @@ import { resolveAssetUsage } from './asset-usage';
 import { ensureTeamAccessSchema } from './team-access-schema';
 import { TeamAccessError, isDesktopUsername, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
 type TeamGrantRow = {
+    fuel_storage_ids?: string[] | null;
     client_work_ids?: string[];
     managed_login?: boolean;
     username?: string | null;
@@ -37,11 +40,16 @@ type TeamGrantRow = {
     version: number;
 };
 export function mapTeamGrant(row: TeamGrantRow): TeamGrant {
-    return { clientWorkIds: row.client_work_ids || [], managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
+    return { fuelStorageIds: row.fuel_storage_ids ?? null, clientWorkIds: row.client_work_ids || [], managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
         status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids, documentAccess: row.document_access || 'selected', excludedDocumentIds: row.excluded_document_ids || [],
         permissions: normalizeTeamPermissions(row.permissions), expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null, version: row.version };
 }
 export async function requireTeamActor(): Promise<TeamActor> {
+    if (await currentAppRealm() === 'owner') {
+      const actor = await managerTeamActor();
+      if (!actor) throw new TeamAccessError('Sign in to Aim4price Manager.', 401);
+      return actor;
+    }
     const session = await getAnyServerSession();
     if (!session?.user?.id) {
         const managed = await getManagedTeamActor();
@@ -92,7 +100,7 @@ export async function loadTeamScope(membershipId: string, permission?: TeamPermi
     if (!teamGrantIsLive(grant, actor))
         throw new TeamAccessError('Team access has expired, changed or been revoked.');
     const profile = await getAccountProfile({ id: grant.ownerId });
-    if (!await teamIssuerAvailable(grant.ownerId, profile))
+    if (actor.id.startsWith('manager:') ? profile.accountType !== 'owner' || profile.accountStatus !== 'active' : !await teamIssuerAvailable(grant.ownerId, profile))
         throw new TeamAccessError('This business workspace is unavailable.');
     grant.permissions = accountTeamPermissions(grant.permissions, teamAccountKind(profile.accountType, profile.accountSubtype)!);
     if (permission)
@@ -111,6 +119,10 @@ export async function requireTeamAsset(scope: TeamScope, assetId: string, client
 }
 /** Grant lock serializes edits with revocation; asset lock rechecks scope after concurrent moves. */
 export async function lockTeamScope(client: PoolClient, scope: TeamScope, assetId: string, permission: TeamPermission) {
+    if (scope.actor.id.startsWith('manager:')) {
+      const member = (await client.query('SELECT is_active,session_version FROM owner_app_users WHERE id=$1 AND parent_owner_user_id=$2 FOR SHARE', [scope.grant.id,scope.grant.ownerId])).rows[0];
+      if (!member?.is_active || Number(member.session_version) !== scope.grant.version) throw new TeamAccessError('Your access changed. Sign in again.', 409);
+    }
     const row = (await client.query('SELECT * FROM team_access WHERE id=$1 FOR SHARE', [scope.grant.id])).rows[0];
     if (!row)
         throw new TeamAccessError('Team access is unavailable.');

@@ -25,7 +25,7 @@ test('all header variants keep Back and Home, including home and account tools',
   for (const props of [{}, { showBack: false }, { showBack: false, showSignOut: true }, { backHref: '/owner-app/assets', backLabel: 'My Assets' }]) {
     const elements = nodes(Nav(props));
     assert.equal(elements.filter(n => n.props?.['aria-label'] === 'Back').length, 1);
-    assert.equal(elements.find(n => n.props?.['aria-label'] === 'Owner App home').props.href, '/owner-app');
+    assert.equal(elements.find(n => n.props?.['aria-label'] === 'Manager App home').props.href, '/owner-app');
     if (props.backHref) assert.equal(elements.find(n => n.props?.['aria-label'] === 'Back').props.href, props.backHref);
   }
 });

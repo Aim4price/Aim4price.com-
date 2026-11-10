@@ -1,40 +1,27 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
 import test from 'node:test';
 import ts from 'typescript';
 
-test('problem notifications respect asset scope and only mark visible reports read', async () => {
-  const marked = [];
-  let resolved = false;
-  const mocks = {
-    './field-manager': { listFieldManagerAssets: async () => [{ id: 'allowed', title: 'Tractor' }] },
-    './asset-maintenance': { listAssetMaintenanceRecords: async () => [] },
-    './asset-issue-notes': { listOpenIssueNoteGroupsForAssets: async ids => {
-      assert.deepEqual(Array.from(ids), ['allowed']);
-      return resolved ? [] : [{ assetRegisterItemId: 'allowed', latest: { id: 'report-1', note: 'Oil leak', createdAtIso: '2026-09-18T07:00:00Z' } }];
-    } },
-    './app-notification-read-state': {
-      listReadNotificationEventKeys: async () => new Set(marked),
-      markNotificationEventKeysRead: async (viewer, keys) => {
-        assert.equal(viewer, 'field-manager:manager-1');
-        marked.push(...keys);
-      },
-    },
+test('Manager problem notifications enforce asset scope and only mark visible reports read', async () => {
+  let marked;
+  const rows = ['allowed','private'].map(assetId => ({ id: assetId, assetId, category: 'qr_scan', title: 'Problem reported', createdAtIso: '2026-01-01' }));
+  const deps = {
+    './app-notification-history': {},
+    './notification-inbox': { listNotificationInbox: async () => rows, updateNotificationInboxState: async input => { marked = input; } },
+    './owner-app-access': { ownerAppCan: (access, key) => access.teamPermissions[key] === true },
+    './push-access': { currentPushIdentity: async () => null },
+    './push-events': {}, './app-notification-state': {},
   };
-  const source = readFileSync(new URL('../lib/field-manager-notifications.ts', import.meta.url), 'utf8');
-  const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } });
-  const exports = {};
-  vm.runInNewContext(outputText, { exports, require: name => { assert.ok(mocks[name], name); return mocks[name]; } });
-  const input = { ownerUserId: 'owner-1', managerId: 'manager-1' };
-  const [notification] = await exports.listFieldManagerNotifications(input);
-  assert.equal(notification.title, 'Problem reported');
-  assert.equal(notification.body, 'Tractor: Oil leak');
-  assert.equal(notification.href, '/field-manager/overview');
-  assert.equal(notification.isRead, false);
-  await exports.markFieldManagerNotificationsRead({ ...input, notificationIds: [notification.id, 'field-manager-problem:private-report'] });
-  assert.deepEqual(marked, [notification.id]);
-  assert.equal((await exports.listFieldManagerNotifications(input))[0].isRead, true);
-  resolved = true;
-  assert.equal((await exports.listFieldManagerNotifications(input)).length, 0);
+  const api = {};
+  new Function('require','exports',ts.transpileModule(readFileSync(new URL('../lib/owner-notification-inbox.ts', import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name => { assert.ok(name in deps, name); return deps[name]; },api);
+  const access = { ownerUserId: 'owner', viewerKey: 'user:staff', sessionKind: 'owner-app-user', assetScope: 'selected', accessibleAssetIds: ['allowed'], teamPermissions: { viewMaintenance: true } };
+  const inbox = await api.listOwnerNotificationInbox(access);
+  assert.deepEqual(inbox.map(item => item.id), ['allowed']);
+  assert.equal(inbox[0].href, '/owner-app/attention');
+  await api.markOwnerNotificationsRead(access, 'read', ['allowed','private']);
+  assert.equal(marked.userId, 'user:staff');
+  assert.deepEqual(marked.notificationIds, ['allowed']);
+  access.teamPermissions.viewMaintenance = false;
+  assert.deepEqual(await api.listOwnerNotificationInbox(access), []);
 });

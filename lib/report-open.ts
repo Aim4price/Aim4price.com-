@@ -108,7 +108,7 @@ export function openCanonicalReportUrl(url: string, preparedWindow?: Window, bod
   return true;
 }
 
-/** Download Excel through the same originating session, including Owner App. */
+/** Download Excel through the same originating session, including Manager App. */
 export async function downloadCanonicalReportFile(url: string): Promise<void> {
   const response = await fetchReport(reportUrl(url));
   if (!response.headers.get('content-type')?.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {

@@ -5,6 +5,10 @@ export const OWNER_TEAM_PERMISSIONS = [
     { key: 'updateUsage', label: 'Update usage', detail: 'Increase hours, kilometres or lifetime worked.' },
     { key: 'viewMaintenance', label: 'View maintenance', detail: 'Schedules and completion details. Financial fields are excluded.' },
     { key: 'completeMaintenance', label: 'Complete maintenance', detail: 'Mark scheduled work done; cannot delete or change schedules.' },
+    { key: 'recordMaintenance', label: 'Record work and problems', detail: 'Log completed work and problems for accessible assets.' },
+    { key: 'scheduleMaintenance', label: 'Manage maintenance schedules', detail: 'Create and change schedules for accessible assets.' },
+    { key: 'recordFuelIssues', label: 'Record tank fuel issues', detail: 'Record litres issued from permitted tanks, without granting access to prices.' },
+    { key: 'refillFuel', label: 'Record tank refills', detail: 'Record deliveries and dipstick readings for permitted tanks.' },
     { key: 'exportMaintenance', label: 'Download maintenance reports', detail: 'The owner’s maintenance PDF for accessible assets.' },
     { key: 'uploadDocuments', label: 'Upload documents', detail: 'Attach documents to accessible assets for owner review.' },
     { key: 'viewPhotos', label: 'View photos', detail: 'Photos can contain visible sensitive information.' },
@@ -44,14 +48,14 @@ export const EMPTY_TEAM_PERMISSIONS = Object.fromEntries(TEAM_PERMISSIONS.map(p 
 export const TEAM_TEMPLATES = {
     viewer: { label: 'View only', detail: 'Read permitted asset details.', permissions: { ...EMPTY_TEAM_PERMISSIONS } },
     operator: { label: 'Operator', detail: 'Update usage and view photos.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewPhotos: true } },
-    workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
+    workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, recordMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
     office: { label: 'Office', detail: 'Maintain records; values stay hidden.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
     manager: { label: 'Manager', detail: 'All listed permissions, including fuel, costs, maps and reports. General documents are chosen separately; fuel and cost originals are included.', permissions: { ...EMPTY_TEAM_PERMISSIONS, ...Object.fromEntries(OWNER_TEAM_PERMISSIONS.map(p => [p.key, true])) } as TeamPermissions },
 } as const;
 export const TEAM_PERMISSION_GROUPS = [
     { label: 'Asset register', keys: ['viewValues', 'editDetails', 'updateUsage', 'viewPhotos', 'uploadPhotos', 'exportAssets'] },
-    { label: 'Maintenance', keys: ['viewMaintenance', 'completeMaintenance', 'exportMaintenance'] },
-    { label: 'Fuel ledger', keys: ['viewFuel', 'viewFuelCosts', 'viewFuelStorage', 'addFuel', 'editFuel', 'voidFuel', 'manageFuelStorage', 'viewFuelDocuments', 'exportFuel'] },
+    { label: 'Maintenance', keys: ['viewMaintenance', 'recordMaintenance', 'scheduleMaintenance', 'completeMaintenance', 'exportMaintenance'] },
+    { label: 'Fuel ledger', keys: ['viewFuel', 'viewFuelCosts', 'viewFuelStorage', 'recordFuelIssues', 'refillFuel', 'addFuel', 'editFuel', 'voidFuel', 'manageFuelStorage', 'viewFuelDocuments', 'exportFuel'] },
     { label: 'Costs', keys: ['viewCosts', 'addCosts', 'editCosts', 'deleteCosts', 'viewCostDocuments', 'viewBudgets', 'manageBudgets', 'exportCosts'] },
     { label: 'Asset map', keys: ['viewMap', 'updateLocation', 'exportMap'] },
     { label: 'Documents', keys: ['uploadDocuments'] },
@@ -59,6 +63,8 @@ export const TEAM_PERMISSION_GROUPS = [
 /** Dependencies are explicit, shared by the editor and server, and never inferred for stored grants. */
 export const TEAM_PERMISSION_DEPENDENCIES: Partial<Record<TeamPermission, readonly TeamPermission[]>> = {
     viewClientContacts: ['viewClientWork'], viewClientValues: ['viewClientWork'], manageClientEnquiries: ['viewClientWork'],
+    recordMaintenance: ['viewMaintenance'], scheduleMaintenance: ['viewMaintenance'],
+    recordFuelIssues: ['viewFuel', 'viewFuelStorage'], refillFuel: ['viewFuel', 'viewFuelStorage'],
     completeMaintenance: ['viewMaintenance'], exportMaintenance: ['viewMaintenance'],
     viewFuelCosts: ['viewFuel'], viewFuelStorage: ['viewFuel'],
     addFuel: ['viewFuel', 'viewFuelCosts'], editFuel: ['viewFuel', 'viewFuelCosts'], voidFuel: ['viewFuel', 'viewFuelCosts'],
@@ -80,6 +86,7 @@ export function updateTeamPermission(permissions: TeamPermissions, key: TeamPerm
     return normalizeTeamPermissions(next);
 }
 export type TeamGrant = {
+    fuelStorageIds?: string[] | null;
     clientWorkIds?: string[];
     username?: string;
     managedLogin?: boolean;

@@ -26,6 +26,8 @@ async function setup(options={}) {
  let cookieToken='';
  const login=load('lib/team-login.ts',{'node:crypto':require('node:crypto'),'node:util':require('node:util'),'next/headers':{cookies:()=>({get:()=>cookieToken?{value:cookieToken}:undefined})},'./db':{getDb:()=>pool},'./team-access-schema':{ensureTeamAccessSchema:async()=>{}},'./team-access-policy':policy});
  const service=load('lib/team-access.ts',{
+  './app-realm-server':{currentAppRealm:async()=>null},
+  './manager-team-workspace':{managerTeamActor:async()=>null},
   './team-account-policy':load('lib/team-account-policy.ts',{'./team-access-policy':policy}),
   './business-workspaces':{businessWorkspaceSummary:async()=>({role:'owner',suspended:false})},
   './team-client-work':{listTeamClientWork:async()=>[]},
@@ -130,7 +132,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal((fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8')+fs.readFileSync('database/migrations/155-desktop-client-work.sql','utf8')).replace(/\n+/g,'\n').trim(),TEAM_ACCESS_SCHEMA.replace(/\n+/g,'\n').trim());
+ assert.equal((fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8')+fs.readFileSync('database/migrations/155-desktop-client-work.sql','utf8')+fs.readFileSync('database/migrations/156-manager-tank-permissions.sql','utf8')).replace(/\n+/g,'\n').trim(),TEAM_ACCESS_SCHEMA.replace(/\n+/g,'\n').trim());
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 

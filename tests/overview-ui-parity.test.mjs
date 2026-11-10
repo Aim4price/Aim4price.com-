@@ -3,34 +3,16 @@ import { readFileSync } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-const fieldOverview = read('app/field-manager/field-manager-overview-client.tsx');
+
 const ownerOverview = read('app/owner-app/attention/owner-attention-client.tsx');
 const dealerOverview = read('app/dealer/overview/dealer-overview-client.tsx');
-const locationGate = read('app/field-manager/field-manager-location-gate.tsx');
+
 const ownerServiceModal = read('app/owner-app/owner-service-location-modal.tsx');
 const fuelLocationModal = read('components/FuelLocationModal.tsx');
-const fieldStyles = read('app/field-manager/page.module.css');
-
-test('Field Manager Overview keeps the Owner Overview search and empty-state behaviour', () => {
-  for (const source of [fieldOverview, ownerOverview]) {
-    assert.match(source, /const \[searchQuery, setSearchQuery\] = useState\(''\)/);
-    assert.match(source, /className=\{styles\.overviewSearch\}/);
-    assert.match(source, /placeholder="Search assets or maintenance"/);
-    assert.match(source, /No matching items need attention\./);
-    assert.match(source, /No matching upcoming items\./);
-  }
-});
-
-test('Field Manager Overview uses the Owner Overview alignment, width and typography', () => {
-  assert.match(fieldStyles, /\.overviewPage \{\s*background: #ffffff;/);
-  assert.match(fieldStyles, /\.overviewPage \.overviewShell \{\s*width: min\(calc\(100% - var\(--field-page-gutter\)\), 560px\);/);
-  assert.match(fieldStyles, /\.overviewPage \.overviewIntro \{[\s\S]*?justify-items: start;[\s\S]*?text-align: left;/);
-  assert.match(fieldStyles, /\.overviewPage \.overviewIntro h1 \{[\s\S]*?font-size: clamp\(1\.9rem, 8vw, 2\.45rem\);[\s\S]*?font-weight: 900;/);
-  assert.match(fieldStyles, /\.overviewPage \.overviewCard h3 \{[\s\S]*?font-size: clamp\(1\.16rem, 4\.8vw, 1\.38rem\);/);
-});
+const fieldStyles = read('components/manager/mobile.module.css');
 
 test('overview cards use background colour instead of redundant pills across all apps', () => {
-  for (const source of [fieldOverview, ownerOverview, dealerOverview]) {
+  for (const source of [ownerOverview, dealerOverview]) {
     assert.match(source, /function cardClassName\(/);
     assert.match(source, /item\.section === 'needs_attention'/);
     assert.match(source, /item\.status === 'due_soon'/);
@@ -44,23 +26,15 @@ test('overview cards use background colour instead of redundant pills across all
 });
 
 test('scheduled Owner maintenance uses the standard fuel-style location modal', () => {
-  assert.match(fieldOverview, /import FieldManagerLocationGate from '.\/field-manager-location-gate'/);
-  assert.match(fieldOverview, /<FieldManagerLocationGate/);
   assert.match(ownerOverview, /import OwnerServiceLocationModal from '..\/owner-service-location-modal'/);
   assert.match(ownerOverview, /item\.type !== 'service' && item\.type !== 'checkup'/);
   assert.match(ownerOverview, /publicAssetCode/);
   assert.match(ownerOverview, /<OwnerServiceLocationModal/);
   assert.match(ownerServiceModal, /<FuelLocationModal/);
-  assert.match(ownerServiceModal, /recordLabel="service"/);
-  assert.match(ownerServiceModal, /saveFieldManagerServiceLocation/);
+  assert.match(ownerServiceModal, /recordLabel=\{recordLabel\}/);
+  assert.match(ownerServiceModal, /saveManagerServiceLocation/);
   assert.match(fuelLocationModal, /Location required/);
   assert.match(fuelLocationModal, /styles\.icon/);
   assert.match(fuelLocationModal, /recordLabel = 'fuel record'/);
-  assert.match(locationGate, /Allow Aim4price to tag this service with your current location\./);
-  assert.match(locationGate, /<h2 id="location-gate-title">Location required<\/h2>/);
-  assert.match(locationGate, /locationState === 'error'\s*\? 'Retry'/);
-  assert.match(locationGate, />\s*Back\s*<\/button>/);
-  assert.doesNotMatch(locationGate, /Ready to start service\?|Retry location|locationGateEyebrow/);
-  assert.doesNotMatch(locationGate, /Back to overview|Aim4price needs your current location before this service can open/);
   assert.match(fieldStyles, /\.locationGateActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });

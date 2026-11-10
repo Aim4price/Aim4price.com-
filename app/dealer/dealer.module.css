@@ -2390,7 +2390,7 @@
   }
 }
 
-/* Owner App parity: the Dealer App uses the same restrained top controls and
+/* Manager App parity: the Dealer App uses the same restrained top controls and
    large, single-purpose launcher cards while keeping dealer-only workspaces. */
 .nav {
   position: relative;
@@ -2697,7 +2697,7 @@
 
 }
 
-/* Dealer notifications intentionally reuse the Owner App notification surface.
+/* Dealer notifications intentionally reuse the Manager App notification surface.
    This wrapper supplies the same responsive gutters without duplicating card styles. */
 .notificationOwnerPage.notificationOwnerPage {
   --owner-page-gutter: 28px;
@@ -3733,7 +3733,7 @@
   scroll-margin-top: calc(90px + env(safe-area-inset-top));
 }
 
-/* Use the Owner App's border-box control dimensions and responsive gutters. */
+/* Use the Manager App's border-box control dimensions and responsive gutters. */
 .navButton,
 .signOut {
   box-sizing: border-box;

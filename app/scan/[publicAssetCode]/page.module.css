@@ -3558,7 +3558,7 @@
   }
 }
 
-/* Field Manager: compact Owner App parity pass. */
+/* Field Manager: compact Manager App parity pass. */
 .fieldManagerMobileSurface {
   --field-manager-line: rgba(18, 53, 45, 0.13);
   --field-manager-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);

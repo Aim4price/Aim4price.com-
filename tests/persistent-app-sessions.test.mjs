@@ -22,7 +22,7 @@ function signed(payload) {
 }
 const decode = token => JSON.parse(Buffer.from(token.split('.')[0], 'base64url').toString());
 
-for (const kind of ['owner', 'dealer', 'middleman', 'field']) {
+for (const kind of ['owner', 'dealer', 'middleman']) {
   test(`${kind}: persistent sign-in survives time passing but respects revocation and legacy expiry`, async () => {
     let active = true, version = 1, status = 'active', role = 'sales', exists = true;
     const jar = new Map();
@@ -75,7 +75,7 @@ for (const kind of ['owner', 'dealer', 'middleman', 'field']) {
 }
 
 test('session renewal endpoints refuse foreign origins and revoked sessions', async () => {
-  for (const app of ['owner-app', 'field-manager', 'dealer']) {
+  for (const app of ['owner-app', 'dealer']) {
     let trusted = false;
     const cookies = [];
     const route = await load(`app/api/${app}/session/route.ts`, {

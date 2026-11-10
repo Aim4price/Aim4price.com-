@@ -17,13 +17,7 @@ const roleApps = [
     styles: new URL('../app/owner-app/owner-app.module.css', import.meta.url),
     tabletLayout: /@media\s*\(min-width:\s*600px\)[\s\S]*?\.homeLauncher\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/,
   },
-  {
-    name: 'Field Manager App',
-    layout: new URL('../app/field-manager/layout.tsx', import.meta.url),
-    manifest: new URL('../app/field-manager/manifest.webmanifest/route.ts', import.meta.url),
-    styles: new URL('../app/field-manager/page.module.css', import.meta.url),
-    tabletLayout: /@media\s*\(min-width:\s*600px\)[\s\S]*?\.homeActionGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2,/,
-  },
+
 ];
 
 test('role apps explicitly keep a scalable device-width viewport', async () => {

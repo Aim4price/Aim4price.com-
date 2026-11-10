@@ -316,3 +316,10 @@
   outline:2px solid var(--app-accent,#28815f); outline-offset:2px;
 }
 .standardAssetPicker::backdrop { background:rgba(12,24,35,.42); backdrop-filter:blur(12px) saturate(.9); }
+
+.permissionPanel button[aria-pressed=true] { background:var(--app-accent,#195b43); color:var(--app-on-accent,#fff); border-color:var(--app-accent,#195b43); }
+.permissionPanel details { background:var(--app-surface,#fff); }
+.permissionPanel input[type=checkbox] { accent-color:var(--app-accent,#195b43); width:1.1rem; height:1.1rem; flex-shrink:0; }
+.permissionPanel summary { min-height:24px; }
+.permissionPanel p { color:var(--app-muted,#65796f); line-height:1.5; }
+.permissionPanel select { max-width:100%; min-height:44px; padding:.65rem; border:1px solid var(--app-line,#d8e5dd); border-radius:.75rem; background:var(--app-surface,#fff); color:inherit; font:inherit; }

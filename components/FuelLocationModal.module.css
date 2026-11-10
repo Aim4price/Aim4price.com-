@@ -27,7 +27,7 @@
 
 .cardError { border-color: var(--app-danger-line, rgba(207, 57, 57, 0.25)); }
 
-/* Owner App: give the title room, while keeping all actions reachable on short screens. */
+/* Manager App: give the title room, while keeping all actions reachable on short screens. */
 :global([data-app-shell='owner']) .card {
   width: min(100%, 420px);
   max-height: calc(100dvh - 36px);

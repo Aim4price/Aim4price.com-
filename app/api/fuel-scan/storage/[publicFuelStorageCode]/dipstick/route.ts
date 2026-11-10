@@ -1,6 +1,7 @@
+import { projectManagerFuelScan } from '../../../../../../lib/fuel-scan-assets';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
 import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from 'next/server';
-import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, getFuelScanPayload, saveFuelStorageDipstickNote } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
@@ -60,8 +61,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
   }
 
-  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_fuel')))) {
-    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot add fuel tank notes.' }, { status: 403 });
+
+  if (access.accessMode === 'owner_session') {
+    const manager = await getOwnerAppAccess();
+    if (!manager || !ownerAppCan(manager, 'refillFuel')) return NextResponse.json({ ok: false, error: 'This fuel action is not allowed for this login.' }, { status: 403 });
   }
 
   let body: DipstickNoteRequest;
@@ -107,7 +110,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
-    return NextResponse.json({ ok: true, ...payload });
+    return NextResponse.json({ ok: true, ...await projectManagerFuelScan(access, payload) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to save dipstick note.') }, { status: 400 });
   }

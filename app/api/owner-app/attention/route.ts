@@ -4,7 +4,7 @@ import {
   unknownMaintenanceCompletionNote,
 } from '../../../../lib/asset-maintenance';
 import { markAssetIssueNoteStatusNoted } from '../../../../lib/asset-issue-notes';
-import { getOwnerAppAccess } from '../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 import {
   dismissOwnerAppOverviewItem,
   getOwnerAppOverviewItem,
@@ -28,7 +28,8 @@ function outcome(value: unknown): OverviewClearOutcome | null {
 
 export async function GET(request: NextRequest) {
   const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Manager.' }, { status: 401 });
+  if (!ownerAppCan(access, 'viewMaintenance')) return NextResponse.json({ ok: true, items: [], needsAttention: [], comingUp: [], canClearForEveryone: false });
   try {
     const overview = await listOwnerAppOverview(
       access.ownerUserId,
@@ -38,17 +39,17 @@ export async function GET(request: NextRequest) {
     );
     return NextResponse.json({
       ...overview,
-      canClearForEveryone: access.accessRole === 'admin',
+      canClearForEveryone: ownerAppCan(access, 'manage_assets'),
     });
   } catch (error) {
-    console.error('Owner App attention GET failed.', error);
+    console.error('Manager App attention GET failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to load Needs Attention.' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Manager.' }, { status: 401 });
 
   try {
     const body = await request.json() as Record<string, unknown>;
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     const sourceId = String(body.sourceId ?? '').trim();
     const requestedOutcome = outcome(body.outcome);
     const allowedAssetIds = access.assetScope === 'selected' ? access.accessibleAssetIds : null;
-    const clearForEveryone = body.clearForEveryone === true && access.accessRole === 'admin';
+    const clearForEveryone = body.clearForEveryone === true && ownerAppCan(access, 'manage_assets');
 
     if (!itemId || !sourceId || !requestedOutcome) {
       return NextResponse.json({ ok: false, error: 'A valid Overview Clear choice is required.' }, { status: 400 });
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       allowedAssetIds,
     );
 
+    if (!ownerAppCan(access, requestedOutcome === 'completed' ? 'completeMaintenance' : 'recordMaintenance')) return NextResponse.json({ ok: false, error: 'This action is not enabled for your login.' }, { status: 403 });
     if (requestedOutcome === 'completed') {
       if (item.type !== 'service' && item.type !== 'checkup') {
         throw new Error('OVERVIEW_MAINTENANCE_REQUIRED');
@@ -115,7 +117,7 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json({
       ...overview,
-      canClearForEveryone: access.accessRole === 'admin',
+      canClearForEveryone: ownerAppCan(access, 'manage_assets'),
       outcome: requestedOutcome,
     });
   } catch (error) {
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error('Owner App attention dismiss failed.', error);
+    console.error('Manager App attention dismiss failed.', error);
     return NextResponse.json({ ok: false, error: 'This item could not be cleared.' }, { status: 400 });
   }
 }

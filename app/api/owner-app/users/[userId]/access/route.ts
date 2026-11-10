@@ -1,3 +1,5 @@
+import { listAccountDocuments } from '../../../../../../lib/account-documents';
+import { listManagerFuelStorages } from '../../../../../../lib/manager-operational-assets';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../../lib/account-profile';
 import { getServerSession, isOwnerAppSession } from '../../../../../../lib/auth-session';
@@ -36,12 +38,14 @@ export async function GET(_request: NextRequest, { params }: { params: { userId:
     return NextResponse.json({
       ok: true,
       settings,
+      documents: (await listAccountDocuments(ownerUserId)).filter(doc => !doc.deletedAtIso).map(doc => ({ id: doc.id, title: doc.title, fileName: doc.fileName })),
+      tanks: (await listManagerFuelStorages(ownerUserId)).map(tank => ({ id: tank.id, name: tank.name })),
       registers: registers.map(register => ({ id: register.id, name: register.businessName })),
       assets: assetData.items.map((asset) => ({ id: asset.id, title: asset.title, kind: asset.kind, yearModel: asset.yearModel, serialNumber: asset.serialNumber, registerName: asset.registerName, usage: asset.usage, usageMetric: asset.usageMetric, registerId: asset.registerId })),
       groups: buildAppAssetDirectoryGroups(assetGroups, assetData.items.map((asset) => asset.id)),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to load Owner App access.';
+    const message = error instanceof Error ? error.message : 'Failed to load Manager App access.';
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }
@@ -53,7 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return NextResponse.json({ ok: false, error: 'Enter valid Owner App access.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Enter valid Manager App access.' }, { status: 400 });
   }
 
   try {
@@ -64,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: { userId: 
     );
     return NextResponse.json({ ok: true, settings });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Failed to save Owner App access.';
+    const message = error instanceof Error ? error.message : 'Failed to save Manager App access.';
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

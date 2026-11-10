@@ -1,3 +1,4 @@
+import { projectManagerAsset } from '../../../../lib/manager-permissions';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   createManualAssetRegisterItem,
@@ -26,7 +27,7 @@ const CONDITIONS = new Set(['excellent', 'good', 'fair', 'used', 'serious']);
 
 function unauthorized() {
   return NextResponse.json(
-    { ok: false, error: 'You must sign in to Aim4price Owner.' },
+    { ok: false, error: 'You must sign in to Aim4price Manager.' },
     { status: 401 },
   );
 }
@@ -78,12 +79,12 @@ export async function GET(request: NextRequest) {
     const query = request.nextUrl.searchParams.get('q') ?? '';
     return NextResponse.json({
       ok: true,
-      registers,
-      items: filterOwnerAppAssets(visibleItems, query),
+      registers: registers.filter(register => access.assetScope === 'all' || visibleItems.some(item => item.registerId === register.id)).map(register => ({ id: register.id, businessName: register.businessName })),
+      items: filterOwnerAppAssets(visibleItems, query).map(item => ownerAppCan(access, 'manage_assets') ? item : projectManagerAsset(item, access.teamPermissions)),
       groups: buildAppAssetDirectoryGroups(assetGroups, visibleItems.map((item) => item.id)),
     });
   } catch (error) {
-    console.error('Owner App assets GET failed.', error);
+    console.error('Manager App assets GET failed.', error);
     return NextResponse.json(
       { ok: false, error: 'Failed to load your assets.' },
       { status: 500 },
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    console.error('Owner App assets POST failed.', error);
+    console.error('Manager App assets POST failed.', error);
     return NextResponse.json(
       { ok: false, error: 'Failed to create the asset.' },
       { status: 500 },

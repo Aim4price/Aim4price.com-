@@ -1,7 +1,8 @@
+import { projectManagerFuelScan } from '../../../../../../lib/fuel-scan-assets';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
 import { fuelScanSelectableAssets } from '../../../../../../lib/fuel-scan-assets';
 import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from 'next/server';
-import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, listFuelAssetsForUser, listFuelEventsForReport, recordFuelAssetIssue } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
@@ -77,8 +78,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_fuel')))) {
-    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot record fuel issues.' }, { status: 403 });
+
+  if (access.accessMode === 'owner_session') {
+    const manager = await getOwnerAppAccess();
+    if (!manager || !ownerAppCan(manager, 'recordFuelIssues')) return NextResponse.json({ ok: false, error: 'This fuel action is not allowed for this login.' }, { status: 403 });
   }
 
   let body: FuelIssueRequest;
@@ -88,6 +91,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Enter valid fuel issue details.' }, { status: 400 });
   }
 
+  if (access.accessMode === 'owner_session') {
+    const manager = await getOwnerAppAccess();
+    if (!manager) return NextResponse.json({ ok: false, error: 'Sign in again.' }, { status: 401 });
+    if (!ownerAppCan(manager, 'updateUsage')) { body.assetUsageReading = undefined; body.assetUsageMetric = undefined; }
+    if (!ownerAppCan(manager, 'updateLocation')) { body.latitude = undefined; body.longitude = undefined; body.locationText = undefined; }
+  }
   const assetId = asText(body.assetId);
 
   if (!assetId) {
@@ -137,10 +146,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({
       ok: true,
-      storage: saved.storage,
-      event: saved.event,
-      assets: saved.assets,
-      recentEvents,
+      ...await projectManagerFuelScan(access, { storage: saved.storage, event: saved.event, assets: saved.assets, recentEvents }),
     });
   } catch (error) {
     return NextResponse.json(

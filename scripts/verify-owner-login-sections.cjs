@@ -129,9 +129,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}));
  await page.screenshot({path:'.next/owner-login-validation/overview-mobile.png'});
  await page.setViewport({width:1280,height:900});
- await click('Asset access');assert(await page.evaluate(()=>document.body.textContent.includes('Full access to all assets')));
- assert.equal(await page.$$eval('input[type="checkbox"]',els=>els.length),0);await click('Login details');
- await click('Permissions');await page.click('label:has(input[value="operations"])');await click('Save access');await heading('Permissions');assert.deepEqual(await patch(),{accessRole:'operations'});
+ await click('Permissions');await click('Workshop');await click('Save permissions');await heading('Permissions');assert.equal((await patch()).permissions.recordMaintenance,true);
  await click('Asset access');await card('Umbrellas');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
  await card('Registers');await page.waitForSelector('dialog[open] input[type="checkbox"]');await page.click('dialog[open] input[type="checkbox"]');await click('Cancel');
  await card('Registers');assert.equal(await page.$eval('dialog[open] input[type="checkbox"]',e=>e.checked),false);await page.click('dialog[open] input[type="checkbox"]');await click('Confirm selection');
@@ -176,7 +174,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    }),'Save footer remains visible outside the form');
  }
  // Exercise every app against the same section flow, using its existing API contract.
- for (const kind of ['field','dealer','middleman']) {
+ for (const kind of ['dealer','middleman']) {
    console.log('Checking app:',kind);
    await page.evaluate(kind => {
      window.requests=[];
