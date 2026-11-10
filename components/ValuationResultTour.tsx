@@ -55,7 +55,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
     const target = document.querySelector<HTMLElement>(`[data-value-tour="${available[index].target}"]`);
     if (!target) {setActive(false); return;}
     const focus = websiteVisibleViewport().width <= 640 ? target.querySelector<HTMLElement>('[data-value-tour-focus]') ?? target : target;
-    focus.scrollIntoView({behavior:'instant', block:websiteVisibleViewport().width <= 640 ? 'start' : 'center'});
+    focus.scrollIntoView({behavior:'instant', block:websiteVisibleViewport().width <= 640 ? (['details', 'assumptions'].includes(available[index].target) ? 'end' : 'start') : 'center'});
     let frame = 0;
     function measure() {
       let r = websiteLogicalRect(focus.getBoundingClientRect());
@@ -76,7 +76,7 @@ export default function ValuationResultTour({assumptionItems = ['Expected lifeti
       const clampTop = (top:number) => Math.max(16, Math.min(h-ch-16, top));
       let left = Math.max(16, Math.min(w-cw-16, r.left));
       let top:number;
-      let showSpotlight = r.top >= 0 && r.bottom <= h;
+      let showSpotlight = r.top >= -1 && r.bottom <= h + 1;
       // Prefer the side: keep the value, details and action being explained clear.
       if (r.right+gap+cw <= w-16) {
         left=r.right+gap; top=clampTop(r.top+(r.height-ch)/2);

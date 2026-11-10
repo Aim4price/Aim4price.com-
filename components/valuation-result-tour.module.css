@@ -41,3 +41,11 @@
   :global(:where(html:not(:has([data-website-canvas])))) .card { padding:16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .card p { font-size:.875rem; line-height:1.45; }
 }
+
+@media (max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .card h2 { font-size:1.05rem; margin:12px 0 8px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .card .hint { padding:10px 12px; margin-bottom:12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .progress { margin-top:10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { padding-top:12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions button { min-height:44px; }
+}
