@@ -133,7 +133,7 @@ export async function GET() {
   try {
     const registers = await listAssetRegisters(session.user.id);
     const selectedRegister = registers.find((register) => register.isSelected) ?? await getSelectedAssetRegister(session.user.id);
-    return NextResponse.json({ ok: true, registers, selectedRegister });
+    return NextResponse.json({ ok: true, registers, selectedRegister }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     console.error('asset registers GET failed', error);
     return errorResponse(error, 'Failed to load asset registers.');

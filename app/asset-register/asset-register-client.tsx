@@ -6305,6 +6305,7 @@ export default function AssetRegisterClient({
   const [assetRegisterMoveDestination, setAssetRegisterMoveDestination] = useState<AssetMoveDestination>('register');
   const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
   const [assetRegisterMoveGroups, setAssetRegisterMoveGroups] = useState<AssetGroup[]>([]);
+  const [assetRegisterMoveRegisters, setAssetRegisterMoveRegisters] = useState<AssetRegisterSummary[]>([]);
   const [assetRegisterMoveGroupLoadError, setAssetRegisterMoveGroupLoadError] = useState('');
   const [isLoadingAssetRegisterMoveGroups, setIsLoadingAssetRegisterMoveGroups] = useState(false);
   const [assetRegisterMoveError, setAssetRegisterMoveError] = useState('');
@@ -7549,11 +7550,11 @@ export default function AssetRegisterClient({
       || '',
   ).trim();
   const assetRegisterMoveTargets = useMemo(
-    () => assetRegisters.filter((register) => (
+    () => assetRegisterMoveRegisters.filter((register) => (
       register.id !== COMBINED_REGISTER_ID
       && register.id !== assetRegisterMoveSourceId
     )),
-    [assetRegisterMoveSourceId, assetRegisters],
+    [assetRegisterMoveSourceId, assetRegisterMoveRegisters],
   );
   const assetRegisterMoveTargetOptions = useMemo<RegisterPickerOption[]>(
     () => assetRegisterMoveTargets.map((register) => ({
@@ -7576,7 +7577,7 @@ export default function AssetRegisterClient({
   const assetRegisterMoveGroupOptions = useMemo<RegisterPickerOption[]>(
     () => assetRegisterMoveGroupTargets.map((group) => {
       const registerName = group.registerId
-        ? assetRegisters.find((register) => register.id === group.registerId)?.businessName || 'Asset Register'
+        ? assetRegisterMoveRegisters.find((register) => register.id === group.registerId)?.businessName || 'Asset Register'
         : '';
       const scopeDescription = group.registerId === null
         ? 'Combined umbrella'
@@ -7592,7 +7593,7 @@ export default function AssetRegisterClient({
         detailValue: group.members.length.toLocaleString('en-ZA'),
       };
     }),
-    [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
+    [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisterMoveRegisters],
   );
 
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
@@ -8129,30 +8130,36 @@ export default function AssetRegisterClient({
   }
 
   async function loadAssetRegisterMoveGroups(requestId: number) {
-    if (!canManageAssetGroups) {
-      setAssetRegisterMoveGroups([]);
-      return;
-    }
-
     setIsLoadingAssetRegisterMoveGroups(true);
     setAssetRegisterMoveGroupLoadError('');
+    setAssetRegisterMoveTargetId('');
+    setAssetRegisterMoveGroups([]);
+    setAssetRegisterMoveRegisters([]);
 
     try {
-      const response = await ownerFetch(buildAssetGroupsApiUrl(undefined, true), {
-        credentials: 'include',
-      });
-      const payload = await response.json() as AssetGroupApiResponse;
-
-      if (!response.ok || !payload.ok) {
-        throw new Error(payload.error ?? 'Umbrellas could not be loaded.');
-      }
+      const read = async (url: string) => {
+        const response = await ownerFetch(url, { credentials: 'include', cache: 'no-store' });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error ?? 'Move destinations could not be loaded.');
+        }
+        return payload;
+      };
+      const groupsUrl = buildAssetGroupsApiUrl(undefined, true);
+      const [registerPayload, groupPayload] = await Promise.all([
+        read('/api/asset-registers'),
+        canManageAssetGroups
+          ? read(`${groupsUrl}${groupsUrl.includes('?') ? '&' : '?'}destinations=1`)
+          : Promise.resolve({ groups: [] }),
+      ]);
 
       if (assetRegisterMoveGroupsRequestRef.current !== requestId) return;
-      setAssetRegisterMoveGroups(Array.isArray(payload.groups) ? payload.groups : []);
+      setAssetRegisterMoveRegisters(Array.isArray(registerPayload.registers) ? registerPayload.registers : []);
+      setAssetRegisterMoveGroups(Array.isArray(groupPayload.groups) ? groupPayload.groups : []);
     } catch (error) {
       if (assetRegisterMoveGroupsRequestRef.current !== requestId) return;
       setAssetRegisterMoveGroupLoadError(
-        error instanceof Error ? error.message : 'Umbrellas could not be loaded.',
+        error instanceof Error ? error.message : 'Move destinations could not be loaded.',
       );
     } finally {
       if (assetRegisterMoveGroupsRequestRef.current === requestId) {
@@ -8170,7 +8177,12 @@ export default function AssetRegisterClient({
       const response = await ownerFetch('/api/asset-registers', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(moveRegisterDraft) });
       const payload = await response.json() as AssetRegisterApiResponse;
       if (!response.ok || !payload.ok || !payload.register) throw new Error(payload.error || 'Could not create the register.');
-      if (Array.isArray(payload.registers)) setAssetRegisters(payload.registers);
+      if (Array.isArray(payload.registers)) {
+        setAssetRegisters(payload.registers);
+        setAssetRegisterMoveRegisters(payload.registers);
+      } else {
+        setAssetRegisterMoveRegisters((current) => [...current, payload.register!]);
+      }
       setAssetRegisterMoveTargetId(payload.register.id);
       setIsCreatingRegisterFromMove(false);
     } catch (error) {
@@ -8215,7 +8227,8 @@ export default function AssetRegisterClient({
     setAssetRegisterMoveAsset(asset);
     setAssetRegisterMoveDestination('register');
     setAssetRegisterMoveTargetId('');
-    setAssetRegisterMoveGroups(assetGroups);
+    setAssetRegisterMoveGroups([]);
+    setAssetRegisterMoveRegisters([]);
     setAssetRegisterMoveGroupLoadError('');
     setAssetRegisterMoveError('');
     void loadAssetRegisterMoveGroups(requestId);
@@ -8227,6 +8240,7 @@ export default function AssetRegisterClient({
   }
 
   async function handleMoveAssetRegister() {
+    if (isLoadingAssetRegisterMoveGroups || assetRegisterMoveGroupLoadError) return;
     if (!assetRegisterMoveAsset || !assetRegisterMoveTargetId || isMovingAssetRegister) {
       if (!assetRegisterMoveTargetId) {
         setAssetRegisterMoveError(
@@ -8273,6 +8287,9 @@ export default function AssetRegisterClient({
         const payload = await response.json() as AssetGroupApiResponse;
 
         if (!response.ok || !payload.ok) {
+          if (response.status === 404) {
+            await loadAssetRegisterMoveGroups(assetRegisterMoveGroupsRequestRef.current);
+          }
           throw new Error(payload.error ?? 'The asset could not be moved to this umbrella.');
         }
 
@@ -8326,6 +8343,9 @@ export default function AssetRegisterClient({
       const payload = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
 
       if (!response.ok || !payload?.ok) {
+        if (response.status === 404) {
+          await loadAssetRegisterMoveGroups(assetRegisterMoveGroupsRequestRef.current);
+        }
         throw new Error(extractApiError(payload, 'Failed to move asset.'));
       }
 
@@ -16207,8 +16227,8 @@ export default function AssetRegisterClient({
               targetId={assetRegisterMoveTargetId}
               onSelect={(id) => { setAssetRegisterMoveTargetId(id); setAssetRegisterMoveError(''); }}
               canUseUmbrellas={canManageAssetGroups}
-              loading={assetRegisterMoveDestination === 'umbrella' && isLoadingAssetRegisterMoveGroups}
-              loadError={assetRegisterMoveDestination === 'umbrella' ? assetRegisterMoveGroupLoadError : ''}
+              loading={isLoadingAssetRegisterMoveGroups}
+              loadError={assetRegisterMoveGroupLoadError}
               error={assetRegisterMoveError}
               busy={isMovingAssetRegister}
               managementHref={registerManagementHref}
