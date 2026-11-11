@@ -30,6 +30,7 @@ export type DealerCostActor = {
 export type DealerCostAssetOption = MyInvoiceAssetOption & {
   ownerUserId: string;
   ownerName: string;
+  canAddCosts: boolean;
 };
 
 export type DealerCostsData = {
@@ -45,6 +46,7 @@ type DealerCostAssetRef = {
   owner_user_id: string;
   asset_register_item_id: string;
   owner_name: string | null;
+  can_add_costs: boolean;
 };
 
 type DealerCostInvoiceRef = {
@@ -108,7 +110,15 @@ async function listDealerCostAssetRefs(
           nullif(owner.display_name, ''),
           nullif(owner_user.name, ''),
           'Asset owner'
-        ) as owner_name
+        ) as owner_name,
+        exists (
+          select 1 from public.dealer_maintenance_access cost_access
+          where cost_access.owner_user_id = shared.owner_user_id
+            and cost_access.dealer_user_id = $1
+            and cost_access.asset_register_item_id = shared.asset_register_item_id
+            and cost_access.is_active = true
+            and cost_access.can_add_costs = true
+        ) as can_add_costs
       from shared_assets shared
       inner join public.asset_register_items asset
         on asset.id = shared.asset_register_item_id
@@ -146,6 +156,7 @@ export async function listDealerCostAssets(dealerUserId: string): Promise<Dealer
       ...mapMyInvoiceAssetOption(asset),
       ownerUserId: ref.owner_user_id,
       ownerName: asText(ref.owner_name) || 'Asset owner',
+      canAddCosts: ref.can_add_costs === true,
     } satisfies DealerCostAssetOption;
   });
 
