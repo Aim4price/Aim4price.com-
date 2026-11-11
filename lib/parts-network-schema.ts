@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS parts_network_rows (
  PRIMARY KEY(network_id,dealer_id,part_key),
  FOREIGN KEY(network_id,dealer_id) REFERENCES parts_network_members(network_id,dealer_id) ON DELETE CASCADE
 );
+ALTER TABLE parts_network_rows ALTER COLUMN price DROP NOT NULL;
+ALTER TABLE parts_network_rows ADD COLUMN IF NOT EXISTS brand text NOT NULL DEFAULT '';
+ALTER TABLE parts_network_rows ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS parts_network_search ON parts_network_rows(network_id,part_key);
 CREATE TABLE IF NOT EXISTS parts_network_invites (
  id uuid PRIMARY KEY, network_id uuid NOT NULL REFERENCES parts_networks(id), email text NOT NULL,

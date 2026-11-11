@@ -13,6 +13,7 @@ import {
   parsePartsSnapshot,
   snapshotChanges,
   type PartColumns,
+  type PartImportOptions,
   type PartRow,
 } from "./parts-network-csv";
 import { sendAim4priceEmail, getSiteOrigin } from "./email";
@@ -167,7 +168,7 @@ export async function partsData(
     const where = `r.network_id=$1 AND EXISTS (SELECT 1 FROM parts_networks n WHERE n.id=r.network_id AND (NOT n.list_mode OR n.created_by=r.dealer_id)) AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0)`;
     const args = [id, mine, actor.id, query];
     const rows = await db.query(
-      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT 50 OFFSET $5`,
+      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,r.brand,r.description,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT 50 OFFSET $5`,
       [...args, offset],
     );
     const count = await db.query(
@@ -448,13 +449,14 @@ export async function importParts(
   input: Record<string, unknown>,
   commit: boolean,
 ) {
-  if (typeof input.csv !== "string") throw new PartsError("Choose a CSV file.");
+  if (typeof input.csv !== "string") throw new PartsError("Add parts or choose a table.");
   let rows: PartRow[];
   try {
-    rows = parsePartsSnapshot(input.csv, input.columns as PartColumns);
+    rows = parsePartsSnapshot(input.csv, input.columns as PartColumns, (input.options ?? {}) as PartImportOptions);
   } catch (e) {
-    throw new PartsError(e instanceof Error ? e.message : "Invalid CSV.");
+    throw new PartsError(e instanceof Error ? e.message : "Invalid table.");
   }
+  if (input.mode !== undefined && input.mode !== "merge" && input.mode !== "replace") throw new PartsError("Choose how to update the list.");
   return transaction(async (db) => {
     const member = await access(db, actor, id, "write");
     if (!member)
@@ -466,17 +468,26 @@ export async function importParts(
       throw new PartsError("Your list changed. Preview the upload again.", 409);
     const previous = (
       await db.query(
-        "SELECT part_number,quantity,price FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
+        "SELECT part_number,quantity,price,brand,description FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
         [id, actor.id],
       )
     ).rows.map((r) => ({
       partNumber: r.part_number,
       quantity: r.quantity,
-      price: Number(r.price),
+      price: r.price === null ? null : Number(r.price),
+      brand: r.brand,
+      description: r.description,
     }));
+    const imported = rows;
+    if (input.mode === "merge") {
+      const combined = new Map(previous.map(row => [row.partNumber.toUpperCase(), row]));
+      for (const row of rows) combined.set(row.partNumber.toUpperCase(), { ...row, brand: row.brand || "", description: row.description || "" });
+      rows = [...combined.values()];
+    }
+    if (rows.length > 20000) throw new PartsError("A list can contain at most 20,000 parts.");
     const summary = snapshotChanges(previous, rows);
     if (!commit)
-      return { summary, revision: member.revision, sample: rows.slice(0, 5) };
+      return { summary, revision: member.revision, sample: imported.slice(0, 5) };
     const business = str(input.businessName),
       town = str(input.town, 100),
       phone = str(input.phone, 30),
@@ -497,14 +508,14 @@ export async function importParts(
       [id, actor.id],
     );
     await db.query(
-      `INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price) SELECT $1,$2,p->>'partNumber',upper(p->>'partNumber'),(p->>'quantity')::integer,(p->>'price')::numeric FROM jsonb_array_elements($3::jsonb) p`,
+      `INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price,brand,description) SELECT $1,$2,p->>'partNumber',upper(p->>'partNumber'),(p->>'quantity')::integer,(p->>'price')::numeric,coalesce(p->>'brand',''),coalesce(p->>'description','') FROM jsonb_array_elements($3::jsonb) p`,
       [id, actor.id, JSON.stringify(rows)],
     );
     await db.query(
       "UPDATE parts_network_members SET business_name=$3,town=$4,phone=$5,email=$6,vat_included=$7,revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2",
       [id, actor.id, business, town, phone, email, input.vatIncluded],
     );
-    await audit(db, id, actor, "replace-list", `${rows.length} rows`);
+    await audit(db, id, actor, input.mode === "merge" ? "update-list" : "replace-list", `${rows.length} rows`);
     return { summary };
   });
 }

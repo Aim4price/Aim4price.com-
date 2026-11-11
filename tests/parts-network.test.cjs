@@ -34,7 +34,7 @@ test("CSV handles BOM, semicolon decimal commas, quotes, CRLF and leading zeros"
   );
   assert.deepEqual(
     csv.guessPartColumns(["Stock Code", "Qty", "Unit Price"]),
-    columns,
+    { ...columns, brand: -1, description: -1 },
   );
 });
 test("CSV refuses empty snapshots, duplicate identities, invalid numbers and mismatched mappings", () => {
@@ -69,6 +69,36 @@ test("CSV refuses empty snapshots, duplicate identities, invalid numbers and mis
     ),
     { added: 1, updated: 1, removed: 1, total: 2 },
   );
+});
+test("headerless tables preserve identifiers, optional prices and dealer metadata", () => {
+  const mapping = { partNumber: 0, description: 1, quantity: 2, price: -1 };
+  const rows = csv.parsePartsSnapshot('01.00123\tDowel\t16\n01.ABC-01\tBush\t9', mapping, { hasHeader: false, stripPrefix: "01.", defaultBrand: "Landini" });
+  assert.deepEqual(rows, [
+    { partNumber: "00123", description: "Dowel", quantity: 16, price: null, brand: "Landini" },
+    { partNumber: "ABC-01", description: "Bush", quantity: 9, price: null, brand: "Landini" },
+  ]);
+  assert.equal(csv.parsePartsSnapshot('Code,Qty,Price\n001,1,', columns)[0].price, null);
+  assert.equal(csv.parsePartsSnapshot('Code,Qty,Price\n001,1,0', columns)[0].price, 0);
+  assert.equal(csv.parsePartsSnapshot('01.00123,Dowel,16', mapping, { hasHeader: false })[0].partNumber, '01.00123');
+  assert.throws(() => csv.parsePartsSnapshot('01.A,Dowel,1\nA,Bush,2', mapping, { hasHeader: false, stripPrefix: '01.' }), /duplicate/);
+  assert.equal(csv.snapshotChanges(rows, rows.map(r => ({ ...r, brand: 'JD' }))).updated, 2);
+  assert.throws(() => csv.parsePartsSnapshot('a,b,1', { ...mapping, description: 0 }, { hasHeader: false }), /different columns/);
+});
+test("Excel sheets preserve text and zero padding, and reject uncached formulas", async () => {
+  const Excel = require('exceljs');
+  const reader = load('lib/parts-network-excel.ts');
+  const workbook = new Excel.Workbook();
+  const sheet = workbook.addWorksheet('Stock');
+  sheet.addRow(['01.3657074', 'Dowel', 16]);
+  sheet.addRow([123, 'Bush', 9]);
+  sheet.getCell('A2').numFmt = '00000';
+  workbook.addWorksheet('Other').addRow(['JD-1', 'Bolt', 1]);
+  const rows = await reader.readPartsExcel(await workbook.xlsx.writeBuffer());
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].rows[0][0], '01.3657074');
+  assert.equal(rows[0].rows[1][0], '00123');
+  sheet.getCell('C1').value = { formula: '1+2' };
+  await assert.rejects(async () => reader.readPartsExcel(await workbook.xlsx.writeBuffer()), /calculated values/);
 });
 test("private network membership, import replacement and invitation lifecycle use real SQL", async () => {
   const db = new PGlite();
@@ -424,6 +454,27 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
     (await parts.partsData(owner, b, "mine", "", 0)).rows[0].part_number,
     "001",
   );
+  const additional = { ...input, mode: "merge", csv: 'Part,Qty,Price,Brand,Description\nNEW,2,,Landini,Dowel', columns: { ...columns, brand: 3, description: 4 } };
+  const mergePreview = await parts.importParts(owner, b, additional, false);
+  assert.deepEqual(mergePreview.summary, { added: 1, updated: 0, removed: 0, total: 2 });
+  assert.equal(mergePreview.sample[0].price, null);
+  await parts.importParts(owner, b, { ...additional, revision: mergePreview.revision }, true);
+  const saved = (await parts.partsData(owner, b, 'mine', 'NEW', 0)).rows[0];
+  assert.equal(saved.price, null);
+  assert.equal(saved.brand, 'Landini');
+  assert.equal(saved.description, 'Dowel');
+  assert.equal((await parts.partsData(owner, b, 'mine', '', 0)).total, 2);
+  await assert.rejects(() => parts.importParts(owner, b, { ...additional, revision: mergePreview.revision }, true), /changed/);
+  const edit = { ...additional, csv: 'Part,Qty,Price,Brand,Description\nNEW,4,0,JD,Updated' };
+  const editPreview = await parts.importParts(owner, b, edit, false);
+  assert.deepEqual(editPreview.summary, { added: 0, updated: 1, removed: 0, total: 2 });
+  await parts.importParts(owner, b, { ...edit, revision: editPreview.revision }, true);
+  const edited = (await parts.partsData(owner, b, 'mine', 'NEW', 0)).rows[0];
+  assert.equal(Number(edited.price), 0);
+  assert.equal(edited.quantity, 4);
+  assert.equal(edited.brand, 'JD');
+  assert.equal((await parts.partsData(owner, b, 'mine', '', 0)).total, 2);
+
   await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
   const invitation = (await parts.partsInbox(buyer)).invitations[0];
   assert.equal(invitation.name, "Landini");

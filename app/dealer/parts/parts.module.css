@@ -1027,3 +1027,29 @@
     min-height: 4rem;
   }
 }
+
+/* Three entry paths share one review and save flow. */
+.importFields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.importChoices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 4px; }
+.importChoices button { flex-direction: column; min-height: 130px; padding: 20px 12px; border-radius: 18px; background: var(--app-surface-soft, #f1f8f5); }
+.importChoices button[aria-pressed="true"] { border-color: #31996b; box-shadow: 0 0 0 2px #40a87628; }
+.importChoices svg { height: 26px; width: 26px; }
+.importChoices strong { font-size: 17px; }
+.importChoices small { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.importForm label { display: grid; gap: 8px; font-weight: 650; }
+.importForm input, .importForm select, .importForm textarea { min-width: 0; width: 100%; box-sizing: border-box; }
+.importForm .importCheck { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; }
+.importCheck input { width: 20px; min-height: 20px; height: 20px; flex: none; }
+.manualRows { display: grid; gap: 16px; }
+.manualRow { padding: 20px; border: 1px solid var(--app-border, #cbded4); border-radius: 18px; }
+.manualRow > button { margin-top: 12px; }
+.importForm p { margin: 0 0 16px; }
+.importFields p { margin: 0; }
+@media (max-width: 700px) {
+ .importChoices { grid-template-columns: 1fr; gap: 10px; }
+ .importChoices button { display: grid; grid-template-columns: 32px 1fr; min-height: 76px; text-align: left; padding: 12px 16px; }
+ .importChoices svg { grid-row: span 2; }
+ .manualRow { padding: 14px; }
+}
+
+.importForm > .actions { margin-top: 20px; }

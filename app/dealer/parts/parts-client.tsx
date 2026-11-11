@@ -13,12 +13,7 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../../components/WorkspacePrimitives";
-import {
-  guessPartColumns,
-  readPartsCsv,
-  MAX_PARTS_CSV_BYTES,
-  type PartColumns,
-} from "../../../lib/parts-network-csv";
+import PartsImportForm from "../../../components/PartsImportForm";
 import PartsInbox from "../../../components/PartsInbox";
 import styles from "./parts.module.css";
 type Network = {
@@ -46,7 +41,9 @@ type Row = {
   dealer_id: string;
   part_number: string;
   quantity: number;
-  price: string;
+  price: string | null;
+  brand?: string;
+  description?: string;
   business_name: string;
   town: string;
   phone: string;
@@ -62,10 +59,6 @@ type Invite = {
   expires_at: string;
   consumed_at: string | null;
   revoked_at: string | null;
-};
-type Preview = {
-  revision: number;
-  summary: { added: number; updated: number; removed: number; total: number };
 };
 const date = (s: string) =>
   s
@@ -234,14 +227,6 @@ export default function PartsClient({
       role: string;
       status: string;
     } | null>(null);
-  const [csv, setCsv] = useState(""),
-    [headers, setHeaders] = useState<string[]>([]),
-    [columns, setColumns] = useState<PartColumns>({
-      partNumber: -1,
-      quantity: -1,
-      price: -1,
-    }),
-    [preview, setPreview] = useState<Preview | null>(null);
   const [details, setDetails] = useState({
       businessName: "",
       town: "",
@@ -356,9 +341,6 @@ export default function PartsClient({
     setRefresh((n) => n + 1);
   }
   function openUpload() {
-    setCsv("");
-    setHeaders([]);
-    setPreview(null);
     setDetails({
       businessName: current?.business_name || "",
       town: current?.town || "",
@@ -388,7 +370,7 @@ export default function PartsClient({
       {canUpload && (
         <button className={styles.primary} onClick={openUpload}>
           <Icon kind="upload" />
-          Upload CSV
+          Add parts
         </button>
       )}
       {admin && (
@@ -660,16 +642,18 @@ export default function PartsClient({
                           <tr key={`${r.part_number}-${i}`}>
                             <td>
                               <strong>{r.part_number}</strong>
+                              {r.brand && <small>{r.brand}</small>}
+                              {r.description && <small>{r.description}</small>}
                             </td>
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
                               <strong>
-                                {Number(r.price).toLocaleString("en-ZA", {
+                                {r.price === null ? "Price on request" : Number(r.price).toLocaleString("en-ZA", {
                                   style: "currency",
                                   currency: "ZAR",
                                 })}
                               </strong>
-                              {!singleDealer && <small>{r.vat_included ? "Incl. VAT" : "Excl. VAT"}</small>}
+                              {!singleDealer && r.price !== null && <small>{r.vat_included ? "Incl. VAT" : "Excl. VAT"}</small>}
                             </td>
                             {!singleDealer && <><td>
                               {r.business_name}
@@ -702,7 +686,7 @@ export default function PartsClient({
                       <div className={styles.tableEmpty}>
                         <Icon kind={search.trim() ? "search" : "upload"} />
                         <strong>{loading ? "Loading parts…" : search.trim() ? "No matching parts" : !uploadedAt ? "No parts uploaded yet" : "No parts available"}</strong>
-                        {!loading && !search.trim() && canUpload && <p>Upload your CSV to add parts to this list.</p>}
+                        {!loading && !search.trim() && canUpload && <p>Add parts manually or import your stocklist.</p>}
                         {!loading && search.trim() && <button onClick={() => { setSearch(""); setPage(0); }}>Clear search</button>}
                       </div>
                     )}
@@ -887,8 +871,8 @@ export default function PartsClient({
                 >
                   <Icon kind="upload" />
                   <span>
-                    <strong>Update CSV</strong>
-                    <small>Replace parts with your latest stocklist.</small>
+                    <strong>Add / update parts</strong>
+                    <small>Enter parts or import your stocklist.</small>
                   </span>
                 </button>
               )}
@@ -1190,175 +1174,18 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal
-            title={preview ? "Review parts list" : "Upload parts list"}
-            onClose={close}
-            busy={busy}
-          >
-            {!preview ? (
-              <>
-                <p>
-                  Upload your complete CSV. It replaces only your parts in this
-                  list.
-                </p>
-                <label className={styles.drop}>
-                  <Icon kind="upload" />
-                  <strong>Choose or drop a CSV</strong>
-                  <span>Part number · Quantity · Unit price</span>
-                  <input
-                    type="file"
-                    accept=".csv,text/csv"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      void run(async () => {
-                        if (f.size > MAX_PARTS_CSV_BYTES)
-                          throw new Error("Use a CSV smaller than 2 MB.");
-                        const value = await f.text();
-                        const parsed = readPartsCsv(value);
-                        setCsv(value);
-                        setHeaders(parsed[0]);
-                        setColumns(guessPartColumns(parsed[0]));
-                      });
-                    }}
-                  />
-                </label>
-                {headers.length > 0 && (
-                  <>
-                    <div className={styles.grid}>
-                      {(["partNumber", "quantity", "price"] as const).map(
-                        (k) => (
-                          <label key={k}>
-                            {
-                              {
-                                partNumber: "Part number",
-                                quantity: "Quantity",
-                                price: "Unit price",
-                              }[k]
-                            }
-                            <select
-                              value={columns[k]}
-                              onChange={(e) =>
-                                setColumns({
-                                  ...columns,
-                                  [k]: Number(e.target.value),
-                                })
-                              }
-                            >
-                              <option value={-1}>Choose column</option>
-                              {headers.map((h, i) => (
-                                <option value={i} key={i}>
-                                  {h || `Column ${i + 1}`}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ),
-                      )}
-                    </div>
-                    <div className={styles.grid}>
-                      {(
-                        ["businessName", "town", "phone", "email"] as const
-                      ).map((k) => (
-                        <label key={k}>
-                          {
-                            {
-                              businessName: "Dealership",
-                              town: "Town",
-                              phone: "Contact phone",
-                              email: "Contact email",
-                            }[k]
-                          }
-                          <input
-                            value={details[k]}
-                            onChange={(e) =>
-                              setDetails({ ...details, [k]: e.target.value })
-                            }
-                          />
-                        </label>
-                      ))}
-                      <label>
-                        Prices
-                        <select
-                          value={String(details.vatIncluded)}
-                          onChange={(e) =>
-                            setDetails({
-                              ...details,
-                              vatIncluded: e.target.value === "true",
-                            })
-                          }
-                        >
-                          <option value="false">Exclude VAT</option>
-                          <option value="true">Include VAT</option>
-                        </select>
-                      </label>
-                    </div>
-                    <button
-                      disabled={
-                        busy || Object.values(columns).some((i) => i < 0)
-                      }
-                      className={styles.primary}
-                      onClick={() =>
-                        void run(async () =>
-                          setPreview(
-                            await api({
-                              action: "preview",
-                              network,
-                              csv,
-                              columns,
-                            }),
-                          ),
-                        )
-                      }
-                    >
-                      Review upload
-                    </button>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <div className={styles.summary}>
-                  {Object.entries(preview.summary).map(([k, v]) => (
-                    <div key={k}>
-                      <strong>{v.toLocaleString()}</strong>
-                      <span>{k}</span>
-                    </div>
-                  ))}
-                </div>
-                <p>
-                  Parts missing from this CSV will be removed from your listing.
-                  Your master stock records and asset cost ledger are
-                  unaffected.
-                </p>
-                <div className={styles.actions}>
-                  <button disabled={busy} onClick={() => setPreview(null)}>
-                    Back
-                  </button>
-                  <button
-                    className={styles.primary}
-                    disabled={busy}
-                    onClick={() =>
-                      void run(async () => {
-                        await mutate({
-                          action: "import",
-                          csv,
-                          columns,
-                          revision: preview.revision,
-                          ...details,
-                        });
-                        setModal(null);
-                        switchView("mine");
-                        setNotice("Parts list replaced successfully.");
-                      })
-                    }
-                  >
-                    Replace my parts list
-                  </button>
-                </div>
-              </>
-            )}
-            {feedback}
+          <Modal title="Add / update parts" onClose={close} busy={busy}>
+            <PartsImportForm initialDetails={details}
+              request={body => api({ ...body, network })}
+              onBusyChange={setBusy}
+              onComplete={async () => {
+                await loadNetworks();
+                setRefresh(n => n + 1);
+                setModal(null);
+                switchView("mine");
+                setNotice("Parts list updated successfully.");
+              }}
+            />
           </Modal>
         )}
         {contact && (
