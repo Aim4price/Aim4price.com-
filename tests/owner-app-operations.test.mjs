@@ -13,9 +13,10 @@ test('Owner App gives daily work direct entries with a shared Work destination',
   assert.match(home, /label: 'Add fuel'/);
   assert.match(home, /label: 'Record work'/);
   assert.match(home, /label: 'Report problem'/);
-  assert.match(operations, /ownerAppCan\(access, 'operate'\)/);
+  for (const permission of ['addFuel', 'recordMaintenance', 'viewMaintenance']) assert.ok(operations.includes(`ownerAppCan(access, '${permission}')`));
+  assert.match(operations, /aria-disabled="true"/);
   for (const route of ['/owner-app/operations/maintenance', '/owner-app/operations/fuel', '/owner-app/report-problem']) assert.ok(operations.includes(route));
-  assert.match(nav, /permissions.includes\('operate'\)/);
+  assert.doesNotMatch(nav, /permissions.includes\('operate'\)/, 'Keep all four mobile navigation tabs; restrict actions inside Work');
   assert.match(nav, /label: 'Work', href: '\/owner-app\/operations'/);
 });
 

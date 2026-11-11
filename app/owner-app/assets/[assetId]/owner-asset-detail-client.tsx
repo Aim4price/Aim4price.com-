@@ -375,6 +375,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [disposalWizardStep, setDisposalWizardStep] = useState<DisposalWizardStep>(1);
   const [transferReceipt, setTransferReceipt] = useState<TransferReceipt | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
+  const [teamPermissions, setTeamPermissions] = useState<Record<string, boolean>>({});
+  const can = (permission: string) => permissions.includes('manage_assets') || teamPermissions[permission] === true;
 
   const hasUnsavedChanges = view === 'section' && Boolean(draft && baseline.current && (
     JSON.stringify(draft) !== JSON.stringify(baseline.current) ||
@@ -409,7 +411,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   useEffect(() => {
     void fetch('/api/owner-app/session', { credentials: 'include', cache: 'no-store' })
       .then((response) => response.json())
-      .then((payload) => setPermissions(Array.isArray(payload?.session?.permissions) ? payload.session.permissions : []))
+      .then((payload) => {
+        setPermissions(Array.isArray(payload?.session?.permissions) ? payload.session.permissions : []);
+        setTeamPermissions(payload?.session?.teamPermissions ?? {});
+      })
       .catch(() => setPermissions([]));
   }, []);
 
@@ -980,12 +985,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             </div>
 
             <nav className={`${mobile.grid} ${mobile.assetActions}`} aria-label="Quick asset actions">
-              {permissions.includes('operate') ? <>
-                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}`} prefetch={false}><OwnerIcon name="record" /><strong>Record work</strong></Link>
-                <Link className={mobile.tile} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1`} prefetch={false}><OwnerIcon name="problem" /><strong>Report problem</strong></Link>
-                <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><OwnerIcon name="calendar" /><strong>Schedule work</strong></Link>
-              </> : null}
-              {permissions.includes('manage_assets') ? <Link className={mobile.tile} href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage`} prefetch={false}><OwnerIcon name="usage" /><strong>Update usage</strong></Link> : null}
+              {[
+                { label: 'Record work', icon: 'record', allowed: can('recordMaintenance') || can('completeMaintenance'), href: `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}` },
+                { label: 'Report problem', icon: 'problem', allowed: can('recordMaintenance'), href: `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1` },
+                { label: 'Schedule work', icon: 'calendar', allowed: can('scheduleMaintenance'), href: `/owner-app/assets/${encodeURIComponent(assetId)}/maintenance` },
+                { label: 'Update usage', icon: 'usage', allowed: permissions.includes('manage_assets'), href: `/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage` },
+              ].map(item => item.allowed
+                ? <Link key={item.label} className={mobile.tile} href={item.href} prefetch={false}><OwnerIcon name={item.icon} /><strong>{item.label}</strong></Link>
+                : <div key={item.label} className={mobile.tile} aria-disabled="true" title="Access restricted"><OwnerIcon name={item.icon} /><strong>{item.label}</strong></div>)}
             </nav>
 
             <div className={styles.detailValueSummary}>

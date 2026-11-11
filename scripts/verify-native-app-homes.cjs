@@ -1,6 +1,8 @@
 /* Native app homes: real components/CSS and synthetic sessions; no live accounts or writes. */
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
+const ownerScreen=process.env.OWNER_SCREEN||'home', restricted=process.env.OWNER_RESTRICTED==='1';
+const ownerPage=ownerScreen==='home'?'app/owner-app/page':'app/owner-app/'+ownerScreen+'/page';
 const appMode=process.env.APP_MODE||'owner',appRoot=appMode==='owner'?'/owner-app':'/'+appMode;
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
@@ -48,28 +50,33 @@ Object.assign(stubs, {
  'lib/dealer-maintenance-tracker':'exports.listDealerTrackedAssets=async()=>[];',
  'lib/partner-access':'exports.listAssetLeadsForUser=async()=>[];'
 });
-stubs['lib/owner-app-access']='exports.requireOwnerAppPageAccess=async()=>({displayName:"Test manager",ownerUserId:"fixture"});exports.ownerAppCan=()=>true;';stubs['app/owner-app/owner-home-attention']='module.exports=()=>null;';stubs['components/AppSettings']='module.exports=()=>null;';add('app/owner-app/page');add('app/owner-app/owner-bottom-nav');
+stubs['lib/owner-app-access']='exports.requireOwnerAppPageAccess=async()=>({displayName:"Test manager",ownerUserId:"fixture"});exports.ownerAppCan=()=>'+(!restricted)+';';stubs['app/owner-app/owner-home-attention']='module.exports=()=>null;';stubs['components/AppSettings']='module.exports=()=>null;';add(ownerPage);add('app/owner-app/owner-bottom-nav');
 add('app/dealer/dealer-nav');add('app/dealer/dealer-bottom-nav');add('app/dealer/page');add('app/middleman/page');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
- 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/dynamic")return ()=>()=>null;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({back(){},push(){},replace(){}}),usePathname:()=>'+JSON.stringify(appRoot)+'};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
+ 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/dynamic")return ()=>()=>null;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({back(){},push(){},replace(){}}),usePathname:()=>'+JSON.stringify(appMode==='owner'&&ownerScreen!=='home'?appRoot+'/'+ownerScreen:appRoot)+'};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
 
 
 (async()=>{const browser=await puppeteer.launch({executablePath:await chromium.executablePath(),args:chromium.args,headless:true});try{
- const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const page=await browser.newPage();const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error(e.message);});
  await page.setViewport({width:Number(process.env.VIEWPORT_WIDTH||320),height:852});
- await page.setRequestInterception(true);page.on('request',r=>r.respond({contentType:'application/json',body:JSON.stringify({ok:true,manager:{id:'fixture',displayName:'A long Manager account name',username:'fixture'},assets:[{id:'baler',title:'2021 Krone Fortima 1250MC Baler',kind:'baler',publicAssetCode:'fixture',serialNumber:'RPS601S1',usageLabel:'30%',yearModel:2021}],groups:[{id:'balers',name:'Balers and agricultural equipment with a long name',memberAssetIds:['baler'],memberCount:1}],session:{role:'owner',permissions:['view','operate']},summary:{needsAttentionCount:3,comingUpCount:14},unreadCount:2})}));
+ await page.setRequestInterception(true);page.on('request',r=>r.respond({contentType:'application/json',body:JSON.stringify({ok:true,manager:{id:'fixture',displayName:'A long Manager account name',username:'fixture'},items:[{id:'baler',title:'2021 Krone Fortima 1250MC Baler',kind:'baler',serialNumber:'RPS601S1',usage:30,usageMetric:'percentage',yearModel:2021}],assets:[{id:'baler',title:'2021 Krone Fortima 1250MC Baler',kind:'baler',publicAssetCode:'fixture',serialNumber:'RPS601S1',usageLabel:'30%',yearModel:2021}],groups:[{id:'balers',name:'Balers and agricultural equipment with a long name',memberAssetIds:['baler'],memberCount:1}],session:{role:'owner',permissions:restricted?['view']:['view','operate']},summary:{needsAttentionCount:3,comingUpCount:14},unreadCount:2})}));
  await page.goto('https://preview.test');await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#eef5f0}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+'window.testRequire=require;'});
- await page.evaluate(async mode=>{const req=window.testRequire;
+ await page.evaluate(async ({mode,ownerPage})=>{const req=window.testRequire;
  const owner=mode==='owner',css=req(owner?'app/owner-app/owner-app.module.css':'app/dealer/dealer.module.css');
- const Home=req(owner?'app/owner-app/page':'app/'+mode+'/page').default;
- const content=await Home();
+ const Home=req(owner?ownerPage:'app/'+mode+'/page').default;
+ const content=await Home({searchParams:{q:'Baler'}});
  ReactDOM.createRoot(document.getElementById('app')).render(React.createElement('div',{className:owner?css.appShell:css.dealerLayout,'data-app-shell':owner?'owner':'dealer'},owner?null:React.createElement(req('app/dealer/dealer-nav').default),owner?content:React.createElement('div',{className:css.patternPageContent},content),React.createElement(req(owner?'app/owner-app/owner-bottom-nav':'app/dealer/dealer-bottom-nav').default)));
- },appMode);
- await page.waitForFunction(()=>document.body.innerText.includes('Add fuel')||document.body.innerText.includes('Value Asset'));
+ },{mode:appMode,ownerPage});
+ await page.waitForFunction(()=>document.body.innerText.includes('Add fuel')||document.body.innerText.includes('Value Asset')||document.querySelector('a[href="/owner-app/assets/baler"]'));
+ if(appMode==='owner'){
+  assert.equal(await page.$$eval('a[href*="/workspace/"]',els=>els.length),0,'No desktop workspace links');
+  if(ownerScreen==='assets'){await page.waitForSelector('a[href="/owner-app/assets/baler"]');assert.equal(await page.$$eval('a[href="/owner-app/assets/add"]',els=>els.length),restricted?0:1);}
+  if(ownerScreen==='home' && restricted) assert.equal(await page.$$eval('[aria-disabled="true"]',els=>els.length),4);
+ }
 
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No horizontal page overflow');
  const header=appMode==='owner'?'Aim4price Manager account controls':appMode==='middleman'?'Middleman App navigation':'Dealer App navigation';
@@ -78,6 +85,6 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const bottomLabel=appMode==='owner'?'Manager App navigation':null;
  await page.waitForSelector(bottomLabel?'nav[aria-label="'+bottomLabel+'"]':'nav[aria-label$="bottom navigation"]');
  assert(await page.$$eval(bottomLabel?'nav[aria-label="'+bottomLabel+'"] a':'nav[aria-label$="bottom navigation"] a',(els,root)=>els.every(e=>e.getAttribute('href').startsWith(root)),appRoot));
- await page.screenshot({path:'/tmp/parity-home-'+appMode+'-'+(process.env.VIEWPORT_WIDTH||320)+'.png',fullPage:true});
+ await page.screenshot({path:'/tmp/parity-home-'+appMode+'-'+ownerScreen+'-'+(restricted?'restricted':'owner')+'-'+(process.env.VIEWPORT_WIDTH||320)+'.png',fullPage:true});
  assert.deepEqual(errors,[]);console.log('PASS actual home and navigation',appMode);
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
