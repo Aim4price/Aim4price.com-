@@ -9,6 +9,8 @@ on:
       - 'app/api/owner-app/**'
       - 'app/api/app-offline/**'
       - 'tests/manager-consolidation.test.cjs'
+      - 'tests/manager-mobile-actions.test.cjs'
+      - 'scripts/verify-manager-mobile-actions.cjs'
       - '.github/workflows/manager-consolidation.yml'
   workflow_dispatch:
 permissions:
@@ -25,5 +27,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/manager-consolidation.test.cjs tests/team-access.test.cjs tests/team-workspace-permissions.test.cjs tests/owner-register-access.test.mjs tests/app-offline.test.cjs tests/persistent-app-sessions.test.mjs
+      - run: node --test tests/manager-mobile-actions.test.cjs tests/manager-consolidation.test.cjs tests/team-access.test.cjs tests/team-workspace-permissions.test.cjs tests/owner-register-access.test.mjs tests/app-offline.test.cjs tests/persistent-app-sessions.test.mjs
       - run: node scripts/verify-owner-access-flow.cjs
+      - run: node scripts/verify-manager-mobile-actions.cjs

@@ -1,5 +1,6 @@
 'use client';
 
+import { managerAssetSectionAllowed } from '../../../../lib/manager-mobile-policy';
 import { automaticValuationPending, automaticValuationLabel, AUTOMATIC_VALUATION_NOTICE } from '../../../../lib/automatic-valuation-status';
 import AppMaintenanceActions from '../../../../components/AppMaintenanceActions';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
@@ -8,7 +9,7 @@ import { assetLocationDraft, hasLocationChanges, validLocationCoordinates, type 
 
 import { legacyValuationRecoveryReason } from '../../../../lib/asset-register-legacy-valuation';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
 import { saleabilityBasis, type SavedSaleability } from '../../../../lib/asset-saleability';
@@ -25,6 +26,13 @@ import mobile from '../../owner-mobile.module.css';
 import styles from '../../owner-app.module.css';
 import OwnerAssetOptionsClient from './owner-asset-options-client';
 import OwnerAssetReportPicker from './owner-asset-report-picker';
+
+function AccessLink({allowed, href, children, className, ...props}: {allowed: boolean; href: string; children: ReactNode; className?: string; 'aria-label'?: string}) {
+  return allowed ? <Link href={href} prefetch={false} className={className} {...props}>{children}</Link> : <div className={className} aria-disabled="true">{children}</div>;
+}
+function RestrictedValue() {
+  return <span aria-label="Value restricted"><span aria-hidden="true" style={{filter:'blur(6px)', userSelect:'none'}}>R ••• •••</span><small style={{display:'block',fontSize:14}}>Value restricted</small></span>;
+}
 
 declare global {
   interface Window { L?: any }
@@ -376,6 +384,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [transferReceipt, setTransferReceipt] = useState<TransferReceipt | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [teamPermissions, setTeamPermissions] = useState<Record<string, boolean>>({});
+  const [membershipId, setMembershipId] = useState<string | null>(null);
+  const isOwner = permissions.includes('manage_assets');
   const can = (permission: string) => permissions.includes('manage_assets') || teamPermissions[permission] === true;
 
   const hasUnsavedChanges = view === 'section' && Boolean(draft && baseline.current && (
@@ -414,12 +424,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       .then((payload) => {
         setPermissions(Array.isArray(payload?.session?.permissions) ? payload.session.permissions : []);
         setTeamPermissions(payload?.session?.teamPermissions ?? {});
+        setMembershipId(payload?.session?.ownerAppUserId ?? null);
       })
       .catch(() => setPermissions([]));
   }, []);
 
   useEffect(() => {
-    if (view !== 'manage' && section !== 'dealer-tracking') return undefined;
+    if (!isOwner || (view !== 'manage' && section !== 'dealer-tracking')) return undefined;
 
     const controller = new AbortController();
     setDealerTrackingAccess([]);
@@ -457,7 +468,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
     void loadDealerTrackingAccess();
     return () => controller.abort();
-  }, [assetId, section, view]);
+  }, [assetId, section, view, isOwner]);
 
   useEffect(() => {
     setPhotoIndex((current) => photoCount ? Math.min(current, photoCount - 1) : 0);
@@ -693,6 +704,16 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         lifeWorkedPercent: draft.lifeWorkedPercent,
         specsJson: draft.specsJson,
       }).metric;
+      if (!isOwner) {
+        if (!membershipId || !can(section === 'usage' ? 'updateUsage' : 'editDetails')) throw new Error('Access restricted.');
+        const patch = section === 'usage' ? {usage: usageMetric === 'percentage' ? draft.lifeWorkedPercent : draft.hours} : {title: draft.title, brand: draft.brandName, model: draft.modelName, yearModel: draft.yearModel, ...(draft.condition !== baseline.current?.condition ? {condition: draft.condition} : {})};
+        const response = await fetch(`/api/team-workspaces/${encodeURIComponent(membershipId)}`, {method: 'PATCH', credentials: 'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify({assetId, patch, expectedUpdatedAtIso: baseline.current?.updatedAtIso})});
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Unable to save changes.');
+        await loadDetail(true);
+        setNotice({tone:'success', message:'Asset changes saved.'});
+        return;
+      }
       const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, {
         method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...draft, usageMetric, allowUsageDecrease, expectedUpdatedAtIso: baseline.current?.updatedAtIso, usageTypeChangeConfirmed: baseline.current ? resolveAssetUsage(baseline.current).metric !== usageMetric : false }),
@@ -735,13 +756,26 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   }
 
   async function uploadFiles(type: 'photo' | 'document', files: FileList | null) {
-    if (!files?.length || !draft) return;
+    if (!files?.length || !draft || !can(type === 'photo' ? 'uploadPhotos' : 'uploadDocuments')) return;
     setActionBusy(`upload-${type}`);
     setNotice(null);
     const formData = new FormData();
     formData.append('uploadType', type);
     Array.from(files).forEach((file) => formData.append('files', file));
     try {
+      if (!isOwner) {
+        if (!membershipId) throw new Error('Access restricted.');
+        for (const file of Array.from(files)) {
+          const upload = new FormData();
+          upload.append('file', file); upload.append('assetId', assetId); upload.append('requestId', crypto.randomUUID());
+          const response = await fetch(`/api/team-workspaces/${encodeURIComponent(membershipId)}/${type === 'photo' ? 'photos' : 'documents'}`, {method:'POST', credentials:'include', body:upload});
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || 'Upload failed.');
+        }
+        await loadDetail(true);
+        setNotice({tone:'success', message: type === 'photo' ? 'Photos added.' : 'Documents submitted for owner review.'});
+        return;
+      }
       const response = await fetch('/api/asset-register/uploads', { method: 'POST', credentials: 'include', body: formData });
       const payload = await response.json().catch(() => null) as UploadResponse | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Upload failed.');
@@ -952,7 +986,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 <img className={styles.detailPhoto} src={primaryPhoto} alt={`${draft.title} photo ${safePhotoIndex + 1}`} />
               </button>
             ) : (
-              <div className={styles.detailPhotoPlaceholder}>No asset photo saved</div>
+              <div className={styles.detailPhotoPlaceholder}>{can('viewPhotos') ? 'No asset photo saved' : 'Photo access restricted'}</div>
             )}
 
             {photoCount > 1 ? (
@@ -989,7 +1023,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 { label: 'Record work', icon: 'record', allowed: can('recordMaintenance') || can('completeMaintenance'), href: `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}` },
                 { label: 'Report problem', icon: 'problem', allowed: can('recordMaintenance'), href: `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?reportProblem=1` },
                 { label: 'Schedule work', icon: 'calendar', allowed: can('scheduleMaintenance'), href: `/owner-app/assets/${encodeURIComponent(assetId)}/maintenance` },
-                { label: 'Update usage', icon: 'usage', allowed: permissions.includes('manage_assets'), href: `/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage` },
+                { label: 'Update usage', icon: 'usage', allowed: can('updateUsage'), href: `/owner-app/assets/${encodeURIComponent(assetId)}/manage/usage` },
               ].map(item => item.allowed
                 ? <Link key={item.label} className={mobile.tile} href={item.href} prefetch={false}><OwnerIcon name={item.icon} /><strong>{item.label}</strong></Link>
                 : <div key={item.label} className={mobile.tile} aria-disabled="true" title="Access restricted"><OwnerIcon name={item.icon} /><strong>{item.label}</strong></div>)}
@@ -1003,13 +1037,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             </div>
 
             <div className={styles.assetMirrorActions} aria-label="Asset actions">
-              <Link
+              {isOwner ? (<Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/options`}
                 prefetch={false}
               >
                 <OwnerIcon name="share" />Share
-              </Link>
+              </Link>) : <div className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`} aria-disabled="true" title="Access restricted"><OwnerIcon name="share" />Share · restricted</div>}
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
@@ -1035,12 +1069,12 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             <div className={styles.ownerPhotoViewerCard}>
               <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-modal-close="true">×</button>
               <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
-                onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
-                onDelete={async () => {
+                onEdit={isOwner ? () => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); } : undefined}
+                onDelete={isOwner ? async () => {
                   const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'media',photos:draft.photos.filter(photo=>photo!==primaryPhoto),documents:draft.documents})});
                   const data=await response.json();if(!response.ok||!data.ok)throw Error('Unable to remove photo');
                   await loadDetail(true);setPhotoViewerOpen(false);
-                }} />
+                } : undefined} />
               <img src={primaryPhoto} decoding="async" alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
               {photoCount > 1 ? (
                 <>
@@ -1057,7 +1091,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   }
 
   if (view === 'details') {
-    const hasMappedLocation = draft.lastKnownLat !== null && draft.lastKnownLng !== null;
+    const hasMappedLocation = can('viewMap') && typeof draft.lastKnownLat === 'number' && Number.isFinite(draft.lastKnownLat) && typeof draft.lastKnownLng === 'number' && Number.isFinite(draft.lastKnownLng);
     const manageBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage`;
     const mapHref = hasMappedLocation ? `https://www.google.com/maps?q=${draft.lastKnownLat},${draft.lastKnownLng}` : '';
     const financeVisual = statusVisual(financeStatus);
@@ -1089,7 +1123,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 <img className={styles.detailPhoto} src={primaryPhoto} alt={`${draft.title} photo ${safePhotoIndex + 1}`} />
               </button>
             ) : (
-              <div className={styles.detailPhotoPlaceholder}>No asset photo saved</div>
+              <div className={styles.detailPhotoPlaceholder}>{can('viewPhotos') ? 'No asset photo saved' : 'Photo access restricted'}</div>
             )}
 
             {photoCount > 1 ? <>
@@ -1117,73 +1151,73 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <section className={styles.assetMirrorValuesSection}>
                 <h2><BalancedHeadingText text="Details & values" /></h2>
 
-                <Link className={styles.assetDetailsEditLink} href={`${manageBase}/details`} prefetch={false}>
+                <AccessLink allowed={can('editDetails')} className={styles.assetDetailsEditLink} href={`${manageBase}/details`}>
                   <div className={styles.assetMirrorDetailGrid}>
                     <div><span><OwnerIcon name="serial" />Serial / VIN</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
                     <div><span><OwnerIcon name="calendar" />Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
                     <div><span><OwnerIcon name="usage" />Usage</span><strong>{usageText}</strong></div>
                     <div><span><OwnerIcon name="shield" />Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
                   </div>
-                  <small>Open asset details ›</small>
-                </Link>
+                  <small>{can('editDetails') ? 'Open asset details ›' : 'Read only'}</small>
+                </AccessLink>
 
                 <div className={styles.assetMirrorStatusGrid} aria-label="Asset status">
-                  <Link href={`${manageBase}/finance`} prefetch={false} aria-label={`Financed: ${financeVisual.title}. Open finance details.`}>
-                    <span className={styles.assetMirrorStatusCopy}><span>Financed</span><small>Open finance ›</small></span>
-                    <strong className={`${styles.assetMirrorStatusMark} ${financeVisual.className}`} aria-hidden="true">{financeVisual.symbol}</strong>
-                  </Link>
-                  <Link href={`${manageBase}/insurance`} prefetch={false} aria-label={`Insured: ${insuranceVisual.title}. Open insurance details.`}>
-                    <span className={styles.assetMirrorStatusCopy}><span>Insured</span><small>Open insurance ›</small></span>
-                    <strong className={`${styles.assetMirrorStatusMark} ${insuranceVisual.className}`} aria-hidden="true">{insuranceVisual.symbol}</strong>
-                  </Link>
-                  <Link href={`${manageBase}/licence`} prefetch={false} aria-label={`Licensed: ${licenceVisual.title}. Open licence details.`}>
-                    <span className={styles.assetMirrorStatusCopy}><span>Licensed</span><small>Open licence ›</small></span>
-                    <strong className={`${styles.assetMirrorStatusMark} ${licenceVisual.className}`} aria-hidden="true">{licenceVisual.symbol}</strong>
-                  </Link>
-                  {hasMappedLocation ? (
+                  <AccessLink allowed={isOwner} href={`${manageBase}/finance`} aria-label={`Financed: ${financeVisual.title}. Open finance details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Financed</span><small>{isOwner ? 'Open finance ›' : 'Access restricted'}</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${financeVisual.className}`} aria-hidden="true">{isOwner ? financeVisual.symbol : '—'}</strong>
+                  </AccessLink>
+                  <AccessLink allowed={isOwner} href={`${manageBase}/insurance`} aria-label={`Insured: ${insuranceVisual.title}. Open insurance details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Insured</span><small>{isOwner ? 'Open insurance ›' : 'Access restricted'}</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${insuranceVisual.className}`} aria-hidden="true">{isOwner ? insuranceVisual.symbol : '—'}</strong>
+                  </AccessLink>
+                  <AccessLink allowed={isOwner} href={`${manageBase}/licence`} aria-label={`Licensed: ${licenceVisual.title}. Open licence details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Licensed</span><small>{isOwner ? 'Open licence ›' : 'Access restricted'}</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${licenceVisual.className}`} aria-hidden="true">{isOwner ? licenceVisual.symbol : '—'}</strong>
+                  </AccessLink>
+                  {!can('viewMap') ? <div aria-disabled="true"><span>Mapped</span><small>Access restricted</small></div> : hasMappedLocation ? (
                     <a href={mapHref} target="_blank" rel="noreferrer" aria-label="Mapped: Yes. Open map.">
                       <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Open map ›</small></span>
                       <strong className={`${styles.assetMirrorStatusMark} ${mappedVisual.className}`} aria-hidden="true">{mappedVisual.symbol}</strong>
                     </a>
                   ) : (
-                    <Link href={`${manageBase}/location`} prefetch={false} aria-label="Mapped: No. Add a location.">
-                      <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Add location ›</small></span>
+                    <AccessLink allowed={can('updateLocation')} href={`${manageBase}/location`} aria-label="Mapped: No. Add a location.">
+                      <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>{can('updateLocation') ? 'Add location ›' : 'No location saved'}</small></span>
                       <strong className={`${styles.assetMirrorStatusMark} ${mappedVisual.className}`} aria-hidden="true">{mappedVisual.symbol}</strong>
-                    </Link>
+                    </AccessLink>
                   )}
                 </div>
 
                 <div className={styles.assetMirrorValueSummaries}>
-                  <Link className={styles.detailValueSummary} href={`${manageBase}/details`} prefetch={false}>
+                  <AccessLink allowed={can('editDetails')} className={styles.detailValueSummary} href={`${manageBase}/details`}>
                     <span>Replacement price</span>
-                    <strong>{money(draft.replacementPriceExVat)}</strong>
-                    <small>Excl. VAT · Open ›</small>
-                  </Link>
+                    <strong>{draft.valuesRestricted ? <RestrictedValue /> : money(draft.replacementPriceExVat)}</strong>
+                    <small>{isOwner ? 'Excl. VAT · Open ›' : 'Excl. VAT'}</small>
+                  </AccessLink>
                   {insuranceStatus === 'yes' || draft.insuredValueExVat !== null ? (
-                    <Link className={styles.detailValueSummary} href={`${manageBase}/insurance`} prefetch={false}>
+                    <AccessLink allowed={isOwner} className={styles.detailValueSummary} href={`${manageBase}/insurance`}>
                       <span>Insured value</span>
-                      <strong>{money(draft.insuredValueExVat)}</strong>
-                      <small>Excl. VAT · Open ›</small>
-                    </Link>
+                      <strong>{draft.valuesRestricted ? <RestrictedValue /> : money(draft.insuredValueExVat)}</strong>
+                      <small>{isOwner ? 'Excl. VAT · Open ›' : 'Excl. VAT'}</small>
+                    </AccessLink>
                   ) : null}
                   {draft.licenseRegistrationNumber ? (
-                    <Link className={styles.detailValueSummary} href={`${manageBase}/licence`} prefetch={false}>
+                    <AccessLink allowed={isOwner} className={styles.detailValueSummary} href={`${manageBase}/licence`}>
                       <span>Registration</span>
                       <strong>{draft.licenseRegistrationNumber}</strong>
                       <small>Open ›</small>
-                    </Link>
+                    </AccessLink>
                   ) : null}
                 </div>
 
                 <div className={styles.assetMirrorSecondaryGrid}>
-                  <Link href={`${manageBase}/licence`} prefetch={false}>
+                  <AccessLink allowed={isOwner} href={`${manageBase}/licence`}>
                     <span>Licence renewal</span>
-                    <strong>{dateOnly(licenceRenewalDate)}</strong>
-                    <small>{licenceRenewalDate ? 'Open licence ›' : 'Add date ›'}</small>
-                  </Link>
-                  <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule active' : 'Maintenance scheduled' : 'Nothing upcoming'}</strong><small>{upcomingMaintenance ? `Next: ${maintenanceDueLabel(upcomingMaintenance)} ›` : 'Schedule ›'}</small></Link>
+                    <strong>{isOwner ? dateOnly(licenceRenewalDate) : 'Access restricted'}</strong>
+                    <small>{isOwner ? (licenceRenewalDate ? 'Open licence ›' : 'Add date ›') : 'Only available to the account owner'}</small>
+                  </AccessLink>
+                  {can('viewMaintenance') ? <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule active' : 'Maintenance scheduled' : 'Nothing upcoming'}</strong><small>{upcomingMaintenance ? `Next: ${maintenanceDueLabel(upcomingMaintenance)} ›` : 'Schedule ›'}</small></Link> : <div aria-disabled="true"><span>Maintenance</span><strong>Access restricted</strong></div>}
                   {draft.marketplaceStatus === 'live' ? (
-                    <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
+                    <AccessLink allowed={isOwner} href={`${manageBase}/marketplace`}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></AccessLink>
                   ) : null}
                 </div>
               </section>
@@ -1209,14 +1243,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 ) : null}
 
                 <div className={styles.detailMediaActions}>
-                  <label className={styles.detailUploadButton}>
+                  <label className={styles.detailUploadButton} aria-disabled={!can('uploadPhotos')} title={can('uploadPhotos') ? undefined : 'Access restricted'}>
                     <span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : photoCount ? 'Add photos' : 'Upload photos'}</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
                       multiple
                       onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)}
-                      disabled={Boolean(actionBusy)}
+                      disabled={Boolean(actionBusy) || !can('uploadPhotos')}
                     />
                   </label>
                 </div>
@@ -1225,7 +1259,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   <div className={styles.assetDocumentPanelHeading}>
                     <OwnerIcon name="document" />
                     <strong>Documents</strong>
-                    <small>{draft.documents.length} saved</small>
+                    <small>{draft.documents.length} {isOwner ? 'saved' : 'available'}</small>
                   </div>
                   {draft.documents.length ? (
                     <div className={styles.assetDocumentLinks}>
@@ -1237,16 +1271,16 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                       ))}
                     </div>
                   ) : (
-                    <p>No documents have been saved for this asset.</p>
+                    <p>{isOwner ? 'No documents have been saved for this asset.' : 'No approved documents are available to this login.'}</p>
                   )}
-                  <label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}>
+                  <label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`} aria-disabled={!can('uploadDocuments')} title={can('uploadDocuments') ? undefined : 'Access restricted'}>
                     <span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span>
                     <input
                       type="file"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
                       multiple
                       onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)}
-                      disabled={Boolean(actionBusy)}
+                      disabled={Boolean(actionBusy) || !can('uploadDocuments')}
                     />
                   </label>
                 </div>
@@ -1261,12 +1295,12 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             <div className={styles.ownerPhotoViewerCard}>
               <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-modal-close="true">×</button>
               <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
-                onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
-                onDelete={async () => {
+                onEdit={isOwner ? () => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); } : undefined}
+                onDelete={isOwner ? async () => {
                   const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'media',photos:draft.photos.filter(photo=>photo!==primaryPhoto),documents:draft.documents})});
                   const data=await response.json();if(!response.ok||!data.ok)throw Error('Unable to remove photo');
                   await loadDetail(true);setPhotoViewerOpen(false);
-                }} />
+                } : undefined} />
               <img src={primaryPhoto} decoding="async" alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
               {photoCount > 1 ? <>
                 <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous photo">‹</button>
@@ -1280,6 +1314,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     );
   }
 
+  if (view === 'options' && !isOwner) return <p className={styles.section}>Sharing is restricted to the account owner.</p>;
   if (view === 'options') {
     return (
       <OwnerAssetOptionsClient
@@ -1310,9 +1345,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     const availableManageSections = MANAGE_SECTIONS.filter((item) => (
       (item.id !== 'marketplace' || draft.kind !== 'property')
       && (item.id !== 'dealer-tracking' || dealerTrackingAccess.length > 0)
-      && (permissions.includes('manage_assets')
-        || (permissions.includes('operate') && ['activity', 'reports', 'location', 'media', 'maintenance'].includes(item.id))
-        || (!permissions.includes('operate') && ['activity', 'reports'].includes(item.id)))
+      && managerAssetSectionAllowed(item.id, isOwner, can)
     ));
     return (
       <div className={styles.wideContent}>
@@ -1325,6 +1358,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           </div>
         </section>
 
+        {!availableManageSections.length ? <p className={styles.section}>No management actions are enabled for this login. The account owner can adjust your permissions.</p> : null}
         <section className={styles.manageSection} aria-label="Asset management options">
           <div className={styles.manageGroupGrid}>
             {MANAGE_GROUPS.map((group) => {
@@ -1358,11 +1392,11 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                             event.target.value = '';
                           }}
                         />
-                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => managePhotoInputRef.current?.click()}>
+                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy) || !can('uploadPhotos')} onClick={() => managePhotoInputRef.current?.click()}>
                           <OwnerIcon name="camera" /><span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-photo' ? 'Adding photos…' : 'Add photos'}</strong></span>
                           <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
                         </button>
-                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => manageDocumentInputRef.current?.click()}>
+                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy) || !can('uploadDocuments')} onClick={() => manageDocumentInputRef.current?.click()}>
                           <OwnerIcon name="document" /><span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-document' ? 'Adding document…' : 'Add document'}</strong></span>
                           <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
                         </button>
@@ -1425,26 +1459,27 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       </form> : null}
 
       {section === 'details' ? <section className={`${styles.section} ${styles.editorSection}`}>
-        {editorHeader('Update asset', 'Edit the asset details, usage and values.')}
+        {editorHeader('Update asset', isOwner ? 'Edit the asset details, usage and values.' : 'Edit the permitted asset details.')}
         <div className={styles.formGrid}>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Asset name</span><input value={draft.title} onChange={(event) => update('title', event.target.value)} /></label>
-          <label className={styles.field}><span>Register</span><select value={draft.registerId ?? ''} onChange={(event) => update('registerId', event.target.value)}>{registers.map((register) => <option key={register.id} value={register.id}>{register.businessName}</option>)}</select></label>
-          <label className={styles.field}><span>Asset type</span><select value={draft.kind} onChange={(event) => update('kind', event.target.value)}><option value="tractor">Tractor</option><option value="equipment">Equipment</option><option value="vehicle">Vehicle</option><option value="property">Property / Land / Building</option><option value="tools">Tools</option><option value="stock">Stock</option><option value="manual">Furniture, appliances &amp; electronics</option></select></label>
+          {isOwner ? <label className={styles.field}><span>Register</span><select value={draft.registerId ?? ''} onChange={(event) => update('registerId', event.target.value)}>{registers.map((register) => <option key={register.id} value={register.id}>{register.businessName}</option>)}</select></label> : null}
+          {isOwner ? <label className={styles.field}><span>Asset type</span><select value={draft.kind} onChange={(event) => update('kind', event.target.value)}><option value="tractor">Tractor</option><option value="equipment">Equipment</option><option value="vehicle">Vehicle</option><option value="property">Property / Land / Building</option><option value="tools">Tools</option><option value="stock">Stock</option><option value="manual">Furniture, appliances &amp; electronics</option></select></label> : null}
           <label className={styles.field}><span>Make</span><input value={draft.brandName} onChange={(event) => update('brandName', event.target.value)} /></label>
           <label className={styles.field}><span>Model</span><input value={draft.modelName} onChange={(event) => update('modelName', event.target.value)} /></label>
           <label className={styles.field}><span>Year model / year built</span><input inputMode="numeric" value={draft.yearModel ?? ''} onChange={(event) => update('yearModel', event.target.value ? Number(event.target.value) : null)} /></label>
-          <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label>
-          <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
-          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">% worked</option><option value="not_applicable">Not applicable</option></select></label>
-          {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : usageMetric === 'not_applicable' ? <label className={styles.field}><span>Current usage</span><input value="Not applicable" disabled readOnly /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
-          <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.value || ''} onValueChange={(value) => update('value', parseCurrencyInput(value) ?? 0)} /></span></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.replacementPriceExVat ?? ''} onValueChange={(value) => update('replacementPriceExVat', parseCurrencyInput(value))} /></span></label>
-          <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>
+          {isOwner ? <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label> : null}
+          <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="poor">Poor</option>{isOwner ? <><option value="used">Used</option><option value="serious">Serious</option></> : null}</select></label>
+          {isOwner ? <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">% worked</option><option value="not_applicable">Not applicable</option></select></label> : null}
+          {!isOwner ? <label className={styles.field}><span>Current usage</span><input value={usageText} disabled readOnly /></label> : usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : usageMetric === 'not_applicable' ? <label className={styles.field}><span>Current usage</span><input value="Not applicable" disabled readOnly /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" disabled={!isOwner} value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
+          {isOwner ? <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.value || ''} onValueChange={(value) => update('value', parseCurrencyInput(value) ?? 0)} /></span></label> : null}
+          {isOwner ? <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.replacementPriceExVat ?? ''} onValueChange={(value) => update('replacementPriceExVat', parseCurrencyInput(value))} /></span></label> : null}
+          {isOwner ? <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label> : null}
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
-      {section === 'reports' ? (
+      {section === 'reports' && !isOwner && membershipId ? <section className={styles.section}><a className={styles.primaryButton} href={`/api/team-workspaces/${encodeURIComponent(membershipId)}/export?assetIds=${encodeURIComponent(assetId)}&format=pdf`} target="_blank" rel="noreferrer">Download asset report</a><p>Only permitted information is included.</p></section> : null}
+      {section === 'reports' && isOwner ? (
         <OwnerAssetReportPicker
           asset={draft}
           valuationReportHtml={buildAssetSheetReportHtml(buildOwnerValuationReportPayload(draft, ownerContext))}
@@ -1489,10 +1524,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       {section === 'location' ? <LocationSection draft={draft} location={location} setLocation={setLocation} action={action} busy={Boolean(actionBusy)} /> : null}
 
       {section === 'media' ? <section className={`${styles.section} ${styles.editorSection}`}>
-        {editorHeader('Photos and documents', 'Add, open or remove saved files.')}
-        <div className={styles.mediaGrid}>{draft.photos.map((url, index) => <div className={styles.mediaItem} key={url}><img src={url} alt={`Asset photo ${index + 1}`} /><button type="button" aria-label={`Remove photo ${index + 1}`} title="Remove photo" onClick={() => update('photos', draft.photos.filter((photo) => photo !== url))}>×</button></div>)}{draft.documents.map((document) => <div className={styles.mediaItem} key={document.id}><a href={document.url} target="_blank" rel="noreferrer">{document.fileName}</a><button type="button" aria-label={`Remove ${document.fileName}`} title="Remove document" onClick={() => update('documents', draft.documents.filter((entry) => entry.id !== document.id))}>×</button></div>)}</div>
-        <div className={styles.manageMediaUploadActions}><label className={styles.detailUploadButton}><span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : 'Add photos'}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy)} /></label><label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}><span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span><input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy)} /></label></div>
-        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+        {editorHeader('Photos and documents', isOwner ? 'Add, open or remove saved files.' : 'View approved files or add files when permitted.')}
+        <div className={styles.mediaGrid}>{draft.photos.map((url, index) => <div className={styles.mediaItem} key={url}><img src={url} alt={`Asset photo ${index + 1}`} /><button type="button" aria-label={`Remove photo ${index + 1}`} title="Remove photo" disabled={!isOwner} onClick={() => update('photos', draft.photos.filter((photo) => photo !== url))}>×</button></div>)}{draft.documents.map((document) => <div className={styles.mediaItem} key={document.id}><a href={document.url} target="_blank" rel="noreferrer">{document.fileName}</a><button type="button" aria-label={`Remove ${document.fileName}`} title="Remove document" disabled={!isOwner} onClick={() => update('documents', draft.documents.filter((entry) => entry.id !== document.id))}>×</button></div>)}</div>
+        <div className={styles.manageMediaUploadActions}><label className={styles.detailUploadButton}><span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : 'Add photos'}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy) || !can('uploadPhotos')} /></label><label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}><span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span><input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy) || !can('uploadDocuments')} /></label></div>
+        {isOwner ? <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div> : null}
       </section> : null}
 
       {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}

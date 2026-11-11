@@ -22,7 +22,7 @@ export function projectManagerAsset<T extends Record<string, any>>(asset: T, per
     photos: [], documents: [], thumbnailUrl: null, specsJson: {}, valuesRestricted: !permissions.viewValues });
   if (permissions.viewValues) for (const key of ['value','replacementPriceExVat','insuredValueExVat']) result[key] = asset[key] ?? null;
   if (permissions.viewPhotos) { result.photos = asset.photos ?? []; result.thumbnailUrl = asset.thumbnailUrl ?? null; }
-  if (permissions.viewMap) for (const key of ['locationText','latitude','longitude','locationUpdatedAtIso']) result[key] = asset[key] ?? null;
+  if (permissions.viewMap) for (const key of ['locationText','latitude','longitude','locationUpdatedAtIso','lastKnownLat','lastKnownLng','lastKnownLocationText','lastKnownLocationAtIso']) result[key] = asset[key] ?? null;
   // Usage metadata is safe and necessary for hours/km/percentage selectors. Valuation/finance JSON is never copied.
   const specs = asset.specsJson || {};
   result.specsJson = Object.fromEntries(['usageMetric','usage_metric','usageMode','usage_mode','usageBasis','usage_basis','usageApplicable','usage_applicable'].filter(k => k in specs).map(k => [k,specs[k]]));
