@@ -1,3 +1,4 @@
+import { loadTeamScope, teamDocuments } from '../../../../../lib/team-access';
 import { projectManagerAsset, projectManagerMaintenance } from '../../../../../lib/manager-permissions';
 import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
 import { NextRequest, NextResponse } from 'next/server';
@@ -126,7 +127,13 @@ export async function GET(_request: NextRequest, { params }: { params: { assetId
     const detail = await loadDetail(access.ownerUserId, params.assetId);
     if (!detail) return notFound();
     if (!ownerAppCan(access, 'manage_assets')) {
-      return NextResponse.json({ ok: true, item: projectManagerAsset(detail.item, access.teamPermissions),
+      const item = projectManagerAsset(detail.item, access.teamPermissions);
+      if (access.ownerAppUserId) {
+        const scope = await loadTeamScope(access.ownerAppUserId);
+        const documents = await teamDocuments(scope);
+        item.documents = documents.filter(document => document.assetLinks.some(asset => asset.id === params.assetId)).map(document => ({id:document.id, fileName:document.fileName, url:`/api/team-workspaces/${encodeURIComponent(access.ownerAppUserId!)}/documents?id=${encodeURIComponent(document.id)}`, contentType:'application/octet-stream', byteSize:0, uploadedAtIso:'', category:'other', documentType:'other'}));
+      }
+      return NextResponse.json({ ok: true, item,
         register: detail.register ? { id: detail.register.id, businessName: detail.register.businessName } : null,
         registers: [], maintenance: ownerAppCan(access, 'viewMaintenance') ? detail.maintenance.map(projectManagerMaintenance) : [], maintenanceSummary: null, ownerContext: null });
     }
@@ -256,11 +263,6 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
     await deleteUnreferencedAssetRegisterUploads({ userId: access.ownerUserId, uploadIds: removedUploadIds, excludeAssetId: params.assetId });
     const detail = await loadDetail(access.ownerUserId, params.assetId);
     if (!detail) return notFound();
-    if (!ownerAppCan(access, 'manage_assets')) {
-      return NextResponse.json({ ok: true, item: projectManagerAsset(detail.item, access.teamPermissions),
-        register: detail.register ? { id: detail.register.id, businessName: detail.register.businessName } : null,
-        registers: [], maintenance: ownerAppCan(access, 'viewMaintenance') ? detail.maintenance.map(projectManagerMaintenance) : [], maintenanceSummary: null, ownerContext: null });
-    }
     return NextResponse.json({ ok: true, ...detail });
   } catch (error) {
     const code = error instanceof Error ? error.message : '';

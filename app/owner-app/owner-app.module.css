@@ -1129,7 +1129,7 @@
   color: var(--app-info, #31485a);
 }
 .assetMirrorDetailGrid > div strong { padding: 0 12px; text-align: right; }
-.assetMirrorStatusGrid > a {
+.assetMirrorStatusGrid > :is(a, div[aria-disabled]) {
   min-height: 62px;
   grid-template-columns: minmax(0, 1fr) 66px;
   align-content: stretch;
@@ -3729,7 +3729,7 @@
 .appShell .assetMirrorDetailGrid > div > span { gap: 8px; padding: 10px; border-right: 1px solid var(--app-info-line, #d5e2ef); background: var(--app-info-soft, #f3f7fa); font-size: .8rem; font-weight: 650; letter-spacing: 0; text-transform: none; white-space: nowrap; }
 .appShell .assetMirrorDetailGrid > div > span svg { width: 20px; height: 20px; padding: 5px; box-sizing: content-box; flex-shrink: 0; border-radius: 8px; color: var(--app-accent, #176c52); background: var(--app-surface-soft, #e7f2ec); }
 .appShell .assetMirrorDetailGrid > div > strong { padding: 10px; font-size: .85rem; font-weight: 650; }
-.appShell .assetMirrorStatusGrid > a { min-height: 58px; grid-template-columns: minmax(0, 1fr) 46px; align-items: center; padding: 7px 8px 7px 12px; gap: 8px; border-color: var(--app-info-line, #d5e2ef); box-shadow: none; }
+.appShell .assetMirrorStatusGrid > :is(a, div[aria-disabled]) { min-height: 58px; grid-template-columns: minmax(0, 1fr) 46px; align-items: center; padding: 7px 8px 7px 12px; gap: 8px; border-color: var(--app-info-line, #d5e2ef); box-shadow: none; }
 .appShell .assetMirrorStatusCopy { padding: 0; background: transparent; gap: 3px; }
 .appShell .assetMirrorStatusCopy > span { font-size: .88rem !important; font-weight: 650 !important; letter-spacing: 0 !important; text-transform: none; }
 .appShell .assetMirrorStatusCopy > small { font-size: .7rem; font-weight: 500; color: var(--app-muted, #667c89); }
@@ -3738,7 +3738,7 @@
 .appShell .assetMirrorStatusGrid .assetMirrorStatusMarkNo { background: var(--app-danger-soft, #fdf0f1); color: var(--app-danger, #bf3545); }
 .appShell .assetMirrorStatusGrid .assetMirrorStatusMarkUnknown { background: var(--app-warning-soft, #fff6e5); color: var(--app-warning, #936315); }
 .appShell .assetMirrorStatusGrid .assetMirrorStatusMarkNotApplicable { background: var(--app-info-soft, #eef2f5); color: var(--app-muted, #596b79); font-size: .75rem; }
-.appShell .assetMirrorSecondaryGrid > a > span { text-transform: none; letter-spacing: 0; font-weight: 650; }
+.appShell .assetMirrorSecondaryGrid > :is(a, div[aria-disabled]) > span { text-transform: none; letter-spacing: 0; font-weight: 650; }
 .appShell .manageButton { justify-content: start; gap: 12px; }
 .appShell .manageButton > svg { width: 20px; height: 20px; padding: 7px; box-sizing: content-box; flex-shrink: 0; border-radius: 9px; color: var(--app-accent, #176c52); background: var(--app-surface-soft, #e7f2ec); }
 .appShell .manageButtonCopy { flex: 1; }
@@ -3837,3 +3837,9 @@
 @media (prefers-reduced-motion: reduce) {
   .appShell :is(button, a) { transition: none; }
 }
+
+/* Restricted controls retain their native layout without looking actionable. */
+.detailUploadButton[aria-disabled="true"],
+.detailUploadButton:has(input:disabled),
+.assetMirrorAction[aria-disabled="true"] { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.assetMirrorStatusGrid [aria-disabled="true"] .assetMirrorStatusMark { background: var(--app-surface-soft, #eef4f1); color: var(--app-muted, #64766e); }

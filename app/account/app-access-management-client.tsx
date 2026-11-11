@@ -168,7 +168,8 @@ function dealerRoleLabel(value: unknown): string {
 
 function ownerRoleLabel(value: unknown): string {
   const role = String(value ?? '').trim();
-  return OWNER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Operations';
+  const labels: Record<string, string> = {operator:'Operator', workshop:'Workshop', office:'Office', manager:'Manager'};
+  return labels[role] ?? OWNER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'View only';
 }
 
 const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {

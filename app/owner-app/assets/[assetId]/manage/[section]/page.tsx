@@ -1,3 +1,5 @@
+import { managerAssetSectionAllowed } from '../../../../../../lib/manager-mobile-policy';
+import type { TeamPermission } from '../../../../../../lib/team-access-policy';
 import { notFound, redirect } from 'next/navigation';
 import { ownerAppCan, ownerAppCanAccessAsset, requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../../owner-app-nav';
@@ -31,11 +33,7 @@ export default async function OwnerAssetManageSectionPage({ params }: {
   if (!ownerAppCanAccessAsset(access, params.assetId)) notFound();
   const section = params.section as OwnerAssetManageSection;
   if (!MANAGE_SECTIONS.has(section)) notFound();
-  const canOpen = ['activity', 'reports'].includes(section)
-    || (['location', 'media', 'maintenance'].includes(section) && ownerAppCan(access, 'operate'))
-    || (section === 'marketplace' && ownerAppCan(access, 'manage_marketplace'))
-    || (!['activity', 'reports', 'location', 'media', 'maintenance', 'marketplace'].includes(section)
-      && ownerAppCan(access, 'manage_assets'));
+  const canOpen = managerAssetSectionAllowed(section, ownerAppCan(access, 'manage_assets'), key => ownerAppCan(access, key as TeamPermission));
   if (!canOpen) redirect(`/owner-app/assets/${encodeURIComponent(params.assetId)}/manage`);
   if (section === 'maintenance') {
     redirect(`/owner-app/assets/${encodeURIComponent(params.assetId)}/maintenance`);

@@ -34,7 +34,8 @@ export async function PATCH(request: NextRequest, { params }: Context) {
         const client = await getDb().connect();
         try {
             await client.query('BEGIN');
-            await lockTeamScope(client, scope, assetId, 'usage' in patch ? 'updateUsage' : 'editDetails');
+            const asset = await lockTeamScope(client, scope, assetId, 'usage' in patch ? 'updateUsage' : 'editDetails');
+            if (body.expectedUpdatedAtIso !== undefined && body.expectedUpdatedAtIso !== asset.updatedAtIso) throw new TeamAccessError('This asset has changed. Reopen it before saving.', 409);
             await updateSharedAssetDetails(client, scope.grant.ownerId, assetId, patch);
             await auditTeam(client, scope.actor, scope.grant, 'Asset updated', assetId, { fields: Object.keys(patch) });
             await client.query('COMMIT');
