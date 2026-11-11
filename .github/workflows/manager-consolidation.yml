@@ -11,6 +11,9 @@ on:
       - 'tests/manager-consolidation.test.cjs'
       - 'tests/manager-mobile-actions.test.cjs'
       - 'scripts/verify-manager-mobile-actions.cjs'
+      - 'scripts/manager-qa/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/manager-consolidation.yml'
   workflow_dispatch:
 permissions:
@@ -30,3 +33,21 @@ jobs:
       - run: node --test tests/manager-mobile-actions.test.cjs tests/manager-consolidation.test.cjs tests/team-access.test.cjs tests/team-workspace-permissions.test.cjs tests/owner-register-access.test.mjs tests/app-offline.test.cjs tests/persistent-app-sessions.test.mjs
       - run: node scripts/verify-owner-access-flow.cjs
       - run: node scripts/verify-manager-mobile-actions.cjs
+  isolated-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:manager-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: manager-qa-screenshots
+          path: /tmp/aim4price-manager-qa-*/*.png
+          if-no-files-found: ignore
+          retention-days: 7

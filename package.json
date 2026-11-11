@@ -10,6 +10,8 @@
     "prestart": "node scripts/migrate-annual-review.mjs",
     "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'",
     "typecheck": "tsc --noEmit",
+    "test:manager-qa": "node scripts/manager-qa/run.cjs",
+    "dev:manager-qa": "node scripts/manager-qa/environment.cjs",
     "test:lifecycle-calculator": "node --test tests/admin-lifecycle-calculator.test.mjs tests/admin-lifecycle-calculator.security.test.mjs tests/admin-lifecycle-calculator-report.test.mjs tests/admin-experience.test.mjs",
     "test:notifications": "node --test tests/notification-inbox.test.mjs tests/notification-viewer-scope.test.mjs tests/admin-account-notifications.test.mjs tests/header-notification-refresh.test.mjs tests/asset-share-notifications.test.mjs tests/notification-clarity.test.cjs",
     "test:cost-budgets": "node --test tests/cost-budgets.security.test.mjs",
@@ -71,6 +73,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "0.2.19",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@types/node": "20.16.5",
     "@types/pg": "^8.20.0",
