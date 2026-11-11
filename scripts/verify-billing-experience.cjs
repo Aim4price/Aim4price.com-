@@ -128,12 +128,14 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='tutorials'){
      const features='nav[aria-label="Owner features"] button';
-     assert.equal(await page.$$eval(features,els=>els.length),46);
+     assert.equal(await page.$$eval(features,els=>els.length),45);
+     assert.equal(await page.$$eval(features,els=>els.some(e=>e.textContent.includes('Field Manager'))),false,'Retired app is not offered');
+     assert.equal(await page.$$eval(features,els=>els.filter(e=>e.textContent.includes('Aim4price Manager')).length),1,'One consolidated Manager guide');
      assert.equal(await page.$eval('#owner-feature-title',e=>e.textContent),'Welcome to Aim4price.');
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Welcome and list have equal heights');
      await page.screenshot({path:path.join(evidence,'owner-welcome-'+width+'.png'),fullPage:false});
      assert.ok(await page.$('[aria-label="Introduction video not yet available"]'));
-     assert.deepEqual(await page.$$eval(features,els=>els.map(e=>Number(e.firstElementChild.textContent))),Array.from({length:46},(_,i)=>i+1));
+     assert.deepEqual(await page.$$eval(features,els=>els.map(e=>Number(e.firstElementChild.textContent))),Array.from({length:45},(_,i)=>i+1));
      await page.$$eval(features,els=>els[0].click());
      assert.match(await page.$eval('#owner-feature-title',e=>e.textContent),/How do I start/);
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Feature and list have equal heights');
@@ -158,7 +160,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
      await page.waitForFunction(()=>document.body.textContent.includes('No matching features'));
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
-     assert.equal(await page.$$eval(features,els=>els.length),46);
+     assert.equal(await page.$$eval(features,els=>els.length),45);
+     assert.equal(await page.$$eval(features,els=>els.some(e=>e.textContent.includes('Field Manager'))),false,'Retired app is not offered');
+     assert.equal(await page.$$eval(features,els=>els.filter(e=>e.textContent.includes('Aim4price Manager')).length),1,'One consolidated Manager guide');
      await page.click('[aria-label="Choose feature category"]');
      await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Getting started')).click());
      assert.equal(await page.$$eval(features,els=>els.length),3);

@@ -14,6 +14,8 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
   const user = {id:'business-1',email:'business@example.test',emailVerified:true};
   const session = {user};
   const mod = load('lib/auth-session.ts', {
+    './manager-request-policy':{managerRequestAllowed:()=>{throw Error('Business sessions must not use Manager policy');}},
+    './manager-permissions':{}, './owner-app':{},
     './sharing-foundation':{sharingSessionIsActive:async()=>true,sharingPlan:async()=> 'desktop'},
     './retired-workspaces': load('lib/retired-workspaces.ts', {}),
     './app-realm-server':{currentAppRealm:async()=>realm},
