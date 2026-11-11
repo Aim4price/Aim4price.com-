@@ -6,6 +6,8 @@ const ts = require("typescript"),
   postcss = require("postcss"),
   puppeteer = require("puppeteer-core"),
   chromium = require("@sparticuz/chromium");
+const parser = {};
+new Function('exports', ts.transpileModule(fs.readFileSync('lib/parts-network-csv.ts', 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(parser);
 const root = path.resolve(__dirname, ".."),
   modules = {},
   sheets = [];
@@ -101,11 +103,12 @@ const reactDOM = fs.readFileSync(
   ),
   "utf8",
 );
+const excelScript = fs.readFileSync(require.resolve('exceljs/dist/exceljs.min.js'), 'utf8');
 const appCode =
   "const sources=" +
   JSON.stringify(modules) +
   ",cache={};" +
-  'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
+  'function require(name){if(name==="exceljs")return ExcelJS;if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
   "const Component=require(location.pathname === '/parts/join' ? 'app/parts/join/join-client' : " +
   JSON.stringify(entry) +
   ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true,listId:location.pathname.split("/")[2]||""}));';
@@ -170,6 +173,7 @@ const appCode =
               ? {
                   revision: 1,
                   summary: { added: 1, updated: 1, removed: 1, total: 2 },
+                  sample: parser.parsePartsSnapshot(b.csv, b.columns, b.options).slice(0,5),
                 }
               : b.action === "invite"
                 ? { url: "https://example.test/parts/join?token=example" }
@@ -222,7 +226,7 @@ const appCode =
       }
       return r.respond({
         contentType: "text/html",
-        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><div id="aim4price-website-overlays"></div><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
+        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><div id="aim4price-website-overlays"></div><script>' + excelScript + '</script><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
       });
     });
     await page.goto("https://example.test/parts");
@@ -313,7 +317,7 @@ const appCode =
     assert.ok(await page.evaluate(() => {
       const buttons = [...document.querySelectorAll("button")];
       return !buttons.some(b => b.textContent.trim() === "Back to Parts") &&
-        ["Upload CSV", "Share", "Manage"].every(label =>
+        ["Add parts", "Share", "Manage"].every(label =>
           buttons.find(b => b.textContent.trim() === label)?.closest('[class*="tableToolbar"]'));
     }), "List actions belong to the table toolbar without a back button");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
@@ -331,6 +335,7 @@ const appCode =
     );
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
+    await click("Add parts");
     await click("Upload CSV");
     await page.waitForSelector("input[type=file]");
     const file = path.join(output, "fixture.csv");
@@ -340,18 +345,69 @@ const appCode =
     );
     await (await page.$("input[type=file]")).uploadFile(file);
     await page.waitForFunction(() =>
-      document.body.innerText.includes("Review upload"),
+      document.body.innerText.includes("Review parts"),
     );
-    await click("Review upload");
+    await page.evaluate(() => {
+      const select = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === 'replace'));
+      select.value = 'replace'; select.dispatchEvent(new Event('change', {bubbles:true}));
+    });
+    await click("Review parts");
     await page.waitForFunction(() =>
       document.body.innerText.includes("Replace my parts list"),
     );
     await page.screenshot({ path: path.join(output, "upload-review.png") });
     await click("Replace my parts list");
     await page.waitForFunction(() =>
-      document.body.innerText.includes("Parts list replaced successfully."),
+      document.body.innerText.includes("Parts list updated successfully."),
     );
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
+    // All entry paths must reach the same review, retaining identifiers and optional fields.
+    await click("Add parts");
+    await click("Add manually");
+    await page.type('[aria-label="Part number 1"]', '000123');
+    await page.type('[aria-label="Brand 1"]', 'Landini');
+    await page.type('[aria-label="Description 1"]', 'Dowel');
+    await click("Review parts");
+    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('Price on request'));
+    await page.screenshot({path:path.join(output,'manual-review.png')});
+    await click("Save parts");
+    await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
+    assert.equal(actions.filter(a => a.action === 'import').at(-1).mode, 'merge');
+    assert.equal(parser.parsePartsSnapshot(actions.filter(a => a.action === 'import').at(-1).csv, {partNumber:0,quantity:1,price:2,brand:3,description:4}, {hasHeader:false})[0].partNumber, '000123');
+
+    await click("Add parts");
+    await click("Excel / Sheets");
+    await page.type('[aria-label="Paste spreadsheet cells"]', '01.3657074\tDowel\t16\n01.3671641\tBush\t9');
+    await click("Use pasted table");
+    await page.select('[aria-label="Quantity column"]', '2');
+    await page.select('[aria-label="Description column"]', '1');
+    await page.type('[aria-label="Remove part number prefix"]', '01.');
+    await page.type('[aria-label="Default brand"]', 'Landini');
+    await click("Review parts");
+    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('3657074'));
+    assert.ok(await page.evaluate(() => document.querySelector('[role=dialog]').textContent.includes('Price on request')));
+    await click("Save parts");
+    await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
+
+    const Excel = require('exceljs');
+    const workbook = new Excel.Workbook();
+    workbook.addWorksheet('Stock').addRow(['01.3657074', 'Dowel', 16]);
+    workbook.addWorksheet('Other').addRow(['01.3671641', 'Bush', 9]);
+    const excelFile = path.join(output, 'fixture.xlsx');
+    await workbook.xlsx.writeFile(excelFile);
+    await click("Add parts");
+    await click("Excel / Sheets");
+    await (await page.$('input[type=file]')).uploadFile(excelFile);
+    await page.waitForSelector('[aria-label="Quantity column"]');
+    assert.equal(await page.$eval('input[type=checkbox]', e => e.checked), false);
+    await page.select('[aria-label="Quantity column"]', '2');
+    await page.select('[aria-label="Description column"]', '1');
+    await page.type('[aria-label="Remove part number prefix"]', '01.');
+    await page.screenshot({path:path.join(output,'excel-mapping.png')});
+    await click("Review parts");
+    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('3657074'));
+    await click("Save parts");
+    await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     await click("Manage");
     await page.waitForSelector("[role=dialog]");
     assert.ok(
@@ -405,7 +461,7 @@ const appCode =
       "only table scrolls on phones",
     );
     await page.screenshot({ path: path.join(output, "table-phone.png") });
-    await click("Upload CSV");
+    await click("Add parts");
     await page.waitForSelector("[role=dialog]");
     assert.ok(
       await page.$eval(
@@ -437,7 +493,7 @@ const appCode =
     assert.ok(
       !(await page.evaluate(() =>
         [...document.querySelectorAll("button")].some(
-          (b) => b.textContent.trim() === "Upload CSV",
+          (b) => b.textContent.trim() === "Add parts",
         ),
       )),
     );
@@ -488,7 +544,7 @@ const appCode =
     network.last_updated = null;
     await page.goto("https://example.test/parts/11111111-1111-4111-8111-111111111111");
     await page.waitForFunction(() => document.body.innerText.includes("No parts uploaded yet"));
-    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Upload CSV").length === 1));
+    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Add parts").length === 1));
     await page.screenshot({path:path.join(output,"empty-list.png")});
     await page.goto("https://example.test/parts/join?token=fixture");
     await page.waitForSelector('a[href^="/auth?returnTo="]');

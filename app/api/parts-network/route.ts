@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       size += value.length;
       if (size > 2_200_000) {
         await reader.cancel();
-        return reply({ error: "Use a CSV smaller than 2 MB." }, 413);
+        return reply({ error: "Use a parts table smaller than 2 MB." }, 413);
       }
       chunks.push(value);
     }

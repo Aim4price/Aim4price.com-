@@ -58,7 +58,8 @@ permissions:
 jobs:
   approved-report-design:
     name: Approved report design
-    runs-on: ubuntu-latest
+    # Keep PDF tooling stable across ubuntu-latest image rollouts.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -82,13 +83,31 @@ jobs:
       - name: Verify workspace retirement boundaries
         run: npm run test:workspace-retirement
 
+      # Avoid Ubuntu mirrors: repeated runner DNS failures blocked PDF validation.
       - name: Install PDF inspection tools
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+        uses: mamba-org/setup-micromamba@v3
+        timeout-minutes: 5
+        with:
+          environment-name: report-tools
+          create-args: >-
+            --override-channels -c conda-forge
+            poppler=24.08.0
+          init-shell: none
+          cache-environment: true
+
+      - name: Verify PDF inspection tools
+        shell: micromamba-shell {0}
+        run: |
+          set -euo pipefail
+          pdftotext -v
+          pdftoppm -v
 
       - name: Verify report templates and print layouts
+        shell: micromamba-shell {0}
         run: node scripts/verify-report-suite.cjs
 
       - name: Verify valuation PDF clarity
+        shell: micromamba-shell {0}
         run: node scripts/verify-valuation-report-clarity.cjs
 
       - name: Upload synthetic report evidence
