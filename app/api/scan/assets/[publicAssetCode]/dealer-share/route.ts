@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../../../../lib/admin-usage-events';
 import {
-  authorizeFieldManagerScanAccess,
+  retiredAppScanAccess,
   authorizePublicQrScanAccess,
 } from '../../../../../../lib/scan-auth';
 import { normalizePublicAssetCode } from '../../../../../../lib/scan-assets';
@@ -133,7 +133,7 @@ async function authorizeDealerShareAccess(request: NextRequest, publicAssetCode:
   const fieldManager = request.nextUrl.searchParams.get('fieldManager') === '1';
   const assetId = request.nextUrl.searchParams.get('assetId');
   return fieldManager
-    ? authorizeFieldManagerScanAccess(request, publicAssetCode, assetId)
+    ? retiredAppScanAccess(request, publicAssetCode, assetId)
     : authorizePublicQrScanAccess(request, publicAssetCode);
 }
 

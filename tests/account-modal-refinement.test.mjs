@@ -21,7 +21,6 @@ test("dedicated staff-management pages remain intact", async () => {
 
   assert.match(source, /window\.location\.assign\("\/account\/dealer-app"\)/);
   assert.match(source, /window\.location\.assign\("\/account\/owner-app"\)/);
-  assert.match(source, /window\.location\.assign\("\/account\/field-manager"\)/);
   assert.match(source, /Manage Dealer App staff/);
 });
 

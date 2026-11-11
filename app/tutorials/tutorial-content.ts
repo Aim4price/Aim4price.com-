@@ -952,11 +952,11 @@ export const tutorials: Tutorial[] = [
   {
     "category": "connections",
     "id": "owner-app",
-    "title": "Owner app",
+    "title": "Aim4price Manager",
     "description": "Reach your asset records while you are away from your desk.",
-    "where": "Account / Owner app",
+    "where": "Account / Aim4price Manager",
     "steps": [
-      "Open the Owner app setup from Account.",
+      "Open the Aim4price Manager setup from Account.",
       "Follow the sign-in and device instructions provided.",
       "Open an asset and use the available Manage actions to record work."
     ],
@@ -964,32 +964,11 @@ export const tutorials: Tutorial[] = [
     "note": "App access and available actions follow your account setup.",
     "audience": "Owner",
     "href": "/account/owner-app",
-    "action": "Open Owner app setup",
-    "keywords": " Use the Owner app",
+    "action": "Open Aim4price Manager setup",
+    "keywords": " Use the Aim4price Manager",
     "question": "Can I manage my assets away from my desk?",
-    "guideTitle": "Set up the Owner app",
+    "guideTitle": "Set up the Aim4price Manager",
     "videoOutcome": "Reach asset records while away from your desk."
-  },
-  {
-    "category": "connections",
-    "id": "field-manager",
-    "title": "Field Manager",
-    "description": "Let a team member record the work they are authorised to handle.",
-    "where": "Account / Field Manager",
-    "steps": [
-      "Open Field Manager from Account.",
-      "Set up the team member, assigned assets and permissions.",
-      "Follow the app setup instructions and check their access."
-    ],
-    "example": "Allow a farm manager to record fuel and maintenance on assigned machinery, reducing the need to pass notes back to the office.",
-    "note": "Review access when responsibilities change or a team member leaves.",
-    "audience": "Owner",
-    "href": "/account/field-manager",
-    "action": "Open Field Manager setup",
-    "keywords": " Set up a Field Manager team access permissions staff",
-    "question": "Can my manager record work in the field?",
-    "guideTitle": "Set up Field Manager access",
-    "videoOutcome": "Let your team record work on assigned assets."
   },
   {
     "category": "connections",

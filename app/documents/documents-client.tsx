@@ -1191,7 +1191,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const content = (
     <>
       {!uploadContext && <div ref={pageContentRef} className={styles.pageContent}>
-        <>{desktop.dialog}<AppHeader active="documents" /></>
+        <>{desktop.dialog}{!desktop.workspace?.native && <AppHeader active="documents" />}</>
 
         <main className={styles.shell}>
           <div className={styles.vaultCanvas}>

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function OwnerFuelPage() {
   const access = await requireOwnerAppPageAccess();
-  if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
+  if (!(ownerAppCan(access, 'addFuel') || ownerAppCan(access, 'recordFuelIssues') || ownerAppCan(access, 'refillFuel'))) redirect('/owner-app');
 
   return (
     <main className={`${styles.page} ${styles.homePage} ${styles.operationsPage}`}>
@@ -20,7 +20,7 @@ export default async function OwnerFuelPage() {
           className={`${styles.operationLauncher} ${styles.fuelSourceLauncher}`}
           aria-label="Fuel source"
         >
-          <Link className={styles.operationChoiceCard} href="/owner-app/operations/fuel/storage" prefetch={false}>
+          {(ownerAppCan(access, 'recordFuelIssues') || ownerAppCan(access, 'refillFuel')) && <Link className={styles.operationChoiceCard} href="/owner-app/operations/fuel/storage" prefetch={false}>
             <span className={styles.operationChoiceIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
                 <ellipse cx="12" cy="5" rx="7" ry="3" />
@@ -32,9 +32,9 @@ export default async function OwnerFuelPage() {
               <strong>Storage tank</strong>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
-          </Link>
+          </Link>}
 
-          <Link className={styles.operationChoiceCard} href="/owner-app/operations/fuel/petrol-station" prefetch={false}>
+          {ownerAppCan(access, 'addFuel') && <Link className={styles.operationChoiceCard} href="/owner-app/operations/fuel/petrol-station" prefetch={false}>
             <span className={styles.operationChoiceIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
                 <path d="M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16" />
@@ -45,7 +45,7 @@ export default async function OwnerFuelPage() {
               <strong>Petrol station</strong>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
-          </Link>
+          </Link>}
         </nav>
       </div>
     </main>

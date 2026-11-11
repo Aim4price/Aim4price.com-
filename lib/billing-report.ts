@@ -5,7 +5,7 @@ import { BILLING_ISSUER, money, type BillingInvoice } from './billing-shared';
 export function billingEscape(value: unknown): string { return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!)); }
 let assets: Promise<{font:string;logo:string}> | undefined;
 async function reportAssets() {
-  if(!assets)assets=Promise.all([readFile(path.join(process.cwd(),'public/field-manager/montserrat-latin.woff')),readFile(path.join(process.cwd(),'public/brand/aim4price-mark-black.png'))]).then(([font,logo])=>({font:font.toString('base64'),logo:logo.toString('base64')})).catch(e=>{assets=undefined;throw e;});
+  if(!assets)assets=Promise.all([readFile(path.join(process.cwd(),'public/fonts/montserrat-latin.woff')),readFile(path.join(process.cwd(),'public/brand/aim4price-mark-black.png'))]).then(([font,logo])=>({font:font.toString('base64'),logo:logo.toString('base64')})).catch(e=>{assets=undefined;throw e;});
   return assets;
 }
 export async function buildBillingInvoiceHtml(invoice: BillingInvoice, issuer: Record<string,string> = BILLING_ISSUER): Promise<string> {

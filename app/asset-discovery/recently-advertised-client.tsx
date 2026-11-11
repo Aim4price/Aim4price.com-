@@ -14,7 +14,7 @@ import {
 import { workspaceStyles } from "../../components/WorkspacePrimitives";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
-import native_mobileStyles from "../field-manager/page.module.css";
+import native_mobileStyles from "../../components/manager/mobile.module.css";
 import styles from "./page.module.css";
 
 type RecentAdvertStatus = "available" | "sold" | "ended";

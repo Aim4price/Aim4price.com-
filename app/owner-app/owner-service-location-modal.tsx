@@ -1,7 +1,7 @@
 'use client';
 
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../components/FuelLocationModal';
-import { saveFieldManagerServiceLocation } from '../../lib/field-manager-location-session';
+import { saveManagerServiceLocation } from '../../lib/manager-location-session';
 
 type OwnerServiceLocationModalProps = {
   recordLabel?: 'service' | 'problem report';
@@ -23,7 +23,7 @@ export default function OwnerServiceLocationModal({
   onError,
 }: OwnerServiceLocationModalProps) {
   function handleReady(coordinates: FuelLocationCoordinates) {
-    const saved = saveFieldManagerServiceLocation({
+    const saved = saveManagerServiceLocation({
       publicAssetCode,
       assetId,
       latitude: coordinates.latitude,

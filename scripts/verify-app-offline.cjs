@@ -35,7 +35,7 @@ async function main() {
         writes.set(app + ':' + item.payload.clientEventId,item);
         return res.end('{"ok":true,"asset":{"id":"asset"},"scheduledMaintenanceCompletion":{"completed":true}}');
       }
-      const allowed = url.pathname.startsWith('/app-offline/') || Object.values(roots).some(r => url.pathname === r+'/offline.html') || url.pathname.endsWith('-sw.js') || ['/app-theme.css','/app-push-worker.js','/field-manager/montserrat-latin.woff'].includes(url.pathname);
+      const allowed = url.pathname.startsWith('/app-offline/') || Object.values(roots).some(r => url.pathname === r+'/offline.html') || url.pathname.endsWith('-sw.js') || ['/app-theme.css','/app-push-worker.js','/fonts/montserrat-latin.woff'].includes(url.pathname);
       if (!allowed) return req.socket.destroy();
       const file = path.join(root,'public',url.pathname);
       res.setHeader('Content-Type',url.pathname.endsWith('.html')?'text/html':url.pathname.endsWith('.css')?'text/css':url.pathname.endsWith('.woff')?'font/woff':'application/javascript');

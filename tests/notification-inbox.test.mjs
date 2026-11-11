@@ -91,11 +91,10 @@ test('opening one active notification moves only that item to history', async ()
 });
 
 test('app notification pages use compact Overview-style controls and cards', async () => {
-  const [ownerClient, dealerClient, ownerStyles, managerClient] = await Promise.all([
+  const [ownerClient, dealerClient, ownerStyles] = await Promise.all([
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
     read('app/owner-app/owner-app.module.css'),
-    read('app/field-manager/field-manager-overview-client.tsx'),
   ]);
 
   for (const source of [ownerClient, dealerClient]) {
@@ -104,7 +103,6 @@ test('app notification pages use compact Overview-style controls and cards', asy
   }
   assert.doesNotMatch(ownerClient, /styles\.notificationSearch/);
   assert.doesNotMatch(dealerClient, /styles\.notificationSearch/);
-  assert.match(managerClient, /styles\.overviewSearch/);
   for (const source of [ownerClient, dealerClient]) {
     assert.match(source, /styles\.notificationTabsTwo/);
     assert.doesNotMatch(source, /styles\.notificationCardLabels/);
@@ -119,46 +117,14 @@ test('app notification pages use compact Overview-style controls and cards', asy
 });
 
 
-test('Owner and Dealer notifications keep Active and History while Field Manager returns to Overview', async () => {
-  const [ownerClient, dealerClient, managerClient, managerRoute, managerOverview] = await Promise.all([
+test('Owner and Dealer notifications keep Active and History in the consolidated Manager app', async () => {
+  const [ownerClient, dealerClient] = await Promise.all([
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
-    read('app/field-manager/field-manager-overview-client.tsx'),
-    read('app/api/field-manager/overview/route.ts'),
-    read('lib/field-manager-overview.ts'),
   ]);
 
   assert.match(ownerClient, /type NotificationView = 'active' \| 'history'/);
   assert.match(ownerClient, /\['active', 'Active'\]/);
   assert.match(dealerClient, /<span>Active<\/span>/);
-  assert.match(managerClient, /<h1>Overview<\/h1>/);
-  assert.match(managerClient, /<h2 id="needs-attention-title">Needs attention<\/h2>/);
-  assert.match(managerClient, /<h2 id="upcoming-title">Upcoming<\/h2>/);
-  assert.doesNotMatch(managerClient, /type NotificationView/);
-  assert.doesNotMatch(managerRoute, /requestedView/);
-  assert.match(managerOverview, /return !dismissedKeys\.has\(key\)/);
-});
-
-test('Field Manager Overview requires a captured location before service opens', async () => {
-  const [managerClient, serviceLocationModal, fuelLocationModal, locationSession, openRoute] = await Promise.all([
-    read('app/field-manager/field-manager-overview-client.tsx'),
-    read('app/field-manager/field-manager-service-location-modal.tsx'),
-    read('components/FuelLocationModal.tsx'),
-    read('lib/field-manager-location-session.ts'),
-    read('app/api/field-manager/assets/[assetId]/open/route.ts'),
-  ]);
-
-  assert.match(managerClient, /setLocationGate\(\{/);
-  assert.match(managerClient, /<FieldManagerServiceLocationModal/);
-  assert.doesNotMatch(managerClient, /window\.location\.assign\(payload\.redirectTo\)/);
-  assert.match(serviceLocationModal, /saveFieldManagerServiceLocation/);
-  assert.match(serviceLocationModal, /window\.location\.assign\(redirectTo\)/);
-  assert.match(serviceLocationModal, /<FuelLocationModal/);
-  assert.match(fuelLocationModal, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(fuelLocationModal, /maximumAge: 0/);
-  assert.match(fuelLocationModal, /locationState === 'error'[\s\S]*?\? 'Retry'/);
-  assert.match(locationSession, /aim4price_qr_scan_session_v1:/);
-  assert.match(locationSession, /latitude: String\(input\.latitude\)/);
-  assert.match(openRoute, /publicAssetCode: asset\.publicAssetCode/);
 });
 

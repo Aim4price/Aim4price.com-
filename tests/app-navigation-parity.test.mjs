@@ -30,9 +30,6 @@ test('wizard Back calls its handler and respects disabled state; login has no ap
   let count=0;for(const disabled of [true,false]){const {Component}=load('app/dealer/dealer-nav.tsx','/middleman/valuation');const back=nodes(Component({onBack:()=>count++,backDisabled:disabled})).find(x=>x.props?.['aria-label']==='Back');back.props.onClick();}assert.equal(count,1);
   for(const root of ['/dealer','/middleman']){const {Component}=load('app/dealer/dealer-nav.tsx',root+'/login');assert.equal(Component({}),null);}
 });
-test('Field Manager navigation works on deep links and remains hidden on login',()=>{
- const original=globalThis.window;try{globalThis.window={history:{length:1}};const {Component,calls}=load('app/field-manager/field-manager-top-nav.tsx','/field-manager/assets/abc');const all=nodes(Component());all.find(x=>x.props?.['aria-label']==='Back').props.onClick();assert.deepEqual(calls,['/field-manager/assets']);assert.equal(all.find(x=>x.props?.['aria-label']==='Field Manager home').props.href,'/field-manager');assert.equal(load('app/field-manager/field-manager-top-nav.tsx','/field-manager/login').Component(),null);}finally{globalThis.window=original;}
-});
 test('bottom navigation fails closed, respects role tools, and excludes capture forms',()=>{
  for(const root of ['/dealer','/middleman']){
   assert.equal(load('app/dealer/dealer-bottom-nav.tsx',root,null).Component(),null);

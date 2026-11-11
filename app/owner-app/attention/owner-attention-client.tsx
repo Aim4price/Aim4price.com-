@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import styles from '../../field-manager/page.module.css';
-import OverviewClearConfirmation from '../../field-manager/overview-clear-confirmation';
+import styles from '../../../components/manager/mobile.module.css';
+import OverviewClearConfirmation from '../../../components/manager/overview-clear-confirmation';
 import ownerStyles from '../owner-app.module.css';
 import OwnerAppNav from '../owner-app-nav';
 import OwnerServiceLocationModal from '../owner-service-location-modal';

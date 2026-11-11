@@ -23,7 +23,7 @@ function runtime({ blocked = false, saved = {} } = {}) {
 
 test('only exact app roots and their descendants receive an app theme', () => {
   const { api } = runtime();
-  for (const root of ['owner-app', 'dealer', 'middleman', 'field-manager']) {
+  for (const root of ['owner-app', 'dealer', 'middleman']) {
     assert.equal(api.appThemeRoot('/' + root), root);
     assert.equal(api.appThemeRoot('/' + root + '/assets/123'), root);
     assert.equal(api.appThemeRoot('/' + root + '-other'), null);
@@ -32,7 +32,7 @@ test('only exact app roots and their descendants receive an app theme', () => {
 });
 
 test('every app starts light unless an explicit dark preference is readable', () => {
-  for (const root of ['owner-app', 'dealer', 'middleman', 'field-manager']) {
+  for (const root of ['owner-app', 'dealer', 'middleman']) {
     for (const blocked of [false, true]) {
       for (const saved of [null, 'light', 'dark', 'invalid']) {
         const state = runtime({ blocked, saved: { ['aim4price-app-theme:' + root]: saved } });
@@ -63,12 +63,12 @@ test('each app remembers its own preference without changing the desktop backgro
 
 test('storage failures retain the current-session choice and external resets clear it', () => {
   const { api, document } = runtime({ blocked: true });
-  api.setAppTheme('field-manager', 'dark');
+  api.setAppTheme('owner-app', 'dark');
   api.applyAppTheme(null);
-  api.applyAppTheme('field-manager');
+  api.applyAppTheme('owner-app');
   assert.equal(document.documentElement.dataset.appTheme, 'dark');
-  api.clearAppThemeMemory('field-manager');
-  api.applyAppTheme('field-manager');
+  api.clearAppThemeMemory('owner-app');
+  api.applyAppTheme('owner-app');
   assert.equal(document.documentElement.dataset.appTheme, 'light');
 });
 
@@ -80,7 +80,7 @@ test('offline entry uses the same pre-paint preference and caches its theme styl
   assert.ok(worker.includes("'-offline-shell-v9'"));
   assert.ok(config.includes("'-offline-shell-v9'"));
   assert.ok(entry.includes('cacheName: config.cache'));
-  for (const root of ['owner-app', 'field-manager', 'dealer', 'middleman']) {
+  for (const root of ['owner-app', 'dealer', 'middleman']) {
     const html = readFileSync(new URL('../public/' + root + '/offline.html', import.meta.url), 'utf8');
     assert.ok(html.includes(api.APP_THEME_SCRIPT));
     assert.ok(html.includes('href="/app-theme.css"'));

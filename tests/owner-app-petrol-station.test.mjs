@@ -50,7 +50,7 @@ test('Petrol station flow captures GPS, fuel details and a receipt-backed cost',
     source('components/FuelLocationModal.tsx'),
   ]);
 
-  assert.match(page, /ownerAppCan\(access, 'operate'\)/);
+  assert.match(page, /ownerAppCan\(access, 'addFuel'\)/);
   assert.match(page, /operatorName=\{access\.displayName\}/);
   assert.match(client, /\['diesel', 'petrol'\]/);
   assert.match(client, /capture="environment"/);

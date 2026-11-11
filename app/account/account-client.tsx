@@ -1539,9 +1539,6 @@ export default function AccountClient({
     openActionModal("scanPin");
   }
 
-  function openFieldManagerPage() {
-    window.location.assign("/account/field-manager");
-  }
 
   function openDealerAppAccessPage() {
     window.location.assign("/account/dealer-app");
@@ -1923,24 +1920,14 @@ export default function AccountClient({
                         type="button"
                         className={styles.quickActionButton}
                         onClick={openOwnerAppAccessPage}
-                        aria-label="Manage Owner App access"
+                        aria-label="Manage Manager App access"
                       >
                         <QuickActionIcon name="ownerApp" />
-                        <strong>Owner App access</strong>
+                        <strong>Manager App access</strong>
                       </button>
                     ) : null}
 
-                    {isOwnerAccount ? (
-                      <button
-                        type="button"
-                        className={styles.quickActionButton}
-                        onClick={openFieldManagerPage}
-                        aria-label="Manage Field Manager access"
-                      >
-                        <QuickActionIcon name="fieldManager" />
-                        <strong>Field Manager access</strong>
-                      </button>
-                    ) : null}
+
 
                     {isDealerAccount ? (
                       <button

@@ -48,7 +48,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
   <style>
     @font-face {
       font-family: Montserrat;
-      src: url('/field-manager/montserrat-latin.woff') format('woff');
+      src: url('/fonts/montserrat-latin.woff') format('woff');
       font-weight: 100 900;
       font-style: normal;
       font-display: swap;

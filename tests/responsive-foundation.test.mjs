@@ -86,7 +86,7 @@ test('Asset Register keeps desktop cards and controls while retaining native app
 test('Owner and Field Manager apps use fluid tablet gutters without adding desktop behavior', async () => {
   const [owner, field] = await Promise.all([
     read('app/owner-app/owner-app.module.css'),
-    read('app/field-manager/page.module.css'),
+    read('components/manager/mobile.module.css'),
   ]);
 
   assert.match(owner, /@media \(min-width: 600px\) and \(max-width: 960px\)[\s\S]*?--owner-page-gutter: clamp\(32px, 6vw, 48px\)/);

@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 export function GET() {
   return NextResponse.json({
     id: '/apps/aim4price-owner',
-    name: 'Aim4price Owner',
-    short_name: 'Owner',
-    description: 'Mobile owner access to Aim4price assets, attention items, estimates and marketplace.',
+    name: 'Aim4price Manager',
+    short_name: 'Manager',
+    description: 'Manage assets, work, fuel and records with access controlled by your account holder.',
     start_url: '/owner-app/login?source=owner-app',
     scope: '/owner-app',
     display: 'standalone',

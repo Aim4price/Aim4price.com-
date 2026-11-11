@@ -27,7 +27,7 @@ function genericError(status = 401) {
 export async function POST(request: NextRequest) {
   if ((await getAnyServerSession())?.user?.id) {
     return NextResponse.json(
-      { ok: false, error: 'Sign out of the current Aim4price account before using an Owner App username.' },
+      { ok: false, error: 'Sign out of the current Aim4price account before using an Manager App username.' },
       { status: 409 },
     );
   }

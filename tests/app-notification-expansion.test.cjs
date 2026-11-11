@@ -72,7 +72,7 @@ test('read mutations ignore IDs that no longer belong to this recipient',async()
 test('owner operations users cannot see financial, commercial or unscoped private notifications',async()=>{
  const items=[{id:'cost',category:'dealer_cost',assetId:'allowed'},{id:'private',category:'maintenance',assetId:'private'},{id:'global',category:'admin_message'},{id:'work',category:'maintenance',assetId:'allowed'}];
  const f=load('lib/owner-notification-inbox.ts',{'./app-notification-history':{},'./notification-inbox':{listNotificationInbox:async()=>items},'./owner-app-access':{ownerAppCan:(access,p)=>access.permissions.includes(p)},'./push-access':{currentPushIdentity:async()=>null},'./push-events':{},'./app-notification-state':{}});
- const result=await f.listOwnerNotificationInbox({ownerUserId:'account',assetScope:'selected',accessibleAssetIds:['allowed'],permissions:['view','operate']});assert.deepEqual(result.map(x=>x.id),['work']);
+ const result=await f.listOwnerNotificationInbox({ownerUserId:'account',assetScope:'selected',accessibleAssetIds:['allowed'],permissions:['view','operate','viewMaintenance']});assert.deepEqual(result.map(x=>x.id),['work']);
 });
 test('listing events reuse live public stock and exclude own, withdrawn and nonmatching assets',async()=>{
  const queries=[];

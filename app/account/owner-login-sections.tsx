@@ -94,7 +94,7 @@ export default function OwnerLoginSections(props: Props) {
   const cards: { id: Section; title: string; text: string; value: string }[] = [
     { id: 'details', title: 'Login details', text: 'Change their name or username.', value: record.username },
     { id: 'permissions', title: 'Permissions', text: 'Choose what they can do.', value: roleOptions.find(r => r.value === currentRole)?.label || 'Manage permissions' },
-    ...(props.renderAssetAccess ? [{ id: 'assets' as Section, title: 'Asset access', text: 'Choose which assets they can access.', value: currentRole === 'admin' ? 'All assets' : 'Manage asset selection' }] : []),
+    ...(props.renderAssetAccess ? [{ id: 'assets' as Section, title: 'Asset access', text: 'Choose which assets they can access.', value: 'Manage asset selection' }] : []),
     ...(props.renderFuelAccess ? [{ id: 'fuel' as Section, title: 'Fuel tank access', text: 'Choose which fuel tanks they can use.', value: 'Manage fuel selection' }] : []),
     { id: 'passcode', title: passwordLabel, text: `Set a new login ${passwordLabel.toLowerCase()}.`, value: `Change ${passwordLabel.toLowerCase()}` },
   ];
@@ -116,7 +116,7 @@ export default function OwnerLoginSections(props: Props) {
       {!props.businessLoginLayout ? <button type="button" className={styles.statusLink} onClick={() => open('status')}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true"><path d="M12 3v9M6.3 5.8a9 9 0 1 0 11.4 0"/></svg>Manage login status</button> : null}
     </> : <>
       <div className={styles.sectionHeading}><h3 ref={heading} tabIndex={-1} className={styles.sectionTitle}>{props.desktopFlow && section === 'status' ? 'Login status' : title}</h3>{props.desktopFlow && <span className={styles.status} data-active={record.isActive}>{record.isActive ? 'Active' : 'Inactive'}</span>}</div>
-      {section === 'fuel' ? props.renderFuelAccess?.(afterAccessSaved) : section === 'permissions' && props.renderPermissions ? props.renderPermissions(afterAccessSaved) : section === 'assets' ? currentRole === 'admin' ? <div className={`${styles.info} ${styles.fullAccess}`}><strong>Full access to all assets</strong><button type="button" onClick={() => open('permissions')}>Change permissions</button></div> : props.renderAssetAccess?.(afterAccessSaved) : section === 'status' ? <>
+      {section === 'fuel' ? props.renderFuelAccess?.(afterAccessSaved) : section === 'permissions' && props.renderPermissions ? props.renderPermissions(afterAccessSaved) : section === 'assets' ? props.renderAssetAccess?.(afterAccessSaved) : section === 'status' ? <>
         <dl className={styles.history}><div><dt><AccessSectionIcon name="clock"/>Last login</dt><dd>{date(record.lastLoginAtIso)}</dd></div><div><dt><AccessSectionIcon name="clock"/>Last updated</dt><dd>{date(record.updatedAtIso)}</dd></div></dl>
         <div className={styles.statusAction}><div><strong>{record.isActive ? 'Deactivate login' : 'Activate login'}</strong><p>{record.isActive ? 'Stop sign-in access. You can activate it again later.' : 'Allow this person to sign in again.'}</p></div><button type="button" disabled={busy} onClick={props.onToggle}><AccessSectionIcon name="power"/>{record.isActive ? 'Deactivate' : 'Activate'}</button></div>
         <div className={styles.statusAction}><div><strong>Delete login</strong><p>Permanently remove this login.</p></div><button type="button" className={styles.danger} disabled={busy} onClick={props.onDelete}><AccessSectionIcon name="delete"/>Delete</button></div>

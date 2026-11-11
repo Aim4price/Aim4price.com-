@@ -5,22 +5,20 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const ownerLogin = read('app/owner-app/login/owner-app-login-client.tsx');
 const dealerLogin = read('app/dealer/login/dealer-login-client.tsx');
-const fieldLogin = read('app/field-manager/field-manager-login-client.tsx');
 const ownerRoute = read('app/api/owner-app/login/route.ts');
 const dealerRoute = read('app/api/dealer/login/route.ts');
-const fieldRoute = read('app/api/field-manager/login/route.ts');
 const welcome = read('components/AppLoginWelcome.tsx');
 const manifest = read('app/dealer/manifest.webmanifest/route.ts');
 const dealerLayout = read('app/dealer/layout.tsx');
 
-test('all three apps show the authenticated user and company logo before redirecting', () => {
-  for (const client of [ownerLogin, dealerLogin, fieldLogin]) {
+test('Manager and Dealer apps show the authenticated user and company logo before redirecting', () => {
+  for (const client of [ownerLogin, dealerLogin]) {
     assert.match(client, /<AppLoginWelcome \{\.\.\.welcome\} \/>/);
     assert.match(client, /setWelcome\(\{/);
     assert.match(client, /window\.setTimeout\(\(\) => window\.location\.replace\(redirectTo\), 1400\)/);
   }
 
-  for (const route of [ownerRoute, dealerRoute, fieldRoute]) {
+  for (const route of [ownerRoute, dealerRoute]) {
     assert.match(route, /welcome: \{/);
     assert.match(route, /companyName: profile\.businessName \|\| profile\.displayName \|\| profile\.name \|\| 'Aim4price'/);
     assert.match(route, /logoUrl: profile\.logoUrl \|\| '\/icon\.png'/);

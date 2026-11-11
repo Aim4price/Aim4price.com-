@@ -28,7 +28,7 @@ export type OwnerAppSession = {
 function sessionSecret(): string {
   const configured = process.env.BETTER_AUTH_SECRET || process.env.OWNER_APP_SECRET;
   if (configured) return configured;
-  if (process.env.NODE_ENV === 'production') throw new Error('Owner App session secret is not configured.');
+  if (process.env.NODE_ENV === 'production') throw new Error('Manager App session secret is not configured.');
   return 'aim4price-development-secret-change-me';
 }
 

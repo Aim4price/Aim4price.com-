@@ -2622,7 +2622,7 @@
 
 }
 
-/* Owner App tablet layout. The phone treatment remains unchanged below 600px;
+/* Manager App tablet layout. The phone treatment remains unchanged below 600px;
    tablets gain wider content, two-column launchers, and larger touch controls. */
 @media (min-width: 600px) {
   .page,
@@ -2795,7 +2795,7 @@
   }
 }
 
-/* Final phone spacing shared by the Owner App's everyday screens. */
+/* Final phone spacing shared by the Manager App's everyday screens. */
 @media (max-width: 599px) {
   .page,
   .module {
@@ -3539,7 +3539,7 @@
 .ownerPhotoViewerCard {padding-top:3.6rem;max-height:calc(100dvh - 24px);overflow:auto;}
 .ownerPhotoViewerCard img {height:min(65dvh,760px);max-height:calc(100dvh - 220px);object-fit:contain;}
 
-/* Owner App phone controls: neutral navigation, clear actions, readable inputs. */
+/* Manager App phone controls: neutral navigation, clear actions, readable inputs. */
 .homeButton.homeButton { background: var(--app-surface-soft, #eef5f0); color: var(--app-text, #173c2e); border-color: var(--app-line, #d4e3da); box-shadow: none; }
 
 .searchResultCount { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin: 0; font-size: .9rem; color: var(--app-muted, #617469); }
@@ -3717,7 +3717,7 @@
   .appShell .assetMirrorAction { padding-inline: 6px; font-size: .8rem; }
 }
 
-/* Asset Register visual language, sized for the Owner App. */
+/* Asset Register visual language, sized for the Manager App. */
 .appShell .assetMirrorOptionsAction.assetMirrorOptionsAction {
   color: #723b0d; border-color: #c87534;
   background: linear-gradient(180deg, #fffaf5, #fff0e3);

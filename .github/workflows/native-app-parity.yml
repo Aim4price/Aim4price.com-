@@ -4,7 +4,7 @@ on:
     paths:
       - 'app/dealer/**'
       - 'app/middleman/**'
-      - 'app/field-manager/**'
+      - 'components/manager/**'
       - 'app/owner-app/**'
       - 'app/valuation/**'
       - 'components/app-flow.module.css'
@@ -32,10 +32,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/app-navigation-parity.test.mjs tests/field-manager-mobile-navigation.test.mjs tests/mobile-valuation-flow.test.mjs tests/owner-top-navigation.test.mjs
+      - run: node --test tests/app-navigation-parity.test.mjs tests/manager-consolidation.test.cjs tests/mobile-valuation-flow.test.mjs tests/owner-top-navigation.test.mjs
       - name: Check real home components on phones and desktop
         run: |
-          for mode in field-manager dealer middleman; do
+          for mode in owner dealer middleman; do
             for width in 320 393 1280; do
               APP_MODE=$mode VIEWPORT_WIDTH=$width node scripts/verify-native-app-homes.cjs || exit 1
             done

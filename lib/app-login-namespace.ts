@@ -2,11 +2,12 @@ import type { Pool, PoolClient } from 'pg';
 import { getDb } from './db';
 import { accountAppUsername, validateAppAccountName } from './app-login-name';
 
-export type AppLoginKind = 'owner' | 'dealer' | 'field';
+export type AppLoginKind = 'owner' | 'dealer';
 const directories = [
   { kind: 'owner', table: 'owner_app_users', owner: 'parent_owner_user_id' },
   { kind: 'dealer', table: 'dealer_app_staff', owner: 'dealer_user_id' },
-  { kind: 'field', table: 'field_managers', owner: 'owner_user_id' },
+  // Reserve legacy names until their identities have been migrated; this is not a login option.
+  { kind: 'legacy', table: 'field_managers', owner: 'owner_user_id' },
 ] as const;
 
 let schema: Promise<void> | undefined;

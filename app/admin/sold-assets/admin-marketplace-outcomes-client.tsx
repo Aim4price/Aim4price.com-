@@ -118,7 +118,7 @@ function compareRecordedFinalValue(
 function actorLabel(actorType: string): string {
   if (actorType === 'admin_support') return 'Admin support';
   if (actorType === 'dealer_staff') return 'Dealer staff';
-  if (actorType === 'owner_app') return 'Owner App';
+  if (actorType === 'owner_app') return 'Manager App';
   return 'Account';
 }
 

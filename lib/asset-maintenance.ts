@@ -5,7 +5,7 @@ import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
 import { resolveAssetUsage } from './asset-usage';
-import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
+import { ensureOwnerAppTables, listOwnerAppUsers } from './owner-app';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
 import {
   listCompletedMaintenanceScanEventsForAssets,
@@ -894,7 +894,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
     return;
   }
 
-  await ensureFieldManagerTables();
+  await ensureOwnerAppTables();
   await db.query(`create extension if not exists pgcrypto`);
 
   await db.query(`
@@ -907,7 +907,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       status text not null default 'upcoming',
       title text,
       notes text,
-      assigned_field_manager_id uuid null references public.field_managers(id) on delete set null,
+      assigned_field_manager_id uuid null references public.owner_app_users(id) on delete set null,
       assigned_name text,
       due_date date,
       due_usage numeric(14,2),
@@ -1000,11 +1000,11 @@ export async function listAssetMaintenanceAssets(userId: string): Promise<AssetM
 
 export async function listAssetMaintenanceFieldManagers(userId: string): Promise<AssetMaintenanceFieldManagerOption[]> {
   try {
-    const managers = await listFieldManagers(userId);
+    const managers = await listOwnerAppUsers(userId);
     return managers
       .map((manager) => ({
         id: manager.id,
-        displayName: manager.displayName || manager.username || 'Field Manager',
+        displayName: manager.displayName || manager.username || 'Manager',
         username: manager.username,
         isActive: manager.isActive,
       }))
@@ -1124,7 +1124,7 @@ function maintenanceSelectSql(whereClause: string): string {
         nullif(to_jsonb(vr)->>'equipment_family_id', ''),
         nullif(to_jsonb(em)->>'equipment_family_id', '')
       )
-    left join public.field_managers fm
+    left join public.owner_app_users fm
       on fm.id = m.assigned_field_manager_id
     left join public.asset_scan_events se
       on se.id = m.source_scan_event_id

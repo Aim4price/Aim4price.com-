@@ -74,7 +74,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
  try{
   const page=await browser.newPage();let verificationRequests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setRequestInterception(true);
   page.on('request',request=>{const url=request.url();if(url.endsWith('/api/billing/plans'))return request.respond({status:503,contentType:'application/json',body:'{}'});if(url.endsWith('/api/auth/sign-up/email')){const payload=JSON.parse(request.postData());assert.equal(payload.accountType,'business');assert.equal(payload.accountSubtype,'contributor');assert.equal(payload.acceptedTerms,true);return request.respond({contentType:'application/json',body:'{"ok":true}'});}if(url.endsWith('/api/auth/send-verification-email'))return request.respond({status:++verificationRequests%2?503:200,contentType:'application/json',body:'{}'});if(url.endsWith('/api/guest-access'))return request.respond({contentType:'application/json',body:'{"ok":true}'});if(url.startsWith('https://billing.test/asset-share/'))return request.respond({contentType:'text/html',body:'<h1>Shared enquiry</h1>'});if(url.endsWith('/api/auth/sign-out')){assert.equal(request.method(),'POST');return request.respond({contentType:'application/json',body:'{}'});}if(url.endsWith('/api/auth/get-session'))return request.respond({contentType:'application/json',body:'null'});if(new URL(url).origin==='https://billing.test'&&new URL(url).pathname==='/auth')return request.respond({contentType:'text/html',body:'<h1>Login</h1>'});if(url.includes('/brand/invoice-drop-hero.webp'))return request.respond({contentType:'image/webp',body:fs.readFileSync(path.join(root,'public/brand/invoice-drop-hero.webp'))});if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:Array.from({length:8},(_,i)=>({...invoice,id:invoice.id.slice(0,-1)+i,number:'A4P-2026-00000'+(i+1)})),total:8,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
-  const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
+  const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
    for(const mode of ['tutorials','guest','pricing','business-join','business-register','signup-owner','signup-dealer','signup-middleman','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
@@ -128,12 +128,14 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='tutorials'){
      const features='nav[aria-label="Owner features"] button';
-     assert.equal(await page.$$eval(features,els=>els.length),46);
+     assert.equal(await page.$$eval(features,els=>els.length),45);
+     assert.equal(await page.$$eval(features,els=>els.some(e=>e.textContent.includes('Field Manager'))),false,'Retired app is not offered');
+     assert.equal(await page.$$eval(features,els=>els.filter(e=>e.textContent.includes('Aim4price Manager')).length),1,'One consolidated Manager guide');
      assert.equal(await page.$eval('#owner-feature-title',e=>e.textContent),'Welcome to Aim4price.');
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Welcome and list have equal heights');
      await page.screenshot({path:path.join(evidence,'owner-welcome-'+width+'.png'),fullPage:false});
      assert.ok(await page.$('[aria-label="Introduction video not yet available"]'));
-     assert.deepEqual(await page.$$eval(features,els=>els.map(e=>Number(e.firstElementChild.textContent))),Array.from({length:46},(_,i)=>i+1));
+     assert.deepEqual(await page.$$eval(features,els=>els.map(e=>Number(e.firstElementChild.textContent))),Array.from({length:45},(_,i)=>i+1));
      await page.$$eval(features,els=>els[0].click());
      assert.match(await page.$eval('#owner-feature-title',e=>e.textContent),/How do I start/);
      if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Feature and list have equal heights');
@@ -158,7 +160,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
      await page.waitForFunction(()=>document.body.textContent.includes('No matching features'));
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
-     assert.equal(await page.$$eval(features,els=>els.length),46);
+     assert.equal(await page.$$eval(features,els=>els.length),45);
+     assert.equal(await page.$$eval(features,els=>els.some(e=>e.textContent.includes('Field Manager'))),false,'Retired app is not offered');
+     assert.equal(await page.$$eval(features,els=>els.filter(e=>e.textContent.includes('Aim4price Manager')).length),1,'One consolidated Manager guide');
      await page.click('[aria-label="Choose feature category"]');
      await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Getting started')).click());
      assert.equal(await page.$$eval(features,els=>els.length),3);

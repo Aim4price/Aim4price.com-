@@ -28,7 +28,7 @@ export function DesktopAccount({ item, username, onPermissions }: { item: Deskto
   const accountType = owner ? 'Owner' : middleman ? 'Middleman' : 'Dealer';
   const groups: [string, Action[]][] = [
     ['Assets & activity', [['registers', 'Manage asset registers'], ['claim', 'Claim or send an asset'], ['notifications', 'Notifications']]],
-    ['Apps & connections', [['connections', middleman ? 'Desktop asset access' : 'Desktop users'], ...(owner ? [['ownerApp', 'Owner App access'], ['fieldManager', 'Field Manager access'], ['connections', 'AI connections']] as Action[] : [['dealer', middleman ? 'Middleman app access' : 'Manage Dealer App staff']] as Action[])]],
+    ['Apps & connections', [['connections', middleman ? 'Desktop asset access' : 'Desktop users'], ...(owner ? [['ownerApp', 'Manager App access'], ['fieldManager', 'Field Manager access'], ['connections', 'AI connections']] as Action[] : [['dealer', middleman ? 'Middleman app access' : 'Manage Dealer App staff']] as Action[])]],
     ['Marketplace & visibility', owner ? [['showroom', 'Manage my showroom'], ['marketplace', 'Marketplace contact'], ['discovery', 'Discovery settings']] : [['marketplace', 'Marketplace contact']]],
     ['Account & billing', [['business', 'Edit business details'], ['invoices', 'Aim4price invoices']]],
   ];

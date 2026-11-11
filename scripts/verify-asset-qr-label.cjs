@@ -32,7 +32,7 @@ const evidence = path.join(__dirname, '../.next/qr-label-validation');
     let currentOptions = options;
     page.on('request', request => {
       if (request.url() === 'https://label.test/') return request.respond({ contentType: 'text/html', body: buildAssetQrLabelHtml(currentOptions) });
-      if (request.url().endsWith('/field-manager/montserrat-latin.woff')) return request.respond({ contentType: 'font/woff', body: fs.readFileSync(path.join(__dirname, '../public/field-manager/montserrat-latin.woff')) });
+      if (request.url().endsWith('/fonts/montserrat-latin.woff')) return request.respond({ contentType: 'font/woff', body: fs.readFileSync(path.join(__dirname, '../public/fonts/montserrat-latin.woff')) });
       if (request.url().startsWith('data:')) return request.continue();
       return request.abort();
     });

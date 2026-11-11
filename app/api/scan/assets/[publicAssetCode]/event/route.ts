@@ -1,3 +1,4 @@
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
 import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from "next/server";
 import {
@@ -15,7 +16,7 @@ import {
   recordStandaloneAssetMaintenanceCompletion,
   type AssetMaintenanceRecord,
 } from "../../../../../../lib/asset-maintenance";
-import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
+import { retiredAppScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
 import {
   listRecentScanEvents,
   normalizePublicAssetCode,
@@ -23,7 +24,6 @@ import {
 } from "../../../../../../lib/scan-assets";
 import { MAX_ASSET_REGISTER_PHOTOS } from "../../../../../../lib/asset-register-uploads";
 import { safeAssetOwnerError } from "../../../../../../lib/asset-owner-resolver";
-import { fieldManagerCan } from "../../../../../../lib/field-manager";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const access = isOwnerAppHint
     ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
     : isFieldManagerHint
-    ? await authorizeFieldManagerScanAccess(
+    ? await retiredAppScanAccess(
         request,
         publicAssetCode,
         requestedAssetId,
@@ -179,9 +179,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_work')))) {
-    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot record checks, services or repairs.' }, { status: 403 });
-  }
 
   let body: ScanEventRequest;
   try {
@@ -196,6 +193,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const triedLifeWorkedPercentUpdate = hasSubmittedValue(
     body.lifeWorkedPercent,
   );
+
+  if (access.accessMode === 'owner_session') {
+    const manager = await getOwnerAppAccess();
+    const permission = body.scheduledMaintenanceId ? 'completeMaintenance' : 'recordMaintenance';
+    if (!manager || !ownerAppCan(manager, permission)) return NextResponse.json({ ok: false, error: 'This action is not allowed for this login.' }, { status: 403 });
+    if (!ownerAppCan(manager, 'uploadPhotos') && Array.isArray(body.photoUrls) && body.photoUrls.length) return NextResponse.json({ ok: false, error: 'Photo uploads are not enabled.' }, { status: 403 });
+    if (!ownerAppCan(manager, 'updateUsage')) { delete body.hours; delete body.lifeWorkedPercent; }
+    if (!ownerAppCan(manager, 'updateLocation')) { delete body.latitude; delete body.longitude; }
+  }
 
   const operatorName = access.accessMode === "field_manager"
     ? asText(access.fieldManagerDisplayName) || "Field Manager"

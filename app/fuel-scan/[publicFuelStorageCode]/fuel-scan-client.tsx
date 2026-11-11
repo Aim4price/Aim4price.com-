@@ -7,7 +7,7 @@ import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../lib/fue
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../components/FuelLocationModal';
-import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
+import FieldManagerNavLink from '../../../components/manager/manager-nav-link';
 import OwnerAppNav from '../../owner-app/owner-app-nav';
 import styles from './page.module.css';
 import {
@@ -1562,7 +1562,7 @@ export default function FuelScanClient({
               <h1>{visibleStorageName}</h1>
               <p>
                 {isOwnerAppMode
-                  ? 'Checking your Owner App access. No fuel PIN or name is required.'
+                  ? 'Checking your Manager App access. No fuel PIN or name is required.'
                   : 'Checking your Field Manager access. No fuel PIN or scanner name is required.'}
               </p>
             </div>

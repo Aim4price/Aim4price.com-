@@ -1,3 +1,4 @@
+import { projectManagerAsset, projectManagerMaintenance } from '../../../../../lib/manager-permissions';
 import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
@@ -111,7 +112,7 @@ async function loadDetail(ownerUserId: string, assetId: string) {
 }
 
 function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Manager.' }, { status: 401 });
 }
 function notFound() {
   return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -123,9 +124,15 @@ export async function GET(_request: NextRequest, { params }: { params: { assetId
   if (!ownerAppCanAccessAsset(access, params.assetId)) return notFound();
   try {
     const detail = await loadDetail(access.ownerUserId, params.assetId);
-    return detail ? NextResponse.json({ ok: true, ...detail }) : notFound();
+    if (!detail) return notFound();
+    if (!ownerAppCan(access, 'manage_assets')) {
+      return NextResponse.json({ ok: true, item: projectManagerAsset(detail.item, access.teamPermissions),
+        register: detail.register ? { id: detail.register.id, businessName: detail.register.businessName } : null,
+        registers: [], maintenance: ownerAppCan(access, 'viewMaintenance') ? detail.maintenance.map(projectManagerMaintenance) : [], maintenanceSummary: null, ownerContext: null });
+    }
+    return NextResponse.json({ ok: true, ...detail });
   } catch (error) {
-    console.error('Owner App asset detail GET failed.', error);
+    console.error('Manager App asset detail GET failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to load this asset.' }, { status: 500 });
   }
 }
@@ -248,7 +255,13 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
     }
     await deleteUnreferencedAssetRegisterUploads({ userId: access.ownerUserId, uploadIds: removedUploadIds, excludeAssetId: params.assetId });
     const detail = await loadDetail(access.ownerUserId, params.assetId);
-    return detail ? NextResponse.json({ ok: true, ...detail }) : notFound();
+    if (!detail) return notFound();
+    if (!ownerAppCan(access, 'manage_assets')) {
+      return NextResponse.json({ ok: true, item: projectManagerAsset(detail.item, access.teamPermissions),
+        register: detail.register ? { id: detail.register.id, businessName: detail.register.businessName } : null,
+        registers: [], maintenance: ownerAppCan(access, 'viewMaintenance') ? detail.maintenance.map(projectManagerMaintenance) : [], maintenanceSummary: null, ownerContext: null });
+    }
+    return NextResponse.json({ ok: true, ...detail });
   } catch (error) {
     const code = error instanceof Error ? error.message : '';
     if (code === 'ASSET_EDIT_CONFLICT') return NextResponse.json({ ok: false, error: 'This asset has changed. Reopen it to load the latest details before saving.', conflict: true }, { status: 409 });
@@ -257,7 +270,7 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
       return NextResponse.json({ ok: false, error: 'The usage reading is lower than the saved reading. Confirm the correction before saving.', requiresUsageConfirmation: true }, { status: 409 });
     }
     if (code === 'ASSET_REGISTER_NOT_FOUND') return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
-    console.error('Owner App asset detail PUT failed.', error);
+    console.error('Manager App asset detail PUT failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to update this asset.' }, { status: 500 });
   }
 }
@@ -308,7 +321,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { asset
       redirectTo: outcome.mode === 'transfer_pending' ? undefined : '/owner-app/assets',
     });
   } catch (error) {
-    console.error('Owner App asset detail DELETE failed.', error);
+    console.error('Manager App asset detail DELETE failed.', error);
     if (error instanceof Error && error.message === 'ASSET_DELETE_HAS_DEPENDENCIES') {
       return NextResponse.json({ ok: false, error: 'This record has linked history or files. Choose the genuine disposal reason so it can be archived safely.' }, { status: 409 });
     }

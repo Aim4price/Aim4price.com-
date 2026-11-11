@@ -61,7 +61,7 @@ const logo = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.
    },logo);
    assert.equal(payload.assetDetailRows[0].label,'Replacement price');
    let html=report.renderValuationReportHtml(payload);
-   const font=fs.readFileSync('public/field-manager/montserrat-latin.woff').toString('base64');
+   const font=fs.readFileSync('public/fonts/montserrat-latin.woff').toString('base64');
    html=html.replace('</head>','<style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}</style></head>');
    const page=await browser.newPage();await page.setRequestInterception(true);page.on('request',req=>req.url().startsWith('http')?req.abort():req.continue());
    await page.setContent(html);await page.emulateMediaType('print');await page.evaluate(()=>document.fonts.ready);

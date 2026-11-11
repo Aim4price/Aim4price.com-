@@ -59,7 +59,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try{
  const page=await browser.newPage();const requests=[],errors=[];let overviewMalformed=false;page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
  await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/asset-share-links/fixture/access')return r.respond({contentType:'application/json',body:JSON.stringify(overviewMalformed?{}:{requests:[],recipientEmail:null,assigned:false,allowReply:true,permissions:{reports:true,allReports:true,addPhotos:true,addCosts:true,yearModel:true,condition:true,addMaintenance:true,maintenanceSchedules:true,directUpdates:true}})});if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/test/'))return r.respond({contentType:'application/json',body:'{"ok":true}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
- const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
+ const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
  await page.setViewport({width:1440,height:1000});
  async function render(module,props,url='/'){
   await page.goto('https://usage.test'+url);

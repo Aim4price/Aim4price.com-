@@ -1,3 +1,6 @@
+import { managerRequestAllowed } from './manager-request-policy';
+import { managerPermissions } from './manager-permissions';
+import { getOwnerAppUserById, getOwnerAppAssetAccessSettings } from './owner-app';
 import { sharingSessionIsActive } from './sharing-foundation';
 import { isRetiredAssistanceAccount } from "./retired-workspaces";
 import { currentAppRealm } from './app-realm-server';
@@ -210,6 +213,11 @@ async function readDealerAppSupportSession(): Promise<DealerAppSupportSession | 
 async function readOwnerAppSupportSession(): Promise<OwnerAppSupportSession | null> {
   const owner = await getOwnerAppSession();
   if (!owner) return null;
+  const member = await getOwnerAppUserById(owner.ownerAppUserId);
+  if (!member) return null;
+  const requestHeaders = await headers();
+  const scope = await getOwnerAppAssetAccessSettings(member.parent_owner_user_id, member.id);
+  if (!(member.access_role === 'admin' && member.permissions == null && scope.assetScope === 'all') && !managerRequestAllowed(requestHeaders.get('x-aim4price-request-path') || '', requestHeaders.get('x-aim4price-request-method') || 'GET', managerPermissions(member.access_role, member.permissions))) return null;
   const now = new Date();
   return {
     user: {
@@ -284,7 +292,7 @@ export async function getServerSession(
   const realm = await currentAppRealm();
   if (realm) {
     if (realm === 'owner') return options.allowOwnerApp ? await readOwnerAppSupportSession() : null;
-    if (realm === 'field') return null; // Field Manager APIs enforce their own scoped permissions.
+    if (realm === 'field') return null; // Retired sessions never authenticate into Manager.
     return options.allowDealerApp ? await readDealerAppSupportSession() : null;
   }
   const session = options.authSession ?? await readAuthSession();

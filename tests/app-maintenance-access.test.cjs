@@ -5,20 +5,16 @@ const ts=require('typescript');
 function load(file,mocks) { const exports={}; new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(name=>name in mocks?mocks[name]:require(name),exports);return exports; }
 class Denied extends Error {constructor(message,status){super(message);this.status=status;}}
 test('native checklist scope preserves role, assignment and separate record/schedule permissions',async()=>{
- let owner={ownerUserId:'owner',permissions:['view']}, assigned=true, fm=true, record=false, schedule=true, dealerRole=true, shared={ownerUserId:'owner',assetId:'asset',permissions:{canViewMaintenanceReports:true}}, session={user:{id:'dealer'},dealerApp:{role:'maintenance'}};
+ let owner={ownerUserId:'owner',permissions:['viewMaintenance']}, assigned=true, fm=true, record=false, schedule=true, dealerRole=true, shared={ownerUserId:'owner',assetId:'asset',permissions:{canViewMaintenanceReports:true}}, session={user:{id:'dealer'},dealerApp:{role:'maintenance'}};
  const api=load('lib/app-maintenance-access.ts',{
  './owner-app-access':{getOwnerAppAccess:async()=>owner,ownerAppCan:(a,p)=>a.permissions.includes(p),ownerAppCanAccessAsset:()=>assigned},
- './field-manager-session':{requireActiveFieldManagerSession:async()=>fm?{ok:true,session:{ownerUserId:'owner',managerId:'manager'}}:{ok:false,status:401,error:'Sign in'}},
- './field-manager':{getFieldManagerAssetForOpen:async()=>assigned?{id:'asset'}:null,fieldManagerCan:async(_,p)=>p==='record_work'?record:schedule},
  './auth-session':{getServerSession:async()=>session,isDealerAppSession:s=>!!s.dealerApp},
  './dealer-app-access':{dealerRoleCan:()=>dealerRole},'./account-profile':{getAccountProfile:async()=>({accountType:'dealer',accountStatus:'active'})},
  './dealer-maintenance-tracker':{getDealerTrackedAsset:async()=>shared},'./external-lead-access':{ExternalLeadAccessError:Denied}
  });
  assert.equal((await api.resolveAppMaintenanceAccess({},'owner','asset')).canEdit,false);
- owner.permissions.push('operate');assert.equal((await api.resolveAppMaintenanceAccess({},'owner','asset')).canEdit,true);
- assigned=false;await assert.rejects(api.resolveAppMaintenanceAccess({},'owner','asset'),e=>e.status===403);await assert.rejects(api.resolveAppMaintenanceAccess({},'field-manager','asset'),e=>e.status===403);
- assigned=true;assert.deepEqual(await api.resolveAppMaintenanceAccess({},'field-manager','asset'),{ownerId:'owner',assetId:'asset',canRecord:false,canEdit:false,canSchedule:true,canRemove:false});
- fm=false;await assert.rejects(api.resolveAppMaintenanceAccess({},'field-manager','asset'),e=>e.status===401);
+ owner.permissions.push('scheduleMaintenance');assert.equal((await api.resolveAppMaintenanceAccess({},'owner','asset')).canEdit,true);
+ assigned=false;await assert.rejects(api.resolveAppMaintenanceAccess({},'owner','asset'),e=>e.status===403);await assert.rejects(api.resolveAppMaintenanceAccess({},'field-manager','asset'),e=>e.status===410); assigned=true;
  assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRecord,false);
  assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRemove,false);
  shared.permissions={canCreateMaintenanceSchedules:true};assert.equal((await api.resolveAppMaintenanceAccess({},'dealer','access')).canRemove,false);

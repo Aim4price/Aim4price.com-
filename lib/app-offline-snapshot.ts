@@ -1,8 +1,8 @@
 import type { OfflineAccess } from './app-offline-access';
-import { listFieldManagerAssets, listFieldManagerFuelStorages, ensureFieldManagerAssetPublicCodes } from './field-manager';
+import { listManagerFuelStorages, ensureManagerAssetPublicCodes } from './manager-operational-assets';
 import { listAssetRegisters, ensureAssetRegisterTables } from './asset-registers';
 import { listAssetRegisterItems } from './asset-register-db';
-import { ownerAppCanAccessAsset } from './owner-app-access';
+import { ownerAppCanAccessAsset, ownerAppCan, managerCanAccessTank } from './owner-app-access';
 import { resolveAssetUsage } from './asset-usage';
 import { listAssetMaintenanceRecords } from './asset-maintenance';
 import { getMaintenanceCatalogue } from './maintenance-catalogue-db';
@@ -29,27 +29,25 @@ export async function buildAppOfflineSnapshot(access: OfflineAccess) {
       leads: leads.filter(l => l.partnerUserId === access.userId).map(l => ({ id: l.id, title: String(l.assetSnapshot.title || 'Asset enquiry'), note: l.ownerMessage, name: l.ownerContactName, phone: l.ownerContactPhone, status: l.status })),
     };
   }
-  if (access.app === 'owner') { await ensureAssetRegisterTables(); await ensureFieldManagerAssetPublicCodes(access.userId); }
+  if (access.app === 'owner') { await ensureAssetRegisterTables(); await ensureManagerAssetPublicCodes(access.userId); }
   const catalogue = await getMaintenanceCatalogue();
-  const assets = access.app === 'field'
-    ? (await listFieldManagerAssets(access.userId, access.managerId!)).filter(a => a.qrStatus === 'active').map(a => ({ ...a, checklist: resolveMaintenanceChecklist(a, catalogue) }))
-    : (await Promise.all((await listAssetRegisters(access.userId)).map(r => listAssetRegisterItems(access.userId, r.id)))).flat()
+  const assets = (await Promise.all((await listAssetRegisters(access.userId)).map(r => listAssetRegisterItems(access.userId, r.id)))).flat()
       .filter(a => ownerAppCanAccessAsset(access.owner!, a.id) && a.qrStatus === 'active').map(a => {
         const usage = resolveAssetUsage({ kind: a.kind, hours: a.hours, lifeWorkedPercent: a.lifeWorkedPercent, specsJson: a.specsJson });
         return { id: a.id, title: a.title, publicAssetCode: a.publicAssetCode, serialNumber: a.serialNumber, registrationNumber: a.licenseRegistrationNumber,
-          note: a.note, usageReading: usage.value, usageMetric: usage.metric, usageLabel: `${usage.value ?? '—'} ${usage.metric}`, checklist: resolveMaintenanceChecklist(a, catalogue) };
+          note: '', usageReading: usage.value, usageMetric: usage.metric, usageLabel: `${usage.value ?? '—'} ${usage.metric}`, checklist: resolveMaintenanceChecklist(a, catalogue) };
       });
   const ids = new Set(assets.map(a => a.id));
-  const [records, fuelAssets, storages] = await Promise.all([listAssetMaintenanceRecords(access.userId),
+  const [records, fuelAssets, storages] = await Promise.all([access.owner && ownerAppCan(access.owner, 'viewMaintenance') ? listAssetMaintenanceRecords(access.userId) : [],
     access.canFuel ? listFuelAssetsForUser(access.userId) : [],
-    access.canFuel || access.canRefill ? listFieldManagerFuelStorages(access.userId, access.managerId) : []]);
+    access.canFuel || access.canRefill ? listManagerFuelStorages(access.userId) : []]);
   const fuel = new Map(fuelAssets.filter(a => a.isActive && a.canReceiveFuel && !a.workUseExcluded).map(a => [a.id, a]));
   return { ...base, canRecordNotes: false, notes: [], listings: [], leads: [],
-    assets: assets.map(a => ({ id: a.id, title: a.title, publicAssetCode: a.publicAssetCode, serialNumber: a.serialNumber, registrationNumber: a.registrationNumber, note: a.note,
+    assets: assets.map(a => ({ id: a.id, title: a.title, publicAssetCode: a.publicAssetCode, serialNumber: a.serialNumber, registrationNumber: a.registrationNumber, note: '',
       usageReading: a.usageReading, usageMetric: a.usageMetric, usageLabel: a.usageLabel, checklist: a.checklist,
       canReceiveFuel: fuel.has(a.id), fuelPercent: fuel.get(a.id)?.fuelPercent ?? null })),
     tasks: records.filter(r => ids.has(r.assetId) && r.status === 'upcoming' && (access.app === 'owner' || !r.assignedFieldManagerId || r.assignedFieldManagerId === access.managerId))
       .map(t => ({ id: t.id, assetId: t.assetId, title: t.title, notes: t.notes, maintenanceType: t.maintenanceType, dueDate: t.dueDate, dueUsage: t.dueUsage, usageMetric: t.usageMetric, status: t.computedStatusLabel })),
-    storages: storages.map(s => ({ id: s.id, name: s.name, publicFuelStorageCode: s.publicFuelStorageCode, fuelType: s.fuelType, currentLitres: s.currentLitres })),
+    storages: storages.filter(s => access.owner && managerCanAccessTank(access.owner, s.id)).map(s => ({ id: s.id, name: s.name, publicFuelStorageCode: s.publicFuelStorageCode, fuelType: s.fuelType, currentLitres: s.currentLitres })),
   };
 }

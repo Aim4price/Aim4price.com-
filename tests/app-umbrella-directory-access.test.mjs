@@ -38,14 +38,12 @@ test('app umbrella projections keep visible members and sort umbrellas alphabeti
 });
 
 test('Owner and Field Manager asset directories adapt only when umbrellas exist', async () => {
-  const [ownerClient, fieldClient, ownerRoute, fieldRoute] = await Promise.all([
+  const [ownerClient, ownerRoute] = await Promise.all([
     read('app/owner-app/assets/owner-assets-client.tsx'),
-    read('app/field-manager/field-manager-assets-client.tsx'),
     read('app/api/owner-app/assets/route.ts'),
-    read('app/api/field-manager/assets/route.ts'),
   ]);
 
-  for (const client of [ownerClient, fieldClient]) {
+  for (const client of [ownerClient]) {
     assert.match(client, /const showDirectoryHome = groups\.length > 0/);
     assert.match(client, /Open/);
     assert.match(client, /View all assets/);
@@ -55,7 +53,6 @@ test('Owner and Field Manager asset directories adapt only when umbrellas exist'
     assert.doesNotMatch(client, /Organised assets/);
   }
   assert.match(ownerRoute, /buildAppAssetDirectoryGroups\(assetGroups, visibleItems\.map/);
-  assert.match(fieldRoute, /buildAppAssetDirectoryGroups\(assetGroups, assets\.map/);
 });
 
 test('account app access headings stay clean and tile copy stays short', async () => {
@@ -73,10 +70,9 @@ test('account app access headings stay clean and tile copy stays short', async (
 });
 
 test('whole-umbrella access is enforced for Owner App users and Field Managers', async () => {
-  const [ownerApp, ownerAccess, fieldManager, accessUi, ownerDetail, ownerActions, ownerNotifications, migration] = await Promise.all([
+  const [ownerApp, ownerAccess, accessUi, ownerDetail, ownerActions, ownerNotifications, migration] = await Promise.all([
     read('lib/owner-app.ts'),
     read('lib/owner-app-access.ts'),
-    read('lib/field-manager.ts'),
     read('app/account/app-access-management-client.tsx'),
     read('app/api/owner-app/assets/[assetId]/route.ts'),
     read('app/api/owner-app/assets/[assetId]/actions/route.ts'),
@@ -86,23 +82,17 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
 
   assert.match(ownerApp, /owner_app_user_group_access/);
   assert.match(ownerApp, /resolveOwnerAppAccessibleAssetIds/);
-  assert.match(ownerApp, /row\.access_role\) === 'admin'[\s\S]*assetScope: 'all'/);
   assert.match(ownerAccess, /ownerAppCanAccessAsset/);
   assert.match(ownerDetail, /ownerAppCanAccessAsset\(access, params\.assetId\)/);
   assert.match(ownerActions, /ownerAppCanAccessAsset\(access, params\.assetId\)/);
   assert.match(ownerNotifications, /access\.accessibleAssetIds\.includes\(item\.assetId\)/);
 
-  assert.match(fieldManager, /field_manager_group_access/);
-  assert.match(fieldManager, /inner join public\.asset_group_members member/);
-  assert.match(fieldManager, /groupIds: string\[\]/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.field_manager_group_access/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.owner_app_user_group_access/);
 
   assert.match(accessUi, /OwnerAppAssetAccessPanel/);
-  assert.match(accessUi, /Includes current and future linked assets/);
+  assert.match(accessUi, /Current and future linked assets/);
   const ownerSections = await read('app/account/owner-login-sections.tsx');
-  assert.match(ownerSections, /currentRole === 'admin' \? <div[\s\S]*?Full access to all assets/);
-  assert.match(ownerSections, /: props\.renderAssetAccess/);
 });
 
 
@@ -162,7 +152,7 @@ async function renderDirectory(role, assets, groups) {
   };
 }
 
-for (const role of ['owner', 'field']) {
+for (const role of ['owner']) {
   test(`${role} search finds grouped and standalone assets and restores browsing`, async () => {
     const assets = [
       { id: 'tractor', title: 'Massey Ferguson 4708', serialNumber: 'MF123', usage: null, usageLabel: 'Not captured' },

@@ -79,7 +79,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
     event.preventDefault();
     if (busy) return;
     const cleanUsername = normalizeUsername(username);
-    if (cleanUsername.length < 3 || !password) { setError('Enter your Owner App username and passcode.'); return; }
+    if (cleanUsername.length < 3 || !password) { setError('Enter your Manager App username and passcode.'); return; }
     setBusy(true); setError('');
     try {
       const response = await fetch('/api/owner-app/login', {
@@ -101,14 +101,14 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
 
   if (welcome) return <main className={styles.loginPage}><AppLoginWelcome {...welcome} /></main>;
 
-  if (view === 'checking') return <main className={styles.loginPage}><section className={styles.installLoadingCard}><span className={styles.loadingSpinner} /><strong>Opening Aim4price Owner…</strong></section></main>;
+  if (view === 'checking') return <main className={styles.loginPage}><section className={styles.installLoadingCard}><span className={styles.loadingSpinner} /><strong>Opening Aim4price Manager…</strong></section></main>;
 
   if (view === 'install') return (
     <main className={styles.loginPage}>
       <section className={styles.installCard} aria-labelledby="owner-install-title">
         <header className={styles.installHeader}>
-          <Image className={styles.installLogo} src="/icon.png" alt="Aim4price Owner" width={92} height={92} priority />
-          <span className={styles.loginEyebrow}>Aim4price Owner</span>
+          <Image className={styles.installLogo} src="/icon.png" alt="Aim4price Manager" width={92} height={92} priority />
+          <span className={styles.loginEyebrow}>Aim4price Manager</span>
           <h1 id="owner-install-title">Do you have the app?</h1>
         </header>
         <div className={styles.installActions}>
@@ -129,23 +129,23 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
     <main className={styles.loginPage}>
       <section className={styles.loginCard} aria-labelledby="owner-login-title">
         <header className={styles.loginHeader}>
-          <Image className={styles.loginLogo} src="/icon.png" alt="Aim4price Owner" width={76} height={76} priority />
-          <span className={styles.loginEyebrow}>Aim4price Owner</span>
+          <Image className={styles.loginLogo} src="/icon.png" alt="Aim4price Manager" width={76} height={76} priority />
+          <span className={styles.loginEyebrow}>Aim4price Manager</span>
           <h1 id="owner-login-title">Sign In</h1>
-          <p className={styles.loginIntro}>Use the Owner App username and passcode supplied by the account owner.</p>
+          <p className={styles.loginIntro}>Use the Manager App username and passcode supplied by the account owner.</p>
         </header>
         {accountSessionActive ? (
           <div className={styles.loginForm}>
-            <p className={styles.sessionNotice}>An Aim4price account is already open in this browser. Switch deliberately before entering an Owner App username.</p>
+            <p className={styles.sessionNotice}>An Aim4price account is already open in this browser. Switch deliberately before entering an Manager App username.</p>
             {error ? <p className={styles.error}>{error}</p> : null}
-            <button type="button" className={styles.primary} onClick={() => void switchToOwnerLogin()} disabled={busy}>{busy ? 'Signing out current account…' : 'Sign out and use Owner App login'}</button>
+            <button type="button" className={styles.primary} onClick={() => void switchToOwnerLogin()} disabled={busy}>{busy ? 'Signing out current account…' : 'Sign out and use Manager App login'}</button>
           </div>
         ) : (
           <form className={styles.loginForm} onSubmit={submit}>
             <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-username">App username</label><input id="owner-app-username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} placeholder="kuyler@vasbyt" autoComplete="username" autoCapitalize="none" disabled={busy} required /></div>
-            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-password">Passcode</label><span className={styles.inputWrap}><input id="owner-app-password" className={styles.passwordInput} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value.slice(0, 64))} placeholder="Enter passcode" minLength={4} maxLength={64} autoComplete="current-password" disabled={busy} required /><button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} disabled={busy}>{showPassword ? 'Hide' : 'Show'}</button></span></div>
+            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-password">Passcode</label><span className={styles.inputWrap}><input id="owner-app-password" className={styles.passwordInput} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value.slice(0, 128))} placeholder="Enter passcode" minLength={4} maxLength={128} autoComplete="current-password" disabled={busy} required /><button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} disabled={busy}>{showPassword ? 'Hide' : 'Show'}</button></span></div>
             {error ? <p className={styles.error}>{error}</p> : null}
-            <button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Opening Aim4price Owner…' : 'Sign in'}</button>
+            <button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Opening Aim4price Manager…' : 'Sign in'}</button>
           </form>
         )}
       </section>

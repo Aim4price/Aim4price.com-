@@ -113,7 +113,7 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
     create table equipment_families(id bigint primary key,family_key text,family_label text,sector_id bigint);
     create table valuation_runs(id bigint primary key,equipment_family_id bigint,specs_json jsonb);
     create table equipment_models(id bigint primary key,equipment_family_id bigint);
-    create table field_managers(id uuid primary key,display_name text);
+    create table owner_app_users(id uuid primary key,display_name text);
     create table asset_scan_events(id uuid primary key,created_at timestamptz);
     insert into equipment_families values(38,'tractors','Tractors',1);
     insert into asset_register_items values('${assetId}','${owner}','Test tractor','tractor',100,'{}',38,1);`);
@@ -122,7 +122,7 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
     './db': { getDb: () => db }, './maintenance-catalogue': shared,
     './asset-register-db': { getAssetRegisterItemById: async (user, id) => user === owner && id === assetId ? asset : null },
     './asset-registers': {}, './asset-usage': load('lib/asset-usage.ts'),
-    './field-manager': { ensureFieldManagerTables: async () => {} }, './scan-assets': {},
+    './owner-app': { ensureOwnerAppTables: async () => {}, listOwnerAppUsers: async () => [] }, './scan-assets': {},
     './database-schema-readiness': { isDatabaseSchemaReady: async f => { try { await f(); return true; } catch { return false; } } },
   });
   try {

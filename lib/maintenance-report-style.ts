@@ -1,5 +1,5 @@
 // One source of truth for the maintenance report and printable checklist.
-// Embedded variable Montserrat (100–900) from public/field-manager/montserrat-latin.woff.
+// Embedded variable Montserrat (100–900) from public/fonts/montserrat-latin.woff.
 // Embedding keeps server PDF exports independent of Google Fonts availability.
 export const MAINTENANCE_REPORT_FONT_CSS = `
 @font-face { font-family: "Montserrat"; font-style: normal; font-weight: 100 900; font-display: block;

@@ -32,6 +32,7 @@ declare global {
 
 type Document = { id: string; url: string; fileName: string; contentType: string; byteSize: number; uploadedAtIso: string };
 type Asset = {
+  valuesRestricted?: boolean;
   id: string; registerId: string | null; kind: string; title: string; value: number; replacementPriceExVat: number | null;
   valuationRunId: number | null; selectedMethod: string;
   brandName: string; modelName: string; typedModelName: string; yearModel: number | null; hours: number | null;
@@ -989,7 +990,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
             <div className={styles.detailValueSummary}>
               <span>Aim4price value</span>
-              <strong>{money(draft.value)}</strong>
+              <strong>{draft.valuesRestricted ? <span aria-label="Value restricted"><span aria-hidden="true" style={{ filter: 'blur(6px)', userSelect: 'none' }}>R ••• •••</span><small style={{ display: 'block', fontSize: 14, filter: 'none' }}>Value restricted</small></span> : money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
               {renderEstimateUpdateAction()}
             </div>
@@ -1098,7 +1099,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
             <div className={styles.detailValueSummary}>
               <span>Aim4price value</span>
-              <strong>{money(draft.value)}</strong>
+              <strong>{draft.valuesRestricted ? <span aria-label="Value restricted"><span aria-hidden="true" style={{ filter: 'blur(6px)', userSelect: 'none' }}>R ••• •••</span><small style={{ display: 'block', fontSize: 14, filter: 'none' }}>Value restricted</small></span> : money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
               {renderEstimateUpdateAction()}
             </div>

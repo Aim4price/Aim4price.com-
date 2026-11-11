@@ -1236,7 +1236,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             )}
           </div>
 
-          {!filteredCards.length ? <div className={`${assetStyles.emptyState} ${workspaceStyles.emptyState}`}>{assets.length ? 'No maintenance cards match this search or filter.' : 'No tracked assets yet. Assets appear here after an owner or Field Manager enables dealer maintenance tracking.'}</div> : null}
+          {!filteredCards.length ? <div className={`${assetStyles.emptyState} ${workspaceStyles.emptyState}`}>{assets.length ? 'No maintenance cards match this search or filter.' : 'No tracked assets yet. Assets appear here after an owner or Manager enables dealer maintenance tracking.'}</div> : null}
 
           <div className={leadStyles.leadStack}>
             {filteredCards.map((asset) => {

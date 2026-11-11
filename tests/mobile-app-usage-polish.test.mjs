@@ -18,9 +18,9 @@ const [
   read('lib/fuel-ledger.ts'),
   read('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx'),
   read('app/fuel-scan/[publicFuelStorageCode]/page.module.css'),
-  read('app/field-manager/page.module.css'),
+  read('components/manager/mobile.module.css'),
   read('app/owner-app/owner-app.module.css'),
-  read('app/field-manager/assets/[publicAssetCode]/maintenance/field-manager-maintenance-client.tsx'),
+  read('components/manager/maintenance-client.tsx'),
   read('components/DealerMaintenanceScheduleModal.tsx'),
   read('app/maintenance/page.module.css'),
 ]);

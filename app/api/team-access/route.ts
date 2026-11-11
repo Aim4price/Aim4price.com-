@@ -18,7 +18,7 @@ export async function GET() {
     try {
         const { actor, profile } = await requireTeamOwner();
         const [rows, registers, assets, documents, activity, groups] = await Promise.all([
-            getDb().query('SELECT * FROM team_access WHERE owner_id=$1 ORDER BY created_at DESC', [actor.id]),
+            getDb().query(`SELECT * FROM team_access WHERE owner_id=$1 AND (username IS NULL OR username NOT LIKE 'manager:%') ORDER BY created_at DESC`, [actor.id]),
             listAssetRegisters(actor.id), listTeamOwnerAssets(actor.id), listAccountDocuments(actor.id),
             getDb().query('SELECT a.id,a.actor_email,a.action,a.asset_id,a.details,a.created_at,t.display_name AS target_name,t.email AS target_email FROM team_access_activity a LEFT JOIN team_access t ON t.id=a.membership_id WHERE a.owner_id=$1 ORDER BY a.created_at DESC LIMIT 100', [actor.id]),
             listAssetGroups(actor.id),

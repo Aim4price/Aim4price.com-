@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Subscriptions',
-  description: 'Explore Aim4price Owner, Dealer and Business accounts, with optional administration services.',
+  description: 'Explore Aim4price Manager, Dealer and Business accounts, with optional administration services.',
   robots: { index: false, follow: false },
 };
 

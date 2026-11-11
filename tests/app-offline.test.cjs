@@ -14,7 +14,7 @@ function request(app, body, identity, method='POST') {
 function accessHelper(app,{staff='staff1',role='technician',subtype=false,realm=app}={}) {
   return load('lib/app-offline-access.ts',{
     './app-realm-server':{currentAppRealm:async()=>realm},
-    './owner-app-access':{getOwnerAppAccess:async()=>({ownerUserId:'owner1',ownerAppUserId:staff,viewerKey:'user:'+staff,displayName:'Owner staff',permissions:role==='view_only'?['view']:['view','operate']}),ownerAppCan:(a,p)=>a.permissions.includes(p)},
+    './owner-app-access':{getOwnerAppAccess:async()=>({ownerUserId:'owner1',ownerAppUserId:staff,viewerKey:'user:'+staff,displayName:'Owner staff',permissions:role==='view_only'?['view']:['view','operate']}),ownerAppCan:(a,p)=>a.permissions.includes(p) || (a.permissions.includes('operate') && ['recordMaintenance','recordFuelIssues','refillFuel'].includes(p))},
     './field-manager-session':{requireActiveFieldManagerSession:async()=>({ok:true,session:{ownerUserId:'owner1',managerId:staff,displayName:'Field staff'}})},
     './field-manager':{fieldManagerCan:async()=>role!=='view_only'},
     './auth-session':{getServerSession:async()=>({user:{id:'dealer1'},dealerApp:{staffId:staff,role,displayName:'Dealer staff'}}),isDealerAppSession:()=>true},
@@ -24,7 +24,7 @@ function accessHelper(app,{staff='staff1',role='technician',subtype=false,realm=
     './notification-request-origin':{isTrustedNotificationRequest:req=>req.headers.get('origin')==='https://www.aim4price.com'},
   });
 }
-for(const app of ['owner','field','dealer','middleman']) test(`${app}: only the original app and actor may sync`,async()=>{
+for(const app of ['owner','dealer','middleman']) test(`${app}: only the original app and actor may sync`,async()=>{
   const h=accessHelper(app,{subtype:app==='middleman'});
   const identity=(await h.requireAppOfflineAccess(request(app,null,null,'GET'),app)).access.identity;
   assert.equal((await h.requireAppOfflineAccess(request(app,{},identity),app)).ok,true);
@@ -46,7 +46,8 @@ function syncRoute(access, overrides={}) {
   const errors=(error,status=400)=>NextResponse.json({ok:false,error},{status});
   const route=load('app/api/app-offline/[app]/sync/route.ts',{
     '../../../../../lib/app-offline-access':{requireAppOfflineAccess:async()=>({ok:true,access}),offlineError:errors,offlineHeaders:{}},
-    '../../../../../lib/owner-app-access':{ownerAppCanAccessAsset:(a,id)=>id==='allowed'},
+    '../../../../../lib/db':{getDb:()=>({query:async()=>({rows:[{}]})})},
+    '../../../../../lib/owner-app-access':{ownerAppCan:()=>true,ownerAppCanAccessAsset:(a,id)=>id==='allowed'},
     '../../../../../lib/field-manager':{getFieldManagerAssetForOpen:async()=>null},
     '../../../../../lib/app-offline-notes':{saveOfflineNote:async()=>{throw Error('Unexpected note');}},
     '../../../../../lib/fuel-ledger':{saveFuelSlipTransaction:async()=>{throw Error('Unexpected slip');}},
@@ -65,15 +66,15 @@ test('owner asset restrictions are rechecked before work, tank fuel or fuel slip
   assert.equal(calls.length,0);
 });
 test('app work keeps stable retry IDs; legacy field queue IDs survive the upgrade unchanged',async()=>{
-  const {route,calls}=syncRoute({app:'field',identity:'owner1:manager1',canWork:true});
-  for(let i=0;i<2;i++) await route.POST(request('field',item),{params:{app:'field'}});
+  const {route,calls}=syncRoute({app:'owner',identity:'owner:owner1:user:manager1',userId:'owner1',actorId:'manager1',owner:{},canWork:true});
+  for(let i=0;i<2;i++) await route.POST(request('owner',item),{params:{app:'owner'}});
   assert.equal(calls[0].clientEventId,calls[1].clientEventId);assert.match(calls[0].clientEventId,/^[a-f0-9]{64}$/);
-  await route.POST(request('field',{...item,payload:{clientEventId:'field-offline:old-stable-id'}}),{params:{app:'field'}});
+  await route.POST(request('owner',{...item,legacyIdentity:'owner1:manager1',payload:{clientEventId:'field-offline:old-stable-id'}}),{params:{app:'owner'}});
   assert.equal(calls[2].clientEventId,'field-offline:old-stable-id');
 });
 test('an ambiguous scan failure stays retryable rather than editable',async()=>{
-  const {route}=syncRoute({app:'field',identity:'owner1:manager1',canWork:true},{'../../../scan/assets/[publicAssetCode]/event/route':{POST:async()=>NextResponse.json({ok:false,error:'Failed to save update.'},{status:400})}});
-  assert.equal((await route.POST(request('field',item),{params:{app:'field'}})).status,503);
+  const {route}=syncRoute({app:'owner',identity:'owner:owner1:user:manager1',userId:'owner1',actorId:'manager1',owner:{},canWork:true},{'../../../scan/assets/[publicAssetCode]/event/route':{POST:async()=>NextResponse.json({ok:false,error:'Failed to save update.'},{status:400})}});
+  assert.equal((await route.POST(request('owner',item),{params:{app:'owner'}})).status,503);
 });
 test('middleman cannot submit maintenance or fuel even with a crafted queued payload',async()=>{
   const {route,calls}=syncRoute({app:'middleman',identity:'middleman1:user1',canWork:false,canFuel:false});
@@ -82,10 +83,10 @@ test('middleman cannot submit maintenance or fuel even with a crafted queued pay
 });
 test('owner snapshot excludes inaccessible, inactive and fuel-excluded assets from operational choices',async()=>{
   const snapshot=load('lib/app-offline-snapshot.ts',{
-    './field-manager':{ensureFieldManagerAssetPublicCodes:async()=>{},listFieldManagerFuelStorages:async()=>[]},
+    './manager-operational-assets':{ensureManagerAssetPublicCodes:async()=>{},listManagerFuelStorages:async()=>[]},
     './asset-registers':{ensureAssetRegisterTables:async()=>{},listAssetRegisters:async()=>[{id:'r'}]},
     './asset-register-db':{listAssetRegisterItems:async()=>[{id:'allowed',title:'Tractor',qrStatus:'active'},{id:'denied',qrStatus:'active'},{id:'inactive',qrStatus:'deleted'}]},
-    './owner-app-access':{ownerAppCanAccessAsset:(a,id)=>id!=='denied'},
+    './owner-app-access':{ownerAppCan:()=>true,managerCanAccessTank:()=>true,ownerAppCanAccessAsset:(a,id)=>id!=='denied'},
     './asset-usage':{resolveAssetUsage:()=>({value:100,metric:'hours'})},
     './asset-maintenance':{listAssetMaintenanceRecords:async()=>[{id:'t',assetId:'allowed',status:'upcoming'},{id:'x',assetId:'denied',status:'upcoming'}]},
     './maintenance-catalogue-db':{getMaintenanceCatalogue:async()=>({})},'./maintenance-catalogue':{resolveMaintenanceChecklist:()=>({items:[]})},

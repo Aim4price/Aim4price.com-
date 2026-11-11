@@ -14,7 +14,6 @@ on:
       - 'app/api/dealer/**'
       - 'app/api/middleman/**'
       - 'app/api/owner-app/**'
-      - 'app/api/field-manager/**'
       - 'app/api/marketplace/**'
       - 'tests/app-account-isolation.test.mjs'
       - 'tests/separate-app-sessions.test.mjs'

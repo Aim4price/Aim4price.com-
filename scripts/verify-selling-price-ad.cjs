@@ -10,7 +10,7 @@ sources['./tractor-data']='exports.listings=[];exports.tractors=[];';
  try{
   const page=await browser.newPage();await page.setViewport({width:1600,height:1000});
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
+  const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
   await page.setContent(`<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,${font})}body{margin:0}canvas{max-width:100%}</style><canvas id="ad"></canvas>`);
   await page.addScriptTag({content:`const sources=${JSON.stringify(sources)},cache={};function require(name){if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function('require','exports','module',sources[name])(require,module.exports,module);return module.exports;}window.renderer=require('./marketplace-ad-renderer');`});
   await page.evaluate(()=>{

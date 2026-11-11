@@ -1333,7 +1333,7 @@ export default function MaintenanceClient({
 
   return (
     <div className={styles.page}>
-      {desktop.dialog}<AppHeader active="maintenance" />
+      {desktop.dialog}{!desktop.workspace?.native && <AppHeader active="maintenance" />}
       <main ref={pageRef} className={styles.shell}>
         {notice ? (
           <div

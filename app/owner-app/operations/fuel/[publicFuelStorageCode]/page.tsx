@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function OwnerFuelActionPage({ params }: { params: { publicFuelStorageCode: string } }) {
   const access = await requireOwnerAppPageAccess();
-  if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
+  if (!(ownerAppCan(access, 'addFuel') || ownerAppCan(access, 'recordFuelIssues') || ownerAppCan(access, 'refillFuel'))) redirect('/owner-app');
   return (
     <FuelScanClient
       publicFuelStorageCode={params.publicFuelStorageCode ?? ''}

@@ -18,7 +18,7 @@ function links(node) {
 for (const [role, permissions] of [['admin', ['view', 'operate', 'manage_assets', 'manage_marketplace']], ['operations', ['view', 'operate']], ['view_only', ['view']]]) {
   test(`${role} home and More expose only permitted actions`, async () => {
     const access = { ownerUserId: 'owner', displayName: 'Test owner', permissions };
-    const auth = { requireOwnerAppPageAccess: async () => access, ownerAppCan: (_, permission) => permissions.includes(permission) };
+    const auth = { requireOwnerAppPageAccess: async () => access, ownerAppCan: (_, permission) => permissions.includes(permission) || (permissions.includes('operate') && ['recordFuelIssues','addFuel','recordMaintenance','viewMaintenance'].includes(permission)) };
     const home = load('app/owner-app/page.tsx', { '../../lib/owner-app-access': auth });
     const more = load('app/owner-app/more/page.tsx', { '../../../lib/owner-app-access': auth });
     const homeLinks = links(await home.default());

@@ -9,9 +9,7 @@ import { hashScanPin, verifyScanPin } from './scan-pin';
 import { ensureAccountProfileColumns } from './account-profile';
 import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
 import { parseFuelSlipDecimal } from './fuel-slip-number';
-import { getActiveFieldManagerSessionFromRequest } from './field-manager-session';
-import { validateFieldManagerFuelStorage } from './field-manager';
-import { getOwnerAppAccess, ownerAppCan } from './owner-app-access';
+import { getOwnerAppAccess, ownerAppCan, managerCanAccessTank } from './owner-app-access';
 import { resolveAssetUsage } from './asset-usage';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
@@ -6066,9 +6064,9 @@ export async function authorizeFuelStorageScanAccess(
   if (options.ownerAppHint === true) {
     const ownerAccess = await getOwnerAppAccess();
     if (!ownerAccess) {
-      return { ok: false, status: 401, error: 'Aim4price Owner login is required.', pinRequired: false };
+      return { ok: false, status: 401, error: 'Aim4price Manager login is required.', pinRequired: false };
     }
-    if (!ownerAppCan(ownerAccess, 'operate')) {
+    if (!managerCanAccessTank(ownerAccess, storage.id)) {
       return { ok: false, status: 403, error: 'This Owner login has View only access.', pinRequired: false };
     }
     if (ownerAccess.ownerUserId !== storage.userId) {
@@ -6083,38 +6081,7 @@ export async function authorizeFuelStorageScanAccess(
     };
   }
 
-  if (options.fieldManagerHint === true) {
-    const fieldManagerSession = await getActiveFieldManagerSessionFromRequest(request);
-
-    if (!fieldManagerSession) {
-      return { ok: false, status: 401, error: 'Field Manager login is required.', pinRequired: false };
-    }
-
-    const manager = await validateFieldManagerFuelStorage({
-      managerId: fieldManagerSession.managerId,
-      ownerUserId: fieldManagerSession.ownerUserId,
-      publicFuelStorageCode: storage.publicFuelStorageCode,
-    });
-
-    if (!manager || !manager.isActive || fieldManagerSession.ownerUserId !== storage.userId) {
-      return {
-        ok: false,
-        status: 403,
-        error: 'This fuel storage unit is not available to this Field Manager login.',
-        pinRequired: false,
-      };
-    }
-
-    return {
-      ok: true,
-      storage,
-      ownerUserId: storage.userId,
-      accessMode: 'field_manager',
-      fieldManagerId: fieldManagerSession.managerId,
-      fieldManagerDisplayName: fieldManagerSession.displayName,
-      fieldManagerSessionId: fieldManagerSession.sessionId,
-    };
-  }
+  if (options.fieldManagerHint) return { ok: false, status: 410, error: 'Open Aim4price Manager and sign in again.', pinRequired: false };
 
   const claims = getFuelScanSessionFromRequest(request, publicFuelStorageCode);
 

@@ -28,28 +28,28 @@ function errorResponse(error: unknown, fallback: string) {
 export async function GET() {
   const ownerUserId = await requireManagingOwner();
   if (!ownerUserId) {
-    return NextResponse.json({ ok: false, error: 'Owner App access is available to active owner accounts only.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Manager App access is available to active owner accounts only.' }, { status: 403 });
   }
 
   try {
     return NextResponse.json({ ok: true, users: await listOwnerAppUsers(ownerUserId) });
   } catch (error) {
-    console.error('Owner App users GET failed.', error);
-    return errorResponse(error, 'Failed to load Owner App users.');
+    console.error('Manager App users GET failed.', error);
+    return errorResponse(error, 'Failed to load Manager App users.');
   }
 }
 
 export async function POST(request: NextRequest) {
   const ownerUserId = await requireManagingOwner();
   if (!ownerUserId) {
-    return NextResponse.json({ ok: false, error: 'Owner App access is available to active owner accounts only.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Manager App access is available to active owner accounts only.' }, { status: 403 });
   }
 
   try {
     const user = await createOwnerAppUser(ownerUserId, await request.json() as Record<string, unknown>);
     return NextResponse.json({ ok: true, user }, { status: 201 });
   } catch (error) {
-    console.error('Owner App user POST failed.', error);
-    return errorResponse(error, 'Failed to create Owner App user.');
+    console.error('Manager App user POST failed.', error);
+    return errorResponse(error, 'Failed to create Manager App user.');
   }
 }

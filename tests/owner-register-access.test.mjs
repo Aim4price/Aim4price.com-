@@ -12,9 +12,11 @@ function fixture() {
     if(sql.startsWith('select * from public.owner_app_users')) return {rows:[{id:id(20),parent_owner_user_id:'owner',access_role:state.role}]};
     if(sql.includes('select explicit.asset_id')) return {rows:state.explicit.map(asset_id=>({asset_id}))};
     if(sql.includes('insert into public.owner_app_user_access_settings')) {state.registers=args[2];state.writes.push(args);}
-    return {rows:[]};
+    if(sql.startsWith('SELECT id FROM owner_app_users')) return {rows:[{id:id(20)}],rowCount:1};
+    return {rows:[],rowCount:1};
   }};
-  const deps = {'./db':{getDb:()=>db},'./app-login-namespace':{},'./app-login-name':{},'./asset-groups':{listAssetGroups:async()=>[]},'./asset-registers':{listAssetRegisters:async owner=>{assert.equal(owner,'owner');return [{id:id(10)}];}},'./owner-app-assets':{listAllOwnerAppAssets:async owner=>{assert.equal(owner,'owner');return {items:state.assets};}}};
+  db.connect=async()=>({...db,release(){}});
+  const deps = {'./db':{getDb:()=>db},'./account-documents':{},'./team-access-policy':{},'./manager-operational-assets':{},'./manager-permissions':{},'./manager-user-migration':{migrateManagerUsers:async()=>{}},'./app-login-namespace':{},'./app-login-name':{},'./asset-groups':{listAssetGroups:async()=>[]},'./asset-registers':{listAssetRegisters:async owner=>{assert.equal(owner,'owner');return [{id:id(10)}];}},'./owner-app-assets':{listAllOwnerAppAssets:async owner=>{assert.equal(owner,'owner');return {items:state.assets};}}};
   const module={exports:{}};
   const code=ts.transpileModule(fs.readFileSync(new URL('../lib/owner-app.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
   new Function('require','module','exports',code)(name=>deps[name]??require(name),module,module.exports);
@@ -31,8 +33,8 @@ test('register grants reject foreign IDs, persist, include future assets and ded
   await api.updateOwnerAppAssetAccessSettings('owner',id(20),{assetScope:'selected',assetIds:[],groupIds:[],registerIds:[]});
   assert.deepEqual(state.registers,[]);
 });
-test('admin access stays unrestricted and cannot be narrowed through this endpoint',async()=>{
+test('legacy admin asset access can be narrowed without retaining an admin scope bypass',async()=>{
  const {state,api}=fixture();state.role='admin';
  const result=await api.updateOwnerAppAssetAccessSettings('owner',id(20),{assetScope:'selected',registerIds:[id(10)]});
- assert.equal(result.assetScope,'all');assert.equal(state.writes.length,0);
+ assert.equal(result.assetScope,'selected');assert.deepEqual(result.registerIds,[id(10)]);assert.equal(state.writes.length,1);
 });

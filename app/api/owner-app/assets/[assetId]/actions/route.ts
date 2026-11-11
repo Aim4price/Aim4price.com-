@@ -57,7 +57,7 @@ async function maintenanceIdForAsset(userId: string, assetId: string, value: unk
 
 export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Manager.' }, { status: 401 });
   if (!ownerAppCanAccessAsset(access, params.assetId)) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
@@ -72,12 +72,14 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
   if (marketplaceAction && !ownerAppCan(access, 'manage_marketplace')) {
     return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can manage Marketplace listings.' }, { status: 403 });
   }
-  if (!marketplaceAction && !ownerAppCan(access, 'operate')) {
+  const required = action === 'location' ? 'updateLocation' : action === 'media' ? 'uploadPhotos' : 'scheduleMaintenance';
+  if (!marketplaceAction && !ownerAppCan(access, required)) {
     return NextResponse.json({ ok: false, error: 'This login has View only access.' }, { status: 403 });
   }
 
   try {
     if (action === 'media') {
+      if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'Use Add photos or Upload documents; replacing existing files requires the account holder.' }, { status: 403 });
       await updateAssetRegisterItemMedia(access.ownerUserId, {
         assetId: params.assetId,
         photos: mediaPhotos(body.photos),
@@ -131,12 +133,12 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
         error: 'Open Manage advert in Marketplace to record the listing outcome before removing it.',
       }, { status: 409 });
     } else {
-      return NextResponse.json({ ok: false, error: 'Unsupported Owner App action.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'Unsupported Manager App action.' }, { status: 400 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error(`Owner App asset action ${action} failed.`, error);
+    console.error(`Manager App asset action ${action} failed.`, error);
     const code = error instanceof Error ? error.message : '';
     const message = code === 'DUE_DATE_REQUIRED'
       ? 'Select the maintenance due date.'

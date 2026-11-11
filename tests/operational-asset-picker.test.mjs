@@ -33,11 +33,10 @@ test('live SQL excludes retained deleted/disposed assets and reacts to removal',
 test('fuel QR picker excludes removed, ineligible, excluded and unassigned assets', async () => {
   let allowed = ['1'];
   const { fuelScanSelectableAssets } = load('lib/fuel-scan-assets.ts', {
-    './field-manager': { listFieldManagerAssets: async () => allowed.map(id => ({ id })) },
     './owner-app-access': { getOwnerAppAccess: async () => ({ ownerUserId: 'owner' }), ownerAppCanAccessAsset: (_owner, id) => allowed.includes(id) },
   });
   const assets = ['1','2','3','4','5'].map(id => ({ id, isActive: id !== '2', canReceiveFuel: id !== '3', workUseExcluded: id === '4' }));
-  for (const accessMode of ['field_manager', 'owner_session']) {
+  for (const accessMode of ['owner_session']) {
     const access = { ownerUserId: 'owner', accessMode, fieldManagerId: 'manager' };
     assert.deepEqual((await fuelScanSelectableAssets(access, assets)).map(a => a.id), ['1']);
     allowed = [];
@@ -51,5 +50,5 @@ test('new fuel writes map lifecycle before checking eligibility; QR reads and wr
   assert.equal((ledger.match(/as lifecycle_state/g) || []).length, 4);
   assert.match(ledger, /isActive: isOperationalAsset/);
   assert.match(ledger, /if \(!asset.isActive\) throw/);
-  for (const file of ['app/api/fuel-scan/storage/[publicFuelStorageCode]/route.ts', 'app/api/fuel-scan/storage/[publicFuelStorageCode]/issue/route.ts']) assert.match(read(file), /fuelScanSelectableAssets\(access,/);
+  for (const file of ['app/api/fuel-scan/storage/[publicFuelStorageCode]/route.ts', 'app/api/fuel-scan/storage/[publicFuelStorageCode]/issue/route.ts']) assert.match(read(file), /(?:fuelScanSelectableAssets|projectManagerFuelScan)\(access,/);
 });

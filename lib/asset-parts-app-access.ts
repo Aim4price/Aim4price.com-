@@ -1,32 +1,24 @@
 import type { NextRequest } from 'next/server';
 import type { AssetPartsScope } from './asset-parts-api';
 import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from './owner-app-access';
-import { requireActiveFieldManagerSession } from './field-manager-session';
-import { fieldManagerCan, getFieldManagerAssetForOpen } from './field-manager';
 import { dealerRoleCan } from './dealer-app-access';
 import { getServerSession, isDealerAppSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
 import { getDealerTrackedAsset } from './dealer-maintenance-tracker';
 import { ExternalLeadAccessError } from './external-lead-access';
 
-type App = 'owner' | 'field-manager' | 'dealer';
+type App = 'owner' | 'dealer';
 // Resolve from the current app login, never from client-supplied owner or actor IDs.
 export async function resolveAppPartsAccess(request: NextRequest, app: App, id: string) {
   const writing = request.method === 'POST' && request.nextUrl?.searchParams.get('format') !== 'pdf';
   async function read() {
     if (app === 'owner') {
       const access = await getOwnerAppAccess();
-      if (!access) throw new ExternalLeadAccessError('Sign in to the Owner App.', 401);
-      if (!ownerAppCan(access, 'view') || !ownerAppCanAccessAsset(access, id)) throw new ExternalLeadAccessError('This asset is not available to this login.', 403);
-      return { ownerId: access.ownerUserId, assetId: id, actorId: access.ownerAppUserId ? `owner-app:${access.ownerAppUserId}` : access.ownerUserId, name: access.displayName, canView: true, canAdd: ownerAppCan(access, 'operate'), canReadMaintenance: true };
+      if (!access) throw new ExternalLeadAccessError('Sign in to the Manager App.', 401);
+      if (!ownerAppCan(access, 'viewMaintenance') || !ownerAppCanAccessAsset(access, id)) throw new ExternalLeadAccessError('This asset is not available to this login.', 403);
+      return { ownerId: access.ownerUserId, assetId: id, actorId: access.ownerAppUserId ? `owner-app:${access.ownerAppUserId}` : access.ownerUserId, name: access.displayName, canView: true, canAdd: ownerAppCan(access, 'recordMaintenance'), canReadMaintenance: true };
     }
-    if (app === 'field-manager') {
-      const access = await requireActiveFieldManagerSession(request);
-      if (!access.ok) throw new ExternalLeadAccessError(access.error, access.status);
-      const asset = await getFieldManagerAssetForOpen({ ownerUserId: access.session.ownerUserId, managerId: access.session.managerId, assetId: id });
-      if (!asset) throw new ExternalLeadAccessError('This asset is not assigned to this Field Manager.', 403);
-      return { ownerId: access.session.ownerUserId, assetId: asset.id, actorId: `field-manager:${access.session.managerId}`, name: access.session.displayName, canView: true, canAdd: await fieldManagerCan(access.session.managerId, 'record_work'), canReadMaintenance: true };
-    }
+    if (app !== 'dealer') throw new ExternalLeadAccessError('This app is no longer available.', 410);
     const session = await getServerSession({ allowDealerApp: true });
     if (!session) throw new ExternalLeadAccessError('Sign in to the Dealer App.', 401);
     if (isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'maintenance')) throw new ExternalLeadAccessError('Maintenance access is not enabled for this login.', 403);

@@ -1,6 +1,7 @@
+import { projectManagerFuelScan } from '../../../../../../lib/fuel-scan-assets';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
 import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from 'next/server';
-import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, getFuelScanPayload, recordFuelStorageStock } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
@@ -62,8 +63,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
   }
 
-  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'refill_fuel')))) {
-    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot refill fuel tanks.' }, { status: 403 });
+
+  if (access.accessMode === 'owner_session') {
+    const manager = await getOwnerAppAccess();
+    if (!manager || !ownerAppCan(manager, 'refillFuel')) return NextResponse.json({ ok: false, error: 'This fuel action is not allowed for this login.' }, { status: 403 });
   }
 
   let body: FuelRefillRequest;
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
 
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
-    return NextResponse.json({ ok: true, ...payload, event: saved.event });
+    return NextResponse.json({ ok: true, ...await projectManagerFuelScan(access, { ...payload, event: saved.event }) });
   } catch (error) {
     return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to save storage refill.') }, { status: 400 });
   }

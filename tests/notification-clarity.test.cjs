@@ -62,18 +62,6 @@ test('invoice wording uses South African date and outstanding balance, including
   assert.match(notices[3].body,/Paid in full/);assert.doesNotMatch(notices[3].body,/outstanding|Was due/);
   assert.equal(shared.dateKey(new Date('2026-10-31T22:30:00Z')),'2026-11-01');
 });
-test('assigned field-manager maintenance retains urgency and keeps per-viewer read state',async()=>{
-  const api=load('lib/field-manager-notifications.ts',{
-    './asset-issue-notes':{listOpenIssueNoteGroupsForAssets:async()=>[]},
-    './field-manager':{listFieldManagerAssets:async()=>[{id:'asset',title:'Tractor'}]},
-    './asset-maintenance':{listAssetMaintenanceRecords:async()=>['due_soon','due','overdue'].map(status=>({id:status,assetId:'asset',assetTitle:'Tractor',title:'Oil service',maintenanceType:'service',computedStatus:status,assignedFieldManagerId:'manager',triggerType:'usage',dueUsage:1500,usageMetric:'hours',updatedAtIso:'2026-11-01'}))},
-    './app-notification-read-state':{listReadNotificationEventKeys:async()=>new Set(['field-manager-maintenance:overdue:overdue'])},
-  });
-  const notices=await api.listFieldManagerNotifications({ownerUserId:'owner',managerId:'manager'});
-  assert.equal(notices[0].title,'Service overdue — assigned to you');assert.equal(notices[0].isRead,true);
-  assert.ok(notices.some(n=>n.title==='Service due now — assigned to you'));
-  assert.ok(notices.some(n=>n.title==='Service due soon — assigned to you'));
-});
 test('dealer maintenance keeps only the current urgency active and preserves each staff member’s read state',async()=>{
   const source=fs.readFileSync('lib/dealer-maintenance-tracker.ts','utf8');
   const start=source.indexOf('export async function syncDealerMaintenanceNotifications(');

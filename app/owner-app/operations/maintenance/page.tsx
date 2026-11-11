@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function OwnerMaintenanceAssetsPage({ searchParams }: { searchParams?: { q?: string | string[] } }) {
   const access = await requireOwnerAppPageAccess();
-  if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
+  if (!(ownerAppCan(access, 'recordMaintenance') || ownerAppCan(access, 'completeMaintenance'))) redirect('/owner-app');
   const initialQuery = Array.isArray(searchParams?.q) ? searchParams.q[0] ?? '' : searchParams?.q ?? '';
 
   return (

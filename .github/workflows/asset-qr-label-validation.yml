@@ -10,7 +10,7 @@ on:
       - 'tests/qr-rendering.test.cjs'
       - 'scripts/verify-asset-qr-label.cjs'
       - 'public/brand/**'
-      - 'public/field-manager/montserrat-latin.woff'
+      - 'public/fonts/montserrat-latin.woff'
       - 'package*.json'
       - '.github/workflows/asset-qr-label-validation.yml'
   workflow_dispatch:
