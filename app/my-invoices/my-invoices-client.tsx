@@ -56,7 +56,7 @@ import costDetailStyles from '../../components/CostDetailIcon.module.css';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 
-type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
+type FlowMode = 'asset-first' | 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
 const CostLedgerFuelEditor = dynamic(() => import('../fuel/fuel-client'), { ssr: false });
 
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
@@ -68,6 +68,7 @@ type OwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 export type AssetOption = {
   id: string;
   ownerUserId?: string;
+  canAddCosts?: boolean;
   title: string;
   kind: string;
   categoryLabel: string;
@@ -1390,7 +1391,7 @@ export default function MyInvoicesClient({
     setInitialLaunchHandled(true);
 
     const requestedAssetId = initialAssetId.trim();
-    if (requestedAssetId && assets.some((asset) => asset.id === requestedAssetId)) {
+    if (requestedAssetId && assets.some((asset) => asset.id === requestedAssetId && (!dealerMode || asset.canAddCosts))) {
       setQuickLaunchActive(true);
       openAddInvoiceModal(requestedAssetId);
       return;
@@ -1400,7 +1401,7 @@ export default function MyInvoicesClient({
       setNotice({
         tone: 'error',
         message: dealerMode
-          ? 'This asset is not currently shared with your dealership.'
+          ? 'The owner needs to share this asset with permission to add costs.'
           : 'This asset is not available in your Cost Ledger.',
       });
     }
@@ -1436,9 +1437,11 @@ export default function MyInvoicesClient({
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, invoiceDropAssetSearch]);
 
+  const costEntryAssets = useMemo(() => assets.filter((asset) => !dealerMode || asset.canAddCosts === true), [assets, dealerMode]);
+
   const pickerBusinesses = useMemo(() => {
     const businesses = new Map<string, { id: string; name: string; assetCount: number }>();
-    for (const asset of assets) {
+    for (const asset of costEntryAssets) {
       const ownerId = asset.ownerUserId;
       if (!ownerId) continue;
       const business = businesses.get(ownerId);
@@ -1450,7 +1453,7 @@ export default function MyInvoicesClient({
       });
     }
     return Array.from(businesses.values()).sort((left, right) => left.name.localeCompare(right.name));
-  }, [assets]);
+  }, [costEntryAssets]);
   const pickerBusiness = pickerBusinesses.find((business) => business.id === pickerOwnerId);
   const businessPickerOpen = dealerMode && !pickerBusiness;
   const filteredPickerBusinesses = useMemo(() => {
@@ -1461,11 +1464,11 @@ export default function MyInvoicesClient({
   const filteredAssets = useMemo(() => {
     const query = pickerSearch.trim().toLowerCase();
     const visibleAssets = dealerMode
-      ? assets.filter((asset) => Boolean(pickerOwnerId) && asset.ownerUserId === pickerOwnerId)
-      : assets;
+      ? costEntryAssets.filter((asset) => Boolean(pickerOwnerId) && asset.ownerUserId === pickerOwnerId)
+      : costEntryAssets;
     if (!query) return visibleAssets;
     return visibleAssets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [assets, dealerMode, pickerOwnerId, pickerSearch]);
+  }, [costEntryAssets, dealerMode, pickerOwnerId, pickerSearch]);
 
   const recurringSelectedAssets = useMemo(
     () => assets.filter((asset) => recurringAssetIds.includes(asset.id)),
@@ -1662,9 +1665,9 @@ export default function MyInvoicesClient({
   const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
 
   const allowanceEndpoint = sharedFlow?.allowanceEndpoint || accountScopedUrl(`/api/capture-allowance?type=invoice${dealerMode ? `&dealer=1&assetId=${encodeURIComponent(selectedAssetId)}` : ''}`);
-  const captureAllowance = useCaptureAllowance(flow === 'upload', allowanceEndpoint);
+  const captureAllowance = useCaptureAllowance(flow === 'upload' && Boolean(selectedAsset) && (!dealerMode || selectedAsset?.canAddCosts === true), allowanceEndpoint);
   const sourceChoiceOpen = flow === 'source-choice';
-  const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
+  const assetPickerOpen = flow === 'asset-first' || flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
   const manualCostWizardOpen = flow === 'manual-form';
   const manualAssetMetricLocked = manualCostWizardOpen && selectedAsset?.selectedMethod === 'manual';
@@ -1679,7 +1682,7 @@ export default function MyInvoicesClient({
   const recurringOpen = flow === 'recurring';
   const flowTitle = businessPickerOpen
     ? 'Choose client business'
-    : flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
+    : flow === 'asset-first' ? 'Choose client asset' : flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const manualCostReviewOpen = manualCostWizardOpen && manualCostWizardStep === 4;
   const formTitle = manualCostReviewOpen ? 'Review cost' : flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
@@ -2504,6 +2507,7 @@ export default function MyInvoicesClient({
     }
     if (flow === 'review') { setFlow('upload'); return; }
     if (flow === 'upload') { setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic'); return; }
+    if (flow === 'asset-first') { finishModal(); return; }
     if (flow === 'asset-manual' || flow === 'asset-automatic') { setFlow('source-choice'); return; }
     finishModal();
   }
@@ -2784,7 +2788,7 @@ export default function MyInvoicesClient({
     if (!desktop.allow('addCosts')) return;
     sourceDraftsRef.current = {};
     recurringDraftStartedRef.current = false;
-    const normalizedAssetId = assetId.trim();
+    const normalizedAssetId = costEntryAssets.some((asset) => asset.id === assetId.trim()) ? assetId.trim() : '';
     setNotice(null);
     setSelectedAssetId(normalizedAssetId);
     setPickerOwnerId(assets.find((asset) => asset.id === normalizedAssetId)?.ownerUserId ?? '');
@@ -2804,7 +2808,7 @@ export default function MyInvoicesClient({
     setManualCostWizardError('');
     setAssetLockedForFlow(Boolean(normalizedAssetId));
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
-    setFlow('source-choice');
+    setFlow(dealerMode && !normalizedAssetId ? 'asset-first' : 'source-choice');
   }
 
   function startFlow(source: InvoiceSource) {
@@ -2812,9 +2816,10 @@ export default function MyInvoicesClient({
     if (sourceDraftsRef.current[draft.source]) {
       sourceDraftsRef.current[draft.source] = { assetId: selectedAssetId, draft };
     }
-    const presetAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
+    const presetAssetId = selectedAssetId && costEntryAssets.some((asset) => asset.id === selectedAssetId)
       ? selectedAssetId
       : '';
+    if (dealerMode && !presetAssetId) { setFlow('asset-first'); return; }
     setNotice(null);
     setSelectedAssetId(presetAssetId);
     setPickerOwnerId(assets.find((asset) => asset.id === presetAssetId)?.ownerUserId ?? '');
@@ -3035,11 +3040,31 @@ export default function MyInvoicesClient({
   }
 
   function selectAssetAndContinue(assetId: string) {
+    if (!costEntryAssets.some((asset) => asset.id === assetId)) return;
     setSelectedAssetId(assetId);
     setPickerSearch('');
     setAssetLockedForFlow(false);
     setManualCostWizardStep(1);
     setManualCostWizardError('');
+
+    if (flow === 'asset-first') {
+      setAssetLockedForFlow(true);
+      if (assetId !== selectedAssetId) {
+        sourceDraftsRef.current = {};
+        setManualAttachment(null);
+        setAutomaticUploadFile(null);
+        setAutomaticUploadPages([]);
+        setCaptureNote('');
+        setCaptureUploadPage('files');
+        setCaptureUploadError('');
+        setUploadedDocument(null);
+        setRawTextPreview('');
+        setExtractionWarnings([]);
+        setDraft(buildDraftForAsset('manual', assetId));
+      }
+      setFlow('source-choice');
+      return;
+    }
 
     if (flow === 'asset-automatic') {
       setDraft(buildDraftForAsset('automatic', assetId));
@@ -4553,7 +4578,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add asset cost</h2>
-                <p>Choose how to capture a cost for {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
+                <p>{dealerMode && selectedAsset ? selectedAsset.title : 'Choose how to capture a cost for a saved asset.'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
@@ -4599,6 +4624,7 @@ export default function MyInvoicesClient({
               </button>
             </div>
             <div className={styles.modalFooter}>
+              {dealerMode && !quickLaunchActive ? <button type="button" className={styles.secondaryButton} onClick={() => setFlow('asset-first')}>Change asset</button> : null}
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
             </div>
           </div>
@@ -5086,7 +5112,7 @@ export default function MyInvoicesClient({
                       <small data-asset-choice-meta="true">{business.assetCount} shared {business.assetCount === 1 ? 'asset' : 'assets'}</small>
                     </span>
                   </button>
-                )) : <div className={styles.emptyState}>No matching businesses found. Ask the owner to share an asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></div>
+                )) : <div className={styles.emptyState}>No matching businesses found. Ask the owner to share an asset with permission to add costs, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></div>
               ) : filteredAssets.length ? filteredAssets.map((asset) => (
                 <button
                   type="button"
@@ -5110,7 +5136,7 @@ export default function MyInvoicesClient({
                     <AssetChooseIcon />
                   </span>
                 </button>
-              )) : <div className={styles.emptyState}>{dealerMode ? <>No matching shared assets found. Ask the owner to share the asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></> : 'No matching assets found.'}</div>}
+              )) : <div className={styles.emptyState}>{dealerMode ? <>No matching shared assets found. Ask the owner to share the asset with permission to add costs, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></> : 'No matching assets found.'}</div>}
             </div>
             <div className={styles.modalFooter} data-asset-choice-footer="true">
               {dealerMode && !businessPickerOpen ? (
@@ -5234,14 +5260,6 @@ export default function MyInvoicesClient({
 
                 {!manualCostWizardOpen || manualCostWizardStep === 1 ? (
                   <>
-                    {dealerMode && dealerDefaults.supplierName ? (
-                      <div className={styles.dealerDetailsCard}>
-                        <span>Dealer details pulled from your account</span>
-                        <strong>{dealerDefaults.supplierName}</strong>
-                        {dealerDefaults.vatNumber ? <small>VAT: {dealerDefaults.vatNumber}</small> : null}
-                        {dealerDefaults.address ? <small>{dealerDefaults.address}</small> : null}
-                      </div>
-                    ) : null}
                     <div className={`${styles.formGrid} ${manualCostWizardOpen ? styles.manualCostInvoiceGrid : ''}`}>
                   <label>
                     <span>Supplier name</span>
@@ -5399,9 +5417,9 @@ export default function MyInvoicesClient({
                   <div className={costReviewStyles.stack}>
                     <dl className={costReviewStyles.grid}>
                     <div className={costReviewStyles.asset}>
-                      <dt className={costReviewStyles.assetIcon}>
+                      <dt className={dealerMode ? costReviewStyles.visuallyHidden : costReviewStyles.assetIcon}>
                         <span className={costReviewStyles.visuallyHidden}>Asset</span>
-                        <LinkedAssetIcon aria-hidden="true" />
+                        {!dealerMode ? <LinkedAssetIcon aria-hidden="true" /> : null}
                       </dt>
                       <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
                     </div>

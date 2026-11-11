@@ -121,7 +121,8 @@ test('dealer cost page reuses manual and Aim4price-assisted entry without owner-
   );
   assert.match(costClient, /Enter cost manually/);
   assert.match(costClient, /Upload invoice\/photo/);
-  assert.match(costClient, /dealerMode && dealerDefaults\.supplierName/);
+  assert.doesNotMatch(costClient, /Dealer details pulled from your account/);
+  assert.match(costClient, /dealerMode \? dealerDefaults\.supplierName : ''/);
   assert.match(costClient, /\{!dealerMode \? \([\s\S]*Download/);
 });
 
@@ -181,7 +182,7 @@ test('dealer deletions require an owner keep or delete decision', () => {
   assert.match(dealerCosts, /listPendingOwnerDealerCostDeletions/);
   assert.match(dealerCosts, /resolveDealerCostDeletionDecision/);
   assert.match(notifications, /dealerCostAction: 'delete'/);
-  assert.match(notifications, /Dealer removed an asset cost/);
+  assert.match(notifications, /Shared asset cost removed/);
   assert.match(ownerDecisionRoute, /getOwnerDealerCostDecision/);
   assert.match(ownerDecisionRoute, /resolveDealerCostDeletionDecision/);
   assert.match(decisionModal, /Keep in Cost Ledger/);

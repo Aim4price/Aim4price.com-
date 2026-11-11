@@ -18,7 +18,7 @@ async function resolve(request: Request) {
     if (!context || type !== 'invoice') return { response: NextResponse.json({ error: 'Dealer access required.' }, { status: 403 }) };
     const assetId = params.get('assetId') || '';
     const access = assetId ? await getDealerCostAssetAccess(context.actor.dealerUserId, assetId) : null;
-    if (!access) return { response: NextResponse.json({ error: 'Choose a shared asset first.' }, { status: 404 }) };
+    if (!access) return { response: NextResponse.json({ error: 'Cost access is no longer available for this asset. Ask the owner to enable permission to add costs, then choose the asset again.' }, { status: 404 }) };
     return { ownerUserId: access.owner_user_id, actorUserId: context.actor.dealerUserId, type, bypass: !!admin };
   }
   const resolved = await resolveOwnerWorkspaceContext(request, { ledger: type === 'invoice' ? 'cost' : 'fuel', requireWrite: true });

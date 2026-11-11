@@ -105,6 +105,11 @@
   min-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 68px - env(safe-area-inset-top));
 }
 
+.dealerCostsPage .shell {
+  width: min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1180px);
+  padding-inline: var(--ledger-panel-inset);
+}
+
 .dealerCostsTitlePanel {
   --workspace-ink: var(--brand-dark);
 }
@@ -823,35 +828,6 @@
     radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.04)), transparent 36%),
     linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
   box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 28, 45, 0.035)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94));
-}
-
-.dealerDetailsCard {
-  display: grid;
-  gap: 0.28rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--app-line, var(--brand-light-border));
-  border-radius: 1rem;
-  background: var(--app-surface-soft, var(--brand-light));
-  color: var(--app-text, var(--brand-dark));
-}
-
-.dealerDetailsCard span {
-  color: var(--app-text, var(--brand-mid));
-  font-size: 0.75rem;
-  font-weight: 850;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-}
-
-.dealerDetailsCard strong {
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.dealerDetailsCard small {
-  color: var(--app-muted, var(--text-muted));
-  font-size: 0.8rem;
-  font-weight: 680;
 }
 
 .uploadPanel h3 {
