@@ -92,7 +92,30 @@ jobs:
           if pdftotext -v >/dev/null 2>&1 && pdftoppm -v >/dev/null 2>&1; then
             exit 0
           fi
-          apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15)
+          # The runner's Azure HTTP mirror can remain unreachable across retries.
+          # Use isolated, signed Ubuntu HTTPS sources for this installation only.
+          apt_dir="$(mktemp -d)"
+          chmod 755 "$apt_dir"
+          trap 'rm -rf "$apt_dir"' EXIT
+          cat > "$apt_dir/ubuntu.sources" <<'SOURCES'
+          Types: deb
+          URIs: https://archive.ubuntu.com/ubuntu/
+          Suites: noble noble-updates
+          Components: main
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+          Types: deb
+          URIs: https://security.ubuntu.com/ubuntu/
+          Suites: noble-security
+          Components: main
+          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+          SOURCES
+          apt_options=(
+            -o "Dir::Etc::sourcelist=$apt_dir/ubuntu.sources"
+            -o Dir::Etc::sourceparts=-
+            -o Acquire::Retries=2
+            -o Acquire::https::Timeout=15
+          )
           sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
           sudo apt-get "${apt_options[@]}" install --no-install-recommends -y poppler-utils
           # Missing or broken PDF tooling must fail, never skip report validation.
