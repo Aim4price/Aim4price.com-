@@ -23,7 +23,7 @@ export default function OwnerBottomNav() {
   const tabs = [
     { id: 'home', label: 'Home', href: '/owner-app' },
     { id: 'assets', label: 'Assets', href: '/owner-app/assets' },
-    ...(permissions.includes('operate') ? [{ id: 'work', label: 'Work', href: '/owner-app/operations' }] : []),
+    { id: 'work', label: 'Work', href: '/owner-app/operations' },
     { id: 'more', label: 'More', href: '/owner-app/more' },
   ];
   return <>

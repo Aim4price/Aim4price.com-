@@ -40,6 +40,15 @@ jobs:
               APP_MODE=$mode VIEWPORT_WIDTH=$width node scripts/verify-native-app-homes.cjs || exit 1
             done
           done
+      - name: Keep Manager mobile screens for owners and restricted staff
+        run: |
+          for screen in home assets more; do
+            for restricted in 0 1; do
+              for width in 320 393 1280; do
+                APP_MODE=owner OWNER_SCREEN=$screen OWNER_RESTRICTED=$restricted VIEWPORT_WIDTH=$width node scripts/verify-native-app-homes.cjs || exit 1
+              done
+            done
+          done
       - name: Complete Dealer and Middleman valuation flows
         run: |
           for mode in dealer middleman; do

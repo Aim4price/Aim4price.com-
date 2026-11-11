@@ -70,3 +70,10 @@
 .assetActions > .tile { align-items: center; justify-content: center; text-align: center; gap: 9px; min-height: 92px; }
 .assetActions > .tile strong { white-space: normal; text-wrap: balance; line-height: 1.4; }
 .assetActions > .tile:last-child:nth-child(odd) { justify-content: center; }
+
+/* Permissions change availability, never the mobile layout or touch-target size. */
+.tile[aria-disabled="true"], .row[aria-disabled="true"] {
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+}

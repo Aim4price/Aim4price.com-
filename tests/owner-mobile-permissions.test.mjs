@@ -64,3 +64,52 @@ test('manual capture keeps not-applicable usage empty and enforces create permis
   assert.equal((await route.POST(request('hours'))).status, 403);
   assert.equal(saved, null);
 });
+
+function nodes(node) {
+  if (!node) return [];
+  if (Array.isArray(node)) return node.flatMap(nodes);
+  if (typeof node !== 'object') return [];
+  return [node, ...nodes(node.props?.children)];
+}
+for (const role of ['admin', 'manager', 'office', 'workshop', 'operator', 'view_only']) {
+  test(`${role} uses the original mobile asset directory, never the desktop workspace`, async () => {
+    const page = load('app/owner-app/assets/page.tsx', {
+      '../../../lib/owner-app-access': {
+        requireOwnerAppPageAccess: async () => ({ accessRole: role, sessionKind: role === 'admin' ? 'account' : 'owner-app-user' }),
+        ownerAppCan: () => role === 'admin',
+      },
+    });
+    const result = nodes(await page.default({searchParams: {q: 'Baler'}}));
+    const directory = result.find(n => n.type === './owner-assets-client');
+    assert.ok(directory);
+    assert.equal(directory.props.initialQuery, 'Baler');
+    assert.equal(directory.props.canAddAssets, role === 'admin');
+    assert.ok(result.every(n => !String(n.type).includes('team-workspace')));
+  });
+}
+test('restricted home actions keep the same mobile layout without actionable links', async () => {
+  const render = async allowed => {
+    const page = load('app/owner-app/page.tsx', {'../../lib/owner-app-access': {
+      requireOwnerAppPageAccess: async () => ({ displayName: 'Staff' }), ownerAppCan: () => allowed,
+    }});
+    return nodes(await page.default());
+  };
+  const allowed = await render(true), restricted = await render(false);
+  const labels = list => list.filter(n => n.type === 'strong').map(n => n.props.children);
+  assert.deepEqual(labels(restricted), labels(allowed));
+  assert.equal(restricted.filter(n => n.props?.['aria-disabled']).length, 4);
+  assert.ok(!restricted.some(n => n.props?.href === '/owner-app/operations/fuel'));
+});
+test('saved workspace links stay in mobile flows and never mount desktop pages', async () => {
+  for (const [section, destination] of Object.entries({fuel:'operations/fuel',maintenance:'attention',costs:'more',budgets:'more',map:'assets',documents:'assets'})) {
+    const page = load('app/owner-app/workspace/[section]/page.tsx', {
+      '../../../../lib/owner-app-access': {requireOwnerAppPageAccess: async () => ({})},
+      'next/navigation': {redirect: value => {throw Error(value)}, notFound: () => {throw Error('notFound')}},
+    });
+    await assert.rejects(() => page.default({params:{section}}), {message:'/owner-app/' + destination});
+  }
+  for (const path of ['app/owner-app/assets/page.tsx','app/owner-app/workspace/[section]/page.tsx']) {
+    assert.doesNotMatch(readFileSync(path,'utf8'), /TeamWorkspaceClient|DesktopWorkspaceProvider|import .* from ['"].*(?:fuel-client|my-invoices-client|documents-client|asset-map-client|maintenance-client)/);
+  }
+  assert.doesNotMatch(readFileSync('app/owner-app/more/page.tsx','utf8'), /\/owner-app\/workspace\//);
+});
