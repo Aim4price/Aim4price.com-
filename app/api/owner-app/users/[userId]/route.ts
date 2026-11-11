@@ -14,6 +14,9 @@ async function requireManagingOwner() {
 }
 
 function errorResponse(error: unknown, fallback: string) {
+  const code = (error as { code?: string } | null)?.code;
+  if (code === '23505') return NextResponse.json({ ok: false, error: 'That username is already in use. Manage the existing login or choose another username.' }, { status: 409 });
+  if (code && /^[0-9A-Z]{5}$/.test(code)) return NextResponse.json({ ok: false, error: fallback }, { status: 500 });
   const message = error instanceof Error && error.message ? error.message : fallback;
   const status = /not found/i.test(message) ? 404 : /username|password|passcode|display name|enter/i.test(message) ? 400 : 500;
   return NextResponse.json({ ok: false, error: message }, { status });
