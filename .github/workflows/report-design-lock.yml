@@ -83,49 +83,31 @@ jobs:
       - name: Verify workspace retirement boundaries
         run: npm run test:workspace-retirement
 
+      # Avoid Ubuntu mirrors: repeated runner DNS failures blocked PDF validation.
       - name: Install PDF inspection tools
-        timeout-minutes: 3
-        shell: bash
+        uses: mamba-org/setup-micromamba@v3
+        timeout-minutes: 5
+        with:
+          environment-name: report-tools
+          create-args: >-
+            --override-channels -c conda-forge
+            poppler=24.08.0
+          init-shell: none
+          cache-environment: true
+
+      - name: Verify PDF inspection tools
+        shell: micromamba-shell {0}
         run: |
           set -euo pipefail
-          # Avoid a network dependency when the tools are already usable.
-          if pdftotext -v >/dev/null 2>&1 && pdftoppm -v >/dev/null 2>&1; then
-            exit 0
-          fi
-          # The runner's Azure HTTP mirror can remain unreachable across retries.
-          # Use isolated, signed Ubuntu HTTPS sources for this installation only.
-          apt_dir="$(mktemp -d)"
-          chmod 755 "$apt_dir"
-          trap 'rm -rf "$apt_dir"' EXIT
-          cat > "$apt_dir/ubuntu.sources" <<'SOURCES'
-          Types: deb
-          URIs: https://archive.ubuntu.com/ubuntu/
-          Suites: noble noble-updates
-          Components: main
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-
-          Types: deb
-          URIs: https://security.ubuntu.com/ubuntu/
-          Suites: noble-security
-          Components: main
-          Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
-          SOURCES
-          apt_options=(
-            -o "Dir::Etc::sourcelist=$apt_dir/ubuntu.sources"
-            -o Dir::Etc::sourceparts=-
-            -o Acquire::Retries=2
-            -o Acquire::https::Timeout=15
-          )
-          sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
-          sudo apt-get "${apt_options[@]}" install --no-install-recommends -y poppler-utils
-          # Missing or broken PDF tooling must fail, never skip report validation.
           pdftotext -v
           pdftoppm -v
 
       - name: Verify report templates and print layouts
+        shell: micromamba-shell {0}
         run: node scripts/verify-report-suite.cjs
 
       - name: Verify valuation PDF clarity
+        shell: micromamba-shell {0}
         run: node scripts/verify-valuation-report-clarity.cjs
 
       - name: Upload synthetic report evidence
