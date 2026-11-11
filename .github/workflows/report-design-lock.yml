@@ -58,7 +58,8 @@ permissions:
 jobs:
   approved-report-design:
     name: Approved report design
-    runs-on: ubuntu-latest
+    # Keep PDF tooling stable across ubuntu-latest image rollouts.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out repository
@@ -83,7 +84,20 @@ jobs:
         run: npm run test:workspace-retirement
 
       - name: Install PDF inspection tools
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+        timeout-minutes: 3
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Avoid a network dependency when the tools are already usable.
+          if pdftotext -v >/dev/null 2>&1 && pdftoppm -v >/dev/null 2>&1; then
+            exit 0
+          fi
+          apt_options=(-o Acquire::Retries=2 -o Acquire::http::Timeout=15 -o Acquire::https::Timeout=15)
+          sudo apt-get "${apt_options[@]}" -o APT::Update::Error-Mode=any update
+          sudo apt-get "${apt_options[@]}" install --no-install-recommends -y poppler-utils
+          # Missing or broken PDF tooling must fail, never skip report validation.
+          pdftotext -v
+          pdftoppm -v
 
       - name: Verify report templates and print layouts
         run: node scripts/verify-report-suite.cjs
