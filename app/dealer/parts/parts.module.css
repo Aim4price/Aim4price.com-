@@ -341,22 +341,19 @@
   gap: 16px;
   margin: 22px 0;
 }
+/* Match Client Costs card geometry with a solid surface. */
 .card {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, auto);
+  align-items: stretch;
+  gap: 1.6rem;
   text-align: left;
-  padding: 24px;
-  border: 1px solid var(--app-line, #9fcfba);
-  border-radius: 20px;
-  background: linear-gradient(
-    115deg,
-    var(--app-surface-soft, #e3f3eb),
-    var(--app-surface, #f9fdfb)
-  );
-  box-shadow: 0 12px 28px var(--app-shadow-colour, #12352d12);
+  padding: 1.3rem 1.38rem;
+  border: 1px solid var(--app-info-line, #c6d8df);
+  border-radius: 1.58rem;
+  background: var(--app-surface, #fff);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(20, 43, 43, 0.04));
   min-width: 0;
 }
 .card::before {
@@ -364,22 +361,53 @@
 }
 .cardContent {
   min-width: 0;
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+.cardAside {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: end;
+  gap: 1.4rem;
+}
+.cardCount {
+  display: grid;
+  align-content: start;
+  justify-items: end;
+  gap: 0.16rem;
+  padding-top: 0.12rem;
+  text-align: right;
+}
+.cardCount strong {
+  color: var(--app-text, #073b30);
+  font-size: 1.9rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+.cardCount span {
+  color: var(--app-muted, #5d6d7c);
+  font-size: 0.9rem;
+  font-weight: 780;
+  line-height: 1.15;
 }
 .card h2 {
   font-family: var(--font-heading, "Montserrat"), sans-serif;
-  font-size: clamp(22px, 2vw, 28px);
-  font-weight: 850;
-  line-height: 1.2;
-  letter-spacing: -0.035em;
-  margin: 0 0 10px;
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 .card p {
   color: var(--app-text-muted, #61766c);
   font-size: 15px;
   font-weight: 650;
-  margin: 0 0 16px;
+  margin: 0;
 }
 .cardKind {
   display: inline-flex;
@@ -507,7 +535,8 @@
 .cardActions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(100%, 510px);
+  width: 100%;
+  min-width: 470px;
   flex-shrink: 0;
   gap: 12px;
 }
@@ -592,12 +621,12 @@
   transform: translate(-50%, 0);
 }
 .card {
-  padding: 26px 24px;
   min-height: 180px;
   overflow: visible;
 }
 .cardKind {
-  padding: 8px 12px;
+  margin-top: auto;
+  padding: 0.4rem 0.8rem;
   font-size: 14px;
   border-radius: 999px;
   background: var(--app-surface-soft, #e2f6ed);
@@ -1046,3 +1075,16 @@
 }
 
 .importForm > .actions { margin-top: 20px; }
+
+/* Stack the action row on narrow native screens; retain the website canvas layout. */
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardAside {
+    gap: 1rem;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardActions {
+    min-width: 0;
+  }
+}

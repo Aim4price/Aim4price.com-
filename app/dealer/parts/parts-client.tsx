@@ -482,11 +482,7 @@ export default function PartsClient({
                   >
                     <div className={styles.cardContent}>
                       <h2>{n.name}</h2>
-                      <p>
-                        {n.part_count || 0}{" "}
-                        {n.part_count === 1 ? "part" : "parts"} ·{" "}
-                        {date(n.last_updated)}
-                      </p>
+                      <p>{date(n.last_updated)}</p>
                       {n.status !== "active" && (
                         <p>
                           {n.status === "pending"
@@ -499,6 +495,11 @@ export default function PartsClient({
                         {n.owned ? "Your parts list" : "Shared parts list"}
                       </span>
                     </div>
+                    <div className={styles.cardAside}>
+                      <div className={styles.cardCount}>
+                        <strong>{(n.part_count || 0).toLocaleString("en-ZA")}</strong>
+                        <span>{n.part_count === 1 ? "Part" : "Parts"}</span>
+                      </div>
                     <div className={styles.cardActions}>
                       {n.owned && !staff && (
                         <button
@@ -541,6 +542,7 @@ export default function PartsClient({
                           Manage
                         </button>
                       )}
+                    </div>
                     </div>
                   </article>
                 ))}
