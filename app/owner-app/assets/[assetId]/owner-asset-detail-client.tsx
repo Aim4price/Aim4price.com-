@@ -1174,7 +1174,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                     <span className={styles.assetMirrorStatusCopy}><span>Licensed</span><small>{isOwner ? 'Open licence ›' : 'Access restricted'}</small></span>
                     <strong className={`${styles.assetMirrorStatusMark} ${licenceVisual.className}`} aria-hidden="true">{isOwner ? licenceVisual.symbol : '—'}</strong>
                   </AccessLink>
-                  {!can('viewMap') ? <div aria-disabled="true"><span>Mapped</span><small>Access restricted</small></div> : hasMappedLocation ? (
+                  {!can('viewMap') ? <div aria-disabled="true"><span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Access restricted</small></span><strong className={styles.assetMirrorStatusMark} aria-hidden="true">—</strong></div> : hasMappedLocation ? (
                     <a href={mapHref} target="_blank" rel="noreferrer" aria-label="Mapped: Yes. Open map.">
                       <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Open map ›</small></span>
                       <strong className={`${styles.assetMirrorStatusMark} ${mappedVisual.className}`} aria-hidden="true">{mappedVisual.symbol}</strong>

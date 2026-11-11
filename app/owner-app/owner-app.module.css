@@ -3843,3 +3843,15 @@
 .detailUploadButton:has(input:disabled),
 .assetMirrorAction[aria-disabled="true"] { opacity: .55; cursor: not-allowed; box-shadow: none; }
 .assetMirrorStatusGrid [aria-disabled="true"] .assetMirrorStatusMark { background: var(--app-surface-soft, #eef4f1); color: var(--app-muted, #64766e); }
+
+/* Permission explanations must not squeeze the native card into narrow columns. */
+.appShell .assetMirrorSecondaryGrid > div[aria-disabled="true"] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+.appShell .assetMirrorSecondaryGrid > div[aria-disabled="true"] > small {
+  grid-column: 1;
+  grid-row: auto;
+  text-align: left;
+  font-weight: 500;
+}
