@@ -360,14 +360,7 @@
   min-width: 0;
 }
 .card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 20px;
-  bottom: 20px;
-  width: 4px;
-  border-radius: 4px;
-  background: #268e65;
+  content: none;
 }
 .cardContent {
   min-width: 0;

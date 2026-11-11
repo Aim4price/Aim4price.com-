@@ -1718,11 +1718,7 @@
 }
 
 .leadThread::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--app-surface-soft, #82918a);
+  content: none;
 }
 
 .leadThreadNew:not(.leadThreadOpen)::before { background: var(--app-danger-soft, #cf7b32); }
