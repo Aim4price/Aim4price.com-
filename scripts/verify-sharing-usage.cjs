@@ -89,9 +89,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Forgot password?');await page.waitForFunction(()=>document.body.textContent.includes('Ask your business owner'));assert.equal(logins.length,0);assert.equal(new URL(page.url()).hash,'#login');
  fs.mkdirSync('.next/team-access-validation',{recursive:true});await page.screenshot({path:'.next/team-access-validation/unified-login.png'});await click('Log in');await page.waitForFunction(()=>document.body.textContent.includes('Incorrect credentials'));
  assert.deepEqual(logins.at(-1),{path:'/api/team-login',body:{username:'office@farm',password:'Desktop-password-123',rememberMe:true}});
- await page.locator('input[autocomplete="username"]').fill('person@example.test');await click('Log in');await page.waitForResponse(r=>r.url().includes('/sign-in/email'));
+ await page.locator('input[autocomplete="username"]').fill('person@example.test');await Promise.all([page.waitForResponse(r=>r.url().includes('/sign-in/email')),click('Log in')]);
  assert.equal(logins.at(-1).path,'/api/auth/sign-in/email');assert.equal(logins.at(-1).body.email,'person@example.test');
- await page.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(n=>n.textContent==='Log in').disabled);
+ await page.waitForFunction(()=>{const button=Array.from(document.querySelectorAll('button')).find(n=>n.textContent==='Log in');return Boolean(button && !button.disabled);});
  desktopSuccess=true;await page.locator('input[autocomplete="username"]').fill('office@farm');await page.click('input[type="checkbox"]');
  await Promise.all([page.waitForNavigation(),click('Log in')]);assert.equal(new URL(page.url()).pathname,'/team');assert.equal(logins.at(-1).body.rememberMe,false);
  await render('app/pricing/pricing-content',{});await page.waitForSelector('h1');assert(!await page.evaluate(()=>document.body.textContent.includes('x credits')));
