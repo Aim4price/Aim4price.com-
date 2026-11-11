@@ -106,8 +106,8 @@
 }
 
 .dealerCostsPage .shell {
-  width: min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1180px);
-  padding-inline: var(--ledger-panel-inset);
+  width: min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1280px);
+  padding-inline: 0;
 }
 
 .dealerCostsTitlePanel {
