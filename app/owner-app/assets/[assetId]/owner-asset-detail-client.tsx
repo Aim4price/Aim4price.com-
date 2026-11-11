@@ -1358,6 +1358,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           </div>
         </section>
 
+        {!availableManageSections.length ? <p className={styles.section}>No management actions are enabled for this login. The account owner can adjust your permissions.</p> : null}
         <section className={styles.manageSection} aria-label="Asset management options">
           <div className={styles.manageGroupGrid}>
             {MANAGE_GROUPS.map((group) => {
