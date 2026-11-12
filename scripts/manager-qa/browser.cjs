@@ -43,14 +43,13 @@ module.exports = async function checkBrowser(e) {
         await page.goto(e.origin + '/owner-app/assets/' + e.assets.tractor + '/manage/usage', {waitUntil:'domcontentloaded',timeout:120000});
         await page.waitForSelector('input[type="number"]');
         const nextUsage = 3000 + Object.keys(e.accounts).indexOf(role);
-        // Replace the whole numeric value; locator.fill can append to a controlled number input.
-        const input = await page.$('input[type="number"]');
-        await input.focus();
-        await page.keyboard.down('Control');
-        await page.keyboard.press('KeyA');
-        await page.keyboard.up('Control');
-        await page.keyboard.press('Backspace');
-        await input.type(String(nextUsage), {delay:30});
+        // Set the controlled numeric value atomically, then exercise the real submit and database write.
+        // Per-key typing can race React's numeric normalization on slower CI workers.
+        await page.$eval('input[type="number"]', (input, value) => {
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+          setter.call(input, value);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, String(nextUsage));
         await page.waitForFunction(value => document.querySelector('input[type="number"]').value === value, {}, String(nextUsage));
         await page.evaluate(() => document.querySelector('form').requestSubmit());
         await page.waitForFunction(() => document.body.textContent.includes('Asset changes saved.'), {polling:250,timeout:15000});
