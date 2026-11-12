@@ -1287,3 +1287,43 @@
   .enquiryFooter { margin-top: 18px; }
   .enquiryModal .enquiryFooter button { width: 100%; }
 }
+
+/* Stocklist results: align quantities, prices and enquiry actions as a ledger. */
+.detailPage .partsPanel .stockTable { color: var(--app-text, #173e32); min-width: 680px; }
+.detailPage .stockTable.singleDealerTable { table-layout: fixed; }
+.detailPage .stockTable th { padding: 13px 24px; font-size: 13px; font-weight: 650; border-top: 1px solid var(--app-border, #dce5df); }
+.detailPage .stockTable td { padding: 16px 24px; font-size: 15px; line-height: 1.5; }
+.detailPage .stockTable .selectColumn { width: 70px; }
+.detailPage .stockTable .quantityColumn { width: 120px; }
+.detailPage .stockTable .priceColumn { width: 200px; }
+.detailPage .stockTable .contactColumn { width: 164px; text-align: right; }
+.detailPage .stockTable td:last-child { width: 164px; }
+.detailPage .stockTable .partIdentity { overflow-wrap: anywhere; }
+.partIdentity > strong { font-size: 16px; font-weight: 700; letter-spacing: -.015em; }
+.detailPage .stockTable .partIdentity small { margin-top: 3px; font-size: 12px; line-height: 1.5; }
+.partPrice { font-weight: 650; font-variant-numeric: tabular-nums; }
+.priceOnRequest { color: var(--app-text-muted, #64766c); font-size: 13px; font-weight: 500; }
+.detailPage .stockTable tbody tr { transition: background .15s; }
+.detailPage .stockTable tbody tr:focus-within { background: var(--app-surface-soft, #f1f7f4); }
+.page .stockTable .partContactButton { min-width: 116px; min-height: 40px; padding: 9px 14px; gap: 8px; border-radius: 10px; border: 1px solid #c7dced; background: linear-gradient(135deg,#f7fbff,#edf5ff); color: #204f79; font-size: 13px; font-weight: 700; box-shadow: 0 2px 4px #204f7906; }
+.page .stockTable .partContactButton svg { width: 18px; height: 18px; flex-shrink: 0; }
+.page .stockTable .partContactButton:hover { border-color: #8eb4d6; background: #e8f2ff; box-shadow: 0 3px 10px #204f7912; }
+.page .stockTable .partContactButton:focus-visible { outline: 3px solid #699eca; outline-offset: 3px; }
+.detailPage .tableToolbar { gap: 16px; padding-top: 20px; padding-bottom: 24px; }
+.detailPage .listContext { padding-top: 24px; }
+.detailPage .tableToolbar .search { background: var(--app-surface-soft, #f6faf8); }
+.detailPage .tableToolbar .search:focus-within { border-color: #6aa58d; box-shadow: 0 0 0 3px #4cbd8315; }
+@media(max-width: 700px) {
+  .detailPage .tableToolbar { padding: 14px; }
+  .detailPage .listContext { padding-top: 16px; }
+  .detailPage .stockTable th, .detailPage .stockTable td { padding: 13px 16px; }
+  .detailPage .stockTable .quantityColumn { width: 96px; }
+  .detailPage .stockTable .priceColumn { width: 160px; }
+  .detailPage .stockTable .contactColumn { width: 148px; }
+}
+@media(max-width: 700px) {
+  .detailPage .stockTable th:last-child, .detailPage .stockTable td:last-child { position: sticky; right: 0; z-index: 1; box-shadow: -8px 0 12px var(--app-shadow-colour, #173e3208); }
+  .detailPage .stockTable th:last-child { background: var(--app-surface-soft, #f3f8f5); }
+  .detailPage .stockTable td:last-child { background: var(--app-surface, #fff); }
+  .detailPage .stockTable tr:hover td:last-child, .detailPage .stockTable tr:focus-within td:last-child { background: var(--app-surface-soft, #f1f7f4); }
+}

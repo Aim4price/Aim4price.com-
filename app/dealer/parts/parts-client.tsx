@@ -692,36 +692,34 @@ export default function PartsClient({
                     role="region"
                     aria-label="Parts results"
                   >
-                    <table>
+                    <table className={`${styles.stockTable} ${singleDealer ? styles.singleDealerTable : ""}`}>
                       <thead>
                         <tr>
-                          {!current?.owned && <th>Select</th>}
+                          {!current?.owned && <th className={styles.selectColumn}>Select</th>}
                           <th>Part number</th>
-                          <th className={styles.numeric}>Quantity</th>
-                          <th className={styles.numeric}>Unit price</th>
+                          <th className={`${styles.numeric} ${styles.quantityColumn}`}>Quantity</th>
+                          <th className={`${styles.numeric} ${styles.priceColumn}`}>Unit price</th>
                           {!singleDealer && <><th>Dealer</th><th>Last updated</th></>}
-                          <th>
-                            Action
-                          </th>
+                          <th className={styles.contactColumn}>Enquiry</th>
                         </tr>
                       </thead>
                       <tbody>
                         {rows.map((r, i) => (
                           <tr key={`${r.part_number}-${i}`}>
                             {!current?.owned && <td><input type="checkbox" aria-label={`Select ${r.part_number}`} checked={selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} disabled={selectedParts.length>0 && selectedParts[0].dealer_id!==r.dealer_id || selectedParts.length>=50 && !selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} onChange={e=>setSelectedParts(e.target.checked?[...selectedParts,r]:selectedParts.filter(p=>p.dealer_id!==r.dealer_id||p.part_number!==r.part_number))}/></td>}
-                            <td>
+                            <td className={styles.partIdentity}>
                               <strong>{r.part_number}</strong>
                               {r.brand && <small>{r.brand}</small>}
                               {r.description && <small>{r.description}</small>}
                             </td>
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
-                              <strong>
+                              <span className={r.price === null ? styles.priceOnRequest : styles.partPrice}>
                                 {r.price === null ? "Price on request" : Number(r.price).toLocaleString("en-ZA", {
                                   style: "currency",
                                   currency: "ZAR",
                                 })}
-                              </strong>
+                              </span>
                               {!singleDealer && r.price !== null && <small>{r.vat_included ? "Incl. VAT" : "Excl. VAT"}</small>}
                             </td>
                             {!singleDealer && <><td>
@@ -735,12 +733,14 @@ export default function PartsClient({
                             </td></>}
                             <td>
                               <button
+                                className={styles.partContactButton}
+                                title="Enquire about this part"
                                 aria-label={`Contact ${r.business_name} about ${r.part_number}`}
                                 onClick={() => {
                                   startEnquiry([r]);
                                 }}
                               >
-                                <Icon kind={current?.owned ? "phone" : "message"} />
+                                <Icon kind="message" />
                                 {current?.owned ? "Contact" : "Enquire"}
                               </button>
                             </td>
