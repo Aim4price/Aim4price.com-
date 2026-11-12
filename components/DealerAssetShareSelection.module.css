@@ -1,6 +1,6 @@
 .panel {
   display: grid;
-  gap: 0.8rem;
+  gap: 1rem;
   padding: 1rem;
   border: 1px solid var(--app-line, rgba(198, 222, 211, 0.95));
   border-radius: 1.1rem;
@@ -53,15 +53,16 @@
 .list {
   display: grid;
   gap: 0.55rem;
-  max-height: 15rem;
+  grid-auto-rows: max-content;
+  max-height: 24rem;
   overflow-y: auto;
-  padding-right: 0.35rem;
-  scrollbar-width: thin;
+  padding: .65rem;
+  scrollbar-width: auto;
   scrollbar-color: rgba(22, 83, 64, 0.72) rgba(226, 238, 232, 0.95);
 }
 
 .list::-webkit-scrollbar {
-  width: 0.7rem;
+  width: 1.1rem;
 }
 
 .list::-webkit-scrollbar-track {
@@ -79,10 +80,12 @@
 .assetRow {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
-  min-height: 3.7rem;
+  box-sizing: border-box;
+  height: auto;
+  min-height: min-content;
   padding: 0.75rem 0.85rem;
   border: 1px solid var(--app-line, rgba(213, 225, 220, 0.96));
   border-radius: 0.9rem;
@@ -103,11 +106,13 @@
 
 .checkbox {
   display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
+  grid-column: 2;
+  grid-row: 1;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   border: 1px solid var(--app-line, rgba(135, 168, 153, 0.72));
-  border-radius: 0.45rem;
+  border-radius: 50%;
   color: #fff;
   background: var(--app-surface, #fff);
   font-size: 0.85rem;
@@ -122,25 +127,29 @@
 .assetCopy {
   min-width: 0;
   display: grid;
-  gap: 0.15rem;
+  grid-column: 1;
+  grid-row: 1;
+  gap: .4rem;
 }
 
 .assetCopy strong {
-  overflow: hidden;
+  overflow: visible;
   color: var(--app-text, #12372e);
   font-size: 0.92rem;
   font-weight: 820;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .assetCopy small {
-  overflow: hidden;
+  overflow: visible;
   color: var(--app-muted, #667b73);
   font-size: 0.76rem;
   font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 560px) {
@@ -154,10 +163,16 @@
 }
 
 
-/* Embedded multi-selection uses the same readable identity hierarchy. */
-.list { padding: .65rem; scrollbar-width: auto; max-height: 24rem; }
-.assetCopy strong, .assetCopy small { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
-.assetRow { grid-template-columns: minmax(0, 1fr) auto; }
-.assetCopy { grid-column: 1; grid-row: 1; }
-.checkbox { grid-column: 2; grid-row: 1; border-radius: 50%; width: 2rem; height: 2rem; }
-.assetRow:focus-within { outline: 2px solid var(--app-accent, #17563f); outline-offset: 2px; }
+.assetRow:focus-within {
+  outline: 2px solid var(--app-accent, #17563f);
+  outline-offset: 2px;
+}
+
+.assetRow:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+.selectAllButton {
+  flex-shrink: 0;
+}
