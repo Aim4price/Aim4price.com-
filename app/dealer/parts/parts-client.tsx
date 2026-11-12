@@ -861,7 +861,7 @@ export default function PartsClient({
                 <Icon kind="edit" />
                 <span>
                   <strong>Rename list</strong>
-                  <small>Change the name of this parts list.</small>
+                  <small>Change this list’s name.</small>
                 </span>
               </button>
               {canUpload && (
@@ -874,7 +874,7 @@ export default function PartsClient({
                   <Icon kind="upload" />
                   <span>
                     <strong>Add / update parts</strong>
-                    <small>Enter parts or import your stocklist.</small>
+                    <small>Enter parts or import a stocklist.</small>
                   </span>
                 </button>
               )}
@@ -887,7 +887,7 @@ export default function PartsClient({
                 <Icon kind="users" />
                 <span>
                   <strong>Sharing &amp; access</strong>
-                  <small>Review invitations and dealer access.</small>
+                  <small>Manage invitations and access.</small>
                 </span>
               </button>
               {canUpload && (
@@ -910,7 +910,7 @@ export default function PartsClient({
                     <small>
                       {current?.visible
                         ? "Pause visibility for other dealers."
-                        : "Make your parts visible to approved dealers."}
+                        : "Show parts to approved dealers."}
                     </small>
                   </span>
                 </button>
@@ -922,7 +922,7 @@ export default function PartsClient({
                 <Icon kind="delete" />
                 <span>
                   <strong>Delete list</strong>
-                  <small>Remove this list and stop shared access.</small>
+                  <small>Delete list and shared access.</small>
                 </span>
               </button>
             </div>
