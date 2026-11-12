@@ -10,6 +10,7 @@ export function managerRequestAllowed(path: string, method: string, permissions:
   if (/^\/api\/scan\/(assets|uploads)(\/|$)/.test(path)) return true;
   if (/^\/api\/fuel-scan\/storage\//.test(path)) return true;
   if (isTeamDocumentRead(path, method)) return true;
+  if (path === '/api/maintenance' && method === 'POST') return permissions.recordMaintenance || permissions.scheduleMaintenance;
   const permission = teamWorkspacePermission(path, method);
   return Boolean(permission && permissions[permission]);
 }
