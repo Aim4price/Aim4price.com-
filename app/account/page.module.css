@@ -4333,3 +4333,38 @@
 .businessDetailsModalCard.polishedSettingsModal .modalSectionHeading { display: none; }
 
 
+
+/* Partner directory: a compact, map-free account wizard. */
+.partnerDirectoryModalCard.polishedSettingsModal { width: min(var(--website-dialog-reference-width, 100%), 58rem) !important; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollContent { padding: 1.5rem 2rem !important; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepProgress { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.partnerDirectoryModalCard.polishedSettingsModal .wizardStepPanel { min-height: 0; gap: 1rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .field > span { text-transform: none; letter-spacing: 0; font-size: .88rem; font-weight: 750; }
+.partnerDirectoryModalCard.polishedSettingsModal .field input,
+.partnerDirectoryModalCard.polishedSettingsModal .field textarea { font-size: 1rem; font-weight: 650; line-height: 1.45; }
+.partnerDirectoryModalCard.polishedSettingsModal .field textarea { min-height: 6rem; resize: vertical; }
+.partnerDirectoryModalCard.polishedSettingsModal .wizardActions { position: static; bottom: auto !important; margin: .85rem 0 0 !important; padding: 1rem 0 .25rem !important; display: flex; flex-wrap: wrap; gap: .75rem; box-shadow: none; }
+.partnerDirectoryModalCard.polishedSettingsModal .wizardActions > button { min-height: 3rem; min-width: 8.75rem; margin: 0; padding: .7rem 1.1rem; }
+.directoryChoices { display: grid; gap: .85rem; }
+.directoryChoice { display: grid; grid-template-columns: 3.25rem minmax(0, 1fr); align-items: center; gap: 1rem; padding: 1.1rem 1.25rem; border: 1px solid var(--app-info-line, #d5e1ea); border-radius: 1rem; background: var(--app-surface, #fff); color: var(--app-text, #12352d); text-align: left; cursor: pointer; }
+.directoryChoice > span:last-child { display: grid; gap: .3rem; }
+.directoryChoice strong { font-size: 1rem; font-weight: 800; line-height: 1.3; }
+.directoryChoice small { font-size: .88rem; font-weight: 650; line-height: 1.45; color: var(--app-muted, #64746a); }
+.directoryChoice[aria-pressed="true"] { border-color: var(--app-accent, #237454); background: var(--app-success-soft, #f2faf6); box-shadow: inset 0 0 0 1px var(--app-accent, #237454); }
+.directoryChoice:focus-visible { outline: 2px solid var(--app-info, #2466a7); outline-offset: 3px; }
+.directoryChoiceIcon { display: grid; place-items: center; width: 3.25rem; height: 3.25rem; border-radius: .9rem; border: 1px solid var(--app-info-line, #b8d4f5); background: var(--app-info-soft, #edf5ff); color: var(--app-info, #2466a7); }
+.directoryChoiceIcon[data-tone="amber"] { border-color: var(--app-warning-line, #e8c58c); background: var(--app-warning-soft, #fff5e3); color: var(--app-warning, #99601d); }
+.directoryChoiceIcon svg { width: 1.5rem; height: 1.5rem; }
+.directoryListingPreview { padding: 1.25rem; border: 1px solid var(--app-line, #d5e1da); border-radius: 1.1rem; background: var(--app-surface-soft, #f6faf8); }
+.directoryPreviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #d5e1da); }
+.directoryPreviewGrid > div { display: flex; align-items: flex-start; gap: .75rem; min-width: 0; padding: .85rem; border: 1px solid var(--app-line, #d5e1da); border-radius: .85rem; background: var(--app-surface, #fff); }
+.directoryPreviewGrid svg { flex: 0 0 1.25rem; width: 1.25rem; height: 1.25rem; color: var(--app-accent, #237454); }
+.directoryPreviewGrid span { display: grid; gap: .3rem; min-width: 0; }
+.directoryPreviewGrid small { font-size: .8rem; font-weight: 650; color: var(--app-muted, #64746a); }
+.directoryPreviewGrid strong { font-size: .88rem; font-weight: 750; line-height: 1.45; overflow-wrap: anywhere; }
+.directoryPreviewDescription { margin: 1rem 0 0; font-size: .88rem; line-height: 1.5; font-weight: 650; color: var(--app-muted, #64746a); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollContent { padding: 1.1rem !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .directoryPreviewGrid { grid-template-columns: 1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .wizardActions > button { flex: 1 1 8rem; min-width: 0; }
+}
