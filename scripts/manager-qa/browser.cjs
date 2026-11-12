@@ -43,7 +43,15 @@ module.exports = async function checkBrowser(e) {
         await page.goto(e.origin + '/owner-app/assets/' + e.assets.tractor + '/manage/usage', {waitUntil:'domcontentloaded',timeout:120000});
         await page.waitForSelector('input[type="number"]');
         const nextUsage = 3000 + Object.keys(e.accounts).indexOf(role);
-        await page.locator('input[type="number"]').fill(String(nextUsage));
+        // Replace the whole numeric value; locator.fill can append to a controlled number input.
+        const input = await page.$('input[type="number"]');
+        await input.focus();
+        await page.keyboard.down('Control');
+        await page.keyboard.press('KeyA');
+        await page.keyboard.up('Control');
+        await page.keyboard.press('Backspace');
+        await input.type(String(nextUsage), {delay:30});
+        await page.waitForFunction(value => document.querySelector('input[type="number"]').value === value, {}, String(nextUsage));
         await page.evaluate(() => document.querySelector('form').requestSubmit());
         await page.waitForFunction(() => document.body.textContent.includes('Asset changes saved.'), {polling:250,timeout:15000});
         const stored = await e.db.query('SELECT hours FROM asset_register_items WHERE id=$1',[e.assets.tractor]);
