@@ -27,7 +27,7 @@ type AccountNotice = {
   message: string;
 };
 type BusinessDetailsStep = 1 | 2 | 3;
-type PartnerDirectoryStep = 1 | 2 | 3;
+type PartnerDirectoryStep = 1 | 2 | 3 | 4;
 type AccountActionModal =
   | "invoices"
   | "notifications"
@@ -167,14 +167,6 @@ const PROFILE_COMPLETION_TOTAL = 7;
 const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
 const ALLOWED_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29.0, 24.0];
-const DEFAULT_PARTNER_MAP_ZOOM = 5;
-const SELECTED_PARTNER_MAP_ZOOM = 11;
-const LEAFLET_SCRIPT_ID = "aim4price-leaflet-script";
-const LEAFLET_CSS_ID = "aim4price-leaflet-css";
-
-let leafletLoaderPromise: Promise<any> | null = null;
-
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: "Owner",
   dealer: "Dealer",
@@ -241,118 +233,6 @@ function keepFocusInsideAccountDialog(
     event.preventDefault();
     firstElement.focus();
   }
-}
-
-function loadLeaflet(): Promise<any> {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("Leaflet can only load in the browser."));
-  }
-
-  const existingLeaflet = (window as any).L;
-
-  if (existingLeaflet) {
-    return Promise.resolve(existingLeaflet);
-  }
-
-  if (leafletLoaderPromise) {
-    return leafletLoaderPromise;
-  }
-
-  leafletLoaderPromise = new Promise((resolve, reject) => {
-    if (!document.getElementById(LEAFLET_CSS_ID)) {
-      const link = document.createElement("link");
-      link.id = LEAFLET_CSS_ID;
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(link);
-    }
-
-    const resolveIfReady = () => {
-      const nextLeaflet = (window as any).L;
-
-      if (nextLeaflet) {
-        resolve(nextLeaflet);
-        return true;
-      }
-
-      return false;
-    };
-
-    if (resolveIfReady()) {
-      return;
-    }
-
-    let script = document.getElementById(
-      LEAFLET_SCRIPT_ID,
-    ) as HTMLScriptElement | null;
-
-    if (!script) {
-      script = document.createElement("script");
-      script.id = LEAFLET_SCRIPT_ID;
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
-    script.addEventListener("load", () => {
-      if (!resolveIfReady()) {
-        reject(new Error("Leaflet did not initialise correctly."));
-      }
-    });
-    script.addEventListener("error", () =>
-      reject(new Error("Failed to load the map.")),
-    );
-  });
-
-  return leafletLoaderPromise;
-}
-
-function parseCoordinate(value: string): number | null {
-  const text = String(value ?? "").trim();
-
-  if (!text) {
-    return null;
-  }
-
-  const numeric = Number(text);
-  return Number.isFinite(numeric) ? numeric : null;
-}
-
-function readPartnerPin(
-  profile: ProfileDraft,
-): { lat: number; lng: number } | null {
-  const lat = parseCoordinate(profile.partnerLatitude);
-  const lng = parseCoordinate(profile.partnerLongitude);
-
-  if (lat === null || lng === null) {
-    return null;
-  }
-
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    return null;
-  }
-
-  // South African partner locations should never have a zero latitude or longitude.
-  // Treat a zero coordinate as an incomplete stale/manual value instead of centering the map in the ocean.
-  if (Math.abs(lat) < 0.000001 || Math.abs(lng) < 0.000001) {
-    return null;
-  }
-
-  return { lat, lng };
-}
-
-function formatCoordinate(value: number): string {
-  return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
-}
-
-function readServiceRadiusKm(value: string): number | null {
-  const numeric = Number(String(value ?? "").trim());
-
-  if (!Number.isFinite(numeric) || numeric <= 0) {
-    return null;
-  }
-
-  return Math.min(Math.round(numeric), 2500);
 }
 
 function buildProfileLocation(profile: AccountProfile): string {
@@ -640,10 +520,6 @@ export default function AccountClient({
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const activeActionModalBusyRef = useRef(false);
   const deleteDialogBusyRef = useRef(false);
-  const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
-  const partnerLeafletMapRef = useRef<any>(null);
-  const partnerPinMarkerRef = useRef<any>(null);
-  const partnerRadiusCircleRef = useRef<any>(null);
 
   activeActionModalBusyRef.current = isSavingNotifications ||
     isSavingProfile ||
@@ -903,13 +779,6 @@ export default function AccountClient({
   const marketplaceLocation =
     profileDraft.marketplaceLocation.trim() ||
     (addressLines.length ? addressLines.join(", ") : "No location saved yet");
-  const partnerDirectoryPin = useMemo(
-    () => readPartnerPin(profileDraft),
-    [profileDraft.partnerLatitude, profileDraft.partnerLongitude],
-  );
-  const partnerDirectoryPinLabel = partnerDirectoryPin
-    ? `${formatCoordinate(partnerDirectoryPin.lat)}, ${formatCoordinate(partnerDirectoryPin.lng)}`
-    : "No map pin selected yet";
   const memberSinceLabel = formatMemberSince(profile?.createdAtIso);
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled
     ? "Visible"
@@ -929,207 +798,7 @@ export default function AccountClient({
       ? scanPinStatusLabel
       : "Not set";
 
-  useEffect(() => {
-    if (
-      isLoading ||
-      !isPartnerAccount ||
-      activeAccountModal !== "partnerDirectory" ||
-      partnerDirectoryStep !== 2 ||
-      !partnerMapElementRef.current
-    ) {
-      return undefined;
-    }
 
-    let cancelled = false;
-
-    async function renderPartnerMap() {
-      try {
-        const L = await loadLeaflet();
-
-        if (cancelled || !partnerMapElementRef.current) {
-          return;
-        }
-
-        const selectedPin = readPartnerPin(profileDraft);
-        const center = selectedPin
-          ? [selectedPin.lat, selectedPin.lng]
-          : DEFAULT_PARTNER_MAP_CENTER;
-        const zoom = selectedPin
-          ? SELECTED_PARTNER_MAP_ZOOM
-          : DEFAULT_PARTNER_MAP_ZOOM;
-
-        if (!partnerLeafletMapRef.current) {
-          partnerLeafletMapRef.current = L.map(partnerMapElementRef.current, {
-            zoomControl: true,
-            scrollWheelZoom: true,
-          }).setView(center, zoom);
-
-          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            referrerPolicy: "strict-origin",
-            attribution: "&copy; OpenStreetMap contributors",
-            maxZoom: 19,
-            detectRetina: true,
-          }).addTo(partnerLeafletMapRef.current);
-
-          partnerLeafletMapRef.current.on("click", (event: any) => {
-            setPartnerMapPin(event.latlng.lat, event.latlng.lng);
-          });
-        }
-
-        if (partnerPinMarkerRef.current) {
-          partnerPinMarkerRef.current.remove();
-          partnerPinMarkerRef.current = null;
-        }
-
-        if (partnerRadiusCircleRef.current) {
-          partnerRadiusCircleRef.current.remove();
-          partnerRadiusCircleRef.current = null;
-        }
-
-        if (selectedPin) {
-          const icon = L.divIcon({
-            className: "accountPartnerMapMarker",
-            html: '<span class="accountPartnerMapMarkerPin"><b>PIN</b></span>',
-            iconSize: [46, 46],
-            iconAnchor: [23, 46],
-            popupAnchor: [0, -40],
-          });
-
-          const marker = L.marker([selectedPin.lat, selectedPin.lng], {
-            draggable: true,
-            icon,
-            title: "Partner directory pin",
-          }).addTo(partnerLeafletMapRef.current);
-
-          marker.on("dragend", () => {
-            const next = marker.getLatLng();
-            setPartnerMapPin(next.lat, next.lng);
-          });
-
-          marker.bindPopup(
-            `<strong>${accountDisplayName.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong><br />Partner directory pin`,
-          );
-
-          partnerPinMarkerRef.current = marker;
-
-          const radiusKm = readServiceRadiusKm(
-            profileDraft.partnerServiceRadiusKm,
-          );
-
-          if (radiusKm) {
-            partnerRadiusCircleRef.current = L.circle(
-              [selectedPin.lat, selectedPin.lng],
-              {
-                radius: radiusKm * 1000,
-                color: "#1f8a66",
-                fillColor: "#1f8a66",
-                fillOpacity: 0.08,
-                opacity: 0.38,
-                weight: 2,
-              },
-            ).addTo(partnerLeafletMapRef.current);
-          }
-
-          partnerLeafletMapRef.current.setView(
-            [selectedPin.lat, selectedPin.lng],
-            Math.max(partnerLeafletMapRef.current.getZoom(), 8),
-          );
-        }
-
-        window.requestAnimationFrame(() =>
-          partnerLeafletMapRef.current?.invalidateSize(),
-        );
-        window.setTimeout(
-          () => partnerLeafletMapRef.current?.invalidateSize(),
-          80,
-        );
-        window.setTimeout(
-          () => partnerLeafletMapRef.current?.invalidateSize(),
-          320,
-        );
-      } catch (error) {
-        if (!cancelled) {
-          setActionModalNotice({
-            tone: "error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Failed to load the map.",
-          });
-        }
-      }
-    }
-
-    void renderPartnerMap();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    accountDisplayName,
-    activeAccountModal,
-    isLoading,
-    isPartnerAccount,
-    partnerDirectoryStep,
-    profileDraft.partnerLatitude,
-    profileDraft.partnerLongitude,
-    profileDraft.partnerServiceRadiusKm,
-  ]);
-
-  useEffect(() => {
-    return () => {
-      if (partnerLeafletMapRef.current) {
-        partnerLeafletMapRef.current.remove();
-        partnerLeafletMapRef.current = null;
-        partnerPinMarkerRef.current = null;
-        partnerRadiusCircleRef.current = null;
-      }
-    };
-  }, []);
-
-  function setPartnerMapPin(lat: number, lng: number) {
-    setProfileDraft((current) => ({
-      ...current,
-      partnerLatitude: lat.toFixed(6),
-      partnerLongitude: lng.toFixed(6),
-    }));
-  }
-
-  function clearPartnerMapPin() {
-    setProfileDraft((current) => ({
-      ...current,
-      partnerLatitude: "",
-      partnerLongitude: "",
-    }));
-  }
-
-  function handleUseCurrentLocation() {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setActionModalNotice({
-        tone: "error",
-        message: "Current location is not available in this browser.",
-      });
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setPartnerMapPin(position.coords.latitude, position.coords.longitude);
-        setActionModalNotice({
-          tone: "success",
-          message: "Map pin set. Continue to additional information when ready.",
-        });
-      },
-      () => {
-        setActionModalNotice({
-          tone: "error",
-          message:
-            "Could not read your current location. Drop the pin manually on the map.",
-        });
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
-    );
-  }
 
   async function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
@@ -1247,10 +916,6 @@ export default function AccountClient({
     const didSave = await saveProfileDraft(profileDraft);
 
     if (didSave) {
-      if (activeAccountModal === "partnerDirectory") {
-        destroyPartnerMap();
-      }
-
       setActiveAccountModal(null);
     }
   }
@@ -1268,7 +933,7 @@ export default function AccountClient({
   }
 
   function handlePartnerDirectorySubmit(event: FormEvent<HTMLFormElement>) {
-    if (partnerDirectoryStep < 3) {
+    if (profileDraft.partnerDirectoryEnabled && partnerDirectoryStep < 4) {
       event.preventDefault();
       goToPartnerDirectoryStep(
         (partnerDirectoryStep + 1) as PartnerDirectoryStep,
@@ -1408,15 +1073,6 @@ export default function AccountClient({
     setIsDeleteDialogOpen(true);
   }
 
-  function destroyPartnerMap() {
-    if (partnerLeafletMapRef.current) {
-      partnerLeafletMapRef.current.remove();
-      partnerLeafletMapRef.current = null;
-      partnerPinMarkerRef.current = null;
-      partnerRadiusCircleRef.current = null;
-    }
-  }
-
   function closeActionModal() {
     if (activeActionModalBusyRef.current) {
       return;
@@ -1426,11 +1082,6 @@ export default function AccountClient({
       setBusinessDetailsStep((businessDetailsStep - 1) as BusinessDetailsStep);
       return;
     }
-    if (activeAccountModal === 'partnerDirectory' && partnerDirectoryStep > 1) {
-      goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep);
-      return;
-    }
-    destroyPartnerMap();
 
     if (profile) {
       setProfileDraft(buildProfileDraft(profile));
@@ -1449,7 +1100,6 @@ export default function AccountClient({
   }
 
   function openActionModal(modal: AccountActionModal) {
-    destroyPartnerMap();
     setActionModalNotice(null);
 
     activeDialogTriggerRef.current =
@@ -1485,10 +1135,6 @@ export default function AccountClient({
   }
 
   function goToPartnerDirectoryStep(step: PartnerDirectoryStep) {
-    if (partnerDirectoryStep === 2 && step !== 2) {
-      destroyPartnerMap();
-    }
-
     setPartnerDirectoryStep(step);
   }
 
@@ -2363,7 +2009,7 @@ export default function AccountClient({
                     <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                       <div className={styles.modalSectionHeading}>
                         <strong><SettingsDetailIcon name="location" />Business address</strong>
-                        <p>Your main business location. The public directory map pin is controlled separately.</p>
+                        <p>Your main business address and the location shown in the partner directory.</p>
                       </div>
 
                       <div className={styles.wizardFieldGrid}>
@@ -2837,7 +2483,7 @@ export default function AccountClient({
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="partner-directory-modal-title"
@@ -2848,8 +2494,7 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="partner-directory-modal-title">Partner directory</h2>
                 <p>
-                  Choose your visibility, place your map pin, then add the
-                  details owners will see.
+                  Choose whether to appear, add your business details, then preview your listing.
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor" data-modal-close="true">×</button>
               </div>
@@ -2858,7 +2503,7 @@ export default function AccountClient({
 
               <ModalStepProgress
                 currentStep={partnerDirectoryStep}
-                labels={["Visibility", "Map", "Additional info"]}
+                labels={["Visibility", "Address", "Details & services", "Preview"]}
               />
 
               <form
@@ -2868,95 +2513,66 @@ export default function AccountClient({
                 {partnerDirectoryStep === 1 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                     <div className={styles.modalSectionHeading}>
-                      <strong>Directory visibility</strong>
-                      <p>You are always in control of whether owners can find and select this business.</p>
+                      <strong><SettingsDetailIcon name="discovery" />Would you like to appear in the directory?</strong>
+                      <p>Choose whether owners can find and select your business. You can change this later.</p>
                     </div>
-
-                    <div className={styles.partnerDecisionGrid}>
-                      <label className={`${styles.toggleField} ${styles.partnerVisibilityToggle}`}>
-                        <input type="checkbox" checked={profileDraft.partnerDirectoryEnabled} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDirectoryEnabled: event.target.checked }))} />
-                        <span>
-                          <strong>{profileDraft.partnerDirectoryEnabled ? "Visible in the partner directory" : "Hidden from the partner directory"}</strong>
-                          <small>{profileDraft.partnerDirectoryEnabled ? "Owners can find this business and send it quote leads." : "Owners cannot select this business until visibility is turned on."}</small>
-                        </span>
-                      </label>
-
-                      <aside className={`${styles.partnerDirectoryPreview} ${!profileDraft.partnerDirectoryEnabled ? styles.partnerPreviewDisabled : ""}`} aria-label="Partner directory owner preview">
-                        <span className={styles.partnerPreviewEyebrow}>{profileDraft.partnerDirectoryEnabled ? "Owner preview" : "Preview hidden"}</span>
-                        <div className={styles.partnerPreviewIdentity}>
-                          <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}</div>
-                          <div><strong>{accountDisplayName}</strong><small>{marketplaceLocation}</small></div>
-                        </div>
-                        <p>{profileDraft.partnerDirectoryEnabled ? "This is the business identity owners will see." : "Turn visibility on when you are ready to receive quote leads."}</p>
-                      </aside>
+                    <div className={styles.directoryChoices}>
+                      {[{ enabled: true, icon: "discovery", title: "Yes, list my business", description: "Let owners find your services and send enquiries." }, { enabled: false, icon: "lock", title: "No, keep my business hidden", description: "Keep your details saved without appearing in the directory." }].map((choice) => (
+                        <button key={String(choice.enabled)} type="button" className={styles.directoryChoice} aria-pressed={profileDraft.partnerDirectoryEnabled === choice.enabled} onClick={() => setProfileDraft(current => ({ ...current, partnerDirectoryEnabled: choice.enabled }))}>
+                          <span className={styles.directoryChoiceIcon} data-tone={choice.enabled ? "blue" : "amber"}><SettingsDetailIcon name={choice.icon as "discovery" | "lock"} /></span>
+                          <span><strong>{choice.title}</strong><small>{choice.description}</small></span>
+                        </button>
+                      ))}
                     </div>
                   </section>
                 ) : null}
 
                 {partnerDirectoryStep === 2 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
-                    <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
-                      <div className={styles.partnerMapHeader}>
-                        <div>
-                          <span>Partner map pin</span>
-                          <strong>Set your public map pin</strong>
-                          <p>Click the map, drag the pin, or use your current location. A precise street address is not displayed.</p>
-                        </div>
-                        <div className={styles.partnerMapActions}>
-                          <button type="button" className={styles.secondaryButton} onClick={handleUseCurrentLocation}>Use current location</button>
-                          {partnerDirectoryPin ? <button type="button" className={styles.ghostButton} onClick={clearPartnerMapPin}>Clear pin</button> : null}
-                        </div>
-                      </div>
-                      <div ref={partnerMapElementRef} className={styles.partnerMapCanvas} aria-label="Partner directory map pin" />
-                      <div className={styles.partnerMapFooter}>
-                        <span>{partnerDirectoryPinLabel}</span>
-                        <strong>{partnerDirectoryPin ? "Pin selected" : "Click the map to place your pin"}</strong>
-                      </div>
+                    <div className={styles.modalSectionHeading}>
+                      <strong><SettingsDetailIcon name="location" />Where is your business based?</strong>
+                      <p>Your location helps owners find you. Street address is optional and will appear in your listing details if supplied.</p>
                     </div>
+                    <div className={styles.wizardFieldGrid}>
+                      {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).map(field => (
+                        <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name="location" /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
+                      ))}
+                    </div>
+                    <p className={styles.fieldHint}>These details also update your business address.</p>
                   </section>
                 ) : null}
 
                 {partnerDirectoryStep === 3 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                     <div className={styles.modalSectionHeading}>
-                      <strong>Additional information</strong>
-                      <p>Help owners understand where you work and what your business offers.</p>
+                      <strong><SettingsDetailIcon name="business" />Your business and services</strong>
+                      <p>Use the contact details you want owners to see.</p>
                     </div>
+                    <div className={styles.wizardFieldGrid}>
+                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands you work with", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services you provide", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).map(field => (
+                        <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name={field.icon} /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
+                      ))}
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Briefly describe your services and the areas you serve." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>
+                    </div>
+                    <p className={styles.fieldHint}>Business and contact details are shared with your account settings.</p>
+                  </section>
+                ) : null}
 
-                    <div className={styles.partnerAdditionalGrid}>
-                      <div className={styles.wizardFieldGrid}>
-                        <label className={styles.field}>
-                          <span>Service radius km</span>
-                          <input inputMode="numeric" value={profileDraft.partnerServiceRadiusKm} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServiceRadiusKm: event.target.value }))} placeholder="250" autoFocus />
-                        </label>
-                        <label className={styles.field}>
-                          <span>Brand focus</span>
-                          <input value={profileDraft.partnerBrandFocus} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerBrandFocus: event.target.value }))} placeholder="John Deere, Case IH, New Holland" />
-                        </label>
-                        <label className={`${styles.field} ${styles.fullWidth}`}>
-                          <span>Services</span>
-                          <input value={profileDraft.partnerServices} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))} placeholder="Finance, insurance, replacements, trade-ins" />
-                        </label>
-                        <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}>
-                          <span>Partner description</span>
-                          <textarea value={profileDraft.partnerDescription} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))} placeholder="Briefly explain how your business helps agricultural asset owners." />
-                          <small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small>
-                        </label>
+                {partnerDirectoryStep === 4 ? (
+                  <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                    <div className={styles.modalSectionHeading}><strong><SettingsDetailIcon name="approvals" />Preview your directory listing</strong><p>This is how your business details will appear to owners. Save when you are happy.</p></div>
+                    <article className={styles.directoryListingPreview} aria-label="Directory listing preview">
+                      <div className={styles.partnerPreviewIdentity}>
+                        <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="Business logo" /> : <strong>{profileInitials}</strong>}</div>
+                        <div><strong>{profileDraft.businessName.trim() || profileDraft.displayName.trim() || "Your business"}</strong><small>{[profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") || "Location not added"}</small></div>
                       </div>
-
-                      <aside className={styles.partnerDirectoryPreview} aria-label="Completed owner preview">
-                        <span className={styles.partnerPreviewEyebrow}>Owner preview</span>
-                        <div className={styles.partnerPreviewIdentity}>
-                          <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}</div>
-                          <div><strong>{accountDisplayName}</strong><small>{marketplaceLocation}</small></div>
-                        </div>
-                        <div className={styles.partnerPreviewDetails}>
-                          <span>{profileDraft.partnerBrandFocus.trim() || "All supported brands"}</span>
-                          <span>{profileDraft.partnerServices.trim() || "Services not added yet"}</span>
-                        </div>
-                        <p>{profileDraft.partnerDescription.trim() || "Add a short description so owners understand how your business can help them."}</p>
-                      </aside>
-                    </div>
+                      <div className={styles.directoryPreviewGrid}>
+                        {([{ label: "Address", icon: "location", value: [profileDraft.addressLine1, profileDraft.addressLine2, profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") }, { label: "Services", icon: "maintenance", value: profileDraft.partnerServices }, { label: "Phone", icon: "phone", value: profileDraft.phone }, { label: "Email", icon: "email", value: profileDraft.marketplaceEmail }, { label: "Brands", icon: "listings", value: profileDraft.partnerBrandFocus }, { label: "Website", icon: "globe", value: profileDraft.websiteUrl }] as const).filter(detail => detail.value.trim()).map(detail => (
+                          <div key={detail.label}><SettingsDetailIcon name={detail.icon} /><span><small>{detail.label}</small><strong>{detail.value}</strong></span></div>
+                        ))}
+                      </div>
+                      {profileDraft.partnerDescription.trim() ? <p className={styles.directoryPreviewDescription}>{profileDraft.partnerDescription}</p> : null}
+                    </article>
                   </section>
                 ) : null}
 
@@ -2973,7 +2589,7 @@ export default function AccountClient({
                     <button type="button" className={styles.secondaryButton} onClick={() => goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep)} disabled={isSavingProfile}>Back</button>
                   ) : null}
                   <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
-                    {partnerDirectoryStep === 3 ? (isSavingProfile ? "Saving..." : "Save directory") : "Next"}
+                    {isSavingProfile ? "Saving..." : !profileDraft.partnerDirectoryEnabled ? "Save as hidden" : partnerDirectoryStep === 4 ? "Save directory" : "Next"}
                   </button>
                 </div>
               </form>

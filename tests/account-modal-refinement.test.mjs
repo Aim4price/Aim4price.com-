@@ -36,7 +36,7 @@ test("the restored account receives server-preloaded profile and PIN data", asyn
   assert.match(source, /useState<AccountProfile \| null>\(initialProfile\)/);
   assert.match(source, /useState\(!initialProfile\)/);
   assert.match(source, /if \(!initialProfile\)/);
-  assert.match(source, /if \(!initialScanPinStatus\)/);
+  assert.match(source, /if \(!sharedAccount && !initialScanPinStatus\)/);
 });
 
 test("business modal uses a short contact, address and logo workflow", async () => {
@@ -51,14 +51,16 @@ test("business modal uses a short contact, address and logo workflow", async () 
   assert.match(source, /Your changes are saved\s+together on the final step/);
 });
 
-test("partner directory separates visibility, map and additional information", async () => {
+test("partner directory separates visibility, address, services and preview", async () => {
   const source = await read("app/account/account-client.tsx");
 
-  assert.match(source, /labels=\{\["Visibility", "Map", "Additional info"\]\}/);
+  assert.match(source, /labels=\{\["Visibility", "Address", "Details & services", "Preview"\]\}/);
   assert.match(source, /partnerDirectoryStep === 1/);
   assert.match(source, /partnerDirectoryStep === 2/);
   assert.match(source, /partnerDirectoryStep === 3/);
-  assert.match(source, /partnerDirectoryStep !== 2/);
+  assert.match(source, /partnerDirectoryStep === 4/);
+  assert.doesNotMatch(source, /loadLeaflet|navigator\.geolocation|Set your public map pin/);
+  assert.match(source, /Save as hidden/);
   assert.match(source, /goToPartnerDirectoryStep/);
 });
 
