@@ -432,10 +432,9 @@ export function MiddlemanShowroomManager({
         <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" />
       </div>
       <section className={styles.managerToolbar} aria-label="Showroom actions">
-        <p>Your adverts, hosted by Aim4price. One link to share.</p>
         <div className={styles.heroActions}>
-          <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button>
-          <button type="button" className={styles.secondaryButton} disabled={!showroom.isPublic} title={showroom.isPublic ? (ownerAccount ? undefined : 'Share showroom') : 'Make your showroom public in Edit showroom to share it'} onClick={() => { setMessage(''); setShareShowroomOpen(true); }} data-tooltip={ownerAccount ? 'Share one link to all your live adverts.' : undefined} data-tooltip-style="description"><ShowroomManageActionIcon name="link" />Share showroom</button>
+          <button type="button" className={`${styles.primaryButton} ${styles.createShowroomAction}`} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button>
+          <button type="button" className={`${styles.secondaryButton} ${styles.shareShowroomAction}`} disabled={!showroom.isPublic} title={showroom.isPublic ? (ownerAccount ? undefined : 'Share showroom') : 'Make your showroom public in Edit showroom to share it'} onClick={() => { setMessage(''); setShareShowroomOpen(true); }} data-tooltip={ownerAccount ? 'Share one link to all your live adverts.' : undefined} data-tooltip-style="description"><ShowroomManageActionIcon name="link" />Share showroom</button>
           {showroom.isPublic ? (
             <button type="button" className={`${styles.secondaryButton} ${styles.openShowroomButton} ${showroomIntroSeen ? '' : styles.showroomPulse}`} aria-haspopup="dialog" onClick={(event) => {
               manageTriggerRef.current = event.currentTarget;
@@ -458,16 +457,9 @@ export function MiddlemanShowroomManager({
         </section>
         {message ? <p className={styles.feedback} role="status">{message}</p> : null}
 
-        <section className={styles.stockCard}>
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2>Your live adverts</h2>
-              <p>Manage the machinery currently shown to customers.</p>
-            </div>
-            <span className={styles.stockCount}>{listings.length} {listings.length === 1 ? 'advert' : 'adverts'}</span>
-          </div>
+        <section className={styles.inventorySection} aria-label="Your live adverts">
           {listings.length ? <div className={styles.inventoryTools}>
-            <label><span>Search adverts</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search by asset or details" /></label>
+            <label className={styles.inventorySearch}><span className={styles.visuallyHidden}>Search adverts</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search adverts by asset or details" /></label>
             <AssetModalSelect className={styles.inventorySort} label="Sort adverts" value={sort} onChange={setSort} usePortal={false} options={[{ value: 'newest', label: 'Newest first' }, { value: 'price-low', label: 'Price: low to high' }, { value: 'price-high', label: 'Price: high to low' }]} />
           </div> : null}
           {listings.length > 0 && !visibleListings.length ? <div className={styles.emptyStock}><h3>No matching adverts</h3><button type="button" className={styles.secondaryButton} onClick={() => setQuery('')}>Clear search</button></div> : null}

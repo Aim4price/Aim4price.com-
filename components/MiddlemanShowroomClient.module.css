@@ -794,3 +794,72 @@
   :global(:where(html:not(:has([data-website-canvas])))) .settingsManager[data-editor='template'] .designBadge { grid-column: 2; justify-self: start; }
   :global(:where(html:not(:has([data-website-canvas])))) .settingsManager .templateActions { flex-direction: column; align-items: stretch; gap: 1rem; }
 }
+
+/* Showroom actions follow the Maintenance workspace toolbar. */
+.managerToolbar .heroActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 1.25rem;
+}
+.managerToolbar .heroActions > :is(.primaryButton, .secondaryButton) {
+  min-height: 4rem;
+  border-radius: 1.2rem;
+  padding: .85rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 800;
+  white-space: nowrap;
+  animation: none;
+}
+.managerToolbar .heroActions > .createShowroomAction,
+.managerToolbar .heroActions > .createShowroomAction:hover:not(:disabled) {
+  color: var(--app-warning, #793d0e);
+  border-color: var(--app-warning-line, #e6a16d);
+  background: linear-gradient(180deg, var(--app-surface, #fffaf5), var(--app-warning-soft, #fff3e7));
+}
+.managerToolbar .heroActions > .shareShowroomAction {
+  color: var(--app-info, #194c7e);
+  border-color: var(--app-info-line, #8ebaff);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #eff6ff));
+}
+.managerToolbar .heroActions > .openShowroomButton {
+  color: #fff;
+  border-color: #23775c;
+  background: linear-gradient(180deg, #197657, #105640);
+}
+.managerToolbar .heroActions > button:hover:not(:disabled) {
+  box-shadow: 0 6px 16px var(--app-shadow-colour, #173b2f18);
+}
+.inventorySection { min-width: 0; }
+.inventorySection .inventoryTools { align-items: center; gap: 1rem; }
+.inventorySection .inventorySearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.inventorySearch > svg {
+  position: absolute;
+  left: 1.1rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: none;
+  stroke: var(--app-muted, #718398);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+.inventorySearch input { padding-left: 3rem; background: var(--app-surface, #fff); border-color: var(--app-info-line, #c6d8df); }
+.inventorySort > span, .visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .managerToolbar .heroActions { grid-template-columns: 1fr; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .inventoryTools > div { flex: 1 1 100%; min-width: 0; }
+}
