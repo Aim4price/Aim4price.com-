@@ -4368,3 +4368,35 @@
  :global(:where(html:not(:has([data-website-canvas])))) .directoryPreviewGrid { grid-template-columns: 1fr; }
  :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .wizardActions > button { flex: 1 1 8rem; min-width: 0; }
 }
+
+/* Directory rhythm: evenly spaced steps and an always-visible action footer. */
+.partnerDirectoryModalCard.polishedSettingsModal { width: min(var(--website-dialog-reference-width, 100%), 64rem) !important; }
+.partnerDirectoryModalCard.polishedSettingsModal[data-directory-step="3"],
+.partnerDirectoryModalCard.polishedSettingsModal[data-directory-step="4"] { width: min(var(--website-dialog-reference-width, 100%), 72rem) !important; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollContent { padding: 1.6rem 2rem 1.4rem !important; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepProgress { margin: .3rem 0 1.6rem; gap: 1.5rem; padding: .35rem 0; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep { flex-direction: column; justify-content: flex-start; gap: .65rem; text-align: center; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep > span { width: 2.3rem; height: 2.3rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep > strong { padding: 0; font-size: .8rem; background: transparent; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep:not(:last-child)::after { top: 1.15rem; left: calc(50% + 1.9rem); right: calc(-50% + .4rem); background: var(--app-line, #d5e1da); }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepComplete::after { background: #91cdb6; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalSectionHeading { margin-bottom: .4rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .wizardActions { flex: 0 0 auto; margin: 0 !important; padding: 1rem 2rem !important; border-top: 1px solid var(--app-line, #d5e1da); background: var(--app-surface, #fff); }
+.partnerDirectoryModalCard.polishedSettingsModal[data-directory-step="3"] .wizardFieldGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .field textarea { min-height: 4.5rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .directoryChoices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; padding: .2rem 0; }
+.partnerDirectoryModalCard.polishedSettingsModal .directoryChoice { min-height: 7rem; padding: 1.25rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .directoryChoiceIcon svg { color: inherit; }
+.partnerDirectoryModalCard.polishedSettingsModal .directoryPreviewGrid > div { padding: .75rem 1rem; }
+.partnerDirectoryModalCard.polishedSettingsModal .directoryListingPreview { background: var(--app-surface, #fff); }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .directoryChoices,
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal[data-directory-step="3"] .wizardFieldGrid,
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .directoryPreviewGrid { grid-template-columns: 1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .modalStepProgress { gap: .5rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .modalStep > strong { font-size: .7rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .wizardActions { padding: .8rem 1.1rem !important; }
+}
+.partnerDirectoryModalCard.polishedSettingsModal { display: flex; flex-direction: column; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollShell { display: flex; flex-direction: column; flex: 1 1 auto; max-height: none !important; border-radius: 0; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollViewport { flex: 1 1 auto; max-height: none !important; }

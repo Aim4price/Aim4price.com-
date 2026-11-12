@@ -2484,6 +2484,7 @@ export default function AccountClient({
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard} ${styles.polishedSettingsModal}`}
+            data-directory-step={partnerDirectoryStep}
             role="dialog"
             aria-modal="true"
             aria-labelledby="partner-directory-modal-title"
@@ -2494,7 +2495,7 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="partner-directory-modal-title">Partner directory</h2>
                 <p>
-                  Choose whether to appear, add your business details, then preview your listing.
+                  Manage your public business listing.
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor" data-modal-close="true">×</button>
               </div>
@@ -2507,17 +2508,18 @@ export default function AccountClient({
               />
 
               <form
+                id="partner-directory-form"
                 className={`${styles.form} ${styles.directoryForm} ${styles.wizardForm}`}
                 onSubmit={handlePartnerDirectorySubmit}
               >
                 {partnerDirectoryStep === 1 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                     <div className={styles.modalSectionHeading}>
-                      <strong><SettingsDetailIcon name="discovery" />Would you like to appear in the directory?</strong>
-                      <p>Choose whether owners can find and select your business. You can change this later.</p>
+                      <strong><SettingsDetailIcon name="discovery" />Join the partner directory?</strong>
+                      <p>You can change this anytime.</p>
                     </div>
                     <div className={styles.directoryChoices}>
-                      {[{ enabled: true, icon: "discovery", title: "Yes, list my business", description: "Let owners find your services and send enquiries." }, { enabled: false, icon: "lock", title: "No, keep my business hidden", description: "Keep your details saved without appearing in the directory." }].map((choice) => (
+                      {[{ enabled: true, icon: "discovery", title: "Yes, show my business", description: "Let owners find and contact you." }, { enabled: false, icon: "lock", title: "No, keep it private", description: "Keep your details saved but hidden." }].map((choice) => (
                         <button key={String(choice.enabled)} type="button" className={styles.directoryChoice} aria-pressed={profileDraft.partnerDirectoryEnabled === choice.enabled} onClick={() => setProfileDraft(current => ({ ...current, partnerDirectoryEnabled: choice.enabled }))}>
                           <span className={styles.directoryChoiceIcon} data-tone={choice.enabled ? "blue" : "amber"}><SettingsDetailIcon name={choice.icon as "discovery" | "lock"} /></span>
                           <span><strong>{choice.title}</strong><small>{choice.description}</small></span>
@@ -2530,37 +2532,37 @@ export default function AccountClient({
                 {partnerDirectoryStep === 2 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                     <div className={styles.modalSectionHeading}>
-                      <strong><SettingsDetailIcon name="location" />Where is your business based?</strong>
-                      <p>Your location helps owners find you. Street address is optional and will appear in your listing details if supplied.</p>
+                      <strong><SettingsDetailIcon name="location" />Business address</strong>
+                      <p>Street details are optional and publicly visible.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
                       {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name="location" /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
                     </div>
-                    <p className={styles.fieldHint}>These details also update your business address.</p>
+                    <p className={styles.fieldHint}>Also updates your business address.</p>
                   </section>
                 ) : null}
 
                 {partnerDirectoryStep === 3 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
                     <div className={styles.modalSectionHeading}>
-                      <strong><SettingsDetailIcon name="business" />Your business and services</strong>
-                      <p>Use the contact details you want owners to see.</p>
+                      <strong><SettingsDetailIcon name="business" />Business details</strong>
+                      <p>Contact details and services shown to owners.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
-                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands you work with", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services you provide", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).map(field => (
+                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name={field.icon} /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Briefly describe your services and the areas you serve." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business (optional)</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Your services and areas covered." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>
                     </div>
-                    <p className={styles.fieldHint}>Business and contact details are shared with your account settings.</p>
+                    <p className={styles.fieldHint}>Also updates your business contact details.</p>
                   </section>
                 ) : null}
 
                 {partnerDirectoryStep === 4 ? (
                   <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
-                    <div className={styles.modalSectionHeading}><strong><SettingsDetailIcon name="approvals" />Preview your directory listing</strong><p>This is how your business details will appear to owners. Save when you are happy.</p></div>
+                    <div className={styles.modalSectionHeading}><strong><SettingsDetailIcon name="approvals" />Your listing</strong><p>Check your details, then save.</p></div>
                     <article className={styles.directoryListingPreview} aria-label="Directory listing preview">
                       <div className={styles.partnerPreviewIdentity}>
                         <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="Business logo" /> : <strong>{profileInitials}</strong>}</div>
@@ -2576,6 +2578,8 @@ export default function AccountClient({
                   </section>
                 ) : null}
 
+              </form>
+            </AccountModalScroller>
                 <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                   <button
                     type="button"
@@ -2588,12 +2592,11 @@ export default function AccountClient({
                   {partnerDirectoryStep > 1 ? (
                     <button type="button" className={styles.secondaryButton} onClick={() => goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep)} disabled={isSavingProfile}>Back</button>
                   ) : null}
-                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
+                  <button type="submit" form="partner-directory-form" className={styles.primaryButton} disabled={isSavingProfile}>
                     {isSavingProfile ? "Saving..." : !profileDraft.partnerDirectoryEnabled ? "Save as hidden" : partnerDirectoryStep === 4 ? "Save directory" : "Next"}
                   </button>
                 </div>
-              </form>
-            </AccountModalScroller>
+
           </section>
         </div>
       ) : null}
