@@ -545,7 +545,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       {studioMode !== 'home' ? <div className={styles.titlePanel}>
         <section className={registerStyles.businessRegisterTitleBlock}>
           <div className={registerStyles.businessRegisterTitleCard}>
-            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'ADVERT TEMPLATE'}</h1>
+            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'YOUR ADVERT TEMPLATE'}</h1>
             <button
               type="button"
               className={`${registerStyles.registerChangeButton} ${registerStyles.controlTooltip}`}
