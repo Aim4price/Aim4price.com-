@@ -517,9 +517,9 @@ export function MiddlemanShowroomManager({
                 { key: 'link', icon: 'link', title: 'Public link', text: 'Edit your address or copy the link.', value: linkChanged ? 'Unsaved changes' : showroom.slug },
                 { key: 'template', icon: 'edit', title: 'Advert template', text: 'View the design used for your adverts.', value: usesSavedBrandDesign ? 'My advert template' : 'Aim4price Marketplace' },
                 { key: 'visibility', icon: 'controls', title: 'Visibility', text: 'Choose who can see your showroom.', value: visibilityChanged ? 'Unsaved changes' : showroom.isPublic ? 'Public' : 'Private' },
-              ] as const).map(item => <button type="button" key={item.key} className={managementStyles.card} onClick={() => { setMessage(''); setSettingsSection(item.key); }}>
-                <span className={managementStyles.icon}><ShowroomManageActionIcon name={item.icon} /></span>
-                <span className={managementStyles.copy}><strong>{item.title}</strong><span>{item.text}</span><small>{item.value}</small></span>
+              ] as const).map(item => <button type="button" key={item.key} className={`${managementStyles.card} ${styles.showroomChoice}`} data-tone={item.key} onClick={() => { setMessage(''); setSettingsSection(item.key); }}>
+                <span className={styles.showroomChoiceIcon}><ShowroomManageActionIcon name={item.icon} /></span>
+                <span className={styles.showroomChoiceCopy}><strong>{item.title}</strong><span>{item.text}</span><small>{item.value}</small></span>
               </button>)}
             </div>
             <div className={styles.dangerZone}>
@@ -740,9 +740,9 @@ ${window.location.origin}${publicHref(showroom.slug)}`)}`} target="_blank" rel="
             </header>
             <div className={styles.showroomIntroBody}>
               <div className={styles.showroomBenefits}>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span><div><strong>All your adverts</strong><p>Your live machinery listings in one place.</p></div></div>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="link" /></span><div><strong>One link to share</strong><p>Send it on WhatsApp, social media or email.</p></div></div>
-                <div><span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="controls" /></span><div><strong>You stay in control</strong><p>Update adverts and manage visibility.</p></div></div>
+                <div data-tone="details"><span className={styles.showroomChoiceIcon}><ShowroomManageActionIcon name="marketplace" /></span><div><strong>All your adverts</strong><p>Your live machinery listings in one place.</p></div></div>
+                <div data-tone="link"><span className={styles.showroomChoiceIcon}><ShowroomManageActionIcon name="link" /></span><div><strong>One link to share</strong><p>Send it on WhatsApp, social media or email.</p></div></div>
+                <div data-tone="visibility"><span className={styles.showroomChoiceIcon}><ShowroomManageActionIcon name="controls" /></span><div><strong>You stay in control</strong><p>Update adverts and manage visibility.</p></div></div>
               </div>
               <div className={styles.showroomAddress}><span>Your showroom link</span><strong>aim4price.com/showroom/{showroom.slug}</strong></div>
               {hasUnsavedShowroomChanges ? <p className={styles.showroomIntroNote}>This opens your saved showroom. Save your changes here to update the public page.</p> : null}
