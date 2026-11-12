@@ -1,3 +1,4 @@
+import type { WorkspaceWriteGuard } from './team-write-guard';
 import { isOperationalAsset, operationalAssetSql } from './operational-asset';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { assetCanReceiveFuel } from './asset-fuel-eligibility';
@@ -3470,6 +3471,7 @@ export async function recordFuelStorageStock(
     fieldManagerDisplayName?: unknown;
     fieldManagerSessionId?: unknown;
   },
+  guard: WorkspaceWriteGuard = {},
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent }> {
   await ensureFuelLedgerTables();
   const db = getDb();
@@ -3490,6 +3492,7 @@ export async function recordFuelStorageStock(
 
   try {
     await client.query('BEGIN');
+    await guard.before?.(client);
 
     const storageResult = await client.query<FuelStorageRow>(
       `
@@ -3523,7 +3526,8 @@ export async function recordFuelStorageStock(
 
       const duplicateEvent = existingEvent.rows[0];
       if (duplicateEvent) {
-        await client.query('COMMIT');
+        await guard.after?.(client);
+    await client.query('COMMIT');
         return {
           storage,
           event: mapFuelEventRow(duplicateEvent),
@@ -3577,6 +3581,7 @@ export async function recordFuelStorageStock(
       fieldManagerSessionId,
     });
 
+    await guard.after?.(client);
     await client.query('COMMIT');
 
     return {
@@ -3738,6 +3743,7 @@ async function insertFuelStorageEvent(
 
 export async function recordFuelAssetIssue(
   input: {
+    updateAssetLocation?: boolean;
     userId: string;
     storageId: string;
     assetId: string;
@@ -3761,6 +3767,7 @@ export async function recordFuelAssetIssue(
     fieldManagerDisplayName?: unknown;
     fieldManagerSessionId?: unknown;
   },
+  guard: WorkspaceWriteGuard = {},
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent; assets: FuelLedgerAsset[] }> {
   await ensureFuelLedgerTables();
   const db = getDb();
@@ -3811,6 +3818,7 @@ export async function recordFuelAssetIssue(
   const client = await db.connect();
   try {
     await client.query('BEGIN');
+    await guard.before?.(client);
 
     const storageResult = await client.query<FuelStorageRow>(
       `
@@ -3844,7 +3852,8 @@ export async function recordFuelAssetIssue(
 
       const duplicateEvent = existingEvent.rows[0];
       if (duplicateEvent) {
-        await client.query('COMMIT');
+        await guard.after?.(client);
+    await client.query('COMMIT');
         committed = true;
         const assets = await listFuelAssetsForUser(input.userId);
         return {
@@ -3986,14 +3995,14 @@ export async function recordFuelAssetIssue(
           fuel_percent = $3::integer,
           hours = case when $4::numeric is null then hours else $4::numeric end,
           last_scanned_at = coalesce($9::timestamptz, now()),
-          last_known_lat = $5::double precision,
-          last_known_lng = $6::double precision,
-          last_known_location_text = $7,
+          last_known_lat = case when $10::boolean then $5::double precision else last_known_lat end,
+          last_known_lng = case when $10::boolean then $6::double precision else last_known_lng end,
+          last_known_location_text = case when $10::boolean then $7 else last_known_location_text end,
           specs_json = $8::jsonb,
           updated_at = now()
         where user_id = $1 and id::text = $2
       `,
-      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText, JSON.stringify(nextSpecsJson), clientCapturedAt],
+      [input.userId, input.assetId, assetFuelPercentAfter, assetUsageReading, latitude, longitude, locationText, JSON.stringify(nextSpecsJson), clientCapturedAt, input.updateAssetLocation !== false],
     );
 
     await client.query(
@@ -4066,6 +4075,7 @@ export async function recordFuelAssetIssue(
       [input.userId, input.storageId],
     );
 
+    await guard.after?.(client);
     await client.query('COMMIT');
     committed = true;
 
@@ -5111,6 +5121,7 @@ export async function voidFuelSlipTransaction(
   userId: string,
   fuelSlipId: string,
   input: { actor?: FuelLedgerAuditActor; reason?: unknown } = {},
+  guard: WorkspaceWriteGuard = {},
 ): Promise<void> {
   await ensureFuelLedgerTables();
   const db = getDb();
@@ -5119,6 +5130,7 @@ export async function voidFuelSlipTransaction(
 
   try {
     await client.query('BEGIN');
+    await guard.before?.(client);
 
     const slip = await loadFuelSlipRowForUpdate(client, userId, fuelSlipId);
     const before = mapFuelSlipRow(slip);
@@ -5153,6 +5165,7 @@ export async function voidFuelSlipTransaction(
       afterSnapshot: { ...before, recordStatus: 'voided', voidedByName: actor.name, voidReason: reason },
     });
 
+    await guard.after?.(client);
     await client.query('COMMIT');
     committed = true;
   } catch (error) {
@@ -5165,7 +5178,7 @@ export async function voidFuelSlipTransaction(
   }
 }
 
-export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSlipInput): Promise<FuelSlipSaveResult> {
+export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSlipInput, guard: WorkspaceWriteGuard = {}): Promise<FuelSlipSaveResult> {
   await ensureFuelLedgerTables();
 
   const db = getDb();
@@ -5282,6 +5295,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const client = await db.connect();
   try {
     await client.query('BEGIN');
+    await guard.before?.(client);
 
     if (offlineEventId) {
       await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId + ':fuel-slip:' + offlineEventId]);
@@ -5290,7 +5304,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         const row = await loadFuelSlipRowForUpdate(client, userId, prior.rows[0].id);
         if (!row) throw new Error('Saved fuel slip could not be loaded.');
         const fuelSlip = mapFuelSlipRow(row);
-        await client.query('COMMIT'); committed = true;
+        await guard.after?.(client);
+    await client.query('COMMIT'); committed = true;
         return { fuelSlip, storage: null, event: null, assets: [], pendingReview: fuelSlip.reviewRequired, message: 'Fuel slip already synced.' };
       }
     }
@@ -5929,6 +5944,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       updatedStorage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
     }
 
+    await guard.after?.(client);
     await client.query('COMMIT');
     committed = true;
 

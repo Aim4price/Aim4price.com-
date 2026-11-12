@@ -1,3 +1,5 @@
+import { teamWriteGuard } from '../../../../lib/team-write-guard';
+import { auditTeam } from '../../../../lib/team-access';
 import { projectTeamCostRecord } from '../../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteMyInvoice, getMyInvoiceById, updateMyInvoice, type MyInvoiceDraftInput } from '../../../../lib/my-invoices';
@@ -49,7 +51,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     await assertWorkspaceAssetAccess(workspace, body.assetId);
     const result = await updateMyInvoice(workspace.ownerUserId, context.params.invoiceId, body, {
       displayName: workspace.team ? workspace.actorName : null,
-    });
+    }, teamWriteGuard(workspace,'editCosts',{assetId:String(body.assetId || existing.assetId),invoiceId:context.params.invoiceId}));
     return NextResponse.json({ ok: true, invoice: workspace.team && result.invoice ? projectTeamCostRecord(result.invoice, workspace.team.grant.permissions) : result.invoice, duplicateWarnings: workspace.team ? [] : result.duplicateWarnings });
   } catch (error) {
     console.error('Aim4price My Cost Ledger PATCH failed.', error);
@@ -68,7 +70,11 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const invoice = await getMyInvoiceById(workspace.ownerUserId, context.params.invoiceId);
     if (workspace.team && invoice?.source === 'fuel_slip') return NextResponse.json({ok:false,error:'Void fuel entries from Fuel Ledger.'},{status:403});
     if (invoice) await assertWorkspaceAssetAccess(workspace, invoice.assetId);
-    const deleted = await deleteMyInvoice(workspace.ownerUserId, context.params.invoiceId);
+    const guard = teamWriteGuard(workspace,'deleteCosts',{invoiceId:context.params.invoiceId});
+    const deleted = await deleteMyInvoice(workspace.ownerUserId, context.params.invoiceId,{...guard,after:async client=>{
+      await guard.after?.(client);
+      if(workspace.team) await auditTeam(client,workspace.team.actor,workspace.team.grant,'Cost record deleted',invoice?.assetId || null,{invoiceId:context.params.invoiceId,before:invoice});
+    }});
 
     if (!deleted) {
       return NextResponse.json({ ok: false, error: 'The selected cost record could not be found for this account.' }, { status: 404 });

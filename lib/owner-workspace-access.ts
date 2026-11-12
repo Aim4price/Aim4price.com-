@@ -20,7 +20,7 @@ export async function resolveOwnerWorkspaceContext(
     const team = await getDesktopScope(url.searchParams.get('desktopMembershipId') || undefined);
     if (team) {
       assertTeamWorkspaceRequest(team.grant.permissions, url, request.method);
-      const tankId = url.pathname.match(/^\/api\/fuel\/storage\/([^/]+)$/)?.[1] || url.searchParams.get('storageId');
+      const tankId = url.pathname.match(/^\/api\/fuel\/storage\/([^/]+)(?:\/[^/]+)?$/)?.[1] || url.searchParams.get('storageId');
       if (tankId && tankId !== 'all' && team.grant.fuelStorageIds && !team.grant.fuelStorageIds.includes(tankId)) throw new TeamAccessError('Fuel tank unavailable.', 404);
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         const origin = request.headers.get('origin');

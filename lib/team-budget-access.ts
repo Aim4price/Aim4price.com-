@@ -3,8 +3,7 @@ import { getDesktopScope } from './desktop-workspace';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds, assertWorkspaceAssetAccess } from './owner-workspace-access';
 import { listCostBudgetsWithProgress, createCostBudget, updateCostBudget, deleteCostBudget, type CostBudgetInput } from './cost-budgets';
 import { listMyInvoiceAssets } from './my-invoices';
-import { auditTeam } from './team-access';
-import { getDb } from './db';
+import { teamWriteGuard } from './team-write-guard';
 /** Return null for ordinary owner/app callers; preserve their existing access logic. */
 export async function teamBudgetResponse(request: Request, budgetId?: string): Promise<NextResponse | null> {
   const scope = await getDesktopScope(new URL(request.url).searchParams.get('desktopMembershipId') || undefined);
@@ -22,15 +21,15 @@ export async function teamBudgetResponse(request: Request, budgetId?: string): P
     }
     if (budgetId && !budgets.some(budget => budget.id === budgetId)) return NextResponse.json({ok:false,error:'Budget unavailable.'},{status:404});
     if (request.method === 'DELETE') {
-      await deleteCostBudget(workspace.ownerUserId, budgetId);
-      await auditTeam(getDb(),scope.actor,scope.grant,'Budget deleted',null,{budgetId});
+      await deleteCostBudget(workspace.ownerUserId, budgetId, teamWriteGuard(workspace,'manageBudgets',{budgetId}));
       return NextResponse.json({ok:true});
     }
     const body = await request.json() as CostBudgetInput;
     if (body.assetId && body.assetId !== 'all') await assertWorkspaceAssetAccess(workspace,body.assetId);
     else if (scope.grant.scope !== 'all') return NextResponse.json({ok:false,error:'Choose an accessible asset.'},{status:403});
-    const budget = budgetId ? await updateCostBudget(workspace.ownerUserId,budgetId,body) : await createCostBudget(workspace.ownerUserId,body);
-    await auditTeam(getDb(),scope.actor,scope.grant,budgetId ? 'Budget updated' : 'Budget created',budget.assetId,{budgetId:budget.id});
+    const assetId = body.assetId && body.assetId !== 'all' ? String(body.assetId) : undefined;
+    const guard = teamWriteGuard(workspace,'manageBudgets',{budgetId,assetId,globalBudget:!assetId});
+    const budget = budgetId ? await updateCostBudget(workspace.ownerUserId,budgetId,body,guard) : await createCostBudget(workspace.ownerUserId,body,guard);
     return NextResponse.json({ok:true,budget});
   } catch { return NextResponse.json({ok:false,error:'The budget could not be saved. Check the asset, amount and period.'},{status:400}); }
 }

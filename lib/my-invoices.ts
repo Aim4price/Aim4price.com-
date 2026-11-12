@@ -1,3 +1,4 @@
+import type { WorkspaceWriteGuard } from './team-write-guard';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import type { PoolClient } from 'pg';
 import { getDb } from './db';
@@ -1685,6 +1686,7 @@ export async function updateMyInvoice(
   invoiceId: string,
   input: MyInvoiceDraftInput,
   actor: MyInvoiceActorContext = {},
+  guard: WorkspaceWriteGuard = {},
 ): Promise<{
   invoice: MyInvoiceRecord | null;
   duplicateWarnings: string[];
@@ -1710,6 +1712,7 @@ export async function updateMyInvoice(
 
   try {
     await client.query('begin');
+    await guard.before?.(client);
     const result = await client.query<{ id: string }>(
       `
         update public.asset_invoices
@@ -1762,6 +1765,7 @@ export async function updateMyInvoice(
     if (!result.rows[0]) throw new Error('INVOICE_NOT_FOUND');
 
     await replaceInvoiceBlocks(client, invoiceId, blocks);
+    await guard.after?.(client);
     await client.query('commit');
 
     return {
@@ -1778,10 +1782,14 @@ export async function updateMyInvoice(
   }
 }
 
-export async function deleteMyInvoice(userId: string, invoiceId: string): Promise<boolean> {
+export async function deleteMyInvoice(userId: string, invoiceId: string, guard: WorkspaceWriteGuard = {}): Promise<boolean> {
   await ensureMyInvoiceTables();
 
-  const result = await getDb().query(
+  const client = await getDb().connect();
+  try {
+  await client.query('BEGIN');
+  await guard.before?.(client);
+  const result = await client.query(
     `
       delete from public.asset_invoices
       where id = $1::uuid
@@ -1790,7 +1798,10 @@ export async function deleteMyInvoice(userId: string, invoiceId: string): Promis
     [invoiceId, userId],
   );
 
+  await guard.after?.(client);
+  await client.query('COMMIT');
   return (result.rowCount ?? 0) > 0;
+  } catch(error) {await client.query('ROLLBACK');throw error;} finally {client.release();}
 }
 
 export async function requestDealerMyInvoiceDeletion(

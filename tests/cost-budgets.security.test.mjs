@@ -229,7 +229,7 @@ test('owner search remains a long field with a dedicated adjacent Filter button'
   assert.match(toolbar, /Search suppliers, assets, invoice numbers or costs\.\.\./);
   assert.match(
     toolbar,
-    /\) : \(\s*<button[^>]+className=\{`[^`]*styles\.searchFilterButton[^`]*`\} onClick=\{openFilterPanel\}>/,
+    /\) : \(\s*<button[^>]+className=\{`[^`]*styles\.searchFilterButton[^`]*`\} onClick=\{openFilterPanel\}[^>]*>/,
   );
 
   assert.match(
@@ -291,7 +291,7 @@ test('warning-level budget cards and notifications use the red priority treatmen
   assert.match(costClient, /budget\.status === 'warning'[\s\S]*?'budgetCardWarning'/);
   assert.match(costStyles, /\.budgetCardWarning\s*\{[^}]*--budget-accent:\s*#b42318;[^}]*--budget-accent-soft:\s*#fff0ef;/);
   assert.match(costStyles, /\.budgetCardWarning\.budgetCardFocused/);
-  assert.match(assetRegisterClient, /fetch\('\/api\/my-invoices\/budgets'/);
+  assert.match(assetRegisterClient, /ownerFetch\('\/api\/my-invoices\/budgets'/);
   assert.match(assetRegisterClient, /styles\.assetCardBudgetWarning/);
   assert.match(assetRegisterClient, /data-cost-budget-status=\{costBudgetStatus \|\| undefined\}/);
   assert.match(assetRegisterStyles, /\.page \.assetCardBudgetWarning\s*\{[^}]*#b42318/);

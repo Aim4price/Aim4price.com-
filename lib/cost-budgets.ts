@@ -1,3 +1,4 @@
+import type { WorkspaceWriteGuard } from './team-write-guard';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { ensureCostBudgetHistory, readCostBudgetHistory } from './cost-budget-history';
 import { getAssetRegisterItemById } from './asset-register-db';
@@ -535,13 +536,30 @@ export async function listCurrentCostBudgetAlertEvents(userId: string): Promise<
   });
 }
 
-export async function createCostBudget(userId: string, input: CostBudgetInput): Promise<CostBudgetProgress> {
+async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWriteGuard) {
+  if (!guard?.before && !guard?.after) return getDb().query<{id:string}>(sql, values);
+  const client = await getDb().connect();
+  try {
+    await client.query('BEGIN');
+    await guard.before?.(client);
+    const result = await client.query<{id:string}>(sql, values);
+    if (!result.rows[0]?.id) throw new Error('COST_BUDGET_NOT_FOUND');
+    await guard.after?.(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
+export async function createCostBudget(userId: string, input: CostBudgetInput, guard?: WorkspaceWriteGuard): Promise<CostBudgetProgress> {
   await ensureCostBudgetTables();
   const budget = normalizeInput(input);
   await verifyBudgetAsset(userId, budget.assetId);
 
   try {
-    const result = await getDb().query<{ id: string }>(
+    const result = await budgetWrite(
       `
         insert into public.asset_cost_budgets (
           user_id,
@@ -557,6 +575,7 @@ export async function createCostBudget(userId: string, input: CostBudgetInput): 
         returning id::text
       `,
       [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts],
+      guard,
     );
     const id = result.rows[0]?.id;
     const created = (await listCostBudgetsWithProgress(userId)).find((entry) => entry.id === id);
@@ -572,6 +591,7 @@ export async function updateCostBudget(
   userId: string,
   budgetIdInput: unknown,
   input: CostBudgetInput,
+  guard?: WorkspaceWriteGuard,
 ): Promise<CostBudgetProgress> {
   await ensureCostBudgetTables();
   const budgetId = normalizeBudgetId(budgetIdInput);
@@ -579,7 +599,7 @@ export async function updateCostBudget(
   await verifyBudgetAsset(userId, budget.assetId);
 
   try {
-    const result = await getDb().query<{ id: string }>(
+    const result = await budgetWrite(
       `
         update public.asset_cost_budgets
         set
@@ -603,6 +623,7 @@ export async function updateCostBudget(
         budget.warningPercent,
         budget.includeFuelSlipCosts,
       ],
+      guard,
     );
     if (!result.rows[0]?.id) throw new Error('COST_BUDGET_NOT_FOUND');
     const updated = (await listCostBudgetsWithProgress(userId)).find((entry) => entry.id === budgetId);
@@ -614,10 +635,10 @@ export async function updateCostBudget(
   }
 }
 
-export async function deleteCostBudget(userId: string, budgetIdInput: unknown): Promise<boolean> {
+export async function deleteCostBudget(userId: string, budgetIdInput: unknown, guard?: WorkspaceWriteGuard): Promise<boolean> {
   await ensureCostBudgetTables();
   const budgetId = normalizeBudgetId(budgetIdInput);
-  const result = await getDb().query<{ id: string }>(
+  const result = await budgetWrite(
     `
       delete from public.asset_cost_budgets
       where id = $1::uuid
@@ -625,6 +646,7 @@ export async function deleteCostBudget(userId: string, budgetIdInput: unknown): 
       returning id::text
     `,
     [budgetId, userId],
+    guard,
   );
   return Boolean(result.rows[0]?.id);
 }

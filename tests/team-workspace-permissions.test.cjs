@@ -6,7 +6,7 @@ function load(file,mocks={}){const out={};new Function('require','exports',ts.tr
 const policy=load('lib/team-access-policy.ts');
 const workspace=load('lib/team-workspace-policy.ts',{'./team-access-policy':policy});
 const empty=()=>({...policy.EMPTY_TEAM_PERMISSIONS});
-const all=()=>({...policy.TEAM_TEMPLATES.manager.permissions});
+const all=()=>Object.fromEntries(policy.TEAM_PERMISSIONS.map(p=>[p.key,true]));
 const url=path=>new URL(path,'https://www.aim4price.com');
 const next={NextResponse:{json:(body,init={})=>new Response(JSON.stringify(body),{...init,headers:{'content-type':'application/json',...init.headers}})}};
 test('legacy grants never acquire new page or download permissions',()=>{
@@ -22,9 +22,9 @@ test('dependent actions are explicit and disabling parent access removes depende
  for(const key of ['viewFuelCosts','viewBudgets','manageBudgets'])assert.equal(p[key],false,key);
 });
 test('all named page actions require their own permission and unknown actions fail closed',()=>{
- const cases=[['/api/fuel','GET','viewFuel'],['/api/fuel','POST','manageFuelStorage'],['/api/fuel/slips','POST','addFuel'],['/api/fuel/slips/one','PATCH','editFuel'],['/api/fuel/slips/one','DELETE','voidFuel'],['/api/fuel/report','GET','exportFuel'],['/api/fuel/documents/download','GET','viewFuelDocuments'],['/api/my-invoices','GET','viewCosts'],['/api/my-invoices','POST','addCosts'],['/api/my-invoices/one','PATCH','editCosts'],['/api/my-invoices/one','DELETE','deleteCosts'],['/api/my-invoices/report','GET','exportCosts'],['/api/my-invoices/budgets','GET','viewBudgets'],['/api/my-invoices/budgets/one','PATCH','manageBudgets'],['/api/my-invoices/documents/one/download','GET','viewCostDocuments'],['/api/asset-map','GET','viewMap'],['/api/asset-map/report','GET','exportMap'],['/api/asset-register/location','POST','updateLocation'],['/api/maintenance','GET','viewMaintenance'],['/api/maintenance/one/complete','POST','completeMaintenance'],['/api/maintenance/report','GET','exportMaintenance']];
+ const cases=[['/api/maintenance','POST','recordMaintenance'],['/api/maintenance/one','PATCH','scheduleMaintenance'],['/api/fuel/storage/one/stock','POST','refillFuel'],['/api/fuel/storage/one/issue','POST','recordFuelIssues'],['/api/fuel','GET','viewFuel'],['/api/fuel','POST','manageFuelStorage'],['/api/fuel/slips','POST','addFuel'],['/api/fuel/slips/one','PATCH','editFuel'],['/api/fuel/slips/one','DELETE','voidFuel'],['/api/fuel/report','GET','exportFuel'],['/api/fuel/documents/download','GET','viewFuelDocuments'],['/api/my-invoices','GET','viewCosts'],['/api/my-invoices','POST','addCosts'],['/api/my-invoices/one','PATCH','editCosts'],['/api/my-invoices/one','DELETE','deleteCosts'],['/api/my-invoices/report','GET','exportCosts'],['/api/my-invoices/budgets','GET','viewBudgets'],['/api/my-invoices/budgets/one','PATCH','manageBudgets'],['/api/my-invoices/documents/one/download','GET','viewCostDocuments'],['/api/asset-map','GET','viewMap'],['/api/asset-map/report','GET','exportMap'],['/api/asset-register/location','POST','updateLocation'],['/api/maintenance','GET','viewMaintenance'],['/api/maintenance/one/complete','POST','completeMaintenance'],['/api/maintenance/report','GET','exportMaintenance']];
  for(const [path,method,key] of cases){assert.equal(workspace.teamWorkspacePermission(path,method),key);assert.throws(()=>workspace.assertTeamWorkspaceRequest(empty(),url(path),method));assert.doesNotThrow(()=>workspace.assertTeamWorkspaceRequest({...empty(),[key]:true},url(path),method));}
- for(const [path,method] of [['/api/maintenance','POST'],['/api/fuel/storage/one/pin','POST'],['/api/asset-register','DELETE'],['/api/marketplace','POST'],['/api/account','PATCH']])assert.throws(()=>workspace.assertTeamWorkspaceRequest(all(),url(path),method));
+ for(const [path,method] of [['/api/maintenance/one','DELETE'],['/api/fuel/storage/one/pin','POST'],['/api/asset-register','DELETE'],['/api/marketplace','POST'],['/api/account','PATCH']])assert.throws(()=>workspace.assertTeamWorkspaceRequest(all(),url(path),method));
  for(const format of ['csv','xlsx','json'])assert.throws(()=>workspace.assertTeamWorkspaceRequest(all(),url('/api/fuel/report?format='+format),'GET'));
  for(const key of ['shareToken','accessId','accountantShareId'])assert.throws(()=>workspace.assertTeamWorkspaceRequest(all(),url('/api/fuel?'+key+'=other'),'GET'));
 });
@@ -47,7 +47,7 @@ test('cost totals use only allowed assets and fuel costs require fuel-price acce
 });
 test('cost edit validates original scope before allowing a move to an accessible asset',async()=>{
  let updated=false;
- const routes=load('app/api/my-invoices/[invoiceId]/route.ts',{'next/server':next,'../../../../lib/team-workspace-policy':workspace,'../../../../lib/my-invoices':{getMyInvoiceById:async()=>({assetId:'outside',source:'manual'}),updateMyInvoice:async()=>{updated=true}},'../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',team:{grant:{permissions:all()}}}}),assertWorkspaceAssetAccess:async(_,id)=>{if(id!=='a')throw new policy.TeamAccessError('Asset unavailable')}}});
+ const routes=load('app/api/my-invoices/[invoiceId]/route.ts',{'../../../../lib/team-write-guard':{teamWriteGuard:()=>({})},'../../../../lib/team-access':{},'next/server':next,'../../../../lib/team-workspace-policy':workspace,'../../../../lib/my-invoices':{getMyInvoiceById:async()=>({assetId:'outside',source:'manual'}),updateMyInvoice:async()=>{updated=true}},'../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',team:{grant:{permissions:all()}}}}),assertWorkspaceAssetAccess:async(_,id)=>{if(id!=='a')throw new policy.TeamAccessError('Asset unavailable')}}});
  const response=await routes.PATCH(new Request(url('/api/my-invoices/one'),{method:'PATCH',body:JSON.stringify({assetId:'a'})}),{params:{invoiceId:'one'}});
  assert.notEqual(response.status,200);assert.equal(updated,false);
 });
@@ -84,10 +84,54 @@ test('workspace resolution rejects revoked grants and cross-origin writes withou
 });
 test('adding fuel cannot overwrite an existing record or attach arbitrary files',async()=>{
  let writes=0;
- const routes=load('app/api/fuel/slips/route.ts',{'next/server':next,'../../../../lib/fuel-ledger':{saveFuelSlipTransaction:async()=>{writes++}},'../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',team:{grant:{permissions:all()}}}})}});
+ const routes=load('app/api/fuel/slips/route.ts',{'../../../../lib/team-write-guard':{teamWriteGuard:()=>({})},'next/server':next,'../../../../lib/fuel-ledger':{saveFuelSlipTransaction:async()=>{writes++}},'../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',team:{grant:{permissions:all()}}}})}});
  for(const field of ['id','slipId','fuelSlipId','captureRequestId','offlineEventId','uploadId','documentFileUrl']){
   const result=await routes.POST(new Request(url('/api/fuel/slips'),{method:'POST',body:JSON.stringify({targetType:'asset',assetId:'a',[field]:'existing'})}));
   assert.equal(result.status,403,field);
  }
  assert.equal(writes,0);
+});
+test('write guards recheck current access, original records and assigned tanks inside the transaction',async()=>{
+ const grant={ownerId:'owner',scope:'selected',permissions:all(),fuelStorageIds:['tank-a']};
+ const scope={grant,actor:{id:'actual-worker'}};
+ let revoked=false; const events=[];
+ const api=load('lib/team-write-guard.ts',{'./team-access-policy':policy,'./team-access':{
+  lockTeamPermission:async(client,s,p)=>{events.push('lock:'+p);if(revoked)throw new policy.TeamAccessError('Revoked');return s.grant;},
+  requireTeamAsset:async(s,id)=>{events.push('asset:'+id);if(id!=='asset-a')throw new policy.TeamAccessError('Asset unavailable');},
+  auditTeam:async(client,actor,g,p)=>events.push('audit:'+actor.id+':'+p),
+ }});
+ let row={asset_register_item_id:'outside',storage_id:'tank-a'};
+ const client={query:async()=>({rows:[row]})};
+ const workspace={team:scope};
+ await assert.rejects(()=>api.teamWriteGuard(workspace,'editFuel',{fuelSlipId:'slip'}).before(client),/Asset unavailable/);
+ await assert.rejects(()=>api.teamWriteGuard(workspace,'refillFuel',{storageId:'tank-b'}).before(client),/Fuel tank unavailable/);
+ await assert.rejects(()=>api.teamWriteGuard(workspace,'manageBudgets',{globalBudget:true}).before(client),/accessible asset/);
+ row={asset_register_item_id:null};
+ await assert.rejects(()=>api.teamWriteGuard(workspace,'manageBudgets',{budgetId:'global'}).before(client),/Budget unavailable/);
+ row={asset_register_item_id:'asset-a',source:'fuel_slip'};
+ await assert.rejects(()=>api.teamWriteGuard(workspace,'editCosts',{invoiceId:'fuel-invoice'}).before(client),/fuel ledger/);
+ const guard=api.teamWriteGuard(workspace,'recordFuelIssues',{assetId:'asset-a',storageId:'tank-a'});
+ await guard.before(client);await guard.after(client);
+ assert.equal(events.at(-1),'audit:actual-worker:recordFuelIssues');
+ revoked=true;await assert.rejects(()=>guard.before(client),/Revoked/);
+ assert.deepEqual(api.teamWriteGuard({},'editFuel'),{});
+});
+test('new operational presets leave financial, export and destructive access off',()=>{
+ const manager=policy.TEAM_TEMPLATES.manager;
+ assert.ok(manager);
+ for(const key of ['viewValues','viewCosts','viewFuelCosts','viewFuelDocuments','viewCostDocuments','deleteCosts','voidFuel','exportAssets','exportFuel','exportCosts'])assert.equal(manager.permissions[key],false,key);
+});
+test('maintenance recording and scheduling remain separate and use actual staff identity',async()=>{
+ const calls=[];const scope={actor:{id:'worker'},grant:{ownerId:'owner',displayName:'Worker',permissions:{...empty(),viewMaintenance:true,recordMaintenance:true}}};
+ const data={records:[],assets:[],fieldManagers:[],summary:{}};
+ const mutation=kind=>async(owner,input,guard)=>{await guard.before({});calls.push({kind,owner,input});await guard.after({},{id:'record'});};
+ const api=load('lib/team-maintenance.ts',{'next/server':next,'./team-access-policy':policy,'./desktop-workspace':{getDesktopScope:async()=>scope},'./owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{team:scope}}),getWorkspaceAssetIds:async()=>new Set(['a'])},'./team-access':{lockTeamScope:async(c,s,id,p)=>{assert.equal(id,'a');policy.assertTeamPermission(s.grant,p);},auditTeam:async()=>{}},'./asset-maintenance':{listAssetMaintenanceData:async()=>data,calculateAssetMaintenanceSummary:()=>({}),createAssetMaintenanceRecord:mutation('schedule'),recordStandaloneAssetMaintenanceCompletion:mutation('record')}});
+ const request=body=>new Request(url('/api/maintenance'),{method:'POST',body:JSON.stringify(body)});
+ let response=await api.teamMaintenanceResponse(request({assetId:'a',status:'upcoming'}));assert.equal(response.status,403);assert.equal(calls.length,0);
+ response=await api.teamMaintenanceResponse(request({assetId:'a',status:'done',completedAt:'2025-01-01',completedUsage:999,completedBy:'Forged owner'}));assert.equal(response.status,200);assert.equal(calls[0].input.completedBy,'Worker');assert.equal(calls[0].input.completedUsage,undefined);
+ scope.grant.permissions.recordMaintenance=false;scope.grant.permissions.scheduleMaintenance=true;
+ response=await api.teamMaintenanceResponse(request({assetId:'a',status:'done',completedAt:'2025-01-01'}));assert.equal(response.status,403);
+ response=await api.teamMaintenanceResponse(request({assetId:'a',status:'upcoming'}));assert.equal(response.status,200);assert.equal(calls[1].kind,'schedule');
+ response=await api.teamMaintenanceResponse(request({assetId:'a',status:'cancelled'}));assert.equal(response.status,400);
+ response=await api.teamMaintenanceResponse(request({assetId:'a',status:'upcoming',assignedFieldManagerId:'another-worker'}));assert.equal(response.status,403);
 });

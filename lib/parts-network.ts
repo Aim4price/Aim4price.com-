@@ -1,3 +1,4 @@
+import { lockTeamPermission, auditTeam } from './team-access';
 import {
   createHash,
   randomBytes,
@@ -75,6 +76,7 @@ async function audit(
   action: string,
   target: string,
 ) {
+  if (actor.team) await auditTeam(db, actor.team.actor, actor.team.grant, 'Parts ' + action, null, {stocklistId:id,target});
   await db.query(
     "INSERT INTO parts_network_audit(id,network_id,actor_id,action,target) VALUES($1,$2,$3,$4,$5)",
     [randomUUID(), id, actor.id, action, target],
@@ -86,6 +88,11 @@ async function access(
   id: string,
   level: "read" | "write" | "admin" = "read",
 ) {
+  if (actor.team) {
+    if (level === 'admin') throw new PartsError('Stocklist administration stays with the account holder.', 403);
+    const grant = await lockTeamPermission(db, actor.team, level === 'write' ? 'manageParts' : 'viewParts');
+    if (!grant.partsListIds?.includes(id)) throw new PartsError('Stocklist unavailable.', 403);
+  }
   if (actor.viewerOnly && level !== "read")
     throw new PartsError(
       "Shared access allows viewing and enquiries only.",
@@ -136,7 +143,7 @@ export async function listPartsNetworks(actor: PartsActor) {
  WHERE m.dealer_id=$1 AND n.archived=false ORDER BY n.name`,
       [actor.id],
     )
-  ).rows;
+  ).rows.filter(row => !actor.team || actor.team.grant.partsListIds?.includes(row.id));
 }
 export async function partsData(
   actor: PartsActor,
@@ -536,10 +543,11 @@ export async function importParts(
         revision: member.revision,
         sample: imported.slice(0, 5),
       };
-    const business = str(input.businessName),
-      town = str(input.town, 100),
-      phone = str(input.phone, 30),
-      email = str(input.email, 254).toLowerCase();
+    const business = str(actor.team ? member.business_name : input.businessName),
+      town = str(actor.team ? member.town : input.town, 100),
+      phone = str(actor.team ? member.phone : input.phone, 30),
+      email = str(actor.team ? member.email : input.email, 254).toLowerCase();
+    const vatIncluded = actor.team ? member.vat_included : input.vatIncluded;
     if (
       !business ||
       !town ||
@@ -549,7 +557,7 @@ export async function importParts(
       throw new PartsError(
         "Enter the dealership name, town, phone and contact email.",
       );
-    if (typeof input.vatIncluded !== "boolean")
+    if (typeof vatIncluded !== "boolean")
       throw new PartsError("Choose the price VAT basis.");
     await db.query(
       "DELETE FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
@@ -561,7 +569,7 @@ export async function importParts(
     );
     await db.query(
       "UPDATE parts_network_members SET business_name=$3,town=$4,phone=$5,email=$6,vat_included=$7,revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2",
-      [id, actor.id, business, town, phone, email, input.vatIncluded],
+      [id, actor.id, business, town, phone, email, vatIncluded],
     );
     await audit(
       db,
@@ -578,6 +586,7 @@ export async function setPartsVisibility(
   id: string,
   visible: unknown,
 ) {
+  if (actor.team) throw new PartsError('Visibility stays with the account holder.', 403);
   if (typeof visible !== "boolean") throw new PartsError("Choose visibility.");
   return transaction(async (db) => {
     await access(db, actor, id, "write");
@@ -629,7 +638,7 @@ export async function partsInbox(actor: PartsActor) {
     )
   ).rows;
   const shared = (await listPartsNetworks(actor)).filter((n) => !n.owned);
-  return { invitations, enquiries, shared };
+  return { invitations, enquiries: actor.team ? [] : enquiries, shared };
 }
 export async function acceptDirectPartsShare(
   actor: PartsActor,
@@ -701,6 +710,7 @@ export async function createPartsEnquiry(
   id: string,
   input: Record<string, unknown>,
 ) {
+  if (actor.team) throw new PartsError('Sending enquiries stays with the account holder.',403);
   return transaction(async (db) => {
     await access(db, actor, id);
     const recipient = str(input.dealerId, 200);
@@ -777,6 +787,7 @@ export async function createPartsEnquiry(
   });
 }
 export async function handlePartsEnquiry(actor: PartsActor, id: unknown) {
+  if (actor.team) throw new PartsError('Enquiry responses stay with the account holder.',403);
   await ensurePartsNetwork();
   await getDb().query(
     "UPDATE parts_enquiries SET status='handled' WHERE id=$1 AND recipient_id=$2",
@@ -785,6 +796,7 @@ export async function handlePartsEnquiry(actor: PartsActor, id: unknown) {
 }
 
 export async function resolvePartsShare(actor: PartsActor, token: unknown) {
+  if (actor.team) throw new PartsError('Invitations stay with the account holder.',403);
   await ensurePartsNetwork();
   const raw = str(token, 128);
   if (!/^[a-f0-9]{64}$/.test(raw))

@@ -1,3 +1,5 @@
+import { getDesktopScope } from './desktop-workspace';
+import type { TeamScope } from './team-access';
 import { getServerSession, isDealerAppSession } from "./auth-session";
 import { sharingPlan } from "./sharing-foundation";
 import { getAccountProfile } from "./account-profile";
@@ -5,6 +7,7 @@ import { isAim4priceAdminEmail } from "./account-constants";
 import { dealerRoleCan } from "./dealer-app-access";
 import { isMiddlemanAccountSubtype } from "./middleman-account";
 export type PartsActor = {
+  team?: TeamScope;
   id: string;
   email: string;
   staff: boolean;
@@ -13,7 +16,13 @@ export type PartsActor = {
 };
 export async function getPartsActor(
   allowPending = false,
+  membershipId?: string,
 ): Promise<PartsActor | null> {
+  const team = await getDesktopScope(membershipId);
+  if (team) {
+    if (team.accountType !== 'dealer' || !team.grant.permissions.viewParts) return null;
+    return {id:team.grant.ownerId, email:'', staff:true, canContribute:team.grant.permissions.manageParts, team};
+  }
   const session = await getServerSession({
     allowDealerApp: true,
     allowAdmin: false,

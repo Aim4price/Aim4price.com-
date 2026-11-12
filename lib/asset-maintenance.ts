@@ -1672,16 +1672,19 @@ function normalizeDraftForSave(userId: string, input: AssetMaintenanceDraftInput
   };
 }
 
-export async function createAssetMaintenanceRecord(userId: string, input: AssetMaintenanceDraftInput): Promise<AssetMaintenanceRecord> {
+export async function createAssetMaintenanceRecord(userId: string, input: AssetMaintenanceDraftInput, guard: AssetMaintenanceCompletionOptions = {}): Promise<AssetMaintenanceRecord> {
   await ensureAssetMaintenanceTables();
 
+  const db = await getDb().connect();
+  try {
+    await db.query('BEGIN');
+    await guard.before?.(db);
   const assetId = asText(input.assetId);
   if (!assetId) throw new Error('ASSET_NOT_FOUND');
 
   const asset = await verifyAssetBelongsToUser(userId, assetId);
   const assigned = await resolveAssignedManager(userId, input.assignedFieldManagerId, input.assignedName);
   const draft = normalizeDraftForSave(userId, input, asset);
-  const db = getDb();
   const result = await db.query<{ id: string }>(
     `
       insert into public.asset_maintenance_records (
@@ -1748,22 +1751,30 @@ export async function createAssetMaintenanceRecord(userId: string, input: AssetM
     ],
   );
 
-  const created = await getAssetMaintenanceRecordById(userId, result.rows[0]?.id ?? '');
+  const created = await getAssetMaintenanceRecordByIdWithClient(db, userId, result.rows[0]?.id ?? '');
   if (!created) throw new Error('MAINTENANCE_NOT_FOUND');
+  await guard.after?.(db, created);
+  await db.query('COMMIT');
   return created;
+  } catch (error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
 }
 
-export async function updateAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceDraftInput): Promise<AssetMaintenanceRecord> {
+export async function updateAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceDraftInput, guard: AssetMaintenanceCompletionOptions = {}): Promise<AssetMaintenanceRecord> {
   await ensureAssetMaintenanceTables();
 
-  const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  const db = await getDb().connect();
+  try {
+    await db.query('BEGIN');
+    await guard.before?.(db);
+  const existing = await getAssetMaintenanceRecordByIdWithClient(db, userId, maintenanceId, true);
   if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+  if (guard.before && existing.status !== 'upcoming') throw new Error('Only upcoming schedules can be edited.');
+  if (guard.before && (asText(input.assetId) !== existing.assetId || (input.assignedFieldManagerId ?? existing.assignedFieldManagerId) !== existing.assignedFieldManagerId || (input.assignedName ?? existing.assignedName) !== existing.assignedName)) throw new Error('The schedule changed. Reload before editing.');
 
   const assetId = asText(input.assetId) || existing.assetId;
   const asset = await verifyAssetBelongsToUser(userId, assetId);
   const assigned = await resolveAssignedManager(userId, input.assignedFieldManagerId ?? existing.assignedFieldManagerId, input.assignedName ?? existing.assignedName);
   const draft = normalizeDraftForSave(userId, { ...input, assetId }, asset, existing);
-  const db = getDb();
 
   await db.query(
     `
@@ -1810,9 +1821,12 @@ export async function updateAssetMaintenanceRecord(userId: string, maintenanceId
     ],
   );
 
-  const updated = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  const updated = await getAssetMaintenanceRecordByIdWithClient(db, userId, maintenanceId, true);
   if (!updated) throw new Error('MAINTENANCE_NOT_FOUND');
+  await guard.after?.(db, updated);
+  await db.query('COMMIT');
   return updated;
+  } catch (error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
 }
 
 export async function cancelAssetMaintenanceRecord(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {

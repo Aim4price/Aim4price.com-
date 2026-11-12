@@ -2044,7 +2044,7 @@ export default function AppHeader({
         </div>
 
         <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
-          {(session ? mobileNavItems : navItems).map((item) => {
+          {(session ? mobileNavItems : navItems).filter(item=>desktopAllows(item.href)).map((item) => {
             const isActive = activeNavKey === item.key;
 
             return (
@@ -2441,7 +2441,7 @@ export default function AppHeader({
                   if (event.target instanceof HTMLElement) revealNavLink(event.target);
                 }}
               >
-                {navItems.map((item) => {
+                {navItems.filter(item=>desktopAllows(item.href)).map((item) => {
                   const isActive = activeNavKey === item.key;
 
                   return (
@@ -2546,7 +2546,7 @@ export default function AppHeader({
                                       ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
-                            ).map((item) => {
+                            ).filter(item=>desktopAllows(item.href)).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);
                               const menuLinkClassName = [
                                 styles.menuLink,

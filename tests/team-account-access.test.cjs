@@ -22,7 +22,7 @@ test('Dealer and Business presets separate financial and enquiry authority',()=>
  assert.equal(dealer.sales.permissions.manageClientEnquiries,true);
  assert.equal(dealer.technician.permissions.manageClientEnquiries,false);
  assert.equal(dealer.technician.permissions.completeMaintenance,true);
- assert.equal(dealer.parts.permissions.viewClientContacts,true);
+ assert.equal(dealer.parts.permissions.viewClientContacts,false);assert.equal(dealer.parts.permissions.viewParts,true);assert.equal(dealer.parts.permissions.manageParts,true);
  for(const template of [dealer.viewer,dealer.sales,dealer.technician,dealer.parts,business.viewer,business.staff])for(const key of ['viewValues','viewClientValues','viewCosts','viewFuelCosts','deleteCosts'])assert.equal(template.permissions[key],false,key);
  for(const kind of ['owner','dealer','business'])for(const template of Object.values(account.teamTemplates(kind)))assert.deepEqual(policy.normalizeTeamPermissions(template.permissions),template.permissions);
 });
