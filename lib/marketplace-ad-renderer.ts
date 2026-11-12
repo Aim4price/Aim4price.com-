@@ -1249,7 +1249,7 @@ export async function renderMarketplaceAdCanvas(
 
   const minimal = templateId === 'minimal';
   const photoArea: Rect = minimal
-    ? { x: 680, y: 28, width: 892, height: 844 }
+    ? { x: 704, y: 28, width: 868, height: 844 }
     : { x: 28, y: 28, width: 950, height: 844 };
   const infoArea: Rect = minimal
     ? { x: 28, y: 28, width: 652, height: 844 }

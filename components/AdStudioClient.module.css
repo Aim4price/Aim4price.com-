@@ -271,7 +271,7 @@
 .templateClassic::before,
 .templateCatalogueGrid::before { top: 4%; right: 2%; bottom: 4%; width: 33%; border: 1px solid #d8e3df; background: #fff; }
 
-.templateMinimal i { top: 6%; right: 3%; width: 57%; height: 88%; }
+.templateMinimal i { top: 6%; right: 3%; width: 55%; height: 88%; }
 .templateMinimal b { left: 6%; top: 10%; width: 26%; height: 9%; background: var(--brand-secondary, #0d3329); }
 .templateMinimal em { left: 6%; top: 29%; width: 28%; height: 12%; }
 .templateMinimal u { display: none; }
@@ -801,4 +801,32 @@
   :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader .createButton { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .stepButton strong { font-size: .78rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .previewTools > button { flex: 1 1 auto; }
+}
+
+/* Compact saved templates leave room for the editor and its preview. */
+.kitGrid { grid-template-columns: minmax(0, 1fr); gap: .85rem; }
+.kitCard { display: grid; grid-template-columns: 11rem minmax(0, 1fr); align-items: center; border-radius: 1.1rem; }
+.kitVisual { padding: .75rem; border-radius: .85rem; margin: .75rem; }
+.kitCardBody { padding: 1rem 1.25rem 1rem .25rem; }
+.kitCardTitle strong { white-space: normal; overflow-wrap: anywhere; }
+.kitCardActions { margin-top: .8rem; gap: .6rem; }
+.kitCardSelected { box-shadow: inset 0 0 0 1px var(--app-accent, #237454); }
+.kitCard:hover { transform: none; box-shadow: 0 5px 16px var(--app-shadow-colour, #173b2f0a); }
+.libraryPanel, .formPanel, .previewPanel { border-color: var(--app-info-line, #d5e1ea); }
+.previewHeading.previewHeading { gap: 1rem; }
+.previewTools { gap: .75rem; }
+.templateGrid { gap: 1rem; }
+.templateChoice { padding: .85rem; border-radius: 1rem; gap: .65rem; }
+.templateTitle { align-items: baseline; }
+.templateTitle b { font-size: .72rem; font-weight: 650; }
+.templateChoice > small { min-height: 0; font-size: .82rem; line-height: 1.5; }
+.templateChoiceActive { background: var(--app-info-soft, #f2f8ff); border-color: var(--app-info, #2466a7); box-shadow: inset 0 0 0 1px var(--app-info, #2466a7); }
+.templateChoice:hover { transform: none; box-shadow: inset 0 0 0 1px var(--app-accent, #43836a); }
+.expandPreview:hover { outline: none !important; box-shadow: none !important; transform: none !important; }
+.expandPreview:focus-visible { outline: 2px solid var(--app-info, #2466a7) !important; outline-offset: 4px; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .kitGrid { display: grid; grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; padding: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCard { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitVisual { max-width: 18rem; width: calc(100% - 1.5rem); justify-self: center; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCardBody { padding: 1rem; }
 }
