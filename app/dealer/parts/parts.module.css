@@ -918,7 +918,9 @@
 .manageModal .manageGrid {
   min-height: 0;
   overflow-y: auto;
-  padding: 0;
+  /* Leave room for hover/focus rings inside the scroll boundary. */
+  margin: -6px;
+  padding: 6px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.88rem;
 }
@@ -1106,4 +1108,18 @@
   :global(:where(html:not(:has([data-website-canvas])))) .cardActions {
     min-width: 0;
   }
+}
+
+/* A quiet, rounded hover edge; keyboard focus remains clearly visible. */
+.manageModal .manageGrid button:hover:not(:disabled) {
+  border-color: var(--app-accent, #31996b) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-accent, #31996b) 35%, transparent) !important;
+}
+.manageModal .manageGrid button:hover:not(:focus-visible) {
+  outline: none !important;
+}
+.manageModal .manageGrid button:focus-visible {
+  outline: 2px solid var(--app-accent, #31996b) !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
 }
