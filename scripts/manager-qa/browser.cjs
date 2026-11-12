@@ -4,7 +4,7 @@ const chromium = require('@sparticuz/chromium');
 module.exports = async function checkBrowser(e) {
   for (const [role, account] of Object.entries(e.accounts)) {
     // Keep Chromium's normal Origin behavior; the package default disables web security.
-    const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args.filter(a => !['--single-process', '--disable-web-security'].includes(a)), pipe: true, headless: true, protocolTimeout: 30000 });
+    const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args.filter(a => !['--single-process', '--disable-web-security'].includes(a)), pipe: true, headless: true, protocolTimeout: 120000 });
     try {
       const page = await browser.newPage();
       console.log('Browser starting ' + role);
