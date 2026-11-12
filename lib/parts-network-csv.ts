@@ -19,12 +19,12 @@ export type PartImportOptions = {
   defaultBrand?: string;
 };
 export const MAX_PARTS_CSV_BYTES = 2_000_000;
-export function readPartsCsv(source: string): string[][] {
+export function readPartsCsv(source: string, options: { delimiter?: string; preserveEmptyRows?: boolean } = {}): string[][] {
   if (new TextEncoder().encode(source).length > MAX_PARTS_CSV_BYTES)
     throw new Error("Use a table smaller than 2 MB.");
   const text = source.replace(/^\uFEFF/, "");
   const first = text.split(/\r?\n/, 1)[0];
-  const delimiter = [";", "\t", ","].sort(
+  const delimiter = options.delimiter ?? [";", "\t", ","].sort(
     (a, b) => first.split(b).length - first.split(a).length,
   )[0];
   const rows: string[][] = [];
@@ -39,7 +39,7 @@ export function readPartsCsv(source: string): string[][] {
   };
   const line = () => {
     field();
-    if (row.some(Boolean)) rows.push(row);
+    if (options.preserveEmptyRows || row.some(Boolean)) rows.push(row);
     row = [];
   };
   for (let i = 0; i < text.length; i++) {

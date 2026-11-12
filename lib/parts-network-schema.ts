@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS parts_network_members (
  vat_included boolean NOT NULL DEFAULT false, uploaded_at timestamptz, approved_by text,
  PRIMARY KEY(network_id,dealer_id)
 );
+ALTER TABLE parts_network_members ADD COLUMN IF NOT EXISTS last_viewed_at timestamptz;
 CREATE TABLE IF NOT EXISTS parts_network_rows (
  network_id uuid NOT NULL, dealer_id text NOT NULL, part_number text NOT NULL, part_key text NOT NULL,
  quantity integer NOT NULL CHECK(quantity>=0), price numeric(14,2) NOT NULL CHECK(price>=0),

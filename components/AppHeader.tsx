@@ -1027,7 +1027,7 @@ export default function AppHeader({
   const isDealerAccount = session?.accountType === 'dealer' && session.sharingPlan !== 'free';
   const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
 
-  const partsAccess = isDealerAccount && !isMiddlemanAccount;
+  const partsAccess = (isDealerAccount && !isMiddlemanAccount) || session?.accountType === 'business';
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
     () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),

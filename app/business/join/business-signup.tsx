@@ -10,6 +10,7 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[createdEmail,setCreatedEmail]=useState('');
  const destination=returnTo||'/business';
  const joiningTeam=returnTo==='/team';
+ const joiningParts=Boolean(returnTo?.startsWith('/parts'));
  async function verify(email:string) {
   const response=await fetch('/api/auth/send-verification-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,callbackURL:destination})});
   if(!response.ok)throw Error('Your account is ready, but the verification email could not be sent. Please try again.');
@@ -26,7 +27,7 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
    setCreatedEmail(email);await verify(email);
   }catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}
  }
- return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open ${joiningTeam?'your team workspace':'your shared enquiries'}.`:joiningTeam?'Join your team with your own free login. Use the email address your business owner invited.':'Access your shared enquiries with a free Aim4price account.'} returnTo={returnTo}>
+ return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open ${joiningTeam?'your team workspace':joiningParts?'your shared parts':'your shared enquiries'}.`:joiningTeam?'Join your team with your own free login. Use the email address your business owner invited.':joiningParts?'View and enquire about shared parts with a free account. The list owner approves access.':'Access your shared enquiries with a free Aim4price account.'} returnTo={returnTo}>
   {createdEmail?<div className={styles.accessChoices}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={auth.form} onSubmit={submit}>
    <label className={auth.field}><span className={auth.label}>Your name</span><input className={auth.input} name="name" autoComplete="name" required maxLength={150}/></label>
    <label className={auth.field}><span className={auth.label}>{joiningTeam?'Business you work for (optional)':'Business name'}</span><input className={auth.input} name="businessName" autoComplete="organization" required={!joiningTeam} maxLength={200}/></label>

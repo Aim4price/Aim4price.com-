@@ -70,7 +70,7 @@ export default function JoinParts() {
           <>
             <p>
               Your email is verified. The list owner will confirm your
-              dealership before opening access.
+              identity before opening access.
             </p>
             <a
               className={styles.button}
@@ -87,7 +87,7 @@ export default function JoinParts() {
               <>
                 <p>
                   Sign up or sign in with the email address on your invitation.
-                  New dealers create their password during signup.
+                  Create a free account to view and enquire. The list owner approves access.
                 </p>
                 <a
                   className={styles.button}

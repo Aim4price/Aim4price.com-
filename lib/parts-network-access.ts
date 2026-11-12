@@ -1,4 +1,5 @@
 import { getServerSession, isDealerAppSession } from "./auth-session";
+import { sharingPlan } from "./sharing-foundation";
 import { getAccountProfile } from "./account-profile";
 import { isAim4priceAdminEmail } from "./account-constants";
 import { dealerRoleCan } from "./dealer-app-access";
@@ -8,6 +9,7 @@ export type PartsActor = {
   email: string;
   staff: boolean;
   canContribute: boolean;
+  viewerOnly?: boolean;
 };
 export async function getPartsActor(
   allowPending = false,
@@ -15,7 +17,7 @@ export async function getPartsActor(
   const session = await getServerSession({
     allowDealerApp: true,
     allowAdmin: false,
-    requireActive: !allowPending,
+    requireActive: false,
   });
   if (!session?.user?.id) return null;
   const staff = isDealerAppSession(session);
@@ -28,17 +30,31 @@ export async function getPartsActor(
     email: session.user.email,
   });
   if (
-    p.accountType !== "dealer" ||
-    (p.accountStatus !== "active" &&
-      !(allowPending && p.accountStatus === "pending_payment")) ||
+    p.accountStatus === "suspended" ||
     isMiddlemanAccountSubtype(p.accountSubtype)
   )
     return null;
+  const plan = await sharingPlan(session.user.id, p.accountType);
+  const dealer =
+    p.accountType === "dealer" &&
+    plan === "desktop" &&
+    p.accountStatus === "active";
+  const freeDealer = !staff && p.accountType === "dealer" && plan === "free";
+  const business =
+    p.accountType === "business" &&
+    (plan === "free" || p.accountStatus === "active");
+  const pending =
+    allowPending &&
+    p.accountType === "dealer" &&
+    p.accountStatus === "pending_payment";
+  if (!dealer && !freeDealer && !business && !pending) return null;
+  if (staff && !dealer) return null;
   return {
     id: session.user.id,
     email: (session.user.email || "").trim().toLowerCase(),
     staff,
+    viewerOnly: !dealer,
     canContribute:
-      !staff || ["owner", "parts"].includes(session.dealerApp.role),
+      dealer && (!staff || ["owner", "parts"].includes(session.dealerApp.role)),
   };
 }

@@ -1,15 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   guessPartColumns,
   readPartsCsv,
   partsTableCsv,
   type PartColumns,
-  type PartRow,
 } from "../lib/parts-network-csv";
 import { readPartsExcel } from "../lib/parts-network-excel";
+import {
+  PART_LABELS,
+  PART_FIELDS,
+  EDITOR_COLUMNS,
+  blankPart,
+  pastePartsCells,
+  partRowErrors,
+  EXAMPLE_PARTS,
+} from "../lib/parts-editor";
 import styles from "../app/dealer/parts/parts.module.css";
-
 type Details = {
   businessName: string;
   town: string;
@@ -20,35 +27,6 @@ type Details = {
 type Preview = {
   revision: number;
   summary: { added: number; updated: number; removed: number; total: number };
-  sample: PartRow[];
-};
-const fields = [
-  "partNumber",
-  "quantity",
-  "price",
-  "brand",
-  "description",
-] as const;
-const labels = {
-  partNumber: "Part number",
-  quantity: "Quantity",
-  price: "Unit price",
-  brand: "Brand",
-  description: "Description",
-};
-const blank = () => ({
-  partNumber: "",
-  quantity: "1",
-  price: "",
-  brand: "",
-  description: "",
-});
-const manualColumns: PartColumns = {
-  partNumber: 0,
-  quantity: 1,
-  price: 2,
-  brand: 3,
-  description: 4,
 };
 export default function PartsImportForm({
   initialDetails,
@@ -61,27 +39,32 @@ export default function PartsImportForm({
   onComplete: () => Promise<void>;
   onBusyChange: (busy: boolean) => void;
 }) {
-  const [source, setSource] = useState<"manual" | "csv" | "sheet" | null>(null);
+  const [source, setSource] = useState<"manual" | "file" | null>(null);
   const [details, setDetails] = useState(initialDetails);
-  const [table, setTable] = useState<string[][]>([]);
+  const [pastedTable, setPastedTable] = useState("");
+  const [raw, setRaw] = useState<string[][]>([]);
   const [sheets, setSheets] = useState<{ name: string; rows: string[][] }[]>(
     [],
   );
   const [sheetIndex, setSheetIndex] = useState(0);
-  const [paste, setPaste] = useState("");
   const [hasHeader, setHasHeader] = useState(true);
-  const [columns, setColumns] = useState<PartColumns>({
-    partNumber: -1,
-    quantity: -1,
-    price: -1,
-  });
+  const [columns, setColumns] = useState<PartColumns>(EDITOR_COLUMNS);
+  const [rows, setRows] = useState<string[][]>([blankPart()]);
+  const [editing, setEditing] = useState(false);
+  const [undo, setUndo] = useState<string[][] | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
   const [prefix, setPrefix] = useState("");
-  const [defaultBrand, setDefaultBrand] = useState("");
+  const [cleanup, setCleanup] = useState(false);
+  const [page, setPage] = useState(0);
   const [mode, setMode] = useState<"merge" | "replace">("merge");
-  const [manual, setManual] = useState([blank()]);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const errors = useMemo(
+    () => (editing ? partRowErrors(rows) : {}),
+    [rows, editing],
+  );
+  const invalid = Object.keys(errors).length;
   async function run(work: () => Promise<void>) {
     setError("");
     setBusy(true);
@@ -95,14 +78,20 @@ export default function PartsImportForm({
       onBusyChange(false);
     }
   }
-  function loadTable(rows: string[][]) {
-    if (!rows.length) throw new Error("The table is empty.");
-    const guessed = guessPartColumns(rows[0]);
-    const headings = guessed.partNumber >= 0 && guessed.quantity >= 0;
-    setTable(rows);
-    setHasHeader(headings);
+  function change(next: string[][]) {
+    setUndo(rows);
+    setRows(next);
+    setPreview(null);
+    setCleanup(false);
+  }
+  function loadTable(table: string[][]) {
+    if (!table.length) throw new Error("The table is empty.");
+    setRaw(table);
+    const guessed = guessPartColumns(table[0]);
+    const header = guessed.partNumber >= 0 && guessed.quantity >= 0;
+    setHasHeader(header);
     setColumns(
-      headings
+      header
         ? guessed
         : {
             partNumber: 0,
@@ -112,44 +101,65 @@ export default function PartsImportForm({
             description: -1,
           },
     );
-    setPrefix("");
-    setPreview(null);
+  }
+  function mapTable() {
+    const indexes = PART_FIELDS.map((k) => columns[k] ?? -1).filter(
+      (i) => i >= 0,
+    );
+    if (
+      columns.partNumber < 0 ||
+      columns.quantity < 0 ||
+      new Set(indexes).size !== indexes.length
+    )
+      throw new Error(
+        "Choose different columns. Part number and quantity are required.",
+      );
+    const data = raw.slice(hasHeader ? 1 : 0);
+    if (!data.length || data.length > 20000)
+      throw new Error("Include between 1 and 20,000 parts.");
+    setRows(data.map((r) => PART_FIELDS.map((k) => r[columns[k] ?? -1] ?? "")));
+    setEditing(true);
+    setPage(0);
+    setSelected([]);
+    setUndo(null);
   }
   const payload = () => ({
-    csv:
-      source === "manual"
-        ? partsTableCsv(manual.map((row) => fields.map((key) => row[key])))
-        : partsTableCsv(table),
-    columns: source === "manual" ? manualColumns : columns,
-    options: {
-      hasHeader: source === "manual" ? false : hasHeader,
-      stripPrefix: source === "manual" ? "" : prefix,
-      defaultBrand,
-    },
-    mode: source === "manual" ? "merge" : mode,
+    csv: partsTableCsv(rows),
+    columns: EDITOR_COLUMNS,
+    options: { hasHeader: false },
+    mode,
     ...details,
   });
-  const ready = source === "manual" || table.length > 0;
-  const choices = [
-    {
-      key: "manual",
-      title: "Add manually",
-      help: "Enter one or more parts",
-      path: "M12 5v14M5 12h14",
-    },
-    {
-      key: "csv",
-      title: "Upload CSV",
-      help: "Choose a stocklist file",
-      path: "M12 16V3M7 8l5-5 5 5M3 15v6h18v-6",
-    },
-    {
-      key: "sheet",
-      title: "Excel / Sheets",
-      help: "Upload Excel or paste cells",
-      path: "M3 3h18v18H3zM3 9h18M9 3v18M3 15h18",
-    },
-  ] as const;
+  async function template(excel: boolean) {
+    let blob: Blob;
+    if (excel) {
+      const Excel = await import("exceljs");
+      const book = new Excel.Workbook();
+      const sheet = book.addWorksheet("Parts");
+      sheet.addRow(PART_LABELS);
+      EXAMPLE_PARTS.forEach((r) => sheet.addRow(r));
+      sheet.getColumn(1).numFmt = "@";
+      sheet.columns.forEach((c) => {
+        c.width = 22;
+      });
+      blob = new Blob([(await book.xlsx.writeBuffer()) as ArrayBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+    } else
+      blob = new Blob([partsTableCsv([PART_LABELS, ...EXAMPLE_PARTS])], {
+        type: "text/csv;charset=utf-8",
+      });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `parts-example.${excel ? "xlsx" : "csv"}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const visible = rows.slice(page * 50, page * 50 + 50);
+  const changed = selected.filter(
+    (i) => prefix && rows[i]?.[0].startsWith(prefix),
+  );
   return (
     <div className={styles.importForm}>
       {error && (
@@ -157,313 +167,506 @@ export default function PartsImportForm({
           {error}
         </p>
       )}
-      {!preview ? (
-        <fieldset disabled={busy} className={styles.importFields}>
-          <div className={styles.importChoices}>
-            {choices.map((choice) => (
+      <fieldset disabled={busy} className={styles.importFields}>
+        {!editing && (
+          <>
+            <div className={styles.importChoices}>
               <button
-                key={choice.key}
                 type="button"
-                aria-pressed={source === choice.key}
+                aria-pressed={source === "manual"}
                 onClick={() => {
-                  setSource(choice.key);
-                  setTable([]);
-                  setSheets([]);
-                  setPaste("");
+                  setSource("manual");
+                  setEditing(true);
                   setError("");
-                  setPrefix("");
                 }}
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  aria-hidden="true"
-                >
-                  <path d={choice.path} />
-                </svg>
-                <strong>{choice.title}</strong>
-                <small>{choice.help}</small>
+                <strong>Enter / paste parts</strong>
+                <small>Type or paste cells from Excel / Sheets</small>
               </button>
-            ))}
-          </div>
-          {source === "manual" && (
-            <>
-              <p>
-                Add or update parts by part number. Other parts in this list
-                stay unchanged.
-              </p>
-              <div className={styles.manualRows}>
-                {manual.map((row, index) => (
-                  <div className={styles.manualRow} key={index}>
-                    <div className={styles.grid}>
-                      {fields.map((key) => (
-                        <label key={key}>
-                          {labels[key]}
-                          {key !== "partNumber" && key !== "quantity"
-                            ? " (optional)"
-                            : ""}
-                          <input
-                            aria-label={`${labels[key]} ${index + 1}`}
-                            value={row[key]}
-                            inputMode={
-                              key === "quantity"
-                                ? "numeric"
-                                : key === "price"
-                                  ? "decimal"
-                                  : undefined
-                            }
-                            maxLength={key === "description" ? 500 : 100}
-                            onChange={(e) =>
-                              setManual(
-                                manual.map((r, i) =>
-                                  i === index
-                                    ? { ...r, [key]: e.target.value }
-                                    : r,
-                                ),
-                              )
-                            }
-                          />
-                        </label>
-                      ))}
-                    </div>
-                    {manual.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setManual(manual.filter((_, i) => i !== index))
-                        }
-                      >
-                        Remove row {index + 1}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
               <button
                 type="button"
-                onClick={() => setManual([...manual, blank()])}
+                aria-pressed={source === "file"}
+                onClick={() => {
+                  setSource("file");
+                  setError("");
+                }}
               >
-                Add another part
+                <strong>Import file</strong>
+                <small>Upload CSV or Excel and match columns</small>
               </button>
-            </>
-          )}
-          {(source === "csv" || source === "sheet") && (
-            <>
-              <label className={styles.drop}>
-                <strong>
-                  {source === "csv"
-                    ? "Choose a CSV file"
-                    : "Choose an Excel file (.xlsx)"}
-                </strong>
-                <span>
-                  {source === "csv"
-                    ? "Up to 2 MB"
-                    : "Up to 5 MB · Choose a worksheet after upload"}
-                </span>
-                <input
-                  key={source}
-                  type="file"
-                  accept={
-                    source === "csv"
-                      ? ".csv,text/csv"
-                      : ".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  }
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setTable([]);
-                    setSheets([]);
-                    void run(async () => {
-                      if (source === "csv") {
-                        if (file.size > 2_000_000)
-                          throw new Error("Use a CSV smaller than 2 MB.");
-                        loadTable(readPartsCsv(await file.text()));
-                      } else {
-                        if (!file.name.toLowerCase().endsWith(".xlsx"))
-                          throw new Error(
-                            "Use .xlsx or paste cells from your spreadsheet.",
-                          );
-                        if (file.size > 5_000_000)
-                          throw new Error(
-                            "Use an Excel file smaller than 5 MB.",
-                          );
-                        const result = await readPartsExcel(
-                          await file.arrayBuffer(),
-                        );
-                        if (!result.length)
-                          throw new Error("No populated worksheets found.");
-                        setSheets(result);
-                        setSheetIndex(0);
-                        loadTable(result[0].rows);
-                      }
-                    });
-                  }}
-                />
-              </label>
-              {source === "sheet" && (
-                <>
-                  {sheets.length > 1 && (
-                    <label>
-                      Worksheet
-                      <select
-                        value={sheetIndex}
-                        onChange={(e) => {
-                          const i = Number(e.target.value);
-                          setSheetIndex(i);
-                          loadTable(sheets[i].rows);
-                        }}
-                      >
-                        {sheets.map((sheet, i) => (
-                          <option value={i} key={sheet.name}>
-                            {sheet.name}
-                          </option>
+            </div>
+            <details>
+              <summary>See an example</summary>
+              <p>
+                Part number and quantity are required. Price, brand and
+                description are optional. Keep part numbers as text in your
+                spreadsheet to preserve leading zeros.
+              </p>
+              <div className={styles.tableWrap}>
+                <table>
+                  <thead>
+                    <tr>
+                      {PART_LABELS.map((l) => (
+                        <th key={l}>{l}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {EXAMPLE_PARTS.map((r) => (
+                      <tr key={r[0]}>
+                        {r.map((c, i) => (
+                          <td key={i}>{c || "Price on request"}</td>
                         ))}
-                      </select>
-                    </label>
-                  )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className={styles.actions}>
+                <button onClick={() => void run(() => template(false))}>
+                  Download CSV example
+                </button>
+                <button onClick={() => void run(() => template(true))}>
+                  Download Excel example
+                </button>
+              </div>
+            </details>
+            {source === "file" && (
+              <>
+                <label className={styles.drop}>
+                  <strong>Choose CSV or Excel (.xlsx)</strong>
+                  <span>CSV up to 2 MB · Excel up to 5 MB</span>
+                  <input
+                    type="file"
+                    accept=".csv,.xlsx"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setRaw([]);
+                      setSheets([]);
+                      void run(async () => {
+                        if (file.name.toLowerCase().endsWith(".xlsx")) {
+                          if (file.size > 5000000)
+                            throw new Error(
+                              "Use an Excel file smaller than 5 MB.",
+                            );
+                          const result = await readPartsExcel(
+                            await file.arrayBuffer(),
+                          );
+                          if (!result.length)
+                            throw new Error("No populated worksheets found.");
+                          setSheets(result);
+                          setSheetIndex(0);
+                          loadTable(result[0].rows);
+                        } else {
+                          if (!file.name.toLowerCase().endsWith(".csv"))
+                            throw new Error("Choose CSV or .xlsx.");
+                          loadTable(readPartsCsv(await file.text()));
+                        }
+                      });
+                    }}
+                  />
+                </label>
+                <details>
+                  <summary>Paste a table with a different column order</summary>
                   <label>
-                    Or paste a table from Excel or Google Sheets
+                    Cells from Excel / Sheets
                     <textarea
                       aria-label="Paste spreadsheet cells"
-                      value={paste}
+                      value={pastedTable}
                       onChange={(e) => {
-                        setPaste(e.target.value);
-                        setTable([]);
+                        setPastedTable(e.target.value);
+                        setRaw([]);
                         setSheets([]);
                       }}
-                      placeholder="Copy the cells, including headings if available, and paste here."
+                      placeholder="Paste a block of cells, with or without headings."
                     />
                   </label>
                   <button
-                    type="button"
-                    disabled={!paste.trim()}
+                    disabled={!pastedTable.trim()}
                     onClick={() =>
-                      void run(async () => loadTable(readPartsCsv(paste)))
+                      void run(async () =>
+                        loadTable(
+                          readPartsCsv(pastedTable, {
+                            delimiter: "\t",
+                            preserveEmptyRows: true,
+                          }),
+                        ),
+                      )
                     }
                   >
-                    Use pasted table
+                    Match pasted columns
+                  </button>
+                </details>
+                {sheets.length > 1 && (
+                  <label>
+                    Worksheet
+                    <select
+                      value={sheetIndex}
+                      onChange={(e) => {
+                        const i = Number(e.target.value);
+                        setSheetIndex(i);
+                        loadTable(sheets[i].rows);
+                      }}
+                    >
+                      {sheets.map((s, i) => (
+                        <option key={s.name} value={i}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {!!raw.length && (
+                  <>
+                    <label className={styles.importCheck}>
+                      <input
+                        type="checkbox"
+                        checked={hasHeader}
+                        onChange={(e) => setHasHeader(e.target.checked)}
+                      />
+                      First row contains column headings
+                    </label>
+                    <div className={styles.grid}>
+                      {PART_FIELDS.map((key, i) => (
+                        <label key={key}>
+                          {PART_LABELS[i]}
+                          {i > 1 ? " (optional)" : ""}
+                          <select
+                            aria-label={`${PART_LABELS[i]} column`}
+                            value={columns[key] ?? -1}
+                            onChange={(e) =>
+                              setColumns({
+                                ...columns,
+                                [key]: Number(e.target.value),
+                              })
+                            }
+                          >
+                            <option value={-1}>
+                              {i < 2 ? "Choose column" : "Not supplied"}
+                            </option>
+                            {Array.from(
+                              {
+                                length: Math.max(
+                                  ...raw.slice(0, 100).map((r) => r.length),
+                                ),
+                              },
+                              (_, j) => (
+                                <option key={j} value={j}>
+                                  Column {j + 1}:{" "}
+                                  {(raw[0][j] || "").slice(0, 50)}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                    <button
+                      className={styles.primary}
+                      onClick={() => void run(async () => mapTable())}
+                    >
+                      Continue to editable table
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </>
+        )}
+        {editing && !preview && (
+          <>
+            <p>
+              Type in a cell, or paste a column or block from Excel / Sheets.
+              Paste without headings, in the column order below.
+            </p>
+            <div className={styles.actions}>
+              <button
+                onClick={() => {
+                  setEditing(false);
+                  setError("");
+                }}
+              >
+                Entry options
+              </button>
+              <button
+                disabled={rows.length >= 20000}
+                onClick={() => {
+                  change([...rows, blankPart()]);
+                  setPage(Math.floor(rows.length / 50));
+                }}
+              >
+                Add row
+              </button>
+              <button
+                disabled={!undo}
+                onClick={() => {
+                  if (undo) {
+                    setRows(undo);
+                    setUndo(null);
+                    setSelected([]);
+                    setPage(0);
+                    setCleanup(false);
+                  }
+                }}
+              >
+                Undo last change
+              </button>
+              <button
+                disabled={!selected.length}
+                onClick={() => {
+                  change(rows.filter((_, i) => !selected.includes(i)));
+                  setSelected([]);
+                  setPage(0);
+                }}
+              >
+                Remove selected ({selected.length})
+              </button>
+            </div>
+            <div className={styles.editorWrap}>
+              <table className={styles.editorTable}>
+                <thead>
+                  <tr>
+                    <th>
+                      <input
+                        type="checkbox"
+                        aria-label="Select all rows"
+                        checked={
+                          rows.length > 0 && selected.length === rows.length
+                        }
+                        onChange={(e) =>
+                          setSelected(
+                            e.target.checked ? rows.map((_, i) => i) : [],
+                          )
+                        }
+                      />
+                    </th>
+                    {PART_LABELS.map((label, i) => (
+                      <th key={label}>
+                        {label}
+                        {i > 1 && <small>Optional</small>}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map((row, offset) => {
+                    const i = page * 50 + offset;
+                    return (
+                      <tr key={i}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select row ${i + 1}`}
+                            checked={selected.includes(i)}
+                            onChange={(e) =>
+                              setSelected(
+                                e.target.checked
+                                  ? [...selected, i]
+                                  : selected.filter((n) => n !== i),
+                              )
+                            }
+                          />
+                          <small>{i + 1}</small>
+                        </td>
+                        {row.map((cell, j) => (
+                          <td key={j}>
+                            <input
+                              aria-label={`${PART_LABELS[j]} ${i + 1}`}
+                              aria-invalid={Boolean(errors[i])}
+                              aria-describedby={
+                                errors[i] ? `part-error-${i}` : undefined
+                              }
+                              value={cell}
+                              inputMode={
+                                j === 1
+                                  ? "numeric"
+                                  : j === 2
+                                    ? "decimal"
+                                    : undefined
+                              }
+                              onChange={(e) =>
+                                change(
+                                  rows.map((r, n) =>
+                                    n === i
+                                      ? r.map((v, k) =>
+                                          k === j ? e.target.value : v,
+                                        )
+                                      : r,
+                                  ),
+                                )
+                              }
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                try {
+                                  change(
+                                    pastePartsCells(
+                                      rows,
+                                      e.clipboardData.getData("text/plain"),
+                                      i,
+                                      j,
+                                    ),
+                                  );
+                                  setError("");
+                                } catch (err) {
+                                  setError((err as Error).message);
+                                }
+                              }}
+                            />
+                            {j === 0 && errors[i] && (
+                              <small
+                                id={`part-error-${i}`}
+                                className={styles.error}
+                              >
+                                {errors[i]}
+                              </small>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className={styles.actions}>
+              <span>
+                {rows.length.toLocaleString()} rows
+                {invalid ? ` · ${invalid} need attention` : ""}
+              </span>
+              {invalid > 0 && (
+                <button
+                  onClick={() =>
+                    setPage(Math.floor(Number(Object.keys(errors)[0]) / 50))
+                  }
+                >
+                  Show first issue
+                </button>
+              )}
+              {rows.length > 50 && (
+                <>
+                  <button disabled={!page} onClick={() => setPage(page - 1)}>
+                    Previous
+                  </button>
+                  <span>
+                    Page {page + 1} of {Math.ceil(rows.length / 50)}
+                  </span>
+                  <button
+                    disabled={(page + 1) * 50 >= rows.length}
+                    onClick={() => setPage(page + 1)}
+                  >
+                    Next
                   </button>
                 </>
               )}
-              {table.length > 0 && (
-                <>
-                  <label className={styles.importCheck}>
-                    <input
-                      type="checkbox"
-                      checked={hasHeader}
-                      onChange={(e) => {
-                        setHasHeader(e.target.checked);
-                        setColumns(
-                          e.target.checked
-                            ? guessPartColumns(table[0])
-                            : {
-                                partNumber: 0,
-                                quantity: -1,
-                                price: -1,
-                                brand: -1,
-                                description: -1,
-                              },
-                        );
-                      }}
-                    />
-                    First row contains column headings
-                  </label>
-                  <div className={styles.grid}>
-                    {fields.map((key) => (
-                      <label key={key}>
-                        {labels[key]}
-                        {key !== "partNumber" && key !== "quantity"
-                          ? " (optional)"
-                          : ""}
-                        <select
-                          aria-label={`${labels[key]} column`}
-                          value={columns[key] ?? -1}
-                          onChange={(e) =>
-                            setColumns({
-                              ...columns,
-                              [key]: Number(e.target.value),
-                            })
-                          }
-                        >
-                          <option value={-1}>
-                            {key === "partNumber" || key === "quantity"
-                              ? "Choose column"
-                              : "Not supplied"}
-                          </option>
-                          {table[0].map((cell, i) => (
-                            <option value={i} key={i}>
-                              {hasHeader
-                                ? cell || `Column ${i + 1}`
-                                : `Column ${i + 1}: ${cell.slice(0, 50)}`}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ))}
-                  </div>
-                  <label>
-                    Remove this prefix from part numbers (optional)
-                    <input
-                      aria-label="Remove part number prefix"
-                      value={prefix}
-                      maxLength={30}
-                      placeholder="e.g. 01."
-                      onChange={(e) => setPrefix(e.target.value)}
-                    />
-                  </label>
-                  <small>
-                    Only an exact match at the start is removed. Check the part
-                    numbers in the review.
-                  </small>
-                  <label>
-                    Update this list
-                    <select
-                      value={mode}
-                      onChange={(e) =>
-                        setMode(e.target.value as "merge" | "replace")
-                      }
-                    >
-                      <option value="merge">
-                        Add / update these parts — keep other parts
-                      </option>
-                      <option value="replace">
-                        Replace full list — remove parts not included
-                      </option>
-                    </select>
-                  </label>
-                </>
-              )}
-            </>
-          )}
-          {ready && (
-            <>
+            </div>
+            <details>
+              <summary>Clean up part numbers</summary>
+              <p>
+                Select the rows to adjust. Only an exact prefix at the start
+                will be removed.
+              </p>
               <label>
-                Default brand (optional)
+                Remove prefix
                 <input
-                  aria-label="Default brand"
-                  value={defaultBrand}
-                  maxLength={100}
-                  placeholder="e.g. Landini"
-                  onChange={(e) => setDefaultBrand(e.target.value)}
+                  aria-label="Remove part number prefix"
+                  maxLength={30}
+                  value={prefix}
+                  placeholder="e.g. 01."
+                  onChange={(e) => {
+                    setPrefix(e.target.value);
+                    setCleanup(false);
+                  }}
                 />
               </label>
-              <p>
-                Blank prices show as “Price on request”. Brand and description
-                are optional.
-              </p>
+              <button
+                disabled={!changed.length}
+                onClick={() => setCleanup(true)}
+              >
+                Preview cleanup ({changed.length})
+              </button>
+              {cleanup && (
+                <>
+                  <div className={styles.tableWrap}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Before</th>
+                          <th>After</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {changed.slice(0, 10).map((i) => (
+                          <tr key={i}>
+                            <td>{rows[i][0]}</td>
+                            <td>
+                              {rows[i][0].slice(prefix.length) ||
+                                "Empty — needs correction"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p>
+                    {changed.length} selected rows will change. Showing up to 10
+                    examples.
+                  </p>
+                  <button
+                    onClick={() =>
+                      change(
+                        rows.map((r, i) =>
+                          changed.includes(i)
+                            ? [r[0].slice(prefix.length), ...r.slice(1)]
+                            : r,
+                        ),
+                      )
+                    }
+                  >
+                    Apply cleanup
+                  </button>
+                </>
+              )}
+            </details>
+            <label>
+              Update this list
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value as "merge" | "replace")}
+              >
+                <option value="merge">
+                  Add / update parts — keep unlisted parts
+                </option>
+                <option value="replace">
+                  Replace entire list — remove unlisted parts
+                </option>
+              </select>
+            </label>
+            <p>
+              Blank prices show as “Price on request”. Matching part numbers
+              replace their previous details, including optional fields left
+              blank.
+            </p>
+            <details
+              open={
+                !details.businessName ||
+                !details.phone ||
+                !details.email ||
+                !details.town
+              }
+            >
+              <summary>Contact details &amp; VAT</summary>
               <div className={styles.grid}>
                 {(["businessName", "town", "phone", "email"] as const).map(
-                  (key) => (
+                  (key, i) => (
                     <label key={key}>
                       {
-                        {
-                          businessName: "Dealership",
-                          town: "Town",
-                          phone: "Contact phone",
-                          email: "Contact email",
-                        }[key]
+                        [
+                          "Dealership",
+                          "Town",
+                          "Contact phone",
+                          "Contact email",
+                        ][i]
                       }
                       <input
                         value={details[key]}
@@ -490,99 +693,67 @@ export default function PartsImportForm({
                   </select>
                 </label>
               </div>
-              <button
-                className={styles.primary}
-                disabled={
-                  busy ||
-                  (source !== "manual" &&
-                    (columns.partNumber < 0 || columns.quantity < 0))
-                }
-                onClick={() =>
-                  void run(async () =>
-                    setPreview(
-                      await request({ action: "preview", ...payload() }),
-                    ),
-                  )
-                }
-              >
-                Review parts
-              </button>
-            </>
-          )}
-        </fieldset>
-      ) : (
-        <>
-          <div className={styles.summary}>
-            {Object.entries(preview.summary).map(([key, value]) => (
-              <div key={key}>
-                <strong>{value.toLocaleString()}</strong>
-                <span>{key}</span>
-              </div>
-            ))}
-          </div>
-          <p>
-            {source === "manual" || mode === "merge"
-              ? "These part numbers will be added or updated. Other parts stay unchanged. Supplied rows replace their previous details."
-              : "Parts missing from this table will be removed from your listing."}{" "}
-            Your master stock records and cost ledger are unaffected.
-          </p>
-          <p>Sample of imported parts:</p>
-          <div className={styles.tableWrap}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Part number</th>
-                  <th>Description</th>
-                  <th>Brand</th>
-                  <th>Quantity</th>
-                  <th>Unit price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {preview.sample.map((row) => (
-                  <tr key={row.partNumber}>
-                    <td>{row.partNumber}</td>
-                    <td>{row.description || "—"}</td>
-                    <td>{row.brand || "—"}</td>
-                    <td>{row.quantity}</td>
-                    <td>
-                      {row.price === null
-                        ? "Price on request"
-                        : row.price.toLocaleString("en-ZA", {
-                            style: "currency",
-                            currency: "ZAR",
-                          })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className={styles.actions}>
-            <button disabled={busy} onClick={() => setPreview(null)}>
-              Back
-            </button>
+            </details>
             <button
-              disabled={busy}
               className={styles.primary}
+              disabled={!rows.length || invalid > 0}
               onClick={() =>
-                void run(async () => {
-                  await request({
-                    action: "import",
-                    ...payload(),
-                    revision: preview.revision,
-                  });
-                  await onComplete();
-                })
+                void run(async () =>
+                  setPreview(
+                    await request({ action: "preview", ...payload() }),
+                  ),
+                )
               }
             >
-              {source === "manual" || mode === "merge"
-                ? "Save parts"
-                : "Replace my parts list"}
+              Review parts
             </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+        {preview && (
+          <>
+            <div className={styles.summary}>
+              {Object.entries(preview.summary).map(([k, v]) => (
+                <div key={k}>
+                  <strong>{v.toLocaleString()}</strong>
+                  <span>{k}</span>
+                </div>
+              ))}
+            </div>
+            <p>
+              {mode === "merge"
+                ? "Unlisted parts stay unchanged."
+                : "Parts missing from this table will be removed from the shared list."}{" "}
+              Your master stock records and cost ledger are unaffected.
+            </p>
+            <p>
+              {rows.length.toLocaleString()} reviewed rows.{" "}
+              {preview.summary.removed > 0
+                ? `${preview.summary.removed} existing parts will be removed.`
+                : "No existing parts will be removed."}
+            </p>
+            <div className={styles.actions}>
+              <button onClick={() => setPreview(null)}>Back to edit</button>
+              <button
+                className={styles.primary}
+                onClick={() =>
+                  void run(async () => {
+                    await request({
+                      action: "import",
+                      ...payload(),
+                      revision: preview.revision,
+                    });
+                    await onComplete();
+                  })
+                }
+              >
+                {mode === "merge"
+                  ? "Save parts"
+                  : `Replace list (${preview.summary.removed} removed)`}
+              </button>
+            </div>
+          </>
+        )}
+      </fieldset>
     </div>
   );
 }

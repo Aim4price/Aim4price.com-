@@ -133,7 +133,7 @@ export default function PartsInbox({
             {new Date(e.created_at).toLocaleDateString("en-ZA")} ·{" "}
             {e.status === "new" ? "New" : "Handled"}
           </small>
-          <p>{e.message}</p>
+          <p style={{ whiteSpace: "pre-line" }}>{e.message}</p>
           <div className={styles.actions}>
             <a
               className={styles.button}
