@@ -864,7 +864,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .inventoryTools > div { flex: 1 1 100%; min-width: 0; }
 }
 
-/* Keep business identity clear and group WhatsApp with the phone contact. */
+/* Keep business identity clear; place chat alongside the equipment browsing heading. */
 .publicPage .publicHeroMain { grid-template-columns: minmax(0, 1fr); }
 .publicPage .publicBusinessDetails > .publicPhoneContact {
   display: flex;
@@ -885,8 +885,8 @@
   align-items: center;
   justify-content: center;
   gap: .45rem;
-  min-height: 2.75rem;
-  padding: .55rem .8rem;
+  min-height: 3rem;
+  padding: .7rem 1.1rem;
   border: 1px solid var(--app-success-line, #b5dcca);
   border-radius: .8rem;
   background: var(--app-success-soft, #eef8f2);
@@ -896,7 +896,7 @@
   white-space: nowrap;
   text-decoration: none;
 }
-.publicBusinessDetails .publicWhatsappContact svg { width: 1.15rem; height: 1.15rem; stroke: currentColor; }
+.publicWhatsappContact svg { width: 1.15rem; height: 1.15rem; stroke: currentColor; }
 .publicWhatsappContact:hover { border-color: var(--app-accent, #31996b); }
 
 /* Match the Create advert introduction subtitle spacing. Shared AccountDialog
@@ -958,3 +958,8 @@
 .showroomBenefits { gap: .85rem; }
 .settingsManager .showroomChoice:hover:not(:disabled) { border-color: var(--showroom-icon-line); box-shadow: 0 5px 16px var(--app-shadow-colour, #173b2f12); }
 :global(html[data-app-theme="dark"]) .showroomChoiceIcon { color: color-mix(in srgb, var(--showroom-icon-ink) 55%, white); }
+
+.inventoryIntro { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.inventoryIntro > div { flex: 1 1 28rem; }
+.inventoryIntro .publicWhatsappContact { flex: 0 0 auto; font-size: .88rem; }
+.publicWhatsappContact:focus-visible { outline: 2px solid var(--app-accent, #31996b); outline-offset: 3px; }

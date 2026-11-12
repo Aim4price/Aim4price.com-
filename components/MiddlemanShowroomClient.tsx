@@ -934,9 +934,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
                     <ShowroomDetailIcon name="phone" />
                     <span className={styles.publicBusinessDetailCopy}><span>Phone</span><strong>{showroom.phone}</strong></span>
                   </a>
-                  <a className={styles.publicWhatsappContact} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}>
-                    <ShowroomDetailIcon name="whatsapp" />Chat on WhatsApp
-                  </a>
+
                 </div>
               ) : null}
               {showroom.email ? (
@@ -962,6 +960,11 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
             <h2 id="showroom-inventory-title">Available equipment</h2>
             <p>Browse equipment listed by {showroom.name} and contact the seller directly.</p>
           </div>
+          {showroom.phone ? (
+            <a className={styles.publicWhatsappContact} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}>
+              <ShowroomDetailIcon name="whatsapp" />Chat on WhatsApp
+            </a>
+          ) : null}
         </div>
         <MarketplaceClient
           initialFilters={{ brand: '', model: '', drive: '', type: '' }}
