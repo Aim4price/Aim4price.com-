@@ -707,9 +707,8 @@ export function MiddlemanShowroomManager({
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
         </section>
       </ShowroomDialog> : null}
-      {shareShowroomOpen ? <ShowroomDialog title="Share showroom" onClose={() => setShareShowroomOpen(false)}>
+      {shareShowroomOpen ? <ShowroomDialog title="Share showroom" subtitle="One link to all your live adverts." onClose={() => setShareShowroomOpen(false)}>
         <div className={styles.dialogContent}>
-          <p>One link to all your live adverts.</p>
           <label className={styles.shareAddress}>Showroom link<input readOnly value={`${window.location.origin}${publicHref(showroom.slug)}`} onFocus={event => event.currentTarget.select()} /></label>
           <div className={styles.heroActions}>
             <a className={styles.secondaryButton} href={`https://wa.me/?text=${encodeURIComponent(`${showroom.name}

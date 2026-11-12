@@ -40,7 +40,7 @@
 }
 .surface .header.header.header.header p {
   max-width: none !important;
-  margin: 0.4rem 0 0 !important;
+  margin: var(--account-dialog-subtitle-gap, 0.4rem) 0 0 !important;
   color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
