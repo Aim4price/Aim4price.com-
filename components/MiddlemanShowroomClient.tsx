@@ -920,11 +920,6 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
                   : <p className={styles.publicTrustLine}>Browse our available machinery.</p>}
               </div>
             </div>
-            <div className={styles.publicContactActions} role="group" aria-label={`${showroom.name} contact options`}>
-              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}><ShowroomDetailIcon name="whatsapp" />Chat on WhatsApp</a> : null}
-              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}><ShowroomDetailIcon name="phone" />Call business</a> : null}
-              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}><ShowroomDetailIcon name="email" />Email business</a> : null}
-            </div>
           </div>
           {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
             <div className={styles.publicBusinessDetails}>
@@ -935,10 +930,15 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
                 </div>
               ) : null}
               {showroom.phone ? (
-                <a href={`tel:${showroom.phone}`}>
-                  <ShowroomDetailIcon name="phone" />
-                  <span className={styles.publicBusinessDetailCopy}><span>Phone</span><strong>{showroom.phone}</strong></span>
-                </a>
+                <div className={styles.publicPhoneContact}>
+                  <a className={styles.publicPhoneLink} href={`tel:${showroom.phone}`}>
+                    <ShowroomDetailIcon name="phone" />
+                    <span className={styles.publicBusinessDetailCopy}><span>Phone</span><strong>{showroom.phone}</strong></span>
+                  </a>
+                  <a className={styles.publicWhatsappContact} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}>
+                    <ShowroomDetailIcon name="whatsapp" />Chat on WhatsApp
+                  </a>
+                </div>
               ) : null}
               {showroom.email ? (
                 <a href={`mailto:${showroom.email}`}>
