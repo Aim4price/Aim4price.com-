@@ -97,6 +97,7 @@ function Icon({
     | "search"
     | "upload"
     | "users"
+    | "mail"
     | "phone"
     | "list"
     | "share"
@@ -125,6 +126,7 @@ function Icon({
     upload: "M12 16V3 M7 8l5-5 5 5 M3 15v6h18v-6",
     users:
       "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0 M22 21v-2a4 4 0 0 0-3-4",
+    mail: "M3 5h18v14H3Z M3 5l9 7 9-7",
     phone: "M5 3h4l2 5-3 2a15 15 0 0 0 6 6l2-3 5 2v4c-9 3-20-8-16-16Z",
     list: "M8 6h13 M8 12h13 M8 18h13 M3 6h1 M3 12h1 M3 18h1",
   };
@@ -151,12 +153,14 @@ function Modal({
   subtitle,
   manage = false,
   entry = false,
+  enquiry = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   manage?: boolean;
   entry?: boolean;
+  enquiry?: boolean;
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -173,7 +177,7 @@ function Modal({
     <div className={styles.backdrop}>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -1245,91 +1249,58 @@ export default function PartsClient({
           </Modal>
         )}
         {contact && (
-          <Modal title={requestedParts.length>1 ? `Enquire about ${requestedParts.length} parts` : contact.part_number} onClose={close} busy={busy}>
-            <h3>{contact.business_name}</h3>
-            <p>
-              {contact.town} · Updated {date(contact.uploaded_at)}
-            </p>
-            <p>Confirm availability and price directly with the dealer.</p>
-            <div className={styles.tableWrap}><table><thead><tr><th>Part number</th><th>Requested quantity</th></tr></thead><tbody>{requestedParts.map((r,i)=><tr key={r.partNumber}><td>{r.partNumber}</td><td><input aria-label={`Requested quantity for ${r.partNumber}`} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===i?{...p,quantity:e.target.value}:p))}/></td></tr>)}</tbody></table></div>
-            {!enquiryValid && <p role="alert">Enter a positive whole quantity for each part.</p>}
-            {!current?.owned && (
-              <>
-                <label>
-                  Enquiry
-                  <textarea
-                    value={enquiry}
-                    maxLength={2000}
-                    onChange={(e) => setEnquiry(e.target.value)}
-                  />
-                </label>
-                <div className={styles.actions}>
-                  <button
-                    className={styles.primary}
-                    disabled={busy || !enquiry.trim() || !enquiryValid}
-                    onClick={() =>
-                      void run(async () => {
-                        await api({
-                          action: "enquire",
-                          network,
-                          dealerId: contact.dealer_id,
-                          items: requestedParts.map(r=>({partNumber:r.partNumber,quantity:Number(r.quantity)})),
-                          message: enquiry,
-                        });
-                        setContact(null);
-                        setSelectedParts([]);
-                        setNotice(
-                          "Enquiry sent. The dealer can find it in Leads.",
-                        );
-                      })
-                    }
-                  >
-                    Send via Aim4price
-                  </button>
+          <Modal enquiry title="Parts enquiry" subtitle={current?.name} onClose={close} busy={busy}>
+            <div className={styles.enquiryBody}>
+              <section className={styles.enquiryDealer} aria-label="Dealer details">
+                <div><h3>{contact.business_name}</h3>{contact.town && <p>{contact.town}</p>}</div>
+                {contact.uploaded_at && <span>Stocklist updated<br /><strong>{date(contact.uploaded_at)}</strong></span>}
+              </section>
+              <section className={styles.enquiryItems} aria-label="Requested parts">
+                <div className={styles.enquirySectionHeading}><h3>Requested parts</h3><span>{requestedParts.length} {requestedParts.length === 1 ? "part" : "parts"}</span></div>
+                <div className={styles.enquiryTableWrap}>
+                  <table className={styles.enquiryTable}>
+                    <thead><tr><th scope="col">Part number</th><th scope="col">Quantity</th></tr></thead>
+                    <tbody>{requestedParts.map((r,i)=>{
+                      const valid = /^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999;
+                      return <tr key={r.partNumber}>
+                        <td><strong>{r.partNumber}</strong>{requestedParts.length === 1 && contact.description && <small>{contact.description}</small>}</td>
+                        <td><input aria-label={`Requested quantity for ${r.partNumber}`} aria-invalid={!valid} aria-describedby={!valid ? "parts-enquiry-quantity-error" : undefined} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===i?{...p,quantity:e.target.value}:p))}/></td>
+                      </tr>;
+                    })}</tbody>
+                  </table>
                 </div>
-                {feedback}
-              </>
-            )}
-            <div className={styles.actions}>
-              <a
-                className={styles.button}
-                href={"tel:" + contact.phone.replace(/[^+0-9]/g, "")}
-              >
-                <Icon kind="phone" />
-                Call
-              </a>
-              <a
-                className={styles.button}
-                onClick={e=>{if(!enquiryValid)e.preventDefault();}}
-                aria-disabled={!enquiryValid}
-                href={`mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent("Parts enquiry: " + current?.name)}&body=${encodeURIComponent(enquiryText)}`}
-              >
-                Email
-              </a>
-              <a
-                className={styles.button}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={e=>{if(!enquiryValid)e.preventDefault();}}
-                aria-disabled={!enquiryValid}
-                href={
-                  "https://wa.me/" +
-                  contact.phone.replace(/\D/g, "").replace(/^0/, "27") +
-                  "?text=" +
-                  encodeURIComponent(enquiryText)
-                }
-              >
-                WhatsApp
-              </a>
+                {!enquiryValid && <p id="parts-enquiry-quantity-error" role="alert" className={styles.error}>Enter a positive whole quantity for each part.</p>}
+              </section>
+              {!current?.owned && <label className={styles.enquiryMessage}>
+                Message to dealer
+                <textarea value={enquiry} maxLength={2000} rows={3} onChange={e=>setEnquiry(e.target.value)} />
+              </label>}
+              <section className={styles.enquiryChannels} aria-label="Contact dealer">
+                <div className={styles.enquirySectionHeading}><h3>Contact dealer</h3></div>
+                <div className={styles.enquiryContactGrid}>
+                  {contact.phone && <a className={styles.enquiryContact} href={"tel:" + contact.phone.replace(/[^+0-9]/g, "")}>
+                    <span className={styles.enquiryContactIcon}><Icon kind="phone" /></span><span><strong>Call</strong><small>{contact.phone}</small></span>
+                  </a>}
+                  {contact.email && <a className={styles.enquiryContact} data-tone="blue" onClick={e=>{if(!enquiryValid)e.preventDefault();}} aria-disabled={!enquiryValid}
+                    href={`mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent("Parts enquiry: " + current?.name)}&body=${encodeURIComponent(enquiryText)}`}>
+                    <span className={styles.enquiryContactIcon}><Icon kind="mail" /></span><span><strong>Email</strong><small>{contact.email}</small></span>
+                  </a>}
+                  {contact.phone && <a className={styles.enquiryContact} data-tone="green" target="_blank" rel="noopener noreferrer" onClick={e=>{if(!enquiryValid)e.preventDefault();}} aria-disabled={!enquiryValid}
+                    href={"https://wa.me/" + contact.phone.replace(/\D/g, "").replace(/^0/, "27") + "?text=" + encodeURIComponent(enquiryText)}>
+                    <span className={styles.enquiryContactIcon}><Icon kind="message" /></span><span><strong>WhatsApp</strong><small>Message dealer</small></span>
+                  </a>}
+                </div>
+                <p className={styles.enquiryHint}>Confirm availability and price with the dealer.</p>
+              </section>
+              {feedback}
             </div>
-            <small>
-              {contact.phone} · {contact.email}
-            </small>
-            {contribute && website && (
-              <p>
-                <a href="/dealer-costs">Open client cost ledger</a>
-              </p>
-            )}
+            {(!current?.owned || (contribute && website)) && <footer className={styles.enquiryFooter}>
+              {contribute && website && <a className={styles.enquiryLedger} href="/dealer-costs">Open client cost ledger <span aria-hidden="true">→</span></a>}
+              {!current?.owned && <button className={styles.primary} disabled={busy || !enquiry.trim() || !enquiryValid} onClick={()=>void run(async()=>{
+                await api({action:"enquire",network,dealerId:contact.dealer_id,items:requestedParts.map(r=>({partNumber:r.partNumber,quantity:Number(r.quantity)})),message:enquiry});
+                setContact(null);setSelectedParts([]);setNotice("Enquiry sent. The dealer can find it in Leads.");
+              })}><Icon kind="message" />{busy ? "Sending…" : "Send via Aim4price"}</button>}
+            </footer>}
           </Modal>
         )}
         {confirm && (

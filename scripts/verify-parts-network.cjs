@@ -344,6 +344,14 @@ const appCode =
       await page.$eval('a[href^="tel:"]', (e) => e.getAttribute("href")),
       "tel:0821234567",
     );
+    assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
+    await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
+    await page.setViewport({width:390,height:844});
+    await page.screenshot({path:path.join(output,'enquiry-phone.png')});
+    assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Enquiry modal fits phone width');
+    assert.ok(await page.$eval('[aria-label="Requested quantity for 001-ABC"]',e=>e.getBoundingClientRect().width<=110),'Quantity field stays compact');
+    await page.setViewport({width:1440,height:1000});
+
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
     await click("Add parts");
@@ -546,6 +554,14 @@ const appCode =
     assert.ok(await page.$eval('a[href^="mailto:"]',e=>decodeURIComponent(e.href).includes('002-XYZ — quantity 3')));
     assert.ok(await page.$eval('a[href^="https://wa.me/"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 1')));
     await page.screenshot({path:path.join(output,'multi-enquiry.png')});
+    await page.setViewport({width:390,height:844});
+    await page.screenshot({path:path.join(output,'multi-enquiry-phone.png')});
+    await page.addStyleTag({content:':root{--app-text:#e1eee6;--app-text-muted:#a9bcb0;--app-surface:#15251d;--app-surface-soft:#1d3025;--app-border:#375345;--app-background:#0d1912}'});
+    assert.equal(await page.$eval('[role=dialog] tbody strong',e=>getComputedStyle(e).color),'rgb(225, 238, 230)');
+    await page.screenshot({path:path.join(output,'enquiry-dark-phone.png')});
+    assert.ok(await page.evaluate(()=>{const r=[...document.querySelectorAll('[role=dialog] button')].find(e=>e.textContent.includes('Send via Aim4price')).getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}),'Send action remains visible on phone');
+    await page.setViewport({width:1440,height:1000});
+
     await click("Send via Aim4price");
     await page.waitForFunction(() =>
       document.body.innerText.includes("Enquiry sent."),
