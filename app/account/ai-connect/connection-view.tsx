@@ -93,6 +93,7 @@ const setupLinks: Record<string, string> = {
 };
 
 export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [], chatGptListingUrl }: ConnectionViewProps) {
+  const blocked = Boolean(message && !disabled);
   const partner = account?.accountType === 'dealer' || account?.accountType === 'business';
   const admin = audience === 'admin';
   const accessDuration = admin ? 'Access lasts 24 hours.' : 'Your assistant stays connected until you disconnect it.';
@@ -177,7 +178,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <section className={`${accessStyles.launcher} ${styles.launcher}`} aria-labelledby="ai-connections-title">
           <div className={accessStyles.launcherIntro}>
             <h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1>
-            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : partner ? 'Ask about your workspace and the client information shared with you.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
+            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : partner ? 'Ask about your workspace and the client information shared with you.' : !account ? 'Connect your AI assistant to the Aim4price information you can access.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
@@ -193,10 +194,10 @@ export default function ConnectionView({ account, connections, resource, proof, 
               <p className={styles.note}>{accessDuration} You can disconnect from this page at any time. Information already shared may remain in your AI conversations.</p>
               <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
             </form>
-          </section> : <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} />}
+          </section> : !blocked ? <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} /> : null}
           <div className={styles.safety} hidden={!!proof}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
         </section>
-        {!proof && <details className={styles.examples} open>
+        {!proof && !blocked && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
             <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : partner ? 'Explore your workspace and authorised client records.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
             <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>

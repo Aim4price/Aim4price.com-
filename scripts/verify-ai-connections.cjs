@@ -232,6 +232,10 @@ const evidence=path.join(root,'.next/ai-connection-validation');
       await page.screenshot({path:path.join(evidence,`${accountType}-consent-${width}.png`),fullPage:true});
     }
   }
+  await render({message:'Your Aim4price account is not active. Contact Aim4price Admin to review your account status.'});
+  assert.ok((await page.$eval('main', e=>e.textContent)).includes('not active'));
+  assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
+  assert.ok(!(await page.$eval('main',e=>e.textContent)).includes('Questions you can ask'));
   assert.deepEqual(errors,[]);console.log('AI provider modal, dark/light cards, mobile layout, focus return and admin consent verified.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

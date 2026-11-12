@@ -72,16 +72,8 @@ export async function eligibleAccount(
       email: String(row.email),
     };
   }
-  if (
-    (config.accessMode !== "owners" &&
-      !config.allowedUserIds.includes(userId)) ||
-    userId.startsWith("aim4price-assistance-")
-  )
-    throw new ConnectionError(
-      403,
-      "access_denied",
-      "This account is not enabled for AI connections.",
-    );
+  if (userId.startsWith("aim4price-assistance-"))
+    throw new ConnectionError(403, "direct_account_required", "Sign in with your own Aim4price account to connect an assistant.");
   const row = (
     await db.query(
       `SELECT u.id,u.name,u.email,p.account_type,p.account_status,
@@ -92,22 +84,17 @@ export async function eligibleAccount(
       [userId],
     )
   ).rows[0];
-  // Direct website account principals only. Staff/delegated sessions are never promoted to a workspace owner.
-  if (
-    !row ||
-    isAim4priceAdminEmail(row.email) ||
-    !(config.customerAccountTypes || ["owner"]).includes(row.account_type) ||
-    !["owner", "dealer", "business"].includes(row.account_type) ||
-    isMiddlemanAccountSubtype(row.account_subtype) ||
-    (row.account_type !== "owner" && !config.allowedUserIds.includes(userId)) ||
-    row.account_status !== "active" ||
-    (row.account_type !== "business" && row.plan !== "desktop")
-  )
-    throw new ConnectionError(
-      403,
-      "access_denied",
-      "This account is not enabled for AI connections. Owner and Dealer access requires an active desktop account.",
-    );
+  // Direct website account principals only; never promote a staff session.
+  if (!row)
+    throw new ConnectionError(403, "account_required", "Complete your Aim4price account setup before connecting.");
+  if (isAim4priceAdminEmail(row.email))
+    throw new ConnectionError(403, "admin_connection_required", "Use the Admin AI connections page for this administrator account.");
+  if (!["owner", "dealer", "business"].includes(row.account_type) || isMiddlemanAccountSubtype(row.account_subtype))
+    throw new ConnectionError(403, "unsupported_account_type", "AI connections are available for Owner, Dealer and Business accounts. This account type is not supported yet.");
+  if (row.account_status !== "active")
+    throw new ConnectionError(403, "inactive_account", "Your Aim4price account is not active. Contact Aim4price Admin to review your account status.");
+  if (row.account_type !== "business" && row.plan !== "desktop")
+    throw new ConnectionError(403, "desktop_required", "Your Owner or Dealer account needs desktop access to connect an AI assistant.");
   if (row.account_type !== "owner" && row.verified !== "true")
     throw new ConnectionError(403, "verification_required", "Verify your account email before connecting.");
   if (row.account_type === "business") {

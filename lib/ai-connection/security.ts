@@ -164,18 +164,10 @@ export function connectionConfig(
       "unavailable",
       "No AI provider has been configured for this connection.",
     );
-  const accessMode = env.AIM4PRICE_AI_ACCESS_MODE || "pilot";
-  const allowedUserIds = split(env.AIM4PRICE_AI_ALLOWED_USER_IDS);
-  if (
-    !["pilot", "owners"].includes(accessMode) ||
-    (audience === "owner" && accessMode === "pilot" && !allowedUserIds.length)
-  )
-    throw new Error("AI account access configuration is incomplete.");
-  const customerAccountTypes = split(env.AIM4PRICE_AI_ACCOUNT_TYPES || "owner");
-  if (!customerAccountTypes.length || customerAccountTypes.some(type => !["owner", "dealer", "business"].includes(type)))
-    throw new Error("Invalid AI customer account types.");
+  // Customer eligibility is determined from current account permissions, not
+  // legacy pilot environment variables. Provider enablement remains explicit.
   return {
-    customerAccountTypes: customerAccountTypes as CustomerAccountType[],
+    customerAccountTypes: ["owner", "dealer", "business"],
     origin,
     resource:
       origin + (audience === "admin" ? "/api/ai/admin/mcp" : "/api/ai/mcp"),
@@ -187,8 +179,8 @@ export function connectionConfig(
     signingSecret,
     clients,
     audience,
-    accessMode: accessMode as "pilot" | "owners",
-    allowedUserIds,
+    accessMode: "owners",
+    allowedUserIds: [],
     sharedLimits: env.AIM4PRICE_AI_SHARED_LIMITS === "true",
   };
 }

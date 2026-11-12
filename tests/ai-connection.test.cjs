@@ -232,7 +232,7 @@ after(async () => {
   await db.close();
   fs.rmSync(tmp, { recursive: true, force: true });
 });
-test('pilot disabled by default and incomplete configuration fails closed', () => {
+test('AI service disabled by default and incomplete configuration fails closed', () => {
   assert.throws(() => security.connectionConfig({}), /not enabled/);
   assert.throws(
     () =>
@@ -627,12 +627,10 @@ test('expired access/code, changed resource and scope are denied', async () => {
     ),
   );
 });
-test('admin/dealer/free/suspended accounts and removed pilot users fail closed', async () => {
+test('ineligible accounts fail closed while eligible owners need no pilot entry', async () => {
   for (const user of ['admin', 'dealer', 'free', 'suspended'])
     await assert.rejects(store.eligibleAccount(pool, user, config));
-  await assert.rejects(
-    store.eligibleAccount(pool, 'owner-a', { ...config, allowedUserIds: [] }),
-  );
+  assert.equal((await store.eligibleAccount(pool, 'owner-a', { ...config, allowedUserIds: [] })).accountType, 'owner');
   await db.query(
     "UPDATE account_profiles SET account_status='suspended' WHERE user_id='owner-a'",
   );
@@ -864,7 +862,7 @@ test('multiple providers use independent exact callbacks, credentials and scopes
   assert.throws(()=>security.connectionConfig({...registryEnv,AIM4PRICE_AI_CLIENTS_JSON:JSON.stringify(duplicate)}));
   assert.throws(()=>registryConfig('bad')); // no matching provider
 });
-test('owner product mode admits active Owners outside pilot, but rejects other roles and suspended/free users',async()=>{
+test('customer mode admits active Owners and rejects unverified dealers and ineligible accounts',async()=>{
   const c=registryConfig();assert.deepEqual(c.allowedUserIds,[]);
   assert.equal((await store.eligibleAccount(pool,'owner-b',c)).id,'owner-b');
   for(const id of ['admin','dealer','free','suspended','aim4price-assistance-any']) await assert.rejects(store.eligibleAccount(pool,id,c));
@@ -1176,4 +1174,27 @@ test('consent and authorization codes cannot cross account type changes', async 
     await db.exec("UPDATE account_profiles SET account_type='dealer' WHERE user_id='dealer'");
     delete config.customerAccountTypes;
   }
+});
+
+
+test('legacy pilot settings cannot block eligible Dealer and Business accounts', async () => {
+  const c = security.connectionConfig({...registryEnv,
+    AIM4PRICE_AI_ACCESS_MODE:'pilot', AIM4PRICE_AI_ALLOWED_USER_IDS:'', AIM4PRICE_AI_ACCOUNT_TYPES:'owner'});
+  assert.deepEqual(c.customerAccountTypes,['owner','dealer','business']);
+  // Also exercise old in-memory configuration: neither type nor ID allowlists grant or deny eligibility.
+  const legacy = {...c,accessMode:'pilot',allowedUserIds:[],customerAccountTypes:['owner']};
+  for (const user of ['owner-a','dealer','business']) {
+    const grant = await registryGrant(legacy,user);
+    const response = await registryRpc(legacy,grant.tokens.access_token,'tools/list');
+    assert.equal(response.status,200,user);
+    const names=(await response.json()).result.tools.map(t=>t.name);
+    assert.equal(names.includes('list_assets'),user!=='business');
+    assert.equal(names.includes('read_shared_asset'),user!=='owner-a');
+  }
+  await assert.rejects(store.eligibleAccount(pool,'free',legacy),{code:'desktop_required'});
+  await assert.rejects(store.eligibleAccount(pool,'suspended',legacy),{code:'inactive_account'});
+  await assert.rejects(store.eligibleAccount(pool,'admin',legacy),{code:'admin_connection_required'});
+  await db.exec(`UPDATE "user" SET "emailVerified"=false WHERE id='dealer'`);
+  try { await assert.rejects(store.eligibleAccount(pool,'dealer',legacy),{code:'verification_required'}); }
+  finally { await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id='dealer'`); }
 });
