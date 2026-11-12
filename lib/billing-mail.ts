@@ -1,3 +1,4 @@
+import { receivesBillingEmails } from './billing-preferences';
 import { getDb } from './db';
 import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
@@ -33,6 +34,10 @@ export async function dispatchBillingMail(): Promise<void> {
     try {
       const invoice=(await getDb().query('select * from aim4price_billing_invoices where id=$1',[mail.invoice_id])).rows[0];
       if(invoice?.status!=='issued'||!invoice.user_id)throw new Error('Invoice is void or the account was deleted. Review required.');
+      if (!await receivesBillingEmails(invoice.user_id)) {
+        await getDb().query("update aim4price_billing_mail set status='needs_review',last_error='Not sent: account opted out of billing emails.',locked_until=null where id=$1", [mail.id]);
+        continue;
+      }
       const key=process.env.RESEND_API_KEY?.trim();
       if(!key)throw new Error('RESEND_API_KEY is not configured.');
       let payload=mail.payload;

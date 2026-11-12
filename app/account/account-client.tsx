@@ -36,7 +36,8 @@ type AccountActionModal =
   | "marketplace"
   | "discovery"
   | "partnerDirectory"
-  | "password";
+  | "password"
+  | "email";
 
 type AccountProfile = {
   userId: string;
@@ -500,6 +501,13 @@ export default function AccountClient({
   const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
+  const [newAccountEmail, setNewAccountEmail] = useState("");
+  const [emailConfirmation, setEmailConfirmation] = useState("");
+  const [emailChangeSent, setEmailChangeSent] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [billingEmails, setBillingEmails] = useState<boolean | null>(null);
+  const [isSavingBillingEmails, setIsSavingBillingEmails] = useState(false);
+  const [billingEmailNotice, setBillingEmailNotice] = useState<AccountNotice | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
@@ -521,7 +529,7 @@ export default function AccountClient({
   const activeActionModalBusyRef = useRef(false);
   const deleteDialogBusyRef = useRef(false);
 
-  activeActionModalBusyRef.current = isSavingNotifications ||
+  activeActionModalBusyRef.current = isChangingEmail || isSavingBillingEmails || isSavingNotifications ||
     isSavingProfile ||
     isReadingLogo ||
     isSavingScanPin ||
@@ -1078,10 +1086,6 @@ export default function AccountClient({
       return;
     }
 
-    if (activeAccountModal === 'business' && businessDetailsStep > 1) {
-      setBusinessDetailsStep((businessDetailsStep - 1) as BusinessDetailsStep);
-      return;
-    }
 
     if (profile) {
       setProfileDraft(buildProfileDraft(profile));
@@ -1200,6 +1204,55 @@ export default function AccountClient({
 
   function openPasswordEditor() {
     openActionModal("password");
+  }
+
+  useEffect(() => {
+    if (sharedAccount || activeAccountModal !== "business") return;
+    let mounted = true;
+    setBillingEmails(null);
+    fetch("/api/account-profile/billing-preferences", { cache: "no-store" })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || typeof data.enabled !== "boolean") throw new Error("Billing email settings could not load.");
+        if (mounted) setBillingEmails(data.enabled);
+      }).catch(error => { if (mounted) setBillingEmailNotice({ tone: "error", message: error.message }); });
+    return () => { mounted = false; };
+  }, [activeAccountModal, sharedAccount]);
+
+  async function toggleBillingEmails() {
+    if (billingEmails === null || isSavingBillingEmails) return;
+    setIsSavingBillingEmails(true);
+    setBillingEmailNotice(null);
+    try {
+      const response = await fetch("/api/account-profile/billing-preferences", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !billingEmails }),
+      });
+      const data = await response.json();
+      if (!response.ok || typeof data.enabled !== "boolean") throw new Error(data.error || "Could not save billing preference.");
+      setBillingEmails(data.enabled);
+      setBillingEmailNotice({ tone: "success", message: "Billing email preference saved." });
+    } catch (error) {
+      setBillingEmailNotice({ tone: "error", message: error instanceof Error ? error.message : "Could not save billing preference." });
+    } finally { setIsSavingBillingEmails(false); }
+  }
+
+  async function handleEmailChange(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (emailConfirmation !== "CHANGE EMAIL" || isChangingEmail || sharedAccount) return;
+    setIsChangingEmail(true);
+    setActionModalNotice(null);
+    try {
+      const response = await fetch("/api/auth/change-email", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail: newAccountEmail.trim(), confirmation: emailConfirmation, callbackURL: "/account" }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Could not request the email change. Try signing in again.");
+      setEmailChangeSent(true);
+    } catch (error) {
+      setActionModalNotice({ tone: "error", message: error instanceof Error ? error.message : "Could not change email." });
+    } finally { setIsChangingEmail(false); }
   }
 
   async function handlePasswordChangeSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1914,6 +1967,35 @@ export default function AccountClient({
         </div>
       ) : null}
 
+      {activeAccountModal === "email" && !sharedAccount ? (
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
+          <section ref={activeDialogRef} className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.polishedSettingsModal}`} role="dialog" aria-modal="true" aria-labelledby="change-account-email-title" tabIndex={-1} onClick={event => event.stopPropagation()}>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="change-account-email-title">Change account email</h2>
+                <p>{emailChangeSent ? "Check your email to continue." : "Are you sure you want to change your login email?"}</p>
+                <button type="button" className={styles.modalCloseButton} aria-label="Close email change" data-modal-close="true" onClick={closeActionModal}>×</button>
+              </div>
+              <ModalInlineNotice notice={actionModalNotice} />
+              {emailChangeSent ? <div className={styles.emailChangeSuccess}>
+                <p>Check your current and new inboxes for the confirmation steps. Your login email stays unchanged until verification is complete.</p>
+                <p>If no email arrives, check spam or try another address.</p>
+                <button type="button" className={styles.primaryButton} onClick={() => { setActionModalNotice(null); setActiveAccountModal("business"); }}>Back to business details</button>
+              </div> : <form className={`${styles.form} ${styles.emailChangeForm}`} onSubmit={handleEmailChange}>
+                <label className={styles.field}><span>Current email</span><input value={profile?.email ?? ""} disabled /></label>
+                <label className={styles.field}><span>New account email</span><input type="email" autoComplete="email" required maxLength={254} value={newAccountEmail} onChange={event => setNewAccountEmail(event.target.value)} /></label>
+                <label className={styles.field}><span>Type CHANGE EMAIL to confirm</span><input autoComplete="off" spellCheck={false} value={emailConfirmation} onChange={event => setEmailConfirmation(event.target.value)} /></label>
+                <p className={styles.fieldHint}>Your business contact email will not change.</p>
+                <div className={styles.actionsRow}>
+                  <button type="button" className={styles.ghostButton} disabled={isChangingEmail} onClick={() => { setActionModalNotice(null); setActiveAccountModal("business"); }}>Cancel</button>
+                  <button type="submit" className={styles.primaryButton} disabled={isChangingEmail || emailConfirmation !== "CHANGE EMAIL" || !newAccountEmail.trim() || newAccountEmail.trim().toLowerCase() === profile?.email.toLowerCase()}>{isChangingEmail ? "Sending..." : "Send verification"}</button>
+                </div>
+              </form>}
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
       {activeAccountModal === "business" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
@@ -1921,6 +2003,7 @@ export default function AccountClient({
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard} ${styles.polishedSettingsModal}`}
             role="dialog"
             aria-modal="true"
+            data-business-step={businessDetailsStep}
             aria-labelledby="business-details-modal-title"
             tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
@@ -1945,6 +2028,7 @@ export default function AccountClient({
                 <p className={styles.loading}>Loading account details...</p>
               ) : (
                 <form
+                  id="business-details-form"
                   className={`${styles.form} ${styles.compactEditForm} ${styles.wizardForm}`}
                   onSubmit={handleBusinessDetailsSubmit}
                 >
@@ -1963,14 +2047,7 @@ export default function AccountClient({
                             <input value={profileDraft.displayName} onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Full name" autoFocus />
                           </span>
                         </label>
-                        <label className={styles.field}>
-                          <span>Account email</span>
-                          <span className={styles.settingsInput}>
-                            <SettingsDetailIcon name="lock" />
-                            <input value={profile?.email ?? ""} disabled />
-                          </span>
-                          <small className={styles.fieldHint}>Used only for login and account access.</small>
-                        </label>
+
                         <label className={styles.field}>
                           <span>Business name</span>
                           <span className={styles.settingsInput}>
@@ -2002,6 +2079,28 @@ export default function AccountClient({
                           </label>
                         ) : null}
                       </div>
+                        <div className={styles.accountEmailRow}>
+                        <div className={styles.field}>
+                          <span>Account email</span>
+                          <span className={styles.settingsInput}>
+                            <SettingsDetailIcon name="lock" />
+                            <input value={profile?.email ?? ""} disabled />
+                          </span>
+                          <small className={styles.fieldHint}>Used to sign in.</small>
+                        </div>
+                          {!sharedAccount ? <button type="button" className={styles.accountEmailChangeButton} onClick={() => {
+                            setNewAccountEmail(""); setEmailConfirmation(""); setEmailChangeSent(false); setActionModalNotice(null); setActiveAccountModal("email");
+                          }}><SettingsDetailIcon name="lock" />Change account details</button> : null}
+                        </div>
+                      {!sharedAccount ? <>
+                        <div className={styles.billingEmailRow}>
+                          <span className={styles.billingEmailIcon}><SettingsDetailIcon name="email" /></span>
+                          <div><strong>Receive billing emails</strong><p>Invoices stay available in your account. This preference saves immediately.</p></div>
+                          <button type="button" role="switch" aria-label="Receive billing emails" aria-checked={billingEmails === true} className={styles.billingEmailSwitch} disabled={billingEmails === null || isSavingBillingEmails} onClick={() => void toggleBillingEmails()}><span /></button>
+                        </div>
+                        <ModalInlineNotice notice={billingEmailNotice} />
+                      </> : null}
+
                     </section>
                   ) : null}
 
@@ -2013,11 +2112,7 @@ export default function AccountClient({
                       </div>
 
                       <div className={styles.wizardFieldGrid}>
-                        <label className={styles.field}>
-                          <span>Account type</span>
-                          <div className={`${styles.readOnlyValue} ${styles.settingsStaticInput}`}><SettingsDetailIcon name="business" />{accountTypeLabel}</div>
-                          <small className={styles.fieldHint}>Account type is locked after signup.</small>
-                        </label>
+                        
                         <label className={styles.field}>
                           <span>Province</span>
                           <span className={styles.settingsInput}>
@@ -2039,7 +2134,7 @@ export default function AccountClient({
                             <input value={profileDraft.addressLine1} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))} placeholder="Street address" />
                           </span>
                         </label>
-                        <label className={`${styles.field} ${styles.fullWidth}`}>
+                        <label className={styles.field}>
                           <span>Address line 2</span>
                           <span className={styles.settingsInput}>
                             <SettingsDetailIcon name="location" />
@@ -2080,6 +2175,10 @@ export default function AccountClient({
                     </section>
                   ) : null}
 
+                </form>
+              )}
+            </AccountModalScroller>
+              {!isLoading ? (
                   <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                     <button
                       type="button"
@@ -2092,13 +2191,12 @@ export default function AccountClient({
                     {businessDetailsStep > 1 ? (
                       <button type="button" className={styles.secondaryButton} onClick={() => setBusinessDetailsStep((businessDetailsStep - 1) as BusinessDetailsStep)} disabled={isSavingProfile || isReadingLogo}>Back</button>
                     ) : null}
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                    <button type="submit" form="business-details-form" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
                       {businessDetailsStep === 3 ? (isSavingProfile ? "Saving..." : "Save business details") : "Next"}
                     </button>
                   </div>
-                </form>
-              )}
-            </AccountModalScroller>
+              ) : null}
+
           </section>
         </div>
       ) : null}

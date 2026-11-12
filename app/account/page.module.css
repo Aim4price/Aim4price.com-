@@ -4458,3 +4458,102 @@
 .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover .accountModalScrollThumb,
 .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollThumb:active { width: auto; margin-left: 0; }
 .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible { opacity: 1; }
+
+/* Business progress: one compact row with a clear active step. */
+.businessDetailsModalCard.polishedSettingsModal .modalStepProgress {
+  gap: .65rem;
+  margin: .15rem 0 1.35rem;
+  padding: .4rem;
+  border: 1px solid var(--app-line, #d7e4de);
+  border-radius: 1rem;
+  background: var(--app-surface-soft, #f4f8f6);
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStep {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: .75rem;
+  min-height: 3.5rem;
+  padding: .65rem .85rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  text-align: left;
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStep:not(:last-child)::after { display: none; }
+.businessDetailsModalCard.polishedSettingsModal .modalStep > span {
+  width: 2rem; height: 2rem; font-size: .8rem; box-shadow: none;
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStep > strong {
+  font-size: .85rem; font-weight: 800; line-height: 1.3;
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStepCurrent {
+  background: var(--app-surface, #fff);
+  border-color: var(--app-success-line, #a5d6c2);
+  box-shadow: 0 3px 10px rgba(20, 73, 54, .06);
+}
+.businessDetailsModalCard.polishedSettingsModal .modalStepCurrent > span {
+  background: #18775b; color: #fff; border-color: #18775b;
+}
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRail,
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover {
+  width: 1rem !important; right: .45rem !important;
+  top: 1rem; bottom: 1rem;
+  border: 1px solid var(--app-line, #d2e1d9);
+  background: var(--app-surface-soft, #eaf2ed);
+  box-shadow: inset 0 1px 3px rgba(20, 73, 54, .05);
+}
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollThumb {
+  left: 2px; right: 2px; width: auto; min-height: 2.75rem;
+  border: 0; background: #6a9b87; border-radius: 999px;
+}
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollThumb:active { background: #25775b; }
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollContent { padding-right: 2.25rem !important; }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .modalStepProgress { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .3rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .modalStep { gap: .5rem; padding: .5rem; }
+}
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollThumb,
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollThumb:active { width: auto; margin-left: 0; }
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRailVisible { opacity: 1; }
+
+.businessDetailsModalCard.polishedSettingsModal { width: min(var(--website-dialog-reference-width, 100%), 64rem) !important; display: flex; flex-direction: column; }
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollShell { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; max-height: none !important; border-radius: 0; }
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollViewport { flex: 1 1 auto; min-height: 0; max-height: none !important; }
+.businessDetailsModalCard.polishedSettingsModal .modalStepProgress { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.businessDetailsModalCard.polishedSettingsModal .modalStep { flex: 1; }
+.businessDetailsModalCard.polishedSettingsModal .wizardFieldGrid { gap: 1.1rem 1.25rem; align-items: start; }
+.businessDetailsModalCard.polishedSettingsModal .wizardStepPanel { gap: 1.25rem; }
+.businessDetailsModalCard.polishedSettingsModal .wizardActions { flex: 0 0 auto; margin: 0 !important; padding: 1rem 2rem !important; border-top: 1px solid var(--app-line, #d5e1da); background: var(--app-surface, #fff); }
+.accountEmailRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .7rem 1.25rem; align-items: center; padding: 1.1rem; border: 1px solid var(--app-line, #d5e1da); border-radius: 1rem; background: var(--app-surface-soft, #f4f8f6); }
+.accountEmailRow .settingsInput { max-width: 32rem; }
+.accountEmailChangeButton { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; min-height: 2.8rem; padding: .7rem 1rem; border: 1px solid #b8d1ef; border-radius: .85rem; background: var(--app-info-soft, #f0f6ff); color: var(--app-info-text, #245d91); font: inherit; font-size: .9rem; font-weight: 750; cursor: pointer; }
+.accountEmailChangeButton svg { width: 1.1rem; height: 1.1rem; }
+.billingEmailRow { display: flex; align-items: center; gap: 1rem; padding: 1.1rem; border: 1px solid var(--app-line, #d5e1da); border-radius: 1rem; }
+.billingEmailRow > div { flex: 1; min-width: 0; }
+.billingEmailRow strong { font-size: .95rem; }
+.billingEmailRow p { margin: .25rem 0 0; font-size: .8rem; line-height: 1.5; color: var(--app-muted, #61746a); }
+.billingEmailIcon { display: grid; place-items: center; flex: 0 0 2.6rem; height: 2.6rem; border: 1px solid #d9c4ee; border-radius: .8rem; color: #7952a0; background: #f6effd; }
+.billingEmailIcon svg { width: 1.2rem; height: 1.2rem; }
+.billingEmailSwitch { flex: 0 0 3rem; width: 3rem; height: 1.75rem; border: 1px solid var(--app-line-strong, #9daea5); border-radius: 999px; padding: 3px; background: #83938b; cursor: pointer; transition: background .15s; }
+.billingEmailSwitch > span { display: block; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: white; box-shadow: 0 1px 3px #0002; transition: transform .15s; }
+.billingEmailSwitch[aria-checked="true"] { background: #18775b; border-color: #18775b; }
+.billingEmailSwitch[aria-checked="true"] > span { transform: translateX(1.25rem); }
+.billingEmailSwitch:disabled { cursor: wait; opacity: .55; }
+.billingEmailSwitch:focus-visible, .accountEmailChangeButton:focus-visible { outline: 3px solid #a8ccef; outline-offset: 3px; }
+.emailChangeSuccess { display: grid; gap: 1rem; line-height: 1.6; }
+.emailChangeSuccess p { margin: 0; }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .accountEmailRow { grid-template-columns: 1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .wizardActions { padding: .8rem 1.1rem !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal .modalStep { flex-direction: column; text-align: center; }
+}
+
+.businessDetailsModalCard.polishedSettingsModal .accountModalScrollRail { display: block; }
+.businessDetailsModalCard.polishedSettingsModal .modalStepProgress { display: grid; }
+.businessDetailsModalCard.polishedSettingsModal[data-business-step="1"] .wizardFieldGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.emailChangeForm { display: grid !important; grid-template-columns: 1fr !important; gap: 1.1rem; }
+.emailChangeForm > * { grid-column: 1 / -1; }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal[data-business-step="1"] .wizardFieldGrid { grid-template-columns: 1fr; }
+}
