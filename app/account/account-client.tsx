@@ -1646,7 +1646,7 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                    {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect" data-tooltip="Connect an AI assistant to read the Aim4price data you allow." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
+                    {(isOwnerAccount || (isDealerAccount && !isMiddlemanAccount) || normalizedAccountType === "business") ? <Link className={styles.quickActionButton} href="/account/ai-connect" data-tooltip="Connect an AI assistant to read the Aim4price data you allow." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
                   </div>
                 </section>
 

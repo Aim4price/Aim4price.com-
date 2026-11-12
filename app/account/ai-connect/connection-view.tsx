@@ -16,7 +16,7 @@ export type ConnectionViewProps = {
   chatGptListingUrl?: string;
   clientId?: string;
   providers?: { name: string; launchUrl?: string }[];
-  account?: { name: string; email: string };
+  account?: { name: string; email: string; accountType?: string };
   connections?: Connection[];
   resource?: string;
   proof?: string;
@@ -64,12 +64,24 @@ const questionNotes: Record<string, string> = {
   service: 'Based on saved dates and usage readings.',
 };
 
-function SharedInformation({ examples = false, admin = false }: { examples?: boolean; admin?: boolean }) {
+const dealerPermissions = [
+  ['asset', 'Stock & client registers', 'Your own stock and the client registers you manage, kept separate.', 'List my registers, then summarise my active assets and saved values.'],
+  ['service', 'Authorised client records', 'Selected asset, maintenance, problem and cost information shared with your dealership.', 'Which client assets can I access, and what information is shared?'],
+  ['records', 'Shared enquiries', 'Enquiries addressed to your verified account. Sharing an asset does not automatically create a task.', 'Summarise the enquiries addressed to my account.'],
+  ['cost', 'Parts listings', 'Saved parts quantities and prices from networks you can access.', 'Find this part number in my accessible parts listings and show when the data was uploaded.'],
+];
+const businessPermissions = [
+  ['records', 'Client enquiries', 'Requests explicitly addressed to your verified account.', 'Summarise my received enquiries and what each client is asking for.'],
+  ['asset', 'Shared asset details', 'Selected details of assets included in those enquiries.', 'Summarise the asset information available for this enquiry.'],
+  ['service', 'Permitted records', 'Maintenance, problems and costs only where the client selected that access.', 'What maintenance information has this client shared with me?'],
+];
+
+function SharedInformation({ examples = false, admin = false, accountType }: { examples?: boolean; admin?: boolean; accountType?: string }) {
   return <div className={examples ? styles.questionGrid : admin ? styles.adminPermissions : styles.permissions}>
-    {(admin ? adminPermissions : permissions).map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title} data-category={icon}>
+    {(admin ? adminPermissions : accountType === 'dealer' ? dealerPermissions : accountType === 'business' ? businessPermissions : permissions).map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title} data-category={icon}>
       <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind={icon} /></span><h3>{title}</h3></div>
       {!examples && <p>{detail}</p>}
-      {examples && <div className={styles.question}><p>{example}</p>{!admin && <span className={styles.questionNote}>{questionNotes[icon]}</span>}<CopyQuestion question={example} category={title} /></div>}
+      {examples && <div className={styles.question}><p>{example}</p>{!admin && (!accountType || accountType === 'owner') && <span className={styles.questionNote}>{questionNotes[icon]}</span>}<CopyQuestion question={example} category={title} /></div>}
     </div>)}
   </div>;
 }
@@ -81,6 +93,7 @@ const setupLinks: Record<string, string> = {
 };
 
 export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled, audience = 'owner', providerName, clientId, needsVerification, providers = [], chatGptListingUrl }: ConnectionViewProps) {
+  const partner = account?.accountType === 'dealer' || account?.accountType === 'business';
   const admin = audience === 'admin';
   const accessDuration = admin ? 'Access lasts 24 hours.' : 'Your assistant stays connected until you disconnect it.';
   const makeSetup = (selectedProvider?: string) => <>
@@ -164,15 +177,15 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <section className={`${accessStyles.launcher} ${styles.launcher}`} aria-labelledby="ai-connections-title">
           <div className={accessStyles.launcherIntro}>
             <h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1>
-            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
+            <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : partner ? 'Ask about your workspace and the client information shared with you.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
             <div className={styles.approvalHeading}><span className={styles.approvalIcon}><Icon kind="link" /></span><div><span className={styles.eyebrow}>Review your connection</span><h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2></div></div>
             <div className={styles.approvalSafety}><Icon kind="shield" /><span>Your assistant can read records. It cannot add, edit or delete them.</span></div>
             {account && <div className={styles.identity}><span>Account being connected</span><strong>{account.name}</strong><span>{account.email}</span></div>}
-            <p>{admin ? 'This is cross-account administrator access. Asset records from all accounts can be returned to this AI provider. Queries are audited. No business records can be changed.' : 'This connection can read the following information from this Owner account only.'}</p>
-            <SharedInformation admin={admin} />
+            <p>{admin ? 'This is cross-account administrator access. Asset records from all accounts can be returned to this AI provider. Queries are audited. No business records can be changed.' : partner ? 'This connection reads the information below within your current account and sharing permissions. Untargeted links, umbrella shares, staff connections and attachments are not included in this pilot.' : 'This connection can read the following information from this Owner account only.'}</p>
+            <SharedInformation admin={admin} accountType={account?.accountType} />
             <form action="/api/ai/oauth/authorize" method="post">
               <input type="hidden" name="authorization" value={authorization || ''} />
               <input type="hidden" name="proof" value={proof} />
@@ -185,16 +198,16 @@ export default function ConnectionView({ account, connections, resource, proof, 
         </section>
         {!proof && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
-            <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
+            <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{admin ? 'Explore asset totals, comparisons and data gaps across accounts.' : partner ? 'Explore your workspace and authorised client records.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
             <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
           </summary>
           <div className={styles.examplesBody}>
             <p className={styles.questionHint}>Copy a question into your connected assistant and ask it to use Aim4price.</p>
-            <SharedInformation examples admin={admin} />
+            <SharedInformation examples admin={admin} accountType={account?.accountType} />
             <details className={styles.disclosure}>
               <summary className={styles.disclosureHeading}><span>What information is shared?</span><span className={styles.disclosureChevron} aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span></summary>
               <div className={styles.sharingDetails}>
-                <div><span className={styles.sharingIcon}><Icon kind="account" /></span><h3>{admin ? 'Admin access' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
+                <div><span className={styles.sharingIcon}><Icon kind="account" /></span><h3>{admin ? 'Admin access' : partner ? 'Your permitted records' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : partner ? 'Your workspace and selected client records. Access is checked on every request. Untargeted links and umbrella shares are not included in this pilot.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
                 <div><span className={styles.sharingIcon}><Icon kind="shield" /></span><h3>Read-only access</h3><p>Your assistant cannot add, edit or delete records. Stop future access at any time through Manage.</p></div>
                 <div><span className={styles.sharingIcon}><Icon kind="records" /></span><h3>Saved records</h3><p>Answers depend on what you have recorded. Missing information can leave gaps. Photos and document attachments are not shared.</p></div>
               </div>

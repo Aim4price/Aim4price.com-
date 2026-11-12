@@ -66,6 +66,8 @@ export async function renderAiConnectionPage(
                 owner.account.id,
                 owner.sessionId,
                 config.signingSecret,
+                Date.now(),
+                owner.account.accountType,
               )
             : undefined
         }

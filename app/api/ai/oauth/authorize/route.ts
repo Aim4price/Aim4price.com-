@@ -67,6 +67,8 @@ export async function POST(request: Request) {
       owner.account.id,
       owner.sessionId,
       config,
+      Date.now(),
+      owner.account.accountType,
     );
     const callback = new URL(auth.redirectUri);
     callback.searchParams.set('state', auth.state);
@@ -77,7 +79,7 @@ export async function POST(request: Request) {
       requireConsentTerms(form);
       callback.searchParams.set(
         'code',
-        await issueCode(getDb(), owner.account.id, auth, proof, config),
+        await issueCode(getDb(), owner.account.id, auth, proof, config, owner.account.accountType),
       );
     }
     return new Response(null, {

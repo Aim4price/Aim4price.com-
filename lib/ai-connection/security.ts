@@ -7,6 +7,7 @@ import {
 
 export const READ_SCOPE = "aim4price:read";
 export const ADMIN_READ_SCOPE = "aim4price:admin:read";
+export type CustomerAccountType = "owner" | "dealer" | "business";
 export type Audience = "owner" | "admin";
 export type AiClient = {
   id: string;
@@ -41,6 +42,7 @@ export type ConnectionConfig = {
   signingSecret: string;
   audience?: Audience;
   accessMode?: "pilot" | "owners";
+  customerAccountTypes?: CustomerAccountType[];
   clients?: AiClient[];
   clientName?: string;
   allowedOrigins?: string[];
@@ -169,7 +171,11 @@ export function connectionConfig(
     (audience === "owner" && accessMode === "pilot" && !allowedUserIds.length)
   )
     throw new Error("AI account access configuration is incomplete.");
+  const customerAccountTypes = split(env.AIM4PRICE_AI_ACCOUNT_TYPES || "owner");
+  if (!customerAccountTypes.length || customerAccountTypes.some(type => !["owner", "dealer", "business"].includes(type)))
+    throw new Error("Invalid AI customer account types.");
   return {
+    customerAccountTypes: customerAccountTypes as CustomerAccountType[],
     origin,
     resource:
       origin + (audience === "admin" ? "/api/ai/admin/mcp" : "/api/ai/mcp"),
@@ -314,9 +320,10 @@ export function consentProof(
   sessionId: string,
   secret: string,
   now = Date.now(),
+  accountType?: string,
 ): string {
   const data = Buffer.from(
-    JSON.stringify({ auth, userId, sessionId, expires: now + 5 * 60_000 }),
+    JSON.stringify({ auth, userId, sessionId, accountType, expires: now + 5 * 60_000 }),
   ).toString("base64url");
   return `${data}.${createHmac("sha256", secret).update(data).digest("base64url")}`;
 }
@@ -326,6 +333,7 @@ export function verifyConsent(
   sessionId: string,
   config: ConnectionConfig,
   now = Date.now(),
+  accountType?: string,
 ): Authorization {
   const [data, mac, extra] = proof.split(".");
   if (
@@ -347,6 +355,7 @@ export function verifyConsent(
     );
   const payload = JSON.parse(Buffer.from(data, "base64url").toString());
   if (
+    (accountType !== undefined && payload.accountType !== accountType) ||
     payload.userId !== userId ||
     payload.sessionId !== sessionId ||
     !Number.isFinite(payload.expires) ||
