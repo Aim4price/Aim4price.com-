@@ -64,7 +64,7 @@ export async function runCustomerTool(db: Reader, account: Account, name: string
   const args = parseReadArgs('list_assets', { limit: input.limit, offset: input.offset, query: input.query, assetId: input.assetId });
   for (const key of definition.inputSchema.required) if (input[key] === undefined) throw new ConnectionError(400, 'invalid_arguments', `Missing ${key}.`);
   if (input.enquiryId !== undefined && (typeof input.enquiryId !== 'string' || !/^[a-f0-9]{32}$/.test(input.enquiryId))) denied();
-  if (input.accessId !== undefined && (typeof input.accessId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9-]{27}$/i.test(input.accessId))) denied();
+  if (input.accessId !== undefined && (typeof input.accessId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(input.accessId))) denied();
   if (name === 'list_registers') {
     if (!await available(db, ['asset_registers'])) return unavailable;
     return rowsPage(db, 'public.asset_registers r WHERE r.user_id=$1', "r.id,r.business_name,CASE WHEN r.is_primary THEN 'dealer_owned' ELSE 'managed_client' END AS register_type,r.include_in_combined_totals", 'r.id', [account.id], args.limit, args.offset);

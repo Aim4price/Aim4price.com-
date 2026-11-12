@@ -142,7 +142,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" /></svg>
         </span>
-        <span className={accessStyles.actionCopy}><strong>Manage</strong><small>{count === undefined ? 'View or disconnect access.' : count === 0 ? 'No active connections' : `${count} active connection${count === 1 ? '' : 's'}`}</small></span>
+        <span className={accessStyles.actionCopy}><strong>Manage</strong><small>{count === undefined ? 'View or disconnect access.' : count === 0 ? 'No active connections' : `${count} approved connection${count === 1 ? '' : 's'}`}</small></span>
 
       </button>
     </div>
@@ -185,7 +185,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
 
         </div>
         <footer className={styles.dialogFooter}>
-          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'You approve read-only access to your own account.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} active connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'Approved access? Select Check connection.'}</p>
+          <p role="status">{flow === 'connect' && !admin && choosingAssistant ? 'Only the Aim4price account you approve will be connected.' : flow === 'connect' && !admin && method === 'choose' ? 'You approve read-only access to your own account.' : flow === 'connect' && !admin && method === 'help' ? 'Your message opens ready to review and send.' : checking ? 'Checking connection status…' : count === undefined ? 'Connection status unavailable.' : count > 0 ? `${count} approved connection${count === 1 ? '' : 's'}${flow === 'manage' ? '.' : ' across your assistants. View them in Manage.'}` : checked ? 'No approved connections yet. Complete setup in your assistant, then check again.' : flow === 'manage' ? 'Your approved connections will appear here.' : 'Approved access? Select Check connection.'}</p>
           <div className={styles.footerActions}>
           {flow === 'connect' && assistant && (method === 'choose' || assistant.name === 'Other') && <button type="button" className={styles.changeAssistant} onClick={() => { setSelectedAssistant(null); setMethod('choose'); setChecked(false); panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus(); }}>Change assistant</button>}
           {flow === 'connect' && assistant && assistant.name !== 'Other' && method !== 'choose' && <button type="button" onClick={() => changeMethod('choose')}>Connection options</button>}

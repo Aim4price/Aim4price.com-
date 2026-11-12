@@ -1198,3 +1198,68 @@ test('legacy pilot settings cannot block eligible Dealer and Business accounts',
   try { await assert.rejects(store.eligibleAccount(pool,'dealer',legacy),{code:'verification_required'}); }
   finally { await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id='dealer'`); }
 });
+
+test('cost summaries disclose missing values and undated records without leaking other accounts', async () => {
+  const {runReadTool,parseReadArgs}=require(path.join(tmp,'ai-connection/data.js'));
+  const ids=['aa000000-0000-4000-8000-000000000001','aa000000-0000-4000-8000-000000000002','aa000000-0000-4000-8000-000000000003'];
+  try {
+    await db.query(`INSERT INTO asset_invoices(id,user_id,asset_register_item_id,invoice_date,total_inc_vat,vat_amount) VALUES
+      ($1,'owner-a',$4,'2026-09-05',NULL,NULL),($2,'owner-a',$4,NULL,500,0),($3,'owner-b',$5,NULL,999999,NULL)`, [...ids,assetA,assetB]);
+    const data=await runReadTool(db,'owner-a','read_costs',parseReadArgs('read_costs',{from:'2026-09-01',to:'2026-09-30',assetId:assetA,limit:1}),{name:'Owner',email:''});
+    assert.equal(Number(data.summary.total_inc_vat),345);
+    assert.equal(Number(data.summary.missing_amount_count),1);
+    assert.equal(Number(data.summary.missing_vat_count),1);
+    assert.equal(data.summary.excludedUndatedRecords,1);
+    assert.equal(data.records.length,1);
+    assert.equal(data.pagination.totalRecords,3);
+    assert.equal(data.pagination.hasMore,true);
+    assert.ok(!JSON.stringify(data).includes('999999'));
+  } finally { await db.query('DELETE FROM asset_invoices WHERE id=ANY($1::uuid[])',[ids]); }
+});
+
+test('disconnect with a rotated refresh token revokes only its provider grant', async () => {
+  const first=(await createGrant()).tokens;
+  const other=(await createGrant()).tokens;
+  const renewed=await store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:first.refresh_token,resource:config.resource}),config);
+  await store.revokeToken(db,first.refresh_token,{...config,clientId:'different-provider'});
+  assert.equal((await rpc('tools/list',{},renewed.access_token)).status,200);
+  await store.revokeToken(db,first.refresh_token,config);
+  assert.equal((await rpc('tools/list',{},renewed.access_token)).status,401);
+  assert.equal((await rpc('tools/list',{},other.access_token)).status,200);
+  await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:renewed.refresh_token,resource:config.resource}),config));
+  await store.revokeToken(db,first.refresh_token,config); // idempotent
+});
+
+test('Dealer and Business ongoing grants renew and suspension blocks both reads and refresh', async () => {
+  for(const user of ['dealer','business']) {
+    const tokens=(await createGrant(user)).tokens;
+    await db.query("UPDATE ai_connections SET created_at=now()-interval '365 days',access_expires_at=now()-interval '1 second' WHERE access_hash=$1",[security.digest(tokens.access_token)]);
+    assert.equal((await rpc('tools/list',{},tokens.access_token)).status,401);
+    const renewed=await store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:tokens.refresh_token,resource:config.resource}),config);
+    assert.equal(renewed.expires_in,3600);
+    assert.equal((await rpc('tools/list',{},renewed.access_token)).status,200);
+    try {
+      await db.query("UPDATE account_profiles SET account_status='suspended' WHERE user_id=$1",[user]);
+      assert.equal((await rpc('tools/list',{},renewed.access_token)).status,403);
+      await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:renewed.refresh_token,resource:config.resource}),config));
+    } finally { await db.query("UPDATE account_profiles SET account_status='active' WHERE user_id=$1",[user]); }
+  }
+});
+
+test('malformed dealer access IDs return a tool error rather than a database failure', async () => {
+  const tokens=(await createGrant('dealer')).tokens;
+  const response=await rpc('tools/call',{name:'read_client_asset',arguments:{accessId:'aaaaaaaa----------------------------',assetId:assetA,section:'asset'}},tokens.access_token);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).result.isError,true);
+});
+
+test('budget with missing invoice amounts reports incomplete instead of on track', async () => {
+  const {runReadTool,parseReadArgs}=require(path.join(tmp,'ai-connection/data.js'));
+  const id='aa000000-0000-4000-8000-000000000004';
+  try {
+    await db.query(`INSERT INTO asset_invoices(id,user_id,asset_register_item_id,invoice_date,total_inc_vat) VALUES($1,'owner-a',$2,(now() AT TIME ZONE 'Africa/Johannesburg')::date,NULL)`,[id,assetA]);
+    const data=await runReadTool(db,'owner-a','read_budgets',parseReadArgs('read_budgets',{}),{name:'Owner',email:''});
+    assert.ok(data.records.length>0);
+    assert.ok(data.records.every(r=>r.status==='incomplete' && Number(r.missing_amount_count)===1));
+  } finally {await db.query('DELETE FROM asset_invoices WHERE id=$1',[id]);}
+});
