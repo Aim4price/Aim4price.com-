@@ -8,9 +8,11 @@ const { PGlite } = require('@electric-sql/pglite');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'aim4price-ai-'));
 for (const file of [
   'account-constants',
+  'middleman-account',
   'ai-connection/security',
   'ai-connection/store',
   'ai-connection/data',
+  'ai-connection/customer-data',
   'ai-connection/extended-data',
   'asset-usage',
   'ai-connection/rate-limit',
@@ -146,6 +148,7 @@ before(async () => {
   );
   await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/137-ai-provider-admin-reporting.sql'), 'utf8'));
   await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/148-ongoing-owner-ai-connections.sql'), 'utf8'));
+  await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/157-ai-customer-account-scope.sql'), 'utf8'));
   for (const id of config.allowedUserIds) {
     await db.query('INSERT INTO "user" VALUES($1,$2,$3)', [
       id,
@@ -1036,4 +1039,141 @@ test('legacy fixed-term approvals retain expiry on renewal and cannot renew afte
   await assert.rejects(store.exchangeToken(pool, new URLSearchParams({
     grant_type: 'refresh_token', refresh_token: renewed.refresh_token, resource: config.resource,
   }), config), /expired or was disconnected/);
+});
+
+// Customer pilot uses real SQL and the same OAuth/MCP path as production.
+test('Dealer and Business pilot enforces tool, asset, section and live membership boundaries', async () => {
+  config.customerAccountTypes = ['owner', 'dealer', 'business'];
+  config.allowedUserIds.push('business');
+  try {
+    await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id='dealer';
+      INSERT INTO "user"(id,name,email,"emailVerified") VALUES('business','Business','business@example.com',true);
+      INSERT INTO account_profiles VALUES('business','business','active','Business');
+      CREATE TABLE business_workspaces(id uuid PRIMARY KEY,owner_user_id text);
+      CREATE TABLE business_workspace_members(business_id uuid,user_id text,role text,status text);
+      CREATE TABLE business_verified_identities(email text,business_id uuid,user_id text);
+      CREATE TABLE guest_businesses(email text,suspended boolean);
+      INSERT INTO business_workspaces VALUES('${assetB}','business');
+      INSERT INTO business_workspace_members VALUES('${assetB}','business','owner','active');
+      INSERT INTO business_verified_identities VALUES('business@example.com','${assetB}','business');
+      CREATE TABLE asset_share_links(token text,user_id text,asset_ids uuid[],umbrella_id uuid,lead_details jsonb,display_options jsonb,created_at timestamptz DEFAULT now(),revoked_at timestamptz);
+      INSERT INTO asset_share_links(token,user_id,asset_ids,lead_details,display_options) VALUES
+        ('targeted','owner-a',ARRAY['${assetA}']::uuid[],'{"recipientEmail":"business@example.com","recipientUserId":"business","request":"Review maintenance","permissions":{"maintenanceReports":true}}','{"valuation":false}'),
+        ('wrong-user','owner-a',ARRAY['${assetA}']::uuid[],'{"recipientEmail":"business@example.com","recipientUserId":"someone-else"}','{}'),
+        ('unbound','owner-a',ARRAY['${assetA}']::uuid[],'{"accessMode":"signed-in"}','{}'),
+        ('wrong-owner','owner-b',ARRAY['${assetA}']::uuid[],'{"recipientEmail":"business@example.com"}','{}');
+      CREATE TABLE dealer_maintenance_access(id uuid,owner_user_id text,dealer_user_id text,asset_register_item_id uuid,is_active boolean,revoked_at timestamptz,can_view_maintenance_reports boolean,can_view_logged_problems boolean,can_view_cost_of_ownership boolean);
+      INSERT INTO dealer_maintenance_access VALUES('${assetA}','owner-a','dealer','${assetA}',true,NULL,true,false,false);`);
+    const business = (await createGrant('business')).tokens;
+    const dealer = (await createGrant('dealer')).tokens;
+    async function partnerCall(token, name, args = {}) {
+      const response = await rpc('tools/call', {name, arguments:args}, token);
+      assert.equal(response.status, 200);
+      return (await response.json()).result;
+    }
+    const listed = (await (await rpc('tools/list', {}, business.access_token)).json()).result.tools.map(t=>t.name);
+    assert.deepEqual(listed, ['account_profile','list_shared_enquiries','read_shared_asset']);
+    assert.equal((await partnerCall(business.access_token,'read_costs',{from:'2026-01-01',to:'2026-12-31'})).isError,true);
+    assert.equal((await partnerCall(business.access_token,'list_assets')).isError,true);
+    const inbox = (await partnerCall(business.access_token,'list_shared_enquiries')).structuredContent;
+    assert.equal(inbox.pagination.totalRecords,1);
+    assert.equal(inbox.records[0].request,'Review maintenance');
+    assert.equal(JSON.stringify(inbox).includes('targeted'),false);
+    const enquiryId = inbox.records[0].enquiry_id;
+    const detail = (await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'asset'})).structuredContent;
+    assert.equal(detail.record.saved_value_ex_vat,null);
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetB,section:'asset'})).isError,true);
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'costs',from:'2026-09-01',to:'2026-09-30'})).isError,true);
+    const maintenance = await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'maintenance'});
+    assert.equal(maintenance.isError,false);
+    assert.ok(maintenance.structuredContent.records.every(r=>r.asset_id===assetA));
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'maintenance',ownerId:'owner-b'})).isError,true);
+    await db.exec(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{permissions,maintenanceReports}','false') WHERE token='targeted'`);
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'maintenance'})).isError,true);
+    await db.exec(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{permissions,costOfOwnership}','true') WHERE token='targeted'`);
+    const costArgs={enquiryId,assetId:assetA,section:'costs',from:'2026-09-01',to:'2026-09-30',limit:1};
+    const sharedCosts=(await partnerCall(business.access_token,'read_shared_asset',costArgs)).structuredContent;
+    const {runReadTool,parseReadArgs}=require(path.join(tmp,'ai-connection/data.js'));
+    const ownerCosts=await runReadTool(db,'owner-a','read_costs',parseReadArgs('read_costs',{assetId:assetA,from:costArgs.from,to:costArgs.to,limit:100}),{name:'Owner',email:''});
+    assert.deepEqual(sharedCosts.summary,ownerCosts.summary);
+    assert.ok(sharedCosts.records.every(r=>r.asset_id===assetA));
+    await db.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2',['owner-b',assetA]);
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'asset'})).isError,true);
+    await db.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2',['owner-a',assetA]);
+    await db.exec(`UPDATE asset_share_links SET revoked_at=now() WHERE token='targeted'`);
+    assert.equal((await partnerCall(business.access_token,'read_shared_asset',{enquiryId,assetId:assetA,section:'asset'})).isError,true);
+    assert.equal((await partnerCall(business.access_token,'list_shared_enquiries')).structuredContent.pagination.totalRecords,0);
+    const client = (await partnerCall(dealer.access_token,'list_client_assets')).structuredContent;
+    assert.equal(client.records.length,1);
+    const clientArgs = {accessId:assetA,assetId:assetA,section:'maintenance'};
+    assert.equal((await partnerCall(dealer.access_token,'read_client_asset',clientArgs)).isError,false);
+    assert.equal((await partnerCall(dealer.access_token,'read_client_asset',{...clientArgs,section:'costs',from:'2026-09-01',to:'2026-09-30'})).isError,true);
+    assert.equal((await partnerCall(dealer.access_token,'read_client_asset',{...clientArgs,assetId:assetB})).isError,true);
+    await db.exec('UPDATE dealer_maintenance_access SET is_active=false');
+    assert.equal((await partnerCall(dealer.access_token,'read_client_asset',clientArgs)).isError,true);
+    assert.equal((await partnerCall(dealer.access_token,'read_parts')).structuredContent.available,false);
+    await db.exec("UPDATE business_workspace_members SET status='revoked'");
+    assert.equal((await rpc('tools/list',{},business.access_token)).status,403);
+    await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:business.refresh_token,resource:config.resource}),config));
+    await db.exec("UPDATE business_workspace_members SET status='active'");
+    await db.exec("UPDATE account_profiles SET account_type='owner' WHERE user_id='business'");
+    assert.equal((await rpc('tools/list',{},business.access_token)).status,401);
+    await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:business.refresh_token,resource:config.resource}),config));
+    await db.exec("UPDATE account_profiles SET account_type='business' WHERE user_id='business'");
+    await db.exec("INSERT INTO guest_businesses VALUES('business@example.com',true)");
+    assert.equal((await rpc('tools/list',{},business.access_token)).status,403);
+    await db.exec("DELETE FROM guest_businesses");
+    await db.query('UPDATE ai_connections SET revoked_at=now() WHERE access_hash=$1',[security.digest(dealer.access_token)]);
+    assert.equal((await rpc('tools/list',{},dealer.access_token)).status,401);
+  } finally {
+    delete config.customerAccountTypes;
+    config.allowedUserIds = config.allowedUserIds.filter(id=>id!=='business');
+  }
+});
+
+test('customer scope migration is repeatable and preserves Owner and Admin grants', async () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../database/migrations/157-ai-customer-account-scope.sql'),'utf8');
+  const before = (await db.query('SELECT id,account_type FROM ai_connections ORDER BY id')).rows;
+  await db.exec(sql); await db.exec(sql);
+  assert.deepEqual((await db.query('SELECT id,account_type FROM ai_connections ORDER BY id')).rows,before);
+});
+
+test('parts listings respect memberships, hidden suppliers, archives and pagination', async () => {
+  const { runCustomerTool } = require(path.join(tmp, 'ai-connection/customer-data.js'));
+  const dealer = {id:'dealer',name:'Dealer',email:'dealer@example.com',accountType:'dealer'};
+  await db.exec(`CREATE TABLE parts_networks(id uuid,name text,created_by text,list_mode boolean,archived boolean);
+    CREATE TABLE parts_network_members(network_id uuid,dealer_id text,status text,visible boolean,business_name text,vat_included boolean,uploaded_at timestamptz);
+    CREATE TABLE parts_network_rows(network_id uuid,dealer_id text,part_number text,part_key text,description text,brand text,quantity integer,price numeric);
+    INSERT INTO parts_networks VALUES('${assetA}','Visible network','supplier',false,false),('${assetB}','Private network','supplier',false,false);
+    INSERT INTO parts_network_members VALUES('${assetA}','dealer','active',true,'Dealer',true,now()),('${assetA}','supplier','active',true,'Supplier',false,now()),('${assetB}','supplier','active',true,'Supplier',false,now());
+    INSERT INTO parts_network_rows VALUES('${assetA}','supplier','0001.1','0001.1','Part','Brand',5,100),('${assetA}','supplier','0002','0002','Other part','Brand',1,200),('${assetB}','supplier','0001.1','0001.1','Hidden','Brand',99,1);`);
+  let result = await runCustomerTool(db,dealer,'read_parts',{limit:1});
+  assert.equal(result.pagination.totalRecords,2); assert.equal(result.pagination.hasMore,true);
+  result = await runCustomerTool(db,dealer,'read_parts',{query:'0001.1'});
+  assert.equal(result.records.length,1); assert.equal(result.records[0].quantity,5);
+  assert.equal(result.records[0].vat_included,false);
+  await db.exec("UPDATE parts_network_members SET visible=false WHERE dealer_id='supplier'");
+  assert.equal((await runCustomerTool(db,dealer,'read_parts',{})).pagination.totalRecords,0);
+  await db.exec("UPDATE parts_network_members SET visible=true; UPDATE parts_network_members SET status='suspended' WHERE dealer_id='dealer'");
+  assert.equal((await runCustomerTool(db,dealer,'read_parts',{})).pagination.totalRecords,0);
+  await db.exec("UPDATE parts_network_members SET status='active'; UPDATE parts_networks SET archived=true");
+  assert.equal((await runCustomerTool(db,dealer,'read_parts',{})).pagination.totalRecords,0);
+});
+
+test('consent and authorization codes cannot cross account type changes', async () => {
+  config.customerAccountTypes = ['owner','dealer'];
+  try {
+    const auth = security.authorizationRequest(authParams(),config);
+    const now = Date.now();
+    const proof = security.consentProof(auth,'dealer','session',config.signingSecret,now,'dealer');
+    assert.throws(()=>security.verifyConsent(proof,'dealer','session',config,now,'owner'));
+    assert.equal(security.verifyConsent(proof,'dealer','session',config,now,'dealer').clientId,config.clientId);
+    const code = await store.issueCode(pool,'dealer',auth,proof,config,'dealer');
+    await db.exec("UPDATE account_profiles SET account_type='owner' WHERE user_id='dealer'");
+    await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:auth.redirectUri,code_verifier:'v'.repeat(43),resource:config.resource}),config));
+    await assert.rejects(store.issueCode(pool,'dealer',auth,proof+'other',config,'dealer'));
+  } finally {
+    await db.exec("UPDATE account_profiles SET account_type='dealer' WHERE user_id='dealer'");
+    delete config.customerAccountTypes;
+  }
 });

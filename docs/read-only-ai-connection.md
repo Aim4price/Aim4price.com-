@@ -1,5 +1,7 @@
 # Read-only Aim4price AI connections
 
+For the opt-in Dealer/Business pilot, its permission map and deployment checklist, see [Customer account pilot](ai-customer-pilot.md). The Owner tool behaviour below is unchanged.
+
 For multi-provider configuration, broad Owner access and the separate private admin resource, see [AI provider and admin rollout](ai-provider-admin-rollout.md). The pilot settings below remain supported for rollback.
 
 An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices, fuel, current budgets, maintenance and logged problems. The AI cannot add, edit or delete business records. Access is explicitly enabled by deployment configuration; this is not a public plugin listing.

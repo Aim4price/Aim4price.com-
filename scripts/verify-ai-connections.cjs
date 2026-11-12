@@ -219,6 +219,19 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
   await page.screenshot({path:path.join(evidence,'owner-provider-modal-mobile.png'),fullPage:true});
+  for (const accountType of ['dealer', 'business']) {
+    for (const width of [1280, 390]) {
+      await page.setViewport({width,height:900});
+      await render({...base,account:{...base.account,accountType},proof:'synthetic-proof',authorization:'synthetic-request'});
+      const content=await page.$eval('main',e=>e.textContent);
+      assert.ok(content.includes('current account and sharing permissions'));
+      assert.ok(!content.includes('Costs & budgets'));
+      assert.ok(!content.includes('This Owner account'));
+      assert.ok(content.includes(accountType==='dealer'?'Parts listings':'Client enquiries'));
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+      await page.screenshot({path:path.join(evidence,`${accountType}-consent-${width}.png`),fullPage:true});
+    }
+  }
   assert.deepEqual(errors,[]);console.log('AI provider modal, dark/light cards, mobile layout, focus return and admin consent verified.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

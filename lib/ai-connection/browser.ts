@@ -9,7 +9,7 @@ export async function connectionOwner(config: ConnectionConfig) {
     throw new ConnectionError(
       401,
       'login_required',
-      'Sign in to your Owner account first.',
+      'Sign in to your Aim4price account first.',
     );
   const account = await readOnly(getDb(), (db) =>
     eligibleAccount(db, session.user.id, config),

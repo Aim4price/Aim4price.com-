@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from "../middleman-account";
 import { randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { isAim4priceAdminEmail } from "../account-constants";
@@ -65,6 +66,7 @@ export async function eligibleAccount(
         "Verify your admin email before connecting an AI assistant.",
       );
     return {
+      accountType: "admin" as const,
       id: String(row.id),
       name: String(row.name || "Aim4price Admin"),
       email: String(row.email),
@@ -83,26 +85,43 @@ export async function eligibleAccount(
   const row = (
     await db.query(
       `SELECT u.id,u.name,u.email,p.account_type,p.account_status,
-    p.business_name,coalesce(s.plan,'desktop') AS plan
+    p.business_name,to_jsonb(u)->>'emailVerified' AS verified,
+    to_jsonb(p)->>'account_subtype' AS account_subtype,coalesce(s.plan,'desktop') AS plan
     FROM public."user" u JOIN public.account_profiles p ON p.user_id=u.id
     LEFT JOIN public.sharing_account_access s ON s.user_id=u.id WHERE u.id=$1`,
       [userId],
     )
   ).rows[0];
-  // Pilot is intentionally limited to direct owner accounts, not delegated/app/admin identities.
+  // Direct website account principals only. Staff/delegated sessions are never promoted to a workspace owner.
   if (
     !row ||
     isAim4priceAdminEmail(row.email) ||
-    row.account_type !== "owner" ||
+    !(config.customerAccountTypes || ["owner"]).includes(row.account_type) ||
+    !["owner", "dealer", "business"].includes(row.account_type) ||
+    isMiddlemanAccountSubtype(row.account_subtype) ||
+    (row.account_type !== "owner" && !config.allowedUserIds.includes(userId)) ||
     row.account_status !== "active" ||
-    row.plan !== "desktop"
+    (row.account_type !== "business" && row.plan !== "desktop")
   )
     throw new ConnectionError(
       403,
       "access_denied",
-      "An active Owner desktop account is required.",
+      "This account is not enabled for AI connections. Owner and Dealer access requires an active desktop account.",
     );
+  if (row.account_type !== "owner" && row.verified !== "true")
+    throw new ConnectionError(403, "verification_required", "Verify your account email before connecting.");
+  if (row.account_type === "business") {
+    // Mirror canBusinessRead without schema writes inside an AI read transaction.
+    const membership = (await db.query(`SELECT m.business_id FROM public.business_workspace_members m
+      JOIN public.business_workspaces w ON w.id=m.business_id
+      WHERE m.user_id=$1 AND m.status='active' AND m.role='owner' AND w.owner_user_id=$1
+      AND NOT EXISTS (SELECT 1 FROM public.business_verified_identities i
+        JOIN public.guest_businesses g ON g.email=i.email WHERE i.business_id=m.business_id AND g.suspended)
+      AND NOT EXISTS (SELECT 1 FROM public.business_verified_identities i WHERE i.email=lower($2) AND i.business_id<>m.business_id)`, [userId, row.email])).rows[0];
+    if (!membership) throw new ConnectionError(403, "access_denied", "An active business workspace owner is required.");
+  }
   return {
+    accountType: row.account_type as "owner" | "dealer" | "business",
     id: String(row.id),
     name: String(row.business_name || row.name || "Owner account"),
     email: String(row.email),
@@ -114,16 +133,18 @@ export async function issueCode(
   auth: Authorization,
   proof: string,
   config: ConnectionConfig,
+  expectedAccountType?: string,
 ) {
   const code = opaqueToken();
   const db = await pool.connect();
   try {
     await db.query("BEGIN");
-    await eligibleAccount(db, userId, config);
+    const account = await eligibleAccount(db, userId, config);
+    if (expectedAccountType !== undefined) requireGrantAccountType(expectedAccountType, account.accountType);
     // A consent form can only be submitted once, including concurrent submissions.
     await db.query(
-      `INSERT INTO public.ai_connection_codes(code_hash,user_id,client_id,redirect_uri,challenge,resource,scope,expires_at,consent_hash)
-      VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '5 minutes',$8)`,
+      `INSERT INTO public.ai_connection_codes(code_hash,user_id,client_id,redirect_uri,challenge,resource,scope,expires_at,consent_hash,account_type)
+      VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '5 minutes',$8,$9)`,
       [
         digest(code),
         userId,
@@ -133,6 +154,7 @@ export async function issueCode(
         auth.resource,
         auth.scope,
         digest(proof),
+        account.accountType,
       ],
     );
     await db.query("COMMIT");
@@ -234,11 +256,12 @@ export async function exchangeToken(
           "invalid_grant",
           "The sign-in code is invalid or expired.",
         );
-      await eligibleAccount(db, code.user_id, config);
+      const account = await eligibleAccount(db, code.user_id, config);
+      requireGrantAccountType(code.account_type, account.accountType);
       const connectionId = randomUUID();
       await db.query(
-        `INSERT INTO public.ai_connections(id,user_id,client_id,resource,scope,access_hash,refresh_hash,access_expires_at,expires_at)
-        VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '1 hour',now()+($8::integer * interval '1 day'))`,
+        `INSERT INTO public.ai_connections(id,user_id,client_id,resource,scope,access_hash,refresh_hash,access_expires_at,expires_at,account_type)
+        VALUES($1,$2,$3,$4,$5,$6,$7,now()+interval '1 hour',now()+($8::integer * interval '1 day'),$9)`,
         [
           connectionId,
           code.user_id,
@@ -248,6 +271,7 @@ export async function exchangeToken(
           digest(access),
           digest(refresh),
           config.audience === "admin" ? 1 : null,
+          account.accountType,
         ],
       );
       await db.query(
@@ -288,7 +312,8 @@ export async function exchangeToken(
           "This connection was disconnected after a reused refresh token. Reconnect your account.",
         );
       }
-      await eligibleAccount(db, grant.user_id, config);
+      const account = await eligibleAccount(db, grant.user_id, config);
+      requireGrantAccountType(grant.account_type, account.accountType);
       expiresIn = grant.expires_at === null ? 3600 : Math.max(
         0,
         Math.min(
@@ -340,7 +365,7 @@ export async function authenticateToken(
     );
   const grant = (
     await db.query(
-      `SELECT id,user_id,client_id FROM public.ai_connections WHERE access_hash=$1 AND resource=$2 AND scope=$3 AND revoked_at IS NULL AND access_expires_at>now() AND (expires_at IS NULL OR expires_at>now())`,
+      `SELECT id,user_id,client_id,account_type FROM public.ai_connections WHERE access_hash=$1 AND resource=$2 AND scope=$3 AND revoked_at IS NULL AND access_expires_at>now() AND (expires_at IS NULL OR expires_at>now())`,
       [digest(bearer.slice(7)), config.resource, connectionScope(config)],
     )
   ).rows[0];
@@ -361,5 +386,10 @@ export async function authenticateToken(
     );
   }
   const account = await eligibleAccount(db, grant.user_id, selected);
+  requireGrantAccountType(grant.account_type, account.accountType);
   return { connectionId: String(grant.id), account, config: selected };
+}
+
+function requireGrantAccountType(granted: string, current: string) {
+  if (granted !== current) throw new ConnectionError(401, "invalid_token", "Your account access changed. Reconnect to review its permissions.");
 }
