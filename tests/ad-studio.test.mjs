@@ -246,7 +246,7 @@ test('Advert Studio is limited to dealer accounts and uses a four-step guided se
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
   assert.match(client, /(?:Brand kits|advert templates)/i);
-  assert.match(client, /studioMode === 'creator' \? 'CREATE ADVERT' : 'ADVERT TEMPLATE'/);
+  assert.match(client, /studioMode === 'creator' \? 'CREATE ADVERT' : 'YOUR ADVERT TEMPLATE'/);
   assert.match(client, /registerStyles\.registerChangeButton/);
   assert.match(client, /data-tooltip=\{studioMode === 'creator' \? 'Switch to Advert Template' : 'Switch to Create Advert'\}/);
   assert.doesNotMatch(client, /Back to Advert Studio/);
@@ -479,8 +479,8 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.equal(publicShowroom.match(/\$\{listings\.length\} live/g)?.length, 1);
   assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}>\{liveAdvertLabel\}/);
   assert.match(publicShowroom, /showroom\.bio\s*\? <p className=\{styles\.publicBio\}>\{showroom\.bio\}<\/p>\s*: <p className=\{styles\.publicTrustLine\}>/);
-  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}[\s\S]*?className=\{styles\.publicTrustLine\}[\s\S]*?className=\{styles\.publicContactActions\}/);
-  assert.match(publicShowroom, /className=\{styles\.publicContactActions\} role="group" aria-label=\{`\$\{showroom\.name\} contact options`\}/);
+  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}[\s\S]*?className=\{styles\.publicTrustLine\}[\s\S]*?className=\{styles\.publicBusinessDetails\}/);
+  assert.doesNotMatch(publicShowroom, /className=\{styles\.publicContactActions\}/);
   assert.match(publicShowroom, /className=\{styles\.publicBusinessDetails\}/);
   for (const icon of ['location', 'phone', 'email', 'website']) {
     assert.match(publicShowroom, new RegExp(`ShowroomDetailIcon name="${icon}"`));
@@ -489,7 +489,7 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(manager, /<svg viewBox="0 0 24 24" aria-hidden="true">/);
   assert.match(publicShowroom, /className=\{styles\.publicBusinessDetailCopy\}/);
   assert.match(publicShowroom, /showroom\.location/);
-  assert.match(publicShowroom, /href=\{whatsappHref\(showroom\.phone\)\}/);
+  assert.match(publicShowroom, /className=\{styles\.publicPhoneLink\} href=\{`tel:\$\{showroom\.phone\}`\}/);
   assert.match(publicShowroom, /href=\{`tel:\$\{showroom\.phone\}`\}/);
   assert.match(publicShowroom, /href=\{`mailto:\$\{showroom\.email\}`\}/);
   assert.match(publicShowroom, /href=\{showroom\.websiteUrl\} target="_blank" rel="noreferrer"/);
