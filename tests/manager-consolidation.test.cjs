@@ -18,12 +18,14 @@ test('restricted payload never contains hidden values, private JSON or photos',(
  const json=JSON.stringify(manager.projectManagerAsset(asset,policy.EMPTY_TEAM_PERMISSIONS));
  for(const secret of ['123456','234567','345678','999999','PRIVATE_'])assert.ok(!json.includes(secret),secret);
  assert.equal(JSON.parse(json).specsJson.usageMetric,'hours');
- const allowed=manager.projectManagerAsset(asset,policy.TEAM_TEMPLATES.manager.permissions);assert.equal(allowed.value,123456);assert.deepEqual(allowed.documents,[]);
+ const allowed=manager.projectManagerAsset(asset,Object.fromEntries(policy.TEAM_PERMISSIONS.map(p=>[p.key,true])));assert.equal(allowed.value,123456);assert.deepEqual(allowed.documents,[]);
 });
 test('restricted support sessions reject arbitrary owner endpoints, even with all role permissions',()=>{
- for(const path of ['/api/admin/accounts','/api/account','/api/owner-app/users','/api/marketplace','/api/asset-register']) assert.equal(requests.managerRequestAllowed(path,'POST',policy.TEAM_TEMPLATES.manager.permissions),false,path);
+ for(const path of ['/api/admin/accounts','/api/account','/api/owner-app/users','/api/marketplace','/api/asset-register']) assert.equal(requests.managerRequestAllowed(path,'POST',Object.fromEntries(policy.TEAM_PERMISSIONS.map(p=>[p.key,true]))),false,path);
  assert.equal(requests.managerRequestAllowed('/api/fuel/slips','POST',policy.EMPTY_TEAM_PERMISSIONS),false);
- assert.equal(requests.managerRequestAllowed('/api/fuel/slips','POST',policy.TEAM_TEMPLATES.manager.permissions),true);
+ assert.equal(requests.managerRequestAllowed('/api/fuel/slips','POST',policy.TEAM_TEMPLATES.manager.permissions),false);
+ assert.equal(requests.managerRequestAllowed('/api/maintenance','POST',{...policy.EMPTY_TEAM_PERMISSIONS,scheduleMaintenance:true}),true);
+ assert.equal(requests.managerRequestAllowed('/api/fuel/slips','POST',Object.fromEntries(policy.TEAM_PERMISSIONS.map(p=>[p.key,true]))),true);
 });
 for (const businessSuffix of ['', '@farm']) for (const collisionOwner of [null, 'farm', 'another-farm']) test(`legacy migration preserves identities and restrictions exactly once (collision: ${collisionOwner || 'none'}, suffix: ${businessSuffix || 'none'})`,async()=>{
  const db=new PGlite();

@@ -52,7 +52,7 @@ async function setup(options={}) {
 test('permissions fail closed, dependencies are enforced, templates hide values',()=>{
  const permissions=policy.normalizeTeamPermissions({viewValues:'true',editDetails:1,manage_access:true,completeMaintenance:true});
  assert.deepEqual(permissions,policy.EMPTY_TEAM_PERMISSIONS);
- for(const [key,template] of Object.entries(policy.TEAM_TEMPLATES))assert.equal(template.permissions.viewValues,key==='manager');
+ for(const [key,template] of Object.entries(policy.TEAM_TEMPLATES))assert.equal(template.permissions.viewValues,false);
 });
 test('projection omits financial data, private JSON and document links',()=>{
  const grant={scope:'all',registerIds:[],assetIds:[],permissions:{...policy.EMPTY_TEAM_PERMISSIONS}};
@@ -132,7 +132,7 @@ test('empty scope denies all; selected registers include future assets while exp
 test('team access does not impersonate the owner or broaden existing desktop sessions',()=>{
  const auth=fs.readFileSync('lib/auth-session.ts','utf8');assert.ok(!auth.includes('team_access'));assert.ok(!auth.includes('teamAccess'));
  const service=fs.readFileSync('lib/team-access.ts','utf8');assert.match(service,/getAnyServerSession/);assert.ok(!service.includes('user: { ...session'));
- assert.equal((fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8')+fs.readFileSync('database/migrations/155-desktop-client-work.sql','utf8')+fs.readFileSync('database/migrations/156-manager-tank-permissions.sql','utf8')).replace(/\n+/g,'\n').trim(),TEAM_ACCESS_SCHEMA.replace(/\n+/g,'\n').trim());
+ assert.equal((fs.readFileSync('database/migrations/143-desktop-team-access.sql','utf8').split('\n').slice(1).join('\n')+fs.readFileSync('database/migrations/144-owner-managed-desktop-logins.sql','utf8')+fs.readFileSync('database/migrations/147-desktop-user-removal.sql','utf8')+fs.readFileSync('database/migrations/149-desktop-immediate-access.sql','utf8')+fs.readFileSync('database/migrations/152-desktop-login-usernames.sql','utf8')+fs.readFileSync('database/migrations/153-desktop-username-lookup.sql','utf8')+fs.readFileSync('database/migrations/154-desktop-document-permissions.sql','utf8')+fs.readFileSync('database/migrations/155-desktop-client-work.sql','utf8')+fs.readFileSync('database/migrations/156-manager-tank-permissions.sql','utf8')+fs.readFileSync('database/migrations/158-desktop-parts-stocklists.sql','utf8')).replace(/\n+/g,'\n').trim(),TEAM_ACCESS_SCHEMA.replace(/\n+/g,'\n').trim());
  const {sharedEnquiryReturnTo}=load('lib/external-share-permissions.ts');assert.equal(sharedEnquiryReturnTo('/team'),'/team');assert.equal(sharedEnquiryReturnTo('//evil.example/team'),null);assert.equal(sharedEnquiryReturnTo('/team?owner=other'),null);
 });
 
@@ -350,6 +350,7 @@ test('desktop creation and reactivation stay silent; only manual invitation send
  f.setSession({user:{...owner,emailVerified:false}});const emails=[];
  const json=(body,status=200)=>({body,status});
  const route=load('app/api/team-access/route.ts',{
+  '../../../lib/fuel-ledger':{listFuelLedger:async()=>({storages:[]})},'../../../lib/parts-network':{ensurePartsNetwork:async()=>{}},
   '../../../lib/asset-usage':load('lib/asset-usage.ts'),
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
   '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
@@ -408,6 +409,7 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  const f=await setup();try{
  f.setSession({user:owner});await f.invite();
  const route=load('app/api/team-access/route.ts',{
+  '../../../lib/fuel-ledger':{listFuelLedger:async()=>({storages:[]})},'../../../lib/parts-network':{ensurePartsNetwork:async()=>{}},
   '../../../lib/asset-usage':load('lib/asset-usage.ts'),
   'next/server':{},'../../../lib/db':{getDb:()=>f.pool},'../../../lib/team-access':f.service,
   '../../../lib/team-client-work':{listTeamClientWork:async()=>[]},
@@ -666,7 +668,7 @@ test('permission dependencies and summaries remain explicit',()=>{
  const off=policy.updateTeamPermission(on,'viewMaintenance',false);assert.equal(off.completeMaintenance,false);
  assert.equal(policy.teamDocumentAccessLabel('none',12),'No document access');
  assert.equal(policy.teamDocumentAccessLabel('all',0,2),'All in-scope documents except 2 excluded');
- assert(policy.TEAM_TEMPLATES.manager.permissions.viewValues);
+ assert.equal(policy.TEAM_TEMPLATES.manager.permissions.viewValues,false);
  assert(!('manageUsers' in policy.TEAM_TEMPLATES.manager.permissions));
 });
 test('Dealer and Business create isolated logins with an empty own-asset scope and explicit client permissions',async()=>{

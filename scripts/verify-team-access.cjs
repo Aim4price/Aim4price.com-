@@ -148,8 +148,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('input[placeholder="DD/MM/YYYY"]',el=>el.value),expiry.split('-').reverse().join('/'));
  await click('Open calendar');await page.waitForSelector('dialog[open]');await click('Close calendar');
  assert.equal(await page.$eval('input[placeholder="DD/MM/YYYY"]',el=>el.value),expiry.split('-').reverse().join('/'));
- await click('Continue');await click('Manager');
- assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),true);
+ await click('Continue');await click('Operations manager');
+ assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),false);
  await click('Workshop');
  assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('label')).find(l=>l.textContent.includes('View asset values')).querySelector('input').checked),false);
  await page.screenshot({path:'.next/team-access-validation/owner-permissions-desktop.png'});

@@ -1,3 +1,4 @@
+import { teamWriteGuard } from '../../../lib/team-write-guard';
 import { projectTeamCostRecord } from '../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import {
@@ -88,9 +89,10 @@ export async function POST(request: NextRequest) {
   try {
     if (context.team && (body.source === 'fuel_slip' || body.invoiceDocumentId)) return NextResponse.json({ok:false,error:'Create a manual cost record. Fuel entries and original documents use their own permissions.'},{status:403});
     await assertWorkspaceAssetAccess(context, body.assetId);
+    const guard = teamWriteGuard(context,'addCosts',{assetId:String(body.assetId || '')});
     const result = await createMyInvoice(context.ownerUserId, body, {
       displayName: context.team ? context.actorName : null,
-    });
+    }, {before:async client=>{await guard.before?.(client);},after:async client=>{await guard.after?.(client);}});
     const data = await filterCostLedgerForWorkspace(
       context,
       await listMyInvoicesData(context.ownerUserId, {}),

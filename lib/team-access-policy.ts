@@ -5,7 +5,7 @@ export const OWNER_TEAM_PERMISSIONS = [
     { key: 'updateUsage', label: 'Update usage', detail: 'Increase hours, kilometres or lifetime worked.' },
     { key: 'viewMaintenance', label: 'View maintenance', detail: 'Schedules and completion details. Financial fields are excluded.' },
     { key: 'completeMaintenance', label: 'Complete maintenance', detail: 'Mark scheduled work done; cannot delete or change schedules.' },
-    { key: 'recordMaintenance', label: 'Record work and problems', detail: 'Log completed work and problems for accessible assets.' },
+    { key: 'recordMaintenance', label: 'Record work and problems', detail: 'Record completed services, check-ups and repairs for accessible assets.' },
     { key: 'scheduleMaintenance', label: 'Manage maintenance schedules', detail: 'Create and change schedules for accessible assets.' },
     { key: 'recordFuelIssues', label: 'Record tank fuel issues', detail: 'Record litres issued from permitted tanks, without granting access to prices.' },
     { key: 'refillFuel', label: 'Record tank refills', detail: 'Record deliveries and dipstick readings for permitted tanks.' },
@@ -15,7 +15,7 @@ export const OWNER_TEAM_PERMISSIONS = [
     { key: 'uploadPhotos', label: 'Add photos', detail: 'Upload photos without changing or deleting existing ones.' },
     { key: 'viewFuel', label: 'View fuel quantities', detail: 'Fuel entries, usage and consumption for accessible assets.' },
     { key: 'viewFuelCosts', label: 'View fuel prices', detail: 'Prices per litre, VAT and fuel amounts. Separate from asset values.' },
-    { key: 'viewFuelStorage', label: 'View fuel tanks', detail: 'All business tanks and their stock levels. Tank access is separate from asset access.' },
+    { key: 'viewFuelStorage', label: 'View fuel tanks', detail: 'Assigned tanks and their stock levels. Tank access is separate from asset access.' },
     { key: 'addFuel', label: 'Add fuel entries', detail: 'Record fuel slips for accessible assets or permitted tanks.' },
     { key: 'editFuel', label: 'Correct fuel entries', detail: 'Correct existing fuel slips within this person’s access.' },
     { key: 'voidFuel', label: 'Void fuel entries', detail: 'Void entries while retaining their history.' },
@@ -39,9 +39,13 @@ export const CLIENT_TEAM_PERMISSIONS = [
     { key: 'viewClientWork', label: 'View assigned client work', detail: 'Selected enquiries and assets shared with this business. Does not grant access to other client assets.' },
     { key: 'viewClientContacts', label: 'View client contact details', detail: 'Contact details supplied with the selected enquiries.' },
     { key: 'viewClientValues', label: 'View shared client values', detail: 'Only values the client included. Separate from values of business-owned assets.' },
-    { key: 'manageClientEnquiries', label: 'Update enquiry status', detail: 'Accept, quote or decline selected enquiries. Cannot close, delete or re-share them.' },
+    { key: 'manageClientEnquiries', label: 'Update enquiry status', detail: 'Accept, mark quoted or decline selected enquiries. Does not create or send a quotation, change client assets or re-share them.' },
 ] as const;
-export const TEAM_PERMISSIONS = [...OWNER_TEAM_PERMISSIONS, ...CLIENT_TEAM_PERMISSIONS] as const;
+export const PARTS_TEAM_PERMISSIONS = [
+    { key: 'viewParts', label: 'View assigned Parts Stocklists', detail: 'Part numbers, quantities, selling prices and supplier contacts on assigned lists.' },
+    { key: 'manageParts', label: 'Update parts stock', detail: 'Add, edit and import rows on assigned lists. Imports can replace existing rows. Cannot share, archive or change membership.' },
+] as const;
+export const TEAM_PERMISSIONS = [...OWNER_TEAM_PERMISSIONS, ...CLIENT_TEAM_PERMISSIONS, ...PARTS_TEAM_PERMISSIONS] as const;
 export type TeamPermission = typeof TEAM_PERMISSIONS[number]['key'];
 export type TeamPermissions = Record<TeamPermission, boolean>;
 export const EMPTY_TEAM_PERMISSIONS = Object.fromEntries(TEAM_PERMISSIONS.map(p => [p.key, false])) as TeamPermissions;
@@ -50,7 +54,7 @@ export const TEAM_TEMPLATES = {
     operator: { label: 'Operator', detail: 'Update usage and view photos.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewPhotos: true } },
     workshop: { label: 'Workshop', detail: 'Usage, maintenance and uploads.', permissions: { ...EMPTY_TEAM_PERMISSIONS, updateUsage: true, viewMaintenance: true, recordMaintenance: true, completeMaintenance: true, viewPhotos: true, uploadPhotos: true, uploadDocuments: true } },
     office: { label: 'Office', detail: 'Maintain records; values stay hidden.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails: true, updateUsage: true, viewMaintenance: true, completeMaintenance: true, uploadDocuments: true, viewPhotos: true, uploadPhotos: true, exportAssets: true } },
-    manager: { label: 'Manager', detail: 'All listed permissions, including fuel, costs, maps and reports. General documents are chosen separately; fuel and cost originals are included.', permissions: { ...EMPTY_TEAM_PERMISSIONS, ...Object.fromEntries(OWNER_TEAM_PERMISSIONS.map(p => [p.key, true])) } as TeamPermissions },
+    manager: { label: 'Operations manager', detail: 'Manage assigned operations. Values, costs, original invoices, exports and destructive actions stay off unless selected.', permissions: { ...EMPTY_TEAM_PERMISSIONS, editDetails:true, updateUsage:true, viewMaintenance:true, recordMaintenance:true, scheduleMaintenance:true, completeMaintenance:true, viewPhotos:true, uploadPhotos:true, uploadDocuments:true, viewFuel:true, viewFuelStorage:true, recordFuelIssues:true, refillFuel:true, viewMap:true, updateLocation:true } as TeamPermissions },
 } as const;
 export const TEAM_PERMISSION_GROUPS = [
     { label: 'Asset register', keys: ['viewValues', 'editDetails', 'updateUsage', 'viewPhotos', 'uploadPhotos', 'exportAssets'] },
@@ -62,6 +66,7 @@ export const TEAM_PERMISSION_GROUPS = [
 ] as const;
 /** Dependencies are explicit, shared by the editor and server, and never inferred for stored grants. */
 export const TEAM_PERMISSION_DEPENDENCIES: Partial<Record<TeamPermission, readonly TeamPermission[]>> = {
+    manageParts: ['viewParts'],
     viewClientContacts: ['viewClientWork'], viewClientValues: ['viewClientWork'], manageClientEnquiries: ['viewClientWork'],
     recordMaintenance: ['viewMaintenance'], scheduleMaintenance: ['viewMaintenance'],
     recordFuelIssues: ['viewFuel', 'viewFuelStorage'], refillFuel: ['viewFuel', 'viewFuelStorage'],
@@ -82,10 +87,17 @@ export function teamDocumentAccessLabel(mode: TeamDocumentAccess = 'selected', s
 }
 export function updateTeamPermission(permissions: TeamPermissions, key: TeamPermission, enabled: boolean): TeamPermissions {
     const next = { ...permissions, [key]: enabled };
-    if (enabled) for (const required of TEAM_PERMISSION_DEPENDENCIES[key] || []) next[required] = true;
+    if (enabled) {
+        const enable = (permission: TeamPermission, seen = new Set<TeamPermission>()) => {
+            if (seen.has(permission)) return; seen.add(permission); next[permission] = true;
+            for (const required of TEAM_PERMISSION_DEPENDENCIES[permission] || []) enable(required, seen);
+        };
+        enable(key);
+    }
     return normalizeTeamPermissions(next);
 }
 export type TeamGrant = {
+    partsListIds?: string[];
     fuelStorageIds?: string[] | null;
     clientWorkIds?: string[];
     username?: string;
@@ -122,8 +134,12 @@ export function normalizeTeamPermissions(value: unknown): TeamPermissions {
     const result = { ...EMPTY_TEAM_PERMISSIONS };
     for (const { key } of TEAM_PERMISSIONS)
         result[key] = input[key] === true;
-    for (const [key, required] of Object.entries(TEAM_PERMISSION_DEPENDENCIES))
-        if (required.some(dependency => !result[dependency])) result[key as TeamPermission] = false;
+    for (let pass = 0; pass < TEAM_PERMISSIONS.length; pass++) {
+        let changed = false;
+        for (const [key, required] of Object.entries(TEAM_PERMISSION_DEPENDENCIES))
+            if (result[key as TeamPermission] && required.some(dependency => !result[dependency])) {result[key as TeamPermission] = false; changed = true;}
+        if (!changed) break;
+    }
     return result;
 }
 export function teamGrantIsLive(grant: TeamGrant, actor: TeamActor, now = Date.now()): boolean {

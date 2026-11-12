@@ -19,6 +19,7 @@ import { resolveAssetUsage } from './asset-usage';
 import { ensureTeamAccessSchema } from './team-access-schema';
 import { TeamAccessError, isDesktopUsername, normalizeTeamPermissions, teamGrantIsLive, teamCanAccessAsset, assertTeamPermission, projectTeamAsset, type TeamActor, type TeamGrant, type TeamPermission } from './team-access-policy';
 type TeamGrantRow = {
+    parts_list_ids?: string[];
     fuel_storage_ids?: string[] | null;
     client_work_ids?: string[];
     managed_login?: boolean;
@@ -40,7 +41,7 @@ type TeamGrantRow = {
     version: number;
 };
 export function mapTeamGrant(row: TeamGrantRow): TeamGrant {
-    return { fuelStorageIds: row.fuel_storage_ids ?? null, clientWorkIds: row.client_work_ids || [], managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
+    return { partsListIds: row.parts_list_ids || [], fuelStorageIds: row.fuel_storage_ids ?? null, clientWorkIds: row.client_work_ids || [], managedLogin: row.managed_login === true, id: row.id, ownerId: row.owner_id, email: row.email || '', username: row.username || undefined, displayName: row.display_name, memberUserId: row.member_user_id,
         status: row.status, scope: row.scope, registerIds: row.register_ids, assetIds: row.asset_ids, documentIds: row.document_ids, documentAccess: row.document_access || 'selected', excludedDocumentIds: row.excluded_document_ids || [],
         permissions: normalizeTeamPermissions(row.permissions), expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null, version: row.version };
 }
@@ -103,12 +104,14 @@ export async function loadTeamScope(membershipId: string, permission?: TeamPermi
     if (actor.id.startsWith('manager:') ? profile.accountType !== 'owner' || profile.accountStatus !== 'active' : !await teamIssuerAvailable(grant.ownerId, profile))
         throw new TeamAccessError('This business workspace is unavailable.');
     grant.permissions = accountTeamPermissions(grant.permissions, teamAccountKind(profile.accountType, profile.accountSubtype)!);
+    if (profile.accountType === 'business') {grant.scope='selected';grant.assetIds=[];grant.registerIds=[];grant.documentIds=[];grant.documentAccess='none';grant.fuelStorageIds=[];}
     if (permission)
         assertTeamPermission(grant, permission);
     return { actor, grant, accountType: profile.accountType, accountSubtype: profile.accountSubtype, logoUrl: profile.logoUrl, businessName: profile.businessName || profile.displayName || 'Team workspace' };
 }
 export type TeamScope = Awaited<ReturnType<typeof loadTeamScope>>;
 export async function requireTeamAsset(scope: TeamScope, assetId: string, client?: PoolClient): Promise<AssetRegisterItem> {
+    if(scope.accountType === 'business') throw new TeamAccessError('Use assigned client work for this business.',403);
     const existing = await (client || getDb()).query(`SELECT id FROM asset_register_items WHERE user_id=$1 AND id::text=$2 AND coalesce(to_jsonb(asset_register_items)->>'lifecycle_state','active')='active'${client ? ' FOR UPDATE' : ''}`, [scope.grant.ownerId, assetId]);
     if (!existing.rows.length)
         throw new TeamAccessError('Asset unavailable.', 404);
@@ -118,7 +121,7 @@ export async function requireTeamAsset(scope: TeamScope, assetId: string, client
     return asset;
 }
 /** Grant lock serializes edits with revocation; asset lock rechecks scope after concurrent moves. */
-export async function lockTeamScope(client: PoolClient, scope: TeamScope, assetId: string, permission: TeamPermission) {
+export async function lockTeamPermission(client: PoolClient, scope: TeamScope, permission: TeamPermission) {
     if (scope.actor.id.startsWith('manager:')) {
       const member = (await client.query('SELECT is_active,session_version FROM owner_app_users WHERE id=$1 AND parent_owner_user_id=$2 FOR SHARE', [scope.grant.id,scope.grant.ownerId])).rows[0];
       if (!member?.is_active || Number(member.session_version) !== scope.grant.version) throw new TeamAccessError('Your access changed. Sign in again.', 409);
@@ -131,8 +134,13 @@ export async function lockTeamScope(client: PoolClient, scope: TeamScope, assetI
         throw new TeamAccessError('Team access has expired or been revoked.');
     if (fresh.version !== scope.grant.version)
         throw new TeamAccessError('Your permissions changed. Refresh and try again.', 409);
+    fresh.permissions = accountTeamPermissions(fresh.permissions, teamAccountKind(scope.accountType,scope.accountSubtype)!);
     assertTeamPermission(fresh, permission);
     await setAssetHistoryActor(client, scope.actor.id, scope.actor.name || scope.actor.email, 'team-workspace');
+    return fresh;
+}
+export async function lockTeamScope(client: PoolClient, scope: TeamScope, assetId: string, permission: TeamPermission) {
+    const fresh = await lockTeamPermission(client, scope, permission);
     return requireTeamAsset({ ...scope, grant: fresh }, assetId, client);
 }
 export async function listTeamOwnerAssets(ownerId: string, registers?: Awaited<ReturnType<typeof listAssetRegisters>>) {
@@ -210,6 +218,20 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
     if (excludedDocumentIds?.some(id => !documents.some(d => d.id === id && !d.deletedAtIso)))
         throw new TeamAccessError('Excluded documents must belong to this account.', 400);
     const permissions = accountTeamPermissions(body.permissions, kind);
+    const partsListIds = body.partsListIds === undefined && body.id ? undefined : ids(body.partsListIds || []);
+    const fuelStorageIds = body.fuelStorageIds === undefined && body.id ? undefined : body.fuelStorageIds === null ? null : ids(body.fuelStorageIds || []);
+    if (partsListIds?.length) {
+        if (kind !== 'dealer') throw new TeamAccessError('Parts Stock delegation is available to Dealers.', 400);
+        const {ensurePartsNetwork} = await import('./parts-network'); await ensurePartsNetwork();
+        const available = (await getDb().query("SELECT n.id FROM parts_networks n JOIN parts_network_members m ON m.network_id=n.id WHERE m.dealer_id=$1 AND m.status='active' AND NOT n.archived", [actor.id])).rows;
+        if (partsListIds.some(id=>!available.some(row=>row.id===id))) throw new TeamAccessError('Choose available stocklists belonging to or shared with this account.', 400);
+    }
+    if (fuelStorageIds?.length) {
+        const {listFuelLedger} = await import('./fuel-ledger');
+        const tanks = (await listFuelLedger(actor.id)).storages;
+        if (fuelStorageIds.some(id=>!tanks.some(t=>t.id===id))) throw new TeamAccessError('Choose fuel tanks belonging to this account.', 400);
+    }
+
     const password = typeof body.password === 'string' ? body.password : '';
     if (loginType === 'existing' && password) throw new TeamAccessError('Existing users keep their own Aim4price password.', 400);
     const passwordHash = password ? await hashTeamPassword(password) : null;
@@ -245,6 +267,8 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
             row = (await client.query(`INSERT INTO team_access(owner_id,email,display_name,scope,register_ids,asset_ids,document_ids,permissions,expires_at,username,document_access,excluded_document_ids) VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,$8::jsonb,$9,$10,$11,$12::jsonb) RETURNING *`, [actor.id, usernameLogin ? null : email, displayName, scope, JSON.stringify(registerIds), JSON.stringify(assetIds), JSON.stringify(documentIds), JSON.stringify(permissions), expiresAt, usernameLogin ? username : null, documentAccess ?? 'selected', JSON.stringify(excludedDocumentIds || [])])).rows[0];
         }
         if (clientWorkIds !== null) row = (await client.query('UPDATE team_access SET client_work_ids=$2::jsonb WHERE id=$1 RETURNING *', [row.id, JSON.stringify([...new Set(clientWorkIds as string[])])])).rows[0];
+        if (partsListIds !== undefined) row = (await client.query('UPDATE team_access SET parts_list_ids=$2::jsonb WHERE id=$1 RETURNING *', [row.id, JSON.stringify(partsListIds)])).rows[0];
+        if (fuelStorageIds !== undefined) row = (await client.query('UPDATE team_access SET fuel_storage_ids=$2::jsonb WHERE id=$1 RETURNING *', [row.id, fuelStorageIds === null ? null : JSON.stringify(fuelStorageIds)])).rows[0];
         const existingLogin = (await client.query('SELECT id FROM "user" WHERE lower(email)=$1 ORDER BY id LIMIT 1', [email])).rows[0];
         if (!body.id && loginType === 'existing' && !existingLogin) throw new TeamAccessError('No Aim4price account is registered with this email. Check the email or choose Create desktop login.', 400);
         if (row.managed_login || (!body.id && (loginType === 'managed' || !existingLogin))) {
@@ -260,7 +284,7 @@ export async function saveTeamGrant(actor: TeamActor, body: Record<string, unkno
         }
         const grant = mapTeamGrant(row);
         if (grant.managedLogin && passwordHash) await auditTeam(client, actor, grant, body.id ? 'Desktop password reset' : 'Desktop login created');
-        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Desktop user added', null, { permissions, scope, registerIds, assetIds, documentIds, documentAccess: grant.documentAccess, excludedDocumentIds: grant.excludedDocumentIds, expiresAt });
+        await auditTeam(client, actor, grant, body.id ? 'Permissions updated' : 'Desktop user added', null, { permissions, scope, registerIds, assetIds, clientWorkIds: grant.clientWorkIds, partsListIds: grant.partsListIds, fuelStorageIds: grant.fuelStorageIds, documentIds, documentAccess: grant.documentAccess, excludedDocumentIds: grant.excludedDocumentIds, expiresAt });
         await client.query('COMMIT');
         return grant;
     }

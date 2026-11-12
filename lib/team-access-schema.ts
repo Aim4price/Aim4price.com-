@@ -64,6 +64,7 @@ ALTER TABLE team_access ADD COLUMN IF NOT EXISTS excluded_document_ids jsonb NOT
 -- Existing desktop users gain no client access.
 ALTER TABLE team_access ADD COLUMN IF NOT EXISTS client_work_ids jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE team_access ADD COLUMN IF NOT EXISTS fuel_storage_ids jsonb;
+ALTER TABLE team_access ADD COLUMN IF NOT EXISTS parts_list_ids jsonb NOT NULL DEFAULT '[]';
 `;
 let ready: Promise<void> | undefined;
 export function ensureTeamAccessSchema() {

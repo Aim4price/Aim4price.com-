@@ -1,3 +1,5 @@
+import { listFuelLedger } from '../../../lib/fuel-ledger';
+import { ensurePartsNetwork } from '../../../lib/parts-network';
 import { resolveAssetUsage } from '../../../lib/asset-usage';
 import { listTeamClientWork } from '../../../lib/team-client-work';
 import { listAssetGroups } from '../../../lib/asset-groups';
@@ -23,8 +25,14 @@ export async function GET() {
             getDb().query('SELECT a.id,a.actor_email,a.action,a.asset_id,a.details,a.created_at,t.display_name AS target_name,t.email AS target_email FROM team_access_activity a LEFT JOIN team_access t ON t.id=a.membership_id WHERE a.owner_id=$1 ORDER BY a.created_at DESC LIMIT 100', [actor.id]),
             listAssetGroups(actor.id),
         ]);
+        const fuelTanks = (await listFuelLedger(actor.id)).storages.map(t=>({id:t.id,name:t.name}));
+        let partsLists: {id:string;name:string}[] = [];
+        if (profile.accountType === 'dealer') {
+          await ensurePartsNetwork();
+          partsLists = (await getDb().query("SELECT n.id,n.name FROM parts_networks n JOIN parts_network_members m ON m.network_id=n.id WHERE m.dealer_id=$1 AND m.status='active' AND NOT n.archived ORDER BY n.name",[actor.id])).rows;
+        }
         const clientWork = profile.accountType === 'owner' ? [] : await listTeamClientWork(actor.id);
-        return teamJson({ clientWork: clientWork.map(work => ({id:work.id,title:work.title,client:work.client})), groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => {
+        return teamJson({ fuelTanks, partsLists, clientWork: clientWork.map(work => ({id:work.id,title:work.title,client:work.client})), groups: buildAppAssetDirectoryGroups(groups, assets.map(a => a.id)), businessId: actor.id, members: rows.rows.map(mapTeamGrant), registers: registers.map(r => ({ id: r.id, name: r.businessName })), assets: assets.map(a => {
             const usage = resolveAssetUsage({ kind: a.kind, hours: a.hours, lifeWorkedPercent: a.lifeWorkedPercent, specsJson: a.specsJson });
             return { id: a.id, title: a.title, registerId: a.registerId, kind: a.kind, yearModel: a.yearModel, serialNumber: a.serialNumber, usage: usage.value, usageMetric: usage.metric };
         }), documents: documents.filter(d => !d.deletedAtIso && d.assetLinks.length).map(d => ({ id: d.id, title: d.title, assetIds: d.assetLinks.map(a => a.id) })), activity: activity.rows });

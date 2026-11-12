@@ -1,3 +1,4 @@
+import { teamWriteGuard } from '../../../../../lib/team-write-guard';
 import { assertTeamFuelTarget } from '../../../../../lib/owner-workspace-access';
 import { NextResponse } from 'next/server';
 import { getFuelSlipTransactionById, listFuelLedger, saveFuelSlipTransaction, voidFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
@@ -52,7 +53,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       auditActorUserId: workspace.actorUserId,
       auditActorName: workspace.actorName,
       auditActorEmail: workspace.actorEmail,
-    });
+    }, teamWriteGuard(workspace, 'editFuel', {assetId: String(payload.assetId || (payload.targetType === 'asset' ? payload.targetId : '') || ''),storageId:String(payload.storageId || (payload.targetType === 'storage_tank' ? payload.targetId : '') || ''),fuelSlipId:slipId}));
     const ledger = await filterFuelLedgerForWorkspace(
       workspace,
       await listFuelLedger(workspace.ownerUserId),
@@ -100,7 +101,7 @@ export async function DELETE(request: Request, context: RouteContext) {
         email: workspace.actorEmail,
       },
       reason: payload.reason,
-    });
+    }, teamWriteGuard(workspace,'voidFuel',{fuelSlipId:slipId}));
     const ledger = await filterFuelLedgerForWorkspace(
       workspace,
       await listFuelLedger(workspace.ownerUserId),

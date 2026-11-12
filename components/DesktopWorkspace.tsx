@@ -20,6 +20,7 @@ export function desktopUrl(url: string, membershipId?: string) {
 }
 export function desktopPageAllowed(path: string, permissions?: DesktopWorkspace['permissions']) {
   if (['/', '/valuation', '/marketplace', '/asset-register', '/account', '/team/access', '/documents'].includes(path)) return true;
+  if (path === '/parts' || path.startsWith('/parts/')) return Boolean(permissions?.viewParts);
   if (path.startsWith('/marketplace/')) return true;
   const key: Record<string, TeamPermission> = { '/maintenance': 'viewMaintenance', '/fuel': 'viewFuel', '/my-invoices': 'viewCosts', '/asset-map': 'viewMap', '/budgets': 'viewBudgets' };
   return Boolean(key[path] && permissions?.[key[path]]);
@@ -35,7 +36,7 @@ export function useDesktopControls() {
     const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     const path = new URL(raw, window.location.origin).pathname;
     const permission = teamWorkspacePermission(path, init?.method || 'GET');
-    if (workspace && !isTeamDocumentRead(path, init?.method || 'GET') && (!permission || !workspace.permissions[permission])) {
+    if (workspace && !isTeamDocumentRead(path, init?.method || 'GET') && (!permission || !workspace.permissions[permission]) && !(path === '/api/maintenance' && init?.method === 'POST' && workspace.permissions.scheduleMaintenance)) {
       if ((init?.method || 'GET') !== 'GET') setUnavailable(true);
       return new Response(JSON.stringify({ ok: false, error: 'Not available with your permissions.' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
     }

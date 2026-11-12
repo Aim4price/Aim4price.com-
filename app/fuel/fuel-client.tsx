@@ -1,4 +1,5 @@
 'use client';
+import TeamFuelEntry from '../../components/team/TeamFuelEntry';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import captureAttachmentStyles from '../../components/CaptureAttachment.module.css';
@@ -3785,6 +3786,7 @@ export default function FuelClient({
         <section className={styles.shell}>
           {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
+          <TeamFuelEntry tanks={storages} assets={assets} onSaved={()=>loadLedger({silent:true})} />
           <section className={styles.ledgerPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>

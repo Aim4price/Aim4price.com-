@@ -1044,7 +1044,7 @@ export default function MaintenanceClient({
   }
 
   function startChecklistWork(assetId: string, timing: 'done' | 'upcoming') {
-    if (desktop.workspace) {desktop.unavailable();return;}
+    if (!desktop.allow(timing === 'done' ? 'recordMaintenance' : 'scheduleMaintenance')) return;
     const asset = assets.find((item) => item.id === assetId);
     if (!asset) return;
     setNotice(null);
@@ -1056,7 +1056,7 @@ export default function MaintenanceClient({
   }
 
   function openAddService() {
-    if (desktop.workspace) {desktop.unavailable();return;}
+    if (!desktop.can('recordMaintenance') && !desktop.can('scheduleMaintenance')) {desktop.unavailable();return;}
     setNotice(null);
     setEditingRecordId(null);
     setDraft(null);
@@ -1066,7 +1066,8 @@ export default function MaintenanceClient({
 
   function selectAsset(asset: AssetOption) {
     setDraft(emptyDraftForAsset(asset));
-    setModalMode('timing');
+    if (desktop.workspace && (!desktop.can('recordMaintenance') || !desktop.can('scheduleMaintenance'))) {setEntryTiming(desktop.can('recordMaintenance') ? 'done' : 'upcoming');setModalMode('maintenance-type');}
+    else setModalMode('timing');
   }
 
   function chooseMaintenanceType(type: MaintenanceType) {
@@ -1075,6 +1076,7 @@ export default function MaintenanceClient({
   }
 
   async function savePastWork(completion: DesktopServiceCompletion) {
+    if (!desktop.allow('recordMaintenance')) return;
     if (!draft || completeRequestInFlight.current) return;
     completeRequestInFlight.current = true;
     setIsSaving(true);
@@ -1108,7 +1110,7 @@ export default function MaintenanceClient({
   }
 
   function openEdit(record: MaintenanceRecord) {
-    if (desktop.workspace) {desktop.unavailable();return;}
+    if (!desktop.allow('scheduleMaintenance')) return;
     setNotice(null);
     setEditingRecordId(record.id);
     setDraft(draftFromRecord(record));
@@ -1141,6 +1143,7 @@ export default function MaintenanceClient({
   }
 
   async function submitDraft() {
+    if (!desktop.allow('scheduleMaintenance')) return;
     if (!draft) return;
     setIsSaving(true);
     setNotice(null);
@@ -1537,10 +1540,10 @@ export default function MaintenanceClient({
             <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
                 <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
-              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update maintenance details.</small></span></button>
-              {managedRecord.status === 'upcoming' ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Mark as completed</strong><small className={umbrellaStyles.menuOptionSubtitle}>Save completion without extra details.</small></span></button> : null}
+              {desktop.can('scheduleMaintenance') && (!desktop.workspace || managedRecord.status === 'upcoming') && <button className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update maintenance details.</small></span></button>}
+              {managedRecord.status === 'upcoming' && desktop.can('completeMaintenance') ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Mark as completed</strong><small className={umbrellaStyles.menuOptionSubtitle}>Save completion without extra details.</small></span></button> : null}
               <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 7 1 1 2-2M13 8h4m-4 6h4" /></svg></i><span><strong>Download checklist</strong><small className={umbrellaStyles.menuOptionSubtitle}>Choose PDF checklist items for this asset.</small></span></button>
-              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle} style={{ whiteSpace: 'nowrap' }}>Remove here. Keep in reports.</small></span></button>
+              {!desktop.workspace && <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle} style={{ whiteSpace: 'nowrap' }}>Remove here. Keep in reports.</small></span></button>}
                 </div>
               </div>
             </div>
@@ -1599,8 +1602,8 @@ export default function MaintenanceClient({
       {modalMode === 'timing' && draft ? (
         <MaintenanceEntryChoice step="timing" assetTitle={selectedDraftAsset?.title || ''} onClose={closeModal}
           onBack={!assetEntryLocked ? returnToAssetPicker : undefined}
-          onDone={() => { setEntryTiming('done'); setModalMode('maintenance-type'); }}
-          onUpcoming={() => { setEntryTiming('upcoming'); setModalMode('maintenance-type'); }} />
+          onDone={() => { if (!desktop.allow('recordMaintenance')) return; setEntryTiming('done'); setModalMode('maintenance-type'); }}
+          onUpcoming={desktop.can('scheduleMaintenance') ? () => { setEntryTiming('upcoming'); setModalMode('maintenance-type'); } : undefined} />
       ) : null}
 
       {modalMode === 'record-work' && draft && selectedDraftAsset ? (

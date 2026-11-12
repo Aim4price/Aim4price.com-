@@ -10,11 +10,14 @@ const FuelLedgerAssetKeys = ["equipmentFamilyKey", "id", "title", "kind", "asset
 
 /** Every opted-in endpoint is listed here. A new owner endpoint never becomes a team endpoint implicitly. */
 export function teamWorkspacePermission(path: string, method: string): TeamPermission | null {
-  if (path === '/api/maintenance') return method === 'GET' ? 'viewMaintenance' : null;
+  if (path === '/api/maintenance') return method === 'GET' ? 'viewMaintenance' : method === 'POST' ? 'recordMaintenance' : null;
   if (path === '/api/maintenance/report') return method === 'GET' ? 'exportMaintenance' : null;
   if (/^\/api\/maintenance\/[^/]+\/complete$/.test(path)) return ['POST','PATCH'].includes(method) ? 'completeMaintenance' : null;
+  if (/^\/api\/maintenance\/[^/]+$/.test(path)) return method === 'PATCH' ? 'scheduleMaintenance' : null;
   if (path === '/api/documents' && method === 'POST') return 'uploadDocuments';
   if (path === '/api/fuel') return method === 'GET' ? 'viewFuel' : method === 'POST' ? 'manageFuelStorage' : null;
+  if (/^\/api\/fuel\/storage\/[^/]+\/stock$/.test(path)) return method === 'POST' ? 'refillFuel' : null;
+  if (/^\/api\/fuel\/storage\/[^/]+\/issue$/.test(path)) return method === 'POST' ? 'recordFuelIssues' : null;
   if (path === '/api/fuel/report') return method === 'GET' ? 'exportFuel' : null;
   if (path === '/api/fuel/documents/download') return method === 'GET' ? 'viewFuelDocuments' : null;
   if (path === '/api/fuel/slips/export') return method === 'POST' ? 'exportFuel' : null;
@@ -37,7 +40,8 @@ export function teamWorkspacePermission(path: string, method: string): TeamPermi
 export function isTeamDocumentRead(path: string, method: string) { return method === 'GET' && (path === '/api/documents' || /^\/api\/documents\/[^/]+\/download$/.test(path)); }
 export function assertTeamWorkspaceRequest(permissions: TeamPermissions, url: URL, method: string) {
   const permission = teamWorkspacePermission(url.pathname, method);
-  if (!isTeamDocumentRead(url.pathname, method) && (!permission || !permissions[permission])) throw new TeamAccessError('Not available with your permissions.');
+  const scheduleCreation = url.pathname === '/api/maintenance' && method === 'POST' && permissions.scheduleMaintenance;
+  if (!scheduleCreation && !isTeamDocumentRead(url.pathname, method) && (!permission || !permissions[permission])) throw new TeamAccessError('Not available with your permissions.');
   if (['shareToken', 'accessId', 'accountantShareId', 'accountantRegisterId'].some(key => url.searchParams.has(key)))
     throw new TeamAccessError('Choose one workspace at a time.');
   if (url.pathname.endsWith('/report') && !['', 'pdf', 'html'].includes(url.searchParams.get('format') || ''))

@@ -4,7 +4,7 @@ const chromium = require('@sparticuz/chromium');
 module.exports = async function checkBrowser(e) {
   for (const [role, account] of Object.entries(e.accounts)) {
     // Keep Chromium's normal Origin behavior; the package default disables web security.
-    const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args.filter(a => !['--single-process', '--disable-web-security'].includes(a)), pipe: true, headless: true, protocolTimeout: 30000 });
+    const browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args.filter(a => !['--single-process', '--disable-web-security'].includes(a)), pipe: true, headless: true, protocolTimeout: 120000 });
     try {
       const page = await browser.newPage();
       console.log('Browser starting ' + role);
@@ -43,7 +43,14 @@ module.exports = async function checkBrowser(e) {
         await page.goto(e.origin + '/owner-app/assets/' + e.assets.tractor + '/manage/usage', {waitUntil:'domcontentloaded',timeout:120000});
         await page.waitForSelector('input[type="number"]');
         const nextUsage = 3000 + Object.keys(e.accounts).indexOf(role);
-        await page.locator('input[type="number"]').fill(String(nextUsage));
+        // Set the controlled numeric value atomically, then exercise the real submit and database write.
+        // Per-key typing can race React's numeric normalization on slower CI workers.
+        await page.$eval('input[type="number"]', (input, value) => {
+          const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+          setter.call(input, value);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }, String(nextUsage));
+        await page.waitForFunction(value => document.querySelector('input[type="number"]').value === value, {}, String(nextUsage));
         await page.evaluate(() => document.querySelector('form').requestSubmit());
         await page.waitForFunction(() => document.body.textContent.includes('Asset changes saved.'), {polling:250,timeout:15000});
         const stored = await e.db.query('SELECT hours FROM asset_register_items WHERE id=$1',[e.assets.tractor]);

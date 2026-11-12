@@ -1,3 +1,4 @@
+import { TeamAccessError } from '../../../lib/team-access-policy';
 import { NextRequest, NextResponse } from "next/server";
 import { getPartsActor } from "../../../lib/parts-network-access";
 import { isTrustedRequestOrigin } from "../../../lib/trusted-request-origin";
@@ -33,7 +34,7 @@ function reply(data: unknown, status = 200) {
   });
 }
 function failure(error: unknown) {
-  if (error instanceof PartsError)
+  if (error instanceof PartsError || error instanceof TeamAccessError)
     return reply({ error: error.message }, error.status);
   console.error("Parts network request failed", error);
   return reply(
@@ -47,7 +48,7 @@ function failure(error: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const token = request.nextUrl.searchParams.get("token");
-    const actor = await getPartsActor(Boolean(token));
+    const actor = await getPartsActor(Boolean(token), request.nextUrl.searchParams.get("desktopMembershipId") || undefined);
     if (!actor)
       return reply(
         { error: "Sign in to view parts shared with your account." },
@@ -69,6 +70,7 @@ export async function GET(request: NextRequest) {
         networks: await listPartsNetworks(actor),
         canContribute: actor.canContribute,
         staff: actor.staff,
+        desktop: Boolean(actor.team),
       });
     return reply(
       await partsData(
@@ -117,6 +119,7 @@ export async function POST(request: NextRequest) {
     }
     const actor = await getPartsActor(
       body.action === "send-pin" || body.action === "accept",
+      request.nextUrl.searchParams.get("desktopMembershipId") || undefined,
     );
     if (!actor)
       return reply(
@@ -126,6 +129,7 @@ export async function POST(request: NextRequest) {
         },
         403,
       );
+    if (actor.team && !["preview", "import"].includes(String(body.action))) return reply({error:"Stocklist administration and external communication stay with the account holder."},403);
     if (body.action === "create")
       return reply(await createPartsNetwork(actor, body.name, true));
     if (body.action === "send-pin")

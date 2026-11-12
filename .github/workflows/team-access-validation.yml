@@ -23,6 +23,8 @@ on:
       - 'tests/team-access.test.cjs'
       - 'tests/team-account-access.test.cjs'
       - 'database/migrations/155-desktop-client-work.sql'
+      - 'database/migrations/158-desktop-parts-stocklists.sql'
+      - 'lib/team-write-guard.ts'
       - 'scripts/verify-team-access.cjs'
       - '.github/workflows/team-access-validation.yml'
   workflow_dispatch:
@@ -43,7 +45,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/team-access.test.cjs tests/team-account-access.test.cjs tests/team-workspace-permissions.test.cjs
+      - run: node --test tests/team-access.test.cjs tests/team-account-access.test.cjs tests/team-workspace-permissions.test.cjs tests/parts-network.test.cjs
       - run: node scripts/verify-team-access.cjs
       - run: node scripts/verify-sharing-usage.cjs
       - run: node scripts/verify-desktop-register.cjs

@@ -115,6 +115,7 @@ test("private network membership, import replacement and invitation lifecycle us
   const pool = { ...client, connect: async () => client };
   const messages = [];
   const network = load("lib/parts-network.ts", {
+    "./team-access": {lockTeamPermission:async(_,s,p)=>{if(!s.grant.permissions[p])throw Error("Permission denied");return s.grant;},auditTeam:async()=>{}},
     "./db": { getDb: () => pool },
     "./parts-network-schema": load("lib/parts-network-schema.ts"),
     "./parts-network-csv": csv,
@@ -188,6 +189,15 @@ test("private network membership, import replacement and invitation lifecycle us
     { ...input, businessName: "Dealer B", revision: 0 },
     true,
   );
+  const staff = {...dealer,staff:true,team:{actor:{id:'staff'},grant:{partsListIds:[id],permissions:{viewParts:true,manageParts:true}}}};
+  assert.equal((await network.listPartsNetworks(staff)).length,1);
+  await assert.rejects(()=>network.partsData(staff,second,'search','',0),/unavailable/);
+  await assert.rejects(()=>network.partsData(staff,id,'members','',0),/administration/);
+  const staffPreview = await network.importParts(staff,id,input,false);
+  await network.importParts(staff,id,{...input,businessName:'Unapproved identity',email:'changed@example.test',revision:staffPreview.revision},true);
+  const savedIdentity=(await db.query('SELECT business_name,email FROM parts_network_members WHERE network_id=$1 AND dealer_id=$2',[id,dealer.id])).rows[0];
+  assert.equal(savedIdentity.business_name,'Dealer A');assert.equal(savedIdentity.email,dealer.email);
+  await assert.rejects(()=>network.importParts({...staff,team:{...staff.team,grant:{...staff.team.grant,permissions:{viewParts:true,manageParts:false}}}},id,input,false),/Permission denied/);
   let result = await network.partsData(other, id, "search", "001", 0);
   assert.equal(result.total, 2);
   assert.equal(result.rows[0].part_number, "001");
@@ -367,6 +377,7 @@ test("account and staff gates reject inactive dealers, other account types and t
     },
     staff = false;
   const access = load("lib/parts-network-access.ts", {
+    "./desktop-workspace":{getDesktopScope:async()=>null},
     "./auth-session": {
       getServerSession: async () => session,
       isDealerAppSession: () => staff,
@@ -424,6 +435,7 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
     release() {},
   };
   const parts = load("lib/parts-network.ts", {
+    "./team-access": {lockTeamPermission:async(_,s,p)=>{if(!s.grant.permissions[p])throw Error("Permission denied");return s.grant;},auditTeam:async()=>{}},
     "./db": { getDb: () => ({ ...client, connect: async () => client }) },
     "./parts-network-schema": schema,
     "./parts-network-csv": csv,

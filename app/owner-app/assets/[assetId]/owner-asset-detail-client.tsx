@@ -416,7 +416,11 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const licenseStatus = draft ? statusValue(draft, 'license') : 'unknown';
   const upcomingMaintenance = useMemo(() => maintenance.find((record) => record.status === 'upcoming') ?? null, [maintenance]);
 
-  useEffect(() => { void loadDetail(); }, [assetId]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadDetail(false, controller.signal);
+    return () => controller.abort();
+  }, [assetId]);
 
   useEffect(() => {
     void fetch('/api/owner-app/session', { credentials: 'include', cache: 'no-store' })
@@ -543,7 +547,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       if (signal?.aborted) return;
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load this asset.' });
     } finally {
-      if (!silent) setLoading(false);
+      if (!silent && !signal?.aborted) setLoading(false);
     }
   }
 

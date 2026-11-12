@@ -70,7 +70,10 @@ const date = (s: string) =>
       })
     : "No parts added";
 async function api(body?: Record<string, unknown>, query = "") {
-  const r = await fetch("/api/parts-network" + query, {
+  const url = new URL("/api/parts-network" + query, window.location.origin);
+  const membership = new URLSearchParams(window.location.search).get("desktopMembershipId");
+  if (membership) url.searchParams.set("desktopMembershipId",membership);
+  const r = await fetch(url, {
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
@@ -205,6 +208,7 @@ export default function PartsClient({
   const [networks, setNetworks] = useState<Network[]>([]),
     [network, setNetwork] = useState(listId),
     [staff, setStaff] = useState(true),
+    [desktop, setDesktop] = useState(false),
     [contribute, setContribute] = useState(false);
   const [accessLoading, setAccessLoading] = useState(false);
   const [view, setView] = useState("search"),
@@ -264,6 +268,7 @@ export default function PartsClient({
   const [requestedParts, setRequestedParts] = useState<{partNumber:string;quantity:string}[]>([]);
   useEffect(() => { setSelectedParts([]); }, [network, view]);
   function startEnquiry(parts: Row[]) {
+    if (desktop) return;
     if (!parts.length) return;
     setContact(parts[0]);
     setRequestedParts(parts.map(r=>({partNumber:r.part_number,quantity:'1'})));
@@ -273,7 +278,7 @@ export default function PartsClient({
   const enquiryText = requestedParts.map(r=>`${r.partNumber} — quantity ${r.quantity}`).join('\n') + '\n\n' + enquiry;
   const basePath = website ? "/parts" : "/dealer/parts";
   function openList(id: string) {
-    window.location.assign(`${basePath}/${encodeURIComponent(id)}`);
+    window.location.assign(`${basePath}/${encodeURIComponent(id)}${window.location.search}`);
   }
   const current = networks.find((n) => n.id === network);
   const singleDealer = Boolean(current?.list_mode);
@@ -301,6 +306,7 @@ export default function PartsClient({
       setView(d.networks.find((n: Network) => n.id === listId)?.owned ? "mine" : "search");
     }
     setStaff(d.staff);
+    setDesktop(Boolean(d.desktop));
     setContribute(d.canContribute);
     setNetwork((old) =>
       d.networks.some((n: Network) => n.id === old) ? old : "",
@@ -496,12 +502,12 @@ export default function PartsClient({
         </div>}
         {!opened && (
           <>
-            <PartsInbox
+            {!desktop && <PartsInbox
               showShared={false}
               onAccepted={() => {
                 void loadNetworks();
               }}
-            />
+            />}
             <div className={styles.cards}>
               {networks
                 .filter((n) =>
@@ -643,7 +649,7 @@ export default function PartsClient({
                   <section className={`${workspaceStyles.titlePanel} ${styles.title} ${styles.stocklistTitle}`}>
                     <div>
                       <h1>{current?.name || "Parts list"}</h1>
-                      <WorkspaceViewSwitch href={basePath} label="Back to parts stocklists" />
+                      <WorkspaceViewSwitch href={basePath + (typeof window !== "undefined" ? window.location.search : "")} label="Back to parts stocklists" />
                     </div>
                   </section>
 
@@ -676,7 +682,7 @@ export default function PartsClient({
                   </div>
                   {!current?.owned && <div className={styles.selectionBar}>
                     <span>{selectedParts.length} selected · Choose up to 50 parts from one dealer</span>
-                    <button disabled={!selectedParts.length} onClick={()=>startEnquiry(selectedParts)}>Enquire about selected</button>
+                    <button disabled={desktop || !selectedParts.length} onClick={()=>startEnquiry(selectedParts)}>Enquire about selected</button>
                     {!!selectedParts.length && <button onClick={()=>setSelectedParts([])}>Clear selection</button>}
                   </div>}
 

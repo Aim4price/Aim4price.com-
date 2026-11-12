@@ -13,8 +13,8 @@ The permission editor keeps Login details, Permissions, Asset access, Documents 
 | Area | Explicit permissions | Scope and dependencies |
 | --- | --- | --- |
 | Asset register | Values, edit details, update usage, view/add photos, download register reports | Existing selected assets/registers or all current and future assets. Value visibility does not grant finance balances or operating costs. |
-| Maintenance | View, complete scheduled work, download reports | Accessible assets only. Completing work does not allow changing schedules or deleting records. |
-| Fuel ledger | View quantities, view prices, view tanks, add/correct/void slips, manage tanks, open original slips, download reports | Asset records follow asset scope. Tank access explicitly includes all business tanks; there is no selected-tank picker in this release. Current manual slip entry/correction/voiding requires fuel-price access. |
+| Maintenance | View, record completed work, create/edit schedules, complete scheduled work, download reports | Accessible assets only. Completing work does not allow changing schedules or deleting records. |
+| Fuel ledger | View quantities, view prices, view tanks, add/correct/void slips, manage tanks, open original slips, download reports | Asset records follow asset scope. Tanks are assigned independently: selected tanks or explicitly all current and future tanks. Record fuel issued and refill/dip permissions support quantity-only work without price access. Current manual slip entry/correction/voiding requires fuel-price access. |
 | Costs | View, add, edit, delete, open original invoices, download reports | Accessible assets only. Fuel-derived costs additionally require fuel-price visibility. Fuel originals require both applicable original-document permissions when accessed through Costs. |
 | Budgets | View, manage | Includes cost and fuel spending, so requires cost and fuel-price visibility. Selected-asset users cannot see or create account-wide budgets. Cost-report permission controls downloads. |
 | Asset map | View current positions, update locations, download map reports | Accessible assets only. Values and photos follow their own permissions. Tracker administration and location-history endpoints are not enabled. |
@@ -22,7 +22,9 @@ The permission editor keeps Login details, Permissions, Asset access, Documents 
 | Home, Value Asset, Marketplace | Ordinary public browsing | Saving assets, publishing listings, paid capture and acting on the holder's behalf remain unavailable. |
 | Account | Owner branding and read-only Permissions modal | Holder settings, credentials, billing, ownership and user administration remain owner-only. |
 
-There are 30 explicit permission flags. New flags default to false when normalizing existing stored grants. No migration expands existing access. Applying Manager deliberately enables all listed operational permissions, including fuel/cost originals; general document selection remains separate. Other presets preserve their existing starting permissions and can be customized per page.
+New permission flags default to false; existing grants gain no stocklists automatically. Operations manager enables assigned operational work, while values, costs, original invoices, exports and destructive actions remain off. Explicitly enable these when needed.
+
+Dealer Parts desk grants Parts Stock viewing/importing within separately assigned stocklists. It does not permit stocklist administration, sharing, enquiries or changing supplier contact details. Owner accounts cannot receive Parts permissions. Business accounts are restricted to assigned client work; they cannot acquire owner-asset functions through a desktop grant. Client work grants never override the client's sharing limits. “Mark quoted” changes workflow status only and does not send a quotation.
 
 ## Reports and original files
 
@@ -45,9 +47,9 @@ Owner-only report workflows such as depreciation and unrelated dealer/advert wor
 
 ## Deliberate boundaries
 
-This is an operational permission expansion, not owner impersonation. Quantity-only fuel entry with hidden prices, per-tank selection, stock reconciliation, QR/PIN administration, automatic invoice capture, recurring costs, maintenance scheduling/deletion, asset sharing/transfers, marketplace publishing, delegated user administration and new dealer-specific workflows are not enabled. General free-text notes and approved photographs/originals may contain information typed or photographed by users; structured-field permissions cannot redact arbitrary document content.
+Account credentials, billing settings, team administration, asset sharing/transfers, marketplace publishing, QR/PIN administration, automatic invoice capture and maintenance deletion remain with the primary account holder. Stock imports retain supplier identity. General free-text notes and approved originals may contain information typed or photographed by users; structured-field permissions cannot redact arbitrary content.
 
-Each request reloads the live grant. Existing team maintenance/document transactions retain their grant-lock checks; newer ledger writes authorize at request time and do not claim atomic cancellation of an already-running write when access is revoked.
+Maintenance, fuel, cost and budget mutations re-lock the current grant inside their write transaction and attribute activity to the actual staff member. Original records and destination assets/tanks are checked. Revocation waits for a mutation already holding the grant lock; after revocation commits, stale writes fail. This does not recall downloaded data.
 
 ## Validation
 
@@ -55,5 +57,3 @@ Each request reloads the live grant. Existing team maintenance/document transact
 - Policy/routes: `node --test tests/team-access.test.cjs tests/team-workspace-permissions.test.cjs tests/dedicated-asset-reports.test.cjs`.
 - Browser: `scripts/verify-team-access.cjs` and `scripts/verify-desktop-register.cjs`, including desktop/mobile sizing, owner branding, umbrellas, permission modal, masked values, restricted actions and revocation.
 - Report regression suite: fuel reports/slips/integrity, maps, cost formats/budgets, asset-link reports and maintenance clear checks.
-
-Three source-text assertions in the broad regression suite also fail on the pre-change baseline: budget warning-card fetch spelling and two desktop maintenance quick-clear assertions. They are recorded separately from the passing new permission tests; they were not weakened to hide failures. CI remains required before merging.
