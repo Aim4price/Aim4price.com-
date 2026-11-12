@@ -108,7 +108,7 @@ const appCode =
   "const sources=" +
   JSON.stringify(modules) +
   ",cache={};" +
-  'function require(name){if(name==="exceljs")return ExcelJS;if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
+  'function require(name){if(name==="next/link")return {__esModule:true,default:({children,...props})=>React.createElement("a",props,children)};if(name==="exceljs")return ExcelJS;if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
   "const Component=require(location.pathname === '/parts/join' ? 'app/parts/join/join-client' : " +
   JSON.stringify(entry) +
   ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true,listId:location.pathname.split("/")[2]||""}));';
@@ -235,7 +235,7 @@ const appCode =
     await page.waitForSelector("article");
     assert.ok(
       await page.$eval("h1", (e) =>
-        e.textContent.trim() === "Parts Stock",
+        e.textContent.trim() === "PARTS STOCKLISTS",
       ),
     );
     const cards = await page.$$eval("article", (nodes) =>
@@ -312,6 +312,15 @@ const appCode =
     await page.keyboard.press("Escape");
     await click("Open");
     await page.waitForSelector("tbody tr");
+    const returnSwitch = await page.$('a[aria-label="Back to parts stocklists"]');
+    assert.ok(returnSwitch, "Open stocklists have a header switch");
+    assert.equal(await returnSwitch.evaluate(el => el.getAttribute("href")), "/parts");
+    await Promise.all([page.waitForNavigation(), returnSwitch.click()]);
+    await page.waitForSelector("article");
+    assert.equal(await page.$eval("h1", el => el.textContent.trim()), "PARTS STOCKLISTS");
+    await click("Open");
+    await page.waitForSelector("tbody tr");
+
     assert.ok(page.url().endsWith("/parts/11111111-1111-4111-8111-111111111111"));
     await page.reload({waitUntil:"domcontentloaded"});
     await page.waitForSelector("tbody tr");

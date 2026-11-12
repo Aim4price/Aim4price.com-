@@ -15,6 +15,7 @@ import {
 } from "../../../components/WorkspacePrimitives";
 import PartsImportForm from "../../../components/PartsImportForm";
 import PartsInbox from "../../../components/PartsInbox";
+import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import styles from "./parts.module.css";
 type Network = {
   owner_business_name?: string;
@@ -459,7 +460,7 @@ export default function PartsClient({
   return (
     <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        {!listId && <WorkspaceTitlePanel title="Parts Stock" className={styles.title} />}
+        {!listId && <WorkspaceTitlePanel title="PARTS STOCKLISTS" className={styles.title} />}
         {!opened && <div className={styles.listToolbar}>
             <div className={styles.search}>
               <Icon kind="search" />
@@ -633,7 +634,12 @@ export default function PartsClient({
             <>
               <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
-                  <WorkspaceTitlePanel title={current?.name || "Parts list"} className={styles.title} />
+                  <section className={`${workspaceStyles.titlePanel} ${styles.title} ${styles.stocklistTitle}`}>
+                    <div>
+                      <h1>{current?.name || "Parts list"}</h1>
+                      <WorkspaceViewSwitch href={basePath} label="Back to parts stocklists" />
+                    </div>
+                  </section>
 
                 </div>
               </div>

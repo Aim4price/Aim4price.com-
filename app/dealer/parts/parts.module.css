@@ -1169,3 +1169,7 @@
   .detailPage .tableToolbar { padding: 14px; }
   .detailPage .detailHeader { margin-bottom: 16px; }
 }
+
+/* Keep the stocklist switch beside its title at every screen size. */
+.stocklistTitle > div { gap: 1.25rem; }
+.stocklistTitle h1 { flex: 1 1 0; }
