@@ -150,11 +150,13 @@ function Modal({
   busy,
   subtitle,
   manage = false,
+  entry = false,
   children,
 }: {
   title: string;
   subtitle?: string;
   manage?: boolean;
+  entry?: boolean;
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -171,7 +173,7 @@ function Modal({
     <div className={styles.backdrop}>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -1228,14 +1230,14 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal title="Add / update parts" subtitle={current?.name} onClose={close} busy={busy}>
+          <Modal entry title="Add / update parts" subtitle={current?.name} onClose={close} busy={busy}>
             <PartsImportForm initialDetails={details}
               request={body => api({ ...body, network })}
               onBusyChange={setBusy}
-              onComplete={async () => {
+              onComplete={async (addAnother) => {
                 await loadNetworks();
                 setRefresh(n => n + 1);
-                setModal(null);
+                if (!addAnother) setModal(null);
                 switchView("mine");
                 setNotice("Parts list updated successfully.");
               }}

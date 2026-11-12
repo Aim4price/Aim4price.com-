@@ -585,19 +585,28 @@ test('clipboard pastes preserve row alignment, punctuation, blanks and existing 
  const editor=load('lib/parts-editor.ts',{'./parts-network-csv':csv});
  let rows=editor.pastePartsCells([editor.blankPart()],'001,ABC\n\n0007',0,0);
  assert.deepEqual(rows.map(r=>r[0]),['001,ABC','','0007']);
- rows=editor.pastePartsCells(rows,'2\n3\n4',0,1);
- assert.deepEqual(rows.map(r=>r[1]),['2','3','4']); assert.equal(rows[2][0],'0007');
- rows=editor.pastePartsCells(rows,'0\tLandini\tFilter',0,2);
- assert.equal(rows[0][2],'0');assert.equal(rows[0][3],'Landini');
+ rows=editor.pastePartsCells(rows,'2\n3\n4',0,2);
+ assert.deepEqual(rows.map(r=>r[2]),['2','3','4']); assert.equal(rows[2][0],'0007');
+ rows=editor.pastePartsCells(rows,'0\tLandini',0,3);
+ assert.equal(rows[0][3],'0');assert.equal(rows[0][4],'Landini');
  assert.ok(editor.partRowErrors(rows)[1]);
- assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4),/beyond Description/);
+ assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4),/beyond Brand/);
  assert.throws(()=>editor.pastePartsCells(rows,'a\nb',19999,0),/20,000/);
- const duplicates=editor.partRowErrors([['ABC','1','','',''],['abc','2','','','']]);
+ const duplicates=editor.partRowErrors([['ABC','','1','',''],['abc','','2','','']]);
  assert.match(duplicates[0],/Duplicate/);assert.match(duplicates[1],/Duplicate/);
- assert.deepEqual(editor.partRowErrors([['001','1','','','']]),{});
+ assert.deepEqual(editor.partRowErrors([['001','','1','','']]),{});
 });
 test('parts signup continuations stay local and narrowly scoped',()=>{
  const {sharedEnquiryReturnTo:back}=load('lib/external-share-permissions.ts');
  const link='/parts/join?token='+'a'.repeat(64);assert.equal(back(link),link);
  for(const value of ['https://evil.test/parts','//evil.test/parts','/parts/join?token=x','/parts/../admin','/parts?redirect=https://evil.test'])assert.equal(back(value),null);
+});
+
+test('sheet validation ignores untouched blank rows and identifies only invalid cells',()=>{
+ const editor=load('lib/parts-editor.ts',{'./parts-network-csv':csv});
+ assert.deepEqual(editor.partCellErrors([editor.blankPart()]),{});
+ assert.deepEqual(Object.keys(editor.partCellErrors([['001','Dowel','','','']])[0]),['2']);
+ const rows=editor.pastePartsCells([editor.blankPart()],'01.3657074\tDowel\t16\n01.3671641\tBush\t9',0,0);
+ assert.equal(rows[1][1],'Bush');assert.equal(rows[1][2],'9');
+ assert.deepEqual(editor.partCellErrors(rows),{});
 });

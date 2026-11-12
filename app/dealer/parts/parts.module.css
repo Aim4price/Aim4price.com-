@@ -1173,3 +1173,57 @@
 /* Keep the stocklist switch beside its title at every screen size. */
 .stocklistTitle > div { gap: 1.25rem; }
 .stocklistTitle h1 { flex: 1 1 0; }
+
+/* Parts entry keeps navigation outside the scrollable working area. */
+.entryModal { width: min(1240px, 100%); max-height: min(900px, 92dvh); display: flex; flex-direction: column; overflow: hidden; padding: 28px; }
+.entryModal .dialogHeader { flex: 0 0 auto; margin-bottom: 20px; padding-bottom: 20px; }
+.entryModal .dialogHeader h2 { font-size: 30px; }
+.entryModal .importForm { min-height: 0; display: flex; flex-direction: column; gap: 16px; overflow: hidden; flex: 1 1 auto; }
+.entryModal .importFields { display: contents; }
+.stageBody { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 20px; padding: 2px 3px 16px; }
+.entrySteps { list-style: none; display: flex; gap: 24px; padding: 0; margin: 0; flex: 0 0 auto; }
+.entrySteps li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--app-muted, #63796f); }
+.entrySteps li span { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid var(--app-border, #cbded4); border-radius: 50%; }
+.entrySteps li[aria-current] { color: var(--app-text, #173f33); }
+.entrySteps li[aria-current] span { background: var(--app-primary, #17654c); color: #fff; border-color: transparent; }
+.entryFooter { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--app-border, #cbded4); }
+.entryModal .entryFooter button { min-height: 44px; padding: 10px 20px; font-size: 15px; }
+.entryMethods { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
+.entryModal .entryMethods button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; padding: 24px; background: var(--app-surface-soft, #f1f8f5); border-radius: 18px; }
+.entryMethods svg { width: 28px; height: 28px; margin-bottom: 8px; }
+.entryMethods strong { font-size: 18px; }
+.entryMethods small { font-size: 14px; font-weight: 500; color: var(--app-muted, #63796f); }
+.entryModal .stageHint { font-size: 14px; color: var(--app-muted, #63796f); line-height: 1.6; }
+.singlePartForm .grid { margin-top: 20px; }
+.entryModal label { font-size: 14px; }
+.entryModal label small { font-weight: 400; color: var(--app-muted, #63796f); }
+.entryModal input, .entryModal select { font-size: 15px; padding: 12px; min-height: 44px; }
+.entryModal input[aria-invalid='true'] { border-color: #c44646; }
+.entryModal .editorWrap { flex: 0 0 auto; max-height: 40dvh; border-radius: 10px; }
+.entryModal .editorTable { table-layout: fixed; min-width: 800px; font-size: 14px; }
+.entryModal .editorTable th { padding: 10px 8px; font-size: 13px; }
+.entryModal .editorTable th:first-child { width: 44px; }
+.entryModal .editorTable th:nth-child(2) { width: 24%; }
+.entryModal .editorTable th:nth-child(3) { width: 28%; }
+.entryModal .editorTable td { padding: 0; border-right: 1px solid var(--app-border, #cbded4); }
+.entryModal .editorTable td:first-child { text-align: center; padding: 6px 2px; }
+.entryModal .editorTable input:not([type='checkbox']) { min-width: 0; width: 100%; min-height: 40px; border: 1px solid transparent; border-radius: 0; background: var(--app-surface, #fff); padding: 8px; font-size: 14px; }
+.entryModal .editorTable input:focus { outline: 2px solid var(--app-primary, #17654c); outline-offset: -2px; }
+.entryModal .editorTable input[aria-invalid='true'] { border-color: #c44646; }
+.entryModal .editorTable .cellError { margin: 0; padding: 6px; }
+.entryModal .stageBody > .actions button { padding: 8px 12px; min-height: 38px; font-size: 13px; }
+.entryModal .stageBody > .actions { font-size: 13px; }
+@media (max-width: 640px) {
+  .entryModal { padding: 18px; max-height: 94dvh; }
+  .entryModal .dialogHeader { padding-bottom: 14px; margin-bottom: 14px; }
+  .entryModal .dialogHeader h2 { font-size: 24px; }
+  .entryMethods { grid-template-columns: 1fr; gap: 10px; }
+  .entryModal .entryMethods button { padding: 16px; gap: 6px; }
+  .entryMethods svg { display: none; }
+  .entrySteps { gap: 14px; }
+  .entrySteps li { font-size: 12px; gap: 5px; }
+  .entryFooter { align-items: flex-end; }
+  .entryFooter .actions { justify-content: flex-end; gap: 6px; }
+  .entryModal .entryFooter button { padding: 10px 12px; font-size: 13px; }
+}
+.entryModal .editorTable td:first-child small { display: inline; margin-left: 4px; }
