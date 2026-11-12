@@ -16,7 +16,7 @@ export const DEALER_TEAM_TEMPLATES = {
   manager: commercialManager,
 };
 export const BUSINESS_TEAM_TEMPLATES = {
-  viewer: preset('View only', 'Read selected business assets and assigned client work. Values and contact details stay hidden.', ['viewClientWork']),
+  viewer: preset('View only', 'Read assigned client work. Values and contact details stay hidden.', ['viewClientWork']),
   staff: preset('Staff', 'Handle assigned enquiries and view client contacts. Shared values require separate permission.', ['viewClientWork', 'viewClientContacts', 'manageClientEnquiries']),
   manager: preset('Operations manager', 'Manage assigned client enquiries. Shared values remain a separate choice; account administration stays with the account holder.', ['viewClientWork','viewClientContacts','manageClientEnquiries']),
 };

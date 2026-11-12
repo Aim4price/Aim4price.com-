@@ -38,7 +38,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const result = await recordFuelStorageStock(workspace.ownerUserId, context.params.storageId, {...body, ...(workspace.team ? {operatorName:workspace.actorName} : {})}, teamWriteGuard(workspace,'refillFuel',{storageId:context.params.storageId}));
+    const result = await recordFuelStorageStock(workspace.ownerUserId, context.params.storageId, workspace.team ? {mode:body.mode,litres:body.litres,currentLitres:body.currentLitres,note:body.note,clientEventId:body.clientEventId,operatorName:workspace.actorName} : body, teamWriteGuard(workspace,'refillFuel',{storageId:context.params.storageId}));
     const ledger = await filterFuelLedgerForWorkspace(workspace,await listFuelLedger(workspace.ownerUserId));
     return NextResponse.json({ ok: true, ...(workspace.team ? {} : result), ...ledger });
   } catch (error) {

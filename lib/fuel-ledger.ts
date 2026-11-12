@@ -3527,7 +3527,7 @@ export async function recordFuelStorageStock(
       const duplicateEvent = existingEvent.rows[0];
       if (duplicateEvent) {
         await guard.after?.(client);
-    await client.query('COMMIT');
+        await client.query('COMMIT');
         return {
           storage,
           event: mapFuelEventRow(duplicateEvent),
@@ -3853,7 +3853,7 @@ export async function recordFuelAssetIssue(
       const duplicateEvent = existingEvent.rows[0];
       if (duplicateEvent) {
         await guard.after?.(client);
-    await client.query('COMMIT');
+        await client.query('COMMIT');
         committed = true;
         const assets = await listFuelAssetsForUser(input.userId);
         return {
@@ -5305,7 +5305,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         if (!row) throw new Error('Saved fuel slip could not be loaded.');
         const fuelSlip = mapFuelSlipRow(row);
         await guard.after?.(client);
-    await client.query('COMMIT'); committed = true;
+        await client.query('COMMIT'); committed = true;
         return { fuelSlip, storage: null, event: null, assets: [], pendingReview: fuelSlip.reviewRequired, message: 'Fuel slip already synced.' };
       }
     }

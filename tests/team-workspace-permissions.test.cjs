@@ -135,3 +135,9 @@ test('maintenance recording and scheduling remain separate and use actual staff 
  response=await api.teamMaintenanceResponse(request({assetId:'a',status:'cancelled'}));assert.equal(response.status,400);
  response=await api.teamMaintenanceResponse(request({assetId:'a',status:'upcoming',assignedFieldManagerId:'another-worker'}));assert.equal(response.status,403);
 });
+test('tank refills strip forged employee attribution and return only projected data',async()=>{
+ let input;
+ const api=load('app/api/fuel/storage/[storageId]/stock/route.ts',{'next/server':next,'../../../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',actorName:'Actual worker',team:{}}}),filterFuelLedgerForWorkspace:async()=>({storages:[]})},'../../../../../../lib/team-write-guard':{teamWriteGuard:()=>({})},'../../../../../../lib/fuel-ledger':{recordFuelStorageStock:async(u,id,body)=>{input=body;return {event:{private:true}}},listFuelLedger:async()=>({})}});
+ const response=await api.POST(new Request(url('/api/fuel/storage/tank/stock'),{method:'POST',body:JSON.stringify({mode:'stock_in',litres:10,operatorName:'Owner',fieldManagerId:'forged',fieldManagerSessionId:'forged-session'})}),{params:{storageId:'tank'}});
+ assert.equal(response.status,200);assert.equal(input.operatorName,'Actual worker');assert.equal(input.fieldManagerId,undefined);assert.equal(input.fieldManagerSessionId,undefined);assert.equal((await response.json()).event,undefined);
+});
