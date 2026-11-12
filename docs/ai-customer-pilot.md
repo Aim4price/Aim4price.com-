@@ -1,4 +1,4 @@
-# Dealer and Business AI connection pilot
+# Dealer and Business AI connections
 
 This extends the existing customer MCP resource (`/api/ai/mcp`) and OAuth clients.
 The registry audience remains `owner` for compatibility; the signed-in account type
@@ -15,9 +15,11 @@ No plugin ZIP or client credentials are sent to customers.
 | Staff, delegated/app sessions, Business members, Middlemen | Not enabled by this pilot. Never substitute a manager's token. |
 | Admin | Existing separate admin tools and 24-hour grants, unchanged. |
 
-Dealer/Business access requires BOTH the account-type switch and an explicit user-ID
-allowlist entry. This remains true in `owners` mode, so broad Owner availability can
-continue without automatically admitting every Dealer or Business.
+Eligible Owner, Dealer and Business account holders can connect without individual
+activation. The legacy `AIM4PRICE_AI_ACCESS_MODE`, `AIM4PRICE_AI_ACCOUNT_TYPES` and
+`AIM4PRICE_AI_ALLOWED_USER_IDS` variables no longer restrict customer eligibility.
+The global `AIM4PRICE_AI_ENABLED` switch and configured OAuth providers still apply.
+Account status, plan, verified partner email and Business workspace checks remain.
 
 For external enquiries, the authenticated verified email must match the recipient;
 if a recipient user ID is stored, that must match too. Only non-revoked,
@@ -80,25 +82,23 @@ record text is data, never executable instructions.
 1. Run `node scripts/migrate-ai-connections.mjs` as the existing pre-deploy step.
    It now includes the repeatable migration `157-ai-customer-account-scope.sql`.
    It changes authentication metadata only, not asset data or sharing permissions.
-2. Deploy the reviewed branch. Default configuration stays Owner-only.
-3. Use established verified Dealer and Business account holders. A Business must
-   already have an active workspace from normal website onboarding. AI requests
-   never initialise application schema or create memberships.
-4. Set `AIM4PRICE_AI_ACCOUNT_TYPES=owner,dealer,business` and add the pilot account
-   IDs to `AIM4PRICE_AI_ALLOWED_USER_IDS`, preserving existing IDs. Keep the
-   existing `AIM4PRICE_AI_ACCESS_MODE`; in `owners` mode, Owners remain broadly
-   available while partners still require the allowlist.
+2. Deploy the reviewed branch. Eligible customer accounts are available automatically.
+3. Use established verified Dealer and Business account holders for acceptance
+   testing. A Business must already have an active workspace from normal website
+   onboarding. AI requests never initialise schema or create memberships.
+4. No account-type switch or user-ID allowlist configuration is required. Legacy
+   pilot variables can be removed; leaving them set does not block eligible accounts.
 5. Connect each pilot account through a configured provider. Confirm the consent
    categories and tool list match its account type. Compare selected results with
    that user's website records, including missing data and pagination.
 6. Revoke a share, turn off cost permission, transfer a test asset, suspend a
    Business membership and disconnect the AI. Confirm subsequent retrieval fails
    in each case. Use synthetic/test records rather than unrelated customer data.
-7. Review audit failures and provider compatibility before adding further IDs.
+7. Review audit failures and provider compatibility before treating live provider connectivity as verified.
 
-Rollback partner access by restoring `AIM4PRICE_AI_ACCOUNT_TYPES=owner` or removing
-partner IDs. Existing partner tokens and refreshes then fail eligibility checks.
-Do not roll back by granting wider permissions or issuing manager tokens to staff.
+To stop all new customer retrieval during an incident, use the global AI enablement
+switch, or revoke an individual connection through the existing disconnect flow.
+Do not grant wider data permissions or issue manager tokens to staff.
 
 ## Validation and remaining work
 

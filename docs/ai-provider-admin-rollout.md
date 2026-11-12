@@ -4,7 +4,7 @@
 
 - Preserves the existing ChatGPT client and existing Owner grants.
 - Supports additional predefined confidential OAuth clients with independent secrets, exact callbacks and browser origins. No public dynamic registration or wildcard redirects.
-- `AIM4PRICE_AI_ACCESS_MODE=owners` allows active direct Owner desktop accounts to opt in; unset/`pilot` retains the explicit pilot allowlist. Dealer, Business, Middleman, free, suspended, delegated and app identities remain ineligible. Account eligibility is checked on every read and refresh.
+- Eligible Owner, Dealer and Business account holders can connect without an individual allowlist. Existing account, workspace and data permissions are checked on every read and refresh. See [customer access](ai-customer-pilot.md).
 - Adds `/admin/ai-connect` and a separate `/api/ai/admin/mcp` resource, `aim4price:admin:read` scope and client credentials. Admin grants cannot call Owner tools and Owner grants cannot call admin tools.
 - Admin access requires the actual website session and a database-confirmed, email-verified canonical Aim4price administrator. A suspended profile is denied. This release does not add MFA to the existing website login. Keep the provider connection private to the administrator; add enforced MFA before expanding admin access to staff.
 - Two admin tools: `admin_asset_summary` and `admin_list_assets`. Both allow account, brand, kind, condition, text and lifecycle filters. Summary breakdowns can group by account, brand, kind, condition or lifecycle. Active assets are the default.
@@ -19,7 +19,7 @@ Configure:
 
 | Variable | Purpose |
 | --- | --- |
-| `AIM4PRICE_AI_ACCESS_MODE=owners` | Product access for eligible Owner accounts; use `pilot` to roll back entitlement expansion. |
+| Legacy `AIM4PRICE_AI_ACCESS_MODE`, `AIM4PRICE_AI_ACCOUNT_TYPES`, `AIM4PRICE_AI_ALLOWED_USER_IDS` | No longer used to restrict customer eligibility. |
 | `AIM4PRICE_AI_SHARED_LIMITS=true` | Required for wider rollout: PostgreSQL-backed limits shared by all application replicas. |
 | `AIM4PRICE_AI_ADMIN_ENABLED=true` | Separate admin feature gate; disabling it immediately blocks subsequent admin requests/refreshes. |
 | `AIM4PRICE_AI_ADMIN_CLIENT_ID` | Distinct private client, e.g. `aim4price-chatgpt-admin`. |
@@ -27,7 +27,7 @@ Configure:
 | `AIM4PRICE_AI_ADMIN_REDIRECT_URIS` | Exact callback supplied by the admin's AI platform. |
 | `AIM4PRICE_AI_CLIENTS_JSON` | Optional additional provider registrations, shown below. |
 
-Existing `AIM4PRICE_AI_ENABLED`, origin, signing secret and legacy Owner ChatGPT variables stay in place. Keep the pilot IDs for rollback. Do not put secrets in source, browser props, manifests, chat messages or logs.
+Existing `AIM4PRICE_AI_ENABLED`, origin, signing secret and legacy Owner ChatGPT variables stay in place. The global AI switch remains available for disabling the service. Do not put secrets in source, browser props, manifests, chat messages or logs.
 
 ## Add another provider
 

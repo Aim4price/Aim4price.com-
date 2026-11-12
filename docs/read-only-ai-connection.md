@@ -1,8 +1,8 @@
 # Read-only Aim4price AI connections
 
-For the opt-in Dealer/Business pilot, its permission map and deployment checklist, see [Customer account pilot](ai-customer-pilot.md). The Owner tool behaviour below is unchanged.
+For Dealer/Business access, its permission map and deployment checklist, see [Customer account pilot](ai-customer-pilot.md). The Owner tool behaviour below is unchanged.
 
-For multi-provider configuration, broad Owner access and the separate private admin resource, see [AI provider and admin rollout](ai-provider-admin-rollout.md). The pilot settings below remain supported for rollback.
+For multi-provider configuration, broad Owner access and the separate private admin resource, see [AI provider and admin rollout](ai-provider-admin-rollout.md). Legacy pilot allowlists no longer restrict eligible customer accounts.
 
 An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices, fuel, current budgets, maintenance and logged problems. The AI cannot add, edit or delete business records. Access is explicitly enabled by deployment configuration; this is not a public plugin listing.
 
@@ -13,8 +13,8 @@ An Owner can connect their own account to an AI assistant and ask about saved as
 - OAuth authorization code flow using the existing Aim4price website sign-in, explicit consent, exact registered callback matching, S256 PKCE, single-use five-minute codes, one-hour opaque access tokens and rotating refresh tokens with connection revocation on replay. New owner approvals remain connected until revoked, with automatic token renewal. Existing fixed-term approvals keep their expiry and require one new approval to become ongoing. Admin approvals still expire after 24 hours.
 - Account → AI connections is a dedicated page with assistant availability, readable-data categories, account identity, connection expiry and disconnect controls. The disabled pilot still shows an informative overview without claiming that connection records have been loaded.
 - Approval requires explicit acceptance of the Terms of Service and acknowledgement of the Privacy Policy/data-sharing notice, enforced on the server before issuing an authorization code. Cancel remains available without accepting terms. Provider cards do not imply a public app listing or working integration before setup and compatibility testing.
-- The connection is always bound to the real signed-in Owner. Admin support cookies, delegated app identities, free accounts and other account types cannot create connections.
-- Every tool call checks the token, audience/resource, scope, expiry, revocation, pilot allowlist and current active paid Owner entitlement.
+- The connection is always bound to the real signed-in Owner. Admin support cookies, delegated app identities, unsupported account types cannot create connections; Dealer and Business rules are documented separately.
+- Every tool call checks the token, audience/resource, scope, expiry, revocation, current account eligibility and permissions.
 - Explicitly selected fields only: no credentials, scan PINs, card details, document URLs, OCR text or arbitrary database rows.
 
 The AI provider answers the question using these tools; Aim4price does not run a separate language model or require an OpenAI API key. Record text is data, not an instruction to the assistant.
@@ -31,7 +31,6 @@ Do not enable the endpoint until its migration and the normal account/ledger mig
    | --- | --- |
    | `AIM4PRICE_AI_ENABLED` | `true` only when ready to test |
    | `AIM4PRICE_AI_ORIGIN` | Canonical HTTPS origin, e.g. `https://aim4price.com`, without a trailing slash |
-   | `AIM4PRICE_AI_ALLOWED_USER_IDS` | The pilot Owner's actual user ID; comma-separated if deliberately expanding later |
    | `AIM4PRICE_AI_CLIENT_ID` | Unique private OAuth client identifier, also entered into the AI platform |
    | `AIM4PRICE_AI_CLIENT_SECRET` | Cryptographically random secret, at least 32 characters; enter through the platform's secure client configuration, never in a conversation |
    | `AIM4PRICE_AI_REDIRECT_URIS` | Exact HTTPS callback URI from the AI platform; comma-separated if multiple callbacks are deliberately registered |
@@ -60,7 +59,7 @@ OAuth consent/token rotation/disconnection necessarily write security metadata t
 
 Only token hashes are persisted. Browser consent is signed, expires in five minutes, binds the current account and session, and requires an exact same-origin POST. Replayed consent/code requests cannot issue another grant. Connection responses are no-store, and consent pages block framing and referrer leakage. Do not log token/code/consent bodies or full OAuth query strings at the proxy.
 
-Revocation takes effect on subsequent requests; a request already executing in its database snapshot can finish. Disconnecting cannot erase records previously returned to an AI conversation. Rotating the configured client ID or disabling the feature denies all existing grants. Removing a user from the pilot allowlist, suspending the account or changing it to free access also denies new reads and refreshes.
+Revocation takes effect on subsequent requests; a request already executing in its database snapshot can finish. Disconnecting cannot erase records previously returned to an AI conversation. Rotating the configured client ID or disabling the feature denies all existing grants. Suspending an account also denies new reads and refreshes. Owner and Dealer accounts additionally require desktop access; Business accounts use their workspace eligibility checks.
 
 The pilot includes 120 authenticated protocol requests per user per minute per process, bounded request bodies, page sizes, date spans and query execution time. For multiple application replicas or a public launch, add a shared edge/gateway rate limit. Configure edge limits on authorization/token endpoints before public exposure. Periodically remove expired codes and expired/revoked connections using an operator-owned maintenance job; tools never run cleanup.
 
