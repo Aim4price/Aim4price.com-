@@ -4400,3 +4400,61 @@
 .partnerDirectoryModalCard.polishedSettingsModal { display: flex; flex-direction: column; }
 .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollShell { display: flex; flex-direction: column; flex: 1 1 auto; max-height: none !important; border-radius: 0; }
 .partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollViewport { flex: 1 1 auto; max-height: none !important; }
+
+/* Directory progress: one compact row with a clear active step. */
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepProgress {
+  gap: .65rem;
+  margin: .15rem 0 1.35rem;
+  padding: .4rem;
+  border: 1px solid var(--app-line, #d7e4de);
+  border-radius: 1rem;
+  background: var(--app-surface-soft, #f4f8f6);
+}
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: .75rem;
+  min-height: 3.5rem;
+  padding: .65rem .85rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  text-align: left;
+}
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep:not(:last-child)::after { display: none; }
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep > span {
+  width: 2rem; height: 2rem; font-size: .8rem; box-shadow: none;
+}
+.partnerDirectoryModalCard.polishedSettingsModal .modalStep > strong {
+  font-size: .85rem; font-weight: 800; line-height: 1.3;
+}
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepCurrent {
+  background: var(--app-surface, #fff);
+  border-color: var(--app-success-line, #a5d6c2);
+  box-shadow: 0 3px 10px rgba(20, 73, 54, .06);
+}
+.partnerDirectoryModalCard.polishedSettingsModal .modalStepCurrent > span {
+  background: #18775b; color: #fff; border-color: #18775b;
+}
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRail,
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover {
+  width: 1rem !important; right: .45rem !important;
+  top: 1rem; bottom: 1rem;
+  border: 1px solid var(--app-line, #d2e1d9);
+  background: var(--app-surface-soft, #eaf2ed);
+  box-shadow: inset 0 1px 3px rgba(20, 73, 54, .05);
+}
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollThumb {
+  left: 2px; right: 2px; width: auto; min-height: 2.75rem;
+  border: 0; background: #6a9b87; border-radius: 999px;
+}
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollThumb:active { background: #25775b; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollContent { padding-right: 2.25rem !important; }
+@media (max-width: 640px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .modalStepProgress { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .3rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .partnerDirectoryModalCard.polishedSettingsModal .modalStep { gap: .5rem; padding: .5rem; }
+}
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollThumb,
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollThumb:active { width: auto; margin-left: 0; }
+.partnerDirectoryModalCard.polishedSettingsModal .accountModalScrollRailVisible { opacity: 1; }
