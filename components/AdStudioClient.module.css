@@ -752,3 +752,53 @@
 .templateFooter .templateFooterButtons > button { flex: 1 1 140px; min-height: 48px; margin: 0; padding: 12px 16px; font-size: .85rem; }
 .templateFooter button:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
 .templateFooter button:disabled { cursor: default; opacity: .6; }
+
+/* Match the workspace controls to Aim4price; exported advert styles stay independent. */
+.createButton,
+.primaryButton, .secondaryButton, .ghostButton, .smallButton,
+.iconDangerButton, .dangerButton, .backButton, .logoUpload, .logoRemove {
+  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+  min-height: 3rem; padding: .75rem 1.1rem; border: 1px solid;
+  border-radius: 1rem; font-family: "Montserrat", sans-serif;
+  font-size: 1rem; font-weight: 750; line-height: 1.25;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+}
+.createButton { color: var(--app-warning, #854616); border-color: var(--app-warning-line, #eba967); background: var(--app-warning-soft, #fff6ec); }
+.secondaryButton, .smallButton, .logoUpload { color: var(--app-info, #205888); border-color: var(--app-info-line, #b8d4f5); background: var(--app-info-soft, #f2f8ff); }
+.ghostButton, .backButton { border-color: var(--app-line, #d3dfe8); background: var(--app-surface-soft, #f2f5f8); }
+.primaryButton { border-color: var(--studio-green); }
+.iconDangerButton, .dangerButton, .logoRemove { border-color: var(--app-danger-line, #edc0ba); background: var(--app-danger-soft, #fff6f4); }
+.createButton:hover:not(:disabled) { border-color: var(--app-warning, #b47435); box-shadow: 0 5px 16px var(--app-shadow-colour, #173b2f12); }
+.createButton:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
+.kitCardActions button { min-height: 2.75rem; padding: .65rem .85rem; font-size: .88rem; }
+.kitCardActions .studioIcon, .studioIcon { width: 1.2rem; height: 1.2rem; }
+.kitCardBody { padding: 1rem; }
+.kitCardTitle strong { font-size: 1rem; font-weight: 800; line-height: 1.3; letter-spacing: -.02em; }
+.sectionHeader p, .editorHeader p, .stepIntro p,
+.kitCardTitle span, .logoCopy > div > span, .previewNote p,
+.templateChoice > small, .reviewGrid small, .templateFooterStatus > span {
+  font-size: .88rem; font-weight: 650; line-height: 1.45; color: var(--app-muted, #64746a);
+}
+.sectionHeader h2, .editorHeader h2, .stepIntro h2 { font-size: 1.45rem; font-weight: 800; line-height: 1.25; letter-spacing: -.025em; }
+.previewHeading > strong { font-size: 1.15rem; font-weight: 800; line-height: 1.3; }
+.formPanel label, .choiceField legend { font-size: .88rem; font-weight: 750; line-height: 1.4; }
+.formPanel input:not([type="color"]):not([type="checkbox"]):not([type="file"]), .formPanel select { font-size: 1rem; font-weight: 650; min-height: 3.25rem; border-radius: .9rem; }
+.logoCopy strong, .templateTitle strong { font-size: 1rem; font-weight: 800; line-height: 1.3; }
+.stepper { padding: 1rem; gap: .65rem; }
+.stepButton { min-height: 5rem; border-radius: 1rem; gap: .45rem; }
+.stepButton strong { font-size: .88rem; font-weight: 800; }
+.stepButton > span:first-child { width: 2.5rem; height: 2.5rem; border: 1px solid var(--app-info-line, #b8d4f5); border-radius: .8rem; color: var(--app-info, #2466a7); background: var(--app-info-soft, #edf5ff); }
+.stepButton[data-step="2"] > span:first-child { color: var(--app-warning, #99601d); border-color: var(--app-warning-line, #e8c58c); background: var(--app-warning-soft, #fff5e3); }
+.stepButton[data-step="3"] > span:first-child { color: var(--app-purple, #7955a1); border-color: var(--app-purple-line, #d9c8ee); background: var(--app-purple-soft, #f5effc); }
+.stepButton[data-step="4"] > span:first-child { color: var(--app-success, #247357); border-color: var(--app-success-line, #b8ddcb); background: var(--app-success-soft, #edf8f2); }
+.stepButton:hover { box-shadow: inset 0 0 0 1px var(--app-accent, #43836a); }
+.previewTools > button, .logoButtons > :is(.logoUpload, .logoRemove) { min-height: 3rem; }
+.templateFooter .templateFooterButtons > button { min-height: 3rem; font-size: 1rem; }
+.choices button { font-size: .88rem; min-height: 3rem; }
+.formPanel .colourControl input:not([type='color']) { min-height: 2.5rem; font-size: .8rem; }
+.sectionHeader { flex-wrap: wrap; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader .createButton { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepButton strong { font-size: .78rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewTools > button { flex: 1 1 auto; }
+}
