@@ -1449,7 +1449,8 @@ export default function AccountClient({
             <div className={styles.heroAvatarControl}>
               <label
                 className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ""}`}
-                title={sharedAccount ? "Account logo" : "Upload account logo"}
+                data-tooltip={sharedAccount ? "Your account logo." : "Upload or replace your account logo."}
+                data-tooltip-style="description"
                 aria-label={sharedAccount ? "Account logo" : "Upload account logo"}
               >
                 <input
@@ -1525,12 +1526,12 @@ export default function AccountClient({
                 <strong>{accountTypeLabel}</strong>
               </div>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails()} aria-label="Edit contact number">
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails()} aria-label="Edit contact number" data-tooltip="Update the contact number saved on your profile." data-tooltip-style="description">
                 <span>Contact number</span>
                 <strong>{profileDraft.phone.trim() || "Not saved"}</strong>
               </button>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails(true)} aria-label="Complete missing profile details">
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails(true)} aria-label="Complete missing profile details" data-tooltip="Review your profile and fill in any missing details." data-tooltip-style="description">
                 <span>Profile progress</span>
                 <strong>
                   {completedFields}/{sharedAccount ? 2 : PROFILE_COMPLETION_TOTAL}
@@ -1549,7 +1550,7 @@ export default function AccountClient({
                 </div>
               </button>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess}>
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "Explore desktop plans for more account features." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
                 <span>
                   {sharedAccount ? "Account access" : isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
@@ -1581,7 +1582,7 @@ export default function AccountClient({
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openAssetRegistersPage}
+                        onClick={openAssetRegistersPage} data-tooltip="Organise your asset registers and choose which one to work with." data-tooltip-style="description"
                       >
                         <QuickActionIcon name="registers" />
                         <strong>Manage asset registers</strong>
@@ -1592,14 +1593,14 @@ export default function AccountClient({
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openAssetTransfersPage}
+                        onClick={openAssetTransfersPage} data-tooltip="Claim an asset or send it to another account." data-tooltip-style="description"
                       >
                         <QuickActionIcon name="claim" />
                         <strong>Claim or send an asset</strong>
                       </button>
                     ) : null}
 
-                    {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")}>
+                    {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")} data-tooltip="Choose which account and asset updates you receive." data-tooltip-style="description">
                       <QuickActionIcon name="notifications" />
                       <strong>Notifications</strong>
                     </button> : null}
@@ -1615,14 +1616,14 @@ export default function AccountClient({
                     <h3 id="apps-connections-actions-title">Apps &amp; connections</h3>
                   </div>
                   <div className={styles.quickActionList}>
-                    {!(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
-                    {canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
+                    {!(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access" data-tooltip="View the workspaces and assets shared with you." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
+                    {canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openOwnerAppAccessPage}
+                        onClick={openOwnerAppAccessPage} data-tooltip="Manage staff access and permissions for the Manager App." data-tooltip-style="description"
                         aria-label="Manage Manager App access"
                       >
                         <QuickActionIcon name="ownerApp" />
@@ -1637,13 +1638,15 @@ export default function AccountClient({
                         type="button"
                         className={styles.quickActionButton}
                         onClick={openDealerAppAccessPage}
+                        data-tooltip={isMiddlemanAccount ? "Manage staff access and permissions for the Middleman App." : "Manage staff access and permissions for the Dealer App."}
+                        data-tooltip-style="description"
                       >
                         <QuickActionIcon name="dealer" />
                         <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
                       </button>
                     ) : null}
 
-                    {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
+                    {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect" data-tooltip="Connect an AI assistant to read the Aim4price data you allow." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
                   </div>
                 </section>
 
@@ -1657,7 +1660,7 @@ export default function AccountClient({
                   </div>
                   <div className={styles.quickActionList}>
                     {isOwnerAccount ? (
-                      <Link href="/my-showroom" className={styles.quickActionButton}>
+                      <Link href="/my-showroom" data-tooltip="Manage the business showroom customers see in the marketplace." data-tooltip-style="description" className={styles.quickActionButton}>
                         <QuickActionIcon name="showroom" />
                         <strong>Manage my showroom</strong>
                       </Link>
@@ -1667,7 +1670,7 @@ export default function AccountClient({
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openMarketplaceEditor}
+                        onClick={openMarketplaceEditor} data-tooltip="Choose the contact details customers see on your marketplace listings." data-tooltip-style="description"
                         aria-label="Marketplace contact details"
                       >
                         <QuickActionIcon name="marketplace" />
@@ -1686,12 +1689,12 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                    {sharedAccount ? <Link href="#directory-listing-title" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
+                    {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
                     {showPartnerDirectory ? (
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openPartnerDirectory}
+                        onClick={openPartnerDirectory} data-tooltip="Choose your directory visibility and update your services and contact details." data-tooltip-style="description"
                       >
                         <QuickActionIcon name="directory" />
                         <strong>Partner directory</strong>
@@ -1709,20 +1712,20 @@ export default function AccountClient({
                   <h3 id="account-billing-actions-title">Account &amp; billing</h3>
                 </div>
                 <div className={styles.quickActionList}>
-                  {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
+                  {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details" data-tooltip="View and update your business details." data-tooltip-style="description"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
-                    onClick={openBusinessEditor}
+                    onClick={openBusinessEditor} data-tooltip="Update your business name, contact details, address and logo." data-tooltip-style="description"
                   >
                     <QuickActionIcon name="business" />
                     <strong>Edit business details</strong>
                   </button>}
 
-                  <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")}>
+                  <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
                     <QuickActionIcon name="invoices" />
                     <strong>Aim4price invoices</strong>
                   </button>
-                  {sharedAccount ? <Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Explore Desktop plans</strong></Link> : null}
+                  {sharedAccount ? <Link href="/pricing" data-tooltip="Compare desktop plans and the features they include." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Explore Desktop plans</strong></Link> : null}
                 </div>
               </section>
             </div>
@@ -1743,7 +1746,7 @@ export default function AccountClient({
               <button
                 type="button"
                 className={styles.securityActionCard}
-                onClick={openPasswordEditor}
+                onClick={openPasswordEditor} data-tooltip="Change the password you use to sign in." data-tooltip-style="description"
               >
                 <QuickActionIcon name="security" />
                 <span className={styles.securityActionCopy}>
@@ -1754,7 +1757,7 @@ export default function AccountClient({
               <button
                 type="button"
                 className={styles.securityActionCard}
-                onClick={handleSendSelfResetEmail}
+                onClick={handleSendSelfResetEmail} data-tooltip="Send a password reset link to your account email." data-tooltip-style="description"
                 disabled={isSendingResetEmail || !profile?.email}
               >
                 <QuickActionIcon name="reset" />
@@ -1768,7 +1771,7 @@ export default function AccountClient({
                 <button
                   type="button"
                   className={styles.securityActionCard}
-                  onClick={openScanPinEditor}
+                  onClick={openScanPinEditor} data-tooltip="Change the PIN used to access your assets through QR codes." data-tooltip-style="description"
                 >
                   <QuickActionIcon name="pin" />
                   <span className={styles.securityActionCopy}>
@@ -1794,7 +1797,7 @@ export default function AccountClient({
           <button
             type="button"
             className={`${styles.dangerButton} ${styles.dangerZoneButton}`}
-            onClick={openDeleteDialog}
+            onClick={openDeleteDialog} data-tooltip="Review the confirmation steps for permanently deleting your account." data-tooltip-style="description"
           >
             <span className={styles.dangerZoneButtonIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none">
