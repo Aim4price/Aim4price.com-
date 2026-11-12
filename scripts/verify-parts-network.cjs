@@ -235,7 +235,7 @@ const appCode =
     await page.waitForSelector("article");
     assert.ok(
       await page.$eval("h1", (e) =>
-        e.textContent.trim() === "Parts",
+        e.textContent.trim() === "Parts Stock",
       ),
     );
     const cards = await page.$$eval("article", (nodes) =>
