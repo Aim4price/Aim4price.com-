@@ -1142,3 +1142,12 @@
 .tableWrap input[type='checkbox'] { width: 18px; height: 18px; min-height: 18px; }
 .editorTable { color: var(--app-text, #173f33); }
 .editorTable th { color: var(--app-text, #173f33); }
+
+/* Match list detail titles to the shared workspace heading. */
+.detailHeader > div { width: 100%; min-width: 0; }
+.detailHeader .title { margin-bottom: 20px; }
+.detailHeader .dealerSubtitle, .detailHeader .eyebrow { padding-inline: 4px; }
+.importFields .shareChoices { margin-bottom: 24px; }
+.card { cursor: pointer; }
+
+.accessSectionTitle { margin: 24px 0 14px; font-size: 20px; font-weight: 800; }

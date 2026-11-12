@@ -199,6 +199,7 @@ export default function PartsClient({
     [network, setNetwork] = useState(listId),
     [staff, setStaff] = useState(true),
     [contribute, setContribute] = useState(false);
+  const [accessLoading, setAccessLoading] = useState(false);
   const [view, setView] = useState("search"),
     [search, setSearch] = useState(""),
     [page, setPage] = useState(0),
@@ -212,6 +213,7 @@ export default function PartsClient({
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
   const [modal, setModal] = useState<
+      | "access"
       | "upload"
       | "invite"
       | "create"
@@ -263,8 +265,8 @@ export default function PartsClient({
   const enquiryValid = requestedParts.length > 0 && requestedParts.every(r=>/^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999);
   const enquiryText = requestedParts.map(r=>`${r.partNumber} — quantity ${r.quantity}`).join('\n') + '\n\n' + enquiry;
   const basePath = website ? "/parts" : "/dealer/parts";
-  function openList(id: string, members = false) {
-    window.location.assign(`${basePath}/${encodeURIComponent(id)}${members ? "?view=members" : ""}`);
+  function openList(id: string) {
+    window.location.assign(`${basePath}/${encodeURIComponent(id)}`);
   }
   const current = networks.find((n) => n.id === network);
   const singleDealer = Boolean(current?.list_mode);
@@ -287,7 +289,7 @@ export default function PartsClient({
   const loadNetworks = useCallback(async () => {
     const d = await api();
     setNetworks(d.networks);
-    if (listId && !initialViewSet.current && new URLSearchParams(window.location.search).get("view") !== "members") {
+    if (listId && !initialViewSet.current) {
       initialViewSet.current = true;
       setView(d.networks.find((n: Network) => n.id === listId)?.owned ? "mine" : "search");
     }
@@ -304,7 +306,7 @@ export default function PartsClient({
       window.location.replace(`${website ? "/parts" : "/dealer/parts"}/${encodeURIComponent(requested)}`);
       return;
     }
-    if (new URLSearchParams(window.location.search).get("view") === "members") setView("members");
+    if (new URLSearchParams(window.location.search).get("view") === "members") setModal("access");
     void loadNetworks()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -312,8 +314,6 @@ export default function PartsClient({
   useEffect(() => {
     const request = ++latest.current;
     setRows([]);
-    setMembers([]);
-    setInvites([]);
     setTotal(0);
     if (!network || !active || !opened) {
       setLoading(false);
@@ -329,8 +329,6 @@ export default function PartsClient({
           if (request !== latest.current) return;
           setRows(d.rows || []);
           setTotal(d.total || 0);
-          setMembers(d.members || []);
-          setInvites(d.invites || []);
           setError("");
         })
         .catch((e) => {
@@ -342,6 +340,16 @@ export default function PartsClient({
     }, 250);
     return () => clearTimeout(timer);
   }, [network, active, view, search, page, refresh, opened]);
+  useEffect(() => {
+    if (modal !== "access" || !network || !admin) return;
+    let cancelled = false;
+    setMembers([]); setInvites([]); setAccessLoading(true);
+    void api(undefined, `?network=${encodeURIComponent(network)}&view=members`)
+      .then(d => { if (!cancelled) { setMembers(d.members || []); setInvites(d.invites || []); } })
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setAccessLoading(false); });
+    return () => { cancelled = true; };
+  }, [modal, network, admin, refresh]);
   async function run(work: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -490,6 +498,7 @@ export default function PartsClient({
                   <article
                     key={n.id}
                     className={styles.card}
+                    title="Open parts list"
                     onClick={(e) => {
                       if (
                         (e.target as HTMLElement).closest(
@@ -612,7 +621,7 @@ export default function PartsClient({
             <>
               <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
-                  <h1 className={styles.listTitle}>{current?.name}</h1>
+                  <WorkspaceTitlePanel title={current?.name || "Parts list"} className={styles.title} />
                   {dealerName && <p className={styles.dealerSubtitle}>{dealerName}{dealerTown ? ` · ${dealerTown}` : ""}</p>}
                   <p className={styles.eyebrow}>
                     {view === "members"
@@ -740,15 +749,19 @@ export default function PartsClient({
                   </div>
                 </>
               )}
-              {view === "members" && (
-                <>
+
+            </>
+          ))}
+              {modal === "access" && !confirm && admin && (
+                <Modal title="Sharing & access" subtitle={current?.name} onClose={close} busy={busy}>
+                  {accessLoading && <p role="status">Loading access…</p>}
                   <p>
                     Verify the dealership independently before approving access.
                     Staff permissions remain controlled by each dealership
                     owner.
                   </p>
                   <div className={styles.tableWrap}>
-                    <div className={styles.tableToolbar}>{detailActions}</div>
+
                     <table>
                       <thead>
                         <tr>
@@ -824,7 +837,7 @@ export default function PartsClient({
                       </tbody>
                     </table>
                   </div>
-                  <h2>Invitations</h2>
+                  <h3 className={styles.accessSectionTitle}>Invitations</h3>
                   <div className={styles.tableWrap}>
                     <table>
                       <thead>
@@ -836,6 +849,7 @@ export default function PartsClient({
                         </tr>
                       </thead>
                       <tbody>
+                        {!accessLoading && invites.length === 0 && <tr><td colSpan={4}>No invitations yet.</td></tr>}
                         {invites.map((i) => (
                           <tr key={i.id}>
                             <td>{i.email}</td>
@@ -870,10 +884,9 @@ export default function PartsClient({
                       </tbody>
                     </table>
                   </div>
-                </>
+                  {feedback}
+                </Modal>
               )}
-            </>
-          ))}
         {modal === "manage" && (
           <Modal
             manage
@@ -906,8 +919,7 @@ export default function PartsClient({
               )}
               <button
                 onClick={() => {
-                  if (!listId) openList(network, true);
-                  else { switchView("members"); setModal(null); }
+                  setModal("access");
                 }}
               >
                 <Icon kind="users" />
@@ -1079,8 +1091,7 @@ export default function PartsClient({
             <div className={styles.shareHistory}>
               <button
                 onClick={() => {
-                  if (!listId) openList(network, true);
-                  else { switchView("members"); setModal(null); }
+                  setModal("access");
                 }}
               >
                 <Icon kind="users" />
@@ -1198,7 +1209,7 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal title="Add / update parts" onClose={close} busy={busy}>
+          <Modal title="Add / update parts" subtitle={current?.name} onClose={close} busy={busy}>
             <PartsImportForm initialDetails={details}
               request={body => api({ ...body, network })}
               onBusyChange={setBusy}
@@ -1301,7 +1312,7 @@ export default function PartsClient({
           </Modal>
         )}
         {confirm && (
-          <Modal title="Update member access" onClose={close} busy={busy}>
+          <Modal title="Update member access" onClose={() => { if (!busy) { setConfirm(null); setError(""); } }} busy={busy}>
             <p>
               {confirm.status === "active"
                 ? "Confirm that you have verified this dealership and approve its access."

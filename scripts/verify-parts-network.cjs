@@ -455,12 +455,16 @@ const appCode =
           ?.getAttribute("aria-label") === "Rename parts list",
     );
     await click("Back");
+    const accessUrl = page.url();
     await click("Sharing & access");
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
         (b) => b.textContent === "Remove access",
       ),
     );
+    assert.equal(page.url(), accessUrl, "access opens without navigation");
+    assert.equal(await page.$eval("[role=dialog]", e=>e.getAttribute("aria-label")), "Sharing & access");
+    await page.screenshot({path:path.join(output,"sharing-access-modal.png")});
     await click("Remove access");
     await page.waitForSelector("[role=dialog]");
     await page.keyboard.press("Escape");
@@ -468,7 +472,7 @@ const appCode =
       !actions.some((a) => a.action === "member"),
       "cancel does not change membership",
     );
-    await click("View parts");
+    await page.keyboard.press("Escape");
     await page.setViewport({ width: 390, height: 844 });
     await page.waitForSelector("tbody tr");
     assert.ok(

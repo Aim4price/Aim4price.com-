@@ -545,7 +545,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       {studioMode !== 'home' ? <div className={styles.titlePanel}>
         <section className={registerStyles.businessRegisterTitleBlock}>
           <div className={registerStyles.businessRegisterTitleCard}>
-            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'ADVERT TEMPLATE'}</h1>
+            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'YOUR ADVERT TEMPLATE'}</h1>
             <button
               type="button"
               className={`${registerStyles.registerChangeButton} ${registerStyles.controlTooltip}`}
@@ -621,7 +621,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   <h2 id="brand-kit-library-title">Saved advert templates</h2>
                   <p>Choose a style to edit or make your default.</p>
                 </div>
-                {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>New advert template</button> : null}
+                {canManage ? <button className={styles.createButton} type="button" onClick={startNewKit}><StudioIcon name="plus" />New advert template</button> : null}
               </div>
 
               <div className={styles.kitGrid}>
@@ -673,6 +673,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {STUDIO_STEPS.map((step) => (
                 <button
                   key={step.id}
+                  data-step={step.id}
                   type="button"
                   className={`${styles.stepButton} ${activeStep === step.id ? styles.stepButtonActive : ''}`}
                   onClick={() => moveToStep(step.id)}

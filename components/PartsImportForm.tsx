@@ -170,7 +170,7 @@ export default function PartsImportForm({
       <fieldset disabled={busy} className={styles.importFields}>
         {!editing && (
           <>
-            <div className={styles.importChoices}>
+            <div className={styles.shareChoices}>
               <button
                 type="button"
                 aria-pressed={source === "manual"}
@@ -180,19 +180,22 @@ export default function PartsImportForm({
                   setError("");
                 }}
               >
-                <strong>Enter / paste parts</strong>
-                <small>Type or paste cells from Excel / Sheets</small>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+                <span><strong>Enter / paste parts</strong>
+                <small>Type or paste cells from Excel / Sheets</small></span>
               </button>
               <button
                 type="button"
+                data-tone="amber"
                 aria-pressed={source === "file"}
                 onClick={() => {
                   setSource("file");
                   setError("");
                 }}
               >
-                <strong>Import file</strong>
-                <small>Upload CSV or Excel and match columns</small>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 14v7h16v-7"/></svg>
+                <span><strong>Import file</strong>
+                <small>Upload CSV or Excel and match columns</small></span>
               </button>
             </div>
             <details>
