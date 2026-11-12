@@ -257,7 +257,8 @@ const EXPECTED_PHOTO_RECTS = {
   'price-focus': [{ x: 28, y: 28, width: 950, height: 844 }],
   'photo-first': [{ x: 28, y: 28, width: 1544, height: 844 }],
   classic: [{ x: 28, y: 28, width: 950, height: 844 }],
-  minimal: [{ x: 680, y: 28, width: 892, height: 844 }],
+  // The details panel ends at x=680; retain the 24px gap before the photo.
+  minimal: [{ x: 704, y: 28, width: 868, height: 844 }],
   'duo-split': [
     { x: 28, y: 28, width: 950, height: 415 },
     { x: 28, y: 457, width: 950, height: 415 },
