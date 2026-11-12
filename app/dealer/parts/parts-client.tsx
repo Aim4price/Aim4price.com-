@@ -396,7 +396,7 @@ export default function PartsClient({
   const detailActions = (
     <div className={`${styles.actions} ${styles.detailActions}`}>
       {canUpload && (
-        <button className={styles.primary} onClick={openUpload}>
+        <button className={styles.primary} onClick={openUpload} data-tooltip="Add parts manually or import your stocklist." data-tooltip-style="description">
           <Icon kind="upload" />
           Add parts
         </button>
@@ -404,6 +404,8 @@ export default function PartsClient({
       {admin && (
         <button
           className={styles.shareAction}
+          data-tooltip="Share this parts list with another dealer."
+          data-tooltip-style="description"
           onClick={() => {
             setInviteEmail("");
             setInviteUrl("");
@@ -417,6 +419,8 @@ export default function PartsClient({
       {admin && (
         <button
           className={styles.manageAction}
+          data-tooltip="Rename the list, update parts or manage shared access."
+          data-tooltip-style="description"
           onClick={() => {
             setName(current?.name || "");
             setNotice("");
@@ -461,6 +465,8 @@ export default function PartsClient({
               <Icon kind="search" />
               <input
                 aria-label="Search parts lists"
+                data-tooltip="Find a parts list by name."
+                data-tooltip-style="description"
                 placeholder="Search parts lists"
                 value={listSearch}
                 onChange={(e) => setListSearch(e.target.value)}
@@ -469,6 +475,8 @@ export default function PartsClient({
           {!staff && contribute && !listId && (
             <button
               className={styles.addButton}
+              data-tooltip="Create a list to add and share your parts stock."
+              data-tooltip-style="description"
               onClick={() => {
                 setName("");
                 setModal("create");
@@ -498,7 +506,8 @@ export default function PartsClient({
                   <article
                     key={n.id}
                     className={styles.card}
-                    title="Open parts list"
+                    data-tooltip="Open this list to browse its parts stock."
+                    data-tooltip-style="description"
                     onClick={(e) => {
                       if (
                         (e.target as HTMLElement).closest(
@@ -533,7 +542,8 @@ export default function PartsClient({
                       {n.owned && !staff && contribute && (
                         <button
                           className={styles.shareAction}
-                          data-tooltip="Share parts list"
+                          data-tooltip="Share this parts list with another dealer."
+                          data-tooltip-style="description"
                           onClick={() => {
                             setNetwork(n.id);
                             setInviteEmail("");
@@ -548,7 +558,8 @@ export default function PartsClient({
                       )}
                       <button
                         className={styles.openAction}
-                        data-tooltip="Open parts list"
+                        data-tooltip="Browse parts, quantities and prices in this list."
+                        data-tooltip-style="description"
                         onClick={() => {
                           openList(n.id);
                         }}
@@ -559,7 +570,8 @@ export default function PartsClient({
                       {n.owned && !staff && contribute && (
                         <button
                           className={styles.manageAction}
-                          data-tooltip="Manage parts list"
+                          data-tooltip="Rename the list, update parts or manage shared access."
+                          data-tooltip-style="description"
                           onClick={() => {
                             setNetwork(n.id);
                             setName(n.name);
