@@ -622,17 +622,19 @@ export default function PartsClient({
               <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
                   <WorkspaceTitlePanel title={current?.name || "Parts list"} className={styles.title} />
-                  {dealerName && <p className={styles.dealerSubtitle}>{dealerName}{dealerTown ? ` · ${dealerTown}` : ""}</p>}
-                  <p className={styles.eyebrow}>
-                    {view === "members"
-                      ? "Sharing history and access"
-                      : `${uploadedAt ? `Last updated ${date(uploadedAt)}` : "No parts added"}${singleDealer && uploadedAt ? ` · Prices ${vatIncluded ? "incl." : "excl."} VAT` : ""}`}
-                  </p>
+
                 </div>
               </div>
               {view !== "members" && (
                 <>
                   <div className={styles.partsPanel}>
+                  <div className={styles.listContext}>
+                    {dealerName && <div className={styles.listDealer}><Icon kind="building" /><span>{dealerName}{dealerTown && <span className={styles.listTown}> · {dealerTown}</span>}</span></div>}
+                    <div className={styles.listStatus}>
+                      <span aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
+                      {uploadedAt && <span>Updated {date(uploadedAt)}{singleDealer ? ` · ${vatIncluded ? "Incl." : "Excl."} VAT` : ""}</span>}
+                    </div>
+                  </div>
                   <div className={styles.tableToolbar}>
                   <div className={styles.search}>
                     <Icon kind="search" />
@@ -653,7 +655,6 @@ export default function PartsClient({
                     <button disabled={!selectedParts.length} onClick={()=>startEnquiry(selectedParts)}>Enquire about selected</button>
                     {!!selectedParts.length && <button onClick={()=>setSelectedParts([])}>Clear selection</button>}
                   </div>}
-                  <span className={styles.resultCount} aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
 
                   <div
                     className={styles.tableWrap}
