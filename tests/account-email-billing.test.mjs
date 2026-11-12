@@ -8,14 +8,14 @@ test('billing preferences reject unauthenticated, cross-origin and malformed wri
  const route=load('app/api/account-profile/billing-preferences/route.ts',{
  '../../../../lib/auth':{auth:{api:{getSession:async()=>user?{user}:null}}},
  '../../../../lib/trusted-request-origin':load('lib/trusted-request-origin.ts',{}),
- '../../../../lib/billing-preferences':{receivesBillingEmails:async()=>true,saveBillingEmailPreference:async(...args)=>writes.push(args)},
+ '../../../../lib/billing-preferences':{getBillingEmailPreference:async()=>({businessEmail:"business@example.test"}),saveBillingEmailPreference:async(...args)=>writes.push(args)},
  });
  const req=(body,origin='https://www.aim4price.com')=>new Request('https://internal.railway.test/api/account-profile/billing-preferences',{method:'PUT',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(body)});
- assert.equal((await route.PUT(req({enabled:false}))).status,401);
+ assert.equal((await route.PUT(req({useBusinessEmail:false}))).status,401);
  user={id:'signed-in-owner'};
- assert.equal((await route.PUT(req({enabled:false},'https://attacker.test'))).status,403);
- assert.equal((await route.PUT(req({enabled:'false'}))).status,400);
- assert.equal((await route.PUT(req({enabled:false,userId:'victim'}))).status,200);
+ assert.equal((await route.PUT(req({useBusinessEmail:false},'https://attacker.test'))).status,403);
+ assert.equal((await route.PUT(req({useBusinessEmail:'false'}))).status,400);
+ assert.equal((await route.PUT(req({useBusinessEmail:false,userId:'victim'}))).status,200);
  assert.deepEqual(writes,[['signed-in-owner',false]]);
 });
 test('email changes require the exact phrase before reaching the authentication handler',async()=>{

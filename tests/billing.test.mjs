@@ -66,8 +66,9 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await billing.queueSignupInvoice('two',quote);await billing.processSignupInvoices();await billing.processSignupInvoices();
   assert.equal((await billing.listBillingInvoices('two',false)).total,1);
   assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where invoice_id=$1",[draft.id])).rows[0].n,1);
+  await pg.exec("alter table account_profiles add column marketplace_email text; update account_profiles set marketplace_email='billing-business@example.test' where user_id='one'");
   const preferences=load('lib/billing-preferences.ts',{'./db':{getDb:()=>db}});
-  assert.equal(await preferences.receivesBillingEmails('one'),true);
+  assert.equal((await preferences.getBillingEmailPreference('one')).billingEmail,'one@example.test');
   const mail=load('lib/billing-mail.ts',{'./billing-preferences':preferences,'./db':{getDb:()=>db},'./billing':billing,'./report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-fixture')},'./email':{getSiteOrigin:()=> 'https://aim4price.test'},'./billing-report':report,'./billing-shared':shared,'./billing-email-template':load('lib/billing-email-template.ts',{'./billing-report':report,'./billing-shared':shared,'./email-brand':load('lib/email-brand.ts')})});
   const calls=[];process.env.RESEND_API_KEY='fake-test-key';
   global.fetch=async(url,options)=>{calls.push({url,options});throw Error('Simulated network timeout');};
@@ -83,16 +84,21 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await pg.query("update aim4price_billing_mail set status='retry',first_attempt_at=now()-interval '25 hours' where status='queued'");
   await mail.dispatchBillingMail();assert.equal(calls.length,4);assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where status='needs_review'")).rows[0].n,1);
 
-  await preferences.saveBillingEmailPreference('one',false);
-  assert.equal(await preferences.receivesBillingEmails('one'),false);
-  assert.equal(await preferences.receivesBillingEmails('two'),true);
-  await billing.actOnBillingInvoice(draft.id,{action:'send',confirmed:true},'admin');
-  await mail.dispatchBillingMail();assert.equal(calls.length,4);
-  assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where last_error like 'Not sent:%'")).rows[0].n,1);
-  assert.equal((await billing.getBillingInvoice(draft.id,'one',false)).id,draft.id);
   await preferences.saveBillingEmailPreference('one',true);
+  assert.equal((await preferences.getBillingEmailPreference('one')).billingEmail,'billing-business@example.test');
+  assert.equal((await preferences.getBillingEmailPreference('two')).billingEmail,'two@example.test');
   await billing.actOnBillingInvoice(draft.id,{action:'send',confirmed:true},'admin');
   await mail.dispatchBillingMail();assert.equal(calls.length,5);
+  assert.deepEqual(JSON.parse(calls[4].options.body).to,['billing-business@example.test']);
+  await preferences.saveBillingEmailPreference('one',false);
+  await billing.actOnBillingInvoice(draft.id,{action:'send',confirmed:true},'admin');
+  await mail.dispatchBillingMail();assert.equal(calls.length,6);
+  assert.deepEqual(JSON.parse(calls[5].options.body).to,['one@example.test']);
+  // A previous opt-out must no longer suppress delivery.
+  await billing.actOnBillingInvoice(draft.id,{action:'send',confirmed:true},'admin');
+  await pg.query("update aim4price_billing_mail set status='needs_review',last_error='Not sent: account opted out of billing emails.' where status='queued'");
+  await mail.dispatchBillingMail();assert.equal(calls.length,7);
+  assert.equal((await billing.getBillingInvoice(draft.id,'one',false)).id,draft.id);
  }finally{global.fetch=oldFetch;if(oldKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=oldKey;await pg.close();}
 });
 

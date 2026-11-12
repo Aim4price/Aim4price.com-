@@ -1,4 +1,4 @@
-import { receivesBillingEmails } from './billing-preferences';
+import { getBillingEmailPreference } from './billing-preferences';
 import { getDb } from './db';
 import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
@@ -17,6 +17,8 @@ export async function billingPdf(id: string): Promise<Buffer> {
 }
 export async function dispatchBillingMail(): Promise<void> {
   await ensureBillingSchema();
+  // Restore only unsent messages suppressed by the former opt-out control.
+  await getDb().query("update aim4price_billing_mail set status='queued',last_error=null,next_attempt_at=now() where status='needs_review' and last_error='Not sent: account opted out of billing emails.'");
   for(let i=0;i<5;i++) {
     const db=await getDb().connect();let mail;
     try {
@@ -34,16 +36,14 @@ export async function dispatchBillingMail(): Promise<void> {
     try {
       const invoice=(await getDb().query('select * from aim4price_billing_invoices where id=$1',[mail.invoice_id])).rows[0];
       if(invoice?.status!=='issued'||!invoice.user_id)throw new Error('Invoice is void or the account was deleted. Review required.');
-      if (!await receivesBillingEmails(invoice.user_id)) {
-        await getDb().query("update aim4price_billing_mail set status='needs_review',last_error='Not sent: account opted out of billing emails.',locked_until=null where id=$1", [mail.id]);
-        continue;
-      }
       const key=process.env.RESEND_API_KEY?.trim();
       if(!key)throw new Error('RESEND_API_KEY is not configured.');
       let payload=mail.payload;
       if(!payload){
+        const { billingEmail } = await getBillingEmailPreference(invoice.user_id);
+        if (!billingEmail) throw new Error('No billing email is available. Review required.');
         const pdf=await billingPdf(invoice.id),url=getSiteOrigin()+'/billing';
-        payload=JSON.stringify({from:process.env.AIM4PRICE_BILLING_EMAIL_FROM||process.env.AIM4PRICE_EMAIL_FROM||'Aim4price <billing@aim4price.com>',to:[invoice.customer.email],reply_to:invoice.issuer.email,subject:`Aim4price invoice ${invoice.number}`,...buildBillingEmail({...mapInvoice(invoice),number:invoice.number,issuer:invoice.issuer},url),attachments:[{filename:`${invoice.number}.pdf`,content:pdf.toString('base64')}]});
+        payload=JSON.stringify({from:process.env.AIM4PRICE_BILLING_EMAIL_FROM||process.env.AIM4PRICE_EMAIL_FROM||'Aim4price <billing@aim4price.com>',to:[billingEmail],reply_to:invoice.issuer.email,subject:`Aim4price invoice ${invoice.number}`,...buildBillingEmail({...mapInvoice(invoice),number:invoice.number,issuer:invoice.issuer},url),attachments:[{filename:`${invoice.number}.pdf`,content:pdf.toString('base64')}]});
         await getDb().query('update aim4price_billing_mail set payload=$2 where id=$1',[mail.id,payload]);
       }
       // Freeze the body before the first provider call. Retries reuse both bytes and key.

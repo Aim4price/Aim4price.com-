@@ -506,6 +506,8 @@ export default function AccountClient({
   const [emailChangeSent, setEmailChangeSent] = useState(false);
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [billingEmails, setBillingEmails] = useState<boolean | null>(null);
+  const [billingDestination, setBillingDestination] = useState("");
+  const [savedBillingBusinessEmail, setSavedBillingBusinessEmail] = useState("");
   const [isSavingBillingEmails, setIsSavingBillingEmails] = useState(false);
   const [billingEmailNotice, setBillingEmailNotice] = useState<AccountNotice | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -1213,8 +1215,8 @@ export default function AccountClient({
     fetch("/api/account-profile/billing-preferences", { cache: "no-store" })
       .then(async response => {
         const data = await response.json();
-        if (!response.ok || typeof data.enabled !== "boolean") throw new Error("Billing email settings could not load.");
-        if (mounted) setBillingEmails(data.enabled);
+        if (!response.ok || typeof data.useBusinessEmail !== "boolean") throw new Error("Billing email settings could not load.");
+        if (mounted) { setBillingEmails(data.useBusinessEmail); setBillingDestination(data.billingEmail); setSavedBillingBusinessEmail(data.businessEmail); }
       }).catch(error => { if (mounted) setBillingEmailNotice({ tone: "error", message: error.message }); });
     return () => { mounted = false; };
   }, [activeAccountModal, sharedAccount]);
@@ -1226,12 +1228,14 @@ export default function AccountClient({
     try {
       const response = await fetch("/api/account-profile/billing-preferences", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: !billingEmails }),
+        body: JSON.stringify({ useBusinessEmail: !billingEmails }),
       });
       const data = await response.json();
-      if (!response.ok || typeof data.enabled !== "boolean") throw new Error(data.error || "Could not save billing preference.");
-      setBillingEmails(data.enabled);
-      setBillingEmailNotice({ tone: "success", message: "Billing email preference saved." });
+      if (!response.ok || typeof data.useBusinessEmail !== "boolean") throw new Error(data.error || "Could not save billing preference.");
+      setBillingEmails(data.useBusinessEmail);
+      setBillingDestination(data.billingEmail);
+      setSavedBillingBusinessEmail(data.businessEmail);
+      setBillingEmailNotice({ tone: "success", message: "Billing email destination saved." });
     } catch (error) {
       setBillingEmailNotice({ tone: "error", message: error instanceof Error ? error.message : "Could not save billing preference." });
     } finally { setIsSavingBillingEmails(false); }
@@ -2095,8 +2099,8 @@ export default function AccountClient({
                       {!sharedAccount ? <>
                         <div className={styles.billingEmailRow}>
                           <span className={styles.billingEmailIcon}><SettingsDetailIcon name="email" /></span>
-                          <div><strong>Receive billing emails</strong><p>Invoices stay available in your account. This preference saves immediately.</p></div>
-                          <button type="button" role="switch" aria-label="Receive billing emails" aria-checked={billingEmails === true} className={styles.billingEmailSwitch} disabled={billingEmails === null || isSavingBillingEmails} onClick={() => void toggleBillingEmails()}><span /></button>
+                          <div><strong>Use business email for billing</strong><p>{billingEmails === null ? "Loading billing email…" : `Billing goes to: ${billingDestination}`}</p><p>{billingEmails ? "On · Business email" : "Off · Account email"} · Saves immediately.</p>{profileDraft.marketplaceEmail.trim() !== savedBillingBusinessEmail ? <p>Save business details to update the business email.</p> : null}</div>
+                          <button type="button" role="switch" aria-label="Use business email for billing" aria-checked={billingEmails === true} className={styles.billingEmailSwitch} disabled={billingEmails === null || isSavingBillingEmails} onClick={() => void toggleBillingEmails()}><span /></button>
                         </div>
                         <ModalInlineNotice notice={billingEmailNotice} />
                       </> : null}
