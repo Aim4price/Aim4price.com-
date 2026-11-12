@@ -1145,9 +1145,27 @@
 
 /* Match list detail titles to the shared workspace heading. */
 .detailHeader > div { width: 100%; min-width: 0; }
-.detailHeader .title { margin-bottom: 20px; }
+.detailHeader .title { margin: 0; }
 .detailHeader .dealerSubtitle, .detailHeader .eyebrow { padding-inline: 4px; }
 .importFields .shareChoices { margin-bottom: 24px; }
 .card { cursor: pointer; }
 
 .accessSectionTitle { margin: 24px 0 14px; font-size: 20px; font-weight: 800; }
+
+/* Keep the list identity and freshness inside its table panel. */
+.detailPage .detailHeader { padding-top: 0; margin-bottom: 20px; }
+.listContext { display: flex; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 20px 24px 0; }
+.listDealer { display: flex; align-items: center; gap: 10px; min-width: 0; color: var(--app-text, #173e32); font-size: 16px; font-weight: 700; line-height: 1.5; }
+.listDealer > span { overflow-wrap: anywhere; }
+.listDealer svg { width: 21px; height: 21px; flex: 0 0 21px; color: var(--app-text-muted, #64766c); }
+.listTown { font-weight: 500; color: var(--app-text-muted, #64766c); }
+.listStatus { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 16px; color: var(--app-text-muted, #64766c); font-size: 13px; line-height: 1.5; }
+.listStatus > span:first-child { font-weight: 700; }
+.detailPage .tableToolbar { padding: 18px 24px 20px; }
+@media (max-width: 640px) {
+  .listContext { align-items: flex-start; flex-direction: column; gap: 6px; padding: 16px 14px 0; }
+  .listDealer { font-size: 14px; }
+  .listStatus { justify-content: flex-start; font-size: 12px; }
+  .detailPage .tableToolbar { padding: 14px; }
+  .detailPage .detailHeader { margin-bottom: 16px; }
+}
