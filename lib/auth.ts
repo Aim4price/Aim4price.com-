@@ -138,8 +138,8 @@ function createAuth() {
   emailVerification: {
     sendOnSignUp: false,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin()})});
+    sendVerificationEmail: async ({ user, url, token }) => {
+      await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin(),emailChange:Boolean(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).updateTo)})});
     },
   },
   databaseHooks: {
@@ -193,6 +193,13 @@ function createAuth() {
     },
   },
   user: {
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: false,
+      sendChangeEmailConfirmation: async ({ user, url }) => {
+        await sendAim4priceEmail({ to: user.email, ...buildAccessEmail({ url, origin: getSiteOrigin(), emailChange: true }) });
+      },
+    },
     deleteUser: {
       enabled: true,
       beforeDelete: async (user) => {

@@ -13,6 +13,13 @@ export const GET = authHandlers.GET;
 export async function POST(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname.replace(/\/+$/, "");
 
+  if (pathname.endsWith("/change-email")) {
+    const input = await request.clone().json().catch(() => null);
+    if (input?.confirmation !== 'CHANGE EMAIL') {
+      return Response.json({ message: 'Type CHANGE EMAIL to confirm.' }, { status: 400 });
+    }
+  }
+
   if (!pathname.endsWith("/sign-up/email")) {
     return authHandlers.POST(request);
   }
