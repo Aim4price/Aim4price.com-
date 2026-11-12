@@ -3484,7 +3484,7 @@ export default function MyInvoicesClient({
         /> : <>
         {dealerMode ? (
           <WorkspaceTitlePanel
-            title="CLIENT ASSET COSTS"
+            title="CLIENT COST LEDGER"
             className={styles.dealerCostsTitlePanel}
           />
         ) : (

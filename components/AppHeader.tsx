@@ -246,7 +246,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/ad-studio', label: 'Advert Studio', accountTypes: ['dealer'] },
   { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
   { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
-  { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
+  { href: '/dealer-costs', label: 'Cost Ledger', accountTypes: ['dealer'] },
 ];
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
@@ -315,7 +315,7 @@ function buildNavItems(
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       { key: 'ad-studio', href: '/ad-studio', label: 'Advert Studio' },
       { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
-      { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
+      { key: 'cost', href: '/dealer-costs', label: 'Cost Ledger' },
     ];
   }
 
