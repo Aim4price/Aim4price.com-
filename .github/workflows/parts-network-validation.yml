@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'lib/parts-network*'
+      - 'lib/parts-editor.ts'
+      - 'components/PartsImportForm.tsx'
+      - 'lib/external-share-permissions.ts'
+      - 'app/business/join/business-signup.tsx'
       - 'lib/dealer-app-access.ts'
       - 'app/parts/**'
       - 'app/dealer/parts/**'

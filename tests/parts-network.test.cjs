@@ -103,7 +103,7 @@ test("Excel sheets preserve text and zero padding, and reject uncached formulas"
 test("private network membership, import replacement and invitation lifecycle use real SQL", async () => {
   const db = new PGlite();
   await db.exec(
-    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text);",
+    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text,account_type text,account_status text,account_subtype text); CREATE TABLE \"user\"(id text,email text); CREATE TABLE sharing_account_access(user_id text,plan text);",
   );
   const client = {
     query: async (sql, args) =>
@@ -118,6 +118,7 @@ test("private network membership, import replacement and invitation lifecycle us
     "./db": { getDb: () => pool },
     "./parts-network-schema": load("lib/parts-network-schema.ts"),
     "./parts-network-csv": csv,
+    "./sharing-foundation": { ensureSharingFoundation: async () => {} },
     "./email": {
       getSiteOrigin: () => "https://example.test",
       sendAim4priceEmail: async (m) => messages.push(m),
@@ -371,6 +372,7 @@ test("account and staff gates reject inactive dealers, other account types and t
       isDealerAppSession: () => staff,
     },
     "./account-profile": { getAccountProfile: async () => profile },
+    "./sharing-foundation": { sharingPlan: async () => profile.accountType === "business" ? "free" : "desktop" },
     "./account-constants": {
       isAim4priceAdminEmail: (e) => e === "admin@example.test",
     },
@@ -388,6 +390,11 @@ test("account and staff gates reject inactive dealers, other account types and t
   profile.accountStatus = "active";
   profile.accountType = "owner";
   assert.equal(await access.getPartsActor(), null);
+  profile.accountType = "business";
+  assert.equal((await access.getPartsActor()).canContribute,false);
+  assert.equal((await access.getPartsActor()).viewerOnly,true);
+  profile.accountStatus='suspended'; assert.equal(await access.getPartsActor(),null);
+  profile.accountStatus='active';
   profile.accountType = "dealer";
   profile.accountSubtype = "middleman";
   assert.equal(await access.getPartsActor(), null);
@@ -408,7 +415,7 @@ test("account and staff gates reject inactive dealers, other account types and t
 test("named lists isolate CSVs, direct shares, enquiries and archived access", async () => {
   const db = new PGlite();
   await db.exec(
-    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text)",
+    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text,account_type text,account_status text,account_subtype text); CREATE TABLE \"user\"(id text,email text); CREATE TABLE sharing_account_access(user_id text,plan text)",
   );
   const schema = load("lib/parts-network-schema.ts");
   const client = {
@@ -420,6 +427,7 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
     "./db": { getDb: () => ({ ...client, connect: async () => client }) },
     "./parts-network-schema": schema,
     "./parts-network-csv": csv,
+    "./sharing-foundation": { ensureSharingFoundation: async () => {} },
     "./email": { getSiteOrigin: () => "https://example.test" },
   });
   const owner = {
@@ -475,6 +483,8 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
   assert.equal(edited.brand, 'JD');
   assert.equal((await parts.partsData(owner, b, 'mine', '', 0)).total, 2);
 
+  await db.query('INSERT INTO "user"(id,email) VALUES($1,$2) ON CONFLICT DO NOTHING',[buyer.id,buyer.email]);
+  await db.query("INSERT INTO account_profiles(user_id,account_type,account_status) VALUES($1,'dealer','active')",[buyer.id]);
   await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
   const invitation = (await parts.partsInbox(buyer)).invitations[0];
   assert.equal(invitation.name, "Landini");
@@ -482,9 +492,20 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
   await assert.rejects(() =>
     parts.acceptDirectPartsShare(stranger, invitation.id),
   );
+  await assert.rejects(()=>parts.invitePartsMember(owner,a,stranger.email,"viewer","direct"), /paid dealer/);
+  assert.equal((await parts.partsRecipients(owner,a,'buyer')).recipients[0].email,buyer.email);
+  await db.exec(`INSERT INTO "user"(id,email) VALUES('paid-business','paid@example.test'),('free-business','free@example.test'); INSERT INTO account_profiles(user_id,business_name,account_type,account_status) VALUES('paid-business','Paid workshop','business','active'),('free-business','Free workshop','business','active'); INSERT INTO sharing_account_access(user_id,plan) VALUES('paid-business','desktop'),('free-business','free');`);
+  assert.deepEqual((await parts.partsRecipients(owner,a,'workshop')).recipients.map(r=>r.email),['paid@example.test']);
+  await assert.rejects(()=>parts.invitePartsMember(owner,a,'free@example.test','viewer','direct'),/paid dealer/);
+
+  await assert.rejects(()=>parts.partsRecipients(buyer,a,''));
   await parts.acceptDirectPartsShare(buyer, invitation.id);
+  assert.equal((await parts.partsData(owner,a,'members','',0)).members.find(m=>m.dealer_id===buyer.id).last_viewed_at,null);
   assert.equal((await parts.partsData(buyer, a, "search", "", 0)).total, 1);
   assert.equal((await parts.partsInbox(buyer)).shared.length, 1);
+  assert.ok((await parts.partsData(owner,a,'members','',0)).members.find(m=>m.dealer_id===buyer.id).last_viewed_at);
+  await assert.rejects(()=>parts.createPartsNetwork({...buyer,viewerOnly:true,canContribute:false},'Forbidden',true));
+  await assert.rejects(()=>parts.importParts({...owner,viewerOnly:true},a,input,false));
   await assert.rejects(() => parts.partsData(buyer, b, "search", "", 0));
   await assert.rejects(() => parts.importParts(buyer, a, input, false));
   await assert.rejects(() => parts.managePartsList(buyer, a, "bad"));
@@ -516,6 +537,16 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
       }),
     /already sent/,
   );
+  const multiInput={...input,mode:'merge',csv:'Part,Qty,Price\n003,3,10',revision:2};
+  await parts.importParts(owner,a,multiInput,true);
+  const multi={dealerId:owner.id,items:[{partNumber:'002',quantity:2},{partNumber:'003',quantity:4}],message:'Please quote both.'};
+  await assert.rejects(()=>parts.createPartsEnquiry(buyer,a,{...multi,items:[...multi.items,{partNumber:'missing',quantity:1}]}),/available parts/);
+  assert.equal((await parts.partsInbox(owner)).enquiries.length,1);
+  await assert.rejects(()=>parts.createPartsEnquiry(buyer,a,{...multi,items:[{partNumber:'002',quantity:0}]}),/positive whole/);
+  await parts.createPartsEnquiry({...buyer,viewerOnly:true},a,multi);
+  const combined=(await parts.partsInbox(owner)).enquiries.find(e=>e.part_number==='002, 003');
+  assert.match(combined.message,/002 — quantity 2/); assert.match(combined.message,/003 — quantity 4/);
+  await assert.rejects(()=>parts.createPartsEnquiry(buyer,a,{...multi,items:[...multi.items].reverse()}),/already sent/);
   await parts.changePartsMember(owner, a, buyer.id, "viewer", "suspended");
   await assert.rejects(() => parts.partsData(buyer, a, "search", "", 0));
   await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
@@ -544,8 +575,29 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
   );
   assert.equal(
     (await parts.partsInbox(owner)).enquiries.length,
-    1,
+    2,
     "enquiries retained after archive",
   );
   await db.close();
+});
+
+test('clipboard pastes preserve row alignment, punctuation, blanks and existing columns',()=>{
+ const editor=load('lib/parts-editor.ts',{'./parts-network-csv':csv});
+ let rows=editor.pastePartsCells([editor.blankPart()],'001,ABC\n\n0007',0,0);
+ assert.deepEqual(rows.map(r=>r[0]),['001,ABC','','0007']);
+ rows=editor.pastePartsCells(rows,'2\n3\n4',0,1);
+ assert.deepEqual(rows.map(r=>r[1]),['2','3','4']); assert.equal(rows[2][0],'0007');
+ rows=editor.pastePartsCells(rows,'0\tLandini\tFilter',0,2);
+ assert.equal(rows[0][2],'0');assert.equal(rows[0][3],'Landini');
+ assert.ok(editor.partRowErrors(rows)[1]);
+ assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4),/beyond Description/);
+ assert.throws(()=>editor.pastePartsCells(rows,'a\nb',19999,0),/20,000/);
+ const duplicates=editor.partRowErrors([['ABC','1','','',''],['abc','2','','','']]);
+ assert.match(duplicates[0],/Duplicate/);assert.match(duplicates[1],/Duplicate/);
+ assert.deepEqual(editor.partRowErrors([['001','1','','','']]),{});
+});
+test('parts signup continuations stay local and narrowly scoped',()=>{
+ const {sharedEnquiryReturnTo:back}=load('lib/external-share-permissions.ts');
+ const link='/parts/join?token='+'a'.repeat(64);assert.equal(back(link),link);
+ for(const value of ['https://evil.test/parts','//evil.test/parts','/parts/join?token=x','/parts/../admin','/parts?redirect=https://evil.test'])assert.equal(back(value),null);
 });

@@ -1123,3 +1123,31 @@
   outline-offset: 2px !important;
   box-shadow: none !important;
 }
+
+/* Spreadsheet entry shares the standard parts table and dialog palette. */
+.importChoices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.editorWrap { overflow: auto; max-height: 52vh; border: 1px solid var(--app-border, #cbded4); border-radius: 16px; }
+.editorTable { width: 100%; border-collapse: collapse; min-width: 800px; }
+.editorTable th { position: sticky; top: 0; z-index: 1; background: var(--app-surface-soft, #f1f8f5); text-align: left; padding: 12px; }
+.editorTable td { padding: 8px; vertical-align: top; border-top: 1px solid var(--app-border, #cbded4); }
+.editorTable input:not([type='checkbox']) { padding: 10px; border-radius: 8px; min-width: 90px; font: inherit; }
+.editorTable input[aria-invalid='true'] { border-color: #c44646; }
+.editorTable input[type='checkbox'] { width: 18px; height: 18px; min-height: 18px; }
+.editorTable small { display: block; font-size: 12px; font-weight: 500; line-height: 1.4; margin-top: 4px; }
+.importForm summary { cursor: pointer; font-weight: 650; padding: 12px 0; }
+.importForm details > button { margin-top: 12px; }
+@media(max-width:640px) { .importChoices { grid-template-columns: 1fr; } }
+.selectionBar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 0 20px 16px; }
+.selectionBar span { flex: 1; color: var(--app-text-muted, #62786e); font-size: 14px; }
+.tableWrap input[type='checkbox'] { width: 18px; height: 18px; min-height: 18px; }
+.editorTable { color: var(--app-text, #173f33); }
+.editorTable th { color: var(--app-text, #173f33); }
+
+/* Match list detail titles to the shared workspace heading. */
+.detailHeader > div { width: 100%; min-width: 0; }
+.detailHeader .title { margin-bottom: 20px; }
+.detailHeader .dealerSubtitle, .detailHeader .eyebrow { padding-inline: 4px; }
+.importFields .shareChoices { margin-bottom: 24px; }
+.card { cursor: pointer; }
+
+.accessSectionTitle { margin: 24px 0 14px; font-size: 20px; font-weight: 800; }

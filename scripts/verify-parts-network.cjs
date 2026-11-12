@@ -126,6 +126,7 @@ const appCode =
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setViewport({ width: 1440, height: 1000 });
     let emptyFixture = false;
+    let viewerFixture = false;
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
       name: "Landini parts",
@@ -201,8 +202,9 @@ const appCode =
               },
             ],
             staff: false,
-            canContribute: true,
+            canContribute: !viewerFixture,
           };
+        else if (url.searchParams.get("view") === "recipients") data={recipients:[{email:'buyer@example.test',business_name:'Buyer Dealer',town_city:'George'}]};
         else if (url.searchParams.get("view") === "inbox")
           data = { invitations: [], enquiries: [], shared: [] };
         else if (url.searchParams.get("view") === "members")
@@ -218,7 +220,7 @@ const appCode =
             ],
             invites: [],
           };
-        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : { rows: [row], total: 1 };
+        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"}],total:2} : { rows: [row], total: 1 };
         return r.respond({
           contentType: "application/json",
           body: JSON.stringify(data),
@@ -233,7 +235,7 @@ const appCode =
     await page.waitForSelector("article");
     assert.ok(
       await page.$eval("h1", (e) =>
-        e.textContent.includes("Parts Management System"),
+        e.textContent.trim() === "Parts",
       ),
     );
     const cards = await page.$$eval("article", (nodes) =>
@@ -263,7 +265,7 @@ const appCode =
     );
 
     const click = async (text) => {
-      await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.disabled), {}, text);
+      await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
       const navigation = text === "Open" ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
       assert.ok(
         await page.evaluate((t) => {
@@ -271,9 +273,9 @@ const appCode =
             (b) =>
               (b.textContent.trim() === t ||
                 b.querySelector("strong")?.textContent.trim() === t) &&
-              !b.disabled,
+              !b.matches(":disabled"),
           );
-          if (!b || b.disabled) return false;
+          if (!b || b.matches(":disabled")) return false;
           b.click();
           return true;
         }, text),
@@ -336,78 +338,93 @@ const appCode =
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
     await click("Add parts");
-    await click("Upload CSV");
+    await click("Import file");
     await page.waitForSelector("input[type=file]");
     const file = path.join(output, "fixture.csv");
-    fs.writeFileSync(
-      file,
-      "Part number,Quantity,Price\n001-ABC,2,850\n002-XYZ,1,100",
-    );
+    fs.writeFileSync(file,"Part number,Quantity,Price\n001-ABC,2,850\n002-XYZ,1,100");
     await (await page.$("input[type=file]")).uploadFile(file);
-    await page.waitForFunction(() =>
-      document.body.innerText.includes("Review parts"),
-    );
+    await page.waitForSelector('[aria-label="Quantity column"]');
+    await click('Continue to editable table');
+    await page.waitForSelector('[aria-label="Part number 1"]');
     await page.evaluate(() => {
       const select = [...document.querySelectorAll('select')].find(s => [...s.options].some(o => o.value === 'replace'));
       select.value = 'replace'; select.dispatchEvent(new Event('change', {bubbles:true}));
     });
     await click("Review parts");
-    await page.waitForFunction(() =>
-      document.body.innerText.includes("Replace my parts list"),
-    );
+    await page.waitForFunction(() => document.body.innerText.includes("Replace list (1 removed)"));
     await page.screenshot({ path: path.join(output, "upload-review.png") });
-    await click("Replace my parts list");
-    await page.waitForFunction(() =>
-      document.body.innerText.includes("Parts list updated successfully."),
-    );
+    await click("Replace list (1 removed)");
+    await page.waitForFunction(() => document.body.innerText.includes("Parts list updated successfully."));
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
-    // All entry paths must reach the same review, retaining identifiers and optional fields.
     await click("Add parts");
-    await click("Add manually");
+    await click("Enter / paste parts");
     await page.type('[aria-label="Part number 1"]', '000123');
+    await page.type('[aria-label="Quantity 1"]', '1');
     await page.type('[aria-label="Brand 1"]', 'Landini');
     await page.type('[aria-label="Description 1"]', 'Dowel');
+    await page.screenshot({path:path.join(output,'manual-editor.png')});
     await click("Review parts");
-    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('Price on request'));
-    await page.screenshot({path:path.join(output,'manual-review.png')});
+    await page.waitForFunction(() => document.body.innerText.includes('reviewed rows'));
     await click("Save parts");
     await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     assert.equal(actions.filter(a => a.action === 'import').at(-1).mode, 'merge');
     assert.equal(parser.parsePartsSnapshot(actions.filter(a => a.action === 'import').at(-1).csv, {partNumber:0,quantity:1,price:2,brand:3,description:4}, {hasHeader:false})[0].partNumber, '000123');
-
+    // Literal column paste preserves all rows and part identifiers.
+    async function paste(selector,text) {
+      await page.$eval(selector,(input,text)=>{const clipboardData=new DataTransfer();clipboardData.setData('text/plain',text);input.dispatchEvent(new ClipboardEvent('paste',{clipboardData,bubbles:true,cancelable:true}));},text);
+    }
     await click("Add parts");
-    await click("Excel / Sheets");
-    await page.type('[aria-label="Paste spreadsheet cells"]', '01.3657074\tDowel\t16\n01.3671641\tBush\t9');
-    await click("Use pasted table");
-    await page.select('[aria-label="Quantity column"]', '2');
-    await page.select('[aria-label="Description column"]', '1');
-    await page.type('[aria-label="Remove part number prefix"]', '01.');
-    await page.type('[aria-label="Default brand"]', 'Landini');
-    await click("Review parts");
-    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('3657074'));
-    assert.ok(await page.evaluate(() => document.querySelector('[role=dialog]').textContent.includes('Price on request')));
-    await click("Save parts");
-    await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
-
-    const Excel = require('exceljs');
-    const workbook = new Excel.Workbook();
-    workbook.addWorksheet('Stock').addRow(['01.3657074', 'Dowel', 16]);
-    workbook.addWorksheet('Other').addRow(['01.3671641', 'Bush', 9]);
-    const excelFile = path.join(output, 'fixture.xlsx');
-    await workbook.xlsx.writeFile(excelFile);
-    await click("Add parts");
-    await click("Excel / Sheets");
+    await click("Enter / paste parts");
+    await paste('[aria-label="Part number 1"]','01.3657074\n01.3671641');
+    await paste('[aria-label="Quantity 1"]','16\n9');
+    await paste('[aria-label="Description 1"]','Dowel\nBush');
+    assert.equal(await page.$eval('[aria-label="Quantity 2"]',e=>e.value),'9');
+    await page.click('[aria-label="Select all rows"]');
+    await page.evaluate(()=>[...document.querySelectorAll('summary')].find(e=>e.textContent==='Clean up part numbers').click());
+    await page.type('[aria-label="Remove part number prefix"]','01.');
+    await click('Preview cleanup (2)');
+    assert.ok(await page.evaluate(()=>document.body.innerText.includes('01.3657074')&&document.body.innerText.includes('3657074')));
+    await click('Apply cleanup');
+    assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'3657074');
+    await click('Undo last change');
+    assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'01.3657074');
+    await page.screenshot({path:path.join(output,'paste-editor.png')});
+    await page.setViewport({width:390,height:844});
+    await page.screenshot({path:path.join(output,'paste-editor-phone.png')});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
+    await page.setViewport({width:1440,height:1000});
+    await click('Review parts');
+    await page.waitForFunction(()=>document.body.innerText.includes('reviewed rows'));
+    await click('Save parts');
+    await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+    await click('Add parts');await click('Import file');
+    await page.evaluate(()=>[...document.querySelectorAll('summary')].find(e=>e.textContent==='Paste a table with a different column order').click());
+    await page.type('[aria-label="Paste spreadsheet cells"]','Description\tQty\tPart number\nDowel\t16\t000123');
+    await click('Match pasted columns');await page.waitForSelector('[aria-label="Part number column"]');
+    assert.equal(await page.$eval('[aria-label="Part number column"]',e=>e.value),'2');
+    await click('Continue to editable table');await page.waitForSelector('[aria-label="Part number 1"]').catch(async e=>{console.error(await page.evaluate(()=>document.body.innerText));throw e;});
+    assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'000123');
+    await paste('[aria-label="Part number 1"]','000123\n000123');
+    await paste('[aria-label="Quantity 1"]','16\n2');
+    assert.ok(await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='Review parts').disabled));
+    await paste('[aria-label="Part number 2"]','000456');
+    await click('Review parts');await page.waitForFunction(()=>document.body.innerText.includes('reviewed rows'));await click('Save parts');
+    await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+    const Excel=require('exceljs');const workbook=new Excel.Workbook();
+    workbook.addWorksheet('Stock').addRow(['01.3657074','Dowel',16]);
+    workbook.addWorksheet('Other').addRow(['01.3671641','Bush',9]);
+    const excelFile=path.join(output,'fixture.xlsx');await workbook.xlsx.writeFile(excelFile);
+    await click('Add parts');await click('Import file');
     await (await page.$('input[type=file]')).uploadFile(excelFile);
     await page.waitForSelector('[aria-label="Quantity column"]');
-    assert.equal(await page.$eval('input[type=checkbox]', e => e.checked), false);
-    await page.select('[aria-label="Quantity column"]', '2');
-    await page.select('[aria-label="Description column"]', '1');
-    await page.type('[aria-label="Remove part number prefix"]', '01.');
+    assert.equal(await page.$eval('input[type=checkbox]',e=>e.checked),false);
+    await page.select('[aria-label="Quantity column"]','2');await page.select('[aria-label="Description column"]','1');
     await page.screenshot({path:path.join(output,'excel-mapping.png')});
-    await click("Review parts");
-    await page.waitForFunction(() => document.querySelector('[role=dialog]').textContent.includes('3657074'));
-    await click("Save parts");
-    await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
+    await click('Continue to editable table');
+    await page.waitForSelector('[aria-label="Part number 1"]');
+    assert.equal(await page.$eval('[aria-label="Quantity 1"]',e=>e.value),'16');
+    await click('Review parts');await page.waitForFunction(()=>document.body.innerText.includes('reviewed rows'));await click('Save parts');
+    await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
     await click("Manage");
     await page.waitForSelector("[role=dialog]");
     assert.ok(
@@ -438,20 +455,24 @@ const appCode =
           ?.getAttribute("aria-label") === "Rename parts list",
     );
     await click("Back");
+    const accessUrl = page.url();
     await click("Sharing & access");
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
-        (b) => b.textContent === "Suspend",
+        (b) => b.textContent === "Remove access",
       ),
     );
-    await click("Suspend");
+    assert.equal(page.url(), accessUrl, "access opens without navigation");
+    assert.equal(await page.$eval("[role=dialog]", e=>e.getAttribute("aria-label")), "Sharing & access");
+    await page.screenshot({path:path.join(output,"sharing-access-modal.png")});
+    await click("Remove access");
     await page.waitForSelector("[role=dialog]");
     await page.keyboard.press("Escape");
     assert.ok(
       !actions.some((a) => a.action === "member"),
       "cancel does not change membership",
     );
-    await click("View parts");
+    await page.keyboard.press("Escape");
     await page.setViewport({ width: 390, height: 844 });
     await page.waitForSelector("tbody tr");
     assert.ok(
@@ -497,14 +518,22 @@ const appCode =
         ),
       )),
     );
-    await click("Enquire");
+    await page.click('[aria-label="Select 001-ABC"]');
+    await page.click('[aria-label="Select 002-XYZ"]');
+    await click("Enquire about selected");
     await page.waitForSelector("textarea");
-    await click("Send enquiry");
+    await page.$eval('[aria-label="Requested quantity for 002-XYZ"]',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'3');e.dispatchEvent(new Event('input',{bubbles:true}));});
+    assert.ok(await page.$eval('a[href^="mailto:"]',e=>decodeURIComponent(e.href).includes('002-XYZ — quantity 3')));
+    assert.ok(await page.$eval('a[href^="https://wa.me/"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 1')));
+    await page.screenshot({path:path.join(output,'multi-enquiry.png')});
+    await click("Send via Aim4price");
     await page.waitForFunction(() =>
       document.body.innerText.includes("Enquiry sent."),
     );
+    assert.equal(actions.find(a=>a.action==='enquire').items.length,2);
+    assert.equal(actions.find(a=>a.action==='enquire').items[1].quantity,3);
     assert.equal(
-      actions.find((a) => a.action === "enquire").partNumber,
+      actions.find((a) => a.action === "enquire").items[0].partNumber,
       "001-ABC",
     );
     assert.equal(
@@ -514,8 +543,8 @@ const appCode =
     await page.goto("https://example.test/parts");
     await click("Share");
     await click("Inside Aim4price");
-    await page.waitForSelector('input[type="email"]');
-    await page.type('input[type="email"]', "buyer@example.test");
+    await page.waitForFunction(()=>document.querySelector('[aria-label="Sharing recipient"] option[value="buyer@example.test"]'));
+    await page.select('[aria-label="Sharing recipient"]', 'buyer@example.test');
     await click("Share inside Aim4price");
     await page.waitForFunction(() =>
       document.body.innerText.includes("Shared inside Aim4price."),
@@ -538,12 +567,16 @@ const appCode =
       actions.filter((a) => a.action === "invite").at(-1).channel,
       "link",
     );
+    viewerFixture=true;
+    await page.goto('https://example.test/parts');await page.waitForSelector('article');
+    assert.ok(await page.evaluate(()=>![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Add parts list')));
+    viewerFixture=false;
     emptyFixture = true;
     network.part_count = 0;
     network.owner_uploaded_at = null;
     network.last_updated = null;
     await page.goto("https://example.test/parts/11111111-1111-4111-8111-111111111111");
-    await page.waitForFunction(() => document.body.innerText.includes("No parts uploaded yet"));
+    await page.waitForFunction(() => document.body.innerText.includes("No parts added yet"));
     assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Add parts").length === 1));
     await page.screenshot({path:path.join(output,"empty-list.png")});
     await page.goto("https://example.test/parts/join?token=fixture");

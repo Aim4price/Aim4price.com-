@@ -3,6 +3,7 @@ import { getPartsActor } from "../../../lib/parts-network-access";
 import { isTrustedRequestOrigin } from "../../../lib/trusted-request-origin";
 import {
   PartsError,
+  partsRecipients,
   resolvePartsShare,
   managePartsList,
   partsInbox,
@@ -49,11 +50,19 @@ export async function GET(request: NextRequest) {
     const actor = await getPartsActor(Boolean(token));
     if (!actor)
       return reply(
-        { error: "Sign in with an active dealer account with Parts access." },
+        { error: "Sign in to view parts shared with your account." },
         403,
       );
     if (token) return reply(await resolvePartsShare(actor, token));
     const q = request.nextUrl.searchParams;
+    if (q.get("view") === "recipients")
+      return reply(
+        await partsRecipients(
+          actor,
+          networkId(q.get("network")),
+          q.get("search") || "",
+        ),
+      );
     if (q.get("view") === "inbox") return reply(await partsInbox(actor));
     if (!q.has("network"))
       return reply({

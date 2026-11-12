@@ -51,7 +51,7 @@ type Row = {
   vat_included: boolean;
   uploaded_at: string;
 };
-type Member = Network & { dealer_id: string };
+type Member = Network & { dealer_id: string; last_viewed_at?: string };
 type Invite = {
   id: string;
   email: string;
@@ -67,7 +67,7 @@ const date = (s: string) =>
         month: "short",
         year: "numeric",
       })
-    : "Not uploaded";
+    : "No parts added";
 async function api(body?: Record<string, unknown>, query = "") {
   const r = await fetch("/api/parts-network" + query, {
     cache: "no-store",
@@ -199,6 +199,7 @@ export default function PartsClient({
     [network, setNetwork] = useState(listId),
     [staff, setStaff] = useState(true),
     [contribute, setContribute] = useState(false);
+  const [accessLoading, setAccessLoading] = useState(false);
   const [view, setView] = useState("search"),
     [search, setSearch] = useState(""),
     [page, setPage] = useState(0),
@@ -212,6 +213,7 @@ export default function PartsClient({
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
   const [modal, setModal] = useState<
+      | "access"
       | "upload"
       | "invite"
       | "create"
@@ -242,9 +244,29 @@ export default function PartsClient({
     [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
+  const [recipients, setRecipients] = useState<{email:string;business_name:string;town_city:string}[]>([]);
+  const [recipientSearch, setRecipientSearch] = useState('');
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
+  useEffect(()=>{
+    if(modal!== 'invite' || channel!== 'direct' || !network) return;
+    let cancelled=false; setRecipientsLoading(true); setRecipients([]);
+    const timer=setTimeout(()=>{void api(undefined,`?view=recipients&network=${encodeURIComponent(network)}&search=${encodeURIComponent(recipientSearch)}`).then(d=>{if(!cancelled)setRecipients(d.recipients||[]);}).catch(e=>{if(!cancelled)setError(e.message);}).finally(()=>{if(!cancelled)setRecipientsLoading(false);});},250);
+    return ()=>{cancelled=true;clearTimeout(timer);};
+  },[modal,channel,network,recipientSearch]);
+  const [selectedParts, setSelectedParts] = useState<Row[]>([]);
+  const [requestedParts, setRequestedParts] = useState<{partNumber:string;quantity:string}[]>([]);
+  useEffect(() => { setSelectedParts([]); }, [network, view]);
+  function startEnquiry(parts: Row[]) {
+    if (!parts.length) return;
+    setContact(parts[0]);
+    setRequestedParts(parts.map(r=>({partNumber:r.part_number,quantity:'1'})));
+    setEnquiry('Please confirm price and availability for these parts.');
+  }
+  const enquiryValid = requestedParts.length > 0 && requestedParts.every(r=>/^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999);
+  const enquiryText = requestedParts.map(r=>`${r.partNumber} — quantity ${r.quantity}`).join('\n') + '\n\n' + enquiry;
   const basePath = website ? "/parts" : "/dealer/parts";
-  function openList(id: string, members = false) {
-    window.location.assign(`${basePath}/${encodeURIComponent(id)}${members ? "?view=members" : ""}`);
+  function openList(id: string) {
+    window.location.assign(`${basePath}/${encodeURIComponent(id)}`);
   }
   const current = networks.find((n) => n.id === network);
   const singleDealer = Boolean(current?.list_mode);
@@ -254,7 +276,7 @@ export default function PartsClient({
   const vatIncluded = current?.owner_vat_included ?? current?.vat_included;
   const active = current?.status === "active";
   const admin =
-    !staff &&
+    contribute && !staff &&
     current?.role === "admin" &&
     (!current.list_mode || current.owned);
   const canUpload =
@@ -267,7 +289,7 @@ export default function PartsClient({
   const loadNetworks = useCallback(async () => {
     const d = await api();
     setNetworks(d.networks);
-    if (listId && !initialViewSet.current && new URLSearchParams(window.location.search).get("view") !== "members") {
+    if (listId && !initialViewSet.current) {
       initialViewSet.current = true;
       setView(d.networks.find((n: Network) => n.id === listId)?.owned ? "mine" : "search");
     }
@@ -284,7 +306,7 @@ export default function PartsClient({
       window.location.replace(`${website ? "/parts" : "/dealer/parts"}/${encodeURIComponent(requested)}`);
       return;
     }
-    if (new URLSearchParams(window.location.search).get("view") === "members") setView("members");
+    if (new URLSearchParams(window.location.search).get("view") === "members") setModal("access");
     void loadNetworks()
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -292,8 +314,6 @@ export default function PartsClient({
   useEffect(() => {
     const request = ++latest.current;
     setRows([]);
-    setMembers([]);
-    setInvites([]);
     setTotal(0);
     if (!network || !active || !opened) {
       setLoading(false);
@@ -309,8 +329,6 @@ export default function PartsClient({
           if (request !== latest.current) return;
           setRows(d.rows || []);
           setTotal(d.total || 0);
-          setMembers(d.members || []);
-          setInvites(d.invites || []);
           setError("");
         })
         .catch((e) => {
@@ -322,6 +340,16 @@ export default function PartsClient({
     }, 250);
     return () => clearTimeout(timer);
   }, [network, active, view, search, page, refresh, opened]);
+  useEffect(() => {
+    if (modal !== "access" || !network || !admin) return;
+    let cancelled = false;
+    setMembers([]); setInvites([]); setAccessLoading(true);
+    void api(undefined, `?network=${encodeURIComponent(network)}&view=members`)
+      .then(d => { if (!cancelled) { setMembers(d.members || []); setInvites(d.invites || []); } })
+      .catch(e => { if (!cancelled) setError(e.message); })
+      .finally(() => { if (!cancelled) setAccessLoading(false); });
+    return () => { cancelled = true; };
+  }, [modal, network, admin, refresh]);
   async function run(work: () => Promise<void>) {
     if (busy) return;
     setBusy(true);
@@ -427,7 +455,7 @@ export default function PartsClient({
   return (
     <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        {!listId && <WorkspaceTitlePanel title="Parts Management System" className={styles.title} />}
+        {!listId && <WorkspaceTitlePanel title="Parts" className={styles.title} />}
         {!opened && <div className={styles.listToolbar}>
             <div className={styles.search}>
               <Icon kind="search" />
@@ -438,7 +466,7 @@ export default function PartsClient({
                 onChange={(e) => setListSearch(e.target.value)}
               />
             </div>
-          {!staff && !listId && (
+          {!staff && contribute && !listId && (
             <button
               className={styles.addButton}
               onClick={() => {
@@ -470,6 +498,7 @@ export default function PartsClient({
                   <article
                     key={n.id}
                     className={styles.card}
+                    title="Open parts list"
                     onClick={(e) => {
                       if (
                         (e.target as HTMLElement).closest(
@@ -501,7 +530,7 @@ export default function PartsClient({
                         <span>{n.part_count === 1 ? "Part" : "Parts"}</span>
                       </div>
                     <div className={styles.cardActions}>
-                      {n.owned && !staff && (
+                      {n.owned && !staff && contribute && (
                         <button
                           className={styles.shareAction}
                           data-tooltip="Share parts list"
@@ -527,7 +556,7 @@ export default function PartsClient({
                         <Icon kind="open" />
                         Open
                       </button>
-                      {n.owned && !staff && (
+                      {n.owned && !staff && contribute && (
                         <button
                           className={styles.manageAction}
                           data-tooltip="Manage parts list"
@@ -554,7 +583,7 @@ export default function PartsClient({
                 <div className={styles.empty}>
                   <h2>{listSearch ? "No matching lists" : "Parts lists"}</h2>
                   <p>
-                    Add a list or accept a dealer’s invitation to get started.
+                    {contribute ? "Add a list or accept a dealer’s invitation to get started." : "Accept a parts invitation to see the lists shared with you."}
                   </p>
                 </div>
               )}
@@ -592,12 +621,12 @@ export default function PartsClient({
             <>
               <div className={`${styles.toolbar} ${styles.detailHeader}`}>
                 <div>
-                  <h1 className={styles.listTitle}>{current?.name}</h1>
+                  <WorkspaceTitlePanel title={current?.name || "Parts list"} className={styles.title} />
                   {dealerName && <p className={styles.dealerSubtitle}>{dealerName}{dealerTown ? ` · ${dealerTown}` : ""}</p>}
                   <p className={styles.eyebrow}>
                     {view === "members"
                       ? "Sharing history and access"
-                      : `${uploadedAt ? `Updated ${date(uploadedAt)}` : "Not uploaded"}${singleDealer && uploadedAt ? ` · Prices ${vatIncluded ? "incl." : "excl."} VAT` : ""}`}
+                      : `${uploadedAt ? `Last updated ${date(uploadedAt)}` : "No parts added"}${singleDealer && uploadedAt ? ` · Prices ${vatIncluded ? "incl." : "excl."} VAT` : ""}`}
                   </p>
                 </div>
               </div>
@@ -619,6 +648,11 @@ export default function PartsClient({
                   </div>
                   {(canUpload || admin) && detailActions}
                   </div>
+                  {!current?.owned && <div className={styles.selectionBar}>
+                    <span>{selectedParts.length} selected · Choose up to 50 parts from one dealer</span>
+                    <button disabled={!selectedParts.length} onClick={()=>startEnquiry(selectedParts)}>Enquire about selected</button>
+                    {!!selectedParts.length && <button onClick={()=>setSelectedParts([])}>Clear selection</button>}
+                  </div>}
                   <span className={styles.resultCount} aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
 
                   <div
@@ -630,6 +664,7 @@ export default function PartsClient({
                     <table>
                       <thead>
                         <tr>
+                          {!current?.owned && <th>Select</th>}
                           <th>Part number</th>
                           <th className={styles.numeric}>Quantity</th>
                           <th className={styles.numeric}>Unit price</th>
@@ -642,6 +677,7 @@ export default function PartsClient({
                       <tbody>
                         {rows.map((r, i) => (
                           <tr key={`${r.part_number}-${i}`}>
+                            {!current?.owned && <td><input type="checkbox" aria-label={`Select ${r.part_number}`} checked={selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} disabled={selectedParts.length>0 && selectedParts[0].dealer_id!==r.dealer_id || selectedParts.length>=50 && !selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} onChange={e=>setSelectedParts(e.target.checked?[...selectedParts,r]:selectedParts.filter(p=>p.dealer_id!==r.dealer_id||p.part_number!==r.part_number))}/></td>}
                             <td>
                               <strong>{r.part_number}</strong>
                               {r.brand && <small>{r.brand}</small>}
@@ -670,10 +706,7 @@ export default function PartsClient({
                               <button
                                 aria-label={`Contact ${r.business_name} about ${r.part_number}`}
                                 onClick={() => {
-                                  setContact(r);
-                                  setEnquiry(
-                                    `Please confirm price and availability for part ${r.part_number}.`,
-                                  );
+                                  startEnquiry([r]);
                                 }}
                               >
                                 <Icon kind={current?.owned ? "phone" : "message"} />
@@ -687,7 +720,7 @@ export default function PartsClient({
                     {!rows.length && (
                       <div className={styles.tableEmpty}>
                         <Icon kind={search.trim() ? "search" : "upload"} />
-                        <strong>{loading ? "Loading parts…" : search.trim() ? "No matching parts" : !uploadedAt ? "No parts uploaded yet" : "No parts available"}</strong>
+                        <strong>{loading ? "Loading parts…" : search.trim() ? "No matching parts" : !uploadedAt ? "No parts added yet" : "No parts available"}</strong>
                         {!loading && !search.trim() && canUpload && <p>Add parts manually or import your stocklist.</p>}
                         {!loading && search.trim() && <button onClick={() => { setSearch(""); setPage(0); }}>Clear search</button>}
                       </div>
@@ -716,15 +749,19 @@ export default function PartsClient({
                   </div>
                 </>
               )}
-              {view === "members" && (
-                <>
+
+            </>
+          ))}
+              {modal === "access" && !confirm && admin && (
+                <Modal title="Sharing & access" subtitle={current?.name} onClose={close} busy={busy}>
+                  {accessLoading && <p role="status">Loading access…</p>}
                   <p>
                     Verify the dealership independently before approving access.
                     Staff permissions remain controlled by each dealership
                     owner.
                   </p>
                   <div className={styles.tableWrap}>
-                    <div className={styles.tableToolbar}>{detailActions}</div>
+
                     <table>
                       <thead>
                         <tr>
@@ -732,6 +769,7 @@ export default function PartsClient({
                           <th>Email</th>
                           <th>Role</th>
                           <th>Status</th>
+                          <th>Last opened</th>
                           <th>Access</th>
                         </tr>
                       </thead>
@@ -769,6 +807,7 @@ export default function PartsClient({
                               </select>
                             </td>
                             <td>{m.status}</td>
+                            <td>{m.last_viewed_at ? new Date(m.last_viewed_at).toLocaleString("en-ZA") : "Not opened yet"}</td>
                             <td>
                               <button
                                 disabled={
@@ -789,7 +828,7 @@ export default function PartsClient({
                                 {m.status === "pending"
                                   ? "Approve"
                                   : m.status === "active"
-                                    ? "Suspend"
+                                    ? "Remove access"
                                     : "Restore"}
                               </button>
                             </td>
@@ -798,7 +837,7 @@ export default function PartsClient({
                       </tbody>
                     </table>
                   </div>
-                  <h2>Invitations</h2>
+                  <h3 className={styles.accessSectionTitle}>Invitations</h3>
                   <div className={styles.tableWrap}>
                     <table>
                       <thead>
@@ -810,6 +849,7 @@ export default function PartsClient({
                         </tr>
                       </thead>
                       <tbody>
+                        {!accessLoading && invites.length === 0 && <tr><td colSpan={4}>No invitations yet.</td></tr>}
                         {invites.map((i) => (
                           <tr key={i.id}>
                             <td>{i.email}</td>
@@ -844,10 +884,9 @@ export default function PartsClient({
                       </tbody>
                     </table>
                   </div>
-                </>
+                  {feedback}
+                </Modal>
               )}
-            </>
-          ))}
         {modal === "manage" && (
           <Modal
             manage
@@ -880,8 +919,7 @@ export default function PartsClient({
               )}
               <button
                 onClick={() => {
-                  if (!listId) openList(network, true);
-                  else { switchView("members"); setModal(null); }
+                  setModal("access");
                 }}
               >
                 <Icon kind="users" />
@@ -1027,7 +1065,7 @@ export default function PartsClient({
               <button
                 data-tone="amber"
                 onClick={() => {
-                  setChannel("link");
+                  setChannel("link"); setInviteEmail("");
                   setModal("invite");
                 }}
               >
@@ -1039,7 +1077,7 @@ export default function PartsClient({
               </button>
               <button
                 onClick={() => {
-                  setChannel("direct");
+                  setChannel("direct"); setInviteEmail(""); setRecipientSearch("");
                   setModal("invite");
                 }}
               >
@@ -1053,8 +1091,7 @@ export default function PartsClient({
             <div className={styles.shareHistory}>
               <button
                 onClick={() => {
-                  if (!listId) openList(network, true);
-                  else { switchView("members"); setModal(null); }
+                  setModal("access");
                 }}
               >
                 <Icon kind="users" />
@@ -1100,15 +1137,11 @@ export default function PartsClient({
             ) : (
               <>
                 <div className={styles.grid}>
-                  <label>
-                    Recipient email
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                    />
-                  </label>
+                  {channel==='direct' ? <div>
+                    <label>Find a dealer or business<input aria-label="Find sharing recipient" value={recipientSearch} onChange={e=>setRecipientSearch(e.target.value)} placeholder="Business name or email"/></label>
+                    <label>Paid Aim4price account<select aria-label="Sharing recipient" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}><option value="">{recipientsLoading?'Loading accounts…':'Choose an account'}</option>{inviteEmail&&!recipients.some(r=>r.email===inviteEmail)&&<option value={inviteEmail}>{inviteEmail}</option>}{recipients.map(r=><option key={r.email} value={r.email}>{r.business_name||r.email}{r.town_city?` · ${r.town_city}`:''} — {r.email}</option>)}</select></label>
+                    {!recipientsLoading&&!recipients.length&&<small>No matching paid accounts. Use a private link for other recipients.</small>}
+                  </div> : <label>Recipient email<input type="email" autoComplete="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>}
                   <label>
                     Access
                     <select
@@ -1176,7 +1209,7 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal title="Add / update parts" onClose={close} busy={busy}>
+          <Modal title="Add / update parts" subtitle={current?.name} onClose={close} busy={busy}>
             <PartsImportForm initialDetails={details}
               request={body => api({ ...body, network })}
               onBusyChange={setBusy}
@@ -1191,12 +1224,14 @@ export default function PartsClient({
           </Modal>
         )}
         {contact && (
-          <Modal title={contact.part_number} onClose={close} busy={busy}>
+          <Modal title={requestedParts.length>1 ? `Enquire about ${requestedParts.length} parts` : contact.part_number} onClose={close} busy={busy}>
             <h3>{contact.business_name}</h3>
             <p>
               {contact.town} · Updated {date(contact.uploaded_at)}
             </p>
             <p>Confirm availability and price directly with the dealer.</p>
+            <div className={styles.tableWrap}><table><thead><tr><th>Part number</th><th>Requested quantity</th></tr></thead><tbody>{requestedParts.map((r,i)=><tr key={r.partNumber}><td>{r.partNumber}</td><td><input aria-label={`Requested quantity for ${r.partNumber}`} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===i?{...p,quantity:e.target.value}:p))}/></td></tr>)}</tbody></table></div>
+            {!enquiryValid && <p role="alert">Enter a positive whole quantity for each part.</p>}
             {!current?.owned && (
               <>
                 <label>
@@ -1210,24 +1245,25 @@ export default function PartsClient({
                 <div className={styles.actions}>
                   <button
                     className={styles.primary}
-                    disabled={busy || !enquiry.trim()}
+                    disabled={busy || !enquiry.trim() || !enquiryValid}
                     onClick={() =>
                       void run(async () => {
                         await api({
                           action: "enquire",
                           network,
                           dealerId: contact.dealer_id,
-                          partNumber: contact.part_number,
+                          items: requestedParts.map(r=>({partNumber:r.partNumber,quantity:Number(r.quantity)})),
                           message: enquiry,
                         });
                         setContact(null);
+                        setSelectedParts([]);
                         setNotice(
                           "Enquiry sent. The dealer can find it in Leads.",
                         );
                       })
                     }
                   >
-                    Send enquiry
+                    Send via Aim4price
                   </button>
                 </div>
                 {feedback}
@@ -1243,7 +1279,9 @@ export default function PartsClient({
               </a>
               <a
                 className={styles.button}
-                href={`mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent("Part enquiry: " + contact.part_number)}`}
+                onClick={e=>{if(!enquiryValid)e.preventDefault();}}
+                aria-disabled={!enquiryValid}
+                href={`mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent("Parts enquiry: " + current?.name)}&body=${encodeURIComponent(enquiryText)}`}
               >
                 Email
               </a>
@@ -1251,15 +1289,13 @@ export default function PartsClient({
                 className={styles.button}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={e=>{if(!enquiryValid)e.preventDefault();}}
+                aria-disabled={!enquiryValid}
                 href={
                   "https://wa.me/" +
                   contact.phone.replace(/\D/g, "").replace(/^0/, "27") +
                   "?text=" +
-                  encodeURIComponent(
-                    "Hello, is part " +
-                      contact.part_number +
-                      " still available?",
-                  )
+                  encodeURIComponent(enquiryText)
                 }
               >
                 WhatsApp
@@ -1276,7 +1312,7 @@ export default function PartsClient({
           </Modal>
         )}
         {confirm && (
-          <Modal title="Update member access" onClose={close} busy={busy}>
+          <Modal title="Update member access" onClose={() => { if (!busy) { setConfirm(null); setError(""); } }} busy={busy}>
             <p>
               {confirm.status === "active"
                 ? "Confirm that you have verified this dealership and approve its access."
