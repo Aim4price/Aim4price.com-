@@ -106,7 +106,7 @@ export default async function DealerHome() {
   const middlemanMode = false;
 
   const allTools: DealerHomeTool[] = [
-    { label: 'Parts', href: '/dealer/parts', capability: 'parts_network' },
+    { label: 'Parts Stock', href: '/dealer/parts', capability: 'parts_network' },
     {
       label: 'Notifications',
       href: '/dealer/notifications',

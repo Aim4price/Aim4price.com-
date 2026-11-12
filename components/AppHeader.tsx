@@ -233,6 +233,7 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/parts', label: 'Parts Stock', accountTypes: ['dealer'] },
   { href: '/valuation', label: 'Value Asset' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
@@ -1030,12 +1031,12 @@ export default function AppHeader({
   const partsAccess = (isDealerAccount && !isMiddlemanAccount) || session?.accountType === 'business';
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
-    () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
+    () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts Stock' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
     [navAccountType, session?.accountSubtype, session?.sharingPlan, session?.accountType, partsAccess],
   );
   const mobileNavItems = useMemo(
     () => (session?.sharingPlan === 'free' || session?.accountType === 'business' ? navItems : session?.accountType
-      ? [...buildMobileNavItems(session.accountType, session.accountSubtype, ), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts' }] : [])]
+      ? [...buildMobileNavItems(session.accountType, session.accountSubtype, ), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts Stock' }] : [])]
       : navItems),
     [navItems, session?.accountType, session?.accountSubtype, session?.sharingPlan],
   );
@@ -2542,6 +2543,7 @@ export default function AppHeader({
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
                                       { href: '/pricing', label: 'Explore plans' },
+                                      ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {

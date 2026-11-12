@@ -455,7 +455,7 @@ export default function PartsClient({
   return (
     <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        {!listId && <WorkspaceTitlePanel title="Parts" className={styles.title} />}
+        {!listId && <WorkspaceTitlePanel title="Parts Stock" className={styles.title} />}
         {!opened && <div className={styles.listToolbar}>
             <div className={styles.search}>
               <Icon kind="search" />
@@ -998,7 +998,7 @@ export default function PartsClient({
         {modal === "delete" && (
           <Modal title="Delete parts list?" onClose={close} busy={busy}>
             <p>
-              This removes {current?.name} from Parts and stops shared access.
+              This removes {current?.name} from Parts Stock and stops shared access.
               Your master stock records and cost ledger stay unchanged.
             </p>
             <div className={styles.actions}>
@@ -1179,7 +1179,7 @@ export default function PartsClient({
                       else {
                         setModal(null);
                         setNotice(
-                          "Shared inside Aim4price. The recipient can accept it in Parts or Leads.",
+                          "Shared inside Aim4price. The recipient can accept it in Parts Stock or Leads.",
                         );
                       }
                       setRefresh((n) => n + 1);
