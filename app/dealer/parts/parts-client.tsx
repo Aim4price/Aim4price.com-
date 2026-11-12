@@ -641,7 +641,7 @@ export default function PartsClient({
                 <>
                   <div className={styles.partsPanel}>
                   <div className={styles.listContext}>
-                    {dealerName && <div className={styles.listDealer}><Icon kind="building" /><span>{dealerName}{dealerTown && <span className={styles.listTown}> · {dealerTown}</span>}</span></div>}
+                    {dealerName && <div className={styles.listDealer}><span>{dealerName}{dealerTown && <span className={styles.listTown}> · {dealerTown}</span>}</span></div>}
                     <div className={styles.listStatus}>
                       <span aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
                       {uploadedAt && <span>Updated {date(uploadedAt)}{singleDealer ? ` · ${vatIncluded ? "Incl." : "Excl."} VAT` : ""}</span>}
