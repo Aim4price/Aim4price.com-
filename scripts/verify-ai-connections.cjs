@@ -53,7 +53,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   }
   await page.setViewport({width:1280,height:1000});
   await render({...base,chatGptListingUrl:'https://chatgpt.com/plugins/aim4price-test'},false);
-  await page.click('button[aria-haspopup="dialog"]');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]');
   await page.waitForSelector('#ai-connect-panel');
   await page.evaluate(()=>Array.from(document.querySelectorAll('#ai-connect-panel button')).find(b=>b.querySelector('strong')?.textContent==='ChatGPT').click());
   await page.click('button::-p-text(Connect yourself)');
@@ -65,7 +65,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   // The launcher must keep the Owner App Users dimensions, without compact overrides.
   const sizing = await page.evaluate(() => {
    const title = document.querySelector('h1');
-   const card = document.querySelector('button[aria-haspopup="dialog"]');
+   const card = document.querySelector('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]');
    return {
     shell: document.querySelector('main > div').getBoundingClientRect().width,
     title: parseFloat(getComputedStyle(title).fontSize),
@@ -77,7 +77,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   assert.ok(Math.abs(sizing.title-57.6)<.1);
   assert.ok(Math.abs(sizing.card-179.2)<.1);
   assert.ok(Math.abs(sizing.icon-76.8)<.1);
-  await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.equal(await page.$$eval('#ai-connect-panel img', icons => icons.length), 3);
   assert.equal(await page.$('a[href="https://chatgpt.com/"]'), null);
   await page.screenshot({path:path.join(evidence,'assistant-chooser.png')});
@@ -126,7 +126,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
   // Empty management can start setup without closing and finding another trigger.
-  await page.click('button[aria-haspopup="dialog"]:nth-child(2)');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]:nth-child(2)');
   await page.waitForSelector('#ai-manage-panel');
   assert.equal(await page.$eval('[data-website-overlay]',e=>e.parentElement===document.body),true);
   await page.setViewport({width:1280,height:650});
@@ -162,7 +162,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.screenshot({path:path.join(evidence,'owner-overview.png'),fullPage:true});
   await page.click('summary::-p-text(What information is shared?)');
   await page.screenshot({path:path.join(evidence,'owner-sharing-details.png'),fullPage:true});
-  await page.click('button[aria-haspopup="dialog"]');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]');
   await page.waitForSelector('#ai-connect-panel');
   await choose('ChatGPT');
   assert.ok(await page.$eval('#ai-connect-panel > div',e=>e.scrollHeight<=e.clientHeight+2));
@@ -216,7 +216,7 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.setViewport({width:390,height:844});await render(base,false);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
   await page.screenshot({path:path.join(evidence,'owner-overview-mobile.png'),fullPage:true});
-  await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+2));
   await page.screenshot({path:path.join(evidence,'owner-provider-modal-mobile.png'),fullPage:true});
   for (const accountType of ['dealer', 'business']) {
@@ -234,10 +234,10 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   }
   await render({message:'Your Aim4price account is not active. Contact Aim4price Admin to review your account status.'});
   assert.ok((await page.$eval('main', e=>e.textContent)).includes('not active'));
-  assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
+  assert.equal(await page.$('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]'),null);
   assert.ok(!(await page.$eval('main',e=>e.textContent)).includes('Questions you can ask'));
   await render({...base,connections:[{id:'test-approval',provider:'ChatGPT',created_at:'2026-11-01T00:00:00Z',expires_at:null}]});
-  await page.click('button[aria-haspopup="dialog"]::-p-text(Manage)');
+  await page.click('[aria-label="AI connection actions"] button[aria-haspopup="dialog"]::-p-text(Manage)');
   await page.waitForSelector('#ai-manage-panel');
   const approvalText=await page.$eval('#ai-manage-panel',e=>e.textContent);
   assert.ok(approvalText.includes('Connected'));
