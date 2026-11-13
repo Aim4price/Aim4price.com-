@@ -140,15 +140,16 @@ test('recent adverts resolve Basic snapshots and live fallbacks with public-safe
     `);
     const specs = { ...identity('agricultural', 'compact_tractor', 'percent'), usageAmount: 20, usageUnit: 'percent' };
     await db.query(`insert into asset_register_items (id,user_id,title,specs_json,hours,life_worked_percent,marketplace_status,lifecycle_state,updated_at)
-      values ('00000000-0000-0000-0000-000000000001','owner','PRIVATE TITLE',$1,1200,35,'live','active',now())`, [JSON.stringify(specs)]);
+      values ('00000000-0000-0000-0000-000000000001','owner','PUBLIC ADVERT TITLE',$1,1200,35,'live','active',now())`, [JSON.stringify(specs)]);
     const recent = load('recent-marketplace-adverts', db);
     let result = await recent.listRecentMarketplaceAdverts({});
     assert.equal(result.adverts.length, 1);
     assert.equal(result.adverts[0].type, 'Compact Tractor');
     assert.equal(result.adverts[0].usage, '35% worked');
-    assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+    assert.equal(result.adverts[0].title, 'PUBLIC ADVERT TITLE');
+    assert.ok(!JSON.stringify(result).includes('PRIVATE BUSINESS'));
     await db.query(`insert into marketplace_listings (id,user_id,asset_register_item_id,status,title,published_at,specs_json)
-      values ('00000000-0000-0000-0000-000000000002','owner','00000000-0000-0000-0000-000000000001','live','PRIVATE TITLE',now(),$1)`, [JSON.stringify(specs)]);
+      values ('00000000-0000-0000-0000-000000000002','owner','00000000-0000-0000-0000-000000000001','live','PUBLIC ADVERT TITLE',now(),$1)`, [JSON.stringify(specs)]);
     result = await recent.listRecentMarketplaceAdverts({ type: 'Compact Tractor' });
     assert.equal(result.adverts.length, 1);
     assert.equal(result.adverts[0].usage, '20% worked');

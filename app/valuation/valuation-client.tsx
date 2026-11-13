@@ -9412,7 +9412,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
-                      <p>{breakdownAccess ? 'Download your estimate, with an optional calculation breakdown.' : 'Value your assets for free. Sign in to save this asset and track its value.'}</p>
+                      <p>{breakdownAccess ? 'Download your estimate, with an optional calculation breakdown.' : 'Value your assets for free. Create an account or sign in to save this asset, build your asset register and automatically track its value as it ages.'}</p>
                     </div>
                   )}
                   <button

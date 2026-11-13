@@ -99,7 +99,7 @@ test("recent advert list is viewer-scoped, outcome-aware and contact-free", () =
   );
 });
 
-test("public recent adverts use taxonomy and allowlisted values instead of seller copy", () => {
+test("archived public adverts use taxonomy while live adverts show public listing details", () => {
   assert.match(listCte, /brand\.name[\s\S]*as taxonomy_brand_name/);
   assert.match(listCte, /model\.model_name[\s\S]*as taxonomy_model_name/);
   assert.match(listCte, /family\.family_label[\s\S]*sector\.sector_label[\s\S]*as taxonomy_type_label/);
@@ -108,10 +108,13 @@ test("public recent adverts use taxonomy and allowlisted values instead of selle
   assert.match(publicSanitizers, /function safePublicUsage[\s\S]*taxonomy_usage_unit/);
   assert.match(publicSanitizers, /function safePublicCondition[\s\S]*labels\[candidate\] \?\? ''/);
   assert.match(publicSanitizers, /function safePublicTitle/);
-  assert.match(mapAdvertFunction, /title: identityVisible[\s\S]*safePublicTitle/);
-  assert.match(mapAdvertFunction, /brand: identityVisible \? text\(row\.brand_name\) : publicBrand/);
-  assert.match(mapAdvertFunction, /model: identityVisible \? text\(row\.model_name\) : publicModel/);
-  assert.match(mapAdvertFunction, /const imageUrl = identityVisible && status === 'available'/);
+  assert.match(mapAdvertFunction, /title: displayDetails[\s\S]*safePublicTitle/);
+  assert.match(mapAdvertFunction, /brand: displayDetails \? text\(row\.brand_name\) : publicBrand/);
+  assert.match(mapAdvertFunction, /model: displayDetails \? text\(row\.model_name\) : publicModel/);
+  assert.match(mapAdvertFunction, /const imageUrl = publicListing/);
+  assert.match(mapAdvertFunction, /const publicListing = status === 'available'/);
+  assert.match(mapAdvertFunction, /const displayDetails = identityVisible \|\| publicListing/);
+  assert.match(publicSearchConfig, /case when advert_status = 'available' then concat_ws/);
   assert.match(mapAdvertFunction, /province: identityVisible[\s\S]*row\.public_province/);
   assert.match(
     publicSearchConfig,
@@ -122,7 +125,7 @@ test("public recent adverts use taxonomy and allowlisted values instead of selle
   );
   assert.doesNotMatch(
     publicSearchBranch,
-    /(?:^|[ ,])(?:title|brand_name|model_name|year_label|condition_label|area|advertiser_name)(?:[ ,)]|$)/,
+    /(?:^|[ ,])(?:area|advertiser_name)(?:[ ,)]|$)/,
   );
 });
 

@@ -472,6 +472,16 @@ export default function RecentlyAdvertisedClient({
   }
 
   function renderStatus(advert: RecentAdvert) {
+    if (advert.status === "available" && advert.marketplaceHref) {
+      return (
+        <a href={advert.marketplaceHref}
+          className={`${styles.recentAdvertStatus} ${styles.recentAdvertStatus_available} ${styles.recentAdvertListingButton}`}
+          data-tooltip="Go to listing" data-tooltip-style="description"
+          aria-label={`Go to listing: ${advert.title}`}>
+          Available
+        </a>
+      );
+    }
     return (
       <span className={`${styles.recentAdvertStatus} ${styles[`recentAdvertStatus_${advert.status}`]}`}>
         {advert.statusLabel}
@@ -689,7 +699,7 @@ export default function RecentlyAdvertisedClient({
               </div>
               <div>
                 <span>Status</span>
-                <strong title={advert.statusLabel}>{advert.statusLabel}</strong>
+                {renderStatus(advert)}
               </div>
               <div>
                 <span>Location</span>
