@@ -433,8 +433,8 @@ export function MiddlemanShowroomManager({
       </div>
       <section className={styles.managerToolbar} aria-label="Showroom actions">
         <div className={styles.heroActions}>
-          <button type="button" className={`${styles.primaryButton} ${styles.createShowroomAction}`} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button>
           <button type="button" className={`${styles.secondaryButton} ${styles.shareShowroomAction}`} disabled={!showroom.isPublic} title={showroom.isPublic ? (ownerAccount ? undefined : 'Share showroom') : 'Make your showroom public in Edit showroom to share it'} onClick={() => { setMessage(''); setShareShowroomOpen(true); }} data-tooltip={ownerAccount ? 'Share one link to all your live adverts.' : undefined} data-tooltip-style="description"><ShowroomManageActionIcon name="link" />Share showroom</button>
+          <button type="button" className={`${styles.primaryButton} ${styles.createShowroomAction}`} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button>
           {showroom.isPublic ? (
             <button type="button" className={`${styles.secondaryButton} ${styles.openShowroomButton} ${showroomIntroSeen ? '' : styles.showroomPulse}`} aria-haspopup="dialog" onClick={(event) => {
               manageTriggerRef.current = event.currentTarget;
