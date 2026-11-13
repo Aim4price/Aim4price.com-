@@ -1382,3 +1382,18 @@
   .enquiryItems { grid-area: parts; }
   .enquiryChannels, .enquiryMessage { grid-area: contact; }
 }
+
+/* Full-width contact rows keep addresses and supporting copy intact. */
+.enquiryContactGrid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.enquiryContact, .enquiryModal button.enquiryContact { min-height: 56px; padding: 10px 14px; align-items: center; }
+.enquiryContact > span:last-child { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 12px; }
+.enquiryContact strong { flex-shrink: 0; white-space: nowrap; }
+.enquiryContact small { margin: 0; white-space: nowrap; overflow-wrap: normal; text-align: right; }
+@media (max-width: 1000px) {
+  .enquiryContact > span:last-child { display: block; }
+  .enquiryContact small { margin-top: 2px; text-align: left; }
+}
+@media (max-width: 760px) {
+  .enquiryContact, .enquiryModal button.enquiryContact { min-height: 54px; padding: 8px 12px; }
+  .enquiryDealer { align-items: flex-start; }
+}
