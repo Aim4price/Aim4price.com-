@@ -1491,3 +1491,5 @@
   outline:2px solid #27805f;
   outline-offset:-2px;
 }
+
+.partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }
