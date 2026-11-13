@@ -31,7 +31,7 @@ export async function renderAiConnectionPage(
         "Use the correct connection page.",
       );
     const auth = params.size ? authorizationRequest(params, config) : null;
-    const owner = await connectionOwner(config);
+    const owner = await connectionOwner(config, Boolean(auth));
     const connections = (
       await getDb().query(
         `SELECT id,client_id,created_at,expires_at FROM public.ai_connections WHERE user_id=$1 AND resource=$2 AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at>now()) ORDER BY created_at DESC`,
@@ -83,6 +83,7 @@ export async function renderAiConnectionPage(
               params,
               connectionConfig(process.env, audience),
             ),
+            error.code === "reauthentication_required",
           ),
         );
       const returnTo =

@@ -156,9 +156,9 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <span className={styles.connectionIcon}><Icon /></span>
         <div className={styles.connectionCopy}>
           <h3>{c.provider || 'AI connection'}</h3>
-          <p>Approved {date(c.created_at)} · {c.expires_at ? `Expires ${date(c.expires_at)}` : 'No scheduled expiry'}</p>
+          <p>Connected {date(c.created_at)}{c.expires_at ? ` · Expires ${date(c.expires_at)}` : ''}</p>
         </div>
-        <span className={styles.active}>{c.disabled ? 'Provider disabled' : 'Access approved'}</span>
+        {c.disabled && <span className={styles.active}>Provider disabled</span>}
         <DisconnectButton id={c.id} audience={audience} />
       </div>)}
     </div> : <div className={styles.empty}>
@@ -168,7 +168,6 @@ export default function ConnectionView({ account, connections, resource, proof, 
       {signInHref && <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>}
     </div>}
     {!admin && connections?.some(c => c.expires_at) && <p className={styles.note}>Earlier approvals keep the expiry date shown above. Reconnect once to approve ongoing access.</p>}
-    <p className={styles.note}>Approval confirms permission, not a successful read. Ask your assistant a question to verify it can retrieve your records.</p>
     <p className={styles.note}>{accessDuration} Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
   </>;
 
@@ -183,17 +182,16 @@ export default function ConnectionView({ account, connections, resource, proof, 
           </div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
-            <div className={styles.approvalHeading}><span className={styles.approvalIcon}><Icon kind="link" /></span><div><span className={styles.eyebrow}>Review your connection</span><h2 id="approve-title">Allow {providerName || 'this assistant'} read-only access?</h2></div></div>
-            <div className={styles.approvalSafety}><Icon kind="shield" /><span>Your assistant can read records. It cannot add, edit or delete them.</span></div>
+            <div className={styles.approvalHeading}><span className={styles.approvalIcon}><Icon kind="link" /></span><div><h2 id="approve-title">{admin ? 'Allow read-only access to ' : 'Connect '}{providerName || 'this assistant'}?</h2></div></div>
+            <div className={styles.approvalSafety}><Icon kind="shield" /><span>Allow read-only access to the information available to your account. Your assistant cannot change or delete anything.</span></div>
             {account && <div className={styles.identity}><span>Account being connected</span><strong>{account.name}</strong><span>{account.email}</span></div>}
-            <p>{admin ? 'This is cross-account administrator access. Asset records from all accounts can be returned to this AI provider. Queries are audited. No business records can be changed.' : partner ? 'This connection reads the information below within your current account and sharing permissions. Untargeted links, umbrella shares, staff connections and attachments are not included in this pilot.' : 'This connection can read the following information from this Owner account only.'}</p>
-            <SharedInformation admin={admin} accountType={account?.accountType} />
+            {admin ? <><p>This is cross-account administrator access. Asset records from all accounts can be returned to this AI provider. Queries are audited. No business records can be changed.</p><SharedInformation admin /></> : <details className={styles.disclosure}><summary>What can my assistant read?</summary><SharedInformation accountType={account?.accountType} /><p className={styles.note}>Access follows your current account and sharing permissions. Photos and document attachments are not shared.</p></details>}
             <form action="/api/ai/oauth/authorize" method="post">
               <input type="hidden" name="authorization" value={authorization || ''} />
               <input type="hidden" name="proof" value={proof} />
-              <label className={styles.consent}><input type="checkbox" name="terms" value="accepted" required /><span>I accept the Aim4price <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and acknowledge the <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>. I authorise read-only access and understand that requested information is shared with my AI provider.</span></label>
+              {admin ? <label className={styles.consent}><input type="checkbox" name="terms" value="accepted" required /><span>I accept the Aim4price <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and acknowledge the <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>. I authorise read-only access and understand that requested information is shared with my AI provider.</span></label> : <p className={styles.note}>By choosing Allow connection, you authorise sharing requested information with your AI provider and accept the <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>.</p>}
               <p className={styles.note}>{accessDuration} You can disconnect from this page at any time. Information already shared may remain in your AI conversations.</p>
-              <div className={styles.actions}><button type="submit" className={styles.primary} name="decision" value="allow">Allow read-only access</button><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button></div>
+              <div className={styles.actions}><button type="submit" name="decision" value="deny" formNoValidate>Cancel</button><button type="submit" className={styles.primary} name="decision" value="allow">{admin ? 'Allow read-only access' : 'Allow connection'}</button></div>
             </form>
           </section> : !blocked ? <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} /> : null}
           <div className={styles.safety} hidden={!!proof}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>

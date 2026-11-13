@@ -86,3 +86,8 @@ References:
 - https://developers.openai.com/plugins/build/auth
 - https://developers.openai.com/api/docs/guides/custom-mcp-server
 - https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
+
+
+Customer approval: Owner, Dealer and Business accounts do not need separate email verification to connect. A new approval requires a website session created within 30 minutes; older sessions return to the password form and then resume the validated consent request. Session refresh timestamps do not count as a new sign-in. Existing connections and disconnection remain available without reauthentication. Administrator email verification and explicit terms acknowledgement remain unchanged.
+
+Customers approve with Cancel / Allow connection; optional record details are collapsed. Multiple connections remain independent. Removing the connection-level email check does not grant email-addressed client records: unbound email-only enquiries still require verified email ownership, while shares explicitly bound to the current account ID remain accessible subject to existing permissions.

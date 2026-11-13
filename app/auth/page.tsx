@@ -13,8 +13,15 @@ import AuthClient from "./auth-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string; accountAccess?: string } }) {
+export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string; accountAccess?: string; reauth?: string } }) {
   const session = await getAnyServerSession();
+
+  // Render the normal password form for an AI approval even when a session exists.
+  // The consent endpoint independently checks the new session's creation time.
+  const aiReturnTo = sharedEnquiryReturnTo(searchParams?.returnTo);
+  if (searchParams?.reauth === 'ai' && aiReturnTo?.startsWith('/account/ai-connect')) {
+    return <><p role="status" style={{ textAlign: 'center', padding: '16px' }}>Sign in again to approve your AI connection.</p><AuthClient returnTo={aiReturnTo} /></>;
+  }
 
   if (session?.user?.id) {
     const access = await getAccountAccess({

@@ -47,7 +47,9 @@ async function rowsPage(db: Reader, from: string, fields: string, order: string,
 // shares. Never discover unbound links or return bearer share tokens / stored snapshots.
 const shares = `public.asset_share_links s WHERE s.revoked_at IS NULL AND s.umbrella_id IS NULL
   AND lower(s.lead_details->>'recipientEmail')=lower($1)
-  AND (coalesce(s.lead_details->>'recipientUserId','')='' OR s.lead_details->>'recipientUserId'=$2)
+  AND (s.lead_details->>'recipientUserId'=$2 OR (coalesce(s.lead_details->>'recipientUserId','')=''
+    AND EXISTS (SELECT 1 FROM public."user" recipient WHERE recipient.id=$2
+      AND lower(recipient.email)=lower($1) AND to_jsonb(recipient)->>'emailVerified'='true')))
   AND cardinality(s.asset_ids)>0 AND NOT EXISTS (SELECT 1 FROM unnest(s.asset_ids) selected(id)
     WHERE NOT EXISTS (SELECT 1 FROM public.asset_register_items a WHERE a.id=selected.id AND a.user_id=s.user_id))`;
 const clientAssets = `public.dealer_maintenance_access d JOIN public.asset_register_items a
