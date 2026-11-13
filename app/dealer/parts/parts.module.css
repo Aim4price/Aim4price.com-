@@ -1454,3 +1454,10 @@
  .detailPage .listStatus { font-size:.85rem; gap:8px 14px; }
  .detailPage .vatContext { font-size:.85rem; }
 }
+
+/* Display-only VAT choice, matching the register's segmented control. */
+.detailPage .displayVatToggle { display:inline-flex; flex-shrink:0; gap:4px; padding:4px; border:1px solid var(--app-line,#bdd7cd); border-radius:14px; background:var(--app-surface-soft,#f1f7f4); }
+.detailPage .displayVatToggle button { min-height:40px; padding:9px 15px; border:0; border-radius:10px; background:transparent; color:var(--app-text,#304d46); font-size:.9rem; font-weight:700; white-space:nowrap; box-shadow:none; }
+.detailPage .displayVatToggle button[aria-pressed="true"] { background:#17664e; color:#fff; box-shadow:0 2px 5px #123e321a; }
+.detailPage .displayVatToggle button:focus-visible { outline:2px solid #247b61; outline-offset:2px; }
+@media(max-width:600px) { .detailPage .displayVatToggle { margin-left:auto; } }
