@@ -1,6 +1,6 @@
 .page {
   color: var(--app-text, #153c31);
-  font-family: var(--font-body, "Inter"), sans-serif;
+  font-family: var(--font-body, "Montserrat"), sans-serif;
   min-height: 70vh;
   background: var(--app-background, transparent);
 }
@@ -200,7 +200,7 @@
   border-radius: 24px;
   background: var(--app-surface, #fff);
   color: var(--app-text, #153c31);
-  font-family: var(--font-body, "Inter"), sans-serif;
+  font-family: var(--font-body, "Montserrat"), sans-serif;
   box-shadow: 0 30px 100px #0005;
 }
 .modal h2 {
@@ -1012,7 +1012,7 @@
   padding: 0.75rem 1.15rem;
   border-width: 1.5px;
   border-radius: 1.02rem;
-  font-family: var(--font-body, "Inter"), sans-serif;
+  font-family: var(--font-body, "Montserrat"), sans-serif;
   font-size: 0.96rem;
   font-weight: 760;
   line-height: 1;
@@ -1291,27 +1291,27 @@
 /* Stocklist results: align quantities, prices and enquiry actions as a ledger. */
 .detailPage .partsPanel .stockTable { color: var(--app-text, #173e32); min-width: 680px; }
 .detailPage .stockTable.singleDealerTable { table-layout: fixed; }
-.detailPage .stockTable th { padding: 13px 24px; font-size: 13px; font-weight: 650; border-top: 1px solid var(--app-border, #dce5df); }
-.detailPage .stockTable td { padding: 16px 24px; font-size: 15px; line-height: 1.5; }
+.detailPage .stockTable th { padding: 13px 24px; color: var(--app-muted, #697d8b); font-size: .85rem; font-weight: 500; line-height: 1.4; border-top: 1px solid var(--app-border, #dce5df); }
+.detailPage .stockTable td { padding: 16px 24px; color: var(--app-text, #304d46); font-size: .95rem; font-weight: 600; line-height: 1.5; }
 .detailPage .stockTable .selectColumn { width: 70px; }
 .detailPage .stockTable .quantityColumn { width: 120px; }
 .detailPage .stockTable .priceColumn { width: 200px; }
 .detailPage .stockTable .contactColumn { width: 164px; text-align: right; }
 .detailPage .stockTable td:last-child { width: 164px; }
 .detailPage .stockTable .partIdentity { overflow-wrap: anywhere; }
-.partIdentity > strong { font-size: 16px; font-weight: 700; letter-spacing: -.015em; }
+.partIdentity > strong { font-size: .95rem; font-weight: 600; letter-spacing: normal; }
 .detailPage .stockTable .partIdentity small {
   margin-top: 5px;
-  color: var(--app-text, #173e32);
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.55;
+  color: var(--app-text, #304d46);
+  font-size: .95rem;
+  font-weight: 400;
+  line-height: 1.5;
 }
-.partPrice { font-weight: 650; font-variant-numeric: tabular-nums; }
-.priceOnRequest { color: var(--app-text-muted, #64766c); font-size: 13px; font-weight: 500; }
+.partPrice { font-weight: 600; font-variant-numeric: tabular-nums; }
+.priceOnRequest { color: var(--app-text, #304d46); font-size: .95rem; font-weight: 600; }
 .detailPage .stockTable tbody tr { transition: background .15s; }
 .detailPage .stockTable tbody tr:focus-within { background: var(--app-surface-soft, #f1f7f4); }
-.page .stockTable .partContactButton { min-width: 116px; min-height: 40px; padding: 9px 14px; gap: 8px; border-radius: 10px; border: 1px solid #c7dced; background: linear-gradient(135deg,#f7fbff,#edf5ff); color: #204f79; font-size: 13px; font-weight: 700; box-shadow: 0 2px 4px #204f7906; }
+.page .stockTable .partContactButton { min-width: 116px; min-height: 40px; padding: 9px 14px; gap: 8px; border-radius: 10px; border: 1px solid #c7dced; background: linear-gradient(135deg,#f7fbff,#edf5ff); color: #204f79; font-size: .96rem; font-weight: 700; box-shadow: 0 2px 4px #204f7906; }
 .page .stockTable .partContactButton svg { width: 18px; height: 18px; flex-shrink: 0; }
 .page .stockTable .partContactButton:hover { border-color: #8eb4d6; background: #e8f2ff; box-shadow: 0 3px 10px #204f7912; }
 .page .stockTable .partContactButton:focus-visible { outline: 3px solid #699eca; outline-offset: 3px; }
@@ -1333,3 +1333,6 @@
   .detailPage .stockTable td:last-child { background: var(--app-surface, #fff); }
   .detailPage .stockTable tr:hover td:last-child, .detailPage .stockTable tr:focus-within td:last-child { background: var(--app-surface-soft, #f1f7f4); }
 }
+
+/* Use Maintenance's action typography in the stocklist toolbar. */
+.detailPage .detailActions button { font-size: .96rem; font-weight: 700; }
