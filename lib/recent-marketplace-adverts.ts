@@ -489,6 +489,11 @@ function mapAdvert(
   identityVisible: boolean,
 ): RecentMarketplaceAdvert {
   const status = cleanStatus(row.advert_status);
+  // Live advert content is already public; identity/contact fields remain gated.
+  const publicListing = status === 'available';
+  const displayDetails = identityVisible || publicListing;
+  const listingReference = text(row.source_asset_id)
+    ? `asset-${text(row.source_asset_id)}` : text(row.id);
   const sourceAssetId = identityVisible
     ? text(row.source_asset_id) || null
     : null;
@@ -497,7 +502,7 @@ function mapAdvert(
   const publicType = text(row.taxonomy_type_label) || 'Equipment';
   const publicYear = safePublicYear(row.year_label);
   const primaryImage = text(row.primary_image_url);
-  const imageUrl = identityVisible && status === 'available'
+  const imageUrl = publicListing
     ? (/^https:\/\//i.test(primaryImage) || primaryImage.startsWith('/'))
       ? primaryImage
       : parseImages(row.image_urls)[0] ?? ''
@@ -509,7 +514,7 @@ function mapAdvert(
     // not recoverable through the generic advert id field.
     id: identityVisible ? text(row.id) : publicAdvertId(row.id),
     sourceAssetId,
-    title: identityVisible
+    title: displayDetails
       ? text(row.title) || 'Aim4price listing'
       : safePublicTitle({
           year: publicYear,
@@ -517,14 +522,14 @@ function mapAdvert(
           model: publicModel,
           type: publicType,
         }),
-    brand: identityVisible ? text(row.brand_name) : publicBrand,
-    model: identityVisible ? text(row.model_name) : publicModel,
-    year: identityVisible ? text(row.year_label) : publicYear,
-    usage: identityVisible ? displayUsage(row) : safePublicUsage(row),
-    condition: identityVisible
+    brand: displayDetails ? text(row.brand_name) : publicBrand,
+    model: displayDetails ? text(row.model_name) : publicModel,
+    year: displayDetails ? text(row.year_label) : publicYear,
+    usage: displayDetails ? displayUsage(row) : safePublicUsage(row),
+    condition: displayDetails
       ? text(row.condition_label)
       : safePublicCondition(row.condition_label),
-    type: identityVisible
+    type: displayDetails
       ? text(row.type_label) || 'Equipment'
       : publicType,
     province: identityVisible
@@ -554,12 +559,12 @@ function mapAdvert(
     publishedAtIso: iso(row.published_at),
     priceExVat: money(row.asking_price_ex_vat),
     imageUrl,
-    imageUrls: identityVisible && status === 'available'
+    imageUrls: publicListing
       ? [...new Set([imageUrl, ...parseImages(row.image_urls)].filter(Boolean))]
       : [],
     marketplaceHref:
-      identityVisible && status === 'available' && sourceAssetId
-        ? `/marketplace/browse?listing=${encodeURIComponent(`asset-${sourceAssetId}`)}`
+      publicListing && listingReference
+        ? `/marketplace/browse?listing=${encodeURIComponent(listingReference)}`
         : null,
   };
 }
@@ -628,7 +633,8 @@ export async function listRecentMarketplaceAdverts(input: {
     ? `concat_ws(' ', title, brand_name, model_name, year_label, type_label,
         province, area, advertiser_name, condition_label)`
     : `concat_ws(' ', taxonomy_brand_name, taxonomy_model_name,
-        taxonomy_type_label, public_province, advert_status)`;
+        taxonomy_type_label, public_province, advert_status,
+        case when advert_status = 'available' then concat_ws(' ', title, brand_name, model_name, year_label, type_label, condition_label) end)`;
   const filteredWhere = `
     where (
       $2::text = ''

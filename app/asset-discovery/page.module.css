@@ -3434,3 +3434,21 @@
   .appDetailsScroll.appDetailsScroll::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
   .appDetailsScroll.appDetailsScroll::-webkit-scrollbar-track { background: transparent !important; margin: 4px !important; }
 }
+
+/* Available adverts link directly to their public Marketplace listing. */
+.recentAdvertListingButton {
+  min-height: 44px;
+  padding: .65rem 1rem;
+  border-left-width: 1px;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.recentAdvertListingButton:hover {
+  background: var(--app-surface-soft, #ddf3e6);
+  border-color: var(--app-accent, #4daf78);
+}
+.recentAdvertListingButton:focus-visible {
+  outline: 3px solid var(--app-accent, #43836a);
+  outline-offset: 3px;
+}
