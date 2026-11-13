@@ -3,7 +3,7 @@ export const pageHelp = {
   marketplaceCreate: {
     title: 'Create a Marketplace advert',
     purpose: 'Prepare an equipment advert with its asking price, photos and contact details, then publish it to Marketplace.',
-    actions: ['Enter the equipment details, price and location, then add photos and contact information.', 'Review the preview and choose a layout. You can download a PNG or share the advert.', 'Select Publish advert to make the listing live. Dealers also publish it to their showroom.'],
+    actions: ['Enter the equipment details, price and location, then add photos and contact information.', 'Choose a layout and check the preview. Download an image or share the advert from here.', 'Select Publish advert to list the equipment for sale on Marketplace.'],
     start: 'Complete Advert details, then Photos & contact. Check everything in Preview & share before publishing.',
   },
   partnerLeads: {
@@ -72,7 +72,7 @@ export const pageHelp = {
     "actions": [
         "Choose Advert Template to set your branding, colours and default layout.",
         "Choose Create Advert to add equipment details and prepare an advert.",
-        "Preview the result and use the available download or sharing options."
+        "Share a finished advert, download it as an image, or publish it as a listing."
     ],
     "start": "Set up your template first, or choose Create Advert if your branding is already ready."
 },
@@ -91,10 +91,10 @@ export const pageHelp = {
     "purpose": "Prepare a branded advert with the equipment details and photos you want buyers to see.",
     "actions": [
         "Choose the available asset source and enter or review the advert details.",
-        "Select your template and photos, then check the preview.",
-        "Use the available sharing or download controls when the advert is ready."
+        "Add your photos and contact details, then check the branded preview.",
+        "Share the advert or download an image. Select Publish advert to list it on Marketplace."
     ],
-    "start": "Choose the equipment you want to advertise and check its details before sharing."
+    "start": "Choose how to add your equipment, then check the asking price and contact details before publishing."
 },
   dealerUsers: {
     "title": "Dealer App Staff",
@@ -215,7 +215,7 @@ export const pageHelp = {
     title: 'Asset Register',
     purpose: 'See what you own, what it is worth and what needs attention. Keep each asset’s records together.',
     actions: ['Add assets to registers. Group related assets under an umbrella while keeping their individual records.', 'Select Manage on an asset to update its details and record costs, fuel and maintenance.', 'Review totals, share selected information and download reports.'],
-    start: 'Find an existing asset and select Manage, or use Add Asset to create a new record.',
+    start: 'Open Manage on an existing asset to find its records, or select Add Asset to create a record.',
   },
   maintenance: {
     title: 'Maintenance',
@@ -261,7 +261,7 @@ export const pageHelp = {
   },
   documents: {
     title: 'Document Vault',
-    purpose: 'Keep important documents in one place. Files belong to your account unless you link them to specific assets.',
+    purpose: 'Keep documents in your account and link them to assets so you can find them from the relevant records.',
     actions: ['Upload finance, accounting, insurance or licensing documents and choose their document type.', 'Link documents to assets and use filters to find them again.', 'Review removed documents in the Recycle Bin.'],
     start: 'Select Upload documents, add your file and link it to the relevant asset where applicable.',
   },
