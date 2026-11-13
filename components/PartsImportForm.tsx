@@ -258,7 +258,7 @@ export default function PartsImportForm({
         <div className={styles.stageBody}>
           {stage === "choose" && (
             <>
-              <div className={styles.entryMethods}>
+              <div className={`${styles.shareChoices} ${styles.entryMethods}`}>
                 {(
                   [
                     ["manual", "Add one part", "A simple form for one part"],
@@ -268,6 +268,7 @@ export default function PartsImportForm({
                 ).map(([value, title, hint]) => (
                   <button
                     key={value}
+                    data-tone={value === "manual" ? "blue" : value === "file" ? "amber" : "green"}
                     type="button"
                     onClick={() => choose(value)}
                   >
@@ -289,12 +290,11 @@ export default function PartsImportForm({
                         <path d="M12 16V3m-5 5 5-5 5 5M4 14v7h16v-7" />
                       )}
                     </svg>
-                    <strong>{title}</strong>
-                    <small>{hint}</small>
+                    <span><strong>{title}</strong><small>{hint}</small></span>
                   </button>
                 ))}
               </div>
-              <details>
+              <details className={styles.entryExample}>
                 <summary>See an example</summary>
                 <p>
                   Part number and quantity are required. Price, brand and

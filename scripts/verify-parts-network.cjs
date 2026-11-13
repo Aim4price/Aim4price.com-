@@ -437,6 +437,10 @@ const appCode =
     await page.goto('https://example.test/parts/11111111-1111-4111-8111-111111111111');
     await page.waitForSelector('tbody tr');
     await click("Add / update parts");
+    await page.screenshot({path:path.join(output,'entry-choices-desktop.png')});
+    await page.setViewport({width:390,height:844});
+    await page.screenshot({path:path.join(output,'entry-choices-phone.png')});
+    await page.setViewport({width:1440,height:1000});
     await click("Import file");
     await page.waitForSelector("input[type=file]");
     const file = path.join(output, "fixture.csv");
