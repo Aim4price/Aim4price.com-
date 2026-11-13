@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../../components/PageHelp';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import accessStyles from '../app-access-management.module.css';
@@ -134,7 +135,7 @@ export default function TeamAccessClient({ accountKind = 'owner' }: { accountKin
     return <main className={baseStyles.shell}>
     <Link className={baseStyles.backButton} href="/account">Back to account</Link>
     <section className={accessStyles.launcher} aria-labelledby="desktop-users-title">
-      <div className={accessStyles.launcherIntro}><h1 id="desktop-users-title">Desktop users</h1><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p>{commercial && <p>{accountKind === 'business' ? 'Choose assigned client work. Original client sharing limits still apply.' : 'Choose business-owned assets, stocklists and client work separately. Client sharing limits still apply.'}</p>}</div>
+      <div className={accessStyles.launcherIntro}><PageHelpHeading topic="desktopUsers"><h1 id="desktop-users-title">Desktop users</h1></PageHelpHeading><p>Give each person their own desktop access. Choose their permissions and the assets they can use.</p>{commercial && <p>{accountKind === 'business' ? 'Choose assigned client work. Original client sharing limits still apply.' : 'Choose business-owned assets, stocklists and client work separately. Client sharing limits still apply.'}</p>}</div>
       <div className={accessStyles.actionGrid}>
         <button type="button" aria-label="Add user" className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew}`} disabled={!data || busy} onClick={() => open()}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 4v16M4 12h16"/></svg></span><span className={accessStyles.actionCopy}><strong>Add user</strong><small>Add a person and choose their access.</small></span></button>
         <button type="button" aria-label="Manage users" className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage}`} disabled={!data || busy} onClick={() => setManaging(true)}><span className={accessStyles.actionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></svg></span><span className={accessStyles.actionCopy}><strong>Manage users</strong><small>Review permissions or remove access.</small></span><span className={accessStyles.actionMeta}><span className={accessStyles.countPill}>{data ? data.members.length : '…'}</span></span></button>

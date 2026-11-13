@@ -1,4 +1,5 @@
 'use client';
+import PageHelp from '../../components/PageHelp';
 
 import { prepareInvoiceUpload, validateInvoicePages } from '../../lib/invoice-upload';
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -449,6 +450,7 @@ export default function InvoiceDropClient() {
         <div className={styles.heroOverlay} />
 
         <div className={styles.shell}>
+          <div className={styles.heroHelp}><PageHelp topic="invoiceDrop" /></div>
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
               <h1 className={styles.heroTitle}>

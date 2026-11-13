@@ -8,7 +8,7 @@ const chromium = require('@sparticuz/chromium');
 const root = path.resolve(__dirname, '..');
 const fixture = path.join(root, 'app/page-help-validation');
 const output = path.join(root, '.next/page-help-validation');
-const topics = ['valuation','register','maintenance','costsEntry','costs','budgets','fuelEntry','fuelSlips','fuelStorage','documents','map','marketplaceEntry','discovery','marketplace','account'];
+const topics = ['valuation','register','maintenance','costsEntry','costs','budgets','fuelEntry','fuelSlips','fuelStorage','documents','map','marketplaceEntry','discovery','marketplace','account','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop','recentAdverts'];
 (async () => {
   let server, browser;
   try {
@@ -31,10 +31,13 @@ const topics = ['valuation','register','maintenance','costsEntry','costs','budge
         await page.waitForSelector(trigger);
         const bounds=await page.$eval(trigger,el=>{const r=el.getBoundingClientRect();return {x:r.x,right:r.right,width:innerWidth};});
         assert.ok(bounds.x>=0 && bounds.right<=bounds.width+1,`${topic} help is visible at ${width}`);
+        const sizes=await page.$eval(trigger,el=>{const button=getComputedStyle(el),icon=getComputedStyle(el.querySelector('svg'));return {buttonWidth:button.width,buttonHeight:button.height,iconWidth:icon.width,iconHeight:icon.height};});
+        for (const [key, expected] of Object.entries({buttonWidth:44,buttonHeight:44,iconWidth:20,iconHeight:20})) assert.ok(Math.abs(parseFloat(sizes[key])-expected)<0.1,`${topic}: ${key} is ${sizes[key]}, expected ${expected}px`);
         const overlaps=await page.$eval(trigger,el=>{const r=el.getBoundingClientRect();return [...document.querySelectorAll('button')].filter(b=>b!==el && b.getAttribute('aria-label')?.startsWith('Switch')).some(b=>{const q=b.getBoundingClientRect();return r.left<q.right && r.right>q.left && r.top<q.bottom && r.bottom>q.top;});});
         assert.equal(overlaps,false,`${topic} help does not overlap switches`);
-        if(width===1440 && ['register','fuelSlips','map'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
+        if(width===1440 && ['register','fuelSlips','map','budgets','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
         await page.click(trigger);await page.waitForSelector('[role="dialog"]');
+        assert.equal(await page.$('[role="dialog"] header svg'),null,'no decorative modal header icon');
         assert.equal(await page.$eval('[role="dialog"]',el=>el.contains(document.activeElement)),true,'dialog receives focus');
         assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden','background scrolling is locked');
         const geometry=await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();const body=el.querySelector('[class*="_body"]');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight,scroll:body.scrollHeight-body.clientHeight};});

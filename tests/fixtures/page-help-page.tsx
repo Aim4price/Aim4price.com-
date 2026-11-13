@@ -10,6 +10,11 @@ import costs from '../../app/my-invoices/page.module.css';
 import map from '../../app/asset-map/page.module.css';
 import maintenance from '../../app/maintenance/page.module.css';
 import documents from '../../app/documents/page.module.css';
+import registers from '../../app/asset-registers/page.module.css';
+import access from '../../app/account/app-access-management.module.css';
+import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
+import BudgetTracking from '../../app/budgets/BudgetTracking';
+import InvoiceDropClient from '../../app/drop-invoice/invoice-drop-client';
 
 export default function PageHelpFixture() {
   const requested = useSearchParams().get('topic') || 'register';
@@ -21,5 +26,10 @@ export default function PageHelpFixture() {
   if (topic === 'map') title = <div className={map.pageTitleBlock}><PageHelpHeading inset topic={topic}><h1>Asset Map &amp; Tracking</h1></PageHelpHeading></div>;
   if (topic === 'maintenance') title = <section className={maintenance.pageTitleBlock}><div><PageHelpHeading topic={topic}><h1>ASSET MAINTENANCE</h1></PageHelpHeading></div></section>;
   if (topic === 'documents') title = <section className={documents.hero}><PageHelpHeading topic={topic}><h1>Document Vault</h1></PageHelpHeading></section>;
+  if (topic === 'registers') title = <div className={registers.pageTitleBlock}><PageHelpHeading inset topic={topic}><h1>MANAGE ASSET REGISTERS</h1></PageHelpHeading></div>;
+  if (['desktopUsers', 'managerUsers', 'aiConnections', 'transfers'].includes(topic)) title = <section className={access.launcher}><div className={access.launcherIntro}><PageHelpHeading topic={topic}><h1>{pageHelp[topic].title}</h1></PageHelpHeading><p>{pageHelp[topic].purpose}</p></div></section>;
+  if (topic === 'showroom') title = <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" helpTopic={topic} />;
+  if (topic === 'budgets') title = <BudgetTracking budgets={[]} loading={false} error="" onRetry={()=>{}} onAdd={()=>{}} onEdit={()=>{}} onDelete={()=>{}} />;
+  if (topic === 'invoiceDrop') return <main><AppHeader active="none"/><InvoiceDropClient /></main>;
   return <main><AppHeader active="asset-register"/><div style={{padding:'3rem', minHeight:'120vh'}}>{title}<button style={{marginTop:32}}>Unrelated page action</button></div></main>;
 }

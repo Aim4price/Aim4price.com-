@@ -1,3 +1,4 @@
+import { PageHelpHeading } from '../../../components/PageHelp';
 import Link from 'next/link';
 import VerifyAdminEmail from './verify-admin-email';
 import CopyQuestion from './copy-question';
@@ -177,7 +178,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <Link href={admin ? "/admin" : "/account"} className={pageStyles.backButton}>Back to {admin ? 'admin' : 'account'}</Link>
         <section className={`${accessStyles.launcher} ${styles.launcher}`} aria-labelledby="ai-connections-title">
           <div className={accessStyles.launcherIntro}>
-            <h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1>
+            <PageHelpHeading topic="aiConnections" enabled={!admin}><h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1></PageHelpHeading>
             <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : partner ? 'Ask about your workspace and the client information shared with you.' : !account ? 'Connect your AI assistant to the Aim4price information you can access.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
           {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}

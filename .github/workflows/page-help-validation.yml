@@ -3,6 +3,11 @@ on:
   pull_request:
     paths:
       - 'components/PageHelp*'
+      - 'components/WorkspacePrimitives*'
+      - 'components/MiddlemanShowroomClient*'
+      - 'app/drop-invoice/**'
+      - 'app/asset-registers/**'
+      - 'app/my-showroom/**'
       - 'components/WebsitePortal.tsx'
       - 'components/leads/useLeadDialog.ts'
       - 'lib/page-help.ts'

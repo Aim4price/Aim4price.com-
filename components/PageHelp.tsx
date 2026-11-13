@@ -21,7 +21,6 @@ function HelpDialog({ topic, id, onClose }: { topic: PageHelpTopic; id: string; 
   return <div className={styles.overlay} data-website-overlay="true" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <section id={`${id}-dialog`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-purpose`} className={styles.dialog}>
       <header className={styles.header}>
-        <span className={styles.mark}><InfoIcon /></span>
         <div><span className={styles.eyebrow}>About this page</span><h2 id={`${id}-title`}>{content.title}</h2></div>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Close page information" data-modal-close="true">×</button>
       </header>

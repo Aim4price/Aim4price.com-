@@ -429,7 +429,7 @@ export function MiddlemanShowroomManager({
   return (
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <div className={styles.managerTitle}>
-        <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" />
+        <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" helpTopic={dealerAppMode ? undefined : "showroom"} />
       </div>
       <section className={styles.managerToolbar} aria-label="Showroom actions">
         <div className={styles.heroActions}>

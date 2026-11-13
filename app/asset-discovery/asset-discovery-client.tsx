@@ -1696,7 +1696,7 @@ export default function AssetDiscoveryClient({
     return (
       <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
         <div className={styles.discoveryTitleRow}>
-          <PageHelpHeading enabled={!compactAppMode} topic="discovery"><h1>{compactAppMode ? "Discover assets" : advertised ? "Recently advertised" : "Discover Assets"}</h1></PageHelpHeading>
+          <PageHelpHeading enabled={!compactAppMode} topic={advertised ? "recentAdverts" : "discovery"}><h1>{compactAppMode ? "Discover assets" : advertised ? "Recently advertised" : "Discover Assets"}</h1></PageHelpHeading>
           {allowRecentAdverts && !compactAppMode ? (
             <WorkspaceViewSwitch
               label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}
