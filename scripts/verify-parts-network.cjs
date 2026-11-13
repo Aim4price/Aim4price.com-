@@ -151,6 +151,8 @@ const appCode =
     const row = {
       dealer_id: "a",
       part_number: "001-ABC",
+      description: "Diff washer domed",
+      brand: "Landini",
       quantity: 3,
       price: "850.00",
       business_name: "Example Agricultural",
@@ -332,7 +334,16 @@ const appCode =
           buttons.find(b => b.textContent.trim() === label)?.closest('[class*="tableToolbar"]'));
     }), "List actions belong to the table toolbar without a back button");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
-    assert.equal(await page.$$eval("thead th", cells => cells.length), 4);
+    assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Enquiry"]);
+    assert.deepEqual(await page.$$eval("tbody tr:first-child td", cells => cells.slice(0, 3).map(c => c.textContent.trim())), ["001-ABC", "Diff washer domed", "Landini"]);
+    await page.setViewport({ width: 390, height: 844 });
+    assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollWidth > el.clientWidth), "Extra columns scroll inside the table on phones");
+    await page.$eval('[aria-label="Parts results"]', el => { el.scrollLeft = el.scrollWidth; });
+    assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollLeft > 0), "Horizontal scrolling reaches the enquiry column");
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), "The page itself does not overflow");
+    await page.$eval('[aria-label="Parts results"]', el => { el.scrollLeft = 0; });
+    await page.screenshot({ path: path.join(output, "table-columns-phone.png") });
+    await page.setViewport({ width: 1440, height: 1000 });
     assert.ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Next"))));
     await page.type('input[aria-label="Search part number"]', "not-found");
     await page.waitForFunction(() => document.body.innerText.includes("No matching parts"));
