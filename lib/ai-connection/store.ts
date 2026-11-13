@@ -380,3 +380,16 @@ export async function authenticateToken(
 function requireGrantAccountType(granted: string, current: string) {
   if (granted !== current) throw new ConnectionError(401, "invalid_token", "Your account access changed. Reconnect to review its permissions.");
 }
+
+// A provider may disconnect using a previously rotated refresh token. Revoke
+// its whole grant, while keeping provider and resource boundaries intact.
+export async function revokeToken(db: Reader, token: string, config: ConnectionConfig) {
+  await db.query(
+    `UPDATE public.ai_connections g SET revoked_at=now()
+     WHERE g.client_id=$1 AND g.resource=$2 AND g.revoked_at IS NULL
+       AND (g.access_hash=$3 OR g.refresh_hash=$3 OR EXISTS (
+         SELECT 1 FROM public.ai_connection_refresh_tokens h
+         WHERE h.connection_id=g.id AND h.token_hash=$3))`,
+    [config.clientId, config.resource, digest(token)],
+  );
+}

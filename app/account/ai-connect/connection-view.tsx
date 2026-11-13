@@ -111,9 +111,9 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <p>Name your connector <strong>Aim4price</strong> and paste this into the MCP server URL field.</p>
         <ServerAddress resource={resource} /></div>
       </section>
-      <div className={styles.setupFinish}><span className={styles.guideNumber}>3</span><div><h3>Sign in and approve</h3><p>Choose OAuth if asked, then approve read-only access to your Aim4price account.</p></div></div>
+      <div className={styles.setupFinish}><span className={styles.guideNumber}>3</span><div><h3>Sign in and approve</h3><p>Use OAuth, sign in to Aim4price and approve read-only access.</p></div></div>
       {selectedProvider === 'ChatGPT' && chatGptListingUrl && <a href={chatGptListingUrl} target="_blank" rel="noopener noreferrer">Already have access to our plugin? Install Aim4price instead.</a>}
-      <p className={styles.setupRequirement}>{providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? 'Need help? Choose Connection options to contact Aim4price Admin.' : 'This provider needs Aim4price Admin setup. Choose Connection options to contact us.'}</p>
+      <p className={styles.setupRequirement}>{providers.some(provider => provider.name.toLowerCase().includes(selectedProvider.toLowerCase())) ? 'Custom setup needs registered OAuth details. If asked for credentials, contact Aim4price Admin.' : 'This provider is not enabled here yet. Contact Aim4price Admin before setup.'}</p>
     </div> : resource ? <>
       <SetupGuide manual={<>
         <p>Private setup requires OAuth credentials and a callback registered by Aim4price. The server address alone is not enough. Setup administrators enter credentials in the assistant’s secure configuration, never in chat.</p>
@@ -156,9 +156,9 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <span className={styles.connectionIcon}><Icon /></span>
         <div className={styles.connectionCopy}>
           <h3>{c.provider || 'AI connection'}</h3>
-          <p>Connected {date(c.created_at)} · {c.expires_at ? `Expires ${date(c.expires_at)}` : 'No scheduled expiry'}</p>
+          <p>Approved {date(c.created_at)} · {c.expires_at ? `Expires ${date(c.expires_at)}` : 'No scheduled expiry'}</p>
         </div>
-        <span className={styles.active}>{c.disabled ? 'Provider disabled' : 'Connected'}</span>
+        <span className={styles.active}>{c.disabled ? 'Provider disabled' : 'Access approved'}</span>
         <DisconnectButton id={c.id} audience={audience} />
       </div>)}
     </div> : <div className={styles.empty}>
@@ -168,6 +168,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
       {signInHref && <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>}
     </div>}
     {!admin && connections?.some(c => c.expires_at) && <p className={styles.note}>Earlier approvals keep the expiry date shown above. Reconnect once to approve ongoing access.</p>}
+    <p className={styles.note}>Approval confirms permission, not a successful read. Ask your assistant a question to verify it can retrieve your records.</p>
     <p className={styles.note}>{accessDuration} Disconnect at any time to stop future access. Information already shared may remain in your AI conversations.</p>
   </>;
 

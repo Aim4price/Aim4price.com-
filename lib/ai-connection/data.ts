@@ -282,13 +282,18 @@ export async function runReadTool(
   const params = [userId, args.from, args.to, args.assetId || null];
   const page = [...params, args.limit, args.offset];
   if (name === 'read_costs') {
-    const where = `i.user_id=$1 AND i.invoice_date >= $2::date AND i.invoice_date <= $3::date
-      AND ($4::text IS NULL OR i.asset_register_item_id::text=$4)
+    const scope = `i.user_id=$1 AND ($4::text IS NULL OR i.asset_register_item_id::text=$4)
       AND (i.created_by_dealer_user_id IS NULL OR i.owner_storage_status IN ('owner','approved'))`;
+    const where = `${scope} AND i.invoice_date >= $2::date AND i.invoice_date <= $3::date`;
+    const undated = Number((await db.query(
+      `SELECT count(*) AS count FROM public.asset_invoices i WHERE ${scope} AND i.invoice_date IS NULL AND $2::date IS NOT NULL AND $3::date IS NOT NULL`, params,
+    )).rows[0].count);
     const summary = (
       await db.query(
         `SELECT count(*) AS count,coalesce(sum(i.total_inc_vat),0)::text AS total_inc_vat,
-      coalesce(sum(i.vat_amount),0)::text AS recorded_vat FROM public.asset_invoices i WHERE ${where}`,
+      coalesce(sum(i.vat_amount),0)::text AS recorded_vat,
+      count(*) FILTER (WHERE i.total_inc_vat IS NULL) AS missing_amount_count,
+      count(*) FILTER (WHERE i.vat_amount IS NULL) AS missing_vat_count FROM public.asset_invoices i WHERE ${where}`,
         params,
       )
     ).rows[0];
@@ -311,10 +316,10 @@ export async function runReadTool(
       currency: 'ZAR',
       from: args.from,
       to: args.to,
-      summary: { ...summary, categories, coversAllMatchingRecords: true },
+      summary: { ...summary, categories, excludedUndatedRecords: undated, coversAllMatchingRecords: true },
       records,
       pagination: pagination(args, Number(summary.count)),
-      note: 'Fuel-slip invoices are included. Categories reflect recorded blocks and may not reconcile with incomplete records.',
+      note: 'Totals sum recorded amounts only; missing amounts and VAT are unknown, not zero. Undated accepted invoices are excluded from the period. Fuel-slip invoices are included; do not add fuel totals again. Categories may not reconcile with incomplete records.',
     };
   }
   if (name === 'read_fuel_slips') {

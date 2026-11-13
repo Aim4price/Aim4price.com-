@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import styles from './page.module.css';
 
-type PilotAccount = {
+type SetupAccount = {
   id: string;
   email: string;
   accountType: string;
@@ -12,7 +12,7 @@ type PilotAccount = {
 };
 
 export default function AccountSetup() {
-  const [account, setAccount] = useState<PilotAccount | null>(null);
+  const [account, setAccount] = useState<SetupAccount | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'signed-out' | 'ready' | 'error'>('idle');
   const [copyMessage, setCopyMessage] = useState('');
 
@@ -58,28 +58,26 @@ export default function AccountSetup() {
   return (
     <div className={styles.accountSetup}>
       <div className={styles.setupHeading}>
-        <div><strong>Start with your Aim4price account</strong><p>Check which account you’re signed into for the private pilot.</p></div>
-        <button type="button" onClick={checkAccount} disabled={status === 'loading'} aria-expanded={status !== 'idle'} aria-controls="pilot-account-details">
+        <div><strong>Start with your Aim4price account</strong><p>Check which account you’re signed into for connection setup.</p></div>
+        <button type="button" onClick={checkAccount} disabled={status === 'loading'} aria-expanded={status !== 'idle'} aria-controls="connection-account-details">
           {status === 'loading' ? 'Checking…' : status === 'idle' ? 'Check my account' : 'Check again'}
         </button>
       </div>
-      <div id="pilot-account-details" aria-live="polite" aria-busy={status === 'loading'}>
+      <div id="connection-account-details" aria-live="polite" aria-busy={status === 'loading'}>
         {status === 'signed-out' && <div className={styles.setupResult}>
           <strong>Sign in to continue</strong>
-          <p>No Aim4price website sign-in was found. Sign in to your Owner account, then return here to check it.</p>
+          <p>No Aim4price website sign-in was found. Sign in to your Aim4price account, then return here to check it.</p>
           <Link className={styles.primary} href="/auth?accountAccess=desktop&returnTo=%2Faccount%2Fai-connect#login">Sign in to Aim4price →</Link>
         </div>}
         {status === 'error' && <p role="alert">We couldn’t check your account. Please try again.</p>}
         {account && <div className={styles.setupResult}>
           <strong>{account.email}</strong>
-          <p>{account.accountType === 'owner' && account.sharingPlan === 'desktop'
-            ? 'These details identify your Owner account for pilot setup. Access still needs to be enabled and approved.'
-            : 'This pilot requires a paid Owner account. These account details do not confirm eligibility.'}</p>
+          <p>These details identify your account for setup. Eligibility is checked separately when you approve access.</p>
           <details className={styles.accountDetails}><summary>View account details</summary>
             <dl>{Object.entries(account).map(([key, value]) => <div key={key}><dt>{({ id: 'Account ID', email: 'Email', accountType: 'Account type', sharingPlan: 'Access plan' } as Record<string, string>)[key]}</dt><dd>{value}</dd></div>)}</dl>
           </details>
           <button type="button" onClick={copyAccount}>Copy account details</button>
-          <p className={styles.note}>Share these details with the person setting up the pilot. They contain no password or access token.</p>
+          <p className={styles.note}>Share these details with the Aim4price Admin helping with setup. They contain no password or access token.</p>
           {copyMessage && <p role="status">{copyMessage}</p>}
         </div>}
       </div>
