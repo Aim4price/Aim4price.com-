@@ -36,13 +36,30 @@ const topics = ['valuation','register','maintenance','costsEntry','costs','budge
         const overlaps=await page.$eval(trigger,el=>{const r=el.getBoundingClientRect();return [...document.querySelectorAll('button')].filter(b=>b!==el && b.getAttribute('aria-label')?.startsWith('Switch')).some(b=>{const q=b.getBoundingClientRect();return r.left<q.right && r.right>q.left && r.top<q.bottom && r.bottom>q.top;});});
         assert.equal(overlaps,false,`${topic} help does not overlap switches`);
         if(width===1440 && ['register','fuelSlips','map','budgets','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
+        await page.hover(trigger);
+        await page.waitForSelector('[role="tooltip"]',{visible:true});
+        const tooltip=await page.$eval('[role="tooltip"]',el=>{const r=el.getBoundingClientRect();return {text:el.textContent,left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height};});
+        const label=await page.$eval(trigger,el=>el.getAttribute('aria-label'));
+        assert.equal(tooltip.text,label,`${topic}: page-specific hover wording`);
+        assert.ok(tooltip.left>=0 && tooltip.right<=width,`${topic}: tooltip stays in viewport`);
+        assert.ok(await page.$eval(trigger,(el,tip)=>{const r=el.getBoundingClientRect();return r.top-tip.height-10>=12 ? tip.bottom<=r.top : tip.top>=r.bottom;},tooltip),`${topic}: tooltip sits above the icon or below when space is limited`);
+        if(width===1440 && topic==='register') await page.screenshot({path:path.join(output,'register-help-hover.png')});
+        await page.focus(trigger);
+        await page.keyboard.press('Escape');
+        assert.equal(await page.$('[role="tooltip"]'),null,'Escape dismisses tooltip');
         await page.click(trigger);await page.waitForSelector('[role="dialog"]');
         assert.equal(await page.$('[role="dialog"] header svg'),null,'no decorative modal header icon');
         assert.equal(await page.$eval('[role="dialog"]',el=>el.contains(document.activeElement)),true,'dialog receives focus');
         assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden','background scrolling is locked');
-        const geometry=await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();const body=el.querySelector('[class*="_body"]');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight,scroll:body.scrollHeight-body.clientHeight};});
+        const geometry=await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();const body=el.querySelector('[class*="_body"]');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight,scroll:body.scrollHeight-body.clientHeight,cssWidth:parseFloat(getComputedStyle(el).width)};});
         assert.ok(geometry.x>=-1 && geometry.y>=-1 && geometry.right<=geometry.w+1 && geometry.bottom<=geometry.h+1,JSON.stringify(geometry));
-        if(width===1440) assert.ok(geometry.scroll<=1,`${topic}: no desktop scrolling`);
+        if(width===1440) {
+          assert.ok(geometry.scroll<=1,`${topic}: no desktop scrolling`);
+          assert.ok(geometry.cssWidth>=1055,`${topic}: spacious desktop dialog ${JSON.stringify(geometry)}`);
+          const wrapped=await page.$$eval('[role="dialog"] li span',elements=>elements.filter(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length>1;}).map(el=>el.textContent));
+          assert.deepEqual(wrapped,[],`${topic}: desktop action text stays on one line`);
+          await page.screenshot({path:path.join(output,`${topic}-help-desktop.png`)});
+        }
         await page.keyboard.down('Shift'); await page.keyboard.press('Tab'); await page.keyboard.up('Shift');
         assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Got it','reverse tab stays in dialog');
         await page.keyboard.press('Tab');
@@ -55,7 +72,7 @@ const topics = ['valuation','register','maintenance','costsEntry','costs','budge
         await page.click(trigger);await page.click('[role="dialog"] footer button');
         assert.equal(await page.$('[role="dialog"]'),null,'Got it closes dialog');
       }
-      console.log(`PASS all ${topics.length} topics at ${width}px: layout, switches, focus, Escape and Got it`);
+      console.log(`PASS all ${topics.length} topics at ${width}px: wide layout, hover labels, switches, focus, Escape and Got it`);
     }
     // Short viewports must scroll the body without hiding the close actions.
     await page.setViewport({width:1440,height:480});
