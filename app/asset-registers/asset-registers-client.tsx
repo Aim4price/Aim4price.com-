@@ -1,4 +1,5 @@
 "use client";
+import { PageHelpHeading } from '../../components/PageHelp';
 import ValueInclusionControl from '../../components/asset-register/ValueInclusionControl';
 import { decorateAssetsWithGroups, assetCountsTowardRegisterTotalFromMeta, type AssetGroup, type AssetGroupExportMeta } from '../../lib/asset-groups-shared';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
@@ -2727,7 +2728,7 @@ export default function AssetRegistersClient({
           <section className={styles.managementPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
-                <h1>MANAGE ASSET REGISTERS</h1>
+                <PageHelpHeading inset topic="registers"><h1>MANAGE ASSET REGISTERS</h1></PageHelpHeading>
               </div>
 
               <div className={styles.toolbar}>

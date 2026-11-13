@@ -1,5 +1,53 @@
 /** Short, task-focused help. Keep copy independent of private account data. */
 export const pageHelp = {
+  registers: {
+    title: 'Manage Asset Registers',
+    purpose: 'Organise your assets into separate registers, such as businesses, farms or sites. Combined Asset Registers brings them together in one view.',
+    actions: ['Select Add Register to create a separate register.', 'Select Open to view its assets, or Manage to change its details and settings.', 'Use Summary or Download to review your registers and their values.'],
+    start: 'Open an existing register, or select Add Register if you need a new one.',
+  },
+  desktopUsers: {
+    title: 'Desktop users',
+    purpose: 'Give each person their own sign-in to your desktop workspace and control what they can access.',
+    actions: ['Select Add user to create access and choose permissions and assets.', 'Select Manage users to review permissions or remove access.', 'Copy the user sign-in link and give it to the person who will use it.'],
+    start: 'Select Add user and choose only the access that person needs.',
+  },
+  managerUsers: {
+    title: 'Manager App Users',
+    purpose: 'Create separate phone app logins for people who work with your assets.',
+    actions: ['Select Add login and choose the person’s role and asset access.', 'Use Manage logins to update permissions or deactivate a login.', 'Scan the QR code or share the app link to open the Manager App on a phone.'],
+    start: 'Create a login, then give the person their sign-in details and the app link.',
+  },
+  aiConnections: {
+    title: 'AI connections',
+    purpose: 'Let an AI assistant read the Aim4price information available to your account so you can ask questions about it.',
+    actions: ['Select Connect AI, choose your assistant and follow the setup steps.', 'Approve read-only access. Your assistant cannot add, edit or delete records.', 'Use Manage to review connections or disconnect an assistant.'],
+    start: 'Select Connect AI. After connecting, try a question such as “Which maintenance is overdue?”',
+  },
+  transfers: {
+    title: 'Asset transfers',
+    purpose: 'Move an asset’s portable record between Aim4price accounts when it changes owner.',
+    actions: ['Choose Incoming to claim an asset using the transfer details provided to you.', 'Choose Outgoing to review sent assets and manage their one-time transfer codes.', 'Asset details and eligible history can move. Private invoices, finance, insurance and account access stay with the original account.'],
+    start: 'Receiving an asset? Choose Incoming. For an asset you have sent, choose Outgoing.',
+  },
+  showroom: {
+    title: 'My Advert Showroom',
+    purpose: 'Keep your adverts together and share one showroom link with interested buyers.',
+    actions: ['Select Create advert to add equipment you want to advertise.', 'Use Manage advert to update a listing, or Manage showroom to change showroom settings.', 'Select Open showroom to view it. Share showroom is available when the showroom is public.'],
+    start: 'Create your first advert, or find an existing advert and select Manage advert.',
+  },
+  invoiceDrop: {
+    title: 'Drop Invoice',
+    purpose: 'Send an invoice to Aim4price for checking and delivery to the correct asset owner. You do not need access to their account.',
+    actions: ['Select Add invoice and identify the asset using the available code or serial/VIN options.', 'Attach one invoice as a PDF or photos of the same invoice, then add your contact details.', 'Review and send it. Aim4price checks the submission before routing it; sending a file does not give you access to asset records.'],
+    start: 'Have the invoice and asset reference ready, then select Add invoice.',
+  },
+  recentAdverts: {
+    title: 'Recently Advertised',
+    purpose: 'Browse recently advertised equipment and see the availability shown on each advert.',
+    actions: ['Search by equipment, advertiser, location or condition.', 'Select Open to view an advert and its available contact options.', 'Use Refresh to reload the list, or the switch button beside the heading to change views.'],
+    start: 'Search for the equipment you need, open a matching advert and confirm availability with the advertiser.',
+  },
   valuation: {
     title: 'Value Asset',
     purpose: 'Estimate what an asset is worth using its details, age, usage and condition.',
@@ -10,7 +58,7 @@ export const pageHelp = {
     title: 'Asset Register',
     purpose: 'Know what you own, what it is worth and what needs attention, with records connected to each asset.',
     actions: ['Add assets and organise them into registers. Use umbrellas to group related assets while keeping their individual records.', 'Open Manage on an asset to update details and build its cost, fuel and maintenance history.', 'Review totals, share selected information and download reports.'],
-    start: 'Select Add Asset to begin. The Start here guide below the search bar walks you through adding an asset, building its history and viewing reports.',
+    start: 'Find an existing asset and select Manage, or use Add Asset to create a new record.',
   },
   maintenance: {
     title: 'Maintenance',
@@ -27,7 +75,7 @@ export const pageHelp = {
   costs: {
     title: 'Cost Ledger',
     purpose: 'Keep a clear record of expenses and connect them to the assets they relate to.',
-    actions: ['Add a cost and attach supporting documents where available.', 'Find saved costs using search and filters.', 'Download records and switch to Budgets to review planned spending.'],
+    actions: ['Select Add Cost to record an expense or upload an invoice.', 'Use Invoice Drop when you need a link for someone to send in an invoice.', 'Find saved costs with search and filters, or Download your records.'],
     start: 'Select Add Cost and choose the option that suits your record. Check the amount, date and asset before saving.',
   },
   budgets: {
@@ -51,12 +99,12 @@ export const pageHelp = {
   fuelStorage: {
     title: 'Storage Tanks',
     purpose: 'Keep a record of your fuel storage tanks and the fuel moving into and out of them.',
-    actions: ['Add storage tanks and keep their details organised.', 'Record fuel movements to keep the stored balance useful.', 'Review tank activity and switch to Fuel Slips for asset fuel receipts.'],
-    start: 'Select Add Storage Tank to create your first tank, or open an existing tank to manage its activity.',
+    actions: ['Add storage tanks and keep their details organised.', 'Select Manage on a tank to record deliveries, fuel issued and other movements.', 'Review tank activity and switch to Fuel Slips for asset fuel receipts.'],
+    start: 'Select Add Storage Tank for a new tank, or Manage on an existing tank to view and record activity.',
   },
   documents: {
     title: 'Document Vault',
-    purpose: 'Keep important documents together and link them to the assets they support.',
+    purpose: 'Store finance, accounting, insurance and licensing documents in one place. Files stay at account level unless you link them to assets.',
     actions: ['Upload documents and choose a suitable document type.', 'Link documents to assets and use filters to find them again.', 'Review removed documents in the Recycle Bin.'],
     start: 'Select Upload documents, add your file and link it to the relevant asset where applicable.',
   },
@@ -69,7 +117,7 @@ export const pageHelp = {
   marketplaceEntry: {
     title: 'Explore assets',
     purpose: 'Find assets through Discovery or browse equipment advertised for sale.',
-    actions: ['Use Discovery to explore assets their owners have made discoverable.', 'Use Marketplace to browse adverts for equipment offered for sale.', 'Open an asset or advert to review its details and available contact options.'],
+    actions: ['Use Discovery to explore assets their owners have made discoverable. These are not necessarily for sale.', 'Use Marketplace to browse adverts for equipment offered for sale.', 'Open an asset or advert to review its details and available contact options.'],
     start: 'Choose Discovery to explore owner-approved assets, or Marketplace to browse sale listings.',
   },
   discovery: {

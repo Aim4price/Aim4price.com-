@@ -1,8 +1,11 @@
+import { PageHelpHeading } from './PageHelp';
+import type { PageHelpTopic } from '../lib/page-help';
 import type { ReactNode } from 'react';
 import styles from './WorkspacePrimitives.module.css';
 
 type WorkspaceTitlePanelProps = {
   title: string;
+  helpTopic?: PageHelpTopic;
   className?: string;
 };
 
@@ -31,11 +34,11 @@ function joinClassNames(...values: Array<string | undefined | false>): string {
   return values.filter(Boolean).join(' ');
 }
 
-export function WorkspaceTitlePanel({ title, className }: WorkspaceTitlePanelProps) {
+export function WorkspaceTitlePanel({ title, className, helpTopic }: WorkspaceTitlePanelProps) {
   return (
     <section className={joinClassNames(styles.titlePanel, className)}>
       <div>
-        <h1>{title}</h1>
+        {helpTopic ? <PageHelpHeading topic={helpTopic}><h1>{title}</h1></PageHelpHeading> : <h1>{title}</h1>}
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 
 import ManagerPermissionsPanel from './manager-permissions-panel';
 import { managerPermissions } from '../../lib/manager-permissions';
@@ -513,7 +514,7 @@ function AccessLauncher({
   return (
     <section className={styles.launcher} aria-labelledby="app-access-title">
       <div className={styles.launcherIntro}>
-        <h1 id="app-access-title">{config.title}</h1>
+        <PageHelpHeading topic="managerUsers" enabled={config.qrApp === 'owner'}><h1 id="app-access-title">{config.title}</h1></PageHelpHeading>
         <p>{config.description}</p>
       </div>
 

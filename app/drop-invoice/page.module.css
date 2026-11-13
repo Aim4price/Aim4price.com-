@@ -1245,3 +1245,5 @@
 :global(html[data-background='dark']) .heroUploadAction:focus-visible {
   outline-color: #a5dec4;
 }
+
+.heroHelp { position: relative; z-index: 3; display: flex; justify-content: flex-end; }
