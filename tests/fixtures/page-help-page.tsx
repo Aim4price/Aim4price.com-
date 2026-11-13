@@ -2,6 +2,9 @@
 import { useSearchParams } from 'next/navigation';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { pageHelp, type PageHelpTopic } from '../../lib/page-help';
+import { workspaceStyles } from '../../components/WorkspacePrimitives';
+import parts from '../../app/dealer/parts/parts.module.css';
+import SharedAccountHero from '../../components/SharedAccountHero';
 import AppHeader from '../../components/AppHeader';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import register from '../../app/asset-register/page.module.css';
@@ -27,7 +30,11 @@ export default function PageHelpFixture() {
   if (topic === 'maintenance') title = <section className={maintenance.pageTitleBlock}><div><PageHelpHeading topic={topic}><h1>ASSET MAINTENANCE</h1></PageHelpHeading></div></section>;
   if (topic === 'documents') title = <section className={documents.hero}><PageHelpHeading topic={topic}><h1>Document Vault</h1></PageHelpHeading></section>;
   if (topic === 'registers') title = <div className={registers.pageTitleBlock}><PageHelpHeading inset topic={topic}><h1>MANAGE ASSET REGISTERS</h1></PageHelpHeading></div>;
-  if (['desktopUsers', 'managerUsers', 'aiConnections', 'transfers'].includes(topic)) title = <section className={access.launcher}><div className={access.launcherIntro}><PageHelpHeading topic={topic}><h1>{pageHelp[topic].title}</h1></PageHelpHeading><p>{pageHelp[topic].purpose}</p></div></section>;
+  if (['desktopUsers', 'managerUsers', 'dealerUsers', 'middlemanUsers', 'aiConnections', 'transfers'].includes(topic)) title = <section className={access.launcher}><div className={access.launcherIntro}><PageHelpHeading topic={topic}><h1>{pageHelp[topic].title}</h1></PageHelpHeading><p>{pageHelp[topic].purpose}</p></div></section>;
+  if (['partnerLeads','dealerTracking','dealerCosts','partsStock'].includes(topic)) title = <WorkspaceTitlePanel title={pageHelp[topic].title} helpTopic={topic} />;
+  if (topic === 'partsList') title = <section className={`${workspaceStyles.titlePanel} ${parts.title} ${parts.stocklistTitle}`}><div><PageHelpHeading topic={topic}><h1>Landini parts stocklist</h1></PageHelpHeading><WorkspaceViewSwitch label="Back to parts stocklists" onClick={()=>{}} /></div></section>;
+  if (topic === 'adCreator' || topic === 'adTemplate') title = <div className={register.businessRegisterTitleCard}><PageHelpHeading topic={topic}><h1>{pageHelp[topic].title}</h1></PageHelpHeading><WorkspaceViewSwitch label="Switch advert view" onClick={()=>{}} /></div>;
+  if (topic === 'sharedEnquiries') return <main><AppHeader active="none"/><SharedAccountHero count={0}/></main>;
   if (topic === 'showroom') title = <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" helpTopic={topic} />;
   if (topic === 'budgets') title = <BudgetTracking budgets={[]} loading={false} error="" onRetry={()=>{}} onAdd={()=>{}} onEdit={()=>{}} onDelete={()=>{}} />;
   if (topic === 'invoiceDrop') return <main><AppHeader active="none"/><InvoiceDropClient /></main>;

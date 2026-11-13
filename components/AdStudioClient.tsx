@@ -1,4 +1,6 @@
 'use client';
+import { PageHelpHeading } from './PageHelp';
+
 import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
@@ -545,7 +547,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       {studioMode !== 'home' ? <div className={styles.titlePanel}>
         <section className={registerStyles.businessRegisterTitleBlock}>
           <div className={registerStyles.businessRegisterTitleCard}>
-            <h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'YOUR ADVERT TEMPLATE'}</h1>
+            <PageHelpHeading topic={studioMode === 'creator' ? 'adCreator' : 'adTemplate'}><h1>{studioMode === 'creator' ? 'CREATE ADVERT' : 'YOUR ADVERT TEMPLATE'}</h1></PageHelpHeading>
             <button
               type="button"
               className={`${registerStyles.registerChangeButton} ${registerStyles.controlTooltip}`}
@@ -580,7 +582,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}>
                 <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                   <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                    <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Advert Studio</h1>
+                    <PageHelpHeading topic="adStudio"><h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Advert Studio</h1></PageHelpHeading>
                     <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>Create your advert template or design an advert to share.</p>
                   </div>
                   <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Advert Studio options">

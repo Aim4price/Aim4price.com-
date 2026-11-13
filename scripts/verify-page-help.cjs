@@ -8,7 +8,7 @@ const chromium = require('@sparticuz/chromium');
 const root = path.resolve(__dirname, '..');
 const fixture = path.join(root, 'app/page-help-validation');
 const output = path.join(root, '.next/page-help-validation');
-const topics = ['valuation','register','maintenance','costsEntry','costs','budgets','fuelEntry','fuelSlips','fuelStorage','documents','map','marketplaceEntry','discovery','marketplace','account','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop','recentAdverts'];
+const topics = ['valuation','register','maintenance','costsEntry','costs','budgets','fuelEntry','fuelSlips','fuelStorage','documents','map','marketplaceEntry','discovery','marketplace','account','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop','recentAdverts','partnerLeads','dealerTracking','dealerRegisterChoice','dealerCosts','partsStock','partsList','adStudio','adTemplate','adCreator','dealerUsers','middlemanUsers','sharedEnquiries','dealerAccount','middlemanAccount','sharingAccount'];
 (async () => {
   let server, browser;
   try {

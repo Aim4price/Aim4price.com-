@@ -1,4 +1,6 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
+
 import PartsInbox from "../../components/PartsInbox";
 import ListPagination from '../../components/ListPagination';
 import AssetPartsModal from '../../components/AssetPartsModal';
@@ -3474,12 +3476,13 @@ export default function LeadsClient({
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
               title={dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
+              helpTopic="partnerLeads"
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>{'LEAD MANAGEMENT SYSTEM'}</h1>
+                <PageHelpHeading topic="partnerLeads"><h1>LEAD MANAGEMENT SYSTEM</h1></PageHelpHeading>
               </div>
             </div>
           )}

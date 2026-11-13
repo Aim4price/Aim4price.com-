@@ -1,5 +1,156 @@
 /** Short, task-focused help. Keep copy independent of private account data. */
 export const pageHelp = {
+  partnerLeads: {
+    "title": "Shared Asset Leads",
+    "purpose": "Review assets shared with your business and see the information and actions the sender has allowed.",
+    "actions": [
+        "Use New, Viewed or All shared to choose which assets to show.",
+        "Search or filter the list, then select Open to review a shared asset.",
+        "A viewed asset is not a completed job. Use Tracking when maintenance access is available."
+    ],
+    "start": "Open a shared asset and read the request before deciding what action is needed."
+},
+  dealerTracking: {
+    "title": "Maintenance Tracking",
+    "purpose": "Follow maintenance for equipment whose owners have shared tracking access with your dealership.",
+    "actions": [
+        "Choose Needs attention, Tracked equipment or Done to review the relevant work.",
+        "Search or filter the list, then select View maintenance on the equipment.",
+        "Review schedules and record permitted updates. Available actions depend on the access granted."
+    ],
+    "start": "Start with Needs attention to find due, overdue or usage-dependent work."
+},
+  dealerRegisterChoice: {
+    "title": "Dealer Asset Registers",
+    "purpose": "Keep dealership assets separate from the asset registers you manage for clients.",
+    "actions": [
+        "Open Dealer Asset Register to work with your dealership’s own assets.",
+        "Choose Client Asset Registers to find the registers you manage for clients.",
+        "Check the selected register before adding or updating an asset."
+    ],
+    "start": "Choose the dealership register or the client-register option to begin."
+},
+  dealerCosts: {
+    "title": "Client Cost Ledger",
+    "purpose": "Record and review costs for client assets available to your dealership.",
+    "actions": [
+        "Search by the available client, asset or invoice details.",
+        "Select Add Cost to record an expense against an available client asset.",
+        "Open a record to see its details and supporting documents where access permits."
+    ],
+    "start": "Select Add Cost for a new expense, or search and filter to find an existing record."
+},
+  partsStock: {
+    "title": "Parts Stocklists",
+    "purpose": "Find parts lists you own or that other businesses have shared with you.",
+    "actions": [
+        "Search by list name and open the list you need.",
+        "Use Add parts list when available to create a list for your own parts.",
+        "Accept an invitation to access a shared list. The list owner controls approval and permissions."
+    ],
+    "start": "Open a list to find parts, or accept the invitation sent by its owner."
+},
+  partsList: {
+    "title": "Parts List",
+    "purpose": "Search the parts in this list and use the actions available to your account.",
+    "actions": [
+        "Search for a part and check its description, quantity and price where supplied.",
+        "Use the available controls to add, import or edit parts when you have permission.",
+        "Confirm availability with the supplier. This list does not replace the supplier’s stock records."
+    ],
+    "start": "Search for the part you need, then review the matching row and supplier details."
+},
+  adStudio: {
+    "title": "Advert Studio",
+    "purpose": "Create a reusable branded template or design an advert to share with buyers.",
+    "actions": [
+        "Choose Advert Template to set your branding, colours and default layout.",
+        "Choose Create Advert to add equipment details and prepare an advert.",
+        "Preview the result and use the available download or sharing options."
+    ],
+    "start": "Set up your template first, or choose Create Advert if your branding is already ready."
+},
+  adTemplate: {
+    "title": "Advert Template",
+    "purpose": "Set the branding and layout used when you create adverts.",
+    "actions": [
+        "Add your business details and choose the layout, colours and wording.",
+        "Preview the template to check the branding and spacing.",
+        "Save your template and choose a default from your saved templates when needed."
+    ],
+    "start": "Check your business details, select a layout and review the preview before saving."
+},
+  adCreator: {
+    "title": "Create Advert",
+    "purpose": "Prepare a branded advert with the equipment details and photos you want buyers to see.",
+    "actions": [
+        "Choose the available asset source and enter or review the advert details.",
+        "Select your template and photos, then check the preview.",
+        "Use the available sharing or download controls when the advert is ready."
+    ],
+    "start": "Choose the equipment you want to advertise and check its details before sharing."
+},
+  dealerUsers: {
+    "title": "Dealer App Staff",
+    "purpose": "Give staff separate Dealer App logins and choose their roles and permissions.",
+    "actions": [
+        "Select Add login to create a staff login and choose its role.",
+        "Use Manage logins to review permissions or deactivate a login.",
+        "Share the app link or QR code and provide the person with their sign-in details."
+    ],
+    "start": "Create a login with the access the staff member needs, then share the app link."
+},
+  middlemanUsers: {
+    "title": "Middleman App Users",
+    "purpose": "Give your team separate logins for the Middleman App.",
+    "actions": [
+        "Select Add login and choose the appropriate role.",
+        "Use Manage logins to review permissions or deactivate a login.",
+        "Share the app link or QR code and provide the person with their sign-in details."
+    ],
+    "start": "Create a login for the team member, then share the app link."
+},
+  sharedEnquiries: {
+    "title": "Shared Enquiries",
+    "purpose": "Open assets and enquiries shared with your account. The sender decides what you can view or update.",
+    "actions": [
+        "Open a received enquiry to read the request and see the shared asset information.",
+        "Use only the actions offered for that enquiry; permissions can differ between assets.",
+        "Open a shared link you received to get started. Verify your email if the page asks you to."
+    ],
+    "start": "Select Open enquiry, or open the link sent to you by email or WhatsApp."
+},
+  dealerAccount: {
+    "title": "Dealer Account",
+    "purpose": "Manage your dealership details, team access and available account services.",
+    "actions": [
+        "Use Assets & activity to manage registers, transfers and notifications.",
+        "Use Apps & connections for desktop users, Dealer App staff and AI connections.",
+        "Review directory visibility, contact details, billing and security using the available controls."
+    ],
+    "start": "Choose the Quick actions option for the account detail or access setting you want to manage."
+},
+  middlemanAccount: {
+    "title": "Middleman Account",
+    "purpose": "Manage your profile, team access and the account details used for your trading activity.",
+    "actions": [
+        "Keep your business and marketplace contact details up to date.",
+        "Use the available app-access controls to manage your team’s logins.",
+        "Review the account, billing and security options available to you."
+    ],
+    "start": "Choose the relevant Quick actions option, or update your contact details in Account overview."
+},
+  sharingAccount: {
+    "title": "Business & Sharing Account",
+    "purpose": "Manage the identity and contact details used when other people share assets and enquiries with you.",
+    "actions": [
+        "Keep your business name and contact details up to date.",
+        "Use the available account controls for access, connections and notifications.",
+        "Review password and security options. Each sender still controls access to their shared assets."
+    ],
+    "start": "Check your account details, then open Shared enquiries to work with the assets sent to you."
+},
+
   registers: {
     title: 'Manage Asset Registers',
     purpose: 'Organise assets by business, farm or site. Open Combined Asset Registers to see them together.',

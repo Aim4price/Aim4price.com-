@@ -1,8 +1,14 @@
-name: Owner page information validation
+name: Page information validation
 on:
   pull_request:
     paths:
       - 'components/PageHelp*'
+      - 'components/AdStudioClient*'
+      - 'components/SharedAccountHero*'
+      - 'components/DealerMaintenanceTrackerClient*'
+      - 'app/leads/**'
+      - 'app/dealer/parts/**'
+      - 'app/business/**'
       - 'components/WorkspacePrimitives*'
       - 'components/MiddlemanShowroomClient*'
       - 'app/drop-invoice/**'
@@ -34,7 +40,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

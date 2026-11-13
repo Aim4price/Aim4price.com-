@@ -514,7 +514,7 @@ function AccessLauncher({
   return (
     <section className={styles.launcher} aria-labelledby="app-access-title">
       <div className={styles.launcherIntro}>
-        <PageHelpHeading topic="managerUsers" enabled={config.qrApp === 'owner'}><h1 id="app-access-title">{config.title}</h1></PageHelpHeading>
+        <PageHelpHeading topic={config.qrApp === 'owner' ? 'managerUsers' : config.qrApp === 'middleman' ? 'middlemanUsers' : 'dealerUsers'}><h1 id="app-access-title">{config.title}</h1></PageHelpHeading>
         <p>{config.description}</p>
       </div>
 
