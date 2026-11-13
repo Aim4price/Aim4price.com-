@@ -608,7 +608,7 @@ export default function RecentlyAdvertisedClient({
         <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
           <div className={styles.discoveryMediaColumn}>
             <RecentAdvertGallery compact={compactAppMode} key={advert.id} id={advert.id} title={advert.title}
-              urls={advertiserIdentityVisible && advert.status === "available" ? (advert.imageUrls?.length ? advert.imageUrls : advert.imageUrl ? [advert.imageUrl] : []) : []} />
+              urls={advert.imageUrls?.length ? advert.imageUrls : advert.imageUrl ? [advert.imageUrl] : []} />
           </div>
 
           <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
