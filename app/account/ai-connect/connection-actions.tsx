@@ -133,7 +133,7 @@ export default function ConnectionActions({ setup, management, count, assistantO
         <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
-        <span className={accessStyles.actionCopy}><strong>Connect</strong><small>Choose your assistant.</small></span>
+        <span className={accessStyles.actionCopy}><strong>Connect AI</strong><small>Choose your assistant.</small></span>
       </button>
       <button ref={manageButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage} ${styles.actionButton}`}

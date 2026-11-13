@@ -463,12 +463,22 @@ export function requireConsentTerms(form: URLSearchParams): void {
 export function connectionSignInHref(
   params: URLSearchParams,
   config: ConnectionConfig,
+  fresh = false,
 ): string {
   authorizationRequest(params, config);
   const returnTo = connectionPage(config) + "?" + params.toString();
   return (
-    "/auth?accountAccess=desktop&returnTo=" +
+    "/auth?accountAccess=desktop" + (fresh ? "&reauth=ai" : "") + "&returnTo=" +
     encodeURIComponent(returnTo) +
     "#login"
   );
+}
+
+/** New approvals require a recent password sign-in, not a refreshed session timestamp. */
+export const AI_APPROVAL_SESSION_MAX_AGE_MS = 30 * 60 * 1000;
+export function requireRecentAiSignIn(createdAt: unknown, now = Date.now()): void {
+  const created = createdAt instanceof Date ? createdAt.getTime()
+    : typeof createdAt === 'string' ? Date.parse(createdAt) : NaN;
+  if (!Number.isFinite(created) || created > now || now - created > AI_APPROVAL_SESSION_MAX_AGE_MS)
+    throw new ConnectionError(401, 'reauthentication_required', 'Sign in again to approve this connection.');
 }

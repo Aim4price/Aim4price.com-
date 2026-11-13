@@ -628,7 +628,7 @@ test('expired access/code, changed resource and scope are denied', async () => {
   );
 });
 test('ineligible accounts fail closed while eligible owners need no pilot entry', async () => {
-  for (const user of ['admin', 'dealer', 'free', 'suspended'])
+  for (const user of ['admin', 'free', 'suspended'])
     await assert.rejects(store.eligibleAccount(pool, user, config));
   assert.equal((await store.eligibleAccount(pool, 'owner-a', { ...config, allowedUserIds: [] })).accountType, 'owner');
   await db.query(
@@ -757,7 +757,8 @@ test('login resumes validated OAuth parameters on the local consent page', () =>
   assert.throws(() => security.connectionSignInHref(authParams({redirect_uri:'https://evil.example'}), config));
 });
 
-test('expired browser login redirects to login without issuing an authorization code', async () => {
+test('missing and stale browser logins redirect without issuing an authorization code', async () => {
+  let failure = 'login_required';
   const Module = require('node:module');
   const filename = path.join(__dirname, '../app/api/ai/oauth/authorize/route.ts');
   const route = new Module(filename, module);
@@ -767,7 +768,7 @@ test('expired browser login redirects to login without issuing an authorization 
   route.require = id => {
     if (id.endsWith('/rate-limit')) return { checkSharedRate: async()=>{throw new Error('unexpected rate write');} };
     if (id.endsWith('/security')) return { ...security, connectionConfig: () => config };
-    if (id.endsWith('/browser')) return { connectionOwner: async () => { throw new security.ConnectionError(401, 'login_required', 'Sign in first'); } };
+    if (id.endsWith('/browser')) return { connectionOwner: async (config, fresh) => { assert.equal(fresh,true); throw new security.ConnectionError(401, failure, 'Sign in first'); } };
     if (id.endsWith('/store')) return { issueCode: async () => { writes++; throw new Error('must not issue a code'); } };
     if (id.endsWith('/db')) return { getDb: () => { writes++; throw new Error('must not access database'); } };
     throw new Error('Unexpected import: ' + id);
@@ -781,6 +782,10 @@ test('expired browser login redirects to login without issuing an authorization 
   assert.equal(response.headers.get('Location'), config.origin + security.connectionSignInHref(authParams(), config));
   assert.equal((await route.exports.POST(makeRequest(authParams({redirect_uri:'https://evil.example'})))).status, 400);
   assert.equal((await route.exports.POST(makeRequest(authParams(), 'https://evil.example'))).status, 403);
+  failure = 'reauthentication_required';
+  const stale = await route.exports.POST(makeRequest(authParams()));
+  assert.equal(stale.status,303);
+  assert.equal(stale.headers.get('Location'),config.origin + security.connectionSignInHref(authParams(),config,true));
   assert.equal(writes, 0);
 });
 
@@ -862,10 +867,10 @@ test('multiple providers use independent exact callbacks, credentials and scopes
   assert.throws(()=>security.connectionConfig({...registryEnv,AIM4PRICE_AI_CLIENTS_JSON:JSON.stringify(duplicate)}));
   assert.throws(()=>registryConfig('bad')); // no matching provider
 });
-test('customer mode admits active Owners and rejects unverified dealers and ineligible accounts',async()=>{
+test('customer mode admits active Owners and Dealers without email verification',async()=>{
   const c=registryConfig();assert.deepEqual(c.allowedUserIds,[]);
   assert.equal((await store.eligibleAccount(pool,'owner-b',c)).id,'owner-b');
-  for(const id of ['admin','dealer','free','suspended','aim4price-assistance-any']) await assert.rejects(store.eligibleAccount(pool,id,c));
+  for(const id of ['admin','free','suspended','aim4price-assistance-any']) await assert.rejects(store.eligibleAccount(pool,id,c));
   const claude=security.selectClient(c,'claude');const grant=await registryGrant(claude,'owner-b');
   const response=await registryRpc(c,grant.tokens.access_token,'list_assets');
   assert.equal(response.status,200);const result=(await response.json()).result.structuredContent;
@@ -1195,7 +1200,7 @@ test('legacy pilot settings cannot block eligible Dealer and Business accounts',
   await assert.rejects(store.eligibleAccount(pool,'suspended',legacy),{code:'inactive_account'});
   await assert.rejects(store.eligibleAccount(pool,'admin',legacy),{code:'admin_connection_required'});
   await db.exec(`UPDATE "user" SET "emailVerified"=false WHERE id='dealer'`);
-  try { await assert.rejects(store.eligibleAccount(pool,'dealer',legacy),{code:'verification_required'}); }
+  try { assert.equal((await store.eligibleAccount(pool,'dealer',legacy)).accountType,'dealer'); }
   finally { await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id='dealer'`); }
 });
 
@@ -1262,4 +1267,63 @@ test('budget with missing invoice amounts reports incomplete instead of on track
     assert.ok(data.records.length>0);
     assert.ok(data.records.every(r=>r.status==='incomplete' && Number(r.missing_amount_count)===1));
   } finally {await db.query('DELETE FROM asset_invoices WHERE id=$1',[id]);}
+});
+
+
+test('new approval requires a recent sign-in, not a missing, future or old timestamp', () => {
+  const now = Date.now();
+  for (const value of [undefined, null, '', 'invalid', new Date(now+1000), new Date(now-30*60*1000-1)])
+    assert.throws(() => security.requireRecentAiSignIn(value,now), {code:'reauthentication_required'});
+  for (const value of [new Date(now), new Date(now-30*60*1000).toISOString()])
+    assert.doesNotThrow(() => security.requireRecentAiSignIn(value,now));
+  const href = new URL(security.connectionSignInHref(authParams(),config,true),config.origin);
+  assert.equal(href.searchParams.get('reauth'),'ai');
+  assert.equal(new URL(href.searchParams.get('returnTo'),config.origin).pathname,'/account/ai-connect');
+});
+
+test('unverified partners connect but cannot claim a client share solely by email', async () => {
+  await db.exec(`UPDATE "user" SET "emailVerified"=false WHERE id IN ('dealer','business');
+    INSERT INTO asset_share_links(token,user_id,asset_ids,lead_details,display_options) VALUES
+    ('email-only-test','owner-a',ARRAY['${assetA}']::uuid[],'{"recipientEmail":"business@example.com","request":"Email-only private request"}','{}'),
+    ('bound-test','owner-a',ARRAY['${assetA}']::uuid[],'{"recipientEmail":"business@example.com","recipientUserId":"business","request":"Bound private request"}','{}')`);
+  try {
+    for (const user of ['dealer','business']) {
+      const tokens=(await createGrant(user)).tokens;
+      assert.equal((await rpc('tools/list',{},tokens.access_token)).status,200);
+    }
+    const tokens=(await createGrant('business')).tokens;
+    const read = async () => (await (await rpc('tools/call',{name:'list_shared_enquiries',arguments:{}},tokens.access_token)).json()).result.structuredContent;
+    const before = await read();
+    assert.ok(before.records.some(r=>r.request==='Bound private request'));
+    assert.ok(!before.records.some(r=>r.request==='Email-only private request'));
+    const hiddenId=require('node:crypto').createHash('md5').update('email-only-test').digest('hex');
+    const denied=await rpc('tools/call',{name:'read_shared_asset',arguments:{enquiryId:hiddenId,assetId:assetA,section:'asset'}},tokens.access_token);
+    assert.equal((await denied.json()).result.isError,true);
+    await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id='business'`);
+    assert.ok((await read()).records.some(r=>r.request==='Email-only private request'));
+  } finally {
+    await db.exec(`UPDATE "user" SET "emailVerified"=true WHERE id IN ('dealer','business'); DELETE FROM asset_share_links WHERE token IN ('email-only-test','bound-test')`);
+  }
+});
+
+
+test('browser consent enforces session creation age while management remains available', async () => {
+  const Module = require('node:module');
+  const filename = path.join(__dirname, '../lib/ai-connection/browser.ts');
+  const browser = new Module(filename, module); browser.filename=filename; browser.paths=module.paths;
+  let session={user:{id:'owner-a'},session:{id:'session',createdAt:new Date(Date.now()-3600000),updatedAt:new Date()}};
+  browser.require=id=>{
+    if(id==='../auth-session') return {getAnyServerSession:async()=>session};
+    if(id==='../db') return {getDb:()=>pool};
+    if(id==='./security') return security;
+    if(id==='./store') return store;
+    throw Error(id);
+  };
+  browser._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,filename);
+  assert.equal((await browser.exports.connectionOwner(config)).account.id,'owner-a');
+  await assert.rejects(browser.exports.connectionOwner(config,true),{code:'reauthentication_required'});
+  session.session.createdAt=new Date();
+  assert.equal((await browser.exports.connectionOwner(config,true)).account.id,'owner-a');
+  session=null;
+  await assert.rejects(browser.exports.connectionOwner(config,true),{code:'login_required'});
 });

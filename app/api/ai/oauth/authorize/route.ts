@@ -48,12 +48,12 @@ export async function POST(request: Request) {
     }
     let owner;
     try {
-      owner = await connectionOwner(config);
+      owner = await connectionOwner(config, form.get('decision') === 'allow');
     } catch (error) {
-      if (error instanceof ConnectionError && error.code === 'login_required') {
+      if (error instanceof ConnectionError && ['login_required', 'reauthentication_required'].includes(error.code)) {
         const params = new URLSearchParams(form.get('authorization') || '');
         // Legacy consent pages lack resume parameters: sign in, then restart the connection.
-        const href = params.size ? connectionSignInHref(params, config)
+        const href = params.size ? connectionSignInHref(params, config, error.code === 'reauthentication_required')
           : '/auth?accountAccess=desktop&returnTo=%2Faccount%2Fai-connect#login';
         return new Response(null, { status: 303, headers: {
           Location: config.origin + href, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     if (form.get('decision') !== 'allow')
       callback.searchParams.set('error', 'access_denied');
     else {
-      requireConsentTerms(form);
+      if (config.audience === 'admin') requireConsentTerms(form);
       callback.searchParams.set(
         'code',
         await issueCode(getDb(), owner.account.id, auth, proof, config, owner.account.accountType),

@@ -208,8 +208,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   for (const width of [1280, 390]) {
     await page.setViewport({width,height:900});
     await render({...base,providerName:'ChatGPT',proof:'synthetic-proof',authorization:'synthetic-request'},false);
-    const consent=await page.$eval('form',form=>({checked:form.querySelector('[name="terms"]').checked,required:form.querySelector('[name="terms"]').required,denyBypasses:form.querySelector('[value="deny"]').formNoValidate}));
-    assert.deepEqual(consent,{checked:false,required:true,denyBypasses:true});
+    const consent=await page.$eval('form',form=>({hasCheckbox:Boolean(form.querySelector('[name="terms"]')),allow:form.querySelector('[value="allow"]').textContent,denyBypasses:form.querySelector('[value="deny"]').formNoValidate}));
+    assert.deepEqual(consent,{hasCheckbox:false,allow:'Allow connection',denyBypasses:true});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
     await page.screenshot({path:path.join(evidence,`owner-consent-${width}.png`),fullPage:true});
   }
@@ -240,8 +240,8 @@ const evidence=path.join(root,'.next/ai-connection-validation');
   await page.click('button[aria-haspopup="dialog"]::-p-text(Manage)');
   await page.waitForSelector('#ai-manage-panel');
   const approvalText=await page.$eval('#ai-manage-panel',e=>e.textContent);
-  assert.ok(approvalText.includes('Access approved'));
-  assert.ok(approvalText.includes('not a successful read'));
+  assert.ok(approvalText.includes('Connected'));
+  assert.ok(!approvalText.includes('No scheduled expiry'));
   assert.deepEqual(errors,[]);console.log('AI provider modal, dark/light cards, mobile layout, focus return and admin consent verified.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

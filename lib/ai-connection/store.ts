@@ -95,8 +95,6 @@ export async function eligibleAccount(
     throw new ConnectionError(403, "inactive_account", "Your Aim4price account is not active. Contact Aim4price Admin to review your account status.");
   if (row.account_type !== "business" && row.plan !== "desktop")
     throw new ConnectionError(403, "desktop_required", "Your Owner or Dealer account needs desktop access to connect an AI assistant.");
-  if (row.account_type !== "owner" && row.verified !== "true")
-    throw new ConnectionError(403, "verification_required", "Verify your account email before connecting.");
   if (row.account_type === "business") {
     // Mirror canBusinessRead without schema writes inside an AI read transaction.
     const membership = (await db.query(`SELECT m.business_id FROM public.business_workspace_members m
