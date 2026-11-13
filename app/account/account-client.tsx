@@ -1475,7 +1475,7 @@ export default function AccountClient({
             </div>
 
             <div className={styles.heroCopy}>
-              <PageHelpHeading topic="account"><h1>{accountDisplayName}</h1></PageHelpHeading>
+              <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}
@@ -1564,8 +1564,12 @@ export default function AccountClient({
 
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
             <div className={styles.compactCardHeader}>
-              <h2>Quick actions</h2>
-              <p>Everyday tasks first, account settings last.</p>
+              <PageHelpHeading topic="account">
+                <div>
+                  <h2>Quick actions</h2>
+                  <p>Everyday tasks first, account settings last.</p>
+                </div>
+              </PageHelpHeading>
             </div>
 
             <div className={styles.quickActionGroups}>
