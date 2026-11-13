@@ -1,0 +1,41 @@
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex: 1 1 auto; min-width: 0; width: 100%; }
+.heading > :is(h1, h2) { min-width: 0; flex: 1 1 auto; }
+.trigger.trigger { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; padding: .65rem; border: 1px solid var(--app-info-line, #cbdde5); border-radius: 50%; background: var(--app-info-soft, #f2f8fb); color: var(--app-text, #28536a); box-shadow: 0 3px 10px rgba(22,55,45,.04); cursor: pointer; transition: background .15s, border-color .15s; }
+.trigger.trigger:hover { background: var(--app-surface-soft, #e7f2ee); border-color: var(--app-accent, #82ad9c); }
+.trigger svg, .mark svg { width: 100%; height: 100%; }
+.trigger:focus-visible, .dialog button:focus-visible { outline: 3px solid var(--app-accent, #6ba58d); outline-offset: 4px; }
+.overlay { position: fixed; inset: 0; z-index: 5000; display: grid; place-items: center; padding: 1.25rem; overflow-y: auto; overscroll-behavior: contain; background: rgba(7, 27, 23, .45); backdrop-filter: blur(5px); }
+.dialog { box-sizing: border-box; width: min(36rem, 100%); max-height: calc(var(--website-visible-height, 100dvh) - 2.5rem); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--app-line, #d4e2db); border-radius: 1.55rem; background: var(--app-surface, #fff); color: var(--app-text, #123d31); box-shadow: 0 28px 90px rgba(7,27,23,.25); font-family: var(--font-heading, 'Montserrat'), sans-serif; text-align: left; }
+.header { display: flex; align-items: center; gap: .9rem; padding: 1.6rem 1.75rem 1.3rem; border-bottom: 1px solid var(--app-line, #e2ebe7); }
+.header > div { flex: 1; min-width: 0; }
+.mark { display: grid; place-items: center; flex: 0 0 2.8rem; width: 2.8rem; height: 2.8rem; padding: .6rem; box-sizing: border-box; border: 1px solid var(--app-info-line, #d3e2e9); border-radius: .9rem; background: var(--app-info-soft, #eef6fa); color: var(--app-text, #345e72); }
+.eyebrow { display: block; color: var(--app-muted, #65796f); font-size: .75rem; font-weight: 650; margin-bottom: .3rem; }
+.header h2 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -.035em; line-height: 1.2; }
+.close { display: grid; place-items: center; flex: 0 0 2.75rem; width: 2.75rem; height: 2.75rem; padding: 0; border: 1px solid var(--app-line, #d7e2dc); border-radius: .8rem; background: var(--app-surface-soft, #f6faf8); color: inherit; font: inherit; font-size: 1.6rem; cursor: pointer; }
+.body { padding: 1.4rem 1.75rem; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.purpose { margin: 0 0 1.4rem; color: var(--app-muted, #526b60); font-size: .94rem; line-height: 1.65; }
+.body h3 { margin: 0 0 .8rem; font-size: .86rem; font-weight: 800; }
+.features { display: grid; gap: .85rem; margin: 0; padding: 0; list-style: none; }
+.features li { display: flex; align-items: flex-start; gap: .65rem; font-size: .88rem; line-height: 1.6; }
+.features svg { flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem; margin-top: .15rem; color: var(--app-accent, #287559); }
+.start { margin-top: 1.4rem; padding: 1rem 1.15rem; border: 1px solid var(--app-line, #d8e6df); border-radius: .9rem; background: var(--app-surface-soft, #f3f9f5); }
+.start h3 { margin-bottom: .35rem; }
+.start p { margin: 0; font-size: .85rem; line-height: 1.6; color: var(--app-muted, #526b60); }
+.footer { display: flex; justify-content: flex-end; padding: 0 1.75rem 1.5rem; }
+.footer button { min-height: 2.8rem; min-width: 7.5rem; padding: .7rem 1.4rem; border: 1px solid #155a43; border-radius: .8rem; background: linear-gradient(180deg, #217757, #12523d); color: #fff; font: inherit; font-size: .88rem; font-weight: 750; cursor: pointer; }
+.footer button:hover { background: #12523d; }
+@media (max-width: 540px) {
+  .header { padding: 1.15rem; gap: .65rem; }
+  .header h2 { font-size: 1.25rem; }
+  .body { padding: 1.15rem; }
+  .footer { padding: 0 1.15rem 1.15rem; }
+  .mark { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .trigger.trigger { transition: none; } }
+
+/* Some existing pages paint the title panel on the heading itself. */
+.inset { position: relative; display: block; }
+.inset > .trigger { position: absolute; right: 1.75rem; top: 50%; transform: translateY(-50%); }
+.heading.inset > :is(h1, h2) { box-sizing: border-box; padding-right: 6rem; }
+.reserveSwitch > .trigger { right: 6.5rem; }
+.heading.reserveSwitch > :is(h1, h2) { padding-right: 10.25rem; }

@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import { createPortal } from '../../components/WebsitePortal';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
@@ -1204,7 +1205,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         ) : null}
 
         <section className={styles.hero} aria-labelledby="document-vault-title">
-          <h1 id="document-vault-title">Document Vault</h1>
+          <PageHelpHeading topic="documents"><h1 id="document-vault-title">Document Vault</h1></PageHelpHeading>
         </section>
 
         {initialAssetId ? (

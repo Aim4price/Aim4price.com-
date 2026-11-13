@@ -1,4 +1,5 @@
 "use client";
+import { PageHelpHeading } from '../../components/PageHelp';
 import DiscoveryAppDetails from '../../components/DiscoveryAppDetails';
 import ListPagination from '../../components/ListPagination';
 import WorkspaceViewSwitch from "../../components/WorkspaceViewSwitch";
@@ -1695,7 +1696,7 @@ export default function AssetDiscoveryClient({
     return (
       <section className={compactAppMode ? `${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}` : workspaceStyles.titlePanel}>
         <div className={styles.discoveryTitleRow}>
-          <h1>{compactAppMode ? "Discover assets" : advertised ? "Recently advertised" : "Discover Assets"}</h1>
+          <PageHelpHeading enabled={!compactAppMode} topic="discovery"><h1>{compactAppMode ? "Discover assets" : advertised ? "Recently advertised" : "Discover Assets"}</h1></PageHelpHeading>
           {allowRecentAdverts && !compactAppMode ? (
             <WorkspaceViewSwitch
               label={advertised ? "Browse available assets" : "View recent Marketplace adverts"}

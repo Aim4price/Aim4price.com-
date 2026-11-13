@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
@@ -73,7 +74,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const ready = !loading && !error;
 
   return <div className={styles.page}>
-    <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1><WorkspaceViewSwitch label="Switch to Cost Ledger" href="/my-invoices?view=costs" /></div></section>
+    <section className={ledger.pageTitleBlock}><div><PageHelpHeading topic="budgets"><h1>BUDGET TRACKING SYSTEM</h1></PageHelpHeading><WorkspaceViewSwitch label="Switch to Cost Ledger" href="/my-invoices?view=costs" /></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready} data-tooltip={filters.status === 'attention' ? 'Show all budgets again.' : 'Show budgets that need attention.'} data-tooltip-style="description"><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>

@@ -1,4 +1,5 @@
 'use client';
+import PageHelp from '../../components/PageHelp';
 import StudioIcon from '../../components/StudioIcon';
 import { marketplaceDealComparison } from '../../lib/selling-price';
 
@@ -3106,6 +3107,7 @@ export default function MarketplaceClient({
           ) : null}
           {!compactAppMode ? (
             <>
+              {!showroomMode ? <div className={styles.pageHelpTitle}><h1>Marketplace</h1><PageHelp topic="marketplace" /></div> : null}
               <label className={styles.searchBox}>
                 <span className={styles.searchIcon} aria-hidden="true">
                   <IconSearch />

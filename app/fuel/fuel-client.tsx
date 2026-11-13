@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import TeamFuelEntry from '../../components/team/TeamFuelEntry';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
@@ -3790,7 +3791,7 @@ export default function FuelClient({
           <section className={styles.ledgerPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
-                <h1>{isSlipsPage ? 'FUEL SLIP TRACKING' : 'FUEL TRACKING SYSTEM'}</h1>
+                <PageHelpHeading inset reserveSwitch topic={isSlipsPage ? 'fuelSlips' : 'fuelStorage'}><h1>{isSlipsPage ? 'FUEL SLIP TRACKING' : 'FUEL TRACKING SYSTEM'}</h1></PageHelpHeading>
                 <div className={styles.titleViewSwitch}><WorkspaceViewSwitch label={isSlipsPage ? 'Switch to Storage Tanks' : 'Switch to Fuel Slips'} onClick={switchFuelView} /></div>
               </div>
 

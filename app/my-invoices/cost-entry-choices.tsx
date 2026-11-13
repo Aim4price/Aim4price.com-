@@ -1,3 +1,4 @@
+import { PageHelpHeading } from '../../components/PageHelp';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
 import valuationStyles from '../valuation/page.module.css';
@@ -14,7 +15,7 @@ export default function CostEntryChoices() {
             <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}>
               <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                  <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Manage your costs</h1>
+                  <PageHelpHeading topic="costsEntry"><h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Manage your costs</h1></PageHelpHeading>
                   <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>Record your costs or track your budgets.</p>
                 </div>
                 <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Cost choices">
