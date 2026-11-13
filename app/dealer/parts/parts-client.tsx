@@ -282,6 +282,8 @@ export default function PartsClient({
   }
   const current = networks.find((n) => n.id === network);
   const singleDealer = Boolean(current?.list_mode);
+  const showBrand = rows.some((row) => row.brand?.trim());
+  const tableMinWidth = 1000 + (showBrand ? 160 : 0) + (!current?.owned ? 70 : 0) + (!singleDealer ? 420 : 0);
   const dealerName = singleDealer ? current?.owner_business_name || (current?.owned ? current.business_name : "") : "";
   const dealerTown = singleDealer ? current?.owner_town || (current?.owned ? current.town : "") : "";
   const uploadedAt = singleDealer ? current?.owner_uploaded_at || (current?.owned ? current.last_updated : "") : current?.last_updated;
@@ -687,19 +689,21 @@ export default function PartsClient({
                   </div>}
 
                   <div
-                    className={styles.tableWrap}
+                    className={`${styles.tableWrap} ${styles.stockTableScroll}`}
                     tabIndex={0}
                     role="region"
                     aria-label="Parts results"
                   >
-                    <table className={`${styles.stockTable} ${singleDealer ? styles.singleDealerTable : ""}`}>
+                    <table className={styles.stockTable} style={{ minWidth: tableMinWidth }}>
                       <thead>
                         <tr>
                           {!current?.owned && <th className={styles.selectColumn}>Select</th>}
-                          <th>Part number</th>
+                          <th scope="col" className={styles.partNumberColumn}>Part number</th>
+                          <th scope="col" className={styles.descriptionColumn}>Description</th>
+                          {showBrand && <th scope="col" className={styles.brandColumn}>Brand</th>}
                           <th className={`${styles.numeric} ${styles.quantityColumn}`}>Quantity</th>
                           <th className={`${styles.numeric} ${styles.priceColumn}`}>Unit price</th>
-                          {!singleDealer && <><th>Dealer</th><th>Last updated</th></>}
+                          {!singleDealer && <><th className={styles.dealerColumn}>Dealer</th><th className={styles.updatedColumn}>Last updated</th></>}
                           <th className={styles.contactColumn}>Enquiry</th>
                         </tr>
                       </thead>
@@ -709,9 +713,9 @@ export default function PartsClient({
                             {!current?.owned && <td><input type="checkbox" aria-label={`Select ${r.part_number}`} checked={selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} disabled={selectedParts.length>0 && selectedParts[0].dealer_id!==r.dealer_id || selectedParts.length>=50 && !selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} onChange={e=>setSelectedParts(e.target.checked?[...selectedParts,r]:selectedParts.filter(p=>p.dealer_id!==r.dealer_id||p.part_number!==r.part_number))}/></td>}
                             <td className={styles.partIdentity}>
                               <strong>{r.part_number}</strong>
-                              {r.brand && <small>{r.brand}</small>}
-                              {r.description && <small>{r.description}</small>}
                             </td>
+                            <td className={styles.partDescription}>{r.description || "—"}</td>
+                            {showBrand && <td className={styles.partBrand}>{r.brand || "—"}</td>}
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
                               <span className={r.price === null ? styles.priceOnRequest : styles.partPrice}>

@@ -1289,8 +1289,7 @@
 }
 
 /* Stocklist results: align quantities, prices and enquiry actions as a ledger. */
-.detailPage .partsPanel .stockTable { color: var(--app-text, #173e32); min-width: 680px; }
-.detailPage .stockTable.singleDealerTable { table-layout: fixed; }
+.detailPage .partsPanel .stockTable { color: var(--app-text, #173e32); table-layout: fixed; }
 .detailPage .stockTable th { padding: 13px 24px; color: var(--app-muted, #697d8b); font-size: .85rem; font-weight: 500; line-height: 1.4; border-top: 1px solid var(--app-border, #dce5df); }
 .detailPage .stockTable td { padding: 16px 24px; color: var(--app-text, #304d46); font-size: .95rem; font-weight: 600; line-height: 1.5; }
 .detailPage .stockTable .selectColumn { width: 70px; }
@@ -1300,13 +1299,22 @@
 .detailPage .stockTable td:last-child { width: 164px; }
 .detailPage .stockTable .partIdentity { overflow-wrap: anywhere; }
 .partIdentity > strong { font-size: .95rem; font-weight: 600; letter-spacing: normal; }
-.detailPage .stockTable .partIdentity small {
-  margin-top: 5px;
-  color: var(--app-text, #304d46);
-  font-size: .95rem;
-  font-weight: 400;
-  line-height: 1.5;
-}
+/* Keep descriptions separate, readable and aligned with their part number. */
+.detailPage .stockTable .partNumberColumn { width: 200px; }
+.detailPage .stockTable .descriptionColumn { min-width: 300px; }
+.detailPage .stockTable .brandColumn { width: 160px; }
+.detailPage .stockTable .dealerColumn { width: 240px; }
+.detailPage .stockTable .updatedColumn { width: 180px; }
+.detailPage .stockTable .partDescription,
+.detailPage .stockTable .partBrand { font-weight: 400; overflow-wrap: anywhere; }
+.detailPage .stockTable th + th,
+.detailPage .stockTable td + td { border-left: 1px solid var(--app-border, #e2eae5); }
+.detailPage .stockTableScroll { max-width: 100%; overflow-x: auto; scrollbar-width: auto; scrollbar-color: #7b9b8e var(--app-surface-soft, #edf3f0); }
+.stockTableScroll::-webkit-scrollbar { height: 14px; }
+.stockTableScroll::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf3f0); }
+.stockTableScroll::-webkit-scrollbar-thumb { background: #7b9b8e; border: 3px solid var(--app-surface-soft, #edf3f0); border-radius: 8px; }
+.stockTableScroll::-webkit-scrollbar-thumb:hover { background: #527868; }
+.stockTableScroll:focus-visible { outline: 2px solid #6aa58d; outline-offset: -2px; }
 .partPrice { font-weight: 600; font-variant-numeric: tabular-nums; }
 .priceOnRequest { color: var(--app-text, #304d46); font-size: .95rem; font-weight: 600; }
 .detailPage .stockTable tbody tr { transition: background .15s; }
@@ -1327,12 +1335,5 @@
   .detailPage .stockTable .priceColumn { width: 160px; }
   .detailPage .stockTable .contactColumn { width: 148px; }
 }
-@media(max-width: 700px) {
-  .detailPage .stockTable th:last-child, .detailPage .stockTable td:last-child { position: sticky; right: 0; z-index: 1; box-shadow: -8px 0 12px var(--app-shadow-colour, #173e3208); }
-  .detailPage .stockTable th:last-child { background: var(--app-surface-soft, #f3f8f5); }
-  .detailPage .stockTable td:last-child { background: var(--app-surface, #fff); }
-  .detailPage .stockTable tr:hover td:last-child, .detailPage .stockTable tr:focus-within td:last-child { background: var(--app-surface-soft, #f1f7f4); }
-}
-
 /* Use Maintenance's action typography in the stocklist toolbar. */
 .detailPage .detailActions button { font-size: .96rem; font-weight: 700; }
