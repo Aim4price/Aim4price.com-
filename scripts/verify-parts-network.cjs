@@ -171,6 +171,7 @@ const appCode =
         if (r.method() === "POST") {
           const b = JSON.parse(r.postData());
           actions.push(b);
+          if (b.action === "edit-part") row.quantity = Number(b.quantity);
           data =
             b.action === "preview"
               ? {
@@ -222,7 +223,7 @@ const appCode =
             ],
             invites: [],
           };
-        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1 };
+        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1, member:{revision:0} };
         return r.respond({
           contentType: "application/json",
           body: JSON.stringify(data),
@@ -334,7 +335,7 @@ const appCode =
           buttons.find(b => b.textContent.trim() === label)?.closest('[class*="tableToolbar"]'));
     }), "List actions belong to the table toolbar without a back button");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
-    assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Enquiry"]);
+    assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Edit"]);
     assert.deepEqual(await page.$$eval("tbody tr:first-child td", cells => cells.slice(0, 3).map(c => c.textContent.trim())), ["001-ABC", "Diff washer domed", "Landini"]);
     await page.setViewport({ width: 390, height: 844 });
     assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollWidth > el.clientWidth), "Extra columns scroll inside the table on phones");
@@ -349,7 +350,22 @@ const appCode =
     await page.waitForFunction(() => document.body.innerText.includes("No matching parts"));
     await click("Clear search");
     await page.waitForSelector("tbody tr");
-    await click("Contact");
+    await click("Edit");
+    await page.waitForSelector('[role=dialog] form');
+    assert.equal(await page.$eval('[role=dialog] input',e=>e.value),'001-ABC');
+    await page.screenshot({path:path.join(output,'edit-part.png')});
+    await page.$eval('[role=dialog] input[type=number]',e=>e.select());
+    await page.type('[role=dialog] input[type=number]',"8");
+    await click("Save changes");
+    await page.waitForFunction(()=>document.body.innerText.includes('Part updated successfully.'));
+    assert.equal(actions.find(a=>a.action==='edit-part').originalPartNumber,'001-ABC');
+    assert.equal(actions.find(a=>a.action==='edit-part').revision,0);
+    assert.equal(actions.find(a=>a.action==='edit-part').quantity,'8');
+    await page.waitForFunction(()=>[...document.querySelectorAll('tbody td')].some(e=>e.textContent.trim()==='8'));
+    await page.goto('https://example.test/parts/44444444-4444-4444-8444-444444444444');
+    await page.waitForSelector('tbody tr');
+    assert.equal(await page.$$eval('button',els=>els.filter(e=>e.textContent.trim()==='Edit').length),0);
+    await click("Enquire");
     await page.waitForSelector("[role=dialog]");
     assert.equal(
       await page.$eval('a[href^="tel:"]', (e) => e.getAttribute("href")),
@@ -379,6 +395,8 @@ const appCode =
 
     await page.keyboard.press("Escape");
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
+    await page.goto('https://example.test/parts/11111111-1111-4111-8111-111111111111');
+    await page.waitForSelector('tbody tr');
     await click("Add parts");
     await click("Import file");
     await page.waitForSelector("input[type=file]");
