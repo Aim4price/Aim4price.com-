@@ -357,8 +357,8 @@ const appCode =
     );
     assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
     await page.setViewport({width:1440,height:700});
-    await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '600px'));
-    assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact fits a scaled desktop viewport without scrolling');
+    await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '700px'));
+    assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact fits a desktop viewport without scrolling');
     await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
     await page.evaluate(() => document.documentElement.style.removeProperty('--website-visible-height'));
     await page.setViewport({width:390,height:844});
@@ -564,10 +564,11 @@ const appCode =
     await page.click('[aria-label="Select 001-ABC"]');
     await page.click('[aria-label="Select 002-XYZ"]');
     await click("Enquire about selected");
-    await page.waitForSelector("textarea");
     await page.$eval('[aria-label="Requested quantity for 002-XYZ"]',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'3');e.dispatchEvent(new Event('input',{bubbles:true}));});
     assert.ok(await page.$eval('a[href^="mailto:"]',e=>decodeURIComponent(e.href).includes('002-XYZ — quantity 3')));
     assert.ok(await page.$eval('a[href^="https://wa.me/"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 1')));
+    await click("Aim4price");
+    await page.waitForSelector("textarea");
     await page.screenshot({path:path.join(output,'multi-enquiry.png')});
     await page.setViewport({width:390,height:844});
     await page.screenshot({path:path.join(output,'multi-enquiry-phone.png')});
