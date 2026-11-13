@@ -336,6 +336,13 @@ const appCode =
     }), "List actions have a dedicated register-style row");
     await page.addStyleTag({content: `@font-face{font-family:PartsPreview;src:url(data:font/woff;base64,${fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64')})} :root{--font-body:PartsPreview;--font-heading:PartsPreview}`});
     await page.evaluate(()=>document.fonts.ready);
+    const priceText = () => page.$eval('tbody tr:first-child td:nth-child(5)', e => e.textContent.replace(/\s/g, ''));
+    assert.match(await priceText(), /850[.,]00/);
+    await page.click('[aria-label="Display prices with or without VAT"] button:nth-child(2)');
+    assert.match(await priceText(), /977[.,]50/);
+    assert.equal(await page.$eval('[aria-label="Display prices with or without VAT"] button:nth-child(2)',e=>e.getAttribute('aria-pressed')),'true');
+    await page.click('[aria-label="Display prices with or without VAT"] button:first-child');
+    assert.match(await priceText(), /850[.,]00/);
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
     assert.ok(await page.$$eval('thead th',els=>els.every(e=>getComputedStyle(e).textAlign==='center')));
     await page.evaluate(()=>{URL.createObjectURL=blob=>{window.exportBlob=blob;return 'blob:fixture';};HTMLAnchorElement.prototype.click=function(){};});

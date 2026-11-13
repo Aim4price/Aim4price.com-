@@ -300,7 +300,13 @@ export default function PartsClient({
   const dealerName = singleDealer ? current?.owner_business_name || (current?.owned ? current.business_name : "") : "";
   const dealerTown = singleDealer ? current?.owner_town || (current?.owned ? current.town : "") : "";
   const uploadedAt = singleDealer ? current?.owner_uploaded_at || (current?.owned ? current.last_updated : "") : current?.last_updated;
-  const vatIncluded = current?.owner_vat_included ?? current?.vat_included;
+  const [displayVatPreference, setDisplayVatPreference] = useState<boolean | null>(null);
+  useEffect(() => { setDisplayVatPreference(null); }, [network]);
+  const displayVatIncluded = displayVatPreference ?? current?.owner_vat_included ?? current?.vat_included ?? false;
+  function displayedPrice(row: Row) {
+    const price = Number(row.price);
+    return row.vat_included === displayVatIncluded ? price : displayVatIncluded ? price * 1.15 : price / 1.15;
+  }
   const active = current?.status === "active";
   const admin =
     contribute && !staff &&
@@ -684,7 +690,10 @@ export default function PartsClient({
                       <span aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
                       {uploadedAt && <span>Updated {date(uploadedAt)}</span>}
                     </div>
-                    {singleDealer && <span className={styles.vatContext}>{vatIncluded ? "Incl." : "Excl."} VAT</span>}
+                    <div className={styles.displayVatToggle} role="group" aria-label="Display prices with or without VAT">
+                      <button type="button" aria-pressed={!displayVatIncluded} onClick={() => setDisplayVatPreference(false)}>Excl. VAT</button>
+                      <button type="button" aria-pressed={displayVatIncluded} onClick={() => setDisplayVatPreference(true)}>Incl. VAT</button>
+                    </div>
                   </div>
                   <div className={styles.tableToolbar}>
                   <div className={styles.search}>
@@ -737,12 +746,11 @@ export default function PartsClient({
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
                               <span className={r.price === null ? styles.priceOnRequest : styles.partPrice}>
-                                {r.price === null ? "Price on request" : Number(r.price).toLocaleString("en-ZA", {
+                                {r.price === null ? "Price on request" : displayedPrice(r).toLocaleString("en-ZA", {
                                   style: "currency",
                                   currency: "ZAR",
                                 })}
                               </span>
-                              {!singleDealer && r.price !== null && <small>{r.vat_included ? "Incl. VAT" : "Excl. VAT"}</small>}
                             </td>
                             {!singleDealer && <><td>
                               {r.business_name}
@@ -1289,7 +1297,7 @@ export default function PartsClient({
               const book=new Excel.Workbook();const sheet=book.addWorksheet("Parts");
               sheet.columns=[{header:"Part number",key:"part",width:24},{header:"Description",key:"description",width:48},{header:"Brand",key:"brand",width:22},{header:"Quantity",key:"quantity",width:14},{header:"Unit price (ZAR)",key:"price",width:22},{header:"VAT basis",key:"vat",width:18},{header:"Dealer",key:"dealer",width:32},{header:"Town",key:"town",width:24}];
               const safe=(value:string)=>format === "csv" && /^[\s]*[=+@-]/.test(value) ? "'"+value : value;
-              (data.rows as Row[]).forEach(r=>sheet.addRow({part:safe(r.part_number),description:safe(r.description||""),brand:safe(r.brand||""),quantity:r.quantity,price:r.price===null?null:Number(r.price),vat:r.vat_included?"Incl. VAT":"Excl. VAT",dealer:safe(r.business_name),town:safe(r.town||"")}));
+              (data.rows as Row[]).forEach(r=>sheet.addRow({part:safe(r.part_number),description:safe(r.description||""),brand:safe(r.brand||""),quantity:r.quantity,price:r.price===null?null:Number(displayedPrice(r).toFixed(2)),vat:displayVatIncluded?"Incl. VAT":"Excl. VAT",dealer:safe(r.business_name),town:safe(r.town||"")}));
               sheet.getRow(1).font={bold:true};sheet.views=[{state:"frozen",ySplit:1}];sheet.getColumn("part").numFmt="@";sheet.getColumn("price").numFmt='"R" #,##0.00';
               const buffer=format==="xlsx"?await book.xlsx.writeBuffer():await book.csv.writeBuffer();
               const url=URL.createObjectURL(new Blob([new Uint8Array(buffer)],{type:format==="xlsx"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"text/csv;charset=utf-8"}));
