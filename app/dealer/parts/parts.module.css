@@ -347,9 +347,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(270px, auto);
   align-items: stretch;
-  gap: 1.6rem;
+  gap: 1.5rem;
   text-align: left;
-  padding: 1.3rem 1.38rem;
+  padding: 1.5rem;
   border: 1px solid var(--app-info-line, #c6d8df);
   border-radius: 1.58rem;
   background: var(--app-surface, #fff);
@@ -364,21 +364,21 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.7rem;
+  gap: 0.5rem;
 }
 .cardAside {
   min-width: 0;
   display: grid;
   grid-template-rows: 1fr auto;
   justify-items: end;
-  gap: 1.4rem;
+  gap: 1.25rem;
 }
 .cardCount {
   display: grid;
   align-content: start;
   justify-items: end;
   gap: 0.16rem;
-  padding-top: 0.12rem;
+  padding-top: 0;
   text-align: right;
 }
 .cardCount strong {
@@ -540,6 +540,7 @@
   flex-shrink: 0;
   gap: 12px;
 }
+.cardActions button:only-child { grid-column: 3; }
 .cardActions button {
   width: 100%;
   min-width: 0;
@@ -621,11 +622,12 @@
   transform: translate(-50%, 0);
 }
 .card {
-  min-height: 180px;
+  min-height: 0;
   overflow: visible;
 }
 .cardKind {
   margin-top: auto;
+  margin-bottom: 0.5rem;
   padding: 0.4rem 0.8rem;
   font-size: 14px;
   border-radius: 999px;
@@ -1101,6 +1103,12 @@
 @media (max-width: 900px) {
   :global(:where(html:not(:has([data-website-canvas])))) .card {
     grid-template-columns: minmax(0, 1fr);
+    padding: 1.125rem;
+    gap: 1rem;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardKind {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
   }
   :global(:where(html:not(:has([data-website-canvas])))) .cardAside {
     gap: 1rem;
