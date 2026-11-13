@@ -1,5 +1,11 @@
 /** Short, task-focused help. Keep copy independent of private account data. */
 export const pageHelp = {
+  marketplaceCreate: {
+    title: 'Create a Marketplace advert',
+    purpose: 'Prepare an equipment advert with its asking price, photos and contact details, then publish it to Marketplace.',
+    actions: ['Enter the equipment details, price and location, then add photos and contact information.', 'Review the preview and choose a layout. You can download a PNG or share the advert.', 'Select Publish advert to make the listing live. Dealers also publish it to their showroom.'],
+    start: 'Complete Advert details, then Photos & contact. Check everything in Preview & share before publishing.',
+  },
   partnerLeads: {
     "title": "Shared Asset Leads",
     "purpose": "Review assets shared with your business and see the information and actions the sender has allowed.",

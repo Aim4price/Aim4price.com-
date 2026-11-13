@@ -8,8 +8,16 @@ const chromium = require('@sparticuz/chromium');
 const root = path.resolve(__dirname, '..');
 const fixture = path.join(root, 'app/page-help-validation');
 const output = path.join(root, '.next/page-help-validation');
-const topics = ['valuation','register','maintenance','costsEntry','costs','budgets','fuelEntry','fuelSlips','fuelStorage','documents','map','marketplaceEntry','discovery','marketplace','account','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop','recentAdverts','partnerLeads','dealerTracking','dealerRegisterChoice','dealerCosts','partsStock','partsList','adStudio','adTemplate','adCreator','dealerUsers','middlemanUsers','sharedEnquiries','dealerAccount','middlemanAccount','sharingAccount'];
+
 (async () => {
+  // Read the registry through TypeScript so every added topic is exercised automatically.
+  const ts = require('typescript');
+  const registry = { exports: {} };
+  const source = await fs.readFile(path.join(root, 'lib/page-help.ts'), 'utf8');
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  require('node:vm').runInNewContext(compiled, { exports: registry.exports });
+  const topics = Object.keys(registry.exports.pageHelp);
+  assert.ok(topics.length > 0, 'help registry contains topics');
   let server, browser;
   try {
     await fs.mkdir(fixture);

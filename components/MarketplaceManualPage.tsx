@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import AdvertCreator from './AdvertCreator';
+import { PageHelpHeading } from './PageHelp';
 import AppHeader from './AppHeader';
 import OwnerAppNav from '../app/owner-app/owner-app-nav';
 import registerStyles from '../app/asset-register/page.module.css';
@@ -27,7 +28,7 @@ export default async function MarketplaceManualPage({ realm = '' }: { realm?: ''
     <div className={styles.titlePanel}>
       <section className={registerStyles.businessRegisterTitleBlock}>
         <div className={registerStyles.businessRegisterTitleCard}>
-          <h1>CREATE ADVERT</h1>
+          <PageHelpHeading topic="marketplaceCreate"><h1>CREATE ADVERT</h1></PageHelpHeading>
         </div>
       </section>
     </div>

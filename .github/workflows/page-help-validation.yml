@@ -4,6 +4,7 @@ on:
     paths:
       - 'components/PageHelp*'
       - 'components/AdStudioClient*'
+      - 'components/MarketplaceManualPage.tsx'
       - 'components/SharedAccountHero*'
       - 'components/DealerMaintenanceTrackerClient*'
       - 'app/leads/**'
