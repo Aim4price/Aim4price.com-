@@ -1347,3 +1347,38 @@
 .detailPage .detailActions button { font-size: .96rem; font-weight: 700; }
 
 .enquiryModal button.enquiryContact:disabled { opacity: 1; background: var(--app-surface-soft, #f1f7f4); cursor: default; }
+
+/* Give the request and contact choices their own space without nested scrollers. */
+.enquiryModal { width: min(1100px, 100%); padding: 28px; overflow-y: auto; }
+.enquiryBody { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px 28px; overflow: visible; flex-shrink: 0; padding: 0; }
+.enquiryDealer { grid-column: 1 / -1; padding: 14px 18px; align-items: center; }
+.enquiryItems, .enquiryChannels, .enquiryMessage { min-width: 0; }
+.enquirySectionHeading { min-height: 24px; margin-bottom: 12px; }
+.enquiryTableWrap { max-height: none; overflow: hidden; }
+.enquiryTable th:last-child { width: 100px; }
+.enquiryContactGrid { gap: 12px; }
+.enquiryContact, .enquiryModal button.enquiryContact { padding: 14px; min-height: 98px; gap: 10px; }
+.enquiryContact strong { line-height: 1.3; }
+.enquiryContact small { margin-top: 6px; line-height: 1.4; }
+.enquiryModal .enquiryHint { margin-top: 12px; line-height: 1.4; }
+.enquiryFooter { margin-top: 22px; padding-top: 16px; }
+.enquiryPagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; }
+.enquiryModal .enquiryPagination button { padding: 8px 12px; min-height: 36px; font-size: 13px; }
+@media (max-width: 760px) {
+  .enquiryModal { padding: 20px; }
+  .enquiryBody { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .enquiryDealer { grid-column: auto; padding: 12px; }
+  .enquiryContactGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .enquiryContact, .enquiryModal button.enquiryContact { padding: 10px; min-height: 88px; gap: 8px; }
+  .enquiryContactIcon { flex-basis: 26px; height: 26px; }
+  .enquiryContact strong { font-size: .9rem; }
+  .enquiryContact small { font-size: .78rem; }
+  .enquiryFooter { margin-top: 16px; }
+}
+
+@media (min-width: 761px) {
+  .enquiryBody { grid-template-areas: "dealer contact" "parts contact"; grid-template-rows: auto 1fr; }
+  .enquiryDealer { grid-area: dealer; }
+  .enquiryItems { grid-area: parts; }
+  .enquiryChannels, .enquiryMessage { grid-area: contact; }
+}

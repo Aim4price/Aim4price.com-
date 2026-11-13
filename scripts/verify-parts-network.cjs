@@ -222,7 +222,7 @@ const appCode =
             ],
             invites: [],
           };
-        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"}],total:2} : { rows: [row], total: 1 };
+        else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1 };
         return r.respond({
           contentType: "application/json",
           body: JSON.stringify(data),
@@ -357,8 +357,9 @@ const appCode =
     );
     assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
     await page.setViewport({width:1440,height:700});
-    await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '700px'));
-    assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact fits a desktop viewport without scrolling');
+    await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '600px'));
+    assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact body has no nested scrollbar at a scaled desktop height');
+    assert.ok(await page.$eval('[role=dialog]', e => e.scrollHeight <= e.clientHeight + 1), 'Entire enquiry fits a 600px effective viewport without clipping or scrolling');
     await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
     await page.evaluate(() => document.documentElement.style.removeProperty('--website-visible-height'));
     await page.setViewport({width:390,height:844});
@@ -563,10 +564,15 @@ const appCode =
     );
     await page.click('[aria-label="Select 001-ABC"]');
     await page.click('[aria-label="Select 002-XYZ"]');
+    await page.click('[aria-label="Select 003-PAGE"]');
     await click("Enquire about selected");
     await page.$eval('[aria-label="Requested quantity for 002-XYZ"]',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'3');e.dispatchEvent(new Event('input',{bubbles:true}));});
     assert.ok(await page.$eval('a[href^="mailto:"]',e=>decodeURIComponent(e.href).includes('002-XYZ — quantity 3')));
     assert.ok(await page.$eval('a[href^="https://wa.me/"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 1')));
+    await click("Next");
+    await page.$eval('[aria-label="Requested quantity for 003-PAGE"]',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'5');e.dispatchEvent(new Event('input',{bubbles:true}));});
+    await click("Previous");
+    assert.equal(await page.$eval('[aria-label="Requested quantity for 002-XYZ"]',e=>e.value),'3');
     await click("Aim4price");
     await page.waitForSelector("textarea");
     await page.screenshot({path:path.join(output,'multi-enquiry.png')});
@@ -582,8 +588,9 @@ const appCode =
     await page.waitForFunction(() =>
       document.body.innerText.includes("Enquiry sent."),
     );
-    assert.equal(actions.find(a=>a.action==='enquire').items.length,2);
+    assert.equal(actions.find(a=>a.action==='enquire').items.length,3);
     assert.equal(actions.find(a=>a.action==='enquire').items[1].quantity,3);
+    assert.equal(actions.find(a=>a.action==='enquire').items[2].quantity,5);
     assert.equal(
       actions.find((a) => a.action === "enquire").items[0].partNumber,
       "001-ABC",
