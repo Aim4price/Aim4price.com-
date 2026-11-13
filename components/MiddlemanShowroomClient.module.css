@@ -811,16 +811,23 @@
   white-space: nowrap;
   animation: none;
 }
-.managerToolbar .heroActions > .createShowroomAction,
+.managerToolbar .heroActions > .createShowroomAction {
+  color: var(--app-text, #0d5a42);
+  border-color: var(--app-accent, #75c79a);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #ecf9f1));
+}
 .managerToolbar .heroActions > .createShowroomAction:hover:not(:disabled) {
-  color: var(--app-warning, #793d0e);
-  border-color: var(--app-warning-line, #e6a16d);
-  background: linear-gradient(180deg, var(--app-surface, #fffaf5), var(--app-warning-soft, #fff3e7));
+  border-color: var(--app-accent, #4daf78);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #ddf3e6));
 }
 .managerToolbar .heroActions > .shareShowroomAction {
-  color: var(--app-info, #194c7e);
-  border-color: var(--app-info-line, #8ebaff);
-  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #eff6ff));
+  color: var(--app-warning, #723b0d);
+  border-color: var(--app-warning-line, #c87534);
+  background: linear-gradient(180deg, var(--app-surface, #fffaf5), var(--app-warning-soft, #fff0e3));
+}
+.managerToolbar .heroActions > .shareShowroomAction:hover:not(:disabled) {
+  border-color: var(--app-warning-line, #a95b1d);
+  background: linear-gradient(180deg, var(--app-surface, #fff7f0), var(--app-warning-soft, #ffe2ca));
 }
 .managerToolbar .heroActions > .openShowroomButton {
   color: #fff;
