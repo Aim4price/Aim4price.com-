@@ -666,6 +666,12 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   await assert.rejects(()=>network.editPartsRow(dealer,id,edit),/changed/);
   assert.equal((await network.partsData(dealer,id,'mine','updated',0)).rows[0].part_number,'003');
   assert.equal((await network.partsData(dealer,id,'mine','landini',0)).rows[0].part_number,'003');
+  await network.editPartsRow(dealer,id,{...edit,originalPartNumber:'003',quantity:'',brand:'',description:'',revision:2});
+  const cleared=(await network.partsData(dealer,id,'mine','003',0)).rows[0];
+  assert.equal(cleared.quantity,8);
+  assert.equal(cleared.brand,'');
+  assert.equal(cleared.description,'');
+
   await db.query("INSERT INTO parts_network_rows(network_id,dealer_id,part_key,part_number,quantity,price,brand,description) SELECT $1,$2,'EXTRA'||n,'EXTRA'||n,1,1,'','' FROM generate_series(1,55) n",[id,dealer.id]);
   assert.equal((await network.partsData(dealer,id,'mine','',0)).rows.length,50);
   assert.equal((await network.partsData(dealer,id,'mine','',0,true)).rows.length,57);

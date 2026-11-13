@@ -286,6 +286,12 @@ test("both Discovery views share one toolbar treatment and archived adverts avoi
   assert.doesNotMatch(client, />A4P</);
 });
 
+test("the recent advert gallery uses the server-provided photos for guests and members", () => {
+  const gallery = client.match(/<RecentAdvertGallery[\s\S]*?\/>/)?.[0] ?? "";
+  assert.match(gallery, /urls=\{advert\.imageUrls/);
+  assert.doesNotMatch(gallery, /advertiserIdentityVisible|identityVisible|authenticated/);
+});
+
 test("recent adverts reuse the normal Discovery card and detail structure", () => {
   for (const token of [
     "assetStyles.assetCard",

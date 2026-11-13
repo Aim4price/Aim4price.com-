@@ -1534,3 +1534,5 @@
   font-weight: 800;
 }
 .deleteModal .deleteFooter .deleteConfirm:hover:not(:disabled) { background: linear-gradient(#a63838, #872b2b); }
+/^>>>>>>> origin/main$/d
+.partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }

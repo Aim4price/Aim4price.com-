@@ -744,7 +744,7 @@ export default function PartsClient({
                             <td className={styles.partIdentity}>
                               <strong>{r.part_number}</strong>
                             </td>
-                            <td className={styles.partDescription}>{r.description || "—"}</td>
+                            <td className={styles.partDescription}><span className={styles.priceOnRequest}>{r.description || "—"}</span></td>
                             {showBrand && <td className={styles.partBrand}>{r.brand || "—"}</td>}
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
@@ -1323,13 +1323,13 @@ export default function PartsClient({
           });}}>
             <div className={styles.partEditFields}>
               <label>Part number<input required maxLength={100} value={editingPart.partNumber} onChange={e=>setEditingPart({...editingPart,partNumber:e.target.value})}/></label>
-              <label>Brand<input maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
-              <label className={styles.partEditDescription}>Description<input maxLength={500} value={editingPart.description} onChange={e=>setEditingPart({...editingPart,description:e.target.value})}/></label>
-              <label>Quantity<input required type="number" min="0" max="999999999" step="1" value={editingPart.quantity} onChange={e=>setEditingPart({...editingPart,quantity:e.target.value})}/></label>
+              <label>Brand<input placeholder="Optional" maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
+              <label className={styles.partEditDescription}>Description<input placeholder="Optional" maxLength={500} value={editingPart.description} onChange={e=>setEditingPart({...editingPart,description:e.target.value})}/></label>
+              <label>Quantity<input placeholder="Optional" type="number" min="0" max="999999999" step="1" value={editingPart.quantity} onChange={e=>setEditingPart({...editingPart,quantity:e.target.value})} aria-describedby="part-edit-quantity-hint"/><small id="part-edit-quantity-hint">Leave blank to keep the current quantity.</small></label>
               <div className={styles.partEditPrice}>
-                <label htmlFor="part-edit-price">Unit price <small>Optional, {editingPart.priceIncluded ? "incl." : "excl."} VAT</small></label>
+                <label htmlFor="part-edit-price">Unit price <small>{editingPart.priceIncluded ? "Incl." : "Excl."} VAT</small></label>
                 <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl}`}>
-                  <VatPriceInput id="part-edit-price" valueExVat={editingPart.price} included={editingPart.priceIncluded} vatRate={0.15} onValueChange={price=>setEditingPart({...editingPart,price})} placeholder="0" aria-label={`Unit price, ${editingPart.priceIncluded ? "including" : "excluding"} VAT`} />
+                  <VatPriceInput id="part-edit-price" valueExVat={editingPart.price} included={editingPart.priceIncluded} vatRate={0.15} onValueChange={price=>setEditingPart({...editingPart,price})} placeholder="Optional" aria-label={`Unit price, ${editingPart.priceIncluded ? "including" : "excluding"} VAT`} />
                   <div className={priceStyles.amountVatToggle} role="group" aria-label="Unit price VAT basis">
                     <button type="button" aria-label="Including VAT" aria-pressed={editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:true})}>Incl</button>
                     <button type="button" aria-label="Excluding VAT" aria-pressed={!editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:false})}>Excl</button>
