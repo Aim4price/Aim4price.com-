@@ -1479,3 +1479,15 @@
   .entryModal:has(.entryMethods) .stageBody { gap:20px; }
   .entryExample { padding-top:16px; }
 }
+
+/* Keep the choice highlight within its rounded edge and clear of the scroller. */
+.entryModal:has(.entryMethods) .stageBody { padding:6px; }
+.entryModal .entryMethods button:hover,
+.entryModal .entryMethods button:focus-visible {
+  border-color:#27805f;
+  box-shadow:inset 0 0 0 1px #27805f, 0 0 0 4px #27805f14;
+}
+.entryModal .entryMethods button:focus-visible {
+  outline:2px solid #27805f;
+  outline-offset:-2px;
+}

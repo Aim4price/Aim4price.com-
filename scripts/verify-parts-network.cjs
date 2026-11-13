@@ -437,6 +437,8 @@ const appCode =
     await page.goto('https://example.test/parts/11111111-1111-4111-8111-111111111111');
     await page.waitForSelector('tbody tr');
     await click("Add / update parts");
+    await page.hover('[data-tone="green"]');
+    await page.$eval('[data-tone="green"]',e=>e.focus());
     await page.screenshot({path:path.join(output,'entry-choices-desktop.png')});
     await page.setViewport({width:390,height:844});
     await page.screenshot({path:path.join(output,'entry-choices-phone.png')});
