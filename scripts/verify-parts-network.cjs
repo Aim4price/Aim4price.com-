@@ -145,7 +145,7 @@ const appCode =
       business_name: "Example Agricultural",
       town: "George",
       phone: "0821234567",
-      email: "parts@example.test",
+      email: "dealers@aim4price.com",
       vat_included: false,
     };
     const row = {
@@ -158,7 +158,7 @@ const appCode =
       business_name: "Example Agricultural",
       town: "George",
       phone: "0821234567",
-      email: "parts@example.test",
+      email: "dealers@aim4price.com",
       vat_included: false,
       uploaded_at: new Date().toISOString(),
     };
@@ -356,10 +356,13 @@ const appCode =
       "tel:0821234567",
     );
     assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
+    await page.addStyleTag({content: `@font-face{font-family:PartsPreview;src:url(data:font/woff;base64,${fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64')})} :root{--font-body:PartsPreview;--font-heading:PartsPreview}`});
+    await page.evaluate(()=>document.fonts.ready);
     await page.setViewport({width:1440,height:700});
     await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '600px'));
     assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact body has no nested scrollbar at a scaled desktop height');
     assert.ok(await page.$eval('[role=dialog]', e => e.scrollHeight <= e.clientHeight + 1), 'Entire enquiry fits a 600px effective viewport without clipping or scrolling');
+    assert.ok(await page.$$eval('[class*=enquiryContact] small', els=>els.every(e=>e.closest('[class*=enquiryContact]').scrollWidth<=e.closest('[class*=enquiryContact]').clientWidth+1 && e.scrollWidth<=e.clientWidth+1 && e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1)), 'Contact details stay on one complete line in the actual site font');
     await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
     await page.evaluate(() => document.documentElement.style.removeProperty('--website-visible-height'));
     await page.setViewport({width:390,height:844});

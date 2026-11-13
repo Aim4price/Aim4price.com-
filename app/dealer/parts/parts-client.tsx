@@ -1299,7 +1299,7 @@ export default function PartsClient({
                 <div className={styles.enquiryContactGrid}>
                   <button type="button" className={styles.enquiryContact} data-tone="green" disabled={Boolean(current?.owned) || desktop}
                     onClick={()=>setEnquiryCompose(true)}>
-                    <span className={styles.enquiryContactIcon}><Icon kind="message" /></span><span><strong>Aim4price</strong><small>{current?.owned ? "Available to dealers viewing your list" : desktop ? "Send from the account holder’s login" : "Send an enquiry to the dealer’s Leads"}</small></span>
+                    <span className={styles.enquiryContactIcon}><Icon kind="message" /></span><span><strong>Aim4price</strong><small>{current?.owned ? "For other dealers" : desktop ? "Account holder only" : "Send to dealer’s Leads"}</small></span>
                   </button>
                   {contact.phone && <a className={styles.enquiryContact} href={"tel:" + contact.phone.replace(/[^+0-9]/g, "")}>
                     <span className={styles.enquiryContactIcon}><Icon kind="phone" /></span><span><strong>Call</strong><small>{contact.phone}</small></span>
