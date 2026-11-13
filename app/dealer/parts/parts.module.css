@@ -1425,3 +1425,32 @@
 .partEditFooter { justify-content:flex-end; padding-top:20px; border-top:1px solid var(--app-line,#d9e5df); }
 .partEditPrice > label { flex-direction:row; }
 .partEditPriceControl input:focus { outline:none; }
+
+/* Register-style stocklist actions and a readable, consistent table. */
+.detailPage .registerActions { display:grid; grid-auto-flow:row; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; margin:0 0 22px; width:100%; }
+.detailPage .registerActions button { width:100%; min-width:0; min-height:60px; padding:16px 18px; border-radius:18px; font-size:1rem; font-weight:750; justify-content:center; white-space:nowrap; }
+.detailPage .registerActions:has(>button:only-child) { grid-template-columns:minmax(200px,1fr); }
+.detailPage .registerActions:has(>button:nth-child(2):last-child) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.detailPage .registerActions .addPartsAction { color:#204f79; border-color:#9fc5ea; background:linear-gradient(135deg,#fff,#edf6ff); }
+.detailPage .listContext { align-items:center; gap:16px 24px; padding:24px 24px 0; }
+.detailPage .listDealer { flex:1; font-size:1rem; font-weight:700; }
+.detailPage .listTown { font-weight:500; }
+.detailPage .listStatus { display:flex; align-items:center; flex-wrap:wrap; gap:10px 20px; font-size:.95rem; font-weight:500; color:var(--app-text,#304d46); }
+.detailPage .listStatus > span:first-child { font-weight:700; }
+.detailPage .vatContext { font-size:.95rem; font-weight:600; color:var(--app-text,#304d46); white-space:nowrap; }
+.detailPage .stockTable th, .detailPage .stockTable td { text-align:center; vertical-align:middle; font-size:.95rem; }
+.detailPage .stockTable th { color:var(--app-text,#173e32); font-weight:700; padding:16px 20px; }
+.detailPage .stockTable td { padding:18px 20px; font-weight:500; }
+.detailPage .stockTable .contactColumn { text-align:center; }
+.detailPage .stockTable .partDescription { text-align:left; font-weight:500; }
+.detailPage .stockTable .partBrand { font-weight:500; }
+.detailPage .stockTable td:last-child button { margin-inline:auto; }
+@media(max-width:1000px) { .detailPage .registerActions { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; } }
+@media(max-width:600px) {
+ .detailPage .registerActions { gap:10px; margin-bottom:16px; }
+ .detailPage .registerActions button { font-size:.85rem; min-height:54px; padding:12px 8px; white-space:normal; }
+ .detailPage .listContext { padding:18px 14px 0; gap:12px; }
+ .detailPage .listDealer { flex-basis:100%; }
+ .detailPage .listStatus { font-size:.85rem; gap:8px 14px; }
+ .detailPage .vatContext { font-size:.85rem; }
+}

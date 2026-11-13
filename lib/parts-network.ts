@@ -151,6 +151,7 @@ export async function partsData(
   view: string,
   search: string,
   page: number,
+  download = false,
 ) {
   return transaction(async (db) => {
     const member = await access(
@@ -178,12 +179,13 @@ export async function partsData(
     const query = str(search, 100).toUpperCase();
     const offset = Math.max(0, Math.min(10000, Math.floor(page) || 0)) * 50;
     // strpos is literal, preserving punctuation and leading zeros in part numbers.
-    const where = `r.network_id=$1 AND EXISTS (SELECT 1 FROM parts_networks n WHERE n.id=r.network_id AND (NOT n.list_mode OR n.created_by=r.dealer_id)) AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0)`;
+    const where = `r.network_id=$1 AND EXISTS (SELECT 1 FROM parts_networks n WHERE n.id=r.network_id AND (NOT n.list_mode OR n.created_by=r.dealer_id)) AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0 OR strpos(upper(coalesce(r.description,'')),$4)>0 OR strpos(upper(coalesce(r.brand,'')),$4)>0)`;
     const args = [id, mine, actor.id, query];
     const rows = await db.query(
-      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,r.brand,r.description,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT 50 OFFSET $5`,
-      [...args, offset],
+      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,r.brand,r.description,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT ${download ? 50001 : 50} OFFSET $5`,
+      [...args, download ? 0 : offset],
     );
+    if (download && rows.rows.length > 50000) throw new PartsError("Narrow your search to download up to 50,000 parts at a time.");
     const count = await db.query(
       `SELECT count(*)::int total FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where}`,
       args,
