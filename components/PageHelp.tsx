@@ -39,7 +39,7 @@ export default function PageHelp({ topic }: { topic: PageHelpTopic }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return <>
-    <button type="button" className={styles.trigger} aria-label={`About ${pageHelp[topic].title}`} title="About this page" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? `${id}-dialog` : undefined} onClick={() => setOpen(true)}><InfoIcon /></button>
+    <button type="button" className={styles.trigger} aria-label={`About ${pageHelp[topic].title}`} data-tooltip={`About ${pageHelp[topic].title}`} aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? `${id}-dialog` : undefined} onClick={() => setOpen(true)}><InfoIcon /></button>
     {open && createPortal(<HelpDialog topic={topic} id={id} onClose={() => setOpen(false)} />, document.body)}
   </>;
 }
