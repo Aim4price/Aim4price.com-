@@ -331,10 +331,22 @@ const appCode =
     assert.ok(await page.evaluate(() => {
       const buttons = [...document.querySelectorAll("button")];
       return !buttons.some(b => b.textContent.trim() === "Back to Parts") &&
-        ["Add parts", "Share", "Manage"].every(label =>
-          buttons.find(b => b.textContent.trim() === label)?.closest('[class*="tableToolbar"]'));
-    }), "List actions belong to the table toolbar without a back button");
+        ["Share", "Add / update parts", "Manage", "Download"].every(label =>
+          buttons.find(b => b.textContent.trim() === label)?.closest('[aria-label="Stocklist actions"]'));
+    }), "List actions have a dedicated register-style row");
+    await page.addStyleTag({content: `@font-face{font-family:PartsPreview;src:url(data:font/woff;base64,${fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64')})} :root{--font-body:PartsPreview;--font-heading:PartsPreview}`});
+    await page.evaluate(()=>document.fonts.ready);
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
+    assert.ok(await page.$$eval('thead th',els=>els.every(e=>getComputedStyle(e).textAlign==='center')));
+    await page.evaluate(()=>{URL.createObjectURL=blob=>{window.exportBlob=blob;return 'blob:fixture';};HTMLAnchorElement.prototype.click=function(){};});
+    await click('Download');await click('Excel');
+    await page.waitForFunction(()=>document.body.innerText.includes('Parts download ready.'));
+    const bytes=await page.evaluate(async()=>Array.from(new Uint8Array(await window.exportBlob.arrayBuffer())));
+    const exported=new (require('exceljs').Workbook)();await exported.xlsx.load(Buffer.from(bytes));
+    assert.equal(exported.worksheets[0].getCell('A2').value,'001-ABC');
+    assert.equal(exported.worksheets[0].getCell('D2').value,3);
+    assert.equal(exported.worksheets[0].getCell('F2').value,'Excl. VAT');
+
     assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Edit"]);
     assert.deepEqual(await page.$$eval("tbody tr:first-child td", cells => cells.slice(0, 3).map(c => c.textContent.trim())), ["001-ABC", "Diff washer domed", "Landini"]);
     await page.setViewport({ width: 390, height: 844 });
@@ -343,6 +355,7 @@ const appCode =
     assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollLeft > 0), "Horizontal scrolling reaches the enquiry column");
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), "The page itself does not overflow");
     await page.$eval('[aria-label="Parts results"]', el => { el.scrollLeft = 0; });
+    assert.equal(await page.$eval('[aria-label="Stocklist actions"]',e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2,"Phone actions use two columns");
     await page.screenshot({ path: path.join(output, "table-columns-phone.png") });
     await page.setViewport({ width: 1440, height: 1000 });
     assert.ok(!(await page.evaluate(() => [...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Next"))));
@@ -416,7 +429,7 @@ const appCode =
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
     await page.goto('https://example.test/parts/11111111-1111-4111-8111-111111111111');
     await page.waitForSelector('tbody tr');
-    await click("Add parts");
+    await click("Add / update parts");
     await click("Import file");
     await page.waitForSelector("input[type=file]");
     const file = path.join(output, "fixture.csv");
@@ -436,7 +449,7 @@ const appCode =
     await click("Replace list (1 removed)");
     await page.waitForFunction(() => document.body.innerText.includes("Parts list updated successfully."));
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
-    await click("Add parts");
+    await click("Add / update parts");
     await click("Add one part");
     await page.type('[aria-label="Part number 1"]', '000123');
     await page.type('[aria-label="Quantity 1"]', '1');
@@ -460,7 +473,7 @@ const appCode =
     async function paste(selector,text) {
       await page.$eval(selector,(input,text)=>{const clipboardData=new DataTransfer();clipboardData.setData('text/plain',text);input.dispatchEvent(new ClipboardEvent('paste',{clipboardData,bubbles:true,cancelable:true}));},text);
     }
-    await click("Add parts");
+    await click("Add / update parts");
     await click("Add in a sheet");
     assert.equal(await page.$$eval('[aria-invalid=true]',els=>els.length),0);
     assert.equal(await page.$('section[aria-label="Contact details and VAT"]'),null);
@@ -487,7 +500,7 @@ const appCode =
     await page.waitForFunction(()=>document.body.innerText.includes('reviewed rows'));
     await click('Save parts');
     await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
-    await click('Add parts');await click('Import file');
+    await click('Add / update parts');await click('Import file');
     await page.evaluate(()=>[...document.querySelectorAll('summary')].find(e=>e.textContent==='Paste a table with a different column order').click());
     await page.type('[aria-label="Paste spreadsheet cells"]','Description\tQty\tPart number\nDowel\t16\t000123');
     await click('Match pasted columns');await page.waitForSelector('[aria-label="Part number column"]');
@@ -504,7 +517,7 @@ const appCode =
     workbook.addWorksheet('Stock').addRow(['01.3657074','Dowel',16]);
     workbook.addWorksheet('Other').addRow(['01.3671641','Bush',9]);
     const excelFile=path.join(output,'fixture.xlsx');await workbook.xlsx.writeFile(excelFile);
-    await click('Add parts');await click('Import file');
+    await click('Add / update parts');await click('Import file');
     await (await page.$('input[type=file]')).uploadFile(excelFile);
     await page.waitForSelector('[aria-label="Quantity column"]');
     assert.equal(await page.$eval('input[type=checkbox]',e=>e.checked),false);
@@ -572,7 +585,7 @@ const appCode =
       "only table scrolls on phones",
     );
     await page.screenshot({ path: path.join(output, "table-phone.png") });
-    await click("Add parts");
+    await click("Add / update parts");
     await page.waitForSelector("[role=dialog]");
     assert.ok(
       await page.$eval(
@@ -604,7 +617,7 @@ const appCode =
     assert.ok(
       !(await page.evaluate(() =>
         [...document.querySelectorAll("button")].some(
-          (b) => b.textContent.trim() === "Add parts",
+          (b) => b.textContent.trim() === "Add / update parts",
         ),
       )),
     );
@@ -682,7 +695,7 @@ const appCode =
     network.last_updated = null;
     await page.goto("https://example.test/parts/11111111-1111-4111-8111-111111111111");
     await page.waitForFunction(() => document.body.innerText.includes("No parts added yet"));
-    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Add parts").length === 1));
+    assert.ok(await page.evaluate(() => [...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "Add / update parts").length === 1));
     await page.screenshot({path:path.join(output,"empty-list.png")});
     await page.goto("https://example.test/parts/join?token=fixture");
     await page.waitForSelector('a[href^="/auth?returnTo="]');

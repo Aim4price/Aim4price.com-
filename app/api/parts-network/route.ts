@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
         q.get("view") || "search",
         q.get("search") || "",
         Number(q.get("page") || 0),
+        q.get("download") === "true",
       ),
     );
   } catch (e) {

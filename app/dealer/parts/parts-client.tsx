@@ -113,9 +113,11 @@ function Icon({
     | "open"
     | "edit"
     | "delete"
+    | "download"
     | "eye";
 }) {
   const paths = {
+    download: "M12 3v13 M7 11l5 5 5-5 M3 17v4h18v-4",
     back: "M19 12H5 M11 6l-6 6 6 6",
     message: "M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z",
     link: "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
@@ -228,6 +230,7 @@ export default function PartsClient({
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
   const [modal, setModal] = useState<
+      | "download"
       | "access"
       | "upload"
       | "invite"
@@ -422,13 +425,7 @@ export default function PartsClient({
     }
   }
   const detailActions = (
-    <div className={`${styles.actions} ${styles.detailActions}`}>
-      {canUpload && (
-        <button className={styles.primary} onClick={openUpload} data-tooltip="Add parts manually or import your stocklist." data-tooltip-style="description">
-          <Icon kind="upload" />
-          Add parts
-        </button>
-      )}
+    <div className={`${styles.actions} ${styles.detailActions} ${styles.registerActions}`} aria-label="Stocklist actions">
       {admin && (
         <button
           className={styles.shareAction}
@@ -442,6 +439,12 @@ export default function PartsClient({
         >
           <Icon kind="share" />
           Share
+        </button>
+      )}
+      {canUpload && (
+        <button className={styles.addPartsAction} onClick={openUpload} data-tooltip="Add parts manually or import your stocklist." data-tooltip-style="description">
+          <Icon kind="upload" />
+          Add / update parts
         </button>
       )}
       {admin && (
@@ -459,6 +462,7 @@ export default function PartsClient({
           Manage
         </button>
       )}
+      <button className={styles.primary} onClick={()=>setModal("download")}><Icon kind="download" />Download</button>
       {view === "members" && (
         <button
           onClick={() =>
@@ -670,6 +674,7 @@ export default function PartsClient({
 
                 </div>
               </div>
+              {detailActions}
               {view !== "members" && (
                 <>
                   <div className={styles.partsPanel}>
@@ -677,15 +682,16 @@ export default function PartsClient({
                     {dealerName && <div className={styles.listDealer}><span>{dealerName}{dealerTown && <span className={styles.listTown}> · {dealerTown}</span>}</span></div>}
                     <div className={styles.listStatus}>
                       <span aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
-                      {uploadedAt && <span>Updated {date(uploadedAt)}{singleDealer ? ` · ${vatIncluded ? "Incl." : "Excl."} VAT` : ""}</span>}
+                      {uploadedAt && <span>Updated {date(uploadedAt)}</span>}
                     </div>
+                    {singleDealer && <span className={styles.vatContext}>{vatIncluded ? "Incl." : "Excl."} VAT</span>}
                   </div>
                   <div className={styles.tableToolbar}>
                   <div className={styles.search}>
                     <Icon kind="search" />
                     <input
                       aria-label="Search part number"
-                      placeholder="Search part number"
+                      placeholder="Search part number, description or brand"
                       value={search}
                       onChange={(e) => {
                         setSearch(e.target.value);
@@ -693,7 +699,6 @@ export default function PartsClient({
                       }}
                     />
                   </div>
-                  {(canUpload || admin) && detailActions}
                   </div>
                   {!current?.owned && <div className={styles.selectionBar}>
                     <span>{selectedParts.length} selected · Choose up to 50 parts from one dealer</span>
@@ -1275,6 +1280,24 @@ export default function PartsClient({
             />
           </Modal>
         )}
+        {modal === "download" && <Modal title="Download parts" subtitle={current?.name} onClose={close} busy={busy}>
+          <p>Download {search.trim() ? "all matching parts" : "the complete stocklist"}, including description, brand, quantity, unit price and VAT basis.</p>
+          <div className={styles.actions}>
+            {(["xlsx", "csv"] as const).map(format=><button key={format} disabled={busy} onClick={()=>void run(async()=>{
+              const data=await api(undefined,`?network=${network}&view=${current?.owned ? "mine" : "search"}&search=${encodeURIComponent(search)}&download=true`);
+              const Excel=await import("exceljs");
+              const book=new Excel.Workbook();const sheet=book.addWorksheet("Parts");
+              sheet.columns=[{header:"Part number",key:"part",width:24},{header:"Description",key:"description",width:48},{header:"Brand",key:"brand",width:22},{header:"Quantity",key:"quantity",width:14},{header:"Unit price (ZAR)",key:"price",width:22},{header:"VAT basis",key:"vat",width:18},{header:"Dealer",key:"dealer",width:32},{header:"Town",key:"town",width:24}];
+              const safe=(value:string)=>format === "csv" && /^[\s]*[=+@-]/.test(value) ? "'"+value : value;
+              (data.rows as Row[]).forEach(r=>sheet.addRow({part:safe(r.part_number),description:safe(r.description||""),brand:safe(r.brand||""),quantity:r.quantity,price:r.price===null?null:Number(r.price),vat:r.vat_included?"Incl. VAT":"Excl. VAT",dealer:safe(r.business_name),town:safe(r.town||"")}));
+              sheet.getRow(1).font={bold:true};sheet.views=[{state:"frozen",ySplit:1}];sheet.getColumn("part").numFmt="@";sheet.getColumn("price").numFmt='"R" #,##0.00';
+              const buffer=format==="xlsx"?await book.xlsx.writeBuffer():await book.csv.writeBuffer();
+              const url=URL.createObjectURL(new Blob([new Uint8Array(buffer)],{type:format==="xlsx"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"text/csv;charset=utf-8"}));
+              const a=document.createElement("a");a.href=url;a.download=(current?.name||"Parts").replace(/[^a-zA-Z0-9 _-]/g,"")+"."+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+              setModal(null);setNotice("Parts download ready.");
+            })}><Icon kind="download" />{format==="xlsx"?"Excel":"CSV"}</button>)}
+          </div>{feedback}
+        </Modal>}
         {editingPart && <Modal title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
           <form onSubmit={e=>{e.preventDefault();void run(async()=>{
             await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
