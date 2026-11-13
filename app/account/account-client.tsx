@@ -1,4 +1,5 @@
 "use client";
+import { PageHelpHeading } from '../../components/PageHelp';
 
 import QuickActionIcon from "./QuickActionIcon";
 import AccountModalScroller from "./account-modal-scroller";
@@ -1474,7 +1475,7 @@ export default function AccountClient({
             </div>
 
             <div className={styles.heroCopy}>
-              <h1>{accountDisplayName}</h1>
+              <PageHelpHeading topic="account"><h1>{accountDisplayName}</h1></PageHelpHeading>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}

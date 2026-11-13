@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -1350,7 +1351,7 @@ export default function MaintenanceClient({
 
         <section className={styles.pageTitleBlock}>
           <div>
-            <h1>ASSET MAINTENANCE</h1>
+            <PageHelpHeading topic="maintenance"><h1>ASSET MAINTENANCE</h1></PageHelpHeading>
           </div>
         </section>
 

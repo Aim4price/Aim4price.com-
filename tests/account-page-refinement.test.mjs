@@ -24,11 +24,11 @@ test("quick actions keep their button treatment while gaining clear groups", asy
   assert.match(source, /Marketplace &amp; visibility/);
   assert.match(source, /Account &amp; billing/);
   assert.match(source, /Manage asset registers/);
-  assert.match(source, /Manage Field Manager access/);
-  assert.match(source, /Manage Owner App access/);
+  assert.match(source, /Manage Manager App access/);
+  assert.match(source, /onClick=\{openOwnerAppAccessPage\}/);
   assert.match(source, /Marketplace contact details/);
-  assert.match(source, /<strong>Field Manager access<\/strong>/);
-  assert.match(source, /<strong>Owner App access<\/strong>/);
+  assert.match(source, /<strong>Manager App access<\/strong>/);
+  assert.doesNotMatch(source, /<strong>(?:Field Manager|Owner App) access<\/strong>/);
   assert.match(source, /<strong>Marketplace contact<\/strong>/);
   assert.match(source, /Discovery settings/);
   assert.doesNotMatch(source, /Profile, registers and secure asset access/);
@@ -62,7 +62,7 @@ test("password controls are compact on the dashboard and edit inside a modal", a
   assert.equal(
     (source.match(/<ModalInlineNotice notice=\{actionModalNotice\} \/>/g) ?? [])
       .length,
-    5,
+    6,
   );
   assert.match(source, /setActiveAccountModal\(null\)[\s\S]*?Password changed successfully/);
   const securityStart = source.indexOf("styles.securityCard");
@@ -194,5 +194,7 @@ test("profile progress opens the first incomplete editable section", async () =>
   open(true);assert.equal(modal,'business');assert.equal(step,expected);
  }
  assert.match(source,/business: "Business"/);
- assert.match(source,/Account type is locked after signup/);
+ // Account type is displayed read-only; profile completion must not expose a type editor.
+ assert.doesNotMatch(source, /<select[^>]*value=\{profileDraft\.accountType\}/);
+ assert.doesNotMatch(source, /onChange=[^\n]*accountType:/);
 });

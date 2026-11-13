@@ -4033,3 +4033,6 @@
 :global(html[data-app-theme='dark']) .dealRatingBadgeHigh {
   --rating-surface: #322123; --rating-line: #63373b; --rating-ink: #ffa3a3; --rating-detail: #dbb9bc;
 }
+
+.pageHelpTitle { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; }
+.pageHelpTitle h1 { margin: 0; color: var(--app-text, #123d31); font-size: 1.2rem; font-weight: 800; letter-spacing: -.035em; }

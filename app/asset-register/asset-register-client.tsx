@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import MarketplacePublishReview from '../../components/MarketplacePublishReview';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 
@@ -16019,7 +16020,7 @@ export default function AssetRegisterClient({
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <div className={styles.businessRegisterTitleCard}>
-                <h1>{desktopAccess ? (activeRegister?.businessName || desktopAccess.data.name) : registerPageTitle}</h1>
+                <PageHelpHeading topic="register"><h1>{desktopAccess ? (activeRegister?.businessName || desktopAccess.data.name) : registerPageTitle}</h1></PageHelpHeading>
                 {canOpenRegisterSwitcher ? (
                   <button
                     type="button"

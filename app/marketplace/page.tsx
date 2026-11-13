@@ -1,3 +1,4 @@
+import { PageHelpHeading } from '../../components/PageHelp';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -86,9 +87,9 @@ export default async function MarketplaceEntryPage({
             >
               <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                  <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>
+                  <PageHelpHeading topic="marketplaceEntry"><h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>
                     Explore assets on Aim4price
-                  </h1>
+                  </h1></PageHelpHeading>
                   <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>
                     Discover owner-approved assets or browse machinery currently listed for sale.
                   </p>

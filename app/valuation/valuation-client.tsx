@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 
 import { replacementSliderRange } from '../../lib/replacement-slider';
 import VatPriceInput from '../../components/VatPriceInput';
@@ -6068,7 +6069,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
-            <h2 className={styles.stepTitle}>What is your asset worth?</h2>
+            <PageHelpHeading topic="valuation"><h2 className={styles.stepTitle}>What is your asset worth?</h2></PageHelpHeading>
             {!compactAppMode ? <p className={styles.stepText}>Choose a sector your asset belongs to.</p> : null}
           </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import LeadPhotoViewerModal from '../../components/LeadPhotoViewerModal';
 import AssetMapAssetDialog from '../../components/asset-register/AssetMapAssetDialog';
@@ -1654,7 +1655,7 @@ export default function AssetMapClient() {
         >
           <header className={styles.panelHeader}>
             <div className={styles.pageTitleBlock}>
-              <h1>Asset Map &amp; Tracking</h1>
+              <PageHelpHeading inset topic="map"><h1>Asset Map &amp; Tracking</h1></PageHelpHeading>
             </div>
 
             <div className={styles.topActions}>

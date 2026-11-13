@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import dynamic from 'next/dynamic';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
@@ -3490,7 +3491,7 @@ export default function MyInvoicesClient({
         ) : (
           <section className={styles.pageTitleBlock}>
             <div>
-              <h1>COST TRACKING SYSTEM</h1>
+              <PageHelpHeading topic="costs"><h1>COST TRACKING SYSTEM</h1></PageHelpHeading>
               {canManageBudgets ? <WorkspaceViewSwitch label="Switch to Budgets" onClick={openBudgetManager} buttonRef={budgetManagerTriggerRef} count={budgetAttentionCount} /> : null}
             </div>
           </section>
