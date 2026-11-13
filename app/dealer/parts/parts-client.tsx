@@ -16,6 +16,8 @@ import {
 import PartsImportForm from "../../../components/PartsImportForm";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
+import VatPriceInput from "../../../components/VatPriceInput";
+import priceStyles from "../../../components/asset-register/AssetDisposal.module.css";
 import styles from "./parts.module.css";
 type Network = {
   owner_business_name?: string;
@@ -265,7 +267,7 @@ export default function PartsClient({
     return ()=>{cancelled=true;clearTimeout(timer);};
   },[modal,channel,network,recipientSearch]);
   const [rowRevision, setRowRevision] = useState<number | null>(null);
-  const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number} | null>(null);
+  const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean} | null>(null);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
   const [enquiryPage, setEnquiryPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<Row[]>([]);
@@ -747,7 +749,7 @@ export default function PartsClient({
                             <td>
                               {current?.owned && canUpload && view === "mine" ? <button className={styles.partContactButton} disabled={rowRevision === null}
                                 title="Edit this part" aria-label={`Edit ${r.part_number}`}
-                                onClick={()=>{setError("");setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(r.price),brand:r.brand || "",description:r.description || "",revision:rowRevision!});}}>
+                                onClick={()=>{setError("");setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(Number(r.price) / (r.vat_included ? 1.15 : 1)),priceIncluded:r.vat_included,storedVatIncluded:r.vat_included,brand:r.brand || "",description:r.description || "",revision:rowRevision!});}}>
                                 <Icon kind="edit" />Edit
                               </button> : <button
                                 className={styles.partContactButton}
@@ -1273,7 +1275,7 @@ export default function PartsClient({
         )}
         {editingPart && <Modal title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
           <form onSubmit={e=>{e.preventDefault();void run(async()=>{
-            await api({action:"edit-part",network,...editingPart});
+            await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
             setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");
           });}}>
             <div className={styles.partEditFields}>
@@ -1281,10 +1283,20 @@ export default function PartsClient({
               <label>Brand<input maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
               <label className={styles.partEditDescription}>Description<input maxLength={500} value={editingPart.description} onChange={e=>setEditingPart({...editingPart,description:e.target.value})}/></label>
               <label>Quantity<input required type="number" min="0" max="999999999" step="1" value={editingPart.quantity} onChange={e=>setEditingPart({...editingPart,quantity:e.target.value})}/></label>
-              <label>Unit price<input type="number" min="0" max="999999999" step="0.01" value={editingPart.price} onChange={e=>setEditingPart({...editingPart,price:e.target.value})}/><small>Leave blank for price on request.</small></label>
+              <div className={styles.partEditPrice}>
+                <label htmlFor="part-edit-price">Unit price <small>Optional, {editingPart.priceIncluded ? "incl." : "excl."} VAT</small></label>
+                <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl}`}>
+                  <VatPriceInput id="part-edit-price" valueExVat={editingPart.price} included={editingPart.priceIncluded} vatRate={0.15} onValueChange={price=>setEditingPart({...editingPart,price})} placeholder="0" aria-label={`Unit price, ${editingPart.priceIncluded ? "including" : "excluding"} VAT`} />
+                  <div className={priceStyles.amountVatToggle} role="group" aria-label="Unit price VAT basis">
+                    <button type="button" aria-label="Including VAT" aria-pressed={editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:true})}>Incl</button>
+                    <button type="button" aria-label="Excluding VAT" aria-pressed={!editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:false})}>Excl</button>
+                  </div>
+                </div>
+                <small>Leave blank for price on request.</small>
+              </div>
             </div>
             {feedback}
-            <div className={styles.actions}><button type="button" disabled={busy} onClick={close}>Cancel</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
+            <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={close}>Cancel</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
           </form>
         </Modal>}
         {contact && (
