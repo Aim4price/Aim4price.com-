@@ -265,6 +265,7 @@ export default function PartsClient({
     return ()=>{cancelled=true;clearTimeout(timer);};
   },[modal,channel,network,recipientSearch]);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
+  const [enquiryPage, setEnquiryPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<Row[]>([]);
   const [requestedParts, setRequestedParts] = useState<{partNumber:string;quantity:string}[]>([]);
   useEffect(() => { setSelectedParts([]); }, [network, view]);
@@ -274,6 +275,7 @@ export default function PartsClient({
     setContact(parts[0]);
     setRequestedParts(parts.map(r=>({partNumber:r.part_number,quantity:'1'})));
     setEnquiryCompose(false);
+    setEnquiryPage(0);
     setEnquiry('Please confirm price and availability for these parts.');
   }
   const enquiryValid = requestedParts.length > 0 && requestedParts.every(r=>/^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999);
@@ -1272,15 +1274,20 @@ export default function PartsClient({
                 <div className={styles.enquiryTableWrap}>
                   <table className={styles.enquiryTable}>
                     <thead><tr><th scope="col">Part number</th><th scope="col">Quantity</th></tr></thead>
-                    <tbody>{requestedParts.map((r,i)=>{
+                    <tbody>{requestedParts.slice(enquiryPage * 2, enquiryPage * 2 + 2).map((r,i)=>{
                       const valid = /^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999;
                       return <tr key={r.partNumber}>
                         <td><strong>{r.partNumber}</strong>{requestedParts.length === 1 && contact.description && <small>{contact.description}</small>}</td>
-                        <td><input aria-label={`Requested quantity for ${r.partNumber}`} aria-invalid={!valid} aria-describedby={!valid ? "parts-enquiry-quantity-error" : undefined} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===i?{...p,quantity:e.target.value}:p))}/></td>
+                        <td><input aria-label={`Requested quantity for ${r.partNumber}`} aria-invalid={!valid} aria-describedby={!valid ? "parts-enquiry-quantity-error" : undefined} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===enquiryPage * 2 + i?{...p,quantity:e.target.value}:p))}/></td>
                       </tr>;
                     })}</tbody>
                   </table>
                 </div>
+                {requestedParts.length > 2 && <nav className={styles.enquiryPagination} aria-label="Requested parts pages">
+                  <button disabled={enquiryPage === 0} onClick={()=>setEnquiryPage(p=>p-1)}>Previous</button>
+                  <span>{enquiryPage + 1} / {Math.ceil(requestedParts.length / 2)}</span>
+                  <button disabled={(enquiryPage + 1) * 2 >= requestedParts.length} onClick={()=>setEnquiryPage(p=>p+1)}>Next</button>
+                </nav>}
                 {!enquiryValid && <p id="parts-enquiry-quantity-error" role="alert" className={styles.error}>Enter a positive whole quantity for each part.</p>}
               </section>
               {enquiryCompose && !current?.owned && <label className={styles.enquiryMessage}>
