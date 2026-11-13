@@ -1,0 +1,47 @@
+name: Owner page information validation
+on:
+  pull_request:
+    paths:
+      - 'components/PageHelp*'
+      - 'components/WebsitePortal.tsx'
+      - 'components/leads/useLeadDialog.ts'
+      - 'lib/page-help.ts'
+      - 'app/account/**'
+      - 'app/asset-register/**'
+      - 'app/asset-map/**'
+      - 'app/asset-discovery/**'
+      - 'app/budgets/**'
+      - 'app/documents/**'
+      - 'app/fuel/**'
+      - 'app/maintenance/**'
+      - 'app/marketplace/**'
+      - 'app/my-invoices/**'
+      - 'app/valuation/**'
+      - 'tests/fixtures/page-help-page.tsx'
+      - 'scripts/verify-page-help.cjs'
+      - '.github/workflows/page-help-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: page-help-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Page information layout and accessibility
+        run: node scripts/verify-page-help.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: page-help-browser-evidence
+          path: .next/page-help-validation

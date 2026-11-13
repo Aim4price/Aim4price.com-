@@ -33,8 +33,10 @@ const topics = ['valuation','register','maintenance','costsEntry','costs','budge
         assert.ok(bounds.x>=0 && bounds.right<=bounds.width+1,`${topic} help is visible at ${width}`);
         const overlaps=await page.$eval(trigger,el=>{const r=el.getBoundingClientRect();return [...document.querySelectorAll('button')].filter(b=>b!==el && b.getAttribute('aria-label')?.startsWith('Switch')).some(b=>{const q=b.getBoundingClientRect();return r.left<q.right && r.right>q.left && r.top<q.bottom && r.bottom>q.top;});});
         assert.equal(overlaps,false,`${topic} help does not overlap switches`);
+        if(width===1440 && ['register','fuelSlips','map'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
         await page.click(trigger);await page.waitForSelector('[role="dialog"]');
         assert.equal(await page.$eval('[role="dialog"]',el=>el.contains(document.activeElement)),true,'dialog receives focus');
+        assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden','background scrolling is locked');
         const geometry=await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();const body=el.querySelector('[class*="_body"]');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight,scroll:body.scrollHeight-body.clientHeight};});
         assert.ok(geometry.x>=-1 && geometry.y>=-1 && geometry.right<=geometry.w+1 && geometry.bottom<=geometry.h+1,JSON.stringify(geometry));
         if(width===1440) assert.ok(geometry.scroll<=1,`${topic}: no desktop scrolling`);
@@ -46,6 +48,7 @@ const topics = ['valuation','register','maintenance','costsEntry','costs','budge
         await page.keyboard.press('Escape');
         assert.equal(await page.$('[role="dialog"]'),null);
         assert.equal(await page.$eval(trigger,el=>el===document.activeElement),true,'focus returns to help');
+        assert.notEqual(await page.evaluate(()=>document.body.style.overflow),'hidden','background scrolling is restored');
         await page.click(trigger);await page.click('[role="dialog"] footer button');
         assert.equal(await page.$('[role="dialog"]'),null,'Got it closes dialog');
       }

@@ -425,7 +425,7 @@ test('owners manage a private-by-default showroom from Account without owner nav
   const ownerNav = header.match(/const OWNER_NAV_ITEMS: NavItem\[\] = \[[\s\S]*?\n\];/)?.[0] ?? '';
 
   assert.match(accountClient, /const isOwnerAccount = !sharedAccount && normalizedAccountType === "owner"/);
-  assert.match(accountClient, /\{isOwnerAccount \? \([\s\S]*?<Link href="\/my-showroom" className=\{styles\.quickActionButton\}>[\s\S]*?<strong>Manage my showroom<\/strong>/);
+  assert.match(accountClient, /\{isOwnerAccount \? \([\s\S]*?<Link\b[^>]*href="\/my-showroom"[^>]*className=\{styles\.quickActionButton\}[^>]*>[\s\S]*?<strong>Manage my showroom<\/strong>/);
   assert.match(accountClient, /QuickActionIcon name="showroom"/);
   assert.match(accountCss, /\.quickActionButton:focus-visible\s*\{/);
   assert.doesNotMatch(ownerNav, /showroom|my-showroom/i);

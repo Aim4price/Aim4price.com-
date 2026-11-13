@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { createPortal } from './WebsitePortal';
 import { useLeadDialog } from './leads/useLeadDialog';
 import { pageHelp, type PageHelpTopic } from '../lib/page-help';
@@ -13,8 +13,13 @@ function InfoIcon() {
 function HelpDialog({ topic, id, onClose }: { topic: PageHelpTopic; id: string; onClose: () => void }) {
   const content = pageHelp[topic];
   const ref = useLeadDialog(onClose);
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, []);
   return <div className={styles.overlay} data-website-overlay="true" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
-    <section ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-purpose`} className={styles.dialog}>
+    <section id={`${id}-dialog`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-purpose`} className={styles.dialog}>
       <header className={styles.header}>
         <span className={styles.mark}><InfoIcon /></span>
         <div><span className={styles.eyebrow}>About this page</span><h2 id={`${id}-title`}>{content.title}</h2></div>
@@ -35,7 +40,7 @@ export default function PageHelp({ topic }: { topic: PageHelpTopic }) {
   const [open, setOpen] = useState(false);
   const id = useId();
   return <>
-    <button type="button" className={styles.trigger} aria-label={`About ${pageHelp[topic].title}`} title="About this page" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}><InfoIcon /></button>
+    <button type="button" className={styles.trigger} aria-label={`About ${pageHelp[topic].title}`} title="About this page" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? `${id}-dialog` : undefined} onClick={() => setOpen(true)}><InfoIcon /></button>
     {open && createPortal(<HelpDialog topic={topic} id={id} onClose={() => setOpen(false)} />, document.body)}
   </>;
 }

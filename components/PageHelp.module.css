@@ -25,11 +25,11 @@
 .footer button { min-height: 2.8rem; min-width: 7.5rem; padding: .7rem 1.4rem; border: 1px solid #155a43; border-radius: .8rem; background: linear-gradient(180deg, #217757, #12523d); color: #fff; font: inherit; font-size: .88rem; font-weight: 750; cursor: pointer; }
 .footer button:hover { background: #12523d; }
 @media (max-width: 540px) {
-  .header { padding: 1.15rem; gap: .65rem; }
-  .header h2 { font-size: 1.25rem; }
-  .body { padding: 1.15rem; }
-  .footer { padding: 0 1.15rem 1.15rem; }
-  .mark { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header { padding: 1.15rem; gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header h2 { font-size: 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 1.15rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 0 1.15rem 1.15rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .mark { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .trigger.trigger { transition: none; } }
 
@@ -39,3 +39,5 @@
 .heading.inset > :is(h1, h2) { box-sizing: border-box; padding-right: 6rem; }
 .reserveSwitch > .trigger { right: 6.5rem; }
 .heading.reserveSwitch > :is(h1, h2) { padding-right: 10.25rem; }
+
+.header, .footer { flex-shrink: 0; }
