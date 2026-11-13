@@ -264,6 +264,8 @@ export default function PartsClient({
     const timer=setTimeout(()=>{void api(undefined,`?view=recipients&network=${encodeURIComponent(network)}&search=${encodeURIComponent(recipientSearch)}`).then(d=>{if(!cancelled)setRecipients(d.recipients||[]);}).catch(e=>{if(!cancelled)setError(e.message);}).finally(()=>{if(!cancelled)setRecipientsLoading(false);});},250);
     return ()=>{cancelled=true;clearTimeout(timer);};
   },[modal,channel,network,recipientSearch]);
+  const [rowRevision, setRowRevision] = useState<number | null>(null);
+  const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number} | null>(null);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
   const [enquiryPage, setEnquiryPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<Row[]>([]);
@@ -347,6 +349,7 @@ export default function PartsClient({
         .then((d) => {
           if (request !== latest.current) return;
           setRows(d.rows || []);
+          setRowRevision(d.member?.revision ?? null);
           setTotal(d.total || 0);
           setError("");
         })
@@ -406,8 +409,10 @@ export default function PartsClient({
   }
   function close() {
     if (!busy) {
+      if (editingPart) setRefresh(n=>n+1);
       setModal(null);
       setContact(null);
+      setEditingPart(null);
       setConfirm(null);
       setError("");
     }
@@ -708,7 +713,7 @@ export default function PartsClient({
                           <th className={`${styles.numeric} ${styles.quantityColumn}`}>Quantity</th>
                           <th className={`${styles.numeric} ${styles.priceColumn}`}>Unit price</th>
                           {!singleDealer && <><th className={styles.dealerColumn}>Dealer</th><th className={styles.updatedColumn}>Last updated</th></>}
-                          <th className={styles.contactColumn}>Enquiry</th>
+                          <th className={styles.contactColumn}>{current?.owned && canUpload ? "Edit" : "Enquiry"}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -740,7 +745,11 @@ export default function PartsClient({
                                 45 * 86400000 && <small>Update overdue</small>}
                             </td></>}
                             <td>
-                              <button
+                              {current?.owned && canUpload && view === "mine" ? <button className={styles.partContactButton} disabled={rowRevision === null}
+                                title="Edit this part" aria-label={`Edit ${r.part_number}`}
+                                onClick={()=>{setError("");setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(r.price),brand:r.brand || "",description:r.description || "",revision:rowRevision!});}}>
+                                <Icon kind="edit" />Edit
+                              </button> : <button
                                 className={styles.partContactButton}
                                 title="Enquire about this part"
                                 aria-label={`Contact ${r.business_name} about ${r.part_number}`}
@@ -750,7 +759,7 @@ export default function PartsClient({
                               >
                                 <Icon kind="message" />
                                 {current?.owned ? "Contact" : "Enquire"}
-                              </button>
+                              </button>}
                             </td>
                           </tr>
                         ))}
@@ -1262,6 +1271,22 @@ export default function PartsClient({
             />
           </Modal>
         )}
+        {editingPart && <Modal title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
+          <form onSubmit={e=>{e.preventDefault();void run(async()=>{
+            await api({action:"edit-part",network,...editingPart});
+            setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");
+          });}}>
+            <div className={styles.partEditFields}>
+              <label>Part number<input required maxLength={100} value={editingPart.partNumber} onChange={e=>setEditingPart({...editingPart,partNumber:e.target.value})}/></label>
+              <label>Brand<input maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
+              <label className={styles.partEditDescription}>Description<input maxLength={500} value={editingPart.description} onChange={e=>setEditingPart({...editingPart,description:e.target.value})}/></label>
+              <label>Quantity<input required type="number" min="0" max="999999999" step="1" value={editingPart.quantity} onChange={e=>setEditingPart({...editingPart,quantity:e.target.value})}/></label>
+              <label>Unit price<input type="number" min="0" max="999999999" step="0.01" value={editingPart.price} onChange={e=>setEditingPart({...editingPart,price:e.target.value})}/><small>Leave blank for price on request.</small></label>
+            </div>
+            {feedback}
+            <div className={styles.actions}><button type="button" disabled={busy} onClick={close}>Cancel</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
+          </form>
+        </Modal>}
         {contact && (
           <Modal enquiry title="Parts enquiry" subtitle={current?.name} onClose={close} busy={busy}>
             <div className={styles.enquiryBody}>

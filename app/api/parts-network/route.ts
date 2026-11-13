@@ -19,6 +19,7 @@ import {
   changePartsMember,
   partsInvitePin,
   importParts,
+  editPartsRow,
   setPartsVisibility,
   networkId,
 } from "../../../lib/parts-network";
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
         },
         403,
       );
-    if (actor.team && !["preview", "import"].includes(String(body.action))) return reply({error:"Stocklist administration and external communication stay with the account holder."},403);
+    if (actor.team && !["preview", "import", "edit-part"].includes(String(body.action))) return reply({error:"Stocklist administration and external communication stay with the account holder."},403);
     if (body.action === "create")
       return reply(await createPartsNetwork(actor, body.name, true));
     if (body.action === "send-pin")
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
       return reply({ ok: true });
     }
     const id = networkId(body.network);
+    if (body.action === "edit-part") return reply(await editPartsRow(actor, id, body));
     if (body.action === "rename" || body.action === "archive") {
       await managePartsList(actor, id, body.name, body.action === "archive");
       return reply({ ok: true });

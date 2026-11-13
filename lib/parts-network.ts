@@ -581,6 +581,32 @@ export async function importParts(
     return { summary };
   });
 }
+/** Update one published row; the dealer retains their master stock record. */
+export async function editPartsRow(actor: PartsActor, id: string, input: Record<string, unknown>) {
+  const fields = [input.partNumber, input.quantity, input.price, input.brand, input.description];
+  if (fields.some(v => typeof v !== "string")) throw new PartsError("Complete the part details.");
+  let row: PartRow;
+  try {
+    const csv = fields.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',');
+    [row] = parsePartsSnapshot(csv, {partNumber:0, quantity:1, price:2, brand:3, description:4}, {hasHeader:false});
+    if (!row) throw new Error("Enter a part number and quantity.");
+  } catch (e) { throw new PartsError(e instanceof Error ? e.message : "Invalid part details."); }
+  if (typeof input.originalPartNumber !== "string") throw new PartsError("Choose a part to edit.");
+  const originalKey = input.originalPartNumber.trim().toUpperCase();
+  return transaction(async db => {
+    const member = await access(db, actor, id, "write");
+    if (!Number.isInteger(input.revision) || input.revision !== member.revision)
+      throw new PartsError("This stocklist changed. Close and reopen the part before saving.", 409);
+    const existing = await db.query("SELECT part_key FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey]);
+    if (!existing.rows.length) throw new PartsError("This part is no longer in your list. Refresh and try again.", 409);
+    const duplicate = await db.query("SELECT part_key FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3 AND part_key<>$4", [id, actor.id, row.partNumber.toUpperCase(), originalKey]);
+    if (duplicate.rows.length) throw new PartsError("That part number already exists in your list.", 409);
+    await db.query("UPDATE parts_network_rows SET part_number=$4,part_key=upper($4),quantity=$5,price=$6,brand=$7,description=$8 WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey, row.partNumber, row.quantity, row.price, row.brand || "", row.description || ""]);
+    await db.query("UPDATE parts_network_members SET revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2", [id, actor.id]);
+    await audit(db, id, actor, "edit-part", row.partNumber);
+    return {updated:true};
+  });
+}
 export async function setPartsVisibility(
   actor: PartsActor,
   id: string,

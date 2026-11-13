@@ -622,3 +622,47 @@ test('sheet validation ignores untouched blank rows and identifies only invalid 
  assert.equal(rows[1][1],'Bush');assert.equal(rows[1][2],'9');
  assert.deepEqual(editor.partCellErrors(rows),{});
 });
+
+test("row edits are scoped, validated and reject stale saves", async () => {
+  const db = new PGlite();
+  await db.exec(
+    "CREATE TABLE account_profiles(user_id text,business_name text,town_city text,account_type text,account_status text,account_subtype text); CREATE TABLE \"user\"(id text,email text); CREATE TABLE sharing_account_access(user_id text,plan text);",
+  );
+  const client = {
+    query: async (sql, args) =>
+      sql === load("lib/parts-network-schema.ts").PARTS_NETWORK_SCHEMA
+        ? db.exec(sql)
+        : db.query(sql, args),
+    release() {},
+  };
+  const pool = { ...client, connect: async () => client };
+  const messages = [];
+  const network = load("lib/parts-network.ts", {
+    "./team-access": {lockTeamPermission:async(_,s,p)=>{if(!s.grant.permissions[p])throw Error("Permission denied");return s.grant;},auditTeam:async()=>{}},
+    "./db": { getDb: () => pool },
+    "./parts-network-schema": load("lib/parts-network-schema.ts"),
+    "./parts-network-csv": csv,
+    "./sharing-foundation": { ensureSharingFoundation: async () => {} },
+    "./email": {
+      getSiteOrigin: () => "https://example.test",
+      sendAim4priceEmail: async (m) => messages.push(m),
+    },
+  });
+
+  const dealer={id:'row-owner',email:'owner@example.test',staff:false,canContribute:true};
+  const {id}=await network.createPartsNetwork(dealer,'Rows',true);
+  await network.importParts(dealer,id,{csv:'Part,Qty,Price\n001,3,12\n002,4,14',columns,businessName:'Dealer',town:'George',phone:'0821234567',email:dealer.email,vatIncluded:false,revision:0},true);
+  const edit={originalPartNumber:'001',partNumber:'003',quantity:'8',price:'',brand:'Landini',description:'Updated part',revision:1};
+  await assert.rejects(()=>network.editPartsRow({...dealer,viewerOnly:true},id,edit),/viewing/);
+  await assert.rejects(()=>network.editPartsRow({...dealer,id:'other'},id,edit),/approval/);
+  await assert.rejects(()=>network.editPartsRow(dealer,id,{...edit,partNumber:'002'}),/already exists/);
+  await assert.rejects(()=>network.editPartsRow(dealer,id,{...edit,quantity:'-1'}));
+  await network.editPartsRow(dealer,id,edit);
+  const rows=(await network.partsData(dealer,id,'mine','',0)).rows;
+  assert.equal(rows.length,2);
+  assert.equal(rows.find(r=>r.part_number==='002').quantity,4);
+  const updated=rows.find(r=>r.part_number==='003');
+  assert.equal(updated.quantity,8);assert.equal(updated.price,null);assert.equal(updated.description,'Updated part');
+  await assert.rejects(()=>network.editPartsRow(dealer,id,edit),/changed/);
+  await db.close();
+});
