@@ -725,7 +725,7 @@ export default function AssetTransfersClient({
 
         <section className={`${launcherStyles.launcher} ${styles.transferLauncher}`} aria-labelledby="asset-transfers-title">
           <div className={launcherStyles.launcherIntro}>
-            <PageHelpHeading topic="transfers" enabled={!isDealerContext}><h1 id="asset-transfers-title">{isDealerContext ? 'Inventory transfers' : 'Asset transfers'}</h1></PageHelpHeading>
+            <PageHelpHeading topic="transfers"><h1 id="asset-transfers-title">{isDealerContext ? 'Inventory transfers' : 'Asset transfers'}</h1></PageHelpHeading>
             <p>{isDealerContext ? 'Bring trade-ins into stock or manage inventory moving to its next owner.' : 'Bring an asset into your register or manage one moving to its next owner.'}</p>
           </div>
 

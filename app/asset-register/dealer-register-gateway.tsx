@@ -1,4 +1,5 @@
 'use client';
+import { PageHelpHeading } from '../../components/PageHelp';
 
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
@@ -45,7 +46,7 @@ export default function DealerRegisterGateway({
             <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}>
               <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                  <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Choose an Asset Register</h1>
+                  <PageHelpHeading topic="dealerRegisterChoice"><h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Choose an Asset Register</h1></PageHelpHeading>
                   <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>
                     Work with the dealership&apos;s own assets or open an Asset Register managed for a client.
                   </p>

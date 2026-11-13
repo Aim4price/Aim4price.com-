@@ -1191,6 +1191,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <section className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel}`}>
           <WorkspaceTitlePanel
             title={dealerAppMode ? 'MAINTENANCE' : 'MAINTENANCE TRACKING'}
+            helpTopic="dealerTracking"
             className={dealerAppMode ? styles.maintenanceTitlePanel : undefined}
           />
 

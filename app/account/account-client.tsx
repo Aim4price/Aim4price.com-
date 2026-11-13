@@ -1564,7 +1564,7 @@ export default function AccountClient({
 
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
             <div className={styles.compactCardHeader}>
-              <PageHelpHeading topic="account">
+              <PageHelpHeading topic={sharedAccount || normalizedAccountType === "business" ? "sharingAccount" : isMiddlemanAccount ? "middlemanAccount" : isDealerAccount ? "dealerAccount" : "account"}>
                 <div>
                   <h2>Quick actions</h2>
                   <p>Everyday tasks first, account settings last.</p>

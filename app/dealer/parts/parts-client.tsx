@@ -1,4 +1,6 @@
 "use client";
+import { PageHelpHeading } from '../../../components/PageHelp';
+
 import {
   useCallback,
   useEffect,
@@ -485,7 +487,7 @@ export default function PartsClient({
   return (
     <main className={`${styles.page} ${listId ? styles.detailPage : ""}`}>
       <div className={`${workspaceStyles.shell} ${styles.shell}`}>
-        {!listId && <WorkspaceTitlePanel title="PARTS STOCKLISTS" className={styles.title} />}
+        {!listId && <WorkspaceTitlePanel title="PARTS STOCKLISTS" helpTopic="partsStock" className={styles.title} />}
         {!opened && <div className={styles.listToolbar}>
             <div className={styles.search}>
               <Icon kind="search" />
@@ -661,7 +663,7 @@ export default function PartsClient({
                 <div>
                   <section className={`${workspaceStyles.titlePanel} ${styles.title} ${styles.stocklistTitle}`}>
                     <div>
-                      <h1>{current?.name || "Parts list"}</h1>
+                      <PageHelpHeading topic="partsList"><h1>{current?.name || "Parts list"}</h1></PageHelpHeading>
                       <WorkspaceViewSwitch href={basePath + (typeof window !== "undefined" ? window.location.search : "")} label="Back to parts stocklists" />
                     </div>
                   </section>
