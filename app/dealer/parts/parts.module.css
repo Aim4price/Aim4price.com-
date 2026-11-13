@@ -1397,3 +1397,17 @@
   .enquiryContact, .enquiryModal button.enquiryContact { min-height: 54px; padding: 8px 12px; }
   .enquiryDealer { align-items: flex-start; }
 }
+
+/* Share grid tracks so both columns begin and finish on the same baselines. */
+@media (min-width: 761px) {
+  .enquiryBody:has(.enquiryChannels) {
+    grid-template-areas: ". heading" "dealer contacts" "parts contacts" ". hint";
+    grid-template-rows: auto auto 1fr auto;
+    row-gap: 12px;
+  }
+  .enquiryChannels { display: contents; }
+  .enquiryChannels .enquirySectionHeading { grid-area: heading; margin-bottom: 0; }
+  .enquiryContactGrid { grid-area: contacts; align-self: stretch; align-content: stretch; }
+  .enquiryBody:has(.enquiryChannels) .enquiryItems { align-self: end; }
+  .enquiryChannels .enquiryHint { grid-area: hint; margin: 0; }
+}

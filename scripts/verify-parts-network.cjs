@@ -363,6 +363,12 @@ const appCode =
     assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact body has no nested scrollbar at a scaled desktop height');
     assert.ok(await page.$eval('[role=dialog]', e => e.scrollHeight <= e.clientHeight + 1), 'Entire enquiry fits a 600px effective viewport without clipping or scrolling');
     assert.ok(await page.$$eval('[class*=enquiryContact] small', els=>els.every(e=>e.closest('[class*=enquiryContact]').scrollWidth<=e.closest('[class*=enquiryContact]').clientWidth+1 && e.scrollWidth<=e.clientWidth+1 && e.getBoundingClientRect().height<=parseFloat(getComputedStyle(e).lineHeight)+1)), 'Contact details stay on one complete line in the actual site font');
+    assert.ok(await page.evaluate(()=>{
+      const dealer=document.querySelector('[class*=enquiryDealer]').getBoundingClientRect();
+      const parts=document.querySelector('[class*=enquiryItems]').getBoundingClientRect();
+      const contacts=document.querySelector('[class*=enquiryContactGrid]').getBoundingClientRect();
+      return Math.abs(dealer.top-contacts.top)<=1 && Math.abs(parts.bottom-contacts.bottom)<=1;
+    }), 'Dealer and requested parts align with the top and bottom of the contact rows');
     await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
     await page.evaluate(() => document.documentElement.style.removeProperty('--website-visible-height'));
     await page.setViewport({width:390,height:844});
