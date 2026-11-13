@@ -772,7 +772,8 @@
   text-align: left;
   box-shadow: 0 12px 26px var(--app-shadow-colour, #153c3109);
 }
-.manageGrid button[data-tone="blue"] {
+.manageGrid button[data-tone="blue"],
+.shareChoices button[data-tone="blue"] {
   --action-tint: var(--app-info-soft, color-mix(in srgb, var(--app-surface, #fff) 94%, #4979b6));
   --action-line: var(--app-info-line, #cbdcf3);
   --action-ink: var(--app-info, #265b87);
@@ -1196,11 +1197,7 @@
 .entrySteps li[aria-current] span { background: var(--app-primary, #17654c); color: #fff; border-color: transparent; }
 .entryFooter { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--app-border, #cbded4); }
 .entryModal .entryFooter button { min-height: 44px; padding: 10px 20px; font-size: 15px; }
-.entryMethods { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; }
-.entryModal .entryMethods button { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 12px; padding: 24px; background: var(--app-surface-soft, #f1f8f5); border-radius: 18px; }
-.entryMethods svg { width: 28px; height: 28px; margin-bottom: 8px; }
-.entryMethods strong { font-size: 18px; }
-.entryMethods small { font-size: 14px; font-weight: 500; color: var(--app-muted, #63796f); }
+.entryMethods { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .entryModal .stageHint { font-size: 14px; color: var(--app-muted, #63796f); line-height: 1.6; }
 .singlePartForm .grid { margin-top: 20px; }
 .entryModal label { font-size: 14px; }
@@ -1226,8 +1223,6 @@
   .entryModal .dialogHeader { padding-bottom: 14px; margin-bottom: 14px; }
   .entryModal .dialogHeader h2 { font-size: 24px; }
   .entryMethods { grid-template-columns: 1fr; gap: 10px; }
-  .entryModal .entryMethods button { padding: 16px; gap: 6px; }
-  .entryMethods svg { display: none; }
   .entrySteps { gap: 14px; }
   .entrySteps li { font-size: 12px; gap: 5px; }
   .entryFooter { align-items: flex-end; }
@@ -1461,3 +1456,26 @@
 .detailPage .displayVatToggle button[aria-pressed="true"] { background:#17664e; color:#fff; box-shadow:0 2px 5px #123e321a; }
 .detailPage .displayVatToggle button:focus-visible { outline:2px solid #247b61; outline-offset:2px; }
 @media(max-width:600px) { .detailPage .displayVatToggle { margin-left:auto; } }
+
+/* The entry chooser shares the invitation dialog's card layout. */
+.entryModal:has(.entryMethods) { width:min(1080px,100%); padding:38px; }
+.entryModal:has(.entryMethods) .dialogHeader { padding-bottom:24px; margin-bottom:28px; }
+.entryModal:has(.entryMethods) .dialogHeader h2 { font-size:34px; }
+.entryModal:has(.entryMethods) .stageBody { gap:28px; padding:0 0 2px; }
+.entryModal .entryMethods { margin:0; gap:20px; }
+.entryMethods button { align-items:center; justify-content:center; }
+.entryExample { border-top:1px solid var(--app-border,#dce5df); padding-top:22px; }
+.entryExample summary { padding:16px 18px; border:1px solid var(--app-border,#cbded4); border-radius:15px; background:var(--app-surface,#fff); font-size:16px; font-weight:750; cursor:pointer; }
+.entryExample summary:focus-visible { outline:2px solid var(--app-primary,#17654c); outline-offset:3px; }
+@media(max-width:640px) {
+  .entryModal:has(.entryMethods) { padding:22px; }
+  .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:18px; margin-bottom:20px; }
+  .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:25px; }
+  .entryModal .entryMethods { grid-template-columns:1fr; gap:12px; }
+  .entryModal .entryMethods button { flex-direction:row; justify-content:flex-start; text-align:left; min-height:96px; padding:16px; gap:16px; }
+  .entryMethods button svg { width:22px; height:22px; padding:10px; }
+  .entryMethods button strong { font-size:16px; }
+  .entryMethods button small { font-size:14px; }
+  .entryModal:has(.entryMethods) .stageBody { gap:20px; }
+  .entryExample { padding-top:16px; }
+}
