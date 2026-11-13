@@ -1300,7 +1300,13 @@
 .detailPage .stockTable td:last-child { width: 164px; }
 .detailPage .stockTable .partIdentity { overflow-wrap: anywhere; }
 .partIdentity > strong { font-size: 16px; font-weight: 700; letter-spacing: -.015em; }
-.detailPage .stockTable .partIdentity small { margin-top: 3px; font-size: 12px; line-height: 1.5; }
+.detailPage .stockTable .partIdentity small {
+  margin-top: 5px;
+  color: var(--app-text, #173e32);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.55;
+}
 .partPrice { font-weight: 650; font-variant-numeric: tabular-nums; }
 .priceOnRequest { color: var(--app-text-muted, #64766c); font-size: 13px; font-weight: 500; }
 .detailPage .stockTable tbody tr { transition: background .15s; }
