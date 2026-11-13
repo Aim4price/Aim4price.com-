@@ -1492,4 +1492,46 @@
   outline-offset:-2px;
 }
 
+/* Mirror the dealer cost confirmation: record summary and a separate action footer. */
+.deleteModal {
+  --delete-gutter: clamp(20px, 4vw, 32px);
+  width: min(930px, 100%);
+  padding: var(--delete-gutter) var(--delete-gutter) 0;
+}
+.deleteModal .closeWrap { top: var(--delete-gutter); right: var(--delete-gutter); }
+.deleteModal .dialogHeader { margin-bottom: 20px; }
+.deleteModal .dialogHeader h2 { margin: 0; font-size: clamp(25px, 3vw, 32px); }
+.deleteModal .deleteCopy { margin: 0 0 18px; font-weight: 650; line-height: 1.5; }
+.deleteSummary {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  margin-bottom: 18px;
+  border: 1px solid var(--app-info-line, #cbdce8);
+  border-radius: 16px;
+  background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #f5f8fa));
+  overflow-wrap: anywhere;
+}
+.deleteSummary span { color: var(--app-text-muted, #63758a); font-size: .78rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.deleteSummary strong { font-size: 1rem; font-weight: 800; }
+.deleteSummary small { color: var(--app-text-muted, #61766c); font-size: .9rem; font-weight: 650; }
+.deleteFooter {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-inline: calc(-1 * var(--delete-gutter));
+  padding: 16px var(--delete-gutter) 24px;
+  border-top: 1px solid var(--app-border, #dce5df);
+  background: var(--app-surface, #fff);
+}
+.deleteModal .deleteFooter button { min-height: 48px; padding: 12px 20px; border-radius: 16px; background: var(--app-surface-soft, #f0f4f7); }
+.deleteModal .deleteFooter .deleteConfirm {
+  color: #fff;
+  border-color: #993232;
+  background: linear-gradient(#b34242, #983232);
+  box-shadow: 0 10px 22px #a339392b;
+  font-weight: 800;
+}
+.deleteModal .deleteFooter .deleteConfirm:hover:not(:disabled) { background: linear-gradient(#a63838, #872b2b); }
 .partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }

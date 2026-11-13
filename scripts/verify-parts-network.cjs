@@ -563,6 +563,11 @@ const appCode =
     );
     await page.screenshot({ path: path.join(output, "manage-mobile.png") });
     await page.setViewport({ width: 1440, height: 1000 });
+    await click("Delete list");
+    await page.waitForSelector('[aria-label="Delete this parts list?"]');
+    await page.screenshot({path:path.join(output,"delete-parts.png")});
+    await click("Cancel");
+    assert.ok(!actions.some(a=>a.action==="archive"), "Cancel does not delete the list");
     await click("Rename list");
     await page.waitForFunction(
       () =>

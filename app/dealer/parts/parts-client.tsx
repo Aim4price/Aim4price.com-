@@ -163,6 +163,7 @@ function Modal({
   manage = false,
   entry = false,
   enquiry = false,
+  destructive = false,
   children,
 }: {
   title: string;
@@ -170,6 +171,7 @@ function Modal({
   manage?: boolean;
   entry?: boolean;
   enquiry?: boolean;
+  destructive?: boolean;
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -186,8 +188,9 @@ function Modal({
     <div className={styles.backdrop}>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""}`}
         role="dialog"
+        aria-describedby={destructive ? "delete-parts-copy" : undefined}
         aria-modal="true"
         aria-label={title}
       >
@@ -1061,14 +1064,22 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "delete" && (
-          <Modal title="Delete parts list?" onClose={close} busy={busy}>
-            <p>
-              This removes {current?.name} from Parts Stock and stops shared access.
+          <Modal destructive title="Delete this parts list?" onClose={close} busy={busy}>
+            <p id="delete-parts-copy" className={styles.deleteCopy}>
+              This removes the list from Parts Stock and stops shared access.
               Your master stock records and cost ledger stay unchanged.
             </p>
-            <div className={styles.actions}>
-              <button onClick={() => setModal("manage")}>Cancel</button>
+            <div className={styles.deleteSummary}>
+              <span>Selected parts list</span>
+              <strong>{current?.name || "Parts list"}</strong>
+              {current?.part_count != null && <small>{current.part_count.toLocaleString()} {current.part_count === 1 ? "part" : "parts"}</small>}
+            </div>
+            {feedback}
+            <div className={styles.deleteFooter}>
+              <button type="button" disabled={busy} onClick={() => setModal("manage")}>Cancel</button>
               <button
+                type="button"
+                className={styles.deleteConfirm}
                 disabled={busy}
                 onClick={() =>
                   void run(async () => {
@@ -1078,10 +1089,9 @@ export default function PartsClient({
                   })
                 }
               >
-                Delete list
+                {busy ? "Deleting…" : "Yes, delete parts list"}
               </button>
             </div>
-            {feedback}
           </Modal>
         )}
         {modal === "create" && (
