@@ -356,7 +356,11 @@ const appCode =
       "tel:0821234567",
     );
     assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
+    await page.setViewport({width:1440,height:700});
+    await page.evaluate(() => document.documentElement.style.setProperty('--website-visible-height', '600px'));
+    assert.ok(await page.$eval('[class*="enquiryBody"]', e => e.scrollHeight <= e.clientHeight + 1), 'Single-part contact fits a scaled desktop viewport without scrolling');
     await page.screenshot({path:path.join(output,'enquiry-desktop.png')});
+    await page.evaluate(() => document.documentElement.style.removeProperty('--website-visible-height'));
     await page.setViewport({width:390,height:844});
     await page.screenshot({path:path.join(output,'enquiry-phone.png')});
     assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Enquiry modal fits phone width');
