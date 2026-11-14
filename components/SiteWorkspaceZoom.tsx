@@ -254,7 +254,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
           priority
           className={styles.landscapeLogo}
         />
-        <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>Turn your phone sideways</h2>
+        <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>Turn screen sideways</h2>
         <p id="aim4price-landscape-description" className={styles.landscapeDescription}>
           We’re proud to pack Aim4price with detailed asset data. For the best experience, turn your phone sideways to give tables, reports and tools more room. The site will open automatically.
         </p>

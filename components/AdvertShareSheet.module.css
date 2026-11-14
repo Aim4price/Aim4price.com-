@@ -1,4 +1,4 @@
-.dialog { box-sizing:border-box; width:min(68rem,calc(100% - 2rem)); max-height:calc(100% - 2rem); padding:1.6rem; border:1px solid var(--app-line,#d8e1ea); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#17362c); font-family:var(--font-heading,"Montserrat"),sans-serif; overflow:auto; }
+.dialog { box-sizing:border-box; width:min(68rem,calc(100% - 2rem)); max-height:calc(var(--website-visible-height, 100dvh) - 2rem); padding:1.6rem; border:1px solid var(--app-line,#d8e1ea); border-radius:1.5rem; background:var(--app-surface,#fff); color:var(--app-text,#17362c); font-family:var(--font-heading,"Montserrat"),sans-serif; overflow:auto; scrollbar-width:thin; }
 .dialog::backdrop {background:rgba(8,24,18,.65);backdrop-filter:blur(8px);}
 .dialog header {display:flex;align-items:start;justify-content:space-between;gap:1rem;}
 .dialog h2 {margin:0;font-size:1.7rem;letter-spacing:-.035em;}
