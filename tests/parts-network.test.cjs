@@ -189,6 +189,11 @@ test("private network membership, import replacement and invitation lifecycle us
     { ...input, businessName: "Dealer B", revision: 0 },
     true,
   );
+  await assert.rejects(() => network.importParts(dealer,id,{...input,mode:"add"},false), /already exists/);
+  await assert.rejects(() => network.importParts(dealer,id,{...input,mode:"replace",baseRevision:0},false), /changed after opening/);
+  await assert.rejects(() => network.importParts(dealer,id,{...input,mode:"replace",baseRevision:0,revision:1},true), /changed after opening/);
+  const editPreview = await network.importParts(dealer,id,{...input,mode:"replace",baseRevision:1,csv:""},false);
+  assert.equal(editPreview.summary.removed,2);
   const staff = {...dealer,staff:true,team:{actor:{id:'staff'},grant:{partsListIds:[id],permissions:{viewParts:true,manageParts:true}}}};
   assert.equal((await network.listPartsNetworks(staff)).length,1);
   await assert.rejects(()=>network.partsData(staff,second,'search','',0),/unavailable/);

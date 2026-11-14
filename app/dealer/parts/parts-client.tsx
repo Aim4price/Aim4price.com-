@@ -106,6 +106,7 @@ function Icon({
     | "users"
     | "mail"
     | "phone"
+    | "table"
     | "list"
     | "share"
     | "manage"
@@ -117,6 +118,7 @@ function Icon({
     | "eye";
 }) {
   const paths = {
+    table: "M3 4h18v16H3z M3 9h18 M3 14h18 M9 4v16",
     download: "M12 3v13 M7 11l5 5 5-5 M3 17v4h18v-4",
     back: "M19 12H5 M11 6l-6 6 6 6",
     message: "M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z",
@@ -275,6 +277,11 @@ export default function PartsClient({
     return ()=>{cancelled=true;clearTimeout(timer);};
   },[modal,channel,network,recipientSearch]);
   const [rowRevision, setRowRevision] = useState<number | null>(null);
+  const [editStep, setEditStep] = useState<"intent" | "add" | "edit" | "picker" | "sheet">("intent");
+  const [stock, setStock] = useState<{rows: Row[]; revision: number} | null>(null);
+  const [partQuery, setPartQuery] = useState("");
+  const [partPage, setPartPage] = useState(0);
+  const [fromPicker, setFromPicker] = useState(false);
   const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean} | null>(null);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
   const [enquiryPage, setEnquiryPage] = useState(0);
@@ -406,7 +413,29 @@ export default function PartsClient({
     await loadNetworks();
     setRefresh((n) => n + 1);
   }
+  function startPartEdit(r: Row, revision: number, picker: boolean) {
+    setError("");
+    setFromPicker(picker);
+    setModal(null);
+    setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(Number(r.price) / (r.vat_included ? 1.15 : 1)),priceIncluded:r.vat_included,storedVatIncluded:r.vat_included,brand:r.brand || "",description:r.description || "",revision:revision});
+  }
+  async function openStockEditor(step: "picker" | "sheet") {
+    await run(async () => {
+      const data = await api(undefined, `?network=${encodeURIComponent(network)}&view=mine&download=true`);
+      if (!Number.isInteger(data.member?.revision) || !Array.isArray(data.rows) || data.total !== data.rows.length)
+        throw new Error("Could not load the complete parts list. Try again.");
+      setStock({rows: data.rows, revision: data.member.revision});
+      setDetails({businessName: data.member.business_name, town: data.member.town, phone: data.member.phone, email: data.member.email, vatIncluded: data.member.vat_included});
+      setPartQuery("");
+      setPartPage(0);
+      setEditStep(step);
+    });
+  }
+  const matchingParts = (stock?.rows ?? []).filter(r =>
+    [r.part_number, r.description, r.brand].some(v => v?.toLowerCase().includes(partQuery.trim().toLowerCase())));
   function openUpload() {
+    setEditStep("intent");
+    setStock(null);
     setDetails({
       businessName: current?.business_name || "",
       town: current?.town || "",
@@ -453,7 +482,7 @@ export default function PartsClient({
       {canUpload && (
         <button className={styles.addPartsAction} onClick={openUpload} data-tooltip="Add parts manually or import your stocklist." data-tooltip-style="description">
           <Icon kind="upload" />
-          Add / update parts
+          Add / edit parts
         </button>
       )}
       {admin && (
@@ -767,7 +796,7 @@ export default function PartsClient({
                             <td>
                               {current?.owned && canUpload && view === "mine" ? <button className={styles.partContactButton} disabled={rowRevision === null}
                                 title="Edit this part" aria-label={`Edit ${r.part_number}`}
-                                onClick={()=>{setError("");setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(Number(r.price) / (r.vat_included ? 1.15 : 1)),priceIncluded:r.vat_included,storedVatIncluded:r.vat_included,brand:r.brand || "",description:r.description || "",revision:rowRevision!});}}>
+                                onClick={() => startPartEdit(r, rowRevision!, false)}>
                                 <Icon kind="edit" />Edit
                               </button> : <button
                                 className={styles.partContactButton}
@@ -980,7 +1009,7 @@ export default function PartsClient({
                 >
                   <Icon kind="upload" />
                   <span>
-                    <strong>Add / update parts</strong>
+                    <strong>Add / edit parts</strong>
                     <small>Enter parts or import a stocklist.</small>
                   </span>
                 </button>
@@ -1284,8 +1313,45 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal entry title="Add / update parts" subtitle={current?.name} onClose={close} busy={busy}>
-            <PartsImportForm initialDetails={details}
+          <Modal entry title={{intent:"Add / edit parts",add:"Add parts",edit:"Edit parts",picker:"Choose part",sheet:"Edit in a sheet"}[editStep]} subtitle={current?.name} onClose={close} busy={busy}>
+            {(editStep === "intent" || editStep === "edit") && <>
+              <div className={`${styles.shareChoices} ${styles.entryMethods} ${styles.partsIntent}`}>
+                {editStep === "intent" ? <>
+                  <button data-tone="blue" disabled={busy} onClick={() => setEditStep("add")}><Icon kind="plus"/><span><strong>Add parts</strong><small>Enter or import new parts</small></span></button>
+                  <button data-tone="green" disabled={busy} onClick={() => setEditStep("edit")}><Icon kind="edit"/><span><strong>Edit parts</strong><small>Change parts already on this list</small></span></button>
+                </> : <>
+                  <button data-tone="blue" disabled={busy} onClick={() => void openStockEditor("picker")}><Icon kind="edit"/><span><strong>Edit one part</strong><small>Search and select a part</small></span></button>
+                  <button data-tone="green" disabled={busy} onClick={() => void openStockEditor("sheet")}><Icon kind="table"/><span><strong>Edit in a sheet</strong><small>Change multiple parts together</small></span></button>
+                </>}
+              </div>
+              {feedback}
+              {editStep === "edit" && <div className={styles.entryFooter}><button disabled={busy} onClick={() => {setError("");setEditStep("intent");}}>Back</button></div>}
+            </>}
+            {editStep === "picker" && stock && <>
+              <div className={styles.partPickerSearch}>
+                <input aria-label="Search parts to edit" placeholder="Search part number, description or brand" value={partQuery} onChange={e => {setPartQuery(e.target.value);setPartPage(0);}} />
+                <button disabled={!partQuery} onClick={() => {setPartQuery("");setPartPage(0);}}>Clear</button>
+              </div>
+              <div className={styles.partPickerResults}>
+                {matchingParts.slice(partPage * 25, partPage * 25 + 25).map(r => (
+                  <button key={r.part_number} onClick={() => startPartEdit(r, stock.revision, true)}>
+                    <span><strong>{r.part_number}</strong>{r.description && <small>{r.description}</small>}<small>{[r.brand, `Quantity: ${r.quantity}`].filter(Boolean).join(" · ")}</small></span>
+                    <Icon kind="edit"/>
+                  </button>
+                ))}
+                {!matchingParts.length && <p>{partQuery.trim() ? "No matching parts." : "There are no parts to edit yet."}</p>}
+              </div>
+              {matchingParts.length > 25 && <div className={styles.actions}>
+                <button disabled={partPage === 0} onClick={() => setPartPage(p => p - 1)}>Previous</button>
+                <span>Page {partPage + 1} of {Math.ceil(matchingParts.length / 25)}</span>
+                <button disabled={(partPage + 1) * 25 >= matchingParts.length} onClick={() => setPartPage(p => p + 1)}>Next</button>
+              </div>}
+              <div className={`${styles.actions} ${styles.partEditFooter}`}><button onClick={() => setEditStep("edit")}>Back</button><button onClick={close}>Cancel</button></div>
+            </>}
+            {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
+              initialDetails={details}
+              editSnapshot={editStep === "sheet" && stock ? {revision: stock.revision, rows: stock.rows.map(r => [r.part_number, r.description ?? "", String(r.quantity), r.price ?? "", r.brand ?? ""])} : undefined}
+              onBack={() => setEditStep(editStep === "sheet" ? "edit" : "intent")}
               request={body => api({ ...body, network })}
               onBusyChange={setBusy}
               onComplete={async (addAnother) => {
@@ -1295,7 +1361,7 @@ export default function PartsClient({
                 switchView("mine");
                 setNotice("Parts list updated successfully.");
               }}
-            />
+            />}
           </Modal>
         )}
         {modal === "download" && <Modal title="Download parts" subtitle={current?.name} onClose={close} busy={busy}>
@@ -1339,7 +1405,7 @@ export default function PartsClient({
               </div>
             </div>
             {feedback}
-            <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={close}>Cancel</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
+            <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
           </form>
         </Modal>}
         {contact && (

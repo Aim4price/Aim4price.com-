@@ -488,7 +488,7 @@ export async function importParts(
     throw new PartsError("Add parts or choose a table.");
   let rows: PartRow[];
   try {
-    rows = parsePartsSnapshot(
+    rows = input.mode === "replace" && Number.isInteger(input.baseRevision) && !input.csv.trim() ? [] : parsePartsSnapshot(
       input.csv,
       input.columns as PartColumns,
       (input.options ?? {}) as PartImportOptions,
@@ -499,6 +499,7 @@ export async function importParts(
   if (
     input.mode !== undefined &&
     input.mode !== "merge" &&
+    input.mode !== "add" &&
     input.mode !== "replace"
   )
     throw new PartsError("Choose how to update the list.");
@@ -511,6 +512,8 @@ export async function importParts(
       (!Number.isInteger(input.revision) || input.revision !== member.revision)
     )
       throw new PartsError("Your list changed. Preview the upload again.", 409);
+    if (input.baseRevision !== undefined && (input.mode !== "replace" || input.baseRevision !== member.revision))
+      throw new PartsError("Your list changed after opening the sheet. Reopen it to load the latest parts.", 409);
     const previous = (
       await db.query(
         "SELECT part_number,quantity,price,brand,description FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
@@ -524,20 +527,25 @@ export async function importParts(
       description: r.description,
     }));
     const imported = rows;
-    if (input.mode === "merge") {
+    if (input.mode === "merge" || input.mode === "add") {
       const combined = new Map(
         previous.map((row) => [row.partNumber.toUpperCase(), row]),
       );
-      for (const row of rows)
+      for (const row of rows) {
+        if (input.mode === "add" && combined.has(row.partNumber.toUpperCase()))
+          throw new PartsError(`Part ${row.partNumber} already exists. Use Edit parts to change it.`, 409);
         combined.set(row.partNumber.toUpperCase(), {
           ...row,
           brand: row.brand || "",
           description: row.description || "",
         });
+      }
       rows = [...combined.values()];
     }
     if (rows.length > 20000)
       throw new PartsError("A list can contain at most 20,000 parts.");
+    if (input.mode === "add" && previous.length && !actor.team && input.vatIncluded !== member.vat_included)
+      throw new PartsError("Use the list’s existing VAT basis when adding parts.");
     const summary = snapshotChanges(previous, rows);
     if (!commit)
       return {
@@ -545,16 +553,17 @@ export async function importParts(
         revision: member.revision,
         sample: imported.slice(0, 5),
       };
-    const business = str(actor.team ? member.business_name : input.businessName),
-      town = str(actor.team ? member.town : input.town, 100),
-      phone = str(actor.team ? member.phone : input.phone, 30),
-      email = str(actor.team ? member.email : input.email, 254).toLowerCase();
-    const vatIncluded = actor.team ? member.vat_included : input.vatIncluded;
+    const keepDetails = actor.team || input.baseRevision !== undefined;
+    const business = str(keepDetails ? member.business_name : input.businessName),
+      town = str(keepDetails ? member.town : input.town, 100),
+      phone = str(keepDetails ? member.phone : input.phone, 30),
+      email = str(keepDetails ? member.email : input.email, 254).toLowerCase();
+    const vatIncluded = keepDetails ? member.vat_included : input.vatIncluded;
     if (
-      !business ||
+      !keepDetails && (!business ||
       !town ||
       !/^\+?[0-9 ()-]{7,30}$/.test(phone) ||
-      !/^\S+@\S+\.\S+$/.test(email)
+      !/^\S+@\S+\.\S+$/.test(email))
     )
       throw new PartsError(
         "Enter the dealership name, town, phone and contact email.",
@@ -577,7 +586,7 @@ export async function importParts(
       db,
       id,
       actor,
-      input.mode === "merge" ? "update-list" : "replace-list",
+      input.mode === "merge" || input.mode === "add" ? "update-list" : "replace-list",
       `${rows.length} rows`,
     );
     return { summary };
