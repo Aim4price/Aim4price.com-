@@ -1458,17 +1458,27 @@
 @media(max-width:600px) { .detailPage .displayVatToggle { margin-left:auto; } }
 
 /* The entry chooser shares the invitation dialog's card layout. */
-.entryModal:has(.entryMethods) { width:min(1080px,100%); padding:38px; }
+.entryModal:has(.entryMethods, .entryExampleView) { width:min(1080px,100%); padding:38px; }
 .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:24px; margin-bottom:28px; }
 .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:34px; }
 .entryModal:has(.entryMethods) .stageBody { gap:28px; padding:0 0 2px; }
 .entryModal .entryMethods { flex-shrink: 0; margin:0; gap:20px; }
 .entryMethods button { align-items:center; justify-content:center; }
 .entryExample { border-top:1px solid var(--app-border,#dce5df); padding-top:22px; }
-.entryExample summary { padding:16px 18px; border:1px solid var(--app-border,#cbded4); border-radius:15px; background:var(--app-surface,#fff); font-size:16px; font-weight:750; cursor:pointer; }
-.entryExample summary:focus-visible { outline:2px solid var(--app-primary,#17654c); outline-offset:3px; }
+.entryModal .entryExample > button {
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 15px;
+  padding: 14px 18px;
+  font-weight: 750;
+}
+.entryExampleView { display: grid; gap: 16px; }
+.entryExampleView h3, .entryExampleView p, .entryExampleView .tableWrap { margin: 0; }
+.entryExampleView .tableWrap { overflow-x: auto; }
+.entryExampleView .tableWrap table { min-width: 540px; }
+.entryExampleView .actions { flex-wrap: wrap; }
 @media(max-width:640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) { padding:22px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods, .entryExampleView) { padding:22px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:18px; margin-bottom:20px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:25px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods { grid-template-columns:1fr; gap:12px; }

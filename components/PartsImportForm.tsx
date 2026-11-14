@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   guessPartColumns,
   readPartsCsv,
@@ -57,8 +57,18 @@ export default function PartsImportForm({
   const [columns, setColumns] = useState<PartColumns>(EDITOR_COLUMNS);
   const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [blankPart()]);
   const [stage, setStage] = useState<
-    "choose" | "file" | "entry" | "settings" | "review"
+    "choose" | "example" | "file" | "entry" | "settings" | "review"
   >(editSnapshot ? "entry" : "choose");
+  const exampleHeading = useRef<HTMLHeadingElement>(null);
+  const exampleButton = useRef<HTMLButtonElement>(null);
+  const returningFromExample = useRef(false);
+  useLayoutEffect(() => {
+    if (stage === "example") exampleHeading.current?.focus();
+    if (stage === "choose" && returningFromExample.current) {
+      returningFromExample.current = false;
+      exampleButton.current?.focus();
+    }
+  }, [stage]);
   const [attempted, setAttempted] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState("");
@@ -271,7 +281,7 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {stage !== "choose" && (
+      {stage !== "choose" && stage !== "example" && (
         <ol className={styles.entrySteps} aria-label="Add parts steps">
           {["Parts", "Settings", "Review"].map((label, i) => (
             <li
@@ -289,7 +299,7 @@ export default function PartsImportForm({
         </ol>
       )}
       <fieldset disabled={busy} className={styles.importFields}>
-        <div className={styles.stageBody}>
+        <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
           {stage === "choose" && (
             <>
               <div className={`${styles.shareChoices} ${styles.entryMethods}`}>
@@ -328,14 +338,20 @@ export default function PartsImportForm({
                   </button>
                 ))}
               </div>
-              <details className={styles.entryExample}>
-                <summary>See an example</summary>
+              <div className={styles.entryExample}>
+                <button ref={exampleButton} type="button" onClick={() => {setError(""); setStage("example");}}>See an example</button>
+              </div>
+            </>
+          )}
+          {stage === "example" && (
+              <section className={styles.entryExampleView} aria-labelledby="parts-example-heading">
+                <h3 id="parts-example-heading" ref={exampleHeading} tabIndex={-1}>Example parts list</h3>
                 <p>
                   Part number and quantity are required. Price, brand and
                   description are optional. Keep part numbers as text in your
                   spreadsheet to preserve leading zeros.
                 </p>
-                <div className={styles.tableWrap}>
+                <div className={styles.tableWrap} role="region" aria-label="Example parts table" tabIndex={0}>
                   <table>
                     <thead>
                       <tr>
@@ -363,8 +379,7 @@ export default function PartsImportForm({
                     Download Excel example
                   </button>
                 </div>
-              </details>
-            </>
+              </section>
           )}
           {stage === "file" && (
             <>
@@ -881,7 +896,10 @@ export default function PartsImportForm({
             <button
               onClick={() => {
                 setError("");
-                if (stage === "review") {
+                if (stage === "example") {
+                  returningFromExample.current = true;
+                  setStage("choose");
+                } else if (stage === "review") {
                   setPreview(null);
                   setStage(editSnapshot ? "entry" : "settings");
                 } else if (stage === "settings") setStage("entry");
