@@ -1537,7 +1537,16 @@
 .partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }
 
 .entryModal:has(.partsIntent) { width: min(1080px, 100%); padding: clamp(22px, calc(var(--website-design-vw, 1vw) * 4), 38px); }
-.entryModal .partsIntent { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 6px; }
+/* Match the breathing room around the cards on both sides of the chooser. */
+.entryModal .partsIntent {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 6px;
+}
+.entryModal:has(> .partsIntent) .dialogHeader { margin-bottom: 20px; }
+.entryModal:has(> .partsIntent) > .entryFooter {
+  margin-top: 20px;
+  padding-top: 18px;
+}
 .partPickerSearch { display: flex; gap: 12px; }
 .partPickerSearch input { flex: 1; min-width: 0; }
 .partPickerResults { display: grid; gap: 10px; margin-block: 16px; padding: 6px; min-height: 0; overflow: auto; }
@@ -1545,4 +1554,8 @@
 .partPickerResults span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
 .partPickerResults small { color: var(--app-text-muted, #61766c); }
 .partPickerResults svg { width: 20px; flex-shrink: 0; }
-@media (max-width: 640px) { :global(:where(html:not(:has([data-website-canvas])))) .entryModal .partsIntent { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .partsIntent { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) .dialogHeader { margin-bottom: 14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) > .entryFooter { margin-top: 12px; padding-top: 12px; }
+}
