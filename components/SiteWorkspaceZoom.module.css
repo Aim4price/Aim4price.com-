@@ -140,6 +140,7 @@
 .canvas :global([data-website-overlay]) {
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   align-items: safe center;
   justify-content: safe center;
   justify-items: safe center;
@@ -238,7 +239,7 @@
   z-index: 2147483000;
   isolation: isolate;
   display: grid;
-  place-items: center;
+  place-items: safe center;
   overflow: auto;
   padding:
     calc(1rem + env(safe-area-inset-top))
