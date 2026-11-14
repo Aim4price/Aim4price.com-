@@ -30,17 +30,21 @@ type Preview = {
 };
 export default function PartsImportForm({
   initialDetails,
+  editSnapshot,
+  onBack,
   request,
   onComplete,
   onBusyChange,
 }: {
   initialDetails: Details;
+  editSnapshot?: {rows: string[][]; revision: number};
+  onBack: () => void;
   request: (body: Record<string, unknown>) => Promise<any>;
   onComplete: (addAnother?: boolean) => Promise<void>;
   onBusyChange: (busy: boolean) => void;
 }) {
   const [source, setSource] = useState<"manual" | "sheet" | "file" | null>(
-    null,
+    editSnapshot ? "sheet" : null,
   );
   const [details, setDetails] = useState(initialDetails);
   const [pastedTable, setPastedTable] = useState("");
@@ -51,19 +55,23 @@ export default function PartsImportForm({
   const [sheetIndex, setSheetIndex] = useState(0);
   const [hasHeader, setHasHeader] = useState(true);
   const [columns, setColumns] = useState<PartColumns>(EDITOR_COLUMNS);
-  const [rows, setRows] = useState<string[][]>([blankPart()]);
+  const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [blankPart()]);
   const [stage, setStage] = useState<
     "choose" | "file" | "entry" | "settings" | "review"
-  >("choose");
+  >(editSnapshot ? "entry" : "choose");
   const [attempted, setAttempted] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState("");
   const [undo, setUndo] = useState<string[][] | null>(null);
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, updateSelected] = useState<number[]>([]);
+  function setSelected(next: number[]) { updateSelected(next); setCleanup(false); }
   const [prefix, setPrefix] = useState("");
   const [cleanup, setCleanup] = useState(false);
   const [page, setPage] = useState(0);
-  const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const mode = editSnapshot ? "replace" : "add";
+  const [suffix, setSuffix] = useState("");
+  const [trimNumbers, setTrimNumbers] = useState(false);
+  const [clearColumn, setClearColumn] = useState(3);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -89,7 +97,6 @@ export default function PartsImportForm({
       setUndo(null);
       setPage(0);
     }
-    if (next === "manual") setMode("merge");
     setSource(next);
     setStage(next === "file" ? "file" : "entry");
     setError("");
@@ -99,7 +106,7 @@ export default function PartsImportForm({
   }
   function continueEntry() {
     setAttempted(true);
-    if (!populated.length) {
+    if (!populated.length && !editSnapshot) {
       setError("Add at least one part to continue.");
       return;
     }
@@ -109,7 +116,14 @@ export default function PartsImportForm({
       return;
     }
     setError("");
-    setStage("settings");
+    if (editSnapshot) void review();
+    else setStage("settings");
+  }
+  async function review() {
+    await run(async () => {
+      setPreview(await request({action: "preview", ...payload()}));
+      setStage("review");
+    });
   }
   async function save(addAnother = false) {
     if (!preview) return;
@@ -141,7 +155,11 @@ export default function PartsImportForm({
       onBusyChange(false);
     }
   }
-  function change(next: string[][]) {
+  function change(next: string[][], removing = false) {
+    if (editSnapshot && !removing && rows.some((row, i) => row.some(v => v.trim()) && !next[i]?.some(v => v.trim()))) {
+      setError("Use Remove selected to remove parts. Clearing cells does not remove a saved part.");
+      return;
+    }
     setUndo(rows);
     setRows(next);
     setPreview(null);
@@ -193,6 +211,7 @@ export default function PartsImportForm({
     columns: EDITOR_COLUMNS,
     options: { hasHeader: false },
     mode,
+    ...(editSnapshot ? {baseRevision: editSnapshot.revision} : {}),
     ...details,
   });
   async function template(excel: boolean) {
@@ -222,9 +241,24 @@ export default function PartsImportForm({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const visible = rows.slice(page * 50, page * 50 + 50);
-  const changed = selected.filter(
-    (i) => prefix && rows[i]?.[0].startsWith(prefix),
-  );
+  const selectedSet = new Set(selected);
+  const cleaned = cleanup || prefix || suffix || trimNumbers ? rows.map((row, i) => {
+    if (selectedSet.size && !selectedSet.has(i)) return row;
+    let number = trimNumbers ? row[0].trim() : row[0];
+    if (prefix && number.startsWith(prefix)) number = number.slice(prefix.length);
+    if (suffix && number.endsWith(suffix)) number = number.slice(0, -suffix.length);
+    return [number, ...row.slice(1)];
+  }) : rows;
+  const changed = rows.flatMap((row, i) => row[0] === cleaned[i][0] ? [] : [i]);
+  const numberCounts = new Map<string, number>();
+  if (cleanup) for (const row of cleaned) {
+    const key = row[0].trim().toUpperCase();
+    if (key) numberCounts.set(key, (numberCounts.get(key) ?? 0) + 1);
+  }
+  const cleanupIssues = cleanup ? cleaned.flatMap((row, i) => {
+    const key = row[0].trim().toUpperCase();
+    return (rows[i][0].trim() && !key) || (numberCounts.get(key) ?? 0) > 1 ? [i + 1] : [];
+  }) : [];
   return (
     <div className={styles.importForm}>
       {error && (
@@ -547,7 +581,7 @@ export default function PartsImportForm({
                 <button
                   disabled={!selected.length}
                   onClick={() => {
-                    change(rows.filter((_, i) => !selected.includes(i)));
+                    change(rows.filter((_, i) => !selected.includes(i)), true);
                     setSelected([]);
                     setPage(0);
                   }}
@@ -555,6 +589,13 @@ export default function PartsImportForm({
                   Remove selected ({selected.length})
                 </button>
               </div>
+              {editSnapshot && <div className={styles.actions}>
+                <label>Column to clear<select value={clearColumn} onChange={e => setClearColumn(Number(e.target.value))}>
+                  {PART_LABELS.map((label, i) => <option value={i} key={label}>{label}</option>)}
+                </select></label>
+                <button disabled={!selected.length} onClick={() => change(rows.map((r, i) => selectedSet.has(i) ? r.map((v, j) => j === clearColumn ? "" : v) : r))}>Clear selected cells</button>
+                <button disabled={!rows.some(r => r.every(v => !v.trim()))} onClick={() => {change(rows.filter(r => r.some(v => v.trim())), true);setSelected([]);setPage(0);}}>Remove blank rows</button>
+              </div>}
               <div className={styles.editorWrap}>
                 <table className={styles.editorTable}>
                   <thead>
@@ -639,6 +680,7 @@ export default function PartsImportForm({
                                 onPaste={(e) => {
                                   e.preventDefault();
                                   try {
+                                    setError("");
                                     change(
                                       pastePartsCells(
                                         rows,
@@ -647,7 +689,6 @@ export default function PartsImportForm({
                                         j,
                                       ),
                                     );
-                                    setError("");
                                   } catch (err) {
                                     setError((err as Error).message);
                                   }
@@ -719,6 +760,9 @@ export default function PartsImportForm({
                     }}
                   />
                 </label>
+                <label>Remove suffix<input maxLength={30} value={suffix} placeholder="e.g. .1" onChange={e => {setSuffix(e.target.value);setCleanup(false);}} /></label>
+                <label><input type="checkbox" checked={trimNumbers} onChange={e => {setTrimNumbers(e.target.checked);setCleanup(false);}} /> Trim surrounding spaces</label>
+                <p>{selected.length ? "Cleanup applies to selected rows." : "Cleanup applies to the whole sheet."}</p>
                 <button
                   disabled={!changed.length}
                   onClick={() => setCleanup(true)}
@@ -740,7 +784,7 @@ export default function PartsImportForm({
                             <tr key={i}>
                               <td>{rows[i][0]}</td>
                               <td>
-                                {rows[i][0].slice(prefix.length) ||
+                                {cleaned[i][0] ||
                                   "Empty — needs correction"}
                               </td>
                             </tr>
@@ -749,20 +793,11 @@ export default function PartsImportForm({
                       </table>
                     </div>
                     <p>
-                      {changed.length} selected rows will change. Showing up to
+                      {changed.length} rows will change. Showing up to
                       10 examples.
                     </p>
-                    <button
-                      onClick={() =>
-                        change(
-                          rows.map((r, i) =>
-                            changed.includes(i)
-                              ? [r[0].slice(prefix.length), ...r.slice(1)]
-                              : r,
-                          ),
-                        )
-                      }
-                    >
+                    {!!cleanupIssues.length && <p role="alert">Duplicate or empty part numbers in rows {cleanupIssues.slice(0, 20).join(", ")}{cleanupIssues.length > 20 ? " and more" : ""}. Adjust your cleanup before applying.</p>}
+                    <button disabled={!!cleanupIssues.length} onClick={() => change(cleaned)}>
                       Apply cleanup
                     </button>
                   </>
@@ -772,29 +807,7 @@ export default function PartsImportForm({
           )}
           {stage === "settings" && (
             <>
-              {source !== "manual" && (
-                <label>
-                  Update this list
-                  <select
-                    value={mode}
-                    onChange={(e) =>
-                      setMode(e.target.value as "merge" | "replace")
-                    }
-                  >
-                    <option value="merge">
-                      Add / update parts — keep unlisted parts
-                    </option>
-                    <option value="replace">
-                      Replace entire list — remove unlisted parts
-                    </option>
-                  </select>
-                </label>
-              )}
-              <p className={styles.stageHint}>
-                Blank prices show as “Price on request”. Matching part numbers
-                replace their previous details, including optional fields left
-                blank.
-              </p>
+              <p className={styles.stageHint}>Blank prices show as “Price on request”. Existing part numbers cannot be overwritten from Add parts.</p>
               <section aria-label="Contact details and VAT">
                 <h3>Contact details &amp; VAT</h3>
                 <div className={styles.grid}>
@@ -848,9 +861,9 @@ export default function PartsImportForm({
                 ))}
               </div>
               <p>
-                {mode === "merge"
+                {mode === "add"
                   ? "Unlisted parts stay unchanged."
-                  : "Parts missing from this table will be removed from the shared list."}{" "}
+                  : "Removed rows will leave the shared list. A changed part number is counted as one removal and one addition."}{" "}
                 Your master stock records and cost ledger are unaffected.
               </p>
               <p>
@@ -862,6 +875,7 @@ export default function PartsImportForm({
             </>
           )}
         </div>
+        {stage === "choose" && <div className={styles.entryFooter}><button onClick={onBack}>Back</button></div>}
         {stage !== "choose" && (
           <div className={styles.entryFooter}>
             <button
@@ -869,8 +883,9 @@ export default function PartsImportForm({
                 setError("");
                 if (stage === "review") {
                   setPreview(null);
-                  setStage("settings");
+                  setStage(editSnapshot ? "entry" : "settings");
                 } else if (stage === "settings") setStage("entry");
+                else if (editSnapshot) onBack();
                 else setStage("choose");
               }}
             >
@@ -879,7 +894,7 @@ export default function PartsImportForm({
             <div className={styles.actions}>
               {stage === "entry" && (
                 <button className={styles.primary} onClick={continueEntry}>
-                  Continue
+                  {editSnapshot ? "Review changes" : "Continue"}
                 </button>
               )}
               {stage === "file" && raw.length > 0 && (
@@ -893,14 +908,7 @@ export default function PartsImportForm({
               {stage === "settings" && (
                 <button
                   className={styles.primary}
-                  onClick={() =>
-                    void run(async () => {
-                      setPreview(
-                        await request({ action: "preview", ...payload() }),
-                      );
-                      setStage("review");
-                    })
-                  }
+                  onClick={() => void review()}
                 >
                   Review parts
                 </button>
@@ -916,9 +924,9 @@ export default function PartsImportForm({
                     className={styles.primary}
                     onClick={() => void run(() => save())}
                   >
-                    {mode === "merge"
+                    {mode === "add"
                       ? "Save parts"
-                      : `Replace list (${preview.summary.removed} removed)`}
+                      : `Save changes${preview.summary.removed ? ` (${preview.summary.removed} removed)` : ""}`}
                   </button>
                 </>
               )}
