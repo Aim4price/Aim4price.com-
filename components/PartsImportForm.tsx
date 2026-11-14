@@ -259,8 +259,73 @@ export default function PartsImportForm({
     const key = row[0].trim().toUpperCase();
     return (rows[i][0].trim() && !key) || (numberCounts.get(key) ?? 0) > 1 ? [i + 1] : [];
   }) : [];
+  const cleanupPanel = (
+              <details className={styles.numberCleanup}>
+                <summary>Clean up part numbers</summary>
+                <div className={styles.numberCleanupBody}>
+                <p>Remove an exact prefix or suffix from part numbers. Preview the result before applying it to the sheet.</p>
+                <div className={styles.numberCleanupFields}>
+                <label>
+                  Remove prefix
+                  <input
+                    aria-label="Remove part number prefix"
+                    maxLength={30}
+                    value={prefix}
+                    placeholder="e.g. 01."
+                    onChange={(e) => {
+                      setPrefix(e.target.value);
+                      setCleanup(false);
+                    }}
+                  />
+                </label>
+                <label>Remove suffix<input maxLength={30} value={suffix} placeholder="e.g. .1" onChange={e => {setSuffix(e.target.value);setCleanup(false);}} /></label>
+                </div>
+                <label className={styles.cleanupCheckbox}><input type="checkbox" checked={trimNumbers} onChange={e => {setTrimNumbers(e.target.checked);setCleanup(false);}} /> Trim surrounding spaces</label>
+                <p>{selected.length ? `Applies to ${selected.length.toLocaleString()} selected rows.` : "Applies to the whole sheet. Select rows to limit the cleanup."}</p>
+                <button
+                  disabled={!changed.length}
+                  onClick={() => setCleanup(true)}
+                >
+                  Preview cleanup ({changed.length})
+                </button>
+                {cleanup && (
+                  <>
+                    <div className={styles.tableWrap}>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Before</th>
+                            <th>After</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {changed.slice(0, 10).map((i) => (
+                            <tr key={i}>
+                              <td>{rows[i][0]}</td>
+                              <td>
+                                {cleaned[i][0] ||
+                                  "Empty — needs correction"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p>
+                      {changed.length} rows will change. Showing up to
+                      10 examples.
+                    </p>
+                    {!!cleanupIssues.length && <p role="alert">Duplicate or empty part numbers in rows {cleanupIssues.slice(0, 20).join(", ")}{cleanupIssues.length > 20 ? " and more" : ""}. Adjust your cleanup before applying.</p>}
+                    <button disabled={!!cleanupIssues.length} onClick={() => change(cleaned)}>
+                      Apply cleanup
+                    </button>
+                  </>
+                )}
+                </div>
+              </details>
+  );
   return (
-    <div className={styles.importForm}>
+    <div className={`${styles.importForm} ${editSnapshot && stage === "entry" ? styles.stockSheet : ""}`}>
       {error && (
         <p role="alert" className={styles.error}>
           {error}
@@ -273,11 +338,11 @@ export default function PartsImportForm({
       )}
       {stage !== "choose" && (
         <ol className={styles.entrySteps} aria-label="Add parts steps">
-          {["Parts", "Settings", "Review"].map((label, i) => (
+          {(editSnapshot ? ["Edit stock", "Review changes"] : ["Parts", "Settings", "Review"]).map((label, i) => (
             <li
               key={label}
               aria-current={
-                (stage === "settings" ? 1 : stage === "review" ? 2 : 0) === i
+                (stage === "settings" ? 1 : stage === "review" ? (editSnapshot ? 1 : 2) : 0) === i
                   ? "step"
                   : undefined
               }
@@ -550,10 +615,10 @@ export default function PartsImportForm({
           )}
           {stage === "entry" && source !== "manual" && (
             <>
-              <p>
-                Paste cells from Excel / Sheets, or type below. Part number and
-                quantity are required.
-              </p>
+              {editSnapshot ? <div className={styles.stockSheetIntro}>
+                <h3>Stock list</h3>
+                <p>Edit cells directly or paste a range from Excel or Google Sheets. Every row needs a part number and quantity. Changes are saved after review.</p>
+              </div> : <p>Paste cells from Excel / Sheets, or type below. Part number and quantity are required.</p>}
               <div className={styles.actions}>
                 <button
                   disabled={rows.length >= 20000}
@@ -589,14 +654,19 @@ export default function PartsImportForm({
                   Remove selected ({selected.length})
                 </button>
               </div>
-              {editSnapshot && <div className={styles.actions}>
+              {editSnapshot && <details className={styles.sheetBulkTools}>
+                <summary>Bulk row tools{selected.length > 0 ? ` · ${selected.length} selected` : ""}</summary>
+                <p>Select rows in the sheet to clear a column. Removing blank rows only removes empty lines.</p>
+                <div className={styles.actions}>
                 <label>Column to clear<select value={clearColumn} onChange={e => setClearColumn(Number(e.target.value))}>
                   {PART_LABELS.map((label, i) => <option value={i} key={label}>{label}</option>)}
                 </select></label>
                 <button disabled={!selected.length} onClick={() => change(rows.map((r, i) => selectedSet.has(i) ? r.map((v, j) => j === clearColumn ? "" : v) : r))}>Clear selected cells</button>
                 <button disabled={!rows.some(r => r.every(v => !v.trim()))} onClick={() => {change(rows.filter(r => r.some(v => v.trim())), true);setSelected([]);setPage(0);}}>Remove blank rows</button>
-              </div>}
-              <div className={styles.editorWrap}>
+                </div>
+              </details>}
+              {editSnapshot && cleanupPanel}
+              <div className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={styles.editorTable}>
                   <thead>
                     <tr>
@@ -741,68 +811,7 @@ export default function PartsImportForm({
                   </>
                 )}
               </div>
-              <details>
-                <summary>Clean up part numbers</summary>
-                <p>
-                  Select the rows to adjust. Only an exact prefix at the start
-                  will be removed.
-                </p>
-                <label>
-                  Remove prefix
-                  <input
-                    aria-label="Remove part number prefix"
-                    maxLength={30}
-                    value={prefix}
-                    placeholder="e.g. 01."
-                    onChange={(e) => {
-                      setPrefix(e.target.value);
-                      setCleanup(false);
-                    }}
-                  />
-                </label>
-                <label>Remove suffix<input maxLength={30} value={suffix} placeholder="e.g. .1" onChange={e => {setSuffix(e.target.value);setCleanup(false);}} /></label>
-                <label><input type="checkbox" checked={trimNumbers} onChange={e => {setTrimNumbers(e.target.checked);setCleanup(false);}} /> Trim surrounding spaces</label>
-                <p>{selected.length ? "Cleanup applies to selected rows." : "Cleanup applies to the whole sheet."}</p>
-                <button
-                  disabled={!changed.length}
-                  onClick={() => setCleanup(true)}
-                >
-                  Preview cleanup ({changed.length})
-                </button>
-                {cleanup && (
-                  <>
-                    <div className={styles.tableWrap}>
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Before</th>
-                            <th>After</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {changed.slice(0, 10).map((i) => (
-                            <tr key={i}>
-                              <td>{rows[i][0]}</td>
-                              <td>
-                                {cleaned[i][0] ||
-                                  "Empty — needs correction"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <p>
-                      {changed.length} rows will change. Showing up to
-                      10 examples.
-                    </p>
-                    {!!cleanupIssues.length && <p role="alert">Duplicate or empty part numbers in rows {cleanupIssues.slice(0, 20).join(", ")}{cleanupIssues.length > 20 ? " and more" : ""}. Adjust your cleanup before applying.</p>}
-                    <button disabled={!!cleanupIssues.length} onClick={() => change(cleaned)}>
-                      Apply cleanup
-                    </button>
-                  </>
-                )}
-              </details>
+              {!editSnapshot && cleanupPanel}
             </>
           )}
           {stage === "settings" && (
