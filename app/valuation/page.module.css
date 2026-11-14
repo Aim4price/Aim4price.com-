@@ -12834,8 +12834,9 @@
 }
 .dealerClientRegisterPicker {
   width: min(820px, calc(calc(var(--website-design-vw, 1vw) * 100) - 32px));
-  max-height: min(780px, calc(calc(var(--website-design-vh, 1vh) * 100) - 40px));
-  overflow: hidden;
+  max-height: min(780px, calc(var(--website-visible-height, 100dvh) - 40px));
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .dealerClientRegisterSearch {
