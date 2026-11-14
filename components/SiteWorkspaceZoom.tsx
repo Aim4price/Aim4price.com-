@@ -256,7 +256,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
         />
         <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>Turn your phone sideways</h2>
         <p id="aim4price-landscape-description" className={styles.landscapeDescription}>
-          Aim4price is designed to give you more working space in landscape. Rotate your phone and the site will open automatically.
+          We’re proud to pack Aim4price with detailed asset data. For the best experience, turn your phone sideways to give tables, reports and tools more room. The site will open automatically.
         </p>
 
         <div className={styles.landscapeRotateStage} aria-hidden="true">

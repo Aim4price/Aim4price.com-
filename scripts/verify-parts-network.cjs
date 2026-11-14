@@ -436,7 +436,41 @@ const appCode =
     await page.waitForFunction(() => !document.querySelector("[role=dialog]"));
     await page.goto('https://example.test/parts/11111111-1111-4111-8111-111111111111');
     await page.waitForSelector('tbody tr');
-    await click("Add / edit parts"); await click("Add parts");
+    await click("Add / edit parts");
+    // Match the normal website: a 1440px canvas with the portal inside the same zoom.
+    await page.setViewport({width: 740, height: 285});
+    await page.evaluate(() => {
+      const canvas = document.createElement("div");
+      const scale = innerWidth / 1440;
+      canvas.dataset.websiteCanvas = "";
+      canvas.id = "parts-test-canvas";
+      canvas.style.width = "1440px";
+      canvas.style.zoom = String(scale);
+      canvas.style.setProperty("--website-design-vw", "14.4px");
+      canvas.style.setProperty("--website-visible-height", `${innerHeight / scale}px`);
+      document.body.append(canvas);
+      canvas.append(document.getElementById("app"), document.getElementById("aim4price-website-overlays"));
+    });
+    const chooser = '[role="dialog"][aria-label="Add / edit parts"]';
+    assert.ok(await page.$eval(chooser, dialog => {
+      const bounds = dialog.getBoundingClientRect();
+      const edit = [...dialog.querySelectorAll("button")].find(button => button.innerText.includes("Edit parts"));
+      return bounds.height > 180 && bounds.top >= 0 && bounds.bottom <= innerHeight + 1
+        && edit.getBoundingClientRect().bottom <= bounds.bottom;
+    }), "Canonical landscape chooser fits the viewport and shows both choices");
+    await page.screenshot({path:path.join(output, "entry-chooser-landscape.png")});
+    await page.setViewport({width: 740, height: 165});
+    await page.$eval("#parts-test-canvas", canvas =>
+      canvas.style.setProperty("--website-visible-height", `${innerHeight / (innerWidth / 1440)}px`));
+    assert.ok(await page.$eval(chooser, dialog => {
+      if (getComputedStyle(dialog).overflowY !== "auto" || dialog.scrollHeight <= dialog.clientHeight) return false;
+      dialog.scrollTop = dialog.scrollHeight;
+      const edit = [...dialog.querySelectorAll("button")].find(button => button.innerText.includes("Edit parts"));
+      return dialog.scrollTop > 0 && edit.getBoundingClientRect().bottom <= dialog.getBoundingClientRect().bottom;
+    }), "The chooser scrolls to its last action on a very short screen");
+    await page.$eval("#parts-test-canvas", canvas => canvas.replaceWith(...canvas.childNodes));
+    await page.setViewport({width: 1440, height: 1000});
+    await click("Add parts");
     await page.hover('[data-tone="green"]');
     await page.$eval('[data-tone="green"]',e=>e.focus());
     await page.screenshot({path:path.join(output,'entry-choices-desktop.png')});

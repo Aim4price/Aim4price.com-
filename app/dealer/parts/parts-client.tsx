@@ -187,7 +187,7 @@ function Modal({
     };
   }, []);
   return createPortal(
-    <div className={styles.backdrop}>
+    <div className={styles.backdrop} data-website-overlay>
       <section
         ref={ref}
         className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""}`}

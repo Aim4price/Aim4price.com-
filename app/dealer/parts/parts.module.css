@@ -194,6 +194,7 @@
   max-height: calc(var(--website-visible-height, 100dvh) - 48px);
   overflow-y: auto;
   scrollbar-width: thin;
+  overscroll-behavior: contain;
   box-sizing: border-box;
   padding: 36px;
   border: 1px solid var(--app-border, #c8dcd0);
@@ -894,10 +895,9 @@
   width: min(calc(var(--website-design-vw, 1vw) * 97), 84rem);
   max-width: 84rem;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
-  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.95), 60rem);
+  max-height: min(calc(var(--website-visible-height, 100dvh) - 48px), 60rem);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 .manageModal .dialogHeader {
   flex: 0 0 auto;
@@ -1183,13 +1183,13 @@
 .stocklistTitle > div { gap: 1.25rem; }
 .stocklistTitle h1 { flex: 1 1 0; }
 
-/* Parts entry keeps navigation outside the scrollable working area. */
-.entryModal { width: min(1240px, 100%); max-height: min(900px, 92dvh); display: flex; flex-direction: column; overflow: hidden; padding: 28px; }
+/* Keep wizard actions in view when there is room, with a scrollable dialog on short screens. */
+.entryModal { width: min(1240px, 100%); max-height: min(900px, calc(var(--website-visible-height, 100dvh) - 48px)); display: flex; flex-direction: column; padding: 28px; }
 .entryModal .dialogHeader { flex: 0 0 auto; margin-bottom: 20px; padding-bottom: 20px; }
 .entryModal .dialogHeader h2 { font-size: 30px; }
-.entryModal .importForm { min-height: 0; display: flex; flex-direction: column; gap: 16px; overflow: hidden; flex: 1 1 auto; }
+.entryModal .importForm { min-height: 0; display: flex; flex-direction: column; gap: 16px; flex: 1 1 auto; }
 .entryModal .importFields { display: contents; }
-.stageBody { flex: 1 1 auto; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 20px; padding: 2px 3px 16px; }
+.stageBody { flex: 1 1 auto; min-height: 5rem; overflow: auto; display: flex; flex-direction: column; gap: 20px; padding: 2px 3px 16px; }
 .entrySteps { list-style: none; display: flex; gap: 24px; padding: 0; margin: 0; flex: 0 0 auto; }
 .entrySteps li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--app-muted, #63796f); }
 .entrySteps li span { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid var(--app-border, #cbded4); border-radius: 50%; }
@@ -1204,7 +1204,7 @@
 .entryModal label small { font-weight: 400; color: var(--app-muted, #63796f); }
 .entryModal input, .entryModal select { font-size: 15px; padding: 12px; min-height: 44px; }
 .entryModal input[aria-invalid='true'] { border-color: #c44646; }
-.entryModal .editorWrap { flex: 0 0 auto; max-height: 40dvh; border-radius: 10px; }
+.entryModal .editorWrap { flex: 0 0 auto; max-height: calc(var(--website-visible-height, 100dvh) * 0.4); border-radius: 10px; }
 .entryModal .editorTable { table-layout: fixed; min-width: 800px; font-size: 14px; }
 .entryModal .editorTable th { padding: 10px 8px; font-size: 13px; }
 .entryModal .editorTable th:first-child { width: 44px; }
@@ -1219,15 +1219,15 @@
 .entryModal .stageBody > .actions button { padding: 8px 12px; min-height: 38px; font-size: 13px; }
 .entryModal .stageBody > .actions { font-size: 13px; }
 @media (max-width: 640px) {
-  .entryModal { padding: 18px; max-height: 94dvh; }
-  .entryModal .dialogHeader { padding-bottom: 14px; margin-bottom: 14px; }
-  .entryModal .dialogHeader h2 { font-size: 24px; }
-  .entryMethods { grid-template-columns: 1fr; gap: 10px; }
-  .entrySteps { gap: 14px; }
-  .entrySteps li { font-size: 12px; gap: 5px; }
-  .entryFooter { align-items: flex-end; }
-  .entryFooter .actions { justify-content: flex-end; gap: 6px; }
-  .entryModal .entryFooter button { padding: 10px 12px; font-size: 13px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal { padding: 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .dialogHeader { padding-bottom: 14px; margin-bottom: 14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .dialogHeader h2 { font-size: 24px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods { grid-template-columns: 1fr; gap: 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entrySteps { gap: 14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entrySteps li { font-size: 12px; gap: 5px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryFooter { align-items: flex-end; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryFooter .actions { justify-content: flex-end; gap: 6px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryFooter button { padding: 10px 12px; font-size: 13px; }
 }
 .entryModal .editorTable td:first-child small { display: inline; margin-left: 4px; }
 
@@ -1462,22 +1462,22 @@
 .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:24px; margin-bottom:28px; }
 .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:34px; }
 .entryModal:has(.entryMethods) .stageBody { gap:28px; padding:0 0 2px; }
-.entryModal .entryMethods { margin:0; gap:20px; }
+.entryModal .entryMethods { flex-shrink: 0; margin:0; gap:20px; }
 .entryMethods button { align-items:center; justify-content:center; }
 .entryExample { border-top:1px solid var(--app-border,#dce5df); padding-top:22px; }
 .entryExample summary { padding:16px 18px; border:1px solid var(--app-border,#cbded4); border-radius:15px; background:var(--app-surface,#fff); font-size:16px; font-weight:750; cursor:pointer; }
 .entryExample summary:focus-visible { outline:2px solid var(--app-primary,#17654c); outline-offset:3px; }
 @media(max-width:640px) {
-  .entryModal:has(.entryMethods) { padding:22px; }
-  .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:18px; margin-bottom:20px; }
-  .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:25px; }
-  .entryModal .entryMethods { grid-template-columns:1fr; gap:12px; }
-  .entryModal .entryMethods button { flex-direction:row; justify-content:flex-start; text-align:left; min-height:96px; padding:16px; gap:16px; }
-  .entryMethods button svg { width:22px; height:22px; padding:10px; }
-  .entryMethods button strong { font-size:16px; }
-  .entryMethods button small { font-size:14px; }
-  .entryModal:has(.entryMethods) .stageBody { gap:20px; }
-  .entryExample { padding-top:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) { padding:22px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:18px; margin-bottom:20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:25px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods { grid-template-columns:1fr; gap:12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods button { flex-direction:row; justify-content:flex-start; text-align:left; min-height:96px; padding:16px; gap:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button svg { width:22px; height:22px; padding:10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button strong { font-size:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button small { font-size:14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .stageBody { gap:20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryExample { padding-top:16px; }
 }
 
 /* Keep the choice highlight within its rounded edge and clear of the scroller. */
@@ -1536,7 +1536,7 @@
 .deleteModal .deleteFooter .deleteConfirm:hover:not(:disabled) { background: linear-gradient(#a63838, #872b2b); }
 .partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }
 
-.entryModal:has(.partsIntent) { width: min(1080px, 100%); padding: clamp(22px, 4vw, 38px); }
+.entryModal:has(.partsIntent) { width: min(1080px, 100%); padding: clamp(22px, calc(var(--website-design-vw, 1vw) * 4), 38px); }
 .entryModal .partsIntent { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 6px; }
 .partPickerSearch { display: flex; gap: 12px; }
 .partPickerSearch input { flex: 1; min-width: 0; }
@@ -1545,4 +1545,4 @@
 .partPickerResults span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
 .partPickerResults small { color: var(--app-text-muted, #61766c); }
 .partPickerResults svg { width: 20px; flex-shrink: 0; }
-@media (max-width: 640px) { .entryModal .partsIntent { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { :global(:where(html:not(:has([data-website-canvas])))) .entryModal .partsIntent { grid-template-columns: 1fr; } }

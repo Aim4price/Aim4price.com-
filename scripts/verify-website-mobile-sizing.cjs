@@ -87,6 +87,7 @@ fs.mkdirSync(output, { recursive: true });
     await setViewport({width:390,height:844,isMobile:false,hasTouch:true});
     await waitScale(390/1440);
     await page.waitForSelector('[data-mobile-landscape-entry]');
+    assert.match(await page.$eval('#aim4price-landscape-description', e => e.textContent), /detailed asset data.*best experience.*sideways/);
     assert.equal(await page.$eval('[data-website-canvas]',e=>e.inert),true);
     assert.ok(await page.$eval('[data-website-canvas]',e=>e.getBoundingClientRect().width<=390.5));
     await page.screenshot({path:path.join(output,'phone-entry.png')});
