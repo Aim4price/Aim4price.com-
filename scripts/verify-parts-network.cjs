@@ -474,6 +474,16 @@ const appCode =
     await page.hover('[data-tone="green"]');
     await page.$eval('[data-tone="green"]',e=>e.focus());
     await page.screenshot({path:path.join(output,'entry-choices-desktop.png')});
+    await click("See an example");
+    await page.waitForSelector('[aria-label="Example parts table"]');
+    assert.equal(await page.$eval('[role=dialog]', dialog => dialog.textContent.includes('Add one part')), false);
+    assert.equal(await page.evaluate(() => document.activeElement.textContent), "Example parts list");
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.$eval('[aria-label="Example parts table"]', table => table.scrollWidth > table.clientWidth));
+    await click("Back");
+    assert.equal(await page.evaluate(() => document.activeElement.textContent), "See an example");
+    await page.setViewport({width:1440,height:1000});
+
     await page.setViewport({width:390,height:844});
     await page.screenshot({path:path.join(output,'entry-choices-phone.png')});
     await page.setViewport({width:1440,height:1000});
