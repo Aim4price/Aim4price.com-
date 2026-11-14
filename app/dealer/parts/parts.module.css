@@ -1549,9 +1549,28 @@
 }
 .partPickerSearch { display: flex; gap: 12px; }
 .partPickerSearch input { flex: 1; min-width: 0; }
-.partPickerResults { display: grid; gap: 10px; margin-block: 16px; padding: 6px; min-height: 0; overflow: auto; }
-.entryModal .partPickerResults button { justify-content: space-between; text-align: left; padding: 16px; }
-.partPickerResults span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.partPickerResults {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-block: 16px;
+  padding: 6px;
+  min-height: 0;
+  overflow: auto;
+}
+.entryModal .partPickerResults > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  flex: 0 0 auto;
+  align-items: center;
+  height: auto;
+  min-height: max-content;
+  max-height: none;
+  text-align: left;
+  white-space: normal;
+  padding: 14px 16px;
+}
+.partPickerResults > button > span { display: grid; gap: 5px; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
 .partPickerResults small { color: var(--app-text-muted, #61766c); }
 .partPickerResults svg { width: 20px; flex-shrink: 0; }
 @media (max-width: 640px) {
