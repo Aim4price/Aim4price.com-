@@ -2087,8 +2087,8 @@ export default function AssetMapClient() {
                   data-tooltip="Reload the latest asset locations and map tiles."
                   data-tooltip-style="description"
                 >
-                  <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></svg>
-                  <span>{isRefreshing ? "Refreshing…" : "Refresh"}</span>
+                  <span className={styles.refreshMapIcon} aria-hidden="true"><svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></svg></span>
+                  <span>{isRefreshing ? "Refreshing…" : "Refresh map"}</span>
                 </button>
               ) : null}
               <span className={styles.refreshStatus} role="status">{refreshStatus}</span>
