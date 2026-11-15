@@ -13,6 +13,7 @@ import {
   handlePartsEnquiry,
   listPartsNetworks,
   partsData,
+  partsReportOwnerId,
   createPartsNetwork,
   invitePartsMember,
   revokePartsInvite,
@@ -78,6 +79,11 @@ export async function GET(request: NextRequest) {
       const { buildPartsStockReportHtml } = await import("../../../lib/parts-network-report");
       const { renderReportHtmlToPdf } = await import("../../../lib/report-pdf");
       const { normaliseReportPdfFileName } = await import("../../../lib/report-pdf-request");
+      const { getAssetRegisterReportLogoUrl } = await import("../../../lib/asset-registers");
+      const { resolveReportLogoUrlForHtml } = await import("../../../lib/report-logo");
+      const ownerId = await partsReportOwnerId(actor, networkId(q.get("network")));
+      const rawLogoUrl = await getAssetRegisterReportLogoUrl(ownerId).catch(() => "");
+      const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
       const included = q.get("vat") === "incl";
       const vat = included ? "Incl. VAT" : "Excl. VAT";
       const title = (q.get("title") || "Parts stock list").slice(0, 150);
@@ -89,7 +95,7 @@ export async function GET(request: NextRequest) {
       }));
       const scope = q.get("search")?.trim() ? `Matching parts for “${q.get("search")!.trim()}”` : "Complete parts list";
       const date = new Intl.DateTimeFormat("en-ZA", {dateStyle:"medium",timeZone:"Africa/Johannesburg"}).format(new Date());
-      const pdf = await renderReportHtmlToPdf(buildPartsStockReportHtml(title, rows, vat, scope, date), {baseUrl:request.url,cookie:request.headers.get("cookie") || ""});
+      const pdf = await renderReportHtmlToPdf(buildPartsStockReportHtml(title, rows, vat, scope, date, {logoUrl}), {baseUrl:request.url,cookie:request.headers.get("cookie") || ""});
       const filename = normaliseReportPdfFileName(title).replace(/[^\x20-\x7e]/g, "_");
       return new NextResponse(pdf, {headers:{"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="${filename}"`,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
     }
