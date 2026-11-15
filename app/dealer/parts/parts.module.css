@@ -1680,3 +1680,33 @@
 }
 @keyframes partsSlideProgress { from { transform: scaleX(.7); opacity: .5; } to { transform: scaleX(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .partsProgress > span { animation: none; } }
+
+.sheetToolbar { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:0 3px 16px; flex:0 0 auto; }
+.sheetToolbar > span { margin-right:auto; font-weight:650; color:var(--app-text-muted, #61766c); }
+.entryModal .sheetToolbar button { min-height:40px; padding:9px 16px; font-size:14px; }
+.entryModal .stockSheet .editorTable th:first-child { width:100px; }
+.entryModal .stockSheet .editorTable td:first-child { white-space:nowrap; }
+.entryModal .stockSheet .editorTable .sheetRowAction { display:inline-flex; align-items:center; justify-content:center; padding:5px; margin:0 0 0 5px; min-height:30px; width:30px; height:30px; border-radius:8px; color:var(--app-text, #175442); }
+.sheetToolDialog { width:min(760px, calc(100vw - 32px)); max-height:calc(100dvh - 48px); padding:28px; border:1px solid var(--app-border, #cbded4); color:var(--app-text, #153c31); background:var(--app-surface, #fff); border-radius:24px; overflow:auto; }
+.sheetToolDialog::backdrop { background:#17372e66; backdrop-filter:blur(4px); }
+.sheetToolHeader { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; padding-bottom:20px; border-bottom:1px solid var(--app-border, #cbded4); }
+.sheetToolHeader h2 { margin:0; font-size:26px; font-weight:800; }
+.sheetToolHeader p { margin:8px 0 0; font-weight:650; }
+.sheetToolHeader > button { min-width:40px; min-height:40px; padding:6px; font-size:24px; }
+.sheetToolBody { display:grid; gap:20px; padding-block:22px; }
+.sheetToolBody p { margin:0; line-height:1.5; }
+.sheetToolFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.sheetToolFields label { display:flex; flex-direction:column; gap:8px; font-weight:700; }
+.sheetToolFields input, .sheetToolFields select { width:100%; min-width:0; padding:12px; border:1px solid var(--app-border, #cbded4); border-radius:12px; background:var(--app-surface-soft, #edf5f1); color:inherit; font:inherit; }
+.sheetColumnChoices { display:grid; gap:16px; }
+.sheetColumnChoices label, .sheetToolFields .sheetCheck { display:flex; flex-direction:row; align-items:center; gap:12px; font-weight:650; }
+.sheetColumnChoices small { margin-left:auto; color:var(--app-text-muted, #61766c); }
+.sheetToolDialog input[type="checkbox"] { width:18px; height:18px; min-height:18px; flex:0 0 18px; accent-color:var(--app-primary, #17654c); }
+.sheetToolFooter { display:flex; justify-content:flex-end; gap:12px; padding-top:18px; border-top:1px solid var(--app-border, #cbded4); }
+.sheetRowChoices { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.sheetToolDialog .sheetDelete { color:var(--app-danger, #a63030); border-color:var(--app-danger-line, #dba3a3); background:var(--app-danger-soft, #fff1f1); }
+@media (max-width:640px) { .sheetToolFields { grid-template-columns:1fr; } .sheetToolbar { flex-wrap:wrap; } .sheetToolDialog { padding:20px; } }
+.sheetToolDialog input[type="checkbox"] { padding:0; margin:0; }
+.sheetToolDialog .tableWrap { margin:0; }
+.sheetToolDialog .tableWrap table { min-width:0; table-layout:fixed; }
+.sheetToolDialog .tableWrap th, .sheetToolDialog .tableWrap td { padding:12px; overflow-wrap:anywhere; font-size:14px; }
