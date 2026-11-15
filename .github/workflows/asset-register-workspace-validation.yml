@@ -49,6 +49,7 @@ jobs:
         run: |
           npm run test:register-value-inclusion
           npm run test:asset-card-ui
+          node --test tests/asset-map-data-consistency.test.mjs tests/asset-tracking-location-delete.test.mjs tests/asset-tracking-bulk-delete.test.mjs
           npm run test:umbrella-modal-design
           npm run test:signup-flow
           npm run test:account-app-access

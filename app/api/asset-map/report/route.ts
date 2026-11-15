@@ -1,3 +1,4 @@
+import {resolveAssetUsage, formatResolvedAssetUsage} from '../../../../lib/asset-usage';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../../lib/owner-workspace-access';
 import { restrictTeamReportItems } from '../../../../lib/team-report-policy';
 import {latestTrackingPositions} from '../../../../lib/asset-tracking';
@@ -25,7 +26,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
-type AssetMapUsageMetric = "hours" | "km" | "percentage" | null;
 
 type AssetMapRegisterContext = {
   id: string;
@@ -249,11 +249,6 @@ function formatNumber(value: number | null): string {
   return new Intl.NumberFormat("en-ZA").format(Math.round(value));
 }
 
-function formatPercent(value: number): string {
-  const clamped = Math.max(0, Math.min(100, value));
-  const rounded = Math.round(clamped * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
 
 function formatMoney(value: number | null): string {
   if (value === null || !Number.isFinite(value) || value <= 0)
@@ -462,146 +457,9 @@ function readLicenseRegistrationNumber(asset: AssetRegisterItem): string {
   ).toUpperCase();
 }
 
-function isPercentUsageModeValue(value: unknown): boolean {
-  const normalized = String(value ?? "")
-    .trim()
-    .toLowerCase();
-
-  return (
-    normalized === "percent" ||
-    normalized === "percentage" ||
-    normalized === "percent_used" ||
-    normalized === "percentage_used" ||
-    normalized === "percentage_depreciation" ||
-    normalized === "life_worked_percent" ||
-    normalized === "worked_percent" ||
-    normalized === "lifetime_percent" ||
-    normalized === "wear_class"
-  );
-}
-
-function assetUsesPercentUsage(asset: AssetRegisterItem): boolean {
-  if (asset.kind === "vehicle") return false;
-
-  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
-  const percent = numericValue(asset.lifeWorkedPercent);
-  const usageReading = numericValue(asset.hours);
-  const hasPositiveUsageReading = usageReading !== null && usageReading > 0;
-  const depreciationMethod = String(
-    asset.depreciationMethodUsed ??
-      specs.depreciationMethodUsed ??
-      specs.depreciation_method_used ??
-      specs.selectedDepreciationMethod ??
-      specs.selected_depreciation_method ??
-      "",
-  )
-    .trim()
-    .toLowerCase();
-
-  const usageModeValues = [
-    specs.usageMode,
-    specs.usage_mode,
-    specs.usageBasis,
-    specs.usage_basis,
-    specs.usageMetricType,
-    specs.usage_metric_type,
-    specs.valuationMode,
-    specs.valuation_mode,
-    specs.selectedUsageMode,
-    specs.selected_usage_mode,
-    specs.selectedUsageBasis,
-    specs.selected_usage_basis,
-    specs.depreciationMethodUsed,
-    specs.depreciation_method_used,
-    specs.selectedDepreciationMethod,
-    specs.selected_depreciation_method,
-  ];
-
-  if (usageModeValues.some(isPercentUsageModeValue)) {
-    return true;
-  }
-
-  if (depreciationMethod === "percentage_depreciation") {
-    return true;
-  }
-
-  return (
-    percent !== null &&
-    (!hasPositiveUsageReading || depreciationMethod === "semi_depreciation")
-  );
-}
-
-function getUsageMetric(asset: AssetRegisterItem): AssetMapUsageMetric {
-  if (assetUsesPercentUsage(asset)) return "percentage";
-  if (asset.kind === "vehicle") return "km";
-
-  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
-  const rawUsage = String(
-    specs.usageMetric ??
-      specs.usage_metric ??
-      specs.usageUnit ??
-      specs.usage_unit ??
-      specs.usage_measure ??
-      specs.usageMetricType ??
-      specs.usage_metric_type ??
-      specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageBasis ??
-      specs.usage_basis ??
-      "",
-  )
-    .trim()
-    .toLowerCase();
-
-  if (isPercentUsageModeValue(rawUsage)) return "percentage";
-
-  if (
-    rawUsage === "km" ||
-    rawUsage === "kms" ||
-    rawUsage === "kilometres" ||
-    rawUsage === "kilometers" ||
-    rawUsage === "odometer" ||
-    rawUsage === "odometer_reading"
-  ) {
-    return "km";
-  }
-
-  if (
-    rawUsage === "hours" ||
-    rawUsage === "hour" ||
-    rawUsage === "hrs" ||
-    rawUsage === "engine_hours" ||
-    rawUsage === "machine_hours"
-  ) {
-    return "hours";
-  }
-
-  if (asset.kind === "tractor" || asset.kind === "equipment") return "hours";
-  if (numericValue(asset.hours) !== null) return "hours";
-
-  return null;
-}
-
 function formatUsage(asset: AssetRegisterItem): string {
-  const usageMetric = getUsageMetric(asset);
-  const usageReading = numericValue(asset.hours);
-  const lifeWorkedPercent = numericValue(asset.lifeWorkedPercent);
-
-  if (usageMetric === "percentage") {
-    return lifeWorkedPercent === null
-      ? "Not saved"
-      : `${formatPercent(lifeWorkedPercent)}% worked`;
-  }
-
-  if (usageReading !== null) {
-    return `${formatNumber(usageReading)} ${usageMetric === "km" ? "km" : "hours"}`;
-  }
-
-  if (lifeWorkedPercent !== null && asset.kind !== "vehicle") {
-    return `${formatPercent(lifeWorkedPercent)}% worked`;
-  }
-
-  return "Not saved";
+  const usage = resolveAssetUsage(asset);
+  return usage.metric === 'not_applicable' ? '' : formatResolvedAssetUsage(usage, 'Usage unknown');
 }
 
 function assetTypeLabel(asset: AssetRegisterItem): string {
@@ -1082,7 +940,7 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
     ["Serial / VIN", asset.serialNumber],
     ["Year model", asset.yearModel],
     ["Condition", asset.condition],
-    ["Usage", asset.usage],
+    ...(asset.usage ? [["Usage", asset.usage] as [string, string]] : []),
     ["Fuel", asset.fuel],
     ["Current value ex VAT", asset.currentValue, true],
     ["Replacement price ex VAT", asset.replacementValue, true],

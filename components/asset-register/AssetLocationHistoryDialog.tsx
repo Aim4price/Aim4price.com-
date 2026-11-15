@@ -21,6 +21,7 @@ export default function AssetLocationHistoryDialog({assetId,title,onClose,initia
    const response=await fetch(`/api/asset-register/${encodeURIComponent(assetId)}/locations?${new URLSearchParams({entryId:deleteEntry.id})}`,{method:'DELETE'});
    const result=await response.json();if(!response.ok)throw Error(result.error||'Could not delete this entry.');
    setDeleteEntry(null);setSelectedRecord(null);setRetry(value=>value+1);
+   window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated'));
   }catch(e){setDeleteError(e instanceof Error?e.message:'Please try again.');}finally{setDeleting(false);}
  }
  const records=useRef(new Map<string,HTMLLIElement>());
@@ -42,7 +43,7 @@ export default function AssetLocationHistoryDialog({assetId,title,onClose,initia
    <span className={styles.deleteIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6m4-6v6"/></svg></span>
    <strong>Are you sure you want to delete this entry?</strong>
    <div className={styles.deleteRecord}><strong>{date(deleteEntry.recordedAt)}</strong><span>{deleteEntry.note&&!/^GPS\s/i.test(deleteEntry.note)?deleteEntry.note:'Saved position'} · {deleteEntry.latitude.toFixed(5)}, {deleteEntry.longitude.toFixed(5)}</span></div>
-   <p>It will be removed from location history and its reports.<br/>The asset’s current map position and other activity stay unchanged.</p>
+   <p>It will be removed from location history and its reports.<br/>If this is the current saved position, the map returns to the previous saved location. If none remain, the saved pin is cleared. Other activity is kept.</p>
    {deleteError&&<p role="alert" className={styles.deleteError}>{deleteError}</p>}
    <div className={styles.confirmActions}><button type="button" disabled={deleting} onClick={()=>setDeleteEntry(null)}>Cancel</button><button type="button" className={styles.deleteButton} disabled={deleting} onClick={()=>void confirmDelete()}>{deleting?'Deleting…':'Delete entry'}</button></div>
   </div>

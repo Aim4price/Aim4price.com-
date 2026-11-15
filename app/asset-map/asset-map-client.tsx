@@ -31,12 +31,12 @@ import accountStyles from "../account/page.module.css";
 
 type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
-type FetchMode = "initial" | "background" | "manual";
+type FetchMode = "initial" | "background" | "manual" | "update";
 type ExportFormat = "pdf" | "xlsx";
 type ExportStep = "format" | "scope";
 type RegisterFilterId = string;
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
-type AssetMapUsageMetric = "hours" | "km" | "percentage" | null;
+type AssetMapUsageMetric = "hours" | "km" | "percentage" | "not_applicable" | null;
 type IconProps = { className?: string };
 
 type AssetMapItem = {
@@ -479,39 +479,15 @@ function normalizePhotos(photos?: string[] | null): string[] {
   return photos.map((photo) => String(photo ?? "").trim()).filter(Boolean);
 }
 
-function formatPercent(value: number): string {
-  const clamped = Math.max(0, Math.min(100, value));
-  const rounded = Math.round(clamped * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-}
-
 function buildUsageDisplay(asset: AssetMapItem): string {
-  const apiUsageDisplay = String(asset.usageDisplay ?? "").trim();
-  if (apiUsageDisplay) return apiUsageDisplay;
-
-  if (asset.usageMetric === "percentage") {
-    return asset.lifeWorkedPercent === null || !Number.isFinite(asset.lifeWorkedPercent)
-      ? "Usage not saved"
-      : `${formatPercent(asset.lifeWorkedPercent)}% worked`;
-  }
-
-  if (asset.hours !== null && Number.isFinite(asset.hours)) {
-    const unit = asset.usageMetric === "km" ? "km" : "hours";
-    return `${formatNumber(asset.hours)} ${unit}`;
-  }
-
-  if (asset.lifeWorkedPercent !== null && Number.isFinite(asset.lifeWorkedPercent)) {
-    return `${formatPercent(asset.lifeWorkedPercent)}% worked`;
-  }
-
-  return "Usage not saved";
+  if (asset.usageMetric === "not_applicable") return "";
+  // The API resolves usage with the register rules, including legacy placeholders.
+  return String(asset.usageDisplay ?? "").trim() || "Usage unknown";
 }
 
 function buildUsageMeta(asset: AssetMapItem): string {
-  const usageDisplay = buildUsageDisplay(asset);
-  return usageDisplay === "Usage not saved"
-    ? usageDisplay
-    : `Usage: ${usageDisplay}`;
+  const display = buildUsageDisplay(asset);
+  return !display || display === "Usage unknown" ? display : `Usage: ${display}`;
 }
 
 function buildAssetMeta(asset: AssetMapItem): string {
@@ -523,7 +499,7 @@ function buildAssetMeta(asset: AssetMapItem): string {
       : "Year not saved",
     usageText,
     `Condition: ${formatCondition(asset.condition)}`,
-  ].join(" • ");
+  ].filter(Boolean).join(" • ");
 }
 
 function buildAssetRegisterHref(asset: AssetMapItem): string {
@@ -762,6 +738,7 @@ export default function AssetMapClient() {
       const initialLoad = mode === "initial";
       setIsRefreshing(true);
       if (mode === "manual") setRefreshStatus("Refreshing map…");
+      else if (mode === "update") setRefreshStatus("");
       const requestId = mapDataRequestIdRef.current + 1;
       mapDataRequestIdRef.current = requestId;
       mapDataAbortControllerRef.current?.abort();
@@ -854,7 +831,7 @@ export default function AssetMapClient() {
 
   useEffect(() => {
     void fetchMapData("initial");
-    const refreshUsage = () => {void fetchMapData("background");};
+    const refreshUsage = () => {void fetchMapData("update");};
     window.addEventListener('aim4price:asset-register-updated', refreshUsage);
     return () => window.removeEventListener('aim4price:asset-register-updated', refreshUsage);
   }, [fetchMapData]);
@@ -1843,7 +1820,7 @@ export default function AssetMapClient() {
                                     : "Year not saved"}
                                 </span>
                                 <span>{formatCondition(asset.condition)}</span>
-                                <span>{usageText}</span>
+                                {usageText ? <span>{usageText}</span> : null}
                               </span>
                             </span>
                           </button>
@@ -2071,7 +2048,7 @@ export default function AssetMapClient() {
                             ) : null}
                             <div className={cardActions.metadata}>
                               <span aria-label={`Year: ${selectedAsset.yearModel ? formatYearModel(selectedAsset.yearModel) : 'Not saved'}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 11h18"/></svg>{selectedAsset.yearModel ? formatYearModel(selectedAsset.yearModel) : 'Year not saved'}</span>
-                              <span aria-label={`Usage: ${buildUsageDisplay(selectedAsset)}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19a10 10 0 1 1 16 0M12 5v2M5 12h2m10 0h2m-7 3 4-6"/><circle cx="12" cy="15" r="1"/></svg>{buildUsageDisplay(selectedAsset)}</span>
+                              {buildUsageDisplay(selectedAsset) ? <span aria-label={`Usage: ${buildUsageDisplay(selectedAsset)}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19a10 10 0 1 1 16 0M12 5v2M5 12h2m10 0h2m-7 3 4-6"/><circle cx="12" cy="15" r="1"/></svg>{buildUsageDisplay(selectedAsset)}</span> : null}
                               <span aria-label={`Condition: ${formatCondition(selectedAsset.condition)}`}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9Z"/></svg>{formatCondition(selectedAsset.condition)}</span>
                             </div>
                           </div>
@@ -2082,7 +2059,7 @@ export default function AssetMapClient() {
                       <div className={cardActions.status} data-warning={['Offline','No recent GPS','Waiting'].includes(selectedAsset.trackingStatus||'')}>
                         <svg className={cardActions.statusIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
                         <div><strong>{selectedAsset.trackingStatus==='No recent GPS'?'GPS signal missing':selectedAsset.trackingStatus==='Offline'?'Phone offline':selectedAsset.trackingStatus==='Waiting'?'Waiting for first location':selectedAsset.trackingStatus==='Deactivated'?'Tracking paused':selectedAsset.trackingStatus==='Stopped'?'Stationary':selectedAsset.trackingStatus||'Saved location'}</strong>
-                        <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:formatDate(selectedAsset.updatedAtIso)}</span>
+                        <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:formatDate(selectedAsset.lastScannedAtIso || selectedAsset.updatedAtIso)}</span>
                         {selectedAsset.trackingStatus&&<small>Phone contact: {selectedAsset.lastTrackingContactAtIso?formatDate(selectedAsset.lastTrackingContactAtIso):'Not received yet'}</small>}</div>
                       </div>
                       <div className={cardActions.primaryRow}>

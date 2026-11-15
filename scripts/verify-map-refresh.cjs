@@ -37,7 +37,7 @@ async function main() {
   await page.type('input[placeholder="Search name, serial or registration"]','Yamaha');
   hold=true;await page.click(refresh);await page.waitForFunction(()=>document.querySelector('[aria-busy="true"]'));
   const count=requests;await page.click(refresh);assert.equal(requests,count,'Busy control cannot duplicate a request');
-  await page.evaluate(()=>window.dispatchEvent(new Event('aim4price:asset-register-updated')));assert.equal(requests,count,'Background update cannot abort manual refresh');
+  // A second click stays disabled while a manual request is pending.
   assert(held,'Manual refresh requested fresh data');hold=false;await held.respond(response());held=null;
   await page.waitForFunction(()=>document.querySelector('[role="status"]')?.textContent==='Map refreshed.');
   assert.equal(await page.$eval('input[placeholder="Search name, serial or registration"]',e=>e.value),'Yamaha');
@@ -45,6 +45,17 @@ async function main() {
   assert.equal(await page.evaluate(()=>window.tileRedraws),3,'Refresh redraws the map layers');
   fail=true;await page.click(refresh);await page.waitForFunction(()=>document.body.textContent.includes('Fixture refresh failed'));assert.equal(await page.$eval(refresh,e=>e.disabled),false,'Failure allows retry');
   fail=false;await page.click(refresh);await page.waitForFunction(()=>document.querySelector('[role="status"]')?.textContent==='Map refreshed.');
+  for (const [metric, text] of [['percentage','42,5%'],['km','Usage unknown'],['not_applicable','']]) {
+    asset.usageMetric=metric;asset.usageDisplay=text;
+    await page.click(refresh);await page.waitForFunction(()=>document.querySelector('[role="status"]')?.textContent==='Map refreshed.');
+    const shown=await page.$eval('article[class*=selectedAssetCard]',e=>e.textContent);
+    if(text) assert(shown.includes(text));
+    else assert.equal(await page.$$eval('article[class*=selectedAssetCard] [aria-label^="Usage:"]',nodes=>nodes.length),0,'Not applicable has no usage badge');
+    assert(!shown.includes('0 km'),'Stale meter is not shown');
+  }
+  asset.usageMetric='km';asset.usageDisplay='120 572 km';
+  await page.evaluate(()=>window.dispatchEvent(new Event('aim4price:asset-register-updated')));
+  await page.waitForFunction(()=>document.querySelector('article[class*=selectedAssetCard]')?.textContent.includes('120 572 km'));
   await page.screenshot({path:'/tmp/map-refresh-desktop.png'});
   await click('More');await click('Update location');await page.waitForSelector('[data-location-view="choice"]');
   const metrics=await page.evaluate(()=>{const editor=document.querySelector('[data-location-view]'),dialog=editor.closest('[role="dialog"]');return {width:parseFloat(getComputedStyle(dialog).width),weight:getComputedStyle(editor.querySelector('[data-location-action] strong')).fontWeight,overflow:editor.scrollWidth>editor.clientWidth+1};});
@@ -53,7 +64,7 @@ async function main() {
   await click('Enter coordinates');assert.equal(await page.$eval('[data-location-view] input',e=>getComputedStyle(e).fontWeight),'500');await page.screenshot({path:'/tmp/map-location-coordinates.png'});
   await page.setViewport({width:390,height:844});await page.screenshot({path:'/tmp/map-location-phone.png'});
   assert(await page.$eval('[role="dialog"]',e=>e.scrollWidth<=e.clientWidth+1),'No dialog horizontal overflow on phone');
-  assert.deepEqual(errors,[]);console.log('PASS refresh request, duplicate guard, background concurrency, failure/retry, retained search, tile redraw and location typography/layout');
+  assert.deepEqual(errors,[]);console.log('PASS refresh request, duplicate guard, register update invalidation, usage modes, failure/retry, retained search, tile redraw and location typography/layout');
  } finally {
   if(browser)await browser.close();if(server&&server.exitCode===null){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}
   await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/map-refresh-validation'),{recursive:true,force:true});
