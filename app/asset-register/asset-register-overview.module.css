@@ -608,7 +608,7 @@
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.messageHint { margin-top: 1.1rem; max-width: 65ch; font-size: .82rem; }
+.messageHint { margin-top: 1.1rem; font-size: .82rem; }
 
 /* The hint sits directly on the desktop background, outside the light cards. */
 :global(html[data-background='dark']) .overviewHint,
