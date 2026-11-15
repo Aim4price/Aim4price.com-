@@ -526,14 +526,20 @@ export async function importParts(
       throw new PartsError("Your list changed. Preview the upload again.", 409);
     if (input.baseRevision !== undefined && (input.mode !== "replace" || input.baseRevision !== member.revision))
       throw new PartsError("Your list changed after opening the sheet. Reopen it to load the latest parts.", 409);
+    const removedFieldIds = input.removedFieldIds ?? [];
+    if (!Array.isArray(removedFieldIds) || removedFieldIds.some(key=>typeof key!=="string" || !(member.extra_fields || []).some((f:PartDetailField)=>f.id===key)))
+      throw new PartsError("Choose existing optional columns to remove.");
+    if (removedFieldIds.length && (input.mode!=="replace" || input.baseRevision!==member.revision))
+      throw new PartsError("Reopen the edit sheet before removing columns.",409);
     let extraFields: PartDetailField[];
     try {
       // Existing definitions cannot be silently removed or made public by stale imports.
-      extraFields = validatePartFields([...(member.extra_fields || []), ...validatePartFields(input.extraFields ?? []).filter(f => !(member.extra_fields || []).some((old: PartDetailField) => old.id === f.id))]);
+      extraFields = validatePartFields([...(member.extra_fields || []).filter((f:PartDetailField)=>!removedFieldIds.includes(f.id)), ...validatePartFields(input.extraFields ?? []).filter(f => !(member.extra_fields || []).some((old: PartDetailField) => old.id === f.id))]);
       for (const field of validatePartFields(input.extraFields ?? [])) {
         const existing = extraFields.find(f=>f.id === field.id)!;
         if (existing.label !== field.label || existing.private !== field.private) throw new Error("Field settings changed. Reopen the stocklist before saving.");
       }
+      if (validatePartFields(input.extraFields ?? []).some(f=>removedFieldIds.includes(f.id))) throw new Error("A removed column cannot also be included.");
       rows = rows.map(row=>({...row,details:validatePartDetails(row.details || {},extraFields)}));
     } catch (e) { throw new PartsError((e as Error).message); }
     const previous = (
@@ -554,6 +560,7 @@ export async function importParts(
     rows = rows.map(row=>{
       const old = previousByNumber.get(row.partNumber.toUpperCase());
       const details = {...old?.details};
+      for (const key of removedFieldIds) delete details[key];
       for (const key of Object.keys((input.columns as PartColumns).details || {})) delete details[key];
       return {...row, details:{...details,...row.details}};
     });

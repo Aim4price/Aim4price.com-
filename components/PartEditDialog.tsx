@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import ShareModalCloseButton from "./asset-register/ShareModalCloseButton";
 import { AddPartField, PartDetailInputs } from "./PartsDetailFields";
@@ -14,6 +14,7 @@ export default function PartEditDialog<T extends PartEditValue>({value,onChange,
 }) {
  const dialog=useRef<HTMLDialogElement>(null);
  const id=useId();
+ const [removed,setRemoved]=useState<string[]>(()=>value.extraFields.filter(f=>!value.details[f.id]?.trim()).map(f=>f.id));
  useEffect(()=>{const opener=document.activeElement as HTMLElement|null; const node=dialog.current;node?.showModal();return()=>{node?.close();if(opener?.isConnected)opener.focus();};},[]);
  return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${styles.partEditorModal} ${styles.sharedPartEditor}`} role="dialog" aria-modal="true" aria-label="Edit part" onCancel={e=>{e.preventDefault();if(!busy)onClose();}}>
    <div className={styles.closeWrap}><ShareModalCloseButton onClick={onClose} disabled={busy}/></div>
@@ -37,10 +38,10 @@ export default function PartEditDialog<T extends PartEditValue>({value,onChange,
                 <small>Leave blank for price on request.</small>
               </div>
             </div>
-            {value.extraFields.length > 0 && <div className={styles.partEditFields}><PartDetailInputs fields={value.extraFields} values={value.details} onChange={details=>onChange({...value,details})}/></div>}
+            {value.extraFields.length > 0 && <div className={styles.partEditFields}><PartDetailInputs fields={value.extraFields.filter(f=>!removed.includes(f.id))} onRemove={id=>{setRemoved([...removed,id]);onChange({...value,details:{...value.details,[id]:""}});}} values={value.details} onChange={details=>onChange({...value,details})}/></div>}
             {feedback}
             </div>
-            <footer className={`${styles.actions} ${styles.partEditFooter}`}><div className={styles.detailFooterAction}><AddPartField fields={value.extraFields} onAdd={field=>onChange({...value,extraFields:[...value.extraFields,field]})}/></div><button type="button" disabled={busy} onClick={onBack}>{backLabel}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : submitLabel}</button></footer>
+            <footer className={`${styles.actions} ${styles.partEditFooter}`}><div className={styles.detailFooterAction}><AddPartField restorableFields={value.extraFields.filter(f=>removed.includes(f.id))} fields={value.extraFields.filter(f=>!removed.includes(f.id))} onAdd={field=>{setRemoved(removed.filter(id=>id!==field.id));onChange({...value,extraFields:value.extraFields.some(f=>f.id===field.id) ? value.extraFields : [...value.extraFields,field]});}}/></div><button type="button" disabled={busy} onClick={onBack}>{backLabel}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : submitLabel}</button></footer>
    </form>
  </dialog>,document.body);
 }

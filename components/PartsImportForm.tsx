@@ -60,7 +60,7 @@ export default function PartsImportForm({
   const [importedDetailIds,setImportedDetailIds] = useState<string[]>([]);
   const labels = [...PART_LABELS,...extraFields.map(f=>f.label)];
   const emptyRow = () => Array(5 + extraFields.length).fill("") as string[];
-  function addField(field:PartDetailField) {setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setUndo(null);setPreview(null);}
+  function addField(field:PartDetailField) {setUndo({rows,fields:extraFields,hidden:hiddenColumns});setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
   const [details, setDetails] = useState(initialDetails);
   const [pastedTable, setPastedTable] = useState("");
   const [raw, setRaw] = useState<string[][]>([]);
@@ -98,7 +98,7 @@ export default function PartsImportForm({
     if (input) { input.focus(); input.scrollIntoView({block: "nearest"}); addRowFocus.current = null; }
   });
   const sheetEntry = stage === "entry" && source !== "manual";
-  const [undo, setUndo] = useState<string[][] | null>(null);
+  const [undo, setUndo] = useState<{rows:string[][];fields:PartDetailField[];hidden:number[]} | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const [page, setPage] = useState(0);
   const mode = editSnapshot ? "replace" : "add";
@@ -191,7 +191,7 @@ export default function PartsImportForm({
       setError("Use the row actions to delete parts. Clearing cells does not remove a saved part.");
       return;
     }
-    setUndo(rows);
+    setUndo({rows,fields:extraFields,hidden:hiddenColumns});
     setRows(next);
     setPreview(null);
 
@@ -242,6 +242,7 @@ export default function PartsImportForm({
     csv: partsTableCsv(populated),
     columns: {...EDITOR_COLUMNS, details:Object.fromEntries(extraFields.flatMap((f,i)=>source !== "file" || importedDetailIds.includes(f.id) || populated.some(r=>r[5+i]?.trim()) ? [[f.id,5+i]] : []))},
     extraFields,
+    removedFieldIds: initialFields.filter(f=>!extraFields.some(next=>next.id===f.id)).map(f=>f.id),
     options: { hasHeader: false },
     mode,
     ...(editSnapshot ? {baseRevision: editSnapshot.revision} : {}),
@@ -286,13 +287,13 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {tool && <PartsSheetTools listName={listName} extraFields={extraFields} tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing, fields) => {if(fields) setExtraFields(fields);change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
+      {tool && <PartsSheetTools removableFieldIds={extraFields.filter(f=>editSnapshot || !initialFields.some(old=>old.id===f.id)).map(f=>f.id)} listName={listName} extraFields={extraFields} tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing, fields) => {change(next, removing);if(fields) {setExtraFields(fields);setHiddenColumns(hiddenColumns.flatMap(i=>i<5 ? [i] : fields.some(f=>f.id===extraFields[i-5]?.id) ? [5+fields.findIndex(f=>f.id===extraFields[i-5]?.id)] : []));}setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
       {sheetEntry && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
         <AddPartField column fields={extraFields} onAdd={addField}/>
-        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Columns</button>
+        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Manage columns</button>
         <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
-        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
+        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo.rows);setExtraFields(undo.fields);setHiddenColumns(undo.hidden);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
       </div>}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
@@ -735,6 +736,7 @@ export default function PartsImportForm({
           )}
           {stage === "review" && preview && (
             <>
+              {initialFields.some(f=>!extraFields.some(next=>next.id===f.id)) && <p className={styles.error}>Columns to delete: {initialFields.filter(f=>!extraFields.some(next=>next.id===f.id)).map(f=>f.label).join(", ")}. Their values will be removed from every part.</p>}
               <div className={styles.summary}>
                 {Object.entries(preview.summary).map(([k, v]) => (
                   <div key={k}>

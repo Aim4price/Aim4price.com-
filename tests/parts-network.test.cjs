@@ -735,6 +735,24 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   assert.equal(own.rows[0].details.location,'Shelf A4');
   assert.throws(()=>csv.validatePartFields([{id:'x',label:'Brand',private:false}]),/already exists/);
   assert.throws(()=>csv.validatePartDetails({location:'x'.repeat(501)},extraFields),/500/);
+  // Removing a detail affects one row, leaving its stocklist definition intact.
+  await network.editPartsRow(dealer,id,{...edit,originalPartNumber:'003',revision:6,extraFields,details:{location:'Shelf A4'}});
+  own=await network.partsData(dealer,id,'mine','003',0,true);
+  assert.equal(own.rows[0].details['custom-size'],undefined);
+  assert.equal(own.fields.length,3);
+  const snapshot=await network.partsData(dealer,id,'mine','',0,true);
+  const removal={...imported,mode:'replace',baseRevision:7,revision:7,removedFieldIds:['location'],extraFields:extraFields.filter(f=>f.id!=='location'),columns:{...columns,details:{notes:3,'custom-size':4}},csv:csv.partsTableCsv(snapshot.rows.map(r=>[r.part_number,String(r.quantity),r.price==null ? '' : String(r.price),r.details.notes || '',r.details['custom-size'] || '']))};
+  await assert.rejects(()=>network.importParts(dealer,id,{...removal,mode:'merge',baseRevision:undefined},true),/Reopen/);
+  await assert.rejects(()=>network.importParts(dealer,id,{...removal,baseRevision:6},true),/changed/);
+  await assert.rejects(()=>network.importParts(dealer,id,{...removal,removedFieldIds:['quantity']},true),/optional columns/);
+  await network.importParts(dealer,id,removal,false);
+  assert.equal((await network.partsData(dealer,id,'mine','003',0,true)).rows[0].details.location,'Shelf A4');
+  await network.importParts(dealer,id,removal,true);
+  const afterRemoval=await network.partsData(dealer,id,'mine','',0,true);
+  assert.equal(afterRemoval.rows.length,snapshot.rows.length);
+  assert.ok(!afterRemoval.fields.some(f=>f.id==='location'));
+  assert.ok(afterRemoval.rows.every(r=>!('location' in r.details)));
+
 
   await db.close();
 });

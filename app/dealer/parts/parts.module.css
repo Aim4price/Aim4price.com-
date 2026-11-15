@@ -2038,3 +2038,18 @@
   .columnPicker .detailPickerChoices { grid-template-columns:minmax(0,1fr); gap:12px; }
   .modal.columnPicker .detailPickerChoices button { padding:18px; min-height:96px; }
 }
+
+.detailInputHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; }
+.modal button.detailTrash { display:inline-flex; align-items:center; justify-content:center; width:36px; min-height:36px; flex:0 0 36px; padding:7px; border:1px solid var(--app-danger-line,#ebcccc); border-radius:10px; color:var(--app-danger,#b4232f); background:var(--app-danger-soft,#fff6f6); }
+.detailTrash .detailIcon { width:20px; height:20px; flex:0 0 20px; border:0; background:transparent; color:inherit; box-shadow:none; }
+.detailTrash .detailIcon svg { width:20px; height:20px; }
+.manageColumns { display:grid; gap:12px; }
+.manageColumnRow { display:flex; align-items:center; gap:12px; padding:16px; border:1px solid var(--app-border,#ccddd4); border-radius:14px; background:var(--app-surface,#fff); }
+.manageColumnRow label { display:flex; flex:1; align-items:center; gap:12px; min-width:0; }
+.manageColumnRow label input { width:20px; min-height:20px; flex:0 0 20px; }
+.manageColumnRow label span { display:grid; gap:4px; }
+.manageColumnRow small { color:var(--app-text-muted,#64766c); }
+.columnConfirmation { padding:20px; border:1px solid var(--app-danger-line,#ebcccc); border-radius:16px; }
+@media(max-width:600px) { .manageColumnRow { flex-wrap:wrap; } .manageColumnRow label { flex-basis:100%; } }
+.modal .manageColumnRow label { flex-direction:row; justify-content:flex-start; text-align:left; margin:0; }
+.modal .manageColumnRow label input { margin:0; width:20px; height:20px; min-height:20px; }

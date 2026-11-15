@@ -10,8 +10,9 @@ import PartsChoice from "./PartsChoice";
 import styles from "../app/dealer/parts/parts.module.css";
 
 export type SheetTool = { kind: "columns" | "bulk" } | { kind: "row"; index: number };
-export default function PartsSheetTools({ tool, rows, selected, hidden, vatIncluded, onHidden, onApply, onClose, labels = PART_LABELS, extraFields = [], listName }: {
+export default function PartsSheetTools({ tool, rows, selected, hidden, vatIncluded, onHidden, onApply, onClose, labels = PART_LABELS, extraFields = [], listName, removableFieldIds }: {
   labels?: string[];
+  removableFieldIds?: string[];
   extraFields?: PartDetailField[];
   listName?: string;
   vatIncluded: boolean;
@@ -36,12 +37,14 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
     try { const amount = parsePartsSnapshot(partsTableCsv([["part","1",price]]), {partNumber:0,quantity:1,price:2,description:-1,brand:-1}, {hasHeader:false})[0]?.price; price = amount == null ? "" : String(amount / (vatIncluded ? 1.15 : 1)); } catch { /* Keep invalid drafts available for validation. */ }
     return {partNumber:row[0] || "",description:row[1] || "",quantity:row[2] || "",brand:row[4] || "",price,priceIncluded:vatIncluded,extraFields,details:Object.fromEntries(extraFields.map((f,i)=>[f.id,row[5+i] || ""]))};
   });
+  const [columnAction,setColumnAction]=useState<{index:number;kind:"clear"|"delete"}|null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     if (rowMode !== "edit") dialog.current?.showModal();
     return () => { dialog.current?.close(); if (opener?.isConnected) opener.focus(); };
   }, [rowMode]);
+  const columnValueCount = columnAction ? rows.filter((row,i)=>(columnAction.kind==="delete" || scope==="all" || selected.includes(i)) && row[columnAction.index]?.trim()).length : 0;
   const selectedSet = new Set(selected);
   const targets = rows.map((_, i) => i).filter(i => scope === "all" || selectedSet.has(i));
   const targetSet = new Set(targets);
@@ -70,11 +73,28 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
     if (!draft[0].trim() || issues) {setError(issues ? Object.values(issues)[0] : "Part number is required.");return;}
     onApply(updated,false,editor.extraFields);onClose();
   }}/>;
-  const title = tool.kind === "columns" ? "Visible columns" : tool.kind === "bulk" ? "Bulk edit parts" : rowMode === "delete" ? "Delete row?" : "Part actions";
+  const title = tool.kind === "columns" ? "Manage columns" : tool.kind === "bulk" ? "Bulk edit parts" : rowMode === "delete" ? "Delete row?" : "Part actions";
   return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${tool.kind === "row" && rowMode === "choose" ? styles.marketplaceChoiceModal : ""}`} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }}>
     <header className={styles.sheetToolHeader}><div><h2>{title}</h2>{tool.kind === "row" && <p>{rows[tool.index][0] || `Row ${tool.index + 1}`}</p>}</div><ShareModalCloseButton aria-label="Close sheet tool" onClick={onClose} /></header>
     <div className={styles.sheetToolBody}>
-      {tool.kind === "columns" && <><p>Choose which fields to display. Hidden values are kept when you save or export.</p><div className={styles.sheetColumnChoices}>{labels.map((label, i) => <label key={label}><input type="checkbox" checked={!hidden.includes(i)} disabled={i === 0 || i === 2} onChange={e => onHidden(e.target.checked ? hidden.filter(n => n !== i) : [...hidden, i])}/>{label}{(i === 0 || i === 2) && <small>Always visible</small>}</label>)}</div></>}
+      {tool.kind === "columns" && <>
+        <p>Hide columns without losing values. Clear values for selected parts or delete an added column from the whole stocklist.</p>
+        {columnAction?.kind!=="delete" && <PartsChoice label="Clear values for" value={scope} onChange={setScope} options={[{value:"selected",label:`Selected parts (${selected.length})`,disabled:!selected.length},{value:"all",label:`All parts (${rows.filter(r=>r.some(v=>v.trim())).length})`}]} />}
+        {columnAction ? <section className={styles.columnConfirmation}>
+          <h3>{columnAction.kind==="delete" ? "Delete column" : "Clear values"}: {labels[columnAction.index]}?</h3>
+          <p>{columnValueCount} {columnValueCount===1 ? "part contains a value." : "parts contain values."} {columnAction.kind==="delete" ? "This removes the column and its values from the entire stocklist." : "This empties the field for the chosen parts and keeps the column."} Changes stay in the draft until reviewed and saved.</p>
+          <div className={styles.actions}><button type="button" onClick={()=>setColumnAction(null)}>Keep column</button><button type="button" className={styles.sheetDelete} onClick={()=>{
+            const index=columnAction.index;
+            if(columnAction.kind==="delete") onApply(rows.map(row=>row.filter((_,i)=>i!==index)),false,extraFields.filter((_,i)=>i!==index-5));
+            else onApply(rows.map((row,i)=>targetSet.has(i) ? row.map((cell,j)=>j===index ? "" : cell) : row));
+            onClose();
+          }}>{columnAction.kind==="delete" ? "Delete column from sheet" : "Clear values in sheet"}</button></div>
+        </section> : <div className={styles.manageColumns}>{labels.map((label,i)=><div key={i} className={styles.manageColumnRow}>
+          <label><input type="checkbox" checked={!hidden.includes(i)} disabled={i===0 || i===2} onChange={e=>onHidden(e.target.checked ? hidden.filter(n=>n!==i) : [...hidden,i])}/><span><strong>{label}</strong><small>{i===0 || i===2 ? "Required · always visible" : `${rows.filter(r=>r[i]?.trim()).length} parts with values`}</small></span></label>
+          {i!==0 && i!==2 && <button type="button" disabled={!targets.some(n=>rows[n][i]?.trim())} onClick={()=>setColumnAction({index:i,kind:"clear"})} aria-label={`Clear ${label} values`}>Clear values</button>}
+          {i>=5 && <button type="button" className={styles.detailTrash} aria-label={`Delete ${label} column`} disabled={removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id)} title={removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id) ? "Use Edit in a sheet to delete an existing column" : "Delete column"} onClick={()=>setColumnAction({index:i,kind:"delete"})}><DetailIcon kind="delete"/></button>}
+        </div>)}</div>}
+      </>}
       {tool.kind === "bulk" && <>
         <div className={styles.sheetToolFields}>
           <PartsChoice label="Apply to" value={scope} onChange={value=>{setScope(value);setShowPreview(false);}} options={[{value:"selected",label:`Selected rows (${selected.length})`,disabled:!selected.length},{value:"all",label:`All rows (${rows.length})`}]} />

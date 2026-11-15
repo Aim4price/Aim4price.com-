@@ -462,6 +462,11 @@ const appCode =
     assert.equal(await page.$eval('dialog input[type="checkbox"]',e=>e.checked),true);
     await click('Add detail');
     await page.type('[aria-label="Bin / shelf location"]','Shelf A4');
+    await page.click('[aria-label="Remove Bin / shelf location from this part"]');
+    assert.equal(await page.$('[aria-label="Bin / shelf location"]'),null);
+    await click('+ Add detail'); await click('Bin / shelf location'); await click('Add detail');
+    assert.equal(await page.$eval('[aria-label="Bin / shelf location"]',e=>e.value),'');
+    await page.type('[aria-label="Bin / shelf location"]','Shelf A4');
     await page.screenshot({path:path.join(output,'edit-part.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Edit controls fit phone width');
@@ -634,13 +639,13 @@ const appCode =
     longPickerFixture = false;
     // Sheet tools only update the draft; columns, bulk scope, row actions and undo round-trip.
     const importsBeforeTools = actions.filter(a => a.action === "import").length;
-    await click("Columns");
-    await page.waitForSelector('dialog[open][aria-label="Visible columns"]');
-    await page.evaluate(() => [...document.querySelectorAll('dialog label')].find(e => e.textContent === 'Brand').querySelector('input').click());
+    await click("Manage columns");
+    await page.waitForSelector('dialog[open][aria-label="Manage columns"]');
+    await page.evaluate(() => [...document.querySelectorAll('dialog label')].find(e => e.querySelector('strong')?.textContent === 'Brand').querySelector('input').click());
     await click("Done");
     assert.equal(await page.$eval('[aria-label="Brand 1"]', e => e.getClientRects().length), 0);
-    await click("Columns");
-    await page.evaluate(() => [...document.querySelectorAll('dialog label')].find(e => e.textContent === 'Brand').querySelector('input').click());
+    await click("Manage columns");
+    await page.evaluate(() => [...document.querySelectorAll('dialog label')].find(e => e.querySelector('strong')?.textContent === 'Brand').querySelector('input').click());
     await click("Done");
     await page.click('[aria-label="Select row 1"]');
     const originalBrand = await page.$eval('[aria-label="Brand 1"]', e => e.value);
@@ -726,6 +731,20 @@ const appCode =
 
     await click('Add column');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
+    await click('Manage columns');
+    await page.click('[aria-label="Clear Dimensions values"]');
+    await click('Clear values in sheet');
+    assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'');
+    await click('Undo');
+    assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
+    await click('Manage columns');
+    await page.screenshot({path:path.join(output,'manage-columns.png')});
+    await page.click('[aria-label="Delete Dimensions column"]');
+    await page.screenshot({path:path.join(output,'delete-column-confirmation.png')});
+    await click('Delete column from sheet');
+    assert.equal(await page.$('[aria-label="Dimensions 1"]'),null);
+    await click('Undo');
+    assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
     await page.click('[aria-label="Actions for row 1"]'); await click('Edit part');
     assert.equal(await page.$eval('dialog[aria-label="Edit part"] [aria-label="Dimensions"]',e=>e.value),'001 x 020');
     await click('Back'); await click('Cancel');
