@@ -367,31 +367,6 @@ const REMOVE_MEMBER_OPTION: ReportSelectOption = {
   tone: 'danger',
 };
 
-const ASSET_GROUP_EDITOR_STEP_LABELS = ['Umbrella name', 'Structure', 'Choose assets'] as const;
-
-function AssetGroupEditorProgress({ currentStep }: { currentStep: AssetGroupEditorStep }) {
-  return (
-    <ol className={styles.wizardProgress} aria-label="Umbrella setup progress">
-      {ASSET_GROUP_EDITOR_STEP_LABELS.map((label, index) => {
-        const step = (index + 1) as AssetGroupEditorStep;
-        const isCurrent = step === currentStep;
-        const isComplete = step < currentStep;
-
-        return (
-          <li
-            key={label}
-            className={`${styles.wizardProgressStep} ${isCurrent ? styles.wizardProgressStepCurrent : ''} ${isComplete ? styles.wizardProgressStepComplete : ''}`}
-            aria-current={isCurrent ? 'step' : undefined}
-          >
-            <span>{isComplete ? '✓' : step}</span>
-            <strong>{label}</strong>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
   const title = String(asset?.title ?? '').trim();
   return title ? `${title} umbrella` : 'Asset umbrella';
@@ -1011,8 +986,7 @@ export default function AssetGroupManagerModal({
               ref={editorBodyRef}
               className={styles.body}
             >
-              {!isAssetPickerStep ? <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p> : null}
-              {group && !isAssetPickerStep ? <AssetGroupEditorProgress currentStep={editorStep} /> : null}
+              {!group && !isAssetPickerStep ? <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p> : null}
 
               <div className={styles.wizardBody}>
                 {editorStep === 1 ? (

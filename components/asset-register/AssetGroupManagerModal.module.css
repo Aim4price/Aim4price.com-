@@ -125,94 +125,14 @@
   line-height: 1.55;
 }
 
-.wizardProgress {
-  list-style: none;
-  display: flex;
-  width: 100%;
-  max-width: none;
-  align-items: center;
-  margin: 24px 0 0;
-  padding: 0;
-}
-
-.wizardProgressStep {
-  position: relative;
-  min-width: 0;
-  display: flex;
-  flex: 1 1 0;
-  align-items: center;
-  gap: 11px;
-  color: var(--app-muted, #7a8b84);
-}
-
-.wizardProgressStep:last-child {
-  flex: 0 0 auto;
-}
-
-.wizardProgressStep:not(:last-child)::after {
-  content: '';
-  position: static;
-  z-index: 0;
-  min-width: 32px;
-  height: 2px;
-  flex: 1 1 auto;
-  margin: 0 18px;
-  background: var(--app-surface-soft, #dce8e3);
-}
-
-.wizardProgressStep > span {
-  position: relative;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--app-line, #c8dbd4);
-  border-radius: 999px;
-  color: var(--app-muted, #597068);
-  background: var(--app-surface, #f7faf8);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.wizardProgressStep > strong {
-  position: relative;
-  z-index: 1;
-  padding-right: 12px;
-  color: inherit;
-  background: var(--app-surface, #fff);
-  font-size: 14px;
-  font-weight: 850;
-  line-height: 1.25;
-}
-
-.wizardProgressStepCurrent,
-.wizardProgressStepComplete {
-  color: var(--app-text, #087553);
-}
-
-.wizardProgressStepCurrent > span {
-  border-color: var(--app-line, #168660);
-  color: #fff;
-  background: #168660;
-  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(22, 134, 96, 0.11));
-}
-
-.wizardProgressStepComplete > span {
-  border-color: var(--app-line, #92cdb7);
-  color: var(--app-text, #087553);
-  background: var(--app-surface-soft, #e5f6ef);
-}
-
-.wizardProgressStepComplete:not(:last-child)::after {
-  background: var(--app-surface-soft, #83c8ae);
-}
-
 .wizardBody {
   display: grid;
   gap: 18px;
   margin-top: 24px;
+}
+
+.wizardBody:first-child {
+  margin-top: 0;
 }
 
 .wizardPanel {
@@ -1363,38 +1283,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .stepCard {
     padding: 18px;
     border-radius: 18px;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .wizardProgress {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .wizardProgressStep {
-    flex: initial;
-    display: grid;
-    justify-items: center;
-    gap: 7px;
-    text-align: center;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .wizardProgressStep:not(:last-child)::after {
-    position: absolute;
-    top: 21px;
-    right: -50%;
-    left: 50%;
-    min-width: 0;
-    margin: 0;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .wizardProgressStep:last-child {
-    flex: initial;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .wizardProgressStep > strong {
-    padding: 0 4px;
-    background: transparent;
-    font-size: 11px;
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .wizardPanel {
