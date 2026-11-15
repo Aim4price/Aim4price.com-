@@ -562,7 +562,7 @@
   width: min(48rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 40px))) !important;
 }
 .messagePanel {
-  padding: clamp(1.25rem, 3vw, 1.75rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 3), 1.75rem);
   border: 1px solid var(--app-line, #b9d5c9);
   border-radius: 1.2rem;
   background: linear-gradient(135deg, var(--app-surface, #fff), var(--app-surface-soft, #e7f1ec));
@@ -578,10 +578,9 @@
 }
 .messageCategory {
   color: var(--app-text, #193c2f);
-  font-size: .8rem;
+  font-size: .9rem;
   font-weight: 750;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  letter-spacing: .01em;
 }
 .messageStatus {
   color: var(--app-muted, #50675c);
@@ -591,7 +590,7 @@
 }
 .messagePanel > p {
   margin: 0;
-  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.2rem);
   font-weight: 500;
   line-height: 1.6;
   white-space: pre-wrap;
