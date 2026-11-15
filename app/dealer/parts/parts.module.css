@@ -2135,7 +2135,7 @@
 .modal.columnsDialog { width:min(1120px,calc(100vw - 40px)); }
 .columnsDialog .sheetToolBody { flex:0 1 auto; padding:24px 14px 24px 4px; gap:20px; }
 .columnIntro { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.columnIntro p { font-weight:650; }
+.columnIntro p, .columnsDialog .bulkPager > span { font-family:inherit; font-size:1rem; font-weight:650; }
 .columnIntro span { color:var(--app-text-muted,#64766c); font-size:.88rem; }
 .columnsDialog .manageColumns { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
 .columnsDialog .manageColumnRow { display:grid; gap:18px; padding:20px; border-radius:20px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
