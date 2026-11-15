@@ -1260,7 +1260,7 @@ export default function PartsClient({
               {editStep === "edit" && <div className={styles.entryFooter}><button disabled={busy} onClick={() => {setError("");setEditStep("intent");}}>Back</button></div>}
             </>}
             {editStep === "picker" && stock && <>
-              <div className={styles.partPickerSearch}>
+              <div className={styles.partPickerSearch}><Icon kind="search"/>
                 <input aria-label="Search parts to edit" placeholder="Search part number, description or brand" value={partQuery} onChange={e => {setPartQuery(e.target.value);}} />
                 <button disabled={!partQuery} onClick={() => {setPartQuery("");}}>Clear</button>
               </div>
@@ -1271,7 +1271,7 @@ export default function PartsClient({
                 {matchingParts.map(r => (
                   <button key={r.part_number} onClick={() => startPartEdit(r, stock.revision, true)}>
                     <span><strong>{r.part_number}</strong>{r.description && <small>{r.description}</small>}<small>{[r.brand, `Quantity: ${r.quantity}`].filter(Boolean).join(" · ")}</small></span>
-                    <Icon kind="edit"/>
+                    <span className={styles.partPickerEdit}><Icon kind="edit"/>Edit part</span>
                   </button>
                 ))}
                 {!matchingParts.length && <p>{partQuery.trim() ? "No matching parts." : "There are no parts to edit yet."}</p>}

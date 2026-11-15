@@ -524,7 +524,7 @@ export default function PartsImportForm({
           {stage === "entry" && source !== "manual" && (
             <>
               <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
-                <table className={styles.editorTable} style={extraFields.length ? {minWidth:1000 + (extraFields.length - hiddenColumns.filter(i=>i>=5).length) * 200} : undefined}>
+                <table className={`${styles.editorTable} ${styles.independentRows}`}>
                   <thead>
                     <tr>
                       <th scope="col">
@@ -542,7 +542,7 @@ export default function PartsImportForm({
                         />}
                       </th>
                       {labels.map((label, i) => (
-                        <th key={label} hidden={hiddenColumns.includes(i)} style={extraFields.length ? {width:i === 1 ? 280 : 180} : undefined}>
+                        <th key={label} data-column={i} hidden={hiddenColumns.includes(i)}>
                           {label}
                           {i !== 0 && i !== 2 && <small>Optional</small>}
                         </th>
@@ -553,7 +553,7 @@ export default function PartsImportForm({
                     {visible.map((row, offset) => {
                       const i = page * 50 + offset;
                       return (
-                        <tr key={i} data-selected={selected.includes(i) || undefined}>
+                        <tr key={i} tabIndex={0} aria-label={`Part row ${i + 1}`} data-extra-details={row.some((v,j)=>j>=5 && !hiddenColumns.includes(j) && v.trim()) || undefined} data-selected={selected.includes(i) || undefined} onFocusCapture={e=>{const header=sheetRef.current?.querySelector("thead tr");if(header) header.scrollLeft=e.currentTarget.scrollLeft;}} onScroll={e=>{const header=sheetRef.current?.querySelector("thead tr");if(header) header.scrollLeft=e.currentTarget.scrollLeft;}}>
                           <td>
                             <div className={styles.sheetRowControls}>
                             {<input
@@ -573,7 +573,7 @@ export default function PartsImportForm({
                             </div>
                           </td>
                           {row.map((cell, j) => (
-                            <td key={j} hidden={hiddenColumns.includes(j)}>
+                            <td key={j} data-column={j} hidden={hiddenColumns.includes(j)}>
                               <input
                                 aria-label={`${labels[j]} ${i + 1}`}
                                 aria-invalid={Boolean(showError(i, j))}

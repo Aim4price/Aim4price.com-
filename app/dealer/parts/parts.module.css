@@ -2065,3 +2065,40 @@
 .partInputBar > .partEditPriceControl { width:100%; padding-right:44px; }
 .entryModal:has(.partContactStep) .stageBody { flex:0 1 auto; scrollbar-gutter:auto; padding:4px 2px 12px; }
 .partContactStep h3 { margin:0 0 22px; }
+
+/* Parts picker: compact results with breathing room around the scroll rail. */
+.partPickerSearch { position:relative; align-items:center; }
+.partPickerSearch > svg { position:absolute; left:16px; width:20px; height:20px; color:var(--app-text-muted,#61766c); pointer-events:none; }
+.modal .partPickerSearch input { padding-left:48px; }
+.entryModal .partPickerCount { align-self:flex-start; margin:14px 6px 4px; padding:6px 12px; border-radius:20px; background:var(--app-surface-soft,#edf5f1); font-size:.85rem; font-weight:650; }
+.partPickerResults { padding:8px 20px 16px 6px; margin:0 0 12px; scrollbar-gutter:stable; overscroll-behavior:contain; }
+.entryModal .partPickerResults > button { padding:18px 20px; gap:24px; border-radius:16px; background:linear-gradient(110deg,var(--app-surface,#fff),var(--app-surface-soft,#f4f8f6)); box-shadow:0 3px 12px #123c3005; transition:background .15s,border-color .15s,box-shadow .15s; }
+.entryModal .partPickerResults > button:hover { border-color:var(--app-primary,#17654c); box-shadow:0 4px 14px #123c3012; }
+.partPickerResults strong { font-size:1rem; font-weight:750; }
+.entryModal .partPickerResults .partPickerEdit { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1px solid var(--app-border,#bfd6cb); border-radius:12px; color:var(--app-primary,#17654c); background:var(--app-surface,#fff); font-size:.85rem; font-weight:650; white-space:nowrap; }
+/* Each row pans independently; the headings follow the row being scrolled. */
+.entryModal .stockSheet .editorWrap { container-type:inline-size; overflow:hidden; }
+.entryModal .stockSheet .independentRows { display:block; width:100%; min-width:0; table-layout:auto; }
+.independentRows thead, .independentRows tbody { display:block; width:100%; }
+.independentRows tr { display:flex; width:100%; overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; }
+.independentRows thead tr { overflow:hidden; }
+.entryModal .stockSheet .independentRows :is(th,td) { display:block; flex:0 0 180px; min-width:0; box-sizing:border-box; }
+.entryModal .stockSheet .independentRows :is(th,td):first-child { position:sticky; left:0; z-index:2; flex-basis:132px; background:var(--app-surface-soft,#f4f8f6); }
+.entryModal .stockSheet .independentRows [data-column="0"] { flex-basis:max(150px,calc((100cqw - 132px)*.22)); }
+.entryModal .stockSheet .independentRows [data-column="1"] { flex-basis:max(200px,calc((100cqw - 132px)*.30)); }
+.entryModal .stockSheet .independentRows [data-column="2"] { flex-basis:max(90px,calc((100cqw - 132px)*.12)); }
+.entryModal .stockSheet .independentRows [data-column="3"], .entryModal .stockSheet .independentRows [data-column="4"] { flex-basis:max(130px,calc((100cqw - 132px)*.18)); }
+.entryModal .stockSheet .independentRows [hidden] { display:none; }
+.independentRows tbody tr:not([data-extra-details]) { scrollbar-width:none; }
+.independentRows tbody tr:not([data-extra-details])::-webkit-scrollbar { display:none; }
+.independentRows tbody tr:focus-visible { outline:2px solid var(--app-primary,#17654c); outline-offset:-2px; }
+.modal :is(.partPickerResults,.stageBody,.partEditorBody,.sheetToolBody,.independentRows tr) { scrollbar-width:thin; scrollbar-color:var(--app-accent,#648b7a) transparent; }
+.modal :is(.partPickerResults,.stageBody,.partEditorBody,.sheetToolBody,.independentRows tr)::-webkit-scrollbar { width:10px; height:9px; }
+.modal :is(.partPickerResults,.stageBody,.partEditorBody,.sheetToolBody,.independentRows tr)::-webkit-scrollbar-track { background:var(--app-surface-soft,#edf5f1); border-radius:12px; margin:8px; }
+.modal :is(.partPickerResults,.stageBody,.partEditorBody,.sheetToolBody,.independentRows tr)::-webkit-scrollbar-thumb { background:var(--app-accent,#648b7a); border:2px solid var(--app-surface-soft,#edf5f1); border-radius:12px; }
+.modal :is(.partPickerResults,.stageBody,.partEditorBody,.sheetToolBody,.independentRows tr)::-webkit-scrollbar-thumb:hover { background:var(--app-primary,#17654c); }
+.modal .sheetToolbar button, .modal .entryFooter button { border-radius:12px; transition:background .15s,border-color .15s,box-shadow .15s; }
+.modal .sheetToolbar button:not(:disabled):hover, .modal .entryFooter button:not(:disabled):hover { box-shadow:0 3px 10px #123c3012; }
+@media(max-width:600px) { .entryModal .partPickerResults > button { padding:14px; gap:12px; } .entryModal .partPickerResults .partPickerEdit { padding:8px; font-size:.8rem; } }
+
+.modal .independentRows tbody tr:not([data-extra-details]) { scrollbar-width:none; }

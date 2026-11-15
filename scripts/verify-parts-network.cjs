@@ -654,6 +654,7 @@ const appCode =
     assert.equal(await page.$$eval('[aria-label="Parts to edit"] button', buttons => buttons.length), 42);
     assert.ok(await page.$eval('[aria-label="Parts to edit"]', list => list.scrollHeight > list.clientHeight));
     assert.ok(await page.$eval('[aria-label="Choose part"]', dialog => !/Page 1 of|Previous|Next/.test(dialog.textContent)));
+    await page.screenshot({path:path.join(output,'choose-part-refined.png')});
     await page.type('[aria-label="Search parts to edit"]', '001-ABC');
     await click("001-ABC");
     await page.waitForSelector('[aria-label="Edit part"]');
@@ -760,6 +761,19 @@ const appCode =
 
     await click('Add column');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
+    await click('+ Add row');
+    const scrollState=await page.evaluate(()=>{
+      const first=document.querySelector('[aria-label="Part row 1"]');
+      const second=document.querySelector('[aria-label="Part row 2"]');
+      first.scrollLeft=first.scrollWidth;
+      return {firstPopulated:first.hasAttribute('data-extra-details'),secondPopulated:second.hasAttribute('data-extra-details'),firstScroll:first.scrollLeft,secondScroll:second.scrollLeft,emptyScrollbar:getComputedStyle(second).scrollbarWidth};
+    });
+    assert.ok(scrollState.firstPopulated && !scrollState.secondPopulated);
+    assert.ok(scrollState.firstScroll>0 && scrollState.secondScroll===0,'Only the active row pans');
+    assert.equal(scrollState.emptyScrollbar,'none','Empty extra fields do not show a row scrollbar');
+    await page.screenshot({path:path.join(output,'independent-row-scroll.png')});
+    await page.click('[aria-label="Actions for row 2"]'); await click('Delete row'); await click('Delete row from sheet');
+
     await click('Manage columns');
     await page.click('[aria-label="Clear Dimensions values"]');
     await click('Clear values in sheet');
