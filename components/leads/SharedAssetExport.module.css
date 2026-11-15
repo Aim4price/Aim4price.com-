@@ -1,8 +1,8 @@
 .trigger.trigger {
   position: relative;
-  color:var(--app-danger,#723b0d)!important;
-  background:linear-gradient(180deg,var(--app-danger-soft,#fffaf5),var(--app-danger-soft,#fff0e3))!important;
-  border-color:var(--app-danger-line,#c87534)!important;
+  color:var(--app-copper,#723b0d)!important;
+  background:linear-gradient(180deg,var(--app-copper-soft,#fffaf5),var(--app-copper-soft,#fff0e3))!important;
+  border-color:var(--app-copper-line,#c87534)!important;
   box-shadow:0 10px 22px var(--app-shadow-colour,rgba(114,59,13,.1)),inset 0 1px 0 rgba(255,255,255,.98)!important;
 }
-.trigger.trigger:hover { background:linear-gradient(180deg,var(--app-danger-soft,#fff7f0),var(--app-danger-soft,#ffe6d1))!important; }
+.trigger.trigger:hover { background:linear-gradient(180deg,var(--app-copper-soft,#fff7f0),var(--app-copper-soft,#ffe6d1))!important; }

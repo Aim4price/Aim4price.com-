@@ -1006,9 +1006,9 @@
   box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.085));
 }
 .assetMirrorOptionsAction {
-  border: 1.5px solid var(--app-danger-line, #c87534);
-  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf5) 0%, var(--app-danger-soft, #fff0e3) 100%);
-  color: var(--app-danger, #723b0d);
+  border: 1.5px solid var(--app-copper-line, #c87534);
+  background: linear-gradient(180deg, var(--app-copper-soft, #fffaf5) 0%, var(--app-copper-soft, #fff0e3) 100%);
+  color: var(--app-copper, #723b0d);
   box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(114, 59, 13, 0.1));
 }
 .assetMirrorManageAction {

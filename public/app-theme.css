@@ -1,3 +1,24 @@
+/* Shared soft action palette. Apply to controls, not page/dialog surfaces.
+   Existing category tokens keep their meaning across every account and portal. */
+@media screen and (forced-colors: none) {
+  html:not([data-app-theme='dark']) :is(button, a, summary, [role='button']) {
+    --app-info-soft: #e5eef7;
+    --app-info-line: #85b0dc;
+    --app-success-soft: #e1efea;
+    --app-success-line: #74b59f;
+    --app-warning-soft: #f7eee2;
+    --app-warning-line: #dcb075;
+    --app-danger-soft: #f5e6e6;
+    --app-danger-line: #d18e8e;
+    --app-copper-soft: #f8eadd;
+    --app-copper-line: #d7a077;
+    --app-purple-soft: #eee8f5;
+    --app-purple-line: #af96d3;
+    --app-surface-soft: #e1efea;
+    --app-muted: #34564b;
+  }
+}
+
 /* App preferences are independent of the desktop background preference.
    Tokens live on html so native dialogs and body-mounted portals inherit them. */
 @media screen {
@@ -17,6 +38,14 @@
     --app-warning: #f3d28c;
     --app-warning-soft: #463d29;
     --app-warning-line: #806c42;
+    --app-success: #a0dfbb;
+    --app-success-soft: #294338;
+    --app-success-line: #638b76;
+    --app-purple-soft: #3c304c;
+    --app-purple-line: #806898;
+    --app-copper: #edc2a6;
+    --app-copper-soft: #49372d;
+    --app-copper-line: #927055;
     --app-info: #b1d5f5;
     --app-info-soft: #2a3d50;
     --app-info-line: #526f87;

@@ -100,9 +100,9 @@
 
 .surface.surface .actions.actions.actions > button {
   gap: 1rem !important;
-  border: 1px solid var(--app-info-line, #d8e1ea);
+  border: 2px solid var(--app-info-line, #85b0dc);
   border-radius: 1.15rem;
-  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f5f8fa));
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #e5eef7));
 }
 .surface.surface .actions.actions.actions > button > span { min-width: 0; }
 .surface.surface .actions.actions.actions > button strong {
@@ -113,7 +113,7 @@
   overflow-wrap: anywhere;
 }
 .surface.surface .actions.actions.actions > button small {
-  color: var(--app-muted, #64746a);
+  color: var(--app-muted, #34564b);
   font-size: 0.82rem !important;
   line-height: 1.5 !important;
   white-space: normal !important;

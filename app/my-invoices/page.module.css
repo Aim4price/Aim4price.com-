@@ -164,9 +164,9 @@
 }
 
 .costActionButton.costActionAdd {
-  color: var(--app-danger, var(--copper-text));
-  border-color: var(--app-danger-line, var(--copper-border));
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffdfb) 0%, var(--app-danger-soft, #fff4ea) 100%);
+  color: var(--app-copper, var(--copper-text));
+  border-color: var(--app-copper-line, var(--copper-border));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdfb) 0%, var(--app-copper-soft, #fff4ea) 100%);
 }
 
 .costActionButton.costActionAdd:hover:not(:disabled) {
@@ -451,9 +451,9 @@
 }
 
 .toolbarAddButton {
-  color: var(--app-danger, var(--copper-text));
-  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-warning-soft, var(--copper-bg)) 100%);
-  border-color: var(--app-danger-line, var(--copper-border));
+  color: var(--app-copper, var(--copper-text));
+  background: linear-gradient(180deg, var(--app-copper-soft, #fffaf6) 0%, var(--app-warning-soft, var(--copper-bg)) 100%);
+  border-color: var(--app-copper-line, var(--copper-border));
   box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(180, 107, 43, 0.09)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 

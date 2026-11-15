@@ -3000,18 +3000,18 @@
 .leadRefreshButton {
   min-width: 154px !important;
   justify-content: center !important;
-  color: var(--app-danger, var(--lead-copper-text)) !important;
-  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-danger-soft, var(--lead-copper-soft-bg)) 100%) !important;
-  border-color: var(--app-danger-line, var(--lead-copper-soft-border)) !important;
+  color: var(--app-copper, var(--lead-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-copper-soft, #fffaf6) 0%, var(--app-copper-soft, var(--lead-copper-soft-bg)) 100%) !important;
+  border-color: var(--app-copper-line, var(--lead-copper-soft-border)) !important;
   box-shadow:
     0 10px 22px var(--app-shadow-colour, rgba(180, 107, 43, 0.08)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadRefreshButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--lead-copper-text)) !important;
-  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-copper-soft-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--lead-copper-soft-border-hover)) !important;
+  color: var(--app-copper, var(--lead-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-copper-soft, var(--lead-copper-soft-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--lead-copper-soft-border-hover)) !important;
   box-shadow:
     0 14px 28px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;

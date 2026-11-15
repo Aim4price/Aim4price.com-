@@ -75,3 +75,21 @@
   .conditionChoices { grid-template-columns: minmax(0, 1fr); }
 }
 
+
+/* Preserve condition/usage meaning while increasing the coloured choice contrast. */
+.choice {
+  --choice-colour: #178361;
+  --choice-fill: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--choice-colour));
+  border-width: 2px;
+  border-color: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--choice-colour));
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--choice-fill));
+}
+.choice:has(.icon[data-tone=blue]) { --choice-colour: #347bc4; }
+.choice:has(.icon[data-tone=teal]) { --choice-colour: #178376; }
+.choice:has(.icon[data-tone=amber]) { --choice-colour: #c47b23; }
+.choice:has(.icon[data-tone=red]) { --choice-colour: #b34242; }
+.choice:has(.icon[data-tone=grey]) { --choice-colour: #647888; }
+.choice .icon { background: var(--choice-fill); }
+.choice:hover:not(:disabled) { background: var(--choice-fill); }
+.choice.selected { border-color: var(--app-accent, #237454); }
+:global(html[data-app-theme='dark']) .choice .icon { color: var(--app-text); }

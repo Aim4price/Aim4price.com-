@@ -14,9 +14,9 @@
   min-height: 8rem !important;
   height: auto;
   padding: 1.5rem;
-  border: 1px solid var(--app-info-line, #d2deed);
+  border: 2px solid var(--app-info-line, #85b0dc);
   border-radius: 1.4rem;
-  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f4f7fa));
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #e5eef7));
   color: var(--app-text, #12352d);
   text-align: left;
   white-space: normal;
@@ -42,19 +42,19 @@
   line-height: 1.3;
 }
 .grid.grid.grid.grid .copy > small {
-  color: var(--app-muted, #64746a);
+  color: var(--app-muted, #34564b);
   font-size: .9rem;
   font-weight: 650;
   line-height: 1.45;
 }
 .grid.grid.grid.grid > .primary {
-  border-color: var(--app-line, #b4dfcb);
-  background: radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, .08)), transparent 50%), linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #eef8f3));
+  border-color: var(--app-success-line, #74b59f);
+  background: radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, .08)), transparent 50%), linear-gradient(180deg, var(--app-surface, #fff), var(--app-success-soft, #e1efea));
 }
 .grid.grid.grid.grid > .primary > svg { color: var(--app-text, #175441); }
 .grid.grid.grid.grid > .danger {
-  border-color: var(--app-danger-line, #ffb3b6);
-  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-danger-soft, #fff2f3));
+  border-color: var(--app-danger-line, #d18e8e);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-danger-soft, #f5e6e6));
 }
 .grid.grid.grid.grid > .danger > svg,
 .grid.grid.grid.grid > .danger .copy > span { color: var(--app-danger, #a92c32); }
