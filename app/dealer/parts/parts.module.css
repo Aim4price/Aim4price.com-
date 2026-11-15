@@ -2175,3 +2175,31 @@
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:active { background-color:var(--app-primary,#17654c); }
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-button { display:none; width:0; height:0; }
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-corner { background:transparent; }
+
+/* Bulk editing shares the calm, semibold typography of Manage columns. */
+.bulkWizard .bulkProgress,
+.bulkWizard .bulkStage :is(h3,p,legend,label,input,strong,small),
+.bulkWizard .bulkPager > span,
+.bulkWizard .bulkReview > div > span > span {
+  font-family:inherit; font-size:1rem; font-weight:650; line-height:1.45;
+}
+.bulkWizard .bulkProgress { margin:16px 0 20px; gap:20px; }
+.bulkWizard .bulkStage { gap:14px; }
+.bulkWizard .bulkStage > h3 { color:var(--app-text,#163f32); }
+.bulkWizard .bulkStage > p { color:var(--app-text-muted,#64766c); }
+.bulkWizard .partsChoice { margin:0; }
+.bulkWizard .partsChoice legend { margin-bottom:10px; }
+.bulkWizard .partsChoiceOptions { gap:12px; }
+.bulkWizard .partsChoiceOptions label { min-height:64px; padding:14px 16px; border-radius:16px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
+.bulkWizard .partsChoiceOptions label:has(input:checked) { background:var(--app-success-soft,#e1f2e9); }
+.bulkWizard .partsChoiceOptions label:not([data-disabled]):hover { border-color:var(--app-primary,#17654c); }
+.bulkWizard .bulkReview { gap:8px; }
+.bulkWizard .bulkReview > div { padding:10px 16px; gap:16px; border-radius:16px; }
+.bulkWizard .bulkReview > div > span { gap:2px; }
+.bulkWizard .sheetToolBody { padding:2px 14px 10px 2px; }
+.bulkWizard .sheetToolFooter { margin-top:8px; }
+.bulkWizard .bulkPager button { font-family:inherit; font-size:1rem; font-weight:650; padding:9px 14px; }
+@media(max-width:600px) {
+  .bulkWizard .bulkStage .partsChoiceOptions { grid-template-columns:1fr; }
+  .bulkWizard .bulkReview > div { gap:10px; padding:10px; }
+}
