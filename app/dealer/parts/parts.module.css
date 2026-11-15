@@ -2053,3 +2053,11 @@
 @media(max-width:600px) { .manageColumnRow { flex-wrap:wrap; } .manageColumnRow label { flex-basis:100%; } }
 .modal .manageColumnRow label { flex-direction:row; justify-content:flex-start; text-align:left; margin:0; }
 .modal .manageColumnRow label input { margin:0; width:20px; height:20px; min-height:20px; }
+
+.partInputBar { position:relative; display:flex; align-items:center; width:100%; min-width:0; }
+.modal .partInputBar > input { padding-right:48px; }
+.modal .partInputBar > .detailTrash { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:30px; min-height:30px; padding:5px; border:0; background:transparent; }
+.modal .partInputBar > .detailTrash:disabled { opacity:.25; cursor:default; }
+.partInputBar > .partEditPriceControl { width:100%; padding-right:44px; }
+.entryModal:has(.partContactStep) .stageBody { flex:0 1 auto; scrollbar-gutter:auto; padding:4px 2px 12px; }
+.partContactStep h3 { margin:0 0 22px; }
