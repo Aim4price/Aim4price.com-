@@ -116,6 +116,7 @@ const appCode =
   const browser = await puppeteer.launch({
     executablePath: await chromium.executablePath(),
     args: chromium.args,
+    ignoreDefaultArgs: ["--hide-scrollbars"],
     headless: true,
     pipe: true,
   });

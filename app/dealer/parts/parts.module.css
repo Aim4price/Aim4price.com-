@@ -2153,3 +2153,25 @@
 .columnsDialog .sheetToolFooter { gap:12px; }
 @media(max-width:900px) { .columnsDialog .manageColumns { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .modal.columnsDialog { width:calc(100vw - 24px); } .columnsDialog .manageColumns { grid-template-columns:1fr; } .columnIntro { align-items:flex-start; flex-direction:column; gap:4px; } .columnsDialog .sheetToolBody { padding:18px 12px 18px 4px; } }
+
+/* Continuous sheet surfaces: inputs fill the row instead of leaving baseline gaps. */
+.entryModal .stockSheet .independentRows tbody tr { background:var(--app-surface-soft,#edf5f1); }
+.entryModal .stockSheet .independentRows td { background:var(--app-surface-soft,#edf5f1); }
+.entryModal .stockSheet .independentRows td input:not([type="checkbox"]) { display:block; margin:0; min-height:48px; background:transparent; }
+.entryModal .stockSheet .independentRows td:has(.cellError) { background:var(--app-danger-soft,#fff6f6); }
+.entryModal .stockSheet .stageBody { padding-right:20px; scrollbar-color:var(--app-border-strong,#91ada1) transparent; }
+.entryModal .stockSheet .independentRows tr[data-extra-details] { scrollbar-color:var(--app-border-strong,#91ada1) var(--app-surface-soft,#edf5f1); }
+/* Chromium uses the shaped thumb; Firefox retains its slim native scrollbar. */
+@supports selector(::-webkit-scrollbar) {
+  .entryModal .stockSheet .stageBody,
+  .entryModal .stockSheet .independentRows tr[data-extra-details] { scrollbar-width:auto; scrollbar-color:auto; }
+}
+.entryModal .stockSheet .stageBody::-webkit-scrollbar { width:8px; }
+.entryModal .stockSheet .independentRows tr[data-extra-details]::-webkit-scrollbar { height:8px; }
+.entryModal .stockSheet .stageBody::-webkit-scrollbar-track { background:transparent; margin-block:12px; }
+.entryModal .stockSheet .independentRows tr[data-extra-details]::-webkit-scrollbar-track { background:var(--app-surface-soft,#edf5f1); margin-inline:12px; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb { background:var(--app-border-strong,#91ada1); background-clip:padding-box; border:2px solid transparent; border-radius:999px; min-height:40px; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:hover { background-color:var(--app-accent,#648b7a); }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:active { background-color:var(--app-primary,#17654c); }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-button { display:none; width:0; height:0; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-corner { background:transparent; }
