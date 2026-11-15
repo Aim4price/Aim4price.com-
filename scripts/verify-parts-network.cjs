@@ -465,6 +465,7 @@ const appCode =
     await page.screenshot({path:path.join(output,'edit-part.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Edit controls fit phone width');
+    assert.ok(await page.evaluate(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent==='Save changes');const r=button.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight;}),'Edit Save changes remains visible on phone');
     await page.screenshot({path:path.join(output,'edit-part-phone.png')});
     await page.setViewport({width:1440,height:1000});
     await page.$eval('[role=dialog] input[type=number]',e=>e.select());
@@ -592,6 +593,7 @@ const appCode =
     await click("Review parts");
     await page.waitForFunction(() => document.body.innerText.includes('reviewed rows'));
     await click("Save & add another");
+    await page.waitForSelector('[aria-label="Part number 1"]');
     const added=actions.filter(a=>a.action==='import').at(-1);
     assert.equal(added.extraFields[0].id,'compatibility');
     assert.equal(parser.parsePartsSnapshot(added.csv,added.columns,added.options)[0].details.compatibility,'Landini 100');
@@ -635,7 +637,7 @@ const appCode =
     const originalBrand = await page.$eval('[aria-label="Brand 1"]', e => e.value);
     await click("Bulk edit");
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
-    await page.type('dialog input:not([type=checkbox])', 'Test brand');
+    await page.type('dialog input:not([type=checkbox]):not([type=radio])', 'Test brand');
     await click("Preview changes");
     await page.screenshot({path:path.join(output,'sheet-bulk-preview.png')});
     await page.setViewport({width:390,height:844});
@@ -649,14 +651,14 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Brand 1"]', e => e.value), originalBrand);
     await page.click('[aria-label="Select row 1"]');
     await click("Bulk edit");
-    await page.select('dialog select:nth-of-type(1)', 'selected');
-    await page.evaluate(() => { const select = [...document.querySelectorAll('dialog select')][1]; select.value = '2'; select.dispatchEvent(new Event('change', {bubbles:true})); });
-    await page.type('dialog input:not([type=checkbox])', '-1');
+    await page.click('dialog input[type=radio][value=selected]');
+    await page.click('dialog input[type=radio][value="2"]');
+    await page.type('dialog input:not([type=checkbox]):not([type=radio])', '-1');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.querySelector('[role=alert]') && [...e.querySelectorAll('button')].some(b => b.textContent.includes('Apply to') && b.disabled)));
     await page.click('[aria-label="Close sheet tool"]');
     await click("Bulk edit");
-    await page.evaluate(() => { const select = [...document.querySelectorAll('dialog select')][1]; select.value = '0'; select.dispatchEvent(new Event('change', {bubbles:true})); });
+    await page.click('dialog input[type=radio][value="0"]');
     await page.type('dialog input[placeholder="e.g. 01."]', '001-');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.textContent.includes('001-ABC') && e.textContent.includes('ABC')));
@@ -697,6 +699,13 @@ const appCode =
     await click('+ Add column'); await click('Custom field');
     await page.type('[aria-label="Custom field name"]','Dimensions');
     await page.screenshot({path:path.join(output,'add-part-column.png')});
+    await page.setViewport({width:1366,height:650});
+    assert.ok(await page.$eval('dialog[open]', e=>{const r=e.getBoundingClientRect(), f=e.querySelector('footer').getBoundingClientRect();return r.top>=0 && r.bottom<=innerHeight && f.bottom<=innerHeight;}),'Detail picker and footer fit a short laptop viewport');
+    await page.screenshot({path:path.join(output,'detail-picker-short.png')});
+    await page.setViewport({width:390,height:650});
+    assert.ok(await page.$eval('dialog[open]', e=>{const r=e.getBoundingClientRect(), f=e.querySelector('footer').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && f.bottom<=innerHeight;}),'Detail picker fits a phone');
+    await page.setViewport({width:1440,height:1000});
+
     await click('Add column');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
     await page.click('[aria-label="Actions for row 1"]'); await click('Edit part');
@@ -720,7 +729,7 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Quantity 2"]',e=>e.value),'9');
     await page.click('[aria-label="Select all rows"]');
     await click('Bulk edit');
-    await page.evaluate(()=>{const select=[...document.querySelectorAll('dialog select')][1];select.value='0';select.dispatchEvent(new Event('change',{bubbles:true}));});
+    await page.click('dialog input[type=radio][value="0"]');
     await page.type('dialog input[placeholder="e.g. 01."]','01.');
     await click('Preview changes');
     assert.ok(await page.evaluate(()=>document.body.innerText.includes('01.3657074')&&document.body.innerText.includes('3657074')));

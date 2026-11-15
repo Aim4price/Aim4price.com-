@@ -1818,3 +1818,67 @@
 .partExtraDetails span { overflow-wrap:anywhere; }
 .partExtraDetails strong { font-weight:700; }
 @media(max-width:600px) { .detailFieldChoices { grid-template-columns:1fr; } }
+
+/* Keep nested part tools inside the physical viewport, with actions always in reach. */
+.modal.sheetToolDialog {
+  position:fixed;
+  inset:0;
+  margin:auto;
+  width:min(880px, calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:calc(100dvh - 32px);
+  height:fit-content;
+  overflow:hidden;
+  padding:24px;
+}
+.sheetToolDialog[open] { display:flex; flex-direction:column; }
+.sheetToolDialog .sheetToolHeader, .sheetToolDialog .sheetToolFooter { flex:0 0 auto; }
+.sheetToolDialog .sheetToolHeader h2 { margin:0; font-size:28px; }
+.sheetToolDialog .sheetToolHeader p { margin:8px 0 0; font-size:15px; }
+.sheetToolDialog .sheetToolBody {
+  min-height:0;
+  overflow:auto;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+  padding:22px 12px 22px 2px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--app-accent, #648b7a) transparent;
+}
+.sheetToolDialog .sheetToolFooter { margin:0; padding-top:18px; }
+.sheetToolDialog .detailFieldChoices { gap:12px; }
+.sheetToolDialog .detailFieldChoices button { min-height:80px; padding:16px 18px; gap:7px; }
+.detailFieldSettings { padding-top:4px; }
+.sheetColumnChoices { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.sheetColumnChoices label { padding:16px; border:1px solid var(--app-border, #cbded4); border-radius:14px; background:var(--app-surface-soft, #edf5f1); flex-wrap:wrap; }
+.sheetColumnChoices label:has(input:checked) { border-color:var(--app-accent, #648b7a); }
+.sheetColumnChoices small { font-size:12px; }
+.modal .partsChoice { min-width:0; border:0; padding:0; margin:0; grid-column:1 / -1; }
+.modal .partsChoice legend { padding:0; margin-bottom:10px; font-size:14px; font-weight:750; }
+.partsChoiceOptions { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+.modal .partsChoiceOptions label { position:relative; display:flex; flex-direction:row; align-items:center; gap:10px; min-width:0; padding:13px 14px; border:1px solid var(--app-border, #b9d2c5); border-radius:12px; background:var(--app-surface, #fff); cursor:pointer; }
+.modal .partsChoiceOptions input { appearance:auto; width:17px; height:17px; min-height:17px; padding:0; margin:0; flex:0 0 17px; accent-color:var(--app-primary, #17654c); }
+.partsChoiceOptions span { display:grid; gap:4px; }
+.partsChoiceOptions strong { font-size:14px; font-weight:700; line-height:1.4; }
+.modal .partsChoiceOptions small { font-size:12px; font-weight:500; line-height:1.5; color:var(--app-text-muted, #61766c); }
+.modal .partsChoiceOptions label:has(input:checked) { border-color:var(--app-primary, #17654c); background:var(--app-success-soft, #e1f2e9); box-shadow:inset 0 0 0 1px var(--app-primary, #17654c); }
+.partsChoiceOptions label:has(input:focus-visible) { outline:2px solid var(--app-primary, #17654c); outline-offset:3px; }
+.partsChoiceOptions label[data-disabled] { opacity:.55; cursor:not-allowed; }
+.modal.partEditorModal { display:flex; flex-direction:column; overflow:hidden; padding:28px; }
+.partEditorModal .dialogHeader { flex:0 0 auto; margin-bottom:20px; padding-bottom:20px; }
+.partEditorForm { display:flex; flex-direction:column; min-height:0; }
+.partEditorBody { min-height:0; overflow:auto; padding:2px 16px 20px 2px; scrollbar-gutter:stable; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--app-accent, #648b7a) transparent; }
+.partEditorModal .partEditFooter { flex:0 0 auto; margin:0; padding-top:18px; }
+.partEditorBody .partEditFields { gap:18px 22px; margin-bottom:20px; }
+.partEditorBody .partEditFields:last-child { margin-bottom:0; }
+@media (max-width:600px) {
+  .modal.sheetToolDialog { padding:18px; width:calc(100vw - 24px); max-width:calc(100vw - 24px); max-height:calc(100dvh - 24px); }
+  .sheetToolDialog .sheetToolHeader h2 { font-size:24px; }
+  .sheetToolDialog .sheetToolBody { padding-block:16px; }
+  .sheetColumnChoices { grid-template-columns:1fr; }
+  .partsChoiceOptions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .modal .partsChoiceOptions label { padding:12px 10px; }
+  .modal.partEditorModal { padding:20px; }
+}
+.sheetToolDialog .sheetToolBody::-webkit-scrollbar, .partEditorBody::-webkit-scrollbar { width:10px; height:10px; }
+.sheetToolDialog .sheetToolBody::-webkit-scrollbar-track, .partEditorBody::-webkit-scrollbar-track { background:var(--app-surface-soft, #edf5f1); border-radius:10px; margin-block:6px; }
+.sheetToolDialog .sheetToolBody::-webkit-scrollbar-thumb, .partEditorBody::-webkit-scrollbar-thumb { background:var(--app-accent, #648b7a); border:2px solid var(--app-surface-soft, #edf5f1); border-radius:10px; }
