@@ -1559,11 +1559,18 @@
 }
 .partPickerSearch { display: flex; gap: 12px; }
 .partPickerSearch input { flex: 1; min-width: 0; }
+.entryModal .partPickerCount {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  color: var(--app-text, #173c32);
+  font-size: .95rem;
+  font-weight: 750;
+}
 .partPickerResults {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-block: 16px;
+  margin-block: 6px 12px;
   padding: 6px;
   min-height: 0;
   overflow: auto;
@@ -1578,6 +1585,8 @@
   max-height: none;
   text-align: left;
   white-space: normal;
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 64px;
   padding: 14px 16px;
 }
 .partPickerResults > button > span { display: grid; gap: 5px; min-width: 0; line-height: 1.35; overflow-wrap: anywhere; }
