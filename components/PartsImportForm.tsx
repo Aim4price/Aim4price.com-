@@ -86,15 +86,11 @@ export default function PartsImportForm({
     const input = sheetRef.current?.querySelector<HTMLInputElement>(`[aria-label="Part number ${addRowFocus.current + 1}"]`);
     if (input) { input.focus(); input.scrollIntoView({block: "nearest"}); addRowFocus.current = null; }
   });
+  const sheetEntry = stage === "entry" && source !== "manual";
   const [undo, setUndo] = useState<string[][] | null>(null);
-  const [selected, updateSelected] = useState<number[]>([]);
-  function setSelected(next: number[]) { updateSelected(next); setCleanup(false); }
-  const [prefix, setPrefix] = useState("");
-  const [cleanup, setCleanup] = useState(false);
+  const [selected, setSelected] = useState<number[]>([]);
   const [page, setPage] = useState(0);
   const mode = editSnapshot ? "replace" : "add";
-  const [suffix, setSuffix] = useState("");
-  const [trimNumbers, setTrimNumbers] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -187,7 +183,7 @@ export default function PartsImportForm({
     setUndo(rows);
     setRows(next);
     setPreview(null);
-    setCleanup(false);
+
   }
   function loadTable(table: string[][]) {
     if (!table.length) throw new Error("The table is empty.");
@@ -265,91 +261,8 @@ export default function PartsImportForm({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
   const visible = rows.slice(page * 50, page * 50 + 50);
-  const selectedSet = new Set(selected);
-  const cleaned = cleanup || prefix || suffix || trimNumbers ? rows.map((row, i) => {
-    if (selectedSet.size && !selectedSet.has(i)) return row;
-    let number = trimNumbers ? row[0].trim() : row[0];
-    if (prefix && number.startsWith(prefix)) number = number.slice(prefix.length);
-    if (suffix && number.endsWith(suffix)) number = number.slice(0, -suffix.length);
-    return [number, ...row.slice(1)];
-  }) : rows;
-  const changed = rows.flatMap((row, i) => row[0] === cleaned[i][0] ? [] : [i]);
-  const numberCounts = new Map<string, number>();
-  if (cleanup) for (const row of cleaned) {
-    const key = row[0].trim().toUpperCase();
-    if (key) numberCounts.set(key, (numberCounts.get(key) ?? 0) + 1);
-  }
-  const cleanupIssues = cleanup ? cleaned.flatMap((row, i) => {
-    const key = row[0].trim().toUpperCase();
-    return (rows[i][0].trim() && !key) || (numberCounts.get(key) ?? 0) > 1 ? [i + 1] : [];
-  }) : [];
-  const cleanupPanel = (
-              <details className={styles.numberCleanup}>
-                <summary>Clean up part numbers</summary>
-                <div className={styles.numberCleanupBody}>
-                <p>Remove an exact prefix or suffix from part numbers. Preview the result before applying it to the sheet.</p>
-                <div className={styles.numberCleanupFields}>
-                <label>
-                  Remove prefix
-                  <input
-                    aria-label="Remove part number prefix"
-                    maxLength={30}
-                    value={prefix}
-                    placeholder="e.g. 01."
-                    onChange={(e) => {
-                      setPrefix(e.target.value);
-                      setCleanup(false);
-                    }}
-                  />
-                </label>
-                <label>Remove suffix<input maxLength={30} value={suffix} placeholder="e.g. .1" onChange={e => {setSuffix(e.target.value);setCleanup(false);}} /></label>
-                </div>
-                <label className={styles.cleanupCheckbox}><input type="checkbox" checked={trimNumbers} onChange={e => {setTrimNumbers(e.target.checked);setCleanup(false);}} /> Trim surrounding spaces</label>
-                <p>{selected.length ? `Applies to ${selected.length.toLocaleString()} selected rows.` : "Applies to the whole sheet. Select rows to limit the cleanup."}</p>
-                <button
-                  disabled={!changed.length}
-                  onClick={() => setCleanup(true)}
-                >
-                  Preview cleanup ({changed.length})
-                </button>
-                {cleanup && (
-                  <>
-                    <div className={styles.tableWrap}>
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Before</th>
-                            <th>After</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {changed.slice(0, 10).map((i) => (
-                            <tr key={i}>
-                              <td>{rows[i][0]}</td>
-                              <td>
-                                {cleaned[i][0] ||
-                                  "Empty — needs correction"}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <p>
-                      {changed.length} rows will change. Showing up to
-                      10 examples.
-                    </p>
-                    {!!cleanupIssues.length && <p role="alert">Duplicate or empty part numbers in rows {cleanupIssues.slice(0, 20).join(", ")}{cleanupIssues.length > 20 ? " and more" : ""}. Adjust your cleanup before applying.</p>}
-                    <button disabled={!!cleanupIssues.length} onClick={() => change(cleaned)}>
-                      Apply cleanup
-                    </button>
-                  </>
-                )}
-                </div>
-              </details>
-  );
   return (
-    <div className={`${styles.importForm} ${editSnapshot && stage === "entry" ? styles.stockSheet : ""}`}>
+    <div className={`${styles.importForm} ${sheetEntry ? styles.stockSheet : ""}`}>
       {error && (
         <p role="alert" className={styles.error}>
           {error}
@@ -361,11 +274,11 @@ export default function PartsImportForm({
         </p>
       )}
       {tool && <PartsSheetTools tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} onClose={() => setTool(null)} onApply={(next, removing) => {change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
-      {editSnapshot && stage === "entry" && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
+      {sheetEntry && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
         <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Columns</button>
         <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
-        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);setCleanup(false);}}}>Undo</button>
+        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
       </div>}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
@@ -620,44 +533,6 @@ export default function PartsImportForm({
           )}
           {stage === "entry" && source !== "manual" && (
             <>
-              {!editSnapshot && <>
-              <p>Paste cells from Excel / Sheets, or type below. Part number and quantity are required.</p>
-              <div className={styles.actions}>
-                <button
-                  disabled={rows.length >= 20000}
-                  onClick={() => {
-                    change([...rows, blankPart()]);
-                    setPage(Math.floor(rows.length / 50));
-                  }}
-                >
-                  Add row
-                </button>
-                <button
-                  disabled={!undo}
-                  onClick={() => {
-                    if (undo) {
-                      setRows(undo);
-                      setUndo(null);
-                      setSelected([]);
-                      setPage(0);
-                      setCleanup(false);
-                    }
-                  }}
-                >
-                  Undo last change
-                </button>
-                <button
-                  disabled={!selected.length}
-                  onClick={() => {
-                    change(rows.filter((_, i) => !selected.includes(i)), true);
-                    setSelected([]);
-                    setPage(0);
-                  }}
-                >
-                  Remove selected ({selected.length})
-                </button>
-              </div>
-              </>}
               <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={styles.editorTable}>
                   <thead>
@@ -677,7 +552,7 @@ export default function PartsImportForm({
                         />}
                       </th>
                       {PART_LABELS.map((label, i) => (
-                        <th key={label} hidden={!!editSnapshot && hiddenColumns.includes(i)}>
+                        <th key={label} hidden={hiddenColumns.includes(i)}>
                           {label}
                           {i !== 0 && i !== 2 && <small>Optional</small>}
                         </th>
@@ -688,8 +563,9 @@ export default function PartsImportForm({
                     {visible.map((row, offset) => {
                       const i = page * 50 + offset;
                       return (
-                        <tr key={i}>
+                        <tr key={i} data-selected={selected.includes(i) || undefined}>
                           <td>
+                            <div className={styles.sheetRowControls}>
                             {<input
                               type="checkbox"
                               aria-label={`Select row ${i + 1}`}
@@ -702,11 +578,12 @@ export default function PartsImportForm({
                                 )
                               }
                             />}
-                            <small>{i + 1}</small>
-                            {editSnapshot && <button type="button" className={styles.sheetRowAction} aria-label={`Actions for row ${i + 1}`} onClick={() => setTool({kind: "row", index: i})}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 3-.5 3-2 .9L4 6l-2 3 2.2 2v2L2 15l2 3 2.5-.9 2 .9.5 3h4l.5-3 2-.9L18 18l2-3-2.2-2v-2L20 9l-2-3-2.5.9-2-.9-.5-3Z"/><circle cx="11" cy="12" r="3"/></svg></button>}
+                            <span className={styles.sheetRowNumber}>{i + 1}</span>
+                            {<button type="button" className={styles.sheetRowAction} title={`Row ${i + 1} options`} aria-haspopup="dialog" aria-label={`Actions for row ${i + 1}`} onClick={() => setTool({kind: "row", index: i})}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 3h6l.5 3 2 1.2 2.8-1 3 5.2-2.3 2v2.3l2.3 2-3 5.2-2.8-1-2 1.2L15 26H9l-.5-3-2-1.2-2.8 1-3-5.2 2.3-2v-2.3l-2.3-2 3-5.2 2.8 1 2-1.2Z" transform="translate(2 0) scale(.8)"/><circle cx="11.6" cy="11.6" r="3.2"/></svg></button>}
+                            </div>
                           </td>
                           {row.map((cell, j) => (
-                            <td key={j} hidden={!!editSnapshot && hiddenColumns.includes(j)}>
+                            <td key={j} hidden={hiddenColumns.includes(j)}>
                               <input
                                 aria-label={`${PART_LABELS[j]} ${i + 1}`}
                                 aria-invalid={Boolean(showError(i, j))}
@@ -744,7 +621,7 @@ export default function PartsImportForm({
                                   e.preventDefault();
                                   try {
                                     setError("");
-                                    if (editSnapshot && hiddenColumns.length && e.clipboardData.getData("text/plain").includes("\t")) throw new Error("Show all columns before pasting multiple columns so values stay aligned.");
+                                    if (hiddenColumns.length && e.clipboardData.getData("text/plain").includes("\t")) throw new Error("Show all columns before pasting multiple columns so values stay aligned.");
                                     change(
                                       pastePartsCells(
                                         rows,
@@ -775,7 +652,7 @@ export default function PartsImportForm({
                 </table>
               </div>
               <div className={styles.actions}>
-                {editSnapshot && <button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, blankPart()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
+                {<button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, blankPart()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
                 <span>
                   {rows.length.toLocaleString()} {rows.length === 1 ? "row" : "rows"}
                   {attempted && invalid ? ` · ${invalid} need attention` : ""}
@@ -806,7 +683,6 @@ export default function PartsImportForm({
                   </>
                 )}
               </div>
-              {!editSnapshot && cleanupPanel}
             </>
           )}
           {stage === "settings" && (

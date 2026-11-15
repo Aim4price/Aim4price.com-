@@ -629,6 +629,10 @@ const appCode =
     assert.equal(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), `Part number ${countBeforeDelete + 1}`);
     await click("Undo");
     assert.equal(actions.filter(a => a.action === "import").length, importsBeforeTools);
+    assert.ok(await page.$eval('[aria-label="Actions for row 1"]',button=>{
+      const rect=button.getBoundingClientRect();const cell=button.closest('td').getBoundingClientRect();
+      return rect.width>=36 && rect.height>=36 && rect.left>=cell.left && rect.right<=cell.right;
+    }));
     await page.screenshot({path:path.join(output,'sheet-tools.png')});
     await click("Review changes");
     await click("Save changes (1 removed)");
@@ -640,6 +644,13 @@ const appCode =
     }
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
+    await page.waitForSelector('[aria-label="Sheet tools"]');
+    assert.ok(await page.$('[aria-label="Actions for row 1"]'));
+    const addRowCount = await page.$$eval('[aria-label="Parts spreadsheet"] tbody tr', rows=>rows.length);
+    await click('+ Add row');
+    assert.equal(await page.$eval('input:focus',input=>input.getAttribute('aria-label')),`Part number ${addRowCount + 1}`);
+    await click('Undo');
+    assert.equal(await page.$$eval('[aria-label="Parts spreadsheet"] tbody tr',rows=>rows.length),addRowCount);
     assert.equal(await page.$$eval('[aria-invalid=true]',els=>els.length),0);
     assert.equal(await page.$('section[aria-label="Contact details and VAT"]'),null);
     await paste('[aria-label="Part number 1"]','01.3657074\n01.3671641');
@@ -647,13 +658,14 @@ const appCode =
     await paste('[aria-label="Description 1"]','Dowel\nBush');
     assert.equal(await page.$eval('[aria-label="Quantity 2"]',e=>e.value),'9');
     await page.click('[aria-label="Select all rows"]');
-    await page.evaluate(()=>[...document.querySelectorAll('summary')].find(e=>e.textContent==='Clean up part numbers').click());
-    await page.type('[aria-label="Remove part number prefix"]','01.');
-    await click('Preview cleanup (2)');
+    await click('Bulk edit');
+    await page.evaluate(()=>{const select=[...document.querySelectorAll('dialog select')][1];select.value='0';select.dispatchEvent(new Event('change',{bubbles:true}));});
+    await page.type('dialog input[placeholder="e.g. 01."]','01.');
+    await click('Preview changes');
     assert.ok(await page.evaluate(()=>document.body.innerText.includes('01.3657074')&&document.body.innerText.includes('3657074')));
-    await click('Apply cleanup');
+    await click('Apply to 2 parts');
     assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'3657074');
-    await click('Undo last change');
+    await click('Undo');
     assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'01.3657074');
     await page.screenshot({path:path.join(output,'paste-editor.png')});
     await page.setViewport({width:390,height:844});
