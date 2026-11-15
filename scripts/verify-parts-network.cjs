@@ -680,8 +680,19 @@ const appCode =
     const originalBrand = await page.$eval('[aria-label="Brand 1"]', e => e.value);
     await click("Bulk edit");
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
+    await page.setViewport({width:1440,height:720});
+    for(let stage=0;stage<3;stage++) {
+      assert.equal(await page.$eval('[aria-label="Bulk edit progress"]',e=>Number(e.getAttribute('aria-valuenow'))),stage+1);
+      assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk stage fits without scrolling');
+      await page.screenshot({path:path.join(output,`bulk-stage-${stage+1}.png`)});
+      if(stage<2) await click('Continue');
+    }
     await page.type('dialog input:not([type=checkbox]):not([type=radio])', 'Test brand');
     await click("Preview changes");
+    assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk review fits without scrolling');
+    await click('Back');
+    assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'Test brand','Going back preserves the change');
+    await click('Preview changes');
     await page.screenshot({path:path.join(output,'sheet-bulk-preview.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.$eval('dialog[open]', e => e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0));
@@ -695,13 +706,17 @@ const appCode =
     await page.click('[aria-label="Select row 1"]');
     await click("Bulk edit");
     await page.click('dialog input[type=radio][value=selected]');
+    await click('Continue');
     await page.click('dialog input[type=radio][value="2"]');
+    await click('Continue');
     await page.type('dialog input:not([type=checkbox]):not([type=radio])', '-1');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.querySelector('[role=alert]') && [...e.querySelectorAll('button')].some(b => b.textContent.includes('Apply to') && b.disabled)));
     await page.click('[aria-label="Close sheet tool"]');
     await click("Bulk edit");
+    await click('Continue');
     await page.click('dialog input[type=radio][value="0"]');
+    await click('Continue');
     await page.type('dialog input[placeholder="e.g. 01."]', '001-');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.textContent.includes('001-ABC') && e.textContent.includes('ABC')));
@@ -809,7 +824,9 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Quantity 2"]',e=>e.value),'9');
     await page.click('[aria-label="Select all rows"]');
     await click('Bulk edit');
+    await click('Continue');
     await page.click('dialog input[type=radio][value="0"]');
+    await click('Continue');
     await page.type('dialog input[placeholder="e.g. 01."]','01.');
     await click('Preview changes');
     assert.ok(await page.evaluate(()=>document.body.innerText.includes('01.3657074')&&document.body.innerText.includes('3657074')));
