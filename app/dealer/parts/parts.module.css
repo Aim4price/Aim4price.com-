@@ -1199,7 +1199,7 @@
 .entryModal .entryFooter button { min-height: 44px; padding: 10px 20px; font-size: 15px; }
 .entryMethods { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .entryModal .stageHint { font-size: 14px; color: var(--app-muted, #63796f); line-height: 1.6; }
-.singlePartForm .grid { margin-top: 20px; }
+
 .entryModal label { font-size: 14px; }
 .entryModal label small { font-weight: 400; color: var(--app-muted, #63796f); }
 .entryModal input, .entryModal select { font-size: 15px; padding: 12px; min-height: 44px; }
@@ -1621,3 +1621,19 @@
   accent-color: var(--app-primary, #17654c);
 }
 .numberCleanupBody .tableWrap { max-width: 100%; margin: 0; }
+
+
+.entryModal:has(.singlePartForm) { width: min(1080px, 100%); padding: 38px; }
+.entryModal:has(.singlePartForm) .dialogHeader { padding-bottom: 24px; margin-bottom: 24px; }
+.entryModal:has(.singlePartForm) .dialogHeader h2 { font-size: 34px; }
+.entryModal:has(.singlePartForm) .stageBody { padding: 2px; }
+.entryModal .singlePartForm { margin: 0; }
+.entryModal .singlePartForm label { font-size: 15px; }
+.entryModal .singlePartForm input { min-height: 48px; padding: 12px 14px; font: inherit; font-weight: 650; }
+.entryModal:has(.singlePartForm) .entryFooter { justify-content: flex-end; }
+.addPartAmount > span:first-child { flex: 0 0 auto; padding-inline-start: 14px; font-weight: 750; }
+.entryModal .addPartAmount input { flex: 1; width: auto; padding-inline-start: 10px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.singlePartForm) { padding: 22px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.singlePartForm) .dialogHeader h2 { font-size: 25px; }
+}
