@@ -16,6 +16,7 @@ import {
   partCellErrors,
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
+import priceStyles from "./asset-register/AssetDisposal.module.css";
 import styles from "../app/dealer/parts/parts.module.css";
 type Details = {
   businessName: string;
@@ -345,23 +346,6 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {!editSnapshot && stage !== "choose" && stage !== "example" && (
-        <ol className={styles.entrySteps} aria-label="Add parts steps">
-          {["Parts", "Settings", "Review"].map((label, i) => (
-            <li
-              key={label}
-              aria-current={
-                (stage === "settings" ? 1 : stage === "review" ? 2 : 0) === i
-                  ? "step"
-                  : undefined
-              }
-            >
-              <span>{i + 1}</span>
-              {label}
-            </li>
-          ))}
-        </ol>
-      )}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
           {stage === "choose" && (
@@ -582,49 +566,35 @@ export default function PartsImportForm({
             </>
           )}
           {stage === "entry" && source === "manual" && (
-            <div className={styles.singlePartForm}>
-              <p className={styles.stageHint}>
-                Part number and quantity are required.
-              </p>
-              <div className={styles.grid}>
-                {PART_LABELS.map((label, j) => (
-                  <label key={label}>
-                    {label}
-                    <small>
-                      {j === 0 || j === 2 ? "Required" : "Optional"}
-                    </small>
-                    <input
-                      aria-label={`${label} 1`}
-                      value={rows[0]?.[j] || ""}
-                      inputMode={
-                        j === 2 ? "numeric" : j === 3 ? "decimal" : undefined
-                      }
-                      aria-invalid={Boolean(showError(0, j))}
-                      aria-describedby={
-                        showError(0, j) ? `single-error-${j}` : undefined
-                      }
-                      onBlur={() =>
-                        setTouched((t) => ({ ...t, [`0:${j}`]: true }))
-                      }
-                      onChange={(e) =>
-                        change([
-                          (rows[0] || blankPart()).map((v, k) =>
-                            k === j ? e.target.value : v,
-                          ),
-                        ])
-                      }
-                    />
-                    {showError(0, j) && (
-                      <small
-                        className={styles.cellError}
-                        id={`single-error-${j}`}
-                      >
-                        {showError(0, j)}
-                      </small>
-                    )}
+            <div className={`${styles.partEditFields} ${styles.singlePartForm}`}>
+              {[0, 4, 1, 2, 3].map(j => {
+                const label = PART_LABELS[j];
+                const required = j === 0 || j === 2;
+                const error = showError(0, j);
+                const hint = j === 3 ? "Leave blank for price on request." : undefined;
+                const input = <input
+                  id={`add-part-field-${j}`}
+                  aria-label={`${label} 1`}
+                  required={required}
+                  placeholder={required ? undefined : "Optional"}
+                  value={rows[0]?.[j] || ""}
+                  inputMode={j === 2 ? "numeric" : j === 3 ? "decimal" : undefined}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? `single-error-${j}` : hint ? "add-part-price-hint" : undefined}
+                  onBlur={() => setTouched(t => ({...t, [`0:${j}`]: true}))}
+                  onChange={e => change([(rows[0] || blankPart()).map((v, k) => k === j ? e.target.value : v)])}
+                />;
+                return <div key={label} className={`${styles.partEditPrice} ${j === 1 ? styles.partEditDescription : ""}`}>
+                  <label htmlFor={`add-part-field-${j}`}>
+                    {label}{j === 3 && <small>{details.vatIncluded ? "Incl." : "Excl."} VAT</small>}
                   </label>
-                ))}
-              </div>
+                  {j === 3 ? <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl} ${styles.addPartAmount}`}>
+                    <span aria-hidden="true">R</span>{input}
+                  </div> : input}
+                  {hint && <small id="add-part-price-hint">{hint}</small>}
+                  {error && <small className={styles.cellError} id={`single-error-${j}`}>{error}</small>}
+                </div>;
+              })}
             </div>
           )}
           {stage === "entry" && source !== "manual" && (
@@ -887,7 +857,7 @@ export default function PartsImportForm({
         </div>
         {stage === "choose" && <div className={styles.entryFooter}><button onClick={onBack}>Back</button></div>}
         {stage !== "choose" && (
-          <div className={styles.entryFooter}>
+          <div className={`${styles.entryFooter} ${stage === "entry" && source === "manual" ? styles.partEditFooter : ""}`}>
             <button
               onClick={() => {
                 setError("");
