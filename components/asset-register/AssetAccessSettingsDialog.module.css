@@ -270,3 +270,15 @@
 .dialog [data-permission-grid] input[type="checkbox"] { width: 1.15rem; height: 1.15rem; }
 .dialog [data-permission-grid] strong { font-size: .85rem; font-weight: 700; line-height: 1.35; }
 :global(:where([data-website-canvas])) .dialog [data-permission-grid] strong { white-space: nowrap; }
+
+/* Permission choices fit the desktop dialog without a separate scrollbar.
+   Preserve wheel, touch and keyboard scrolling on shorter screens. */
+.dialog.dialog .body.body:has([data-permission-groups]) {
+  scrollbar-width: none !important;
+  scrollbar-gutter: auto !important;
+}
+.dialog.dialog .body.body:has([data-permission-groups])::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

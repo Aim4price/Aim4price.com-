@@ -431,3 +431,6 @@
 }
 
 .dealerLogo { display: block; width: 100%; height: 100%; padding: .25rem; object-fit: contain; border-radius: inherit; background: #fff; }
+
+/* Keep the bulk toggle in the shorter reports column, above the footer. */
+.permissionGroup .permissionToolbar { margin-top: 1rem; }
