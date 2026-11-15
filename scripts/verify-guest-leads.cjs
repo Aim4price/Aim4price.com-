@@ -229,8 +229,9 @@ export default function Validation(){
    await page.waitForFunction(()=>{const inputs=Array.from(document.querySelectorAll('[data-permission-grid] input[type=checkbox]'));return inputs.length>0&&inputs.every(input=>input.checked);});
    assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[data-permission-grid] label')).find(label=>label.textContent.includes('Update market price'))?.querySelector('input')?.checked),true,'Select all includes market price editing');
    if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
-   const overflowingDescriptions=await page.$$eval('[data-permission-grid] small',nodes=>nodes.filter(node=>node.offsetHeight>parseFloat(getComputedStyle(node).lineHeight)+1||node.scrollWidth>node.clientWidth+1).map(node=>node.textContent));
-   assert.deepEqual(overflowingDescriptions,[], 'Permission descriptions fit one line without clipping');
+   assert.equal(await page.$$eval('[data-permission-grid] small',nodes=>nodes.length),0,'Permission choices show titles only');
+   const overflowingTitles=await page.$$eval('[data-permission-grid] strong',nodes=>nodes.filter(node=>node.getBoundingClientRect().height>parseFloat(getComputedStyle(node).lineHeight)+1||node.scrollWidth>node.clientWidth+1).map(node=>node.textContent));
+   assert.deepEqual(overflowingTitles,[], 'Permission titles fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});

@@ -259,3 +259,14 @@
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .dialog.guideDialog .accessChoices { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Title-only permission choices keep the four groups compact and readable. */
+.dialog [data-permission-grid] > label {
+  min-height: 3.1rem;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+  padding: .55rem;
+  gap: .5rem;
+}
+.dialog [data-permission-grid] input[type="checkbox"] { width: 1.15rem; height: 1.15rem; }
+.dialog [data-permission-grid] strong { font-size: .85rem; font-weight: 700; line-height: 1.35; }
+:global(:where([data-website-canvas])) .dialog [data-permission-grid] strong { white-space: nowrap; }

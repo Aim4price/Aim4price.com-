@@ -100,12 +100,12 @@ export function DealerMaintenancePermissionPicker({
                   <input type="checkbox" checked={value[option.key] === true}
                     onChange={event => onChange({ ...value, [option.key]: event.target.checked, ...(option.key === 'canUpdateDetails' ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key,event.target.checked])) : {}) })}
                     disabled={disabled || lockedPermissions.includes(option.key)} />
-                  <span><strong>{option.title}</strong><small>{lockedPermissions.includes(option.key) ? 'Always included with this asset link.' : option.description}</small></span>
+                  <span><strong>{option.title}</strong></span>
                 </label>
               ))}
               {group.title === 'Costs and values' && marketPrice && <label className={`${styles.permission} ${marketPrice.enabled ? styles.permissionEnabled : ''}`}>
                 <input type="checkbox" checked={marketPrice.enabled} disabled={disabled} onChange={event => marketPrice.onChange(event.target.checked)} />
-                <span><strong>Update market price</strong><small>Review the assessment.</small></span>
+                <span><strong>Update market price</strong></span>
               </label>}
             </div>
             {group.note && <p className={styles.permissionNote} data-permission-note>{group.note}</p>}
