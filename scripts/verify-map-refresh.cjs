@@ -23,8 +23,8 @@ async function main() {
   await page.evaluateOnNewDocument(()=>{
    Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');window.tileRedraws=0;
    const layers=new Set();
-   window.L={control:{zoom:()=>({addTo(){}})},divIcon:o=>o,layerGroup:()=>({addTo(){return this;},clearLayers(){}}),
-    map:()=>({setView(){return this;},on(){return this;},off(){return this;},fitBounds(){},getZoom:()=>13,getSize:()=>({y:700}),project:p=>({add:()=>p}),unproject:p=>p,panTo(){},hasLayer:l=>layers.has(l),removeLayer:l=>layers.delete(l),invalidateSize(){},remove(){}}),
+   window.L={control:{zoom:()=>({addTo(){const controls=document.createElement('div');controls.className='leaflet-bar leaflet-control-zoom';controls.style.cssText='position:absolute;left:.88rem;top:.88rem';controls.innerHTML='<a class="leaflet-control-zoom-in" title="Zoom in" aria-label="Zoom in" href="#"><span>+</span></a><a class="leaflet-control-zoom-out" title="Zoom out" aria-label="Zoom out" href="#"><span>−</span></a>';window.fixtureMapElement.append(controls);}})},divIcon:o=>o,layerGroup:()=>({addTo(){return this;},clearLayers(){}}),
+    map:element=>(window.fixtureMapElement=element,{setView(){return this;},on(){return this;},off(){return this;},fitBounds(){},getZoom:()=>13,getSize:()=>({y:700}),project:p=>({add:()=>p}),unproject:p=>p,panTo(){},hasLayer:l=>layers.has(l),removeLayer:l=>layers.delete(l),invalidateSize(){},remove(){}}),
     tileLayer:()=>({addTo(){layers.add(this);return this;},on(){return this;},off(){return this;},redraw(){window.tileRedraws++;}}),
     marker:p=>({addTo(){return this;},on(){return this;},bindTooltip(){return this;},getLatLng:()=>p})};
   });
@@ -34,6 +34,16 @@ async function main() {
   if(errors.length) throw Error(errors.join('; '));
   await page.waitForSelector('[data-tooltip="Reload the latest asset locations and map tiles."]');
   const refresh='[data-tooltip="Reload the latest asset locations and map tiles."]';
+  for(const name of ['Zoom in','Zoom out']) {
+    const selector=`.leaflet-control-zoom a[aria-label="${name}"]`;
+    assert.equal(await page.$eval(selector,e=>e.hasAttribute('title')),false,'Remove competing native tooltip');
+    await page.hover(selector);await page.waitForSelector('[role="tooltip"]',{visible:true});
+    assert.equal(await page.$eval('[role="tooltip"]',e=>e.textContent),name);
+    assert.equal(await page.$eval('[role="tooltip"]',e=>Boolean(e.closest('[data-website-canvas]'))),false,'Tooltip escapes the map and canvas stacking contexts');
+    assert.equal(await page.$eval('[role="tooltip"]',e=>getComputedStyle(e).zIndex),'2147483647');
+    await page.screenshot({path:`/tmp/map-${name.replace(' ','-')}-tooltip.png`});
+  }
+  await page.mouse.move(1,1);
   await page.type('input[placeholder="Search name, serial or registration"]','Yamaha');
   hold=true;await page.click(refresh);await page.waitForFunction(()=>document.querySelector('[aria-busy="true"]'));
   const count=requests;await page.click(refresh);assert.equal(requests,count,'Busy control cannot duplicate a request');
