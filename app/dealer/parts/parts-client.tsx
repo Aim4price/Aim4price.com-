@@ -166,6 +166,7 @@ function Modal({
   entry = false,
   enquiry = false,
   destructive = false,
+  progress,
   children,
 }: {
   title: string;
@@ -174,6 +175,7 @@ function Modal({
   entry?: boolean;
   enquiry?: boolean;
   destructive?: boolean;
+  progress?: { value: number; label: string };
   onClose: () => void;
   busy: boolean;
   children: ReactNode;
@@ -202,6 +204,9 @@ function Modal({
         <header className={styles.dialogHeader}>
           <h2>{title}</h2>
           {subtitle && <p>{subtitle}</p>}
+          {progress && <div className={styles.partsProgress} role="progressbar" aria-label="Parts workflow" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.value} aria-valuetext={progress.label}>
+            <span key={progress.label} style={{width: `${progress.value}%`}} />
+          </div>}
         </header>
         {children}
       </section>
@@ -277,6 +282,7 @@ export default function PartsClient({
     return ()=>{cancelled=true;clearTimeout(timer);};
   },[modal,channel,network,recipientSearch]);
   const [rowRevision, setRowRevision] = useState<number | null>(null);
+  const [importStage, setImportStage] = useState("choose");
   const [editStep, setEditStep] = useState<"intent" | "add" | "edit" | "picker" | "sheet">("intent");
   const [stock, setStock] = useState<{rows: Row[]; revision: number} | null>(null);
   const [partQuery, setPartQuery] = useState("");
@@ -1311,14 +1317,14 @@ export default function PartsClient({
           </Modal>
         )}
         {modal === "upload" && (
-          <Modal entry title={{intent:"Add / edit parts",add:"Add parts",edit:"Edit parts",picker:"Choose part",sheet:"Edit in a sheet"}[editStep]} subtitle={current?.name} onClose={close} busy={busy}>
+          <Modal entry progress={{value: editStep === "intent" ? 20 : editStep === "edit" ? 40 : editStep === "picker" ? 60 : importStage === "review" ? 100 : importStage === "settings" ? 80 : editStep === "add" && (importStage === "choose" || importStage === "example") ? 40 : 60, label: editStep === "intent" ? "Choose add or edit" : editStep === "edit" ? "Choose how to edit" : editStep === "picker" ? "Choose a specific part" : importStage === "review" ? "Review parts before saving" : importStage === "settings" ? "Parts settings" : importStage === "choose" && editStep === "add" ? "Choose how to add parts" : "Enter or edit parts"}} title={{intent:"Add / edit parts",add:"Add parts",edit:"Edit parts",picker:"Choose part",sheet:"Edit in a sheet"}[editStep]} subtitle={current?.name} onClose={close} busy={busy}>
             {(editStep === "intent" || editStep === "edit") && <>
               <div className={`${styles.shareChoices} ${styles.entryMethods} ${styles.partsIntent}`}>
                 {editStep === "intent" ? <>
                   <button data-tone="blue" disabled={busy} onClick={() => setEditStep("add")}><Icon kind="plus"/><span><strong>Add parts</strong><small>Enter or import new parts</small></span></button>
                   <button data-tone="green" disabled={busy} onClick={() => setEditStep("edit")}><Icon kind="edit"/><span><strong>Edit parts</strong><small>Change parts already on this list</small></span></button>
                 </> : <>
-                  <button data-tone="blue" disabled={busy} onClick={() => void openStockEditor("picker")}><Icon kind="edit"/><span><strong>Edit one part</strong><small>Search and select a part</small></span></button>
+                  <button data-tone="blue" disabled={busy} onClick={() => void openStockEditor("picker")}><Icon kind="edit"/><span><strong>Edit a specific part</strong><small>Search and select a specific part</small></span></button>
                   <button data-tone="green" disabled={busy} onClick={() => void openStockEditor("sheet")}><Icon kind="table"/><span><strong>Edit in a sheet</strong><small>Change multiple parts together</small></span></button>
                 </>}
               </div>
@@ -1345,6 +1351,7 @@ export default function PartsClient({
               <div className={`${styles.actions} ${styles.partEditFooter}`}><button onClick={() => setEditStep("edit")}>Back</button><button onClick={close}>Cancel</button></div>
             </>}
             {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
+              onStageChange={setImportStage}
               initialDetails={details}
               editSnapshot={editStep === "sheet" && stock ? {revision: stock.revision, rows: stock.rows.map(r => [r.part_number, r.description ?? "", String(r.quantity), r.price ?? "", r.brand ?? ""])} : undefined}
               onBack={() => setEditStep(editStep === "sheet" ? "edit" : "intent")}
@@ -1378,7 +1385,7 @@ export default function PartsClient({
             })}><Icon kind="download" />{format==="xlsx"?"Excel":"CSV"}</button>)}
           </div>{feedback}
         </Modal>}
-        {editingPart && <Modal title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
+        {editingPart && <Modal progress={{value: 80, label: "Edit selected part"}} title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
           <form onSubmit={e=>{e.preventDefault();void run(async()=>{
             await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
             setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");

@@ -1649,3 +1649,34 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.singlePartForm) { padding: 22px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.singlePartForm) .dialogHeader h2 { font-size: 25px; }
 }
+
+/* Distinct, readable choices throughout the parts entry flow. */
+.entryModal .entryMethods button[data-tone] {
+  --choice-colour: #178361;
+  --action-tint: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--choice-colour));
+  --action-line: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--choice-colour));
+  border-width: 2px;
+}
+.entryModal .entryMethods button[data-tone="blue"] { --choice-colour: #347bc4; }
+.entryModal .entryMethods button[data-tone="amber"] { --choice-colour: #c47b23; }
+.entryModal .entryMethods button small { color: var(--app-text, #34564b); }
+.entryModal .entryMethods button svg { background: var(--action-tint); border-width: 2px; }
+.entryModal .entryMethods button:hover { background: var(--action-tint); }
+.partsProgress {
+  height: 5px;
+  width: 100%;
+  margin-top: 20px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--app-border, #dce5df);
+}
+.partsProgress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--app-primary, #17654c);
+  transform-origin: left;
+  animation: partsSlideProgress 360ms ease-out;
+}
+@keyframes partsSlideProgress { from { transform: scaleX(.7); opacity: .5; } to { transform: scaleX(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .partsProgress > span { animation: none; } }

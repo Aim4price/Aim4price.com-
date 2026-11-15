@@ -527,7 +527,7 @@ const appCode =
     await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     assert.equal(actions.filter(a => a.action === 'import').at(-1).mode, 'add');
     assert.equal(parser.parsePartsSnapshot(actions.filter(a => a.action === 'import').at(-1).csv, {partNumber:0,description:1,quantity:2,price:3,brand:4}, {hasHeader:false})[0].partNumber, '000123');
-    await click("Add / edit parts"); await click("Edit parts"); longPickerFixture = true; await click("Edit one part");
+    await click("Add / edit parts"); await click("Edit parts"); longPickerFixture = true; await click("Edit a specific part");
     await page.waitForSelector('[aria-label="Search parts to edit"]');
     longPickerFixture = false;
     assert.equal(await page.$$eval('[aria-label="Parts to edit"] button', buttons => buttons.length), 42);
