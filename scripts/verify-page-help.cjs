@@ -56,7 +56,11 @@ const output = path.join(root, '.next/page-help-validation');
         await page.keyboard.press('Escape');
         assert.equal(await page.$('[role="tooltip"]'),null,'Escape dismisses tooltip');
         await page.click(trigger);await page.waitForSelector('[role="dialog"]');
-        assert.equal(await page.$('[role="dialog"] header svg'),null,'no decorative modal header icon');
+        const dialog = '[role="dialog"]';
+        assert.equal(await page.$eval(`${dialog} header svg`, icon => icon.getAttribute('aria-hidden')), 'true');
+        assert.equal(await page.$eval(`${dialog} header`, header => header.textContent.includes('About this page')), false);
+        assert.deepEqual(await page.$$eval(`${dialog} h3`, headings => headings.map(heading => heading.textContent)),
+          ['Why it was built', 'What you can do here', 'Where to start']);
         assert.equal(await page.$eval('[role="dialog"]',el=>el.contains(document.activeElement)),true,'dialog receives focus');
         assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden','background scrolling is locked');
         const geometry=await page.$eval('[role="dialog"]',el=>{const r=el.getBoundingClientRect();const body=el.querySelector('[class*="_body"]');return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,w:innerWidth,h:innerHeight,scroll:body.scrollHeight-body.clientHeight,cssWidth:parseFloat(getComputedStyle(el).width)};});

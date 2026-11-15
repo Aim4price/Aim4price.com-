@@ -1,299 +1,394 @@
-/** Short, task-focused help. Keep copy independent of private account data. */
+/** Page-specific guidance. Keep copy independent of private account data. */
 export const pageHelp = {
   marketplaceCreate: {
-    title: 'Create a Marketplace advert',
-    purpose: 'Prepare an equipment advert with its asking price, photos and contact details, then publish it to Marketplace.',
-    actions: ['Enter the equipment details, price and location, then add photos and contact information.', 'Choose a layout and check the preview. Download an image or share the advert from here.', 'Select Publish advert to list the equipment for sale on Marketplace.'],
-    start: 'Complete Advert details, then Photos & contact. Check everything in Preview & share before publishing.',
+    title: "Create a Marketplace advert",
+    purpose: "Turn equipment details into a listing buyers can find on Marketplace.",
+    actions: [
+      "Enter the asking price, location and contact details.",
+      "Add photos and choose a layout in Preview & share.",
+      "Download or share the advert, or publish it as a live listing.",
+    ],
+    start: "Enter the equipment details and have your photos ready for the next step.",
   },
   partnerLeads: {
-    "title": "Shared Asset Leads",
-    "purpose": "Review assets shared with your business and see the information and actions the sender has allowed.",
-    "actions": [
-        "Use New, Viewed or All shared to choose which assets to show.",
-        "Search or filter the list, then select Open to review a shared asset.",
-        "A viewed asset is not a completed job. Use Tracking when maintenance access is available."
+    title: "Shared Asset Leads",
+    purpose: "Give your team one place to pick up asset enquiries and see what each sender needs.",
+    actions: [
+      "Use New, Viewed or All shared to find the right enquiry.",
+      "Open a lead to read the request and see what the sender has shared.",
+      "Use Tracking for maintenance when the owner has granted access.",
     ],
-    "start": "Open a shared asset and read the request before deciding what action is needed."
-},
+    start: "Open a new lead and read the request before deciding what action it needs.",
+  },
   dealerTracking: {
-    "title": "Maintenance Tracking",
-    "purpose": "Follow maintenance for equipment whose owners have shared tracking access with your dealership.",
-    "actions": [
-        "Choose Needs attention, Tracked equipment or Done to review the relevant work.",
-        "Search or filter the list, then select View maintenance on the equipment.",
-        "Review schedules and record permitted updates. Available actions depend on the access granted."
+    title: "Maintenance Tracking",
+    purpose: "Help dealers stay on top of service work for equipment their clients have shared.",
+    actions: [
+      "Use Needs attention for work that is due, overdue or driven by usage.",
+      "Find equipment in Tracked equipment or review completed work in Done.",
+      "Open View maintenance to see schedules and record permitted updates.",
     ],
-    "start": "Start with Needs attention to find due, overdue or usage-dependent work."
-},
+    start: "Start with Needs attention and open the item you want to follow up.",
+  },
   dealerRegisterChoice: {
-    "title": "Dealer Asset Registers",
-    "purpose": "Keep dealership assets separate from the asset registers you manage for clients.",
-    "actions": [
-        "Open Dealer Asset Register to work with your dealership’s own assets.",
-        "Choose Client Asset Registers to find the registers you manage for clients.",
-        "Check the selected register before adding or updating an asset."
+    title: "Dealer Asset Registers",
+    purpose: "Keep your dealership’s equipment separate from the assets you manage for clients.",
+    actions: [
+      "Open Dealer Asset Register to work with your own equipment.",
+      "Open Client Asset Registers to find registers you manage for clients.",
+      "Check the register name before saving new assets or making changes.",
     ],
-    "start": "Choose the dealership register or the client-register option to begin."
-},
+    start: "Choose the register based on who owns the equipment.",
+  },
   dealerCosts: {
-    "title": "Client Cost Ledger",
-    "purpose": "Record and review costs for client assets available to your dealership.",
-    "actions": [
-        "Search by the available client, asset or invoice details.",
-        "Select Add Cost to record an expense against an available client asset.",
-        "Open a record to see its details and supporting documents where access permits."
+    title: "Client Cost Ledger",
+    purpose: "Keep client equipment expenses traceable to the asset and the supporting paperwork.",
+    actions: [
+      "Use Add Cost to record an expense against an available client asset.",
+      "Search or filter by client, asset or invoice details.",
+      "Open a saved cost to check the amount and any supporting documents you can access.",
     ],
-    "start": "Select Add Cost for a new expense, or search and filter to find an existing record."
-},
+    start: "For a new cost, have the client, asset and invoice details ready before selecting Add Cost.",
+  },
   partsStock: {
-    "title": "Parts Stocklists",
-    "purpose": "Find parts lists you own or that other businesses have shared with you.",
-    "actions": [
-        "Search by list name and open the list you need.",
-        "Use Add parts list when available to create a list for your own parts.",
-        "Accept an invitation to access a shared list. The list owner controls approval and permissions."
+    title: "Parts Stocklists",
+    purpose: "Help dealers find parts across businesses and give slow-moving stock another route to a buyer.",
+    actions: [
+      "Open an owned or shared list to search for parts.",
+      "Use Add parts list to make your own list if your account has access.",
+      "Share a list you own, or accept an invitation to a list another business controls.",
     ],
-    "start": "Open a list to find parts, or accept the invitation sent by its owner."
-},
+    start: "Looking for a part? Open the relevant list. Sharing your own stock? Start with Add parts list.",
+  },
   partsList: {
-    "title": "Parts List",
-    "purpose": "Search the parts in this list and use the actions available to your account.",
-    "actions": [
-        "Search for a part and check its description, quantity and price where supplied.",
-        "Use the available controls to add, import or edit parts when you have permission.",
-        "Confirm availability with the supplier. This list does not replace the supplier’s stock records."
+    title: "Parts List",
+    purpose: "Make it easier to find the right part and contact the supplier from one stocklist.",
+    actions: [
+      "Search by part number, description or brand, then check the listed quantity and price.",
+      "Enquire where available to confirm price and availability with the supplier.",
+      "Use Add / edit parts if you can edit the list, or Download a PDF or Excel copy.",
     ],
-    "start": "Search for the part you need, then review the matching row and supplier details."
-},
+    start: "Search by part number first. Use Edit a specific part for a single change or Edit in a sheet for bulk changes.",
+  },
   adStudio: {
-    "title": "Advert Studio",
-    "purpose": "Create a reusable branded template or design an advert to share with buyers.",
-    "actions": [
-        "Choose Advert Template to set your branding, colours and default layout.",
-        "Choose Create Advert to add equipment details and prepare an advert.",
-        "Share a finished advert, download it as an image, or publish it as a listing."
+    title: "Advert Studio",
+    purpose: "Help your business make consistent equipment adverts without rebuilding the design each time.",
+    actions: [
+      "Use Advert Template to save your branding and layout.",
+      "Use Create Advert to add equipment details, photos and an asking price.",
+      "Download the finished image, share it, or publish a Marketplace listing.",
     ],
-    "start": "Set up your template first, or choose Create Advert if your branding is already ready."
-},
+    start: "Set up your branding once in Advert Template, then use Create Advert for each machine.",
+  },
   adTemplate: {
-    "title": "Advert Template",
-    "purpose": "Set the branding and layout used when you create adverts.",
-    "actions": [
-        "Add your business details and choose the layout, colours and wording.",
-        "Preview the template to check the branding and spacing.",
-        "Save your template and choose a default from your saved templates when needed."
+    title: "Advert Template",
+    purpose: "Keep your business identity and contact details consistent across adverts.",
+    actions: [
+      "Set the business details, colours, wording and layout.",
+      "Preview how the template looks with photos and sample information.",
+      "Save your template and use Set as default to make it your usual choice.",
     ],
-    "start": "Check your business details, select a layout and review the preview before saving."
-},
+    start: "Check your business name and contact details, then choose a layout that fits your photos.",
+  },
   adCreator: {
-    "title": "Create Advert",
-    "purpose": "Prepare a branded advert with the equipment details and photos you want buyers to see.",
-    "actions": [
-        "Choose the available asset source and enter or review the advert details.",
-        "Add your photos and contact details, then check the branded preview.",
-        "Share the advert or download an image. Select Publish advert to list it on Marketplace."
+    title: "Create Advert",
+    purpose: "Turn an asset or estimate into a branded advert buyers can use to judge the offer and contact you.",
+    actions: [
+      "Choose an available source or enter the equipment details manually.",
+      "Check the asking price and add photos and contact details.",
+      "Preview the design, then share it, download an image or publish to Marketplace.",
     ],
-    "start": "Choose how to add your equipment, then check the asking price and contact details before publishing."
-},
+    start: "Choose how to add your equipment. Check which details came across before continuing.",
+  },
   dealerUsers: {
-    "title": "Dealer App Staff",
-    "purpose": "Give staff separate Dealer App logins and choose their roles and permissions.",
-    "actions": [
-        "Select Add login to create a staff login and choose its role.",
-        "Use Manage logins to review permissions or deactivate a login.",
-        "Share the app link or QR code and provide the person with their sign-in details."
+    title: "Dealer App Staff",
+    purpose: "Give dealership staff their own app logins so you can control access for each person.",
+    actions: [
+      "Use Add login to set up a staff member and choose their role.",
+      "Use Manage logins to change permissions or deactivate an account.",
+      "Share the app link or QR code with the person who will use it.",
     ],
-    "start": "Create a login with the access the staff member needs, then share the app link."
-},
+    start: "Start with Add login and choose only the access their work requires.",
+  },
   middlemanUsers: {
-    "title": "Middleman App Users",
-    "purpose": "Give your team separate logins for the Middleman App.",
-    "actions": [
-        "Select Add login and choose the appropriate role.",
-        "Use Manage logins to review permissions or deactivate a login.",
-        "Share the app link or QR code and provide the person with their sign-in details."
+    title: "Middleman App Users",
+    purpose: "Give your trading team separate Middleman App logins and manage access as responsibilities change.",
+    actions: [
+      "Use Add login to create a login and choose its role.",
+      "Use Manage logins to update permissions or deactivate access.",
+      "Share the app link or QR code so the person can open the right app.",
     ],
-    "start": "Create a login for the team member, then share the app link."
-},
+    start: "Decide what the person needs to do, then create their login and share the app link.",
+  },
   sharedEnquiries: {
-    "title": "Shared Enquiries",
-    "purpose": "Open assets and enquiries shared with your account. The sender decides what you can view or update.",
-    "actions": [
-        "Open a received enquiry to read the request and see the shared asset information.",
-        "Use only the actions offered for that enquiry; permissions can differ between assets.",
-        "Open a shared link you received to get started. Verify your email if the page asks you to."
+    title: "Shared Enquiries",
+    purpose: "Give you a place to respond to asset enquiries without needing access to the sender’s whole account.",
+    actions: [
+      "Open an enquiry to read the request and see the shared asset details.",
+      "Use the actions the sender has enabled for that particular enquiry.",
+      "Verify your email if prompted so Aim4price can identify enquiries shared with you.",
     ],
-    "start": "Select Open enquiry, or open the link sent to you by email or WhatsApp."
-},
+    start: "Select Open enquiry, or open the link you received by email or WhatsApp.",
+  },
   dealerAccount: {
-    "title": "Dealer Account",
-    "purpose": "Manage your dealership details, team access and available account services.",
-    "actions": [
-        "Use Assets & activity to manage registers, transfers and notifications.",
-        "Use Apps & connections for desktop users, Dealer App staff and AI connections.",
-        "Review directory visibility, contact details, billing and security using the available controls."
+    title: "Dealer Account",
+    purpose: "Give dealerships one place to manage their profile, asset activity and staff access.",
+    actions: [
+      "Use Assets & activity for registers, transfers and notifications.",
+      "Use Apps & connections for desktop users, Dealer App staff and AI access where available.",
+      "Keep contact, directory, billing and security details current.",
     ],
-    "start": "Choose the Quick actions option for the account detail or access setting you want to manage."
-},
+    start: "Open the relevant Quick actions option. For profile changes, start in Account overview.",
+  },
   middlemanAccount: {
-    "title": "Middleman Account",
-    "purpose": "Manage your profile, team access and the account details used for your trading activity.",
-    "actions": [
-        "Keep your business and marketplace contact details up to date.",
-        "Use the available app-access controls to manage your team’s logins.",
-        "Review the account, billing and security options available to you."
+    title: "Middleman Account",
+    purpose: "Keep your trading profile and the people who can work under it easy to manage.",
+    actions: [
+      "Update the business and contact details you use for trading.",
+      "Use Middleman app access to manage your team’s logins.",
+      "Review available billing, notification and security settings.",
     ],
-    "start": "Choose the relevant Quick actions option, or update your contact details in Account overview."
-},
+    start: "Start in Account overview for profile changes or Quick actions for app access.",
+  },
   sharingAccount: {
-    "title": "Business & Sharing Account",
-    "purpose": "Manage the identity and contact details used when other people share assets and enquiries with you.",
-    "actions": [
-        "Keep your business name and contact details up to date.",
-        "Use the available account controls for access, connections and notifications.",
-        "Review password and security options. Each sender still controls access to their shared assets."
+    title: "Business & Sharing Account",
+    purpose: "Help senders recognise your business and help your team find the enquiries it can act on.",
+    actions: [
+      "Keep your profile and contact details current.",
+      "Review notifications, account security and connections available to your account.",
+      "Open Shared enquiries for the assets and requests senders have authorised.",
     ],
-    "start": "Check your account details, then open Shared enquiries to work with the assets sent to you."
-},
-
+    start: "Check your email in Account, then open the enquiry or link you received.",
+  },
   registers: {
-    title: 'Manage Asset Registers',
-    purpose: 'Organise assets by business, farm or site. Open Combined Asset Registers to see them together.',
-    actions: ['Select Add Register to create a separate register.', 'Select Open to view its assets, or Manage to change its details and settings.', 'Use Summary or Download to review your registers and their values.'],
-    start: 'Open an existing register, or select Add Register if you need a new one.',
+    title: "Manage Asset Registers",
+    purpose: "Let you keep separate asset books for each business, farm or site and still see the combined picture.",
+    actions: [
+      "Use Add Register to create a separate asset book.",
+      "Select Open to view assets or Manage to change register details and settings.",
+      "Use Summary or Download to review register totals and values.",
+    ],
+    start: "Open an existing register to work on its assets, or create one for a new business, farm or site.",
   },
   desktopUsers: {
-    title: 'Desktop users',
-    purpose: 'Give team members their own desktop sign-in and choose the assets and features they can use.',
-    actions: ['Select Add user to create access and choose permissions and assets.', 'Select Manage users to review permissions or remove access.', 'Use Copy user sign-in link to give your team the correct login page.'],
-    start: 'Select Add user and choose only the access that person needs.',
+    title: "Desktop users",
+    purpose: "Give people their own desktop access while keeping each user’s features and assets under your control.",
+    actions: [
+      "Use Add user to assign permissions and choose which assets they can work with.",
+      "Use Manage users to review or remove access as duties change.",
+      "Use Copy user sign-in link to send the team to the correct login page.",
+    ],
+    start: "Decide which tasks and assets the person needs, then select Add user.",
   },
   managerUsers: {
-    title: 'Manager App Users',
-    purpose: 'Give people access to your assets on their phones using separate Manager App logins.',
-    actions: ['Select Add login and choose the person’s role and asset access.', 'Use Manage logins to update permissions or deactivate a login.', 'Scan the QR code or share the app link to open the Manager App on a phone.'],
-    start: 'Create a login, then give the person their sign-in details and the app link.',
+    title: "Manager App Users",
+    purpose: "Let staff work with assets from their phones using access you manage from the owner account.",
+    actions: [
+      "Use Add login to choose a role and grant access to the right assets.",
+      "Use Manage logins to change permissions or deactivate access.",
+      "Share the app link or QR code so the person can open the Manager App.",
+    ],
+    start: "Create a login with the permissions needed for the person’s day-to-day work.",
   },
   aiConnections: {
-    title: 'AI connections',
-    purpose: 'Connect an AI assistant to ask questions about the Aim4price records your account can access.',
-    actions: ['Select Connect AI, choose your assistant and follow the setup steps.', 'Approve read-only access. Your assistant cannot add, edit or delete records.', 'Use Manage to review connections or disconnect an assistant.'],
-    start: 'Select Connect AI. After connecting, try a question such as “Which maintenance is overdue?”',
+    title: "AI connections",
+    purpose: "Help you ask questions about your Aim4price records without gathering the answers by hand.",
+    actions: [
+      "Use Connect AI to choose an available assistant and follow the setup steps.",
+      "Approve read-only access to the records available to your account.",
+      "Use Manage to review or disconnect assistants.",
+    ],
+    start: "Once connected, try a question such as “Which maintenance is overdue?”",
   },
   transfers: {
-    title: 'Asset transfers',
-    purpose: 'Transfer an asset and its portable history to its next owner’s Aim4price account.',
-    actions: ['Choose Incoming to claim an asset using the transfer details provided to you.', 'Choose Outgoing to review sent assets and manage their one-time transfer codes.', 'Private invoices, finance, insurance and account access stay with the original account.'],
-    start: 'Receiving an asset? Choose Incoming. For an asset you have sent, choose Outgoing.',
+    title: "Asset transfers",
+    purpose: "Let useful asset history follow equipment when it changes hands.",
+    actions: [
+      "Use Incoming to claim an asset with the transfer details you received.",
+      "Use Outgoing to review sent assets and manage one-time codes.",
+      "Check which records can transfer. Private invoices, finance and insurance stay with the source account.",
+    ],
+    start: "Choose Incoming if you’re receiving an asset, or Outgoing to check a transfer you sent.",
   },
   showroom: {
-    title: 'My Advert Showroom',
-    purpose: 'Manage your adverts in one place and share your public showroom with interested buyers.',
-    actions: ['Select Create advert to add equipment you want to advertise.', 'Use Manage advert to update a listing, or Manage showroom to change showroom settings.', 'Select Open showroom to view it. Share showroom is available when the showroom is public.'],
-    start: 'Create your first advert, or find an existing advert and select Manage advert.',
+    title: "My Advert Showroom",
+    purpose: "Give buyers one place to see your adverts and give you one place to keep them up to date.",
+    actions: [
+      "Create an advert or use Manage advert to update a listing.",
+      "Use Manage showroom to control its details and visibility.",
+      "Use Open showroom to see the result, then Share showroom when it’s public.",
+    ],
+    start: "Open your showroom to check what buyers see, or create your first advert.",
   },
   invoiceDrop: {
-    title: 'Drop Invoice',
-    purpose: 'Send an invoice to the correct asset owner through Aim4price, without needing access to their account.',
-    actions: ['Select Add invoice and identify the asset using the available code or serial/VIN options.', 'Attach one invoice as a PDF or photos of the same invoice, then add your contact details.', 'Review and send. Aim4price checks the invoice before routing it; asset records remain private.'],
-    start: 'Have the invoice and asset reference ready, then select Add invoice.',
+    title: "Drop Invoice",
+    purpose: "Let someone send an invoice for a specific asset without getting access to the owner’s records.",
+    actions: [
+      "Select Add invoice and identify the asset using the available code or serial/VIN option.",
+      "Attach one invoice as a PDF or photos of the same invoice, then enter your contact details.",
+      "Review and send it for verification and routing to the right asset.",
+    ],
+    start: "Have the invoice and asset reference ready before selecting Add invoice.",
   },
   recentAdverts: {
-    title: 'Recently Advertised',
-    purpose: 'Find recently advertised equipment and check the availability shown by the advertiser.',
-    actions: ['Search by equipment, advertiser, location or condition.', 'Select Open to view an advert and its available contact options.', 'Use Refresh to reload the list, or the switch button beside the heading to change views.'],
-    start: 'Search for the equipment you need, open a matching advert and confirm availability with the advertiser.',
+    title: "Recently Advertised",
+    purpose: "Make recently advertised equipment easy to find so you can follow up while the offer is relevant.",
+    actions: [
+      "Search by equipment, advertiser, location or condition.",
+      "Select Open to view photos, listing details and available contact options.",
+      "Use Refresh for the current results, or switch back to Discovery.",
+    ],
+    start: "Open a matching advert and confirm current availability with the advertiser.",
   },
   valuation: {
-    title: 'Value Asset',
-    purpose: 'Estimate what an asset is worth using its details, age, usage and condition.',
-    actions: ['Choose the asset sector, type, brand and model.', 'Enter the asset’s year, usage, condition and pricing details as prompted.', 'Review and save the estimate. It is a guide to value, not a guaranteed selling price.'],
-    start: 'Choose the sector your asset belongs to, then follow the steps using the most accurate details you have.',
+    title: "Value Asset",
+    purpose: "Give you a reasoned estimate to work with when deciding what an asset is worth.",
+    actions: [
+      "Choose the sector, type, brand and model.",
+      "Enter the year, usage, condition and pricing details requested for that asset.",
+      "Review and save the estimate. Use it as a guide when discussing price.",
+    ],
+    start: "Choose the sector and have the asset’s actual usage and condition details ready.",
   },
   register: {
-    title: 'Asset Register',
-    purpose: 'See what you own, what it is worth and what needs attention. Keep each asset’s records together.',
-    actions: ['Add assets to registers. Group related assets under an umbrella while keeping their individual records.', 'Select Manage on an asset to update its details and record costs, fuel and maintenance.', 'Review totals, share selected information and download reports.'],
-    start: 'Open Manage on an existing asset to find its records, or select Add Asset to create a record.',
+    title: "Asset Register",
+    purpose: "Give you one record of what you own, what it’s worth and what needs attention.",
+    actions: [
+      "Add assets to a register and group related equipment under an umbrella when useful.",
+      "Use Manage to open an asset’s details and add costs, fuel or maintenance.",
+      "Review totals, share selected information or download reports.",
+    ],
+    start: "Open Manage on an existing asset, or select Add Asset to create a record.",
   },
   maintenance: {
-    title: 'Maintenance',
-    purpose: 'Schedule services, inspections and repairs, and keep a history of completed work for each asset.',
-    actions: ['Add maintenance for an asset and record work already done or schedule upcoming work.', 'Use checklists and review work that is due or overdue.', 'Record completed work and review its details when planning the next service or repair.'],
-    start: 'Select Add Maintenance, choose the asset and follow the steps for the work you want to record or schedule.',
+    title: "Maintenance",
+    purpose: "Help you plan services and repairs before they’re missed and keep evidence of completed work.",
+    actions: [
+      "Schedule upcoming work or record maintenance that’s already done.",
+      "Use checklists and review due or overdue work.",
+      "Record completion so the asset’s history is ready for the next service or repair.",
+    ],
+    start: "Select Add Maintenance, choose the asset and decide whether to schedule or record work.",
   },
   costsEntry: {
-    title: 'Manage your costs',
-    purpose: 'Choose whether to record actual expenses or plan future spending for your assets.',
-    actions: ['Open Cost Ledger to record and review expenses.', 'Open Budgets to plan spending and review progress.', 'Link expenses to the correct assets to build a reliable cost history.'],
-    start: 'Choose Cost Ledger for an expense, or Budgets to set up a spending plan.',
+    title: "Manage your costs",
+    purpose: "Put asset spending and spending plans in one place so you can see both the cost and the budget.",
+    actions: [
+      "Use Cost Ledger to enter expenses and review invoices.",
+      "Use Budgets to set spending limits and monitor progress.",
+      "Record costs against the relevant asset so they’re easier to find and compare.",
+    ],
+    start: "Choose Cost Ledger to enter a cost or Budgets to plan spending.",
   },
   costs: {
-    title: 'Cost Ledger',
-    purpose: 'Record asset expenses, keep supporting invoices and find past costs when you need them.',
-    actions: ['Select Add Cost to record an expense or upload an invoice.', 'Use Invoice Drop when you need a link for someone to send in an invoice.', 'Find saved costs with search and filters, or Download your records.'],
-    start: 'Select Add Cost and choose the option that suits your record. Check the amount, date and asset before saving.',
+    title: "Cost Ledger",
+    purpose: "Show what your equipment costs to run and keep each expense tied to its supporting record.",
+    actions: [
+      "Use Add Cost to enter an expense or upload an invoice.",
+      "Use Invoice Drop to give someone a way to send an invoice for an asset.",
+      "Search and filter past expenses, or download the records you need.",
+    ],
+    start: "Select Add Cost and check the asset, date and amount before saving.",
   },
   budgets: {
-    title: 'Budgets',
-    purpose: 'Set spending limits for a period and compare them with the costs you have recorded.',
-    actions: ['Create a budget for the period and assets you want to track.', 'Review spending against the budget and keep recorded costs up to date.', 'Open Alerts to review budget warnings, or Download to export your budget information.'],
-    start: 'Select Add Budget, choose what it covers and enter the planned amount and period.',
+    title: "Budgets",
+    purpose: "Help you spot rising costs by comparing actual spending with the amount you planned.",
+    actions: [
+      "Use Add Budget to set a spending limit for a period and the assets it covers.",
+      "Review progress against recorded costs and use Alerts to see which budgets need attention.",
+      "Download budget reports for review or sharing.",
+    ],
+    start: "Choose what you want to control, then set the amount and period in Add Budget.",
   },
   fuelEntry: {
-    title: 'Manage your fuel',
-    purpose: 'Choose whether to manage stored fuel or record fuel purchases for your assets.',
-    actions: ['Open Storage Tanks to manage tanks and their fuel movements.', 'Open Fuel Slips to record and review fuel receipts.', 'Link fuel records to the correct assets to review their usage and spending.'],
-    start: 'Choose Storage Tanks for stored fuel, or Fuel Slips for fuel receipts and asset usage.',
+    title: "Manage your fuel",
+    purpose: "Keep fuel stored in tanks and fuel used by equipment easy to reconcile.",
+    actions: [
+      "Use Storage Tanks to track stock and movements.",
+      "Use Fuel Slips to record and find fuel receipts.",
+      "Link fuel movements and purchases to the relevant asset where applicable.",
+    ],
+    start: "Choose Storage Tanks for fuel you hold on site, or Fuel Slips for purchases and receipts.",
   },
   fuelSlips: {
-    title: 'Fuel Slips',
-    purpose: 'Keep a fuel history for each asset, including quantities, costs and usage readings where available.',
-    actions: ['Add fuel records with the date, quantity, cost and relevant asset details.', 'Search and filter saved records to find a specific fill-up.', 'Download fuel records for review and reporting.'],
-    start: 'Select Add Fuel Slip and choose the asset. Enter the fuel details and attach the receipt if you have one.',
+    title: "Fuel Slips",
+    purpose: "Build an asset fuel history you can use to review usage and spending.",
+    actions: [
+      "Record the quantity, cost and usage reading where it applies.",
+      "Search or filter records to find a specific fill-up.",
+      "Download fuel records for reporting.",
+    ],
+    start: "Select Add Fuel Slip, choose the asset and attach the receipt if you have it.",
   },
   fuelStorage: {
-    title: 'Storage Tanks',
-    purpose: 'See how much fuel is in each tank and record deliveries and fuel issued to assets.',
-    actions: ['Add storage tanks and keep their details organised.', 'Select Manage on a tank to record deliveries, fuel issued and other movements.', 'Review tank activity and switch to Fuel Slips for asset fuel receipts.'],
-    start: 'Select Add Storage Tank for a new tank, or Manage on an existing tank to view and record activity.',
+    title: "Storage Tanks",
+    purpose: "Help you know how much fuel is on hand and where the fuel issued from each tank went.",
+    actions: [
+      "Add storage tanks and keep their details up to date.",
+      "Use Manage to record deliveries, fuel issued and other movements.",
+      "Review activity to check the recorded balance and who received fuel.",
+    ],
+    start: "Select Add Storage Tank to set up a tank, or Manage to work with an existing one.",
   },
   documents: {
-    title: 'Document Vault',
-    purpose: 'Keep documents in your account and link them to assets so you can find them from the relevant records.',
-    actions: ['Upload finance, accounting, insurance or licensing documents and choose their document type.', 'Link documents to assets and use filters to find them again.', 'Review removed documents in the Recycle Bin.'],
-    start: 'Select Upload documents, add your file and link it to the relevant asset where applicable.',
+    title: "Document Vault",
+    purpose: "Give finance, insurance and licensing records one home, with links back to the relevant assets.",
+    actions: [
+      "Upload documents and choose a category that will make them easy to find.",
+      "Link records to assets where useful and use filters to narrow the list.",
+      "Use Recycle Bin to review removed documents.",
+    ],
+    start: "Select Upload documents and link each file to an asset if it belongs with that record.",
   },
   map: {
-    title: 'Asset Map & Tracking',
-    purpose: 'Find your assets on the map and review their saved locations and available tracking history.',
-    actions: ['Add an asset to the map and save its location.', 'Search or filter mapped assets and open their details.', 'Review tracking records and Download map information. A saved location may not be the asset’s current position.'],
-    start: 'Select Add asset to map to save a location, or choose an existing mapped asset to see its details.',
+    title: "Asset Map & Tracking",
+    purpose: "Help you find equipment by location and review where it’s been when tracking data is available.",
+    actions: [
+      "Save an asset location or search and filter the assets already on the map.",
+      "Open an asset to review its saved location and available tracking history.",
+      "Download map information when you need a record. Check the date before relying on a location.",
+    ],
+    start: "Use Add asset to map for a new location or select a marker to see what was recorded.",
   },
   marketplaceEntry: {
-    title: 'Explore assets',
-    purpose: 'Choose Discovery to explore owner-approved assets, or Marketplace to browse equipment for sale.',
-    actions: ['Open Discovery to find assets their owners have made visible. They are not necessarily for sale.', 'Use Marketplace to browse adverts for equipment offered for sale.', 'Open an asset or advert to review its details and available contact options.'],
-    start: 'Choose Discovery to explore owner-approved assets, or Marketplace to browse sale listings.',
+    title: "Explore assets",
+    purpose: "Give buyers two ways to look for equipment depending on whether they need a live sale listing.",
+    actions: [
+      "Use Discovery to see assets owners have chosen to make visible.",
+      "Use Marketplace to browse equipment advertised for sale.",
+      "Open a match to see its details and the available contact options.",
+    ],
+    start: "Buying now? Start in Marketplace. Exploring what’s out there? Start in Discovery.",
   },
   discovery: {
-    title: 'Discovery',
-    purpose: 'Explore assets their owners have made visible to others. Being discoverable does not mean an asset is for sale.',
-    actions: ['Search and filter to find relevant equipment.', 'Open an asset to review the information its owner has made available.', 'Use the available contact options to discuss your interest.'],
-    start: 'Search for the equipment you need, then open a matching asset to learn more.',
+    title: "Discovery",
+    purpose: "Help you discover equipment owners are willing to show, including assets they haven’t listed for sale.",
+    actions: [
+      "Search and filter for the type of equipment you need.",
+      "Open an asset to see the information the owner has chosen to share.",
+      "Use the available contact options to ask about it.",
+    ],
+    start: "Search for the equipment first, then check the asset’s details before making contact.",
   },
   marketplace: {
-    title: 'Marketplace',
-    purpose: 'Find equipment advertised for sale and compare its details, photos and asking price.',
-    actions: ['Search and filter adverts by the available equipment details.', 'Review photos, prices and listing information.', 'Use the contact options to discuss availability and details with the seller.'],
-    start: 'Search for a brand or model, or use the filters to narrow the listings.',
+    title: "Marketplace",
+    purpose: "Help buyers compare equipment that’s actually been listed for sale and reach the seller.",
+    actions: [
+      "Search or filter to narrow adverts by equipment details.",
+      "Compare asking prices, condition and photos before following up.",
+      "Open a listing and confirm availability with the seller.",
+    ],
+    start: "Search by brand or model, then open a listing that looks right for your needs.",
   },
   account: {
-    title: 'Your account',
-    purpose: 'Update your business details and manage the people, apps and connections linked to your account.',
-    actions: ['Keep your profile and contact information up to date.', 'Manage registers, desktop users, app access and AI connections through the available quick actions.', 'Review billing and manage your password and security settings.'],
-    start: 'Choose the quick action for what you want to manage. Access settings control what other people can use.',
+    title: "Your account",
+    purpose: "Give you one place to look after your profile and control who can work with your asset records.",
+    actions: [
+      "Keep your business and contact details up to date.",
+      "Use Quick actions for registers, transfers, team access and app connections.",
+      "Review notifications, billing, passwords and security where available.",
+    ],
+    start: "Start in Account overview for profile changes, or use Quick actions to manage access or assets.",
   },
 } as const;
 
