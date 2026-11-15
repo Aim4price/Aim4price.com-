@@ -164,7 +164,13 @@ const appCode =
       uploaded_at: new Date().toISOString(),
     };
     await page.setRequestInterception(true);
+    let pdfRequest;
     page.on("request", (r) => {
+      if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
+      if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
+        pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
+        return r.respond({status:200,contentType:"application/pdf",body:"%PDF-1.7\nfixture"});
+      }
       if (r.url().includes("/api/parts-network")) {
         const url = new URL(r.url());
         let data;
@@ -351,13 +357,33 @@ const appCode =
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
     assert.ok(await page.$$eval('thead th',els=>els.every(e=>getComputedStyle(e).textAlign==='center')));
     await page.evaluate(()=>{URL.createObjectURL=blob=>{window.exportBlob=blob;return 'blob:fixture';};HTMLAnchorElement.prototype.click=function(){};});
-    await click('Download');await click('Excel');
+    await click('Download');
+    assert.equal(await page.$$eval('[data-download-option]', els=>els.length),2);
+    assert.ok(!await page.$eval('[role=dialog]',el=>el.textContent.includes('CSV')));
+    await page.waitForFunction(()=>[...document.querySelectorAll('[data-download-icon] img')].every(img=>img.complete && img.naturalWidth > 0));
+    await page.screenshot({path:path.join(output,'download-parts-desktop.png')});
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth + 2));
+    await page.screenshot({path:path.join(output,'download-parts-phone.png')});
+    await page.setViewport({width:1440,height:1000});
+    await page.click('[data-download-option]:last-child');await click('Download Excel');
     await page.waitForFunction(()=>document.body.innerText.includes('Parts download ready.'));
     const bytes=await page.evaluate(async()=>Array.from(new Uint8Array(await window.exportBlob.arrayBuffer())));
     const exported=new (require('exceljs').Workbook)();await exported.xlsx.load(Buffer.from(bytes));
     assert.equal(exported.worksheets[0].getCell('A2').value,'001-ABC');
     assert.equal(exported.worksheets[0].getCell('D2').value,3);
     assert.equal(exported.worksheets[0].getCell('F2').value,'Excl. VAT');
+    assert.equal(exported.worksheets[0].getCell('E2').value,850);
+    assert.equal(exported.worksheets[0].getCell('A2').numFmt,'@');
+    await page.click('[aria-label="Display prices with or without VAT"] button:nth-child(2)');
+    await click('Download');await click('Download PDF');
+    await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+    assert.equal(pdfRequest.vat,'incl');
+    assert.equal(pdfRequest.network,'11111111-1111-4111-8111-111111111111');
+    assert.equal(pdfRequest.view,'mine');
+    assert.equal(pdfRequest.title,'Landini parts');
+    assert.equal(await page.evaluate(()=>window.exportBlob.type),'application/pdf');
+    await page.click('[aria-label="Display prices with or without VAT"] button:first-child');
 
     assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Edit"]);
     assert.deepEqual(await page.$$eval("tbody tr:first-child td", cells => cells.slice(0, 3).map(c => c.textContent.trim())), ["001-ABC", "Diff washer domed", "Landini"]);

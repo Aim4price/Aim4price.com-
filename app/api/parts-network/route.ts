@@ -73,6 +73,25 @@ export async function GET(request: NextRequest) {
         staff: actor.staff,
         desktop: Boolean(actor.team),
       });
+    if (q.get("format") === "pdf") {
+      const data = await partsData(actor, networkId(q.get("network")), q.get("view") === "mine" ? "mine" : "search", q.get("search") || "", 0, true);
+      const { buildPartsStockReportHtml } = await import("../../../lib/parts-network-report");
+      const { renderReportHtmlToPdf } = await import("../../../lib/report-pdf");
+      const { normaliseReportPdfFileName } = await import("../../../lib/report-pdf-request");
+      const included = q.get("vat") === "incl";
+      const vat = included ? "Incl. VAT" : "Excl. VAT";
+      const title = (q.get("title") || "Parts stock list").slice(0, 150);
+      const rows = (data.rows || []).map(row => ({
+        part: row.part_number, description: row.description || "", brand: row.brand || "", quantity: row.quantity,
+        price: row.price === null ? null : Number((Number(row.price) * (row.vat_included === included ? 1 : included ? 1.15 : 1 / 1.15)).toFixed(2)),
+        vat, dealer: row.business_name, town: row.town || "",
+      }));
+      const scope = q.get("search")?.trim() ? `Matching parts for “${q.get("search")!.trim()}”` : "Complete parts list";
+      const date = new Intl.DateTimeFormat("en-ZA", {dateStyle:"medium",timeZone:"Africa/Johannesburg"}).format(new Date());
+      const pdf = await renderReportHtmlToPdf(buildPartsStockReportHtml(title, rows, vat, scope, date), {baseUrl:request.url,cookie:request.headers.get("cookie") || ""});
+      const filename = normaliseReportPdfFileName(title).replace(/[^\x20-\x7e]/g, "_");
+      return new NextResponse(pdf, {headers:{"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="${filename}"`,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
+    }
     return reply(
       await partsData(
         actor,

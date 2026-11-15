@@ -684,3 +684,56 @@ test("row edits are scoped, validated and reject stale saves", async () => {
 
   await db.close();
 });
+
+test("Parts PDF escapes user text and distinguishes zero prices from price on request", () => {
+  const { buildPartsStockReportHtml } = load("lib/parts-network-report.ts", {
+    './maintenance-report-style': { MAINTENANCE_REPORT_FONT_CSS: '', MAINTENANCE_REPORT_LAYOUT_CSS: '' },
+    './report-theme': { REPORT_THEME_CSS: '' },
+  });
+  const { parseReportPdfRenderRequest } = load('lib/report-pdf-request.ts');
+  const row = { part: '001-AB', description: '<script>alert(1)</script>', brand: 'A&B', quantity: 0, price: 0, vat: 'Excl. VAT', dealer: 'Dealer', town: 'George' };
+  const html = buildPartsStockReportHtml('Parts <list>', [row, {...row, part:'002', price:null}], 'Excl. VAT', 'Complete parts list', '15 Nov 2026');
+  assert.ok(!html.includes('<script>'));
+  assert.match(html, /&lt;script&gt;/);
+  assert.match(html, /A&amp;B/);
+  assert.match(html, /001-AB/);
+  assert.match(html, /R\s*0[.,]00/);
+  assert.equal((html.match(/Price on request/g) || []).length, 1);
+  assert.equal(parseReportPdfRenderRequest(JSON.stringify({html,fileName:'Parts.pdf'})).html, html);
+});
+
+test("Parts PDF uses parts access, full filtered rows, VAT conversion and private responses", async () => {
+  let actor = {id:'dealer-1'}, denied = false, renderCalls = 0, requestArgs, reportArgs, actorArgs;
+  class PartsError extends Error { constructor(message, status) { super(message); this.status = status; } }
+  class Reply extends Response { static json(value, options) { return new Reply(JSON.stringify(value),options); } }
+  const { GET } = load('app/api/parts-network/route.ts', {
+    'next/server': {NextResponse:Reply},
+    '../../../lib/team-access-policy': {TeamAccessError:class extends Error {}},
+    '../../../lib/trusted-request-origin': {},
+    '../../../lib/parts-network-access': {getPartsActor:async (...args)=>{actorArgs=args;return actor;}},
+    '../../../lib/parts-network': {
+      PartsError, networkId:value=>value,
+      partsData:async (...args)=>{requestArgs=args;if(denied)throw new PartsError('No access',403);return {rows:[{part_number:'001',quantity:2,price:'100',vat_included:false,business_name:'Dealer',description:'Filter'},{part_number:'002',quantity:0,price:null,vat_included:false,business_name:'Dealer'}]};},
+    },
+    '../../../lib/parts-network-report': {buildPartsStockReportHtml:(...args)=>{reportArgs=args;return '<html>report</html>';}},
+    '../../../lib/report-pdf': {renderReportHtmlToPdf:async()=>{renderCalls++;return Buffer.from('%PDF-1.7');}},
+    '../../../lib/report-pdf-request': load('lib/report-pdf-request.ts'),
+  });
+  const url = new URL('https://example.test/api/parts-network?network=list-1&view=mine&format=pdf&vat=incl&search=Filter&title=Landini&desktopMembershipId=team-1');
+  const request = {nextUrl:url,url:url.href,headers:new Headers()};
+  const response = await GET(request);
+  assert.equal(response.status,200);
+  assert.match(response.headers.get('content-type'),/application\/pdf/);
+  assert.match(response.headers.get('cache-control'),/private, no-store/);
+  assert.deepEqual(actorArgs,[false,'team-1']);
+  assert.deepEqual(requestArgs,[actor,'list-1','mine','Filter',0,true]);
+  assert.equal(reportArgs[1][0].part,'001');
+  assert.equal(reportArgs[1][0].price,115);
+  assert.equal(reportArgs[1][1].price,null);
+  assert.equal(reportArgs[2],'Incl. VAT');
+  denied=true;
+  assert.equal((await GET(request)).status,403);
+  actor=null;
+  assert.equal((await GET(request)).status,403);
+  assert.equal(renderCalls,1,'Unauthorized requests never render a report');
+});
