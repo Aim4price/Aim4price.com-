@@ -5,6 +5,7 @@ on:
       - 'lib/parts-network*'
       - 'lib/parts-editor.ts'
       - 'components/PartsImportForm.tsx'
+      - 'components/PartsSheetTools.tsx'
       - 'lib/external-share-permissions.ts'
       - 'app/business/join/business-signup.tsx'
       - 'lib/dealer-app-access.ts'
