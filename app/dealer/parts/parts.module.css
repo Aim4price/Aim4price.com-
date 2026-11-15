@@ -1741,3 +1741,54 @@
 .sheetToolDialog .tableWrap { margin:0; }
 .sheetToolDialog .tableWrap table { min-width:0; table-layout:fixed; }
 .sheetToolDialog .tableWrap th, .sheetToolDialog .tableWrap td { padding:12px; overflow-wrap:anywhere; font-size:14px; }
+
+/* Access management keeps identities readable and actions out of narrow table cells. */
+.modal.accessModal { width:min(1040px,100%); display:flex; flex-direction:column; overflow:hidden; padding:32px; }
+.accessModal .dialogHeader { flex:0 0 auto; padding-bottom:22px; margin-bottom:24px; }
+.accessModal .dialogHeader h2 { margin-bottom:0; }
+.accessBody { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; scrollbar-width:thin; scrollbar-color:var(--app-accent, #648b7a) transparent; padding:2px 16px 4px 2px; display:grid; gap:26px; }
+.accessIntro { display:flex; align-items:flex-start; gap:14px; padding:18px 20px; border:1px solid var(--app-info-line, #b6cde1); border-radius:16px; background:var(--app-info-soft, #edf4fb); }
+.accessIntro > svg { width:24px; height:24px; flex:0 0 24px; color:var(--app-info, #285f89); margin-top:2px; }
+.accessIntro p { margin:0; font-size:15px; font-weight:750; line-height:1.5; }
+.accessIntro small { display:block; margin-top:5px; font-size:13px; font-weight:550; line-height:1.6; color:var(--app-text-muted, #516e62); }
+.accessSection { display:grid; gap:12px; min-width:0; }
+.accessHeading { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.accessModal .accessHeading h3 { margin:0; font-size:19px; font-weight:800; }
+.accessHeading > span { font-size:13px; font-weight:650; color:var(--app-text-muted, #516e62); white-space:nowrap; }
+.accessCard { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:20px 24px; padding:20px; border:1px solid var(--app-border, #c6dad0); border-radius:18px; background:var(--app-surface, #fff); box-shadow:0 6px 18px #123c3006; }
+.accessIdentity { display:grid; gap:6px; min-width:0; }
+.accessIdentity > strong { font-size:16px; font-weight:750; line-height:1.4; overflow-wrap:anywhere; }
+.accessIdentity > span { font-size:14px; font-weight:550; color:var(--app-text-muted, #516e62); line-height:1.5; overflow-wrap:anywhere; }
+.accessStatus { padding:6px 11px; border-radius:999px; border:1px solid var(--app-border, #c6dad0); background:var(--app-surface-soft, #f1f5f3); color:var(--app-text, #36594b); font-size:12px; font-weight:750; white-space:nowrap; }
+.accessStatus[data-status="active"] { background:var(--app-success-soft, #e1f3e9); border-color:var(--app-success-line, #99ccb3); color:var(--app-success, #155d40); }
+.accessStatus[data-status="pending"] { background:var(--app-warning-soft, #fff2da); border-color:var(--app-warning-line, #e6c38d); color:var(--app-warning, #815315); }
+.accessDetails { display:flex; gap:32px; flex-wrap:wrap; }
+.accessDetails > div { display:grid; align-content:start; gap:6px; }
+.accessDetails > div > span { color:var(--app-text-muted, #61766c); font-size:12px; font-weight:650; }
+.accessDetails strong { font-size:14px; font-weight:650; line-height:1.5; }
+.accessModal .accessDetails select { width:auto; min-width:150px; min-height:40px; padding:8px 12px; font-size:14px; font-weight:650; }
+.accessAction { align-self:end; justify-self:end; }
+.accessModal .accessAction button { min-height:40px; font-size:13px; font-weight:700; white-space:nowrap; padding:9px 14px; }
+.accessAction button[data-danger] { color:var(--app-danger, #a53438); border-color:var(--app-danger-line, #dca6a8); background:var(--app-danger-soft, #fff3f3); }
+.accessOwner { color:var(--app-text-muted, #61766c); font-size:12px; font-weight:600; }
+.accessEmpty { display:flex; align-items:center; gap:16px; margin:0; padding:22px; border:1px dashed var(--app-border, #b9d2c6); border-radius:16px; background:var(--app-surface-soft, #f3f8f5); font-size:14px; }
+.accessEmpty > svg { flex:0 0 26px; width:26px; height:26px; color:var(--app-accent, #346f57); }
+.accessEmpty strong { font-size:15px; font-weight:750; }
+.accessEmpty p { margin:5px 0 0; font-size:14px; font-weight:550; color:var(--app-text-muted, #61766c); line-height:1.5; }
+.accessFooter { display:flex; flex:0 0 auto; justify-content:flex-end; align-items:center; gap:12px; padding-top:20px; margin-top:24px; border-top:1px solid var(--app-border, #c6dad0); }
+.accessFooter button { font-weight:750; white-space:nowrap; }
+@media (max-width:640px) {
+  .modal.accessModal { padding:22px; }
+  .accessBody { padding-right:10px; gap:22px; }
+  .accessIntro { padding:15px; gap:10px; }
+  .accessCard { padding:16px; grid-template-columns:minmax(0,1fr); gap:14px; }
+  .accessStatus { justify-self:start; grid-row:2; }
+  .accessAction { justify-self:start; }
+  .accessDetails { gap:18px; }
+  .accessFooter { margin-top:18px; padding-top:18px; }
+  .accessEmpty { padding:18px; align-items:flex-start; }
+}
+.accessAction { grid-column:2; }
+@media (max-width:640px) { .accessAction { grid-column:1; } }
+.accessStatus { justify-self:end; }
+@media (max-width:640px) { .accessStatus { justify-self:start; } }

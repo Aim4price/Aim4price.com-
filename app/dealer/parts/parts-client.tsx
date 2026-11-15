@@ -169,6 +169,7 @@ function Modal({
   enquiry = false,
   destructive = false,
   download = false,
+  access = false,
   progress,
   children,
 }: {
@@ -179,6 +180,7 @@ function Modal({
   enquiry?: boolean;
   destructive?: boolean;
   download?: boolean;
+  access?: boolean;
   progress?: { value: number; label: string };
   onClose: () => void;
   busy: boolean;
@@ -196,7 +198,7 @@ function Modal({
     <div className={styles.backdrop} data-website-overlay>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""} ${access ? styles.accessModal : ""}`}
         data-download-dialog={download ? "true" : undefined}
         role="dialog"
         aria-describedby={destructive ? "delete-parts-copy" : undefined}
@@ -474,6 +476,12 @@ export default function PartsClient({
       setError("");
     }
   }
+  function openDownload() {
+    setReportName(current?.name || "Parts");
+    setDownloadFormat("pdf");
+    setError("");
+    setModal("download");
+  }
   const detailActions = (
     <div className={`${styles.actions} ${styles.detailActions} ${styles.registerActions}`} aria-label="Stocklist actions">
       {admin && (
@@ -512,7 +520,7 @@ export default function PartsClient({
           Manage
         </button>
       )}
-      <button className={styles.primary} onClick={()=>{setReportName(current?.name || "Parts");setDownloadFormat("pdf");setModal("download");}}><Icon kind="download" />Download</button>
+      <button className={styles.primary} onClick={openDownload}><Icon kind="download" />Download</button>
       {view === "members" && (
         <button
           onClick={() =>
@@ -862,138 +870,42 @@ export default function PartsClient({
             </>
           ))}
               {modal === "access" && !confirm && admin && (
-                <Modal title="Sharing & access" subtitle={current?.name} onClose={close} busy={busy}>
-                  {accessLoading && <p role="status">Loading access…</p>}
-                  <p>
-                    Verify the dealership independently before approving access.
-                    Staff permissions remain controlled by each dealership
-                    owner.
-                  </p>
-                  <div className={styles.tableWrap}>
-
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Dealership</th>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Status</th>
-                          <th>Last opened</th>
-                          <th>Access</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {members.map((m) => (
-                          <tr key={m.dealer_id}>
-                            <td>
-                              {m.business_name || "Details pending"}
-                              <small>{m.town}</small>
-                            </td>
-                            <td>{m.email}</td>
-                            <td>
-                              <select
-                                aria-label={`Role for ${m.email}`}
-                                value={m.role}
-                                disabled={
-                                  busy ||
-                                  m.status === "pending" ||
-                                  current?.list_mode
-                                }
-                                onChange={(e) =>
-                                  setConfirm({
-                                    dealerId: m.dealer_id,
-                                    role: e.target.value,
-                                    status: m.status,
-                                  })
-                                }
-                              >
-                                {(current?.list_mode
-                                  ? [m.role]
-                                  : ["admin", "contributor", "viewer"]
-                                ).map((r) => (
-                                  <option key={r}>{r}</option>
-                                ))}
-                              </select>
-                            </td>
-                            <td>{m.status}</td>
-                            <td>{m.last_viewed_at ? new Date(m.last_viewed_at).toLocaleString("en-ZA") : "Not opened yet"}</td>
-                            <td>
-                              <button
-                                disabled={
-                                  busy ||
-                                  (current?.list_mode && m.role === "admin")
-                                }
-                                onClick={() =>
-                                  setConfirm({
-                                    dealerId: m.dealer_id,
-                                    role: m.role,
-                                    status:
-                                      m.status === "active"
-                                        ? "suspended"
-                                        : "active",
-                                  })
-                                }
-                              >
-                                {m.status === "pending"
-                                  ? "Approve"
-                                  : m.status === "active"
-                                    ? "Remove access"
-                                    : "Restore"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <Modal access title="Sharing & access" subtitle={current?.name} onClose={close} busy={busy}>
+                  <div className={styles.accessBody} aria-busy={accessLoading}>
+                    <div className={styles.accessIntro}><Icon kind="users" /><p>Control who can open this list.<small>Verify each dealership before approving access. Each dealer manages their own staff permissions.</small></p></div>
+                    {accessLoading ? <p className={styles.accessEmpty} role="status">Loading dealers and invitations…</p> : <>
+                      <section aria-labelledby="parts-dealers-title" className={styles.accessSection}>
+                        <div className={styles.accessHeading}><h3 id="parts-dealers-title">Dealer access</h3><span>{members.length} {members.length === 1 ? "dealer" : "dealers"}</span></div>
+                        {members.length === 0 && <p className={styles.accessEmpty}>No dealers have access yet. Share this list to invite a dealer.</p>}
+                        {members.map(m => {
+                          const owner = Boolean(current?.list_mode && m.role === "admin");
+                          const roleLabel = (role: string) => role === "admin" ? "Administrator" : role === "contributor" ? "Contributor" : "Viewer";
+                          return <article key={m.dealer_id} className={styles.accessCard}>
+                            <div className={styles.accessIdentity}><strong>{m.business_name || "Details pending"}</strong><span>{[m.town, m.email].filter(Boolean).join(" · ") || "Contact details pending"}</span></div>
+                            <span className={styles.accessStatus} data-status={m.status}>{m.status === "active" ? "Active" : m.status === "pending" ? "Awaiting approval" : "Access removed"}</span>
+                            <div className={styles.accessDetails}>
+                              <div><span>Role</span>{current?.list_mode || m.status === "pending" ? <strong>{owner ? "List owner" : roleLabel(m.role)}</strong> : <select aria-label={`Role for ${m.email}`} value={m.role} disabled={busy} onChange={e=>setConfirm({dealerId:m.dealer_id,role:e.target.value,status:m.status})}>{["admin","contributor","viewer"].map(role=><option key={role} value={role}>{roleLabel(role)}</option>)}</select>}</div>
+                              <div><span>Last opened</span><strong>{m.last_viewed_at ? new Intl.DateTimeFormat("en-ZA", {day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(m.last_viewed_at)) : "Not opened yet"}</strong></div>
+                            </div>
+                            <div className={styles.accessAction}>{owner ? <span className={styles.accessOwner}>Owner access stays active</span> : <button type="button" data-danger={m.status === "active" || undefined} disabled={busy} onClick={()=>setConfirm({dealerId:m.dealer_id,role:m.role,status:m.status === "active" ? "suspended" : "active"})}>{m.status === "pending" ? "Approve access" : m.status === "active" ? "Remove access" : "Restore access"}</button>}</div>
+                          </article>;
+                        })}
+                      </section>
+                      <section aria-labelledby="parts-invitations-title" className={styles.accessSection}>
+                        <div className={styles.accessHeading}><h3 id="parts-invitations-title">Invitations</h3><span>{invites.length} {invites.length === 1 ? "invitation" : "invitations"}</span></div>
+                        {invites.length === 0 ? <div className={styles.accessEmpty}><Icon kind="share" /><div><strong>No invitations yet</strong><p>Use Share list to invite a dealer by link or inside Aim4price.</p></div></div> : invites.map(i=>{
+                          const status = i.consumed_at ? "Accepted" : i.revoked_at ? "Revoked" : new Date(i.expires_at).getTime() < Date.now() ? "Expired" : "Pending";
+                          return <article key={i.id} className={styles.accessCard}>
+                            <div className={styles.accessIdentity}><strong>{i.email || "Private invitation link"}</strong><span>{i.role === "admin" ? "Administrator" : i.role === "contributor" ? "Contributor" : "Viewer"} · Expires {date(i.expires_at)}</span></div>
+                            <span className={styles.accessStatus} data-status={status === "Accepted" ? "active" : status === "Pending" ? "pending" : "suspended"}>{status}</span>
+                            {status === "Pending" && <div className={styles.accessAction}><button type="button" data-danger disabled={busy} onClick={()=>void run(async()=>{await mutate({action:"revoke",id:i.id});})}>Revoke invitation</button></div>}
+                          </article>;
+                        })}
+                      </section>
+                    </>}
+                    {feedback}
                   </div>
-                  <h3 className={styles.accessSectionTitle}>Invitations</h3>
-                  <div className={styles.tableWrap}>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Email</th>
-                          <th>Role</th>
-                          <th>Expires</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {!accessLoading && invites.length === 0 && <tr><td colSpan={4}>No invitations yet.</td></tr>}
-                        {invites.map((i) => (
-                          <tr key={i.id}>
-                            <td>{i.email}</td>
-                            <td>{i.role}</td>
-                            <td>{date(i.expires_at)}</td>
-                            <td>
-                              {i.consumed_at ? (
-                                "Accepted"
-                              ) : i.revoked_at ? (
-                                "Revoked"
-                              ) : new Date(i.expires_at).getTime() <
-                                Date.now() ? (
-                                "Expired"
-                              ) : (
-                                <button
-                                  disabled={busy}
-                                  onClick={() =>
-                                    void run(async () => {
-                                      await mutate({
-                                        action: "revoke",
-                                        id: i.id,
-                                      });
-                                    })
-                                  }
-                                >
-                                  Revoke
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {feedback}
+                  <footer className={styles.accessFooter}><button type="button" disabled={busy} onClick={close}>Done</button><button type="button" className={styles.primary} disabled={busy} onClick={()=>setModal("share")}><Icon kind="share" />Share list</button></footer>
                 </Modal>
               )}
         {modal === "manage" && (
@@ -1062,6 +974,9 @@ export default function PartsClient({
                   </span>
                 </button>
               )}
+              <button data-tone="green" onClick={openDownload}>
+                <Icon kind="download" /><span><strong>Download</strong><small>Export this list as PDF or Excel.</small></span>
+              </button>
               <button
                 className={styles.deleteAction}
                 onClick={() => setModal("delete")}
