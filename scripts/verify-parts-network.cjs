@@ -793,7 +793,7 @@ const appCode =
     assert.ok(await page.$eval('dialog[open]', e=>{const r=e.getBoundingClientRect(), f=e.querySelector('footer').getBoundingClientRect();return r.left>=0 && r.right<=innerWidth && r.top>=0 && f.bottom<=innerHeight;}),'Detail picker fits a phone');
     await page.setViewport({width:1440,height:1000});
 
-    await click('Add column');
+    await click('Next');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
     await click('+ Add row');
     const scrollState=await page.evaluate(()=>{
