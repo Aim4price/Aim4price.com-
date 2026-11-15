@@ -167,8 +167,8 @@ const appCode =
     let pdfRequest;
     page.on("request", (r) => {
       if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
-      if (r.url().includes("/api/reports/render-pdf")) {
-        pdfRequest = JSON.parse(r.postData());
+      if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
+        pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
         return r.respond({status:200,contentType:"application/pdf",body:"%PDF-1.7\nfixture"});
       }
       if (r.url().includes("/api/parts-network")) {
@@ -378,17 +378,10 @@ const appCode =
     await page.click('[aria-label="Display prices with or without VAT"] button:nth-child(2)');
     await click('Download');await click('Download PDF');
     await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
-    assert.match(pdfRequest.html,/001-ABC/);
-    assert.match(pdfRequest.html,/977[.,]50/);
-    assert.match(pdfRequest.html,/Incl. VAT/);
-    assert.match(pdfRequest.fileName,/\.pdf$/);
-    const reportPage = await browser.newPage();
-    await reportPage.setContent(pdfRequest.html, {waitUntil:'networkidle0'});
-    await reportPage.evaluate(()=>document.fonts.ready);
-    await reportPage.screenshot({path:path.join(output,'parts-pdf-report.png'),fullPage:true});
-    const pdf = await reportPage.pdf({format:'A4',printBackground:true,preferCSSPageSize:true});
-    assert.equal(Buffer.from(pdf).subarray(0,5).toString(),'%PDF-');
-    await reportPage.close();
+    assert.equal(pdfRequest.vat,'incl');
+    assert.equal(pdfRequest.network,'11111111-1111-4111-8111-111111111111');
+    assert.equal(pdfRequest.view,'mine');
+    assert.equal(pdfRequest.title,'Landini parts');
     assert.equal(await page.evaluate(()=>window.exportBlob.type),'application/pdf');
     await page.click('[aria-label="Display prices with or without VAT"] button:first-child');
 
