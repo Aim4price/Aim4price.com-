@@ -2001,3 +2001,13 @@
   .shareRecipientCard > span:nth-child(3), .shareSelectBadge { grid-column:2; }
   .shareAccountIcon { width:36px; height:36px; }
 }
+
+/* Keep the complete focus halo inside each scrollable choice viewport. */
+.modal.marketplaceChoiceModal .sheetToolBody { padding:24px; scroll-padding:24px; }
+.modal.sharedPartEditor { width:min(1080px, calc(100vw - 40px)); padding:28px; }
+.sharedPartEditor .dialogHeader h2 { font-size:30px; }
+.sharedPartEditor .partEditorForm { flex:1; }
+@media (max-width:600px) {
+  .modal.marketplaceChoiceModal .sheetToolBody { padding:18px; }
+  .modal.sharedPartEditor { width:calc(100vw - 24px); padding:20px; }
+}

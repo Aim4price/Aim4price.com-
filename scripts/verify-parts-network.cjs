@@ -305,11 +305,11 @@ const appCode =
     await page.waitForSelector("article");
 
     const click = async (text) => {
-      await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
+      await page.waitForFunction(t => [...([...document.querySelectorAll("dialog[open]")].at(-1) || document).querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
       const navigation = text === "Open" ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
       assert.ok(
         await page.evaluate((t) => {
-          const b = [...document.querySelectorAll("button")].find(
+          const b = [...([...document.querySelectorAll("dialog[open]")].at(-1) || document).querySelectorAll("button")].find(
             (b) =>
               (b.textContent.trim() === t ||
                 b.querySelector("strong")?.textContent.trim() === t) &&
@@ -443,16 +443,16 @@ const appCode =
     await click("Edit");
     await page.waitForSelector('[role=dialog] form');
     assert.equal(await page.$eval('[role=dialog] input',e=>e.value),'001-ABC');
-    assert.equal(await page.$eval('#part-edit-price',e=>e.value),'850');
+    assert.equal(await page.$eval('[aria-label^="Unit price,"]',e=>e.value),'850');
     await click("Incl");
-    assert.equal(await page.$eval('#part-edit-price',e=>e.value),'977.5');
-    await page.$eval('#part-edit-price',e=>e.select());
-    await page.type('#part-edit-price','115');
+    assert.equal(await page.$eval('[aria-label^="Unit price,"]',e=>e.value),'977.5');
+    await page.$eval('[aria-label^="Unit price,"]',e=>e.select());
+    await page.type('[aria-label^="Unit price,"]','115');
     await click("Excl");
-    assert.equal(await page.$eval('#part-edit-price',e=>e.value),'100');
+    assert.equal(await page.$eval('[aria-label^="Unit price,"]',e=>e.value),'100');
     await click("Incl");
-    assert.equal(await page.$eval('#part-edit-price',e=>e.value),'115');
-    assert.ok(await page.$eval('#part-edit-price',e=>e.parentElement.textContent.includes('R')));
+    assert.equal(await page.$eval('[aria-label^="Unit price,"]',e=>e.value),'115');
+    assert.ok(await page.$eval('[aria-label^="Unit price,"]',e=>e.parentElement.textContent.includes('R')));
     assert.ok(await page.$eval('[role=dialog] form',e=>{
       const save=[...e.querySelectorAll('button')].find(b=>b.textContent==='Save changes');
       return Math.abs(save.getBoundingClientRect().right-e.getBoundingClientRect().right)<2;
@@ -675,11 +675,17 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Part number 1"]', e => e.value), 'ABC');
     await click("Undo");
     await page.click('[aria-label="Actions for row 1"]');
+    await page.focus('[data-detail="delete"]');
+    assert.ok(await page.$eval('[data-detail="delete"]',button=>{const r=button.getBoundingClientRect(),p=button.closest('[class*=sheetToolBody]').getBoundingClientRect();return r.left-p.left>=16 && p.right-r.right>=16;}),'Focus halo has space on both sides');
     await page.screenshot({path:path.join(output,"part-action-choices.png")});
+    const sheetPriceBefore = await page.$eval('[aria-label="Unit price 1"]',e=>e.value);
     await click("Edit part");
-    await page.type('[aria-label="Edit row Description"]', ' changed');
-    await click("Apply to sheet");
+    await page.type('dialog[aria-label="Edit part"] [aria-label="Description"]', ' changed');
+    assert.ok(await page.$('dialog[aria-label="Edit part"] [aria-label="Unit price VAT basis"]'));
+    await page.screenshot({path:path.join(output,'sheet-shared-edit-part.png')});
+    await click("Save changes");
     assert.ok((await page.$eval('[aria-label="Description 1"]', e => e.value)).endsWith(' changed'));
+    assert.equal(Number(await page.$eval('[aria-label="Unit price 1"]',e=>e.value)), Number(sheetPriceBefore), 'Shared editor preserves the sheet price');
     await click("Undo");
     const countBeforeDelete = await page.$$eval('[aria-label="Parts spreadsheet"] tbody tr', els => els.length);
     await page.click('[aria-label="Actions for row 1"]');
@@ -719,8 +725,8 @@ const appCode =
     await click('Add column');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
     await page.click('[aria-label="Actions for row 1"]'); await click('Edit part');
-    assert.equal(await page.$eval('[aria-label="Edit row Dimensions"]',e=>e.value),'001 x 020');
-    await click('Cancel');
+    assert.equal(await page.$eval('dialog[aria-label="Edit part"] [aria-label="Dimensions"]',e=>e.value),'001 x 020');
+    await click('Back'); await click('Cancel');
     // Clear the temporary value so existing blank-row validation stays unchanged.
     await page.$eval('[aria-label="Dimensions 1"]',e=>e.select());await page.keyboard.press('Backspace');
 

@@ -34,6 +34,7 @@ type Preview = {
 };
 export default function PartsImportForm({
   initialFields = [],
+  listName,
   initialDetails,
   editSnapshot,
   onBack,
@@ -44,6 +45,7 @@ export default function PartsImportForm({
 }: {
   onStageChange?: (stage: string) => void;
   initialFields?: PartDetailField[];
+  listName?: string;
   initialDetails: Details;
   editSnapshot?: {rows: string[][]; revision: number};
   onBack: () => void;
@@ -284,7 +286,7 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {tool && <PartsSheetTools tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing) => {change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
+      {tool && <PartsSheetTools listName={listName} extraFields={extraFields} tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing, fields) => {if(fields) setExtraFields(fields);change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
       {sheetEntry && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
         <AddPartField column fields={extraFields} onAdd={addField}/>
