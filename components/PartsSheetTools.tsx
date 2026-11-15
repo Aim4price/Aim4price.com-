@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import ShareModalCloseButton from "./asset-register/ShareModalCloseButton";
 import { createPortal } from "react-dom";
 import { PART_LABELS, partCellErrors } from "../lib/parts-editor";
+import { DetailIcon } from "./PartsDetailFields";
 import PartsChoice from "./PartsChoice";
 import styles from "../app/dealer/parts/parts.module.css";
 
@@ -53,7 +54,7 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
     onApply(next); onClose();
   };
   const title = tool.kind === "columns" ? "Visible columns" : tool.kind === "bulk" ? "Bulk edit parts" : rowMode === "edit" ? "Edit part" : rowMode === "delete" ? "Delete row?" : "Part actions";
-  return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog}`} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }}>
+  return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${tool.kind === "row" && rowMode === "choose" ? styles.marketplaceChoiceModal : ""}`} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }}>
     <header className={styles.sheetToolHeader}><div><h2>{title}</h2>{tool.kind === "row" && <p>{rows[tool.index][0] || `Row ${tool.index + 1}`}</p>}</div><ShareModalCloseButton aria-label="Close sheet tool" onClick={onClose} /></header>
     <div className={styles.sheetToolBody}>
       {tool.kind === "columns" && <><p>Choose which fields to display. Hidden values are kept when you save or export.</p><div className={styles.sheetColumnChoices}>{labels.map((label, i) => <label key={label}><input type="checkbox" checked={!hidden.includes(i)} disabled={i === 0 || i === 2} onChange={e => onHidden(e.target.checked ? hidden.filter(n => n !== i) : [...hidden, i])}/>{label}{(i === 0 || i === 2) && <small>Always visible</small>}</label>)}</div></>}
@@ -66,7 +67,7 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
         <p>{targets.length} {targets.length === 1 ? "row" : "rows"} in scope · {changed.length} will change. Changes stay in the sheet until reviewed and saved.</p>
         {showPreview && <><div className={styles.tableWrap}><table><thead><tr><th>Part</th><th>Before</th><th>After</th></tr></thead><tbody>{changed.slice(0, 8).map(i => <tr key={i}><td>{rows[i][0] || `Row ${i + 1}`}</td><td>{rows[i][field] || "Empty"}</td><td>{next[i][field] || "Empty"}</td></tr>)}</tbody></table></div>{changed.length > 8 && <p>Showing the first 8 changes.</p>}{!!invalid.length && <p role="alert" className={styles.error}>Check rows {invalid.slice(0, 8).map(i => i + 1).join(", ")}: {bulkErrors[invalid[0]]?.[field] || "Part number cannot be empty."}</p>}</>}
       </>}
-      {tool.kind === "row" && rowMode === "choose" && <div className={styles.sheetRowChoices}><button onClick={() => setRowMode("edit")}>Edit part</button><button className={styles.sheetDelete} onClick={() => setRowMode("delete")}>Delete row</button></div>}
+      {tool.kind === "row" && rowMode === "choose" && <div className={styles.sheetRowChoices}><button type="button" data-detail="edit" onClick={() => setRowMode("edit")}><DetailIcon kind="edit"/><span><strong>Edit part</strong><small>Update this part’s details in the sheet.</small></span></button><button type="button" data-detail="delete" onClick={() => setRowMode("delete")}><DetailIcon kind="delete"/><span><strong>Delete row</strong><small>Remove this part from the draft sheet.</small></span></button></div>}
       {tool.kind === "row" && rowMode === "edit" && <div className={styles.sheetToolFields}>{labels.map((label, i) => <label key={label}>{i === 3 ? `Unit price (R, ${vatIncluded ? "incl." : "excl."} VAT)` : label}<input aria-label={`Edit row ${label}`} value={draft[i]} placeholder={i !== 0 && i !== 2 ? "Optional" : undefined} inputMode={i === 2 ? "numeric" : i === 3 ? "decimal" : undefined} onChange={e => {setDraft(draft.map((v, j) => j === i ? e.target.value : v));setError("");}}/></label>)}</div>}
       {tool.kind === "row" && rowMode === "delete" && <p>Remove this row from your draft sheet? The saved parts list changes only after you review and save. You can undo this removal in the sheet.</p>}
       {error && <p role="alert" className={styles.error}>{error}</p>}

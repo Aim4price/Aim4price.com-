@@ -675,6 +675,7 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Part number 1"]', e => e.value), 'ABC');
     await click("Undo");
     await page.click('[aria-label="Actions for row 1"]');
+    await page.screenshot({path:path.join(output,"part-action-choices.png")});
     await click("Edit part");
     await page.type('[aria-label="Edit row Description"]', ' changed');
     await click("Apply to sheet");
