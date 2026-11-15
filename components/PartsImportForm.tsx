@@ -81,7 +81,6 @@ export default function PartsImportForm({
   const mode = editSnapshot ? "replace" : "add";
   const [suffix, setSuffix] = useState("");
   const [trimNumbers, setTrimNumbers] = useState(false);
-  const [clearColumn, setClearColumn] = useState(3);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -346,13 +345,13 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {stage !== "choose" && stage !== "example" && (
+      {!editSnapshot && stage !== "choose" && stage !== "example" && (
         <ol className={styles.entrySteps} aria-label="Add parts steps">
-          {(editSnapshot ? ["Edit stock", "Review changes"] : ["Parts", "Settings", "Review"]).map((label, i) => (
+          {["Parts", "Settings", "Review"].map((label, i) => (
             <li
               key={label}
               aria-current={
-                (stage === "settings" ? 1 : stage === "review" ? (editSnapshot ? 1 : 2) : 0) === i
+                (stage === "settings" ? 1 : stage === "review" ? 2 : 0) === i
                   ? "step"
                   : undefined
               }
@@ -630,10 +629,8 @@ export default function PartsImportForm({
           )}
           {stage === "entry" && source !== "manual" && (
             <>
-              {editSnapshot ? <div className={styles.stockSheetIntro}>
-                <h3>Stock list</h3>
-                <p>Edit cells directly or paste a range from Excel or Google Sheets. Every row needs a part number and quantity. Changes are saved after review.</p>
-              </div> : <p>Paste cells from Excel / Sheets, or type below. Part number and quantity are required.</p>}
+              {!editSnapshot && <>
+              <p>Paste cells from Excel / Sheets, or type below. Part number and quantity are required.</p>
               <div className={styles.actions}>
                 <button
                   disabled={rows.length >= 20000}
@@ -669,24 +666,13 @@ export default function PartsImportForm({
                   Remove selected ({selected.length})
                 </button>
               </div>
-              {editSnapshot && <details className={styles.sheetBulkTools}>
-                <summary>Bulk row tools{selected.length > 0 ? ` · ${selected.length} selected` : ""}</summary>
-                <p>Select rows in the sheet to clear a column. Removing blank rows only removes empty lines.</p>
-                <div className={styles.actions}>
-                <label>Column to clear<select value={clearColumn} onChange={e => setClearColumn(Number(e.target.value))}>
-                  {PART_LABELS.map((label, i) => <option value={i} key={label}>{label}</option>)}
-                </select></label>
-                <button disabled={!selected.length} onClick={() => change(rows.map((r, i) => selectedSet.has(i) ? r.map((v, j) => j === clearColumn ? "" : v) : r))}>Clear selected cells</button>
-                <button disabled={!rows.some(r => r.every(v => !v.trim()))} onClick={() => {change(rows.filter(r => r.some(v => v.trim())), true);setSelected([]);setPage(0);}}>Remove blank rows</button>
-                </div>
-              </details>}
-              {editSnapshot && cleanupPanel}
+              </>}
               <div className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={styles.editorTable}>
                   <thead>
                     <tr>
-                      <th>
-                        <input
+                      <th scope="col">
+                        {editSnapshot ? "#" : <input
                           type="checkbox"
                           aria-label="Select all rows"
                           checked={
@@ -697,7 +683,7 @@ export default function PartsImportForm({
                               e.target.checked ? rows.map((_, i) => i) : [],
                             )
                           }
-                        />
+                        />}
                       </th>
                       {PART_LABELS.map((label, i) => (
                         <th key={label}>
@@ -713,7 +699,7 @@ export default function PartsImportForm({
                       return (
                         <tr key={i}>
                           <td>
-                            <input
+                            {!editSnapshot && <input
                               type="checkbox"
                               aria-label={`Select row ${i + 1}`}
                               checked={selected.includes(i)}
@@ -724,7 +710,7 @@ export default function PartsImportForm({
                                     : selected.filter((n) => n !== i),
                                 )
                               }
-                            />
+                            />}
                             <small>{i + 1}</small>
                           </td>
                           {row.map((cell, j) => (

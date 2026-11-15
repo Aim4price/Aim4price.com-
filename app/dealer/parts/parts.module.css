@@ -1590,23 +1590,18 @@
 }
 
 .stockSheet .stageBody { gap: 12px; min-width: 0; overflow-x: hidden; }
-.stockSheetIntro { display: grid; gap: 4px; }
-.stockSheetIntro h3, .stockSheetIntro p { margin: 0; }
-.stockSheetIntro h3 { font-size: 1rem; }
-.stockSheetIntro p { font-size: .9rem; }
 .stockSheet .stageBody > .actions { margin: 0; flex-wrap: wrap; }
 .entryModal .stockSheet .editorWrap { min-height: min(180px, 28dvh); max-width: 100%; }
-.sheetBulkTools, .numberCleanup {
+.numberCleanup {
   padding: 10px 14px;
   border: 1px solid var(--app-border, #cbded4);
   border-radius: 12px;
   background: var(--app-surface-soft, #f4f8f6);
   min-width: 0;
 }
-.sheetBulkTools summary, .numberCleanup summary { cursor: pointer; font-size: .9rem; font-weight: 750; }
-.sheetBulkTools p, .numberCleanupBody p { margin: 0; font-size: .9rem; }
-.sheetBulkTools[open] p, .numberCleanupBody { margin-top: 12px; }
-.sheetBulkTools .actions { align-items: end; flex-wrap: wrap; }
+.numberCleanup summary { cursor: pointer; font-size: .9rem; font-weight: 750; }
+.numberCleanupBody p { margin: 0; font-size: .9rem; }
+.numberCleanupBody { margin-top: 12px; }
 .numberCleanupBody { display: grid; gap: 12px; justify-items: start; }
 .numberCleanupFields { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
 .numberCleanupFields > label { flex: 1 1 175px; min-width: 0; }
