@@ -796,10 +796,17 @@ const appCode =
     await click('Undo');
     assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
     await click('Manage columns');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.$eval('[data-columns-body]',e=>e.scrollHeight<=e.clientHeight+1),'Column cards fit at laptop height');
+    assert.equal(await page.$$eval('[class*="manageColumnRow"]',e=>e.length),6);
     await page.screenshot({path:path.join(output,'manage-columns.png')});
     await page.click('[aria-label="Delete Dimensions column"]');
     await page.screenshot({path:path.join(output,'delete-column-confirmation.png')});
+    await click('Back');
+    assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020','Back preserves column values');
+    await page.click('[aria-label="Delete Dimensions column"]');
     await click('Delete column from sheet');
+    await page.setViewport({width:1440,height:1000});
     assert.equal(await page.$('[aria-label="Dimensions 1"]'),null);
     await click('Undo');
     assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
