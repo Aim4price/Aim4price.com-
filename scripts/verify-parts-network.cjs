@@ -614,7 +614,9 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Unit price 1"]',e=>e.value),'100');
     await page.click('[aria-label="Remove Brand from this part"]');
     assert.equal(await page.$('[aria-label="Brand 1"]'),null);
-    await click('+ Add detail'); await page.click('dialog[open] summary'); await click('Brand');
+    await click('+ Add detail');
+    await page.screenshot({path:path.join(output,'restore-fields.png')});
+    await page.click('[aria-label="Restore Brand"]');
     assert.equal(await page.$eval('[aria-label="Brand 1"]',e=>e.value),'');
     await page.type('[aria-label="Brand 1"]','Landini');
 

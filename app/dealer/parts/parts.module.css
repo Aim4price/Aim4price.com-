@@ -2031,9 +2031,8 @@
 .columnPicker .detailPickerChoices strong { font-size:1rem; font-weight:800; }
 .columnPicker .detailPickerChoices small { font-size:.88rem; font-weight:650; white-space:nowrap; }
 .modal.columnPicker .detailPickerChoices button:disabled { opacity:.5; cursor:default; }
-.detailRestoreInputs { margin-top:16px; }
-.detailRestoreInputs summary { cursor:pointer; font-weight:650; }
-.detailRestoreInputs > div { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; }
+.detailRestoreInputs { margin-top:4px; padding-top:22px; border-top:1px solid var(--app-border,#cbded4); }
+.detailRestoreInputs h3 { margin:0 0 16px; font-size:1rem; font-weight:750; color:var(--app-text,#163f32); }
 @media (max-width:1050px) {
   .columnPicker .detailPickerChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
