@@ -166,6 +166,22 @@ test("private network membership, import replacement and invitation lifecycle us
     "INSERT INTO parts_network_members(network_id,dealer_id,role,status,business_name,email) VALUES($1,$2,'admin','active','Dealer A',$3),($1,$4,'contributor','active','Dealer B',$5) ON CONFLICT(network_id,dealer_id) DO UPDATE SET business_name=excluded.business_name",
     [id, dealer.id, dealer.email, other.id, other.email],
   );
+  for (let i = 0; i < 65; i++) {
+    const part = `PAGE-${String(i).padStart(3, "0")}`;
+    await db.query("INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price) VALUES($1,$2,$3,$3,1,0)", [id, dealer.id, part]);
+  }
+  for (const size of [20, 40, 60]) {
+    const first = await network.partsData(dealer, id, "mine", "PAGE-", 0, false, size);
+    const next = await network.partsData(dealer, id, "mine", "PAGE-", 1, false, size);
+    assert.equal(first.rows.length, size);
+    assert.equal(first.total, 65);
+    assert.equal(next.rows.length, Math.min(size, 65 - size));
+    assert.equal(next.rows[0].part_number, `PAGE-${String(size).padStart(3, "0")}`);
+  }
+  assert.equal((await network.partsData(dealer, id, "mine", "PAGE-", 3, false, "all")).rows.length, 65);
+  assert.equal((await network.partsData(dealer, id, "mine", "PAGE-064", 0, false, 20)).total, 1);
+  assert.equal((await network.partsData(dealer, id, "mine", "PAGE-", 2, true, 20)).rows.length, 65);
+  await db.query("DELETE FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2", [id, dealer.id]);
   const input = {
     csv: "Part number,Qty,Price\n001,3,12\n002,4,14",
     columns,

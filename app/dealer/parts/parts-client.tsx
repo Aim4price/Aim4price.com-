@@ -16,6 +16,7 @@ import {
   workspaceStyles,
 } from "../../../components/WorkspacePrimitives";
 import PartsImportForm from "../../../components/PartsImportForm";
+import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import VatPriceInput from "../../../components/VatPriceInput";
@@ -234,6 +235,9 @@ export default function PartsClient({
     [staff, setStaff] = useState(true),
     [desktop, setDesktop] = useState(false),
     [contribute, setContribute] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listPageSize, setListPageSize] = useState<ListPageSize>(6);
+  const [partsPageSize, setPartsPageSize] = useState<20 | 40 | 60 | "all">(20);
   const [accessLoading, setAccessLoading] = useState(false);
   const [view, setView] = useState("search"),
     [search, setSearch] = useState(""),
@@ -342,6 +346,11 @@ export default function PartsClient({
     current?.role !== "viewer" &&
     active &&
     (!current?.list_mode || current.owned);
+  const filteredLists = networks.filter(n => n.name.toLowerCase().includes(listSearch.trim().toLowerCase()));
+  const listPageCount = listPageSize === "all" ? 1 : Math.max(1, Math.ceil(filteredLists.length / listPageSize));
+  const visibleListPage = Math.min(listPage, listPageCount);
+  const visibleLists = listPageSize === "all" ? filteredLists : filteredLists.slice((visibleListPage - 1) * listPageSize, visibleListPage * listPageSize);
+  useEffect(() => { setListPage(1); }, [listSearch]);
   const latest = useRef(0);
   const initialViewSet = useRef(false);
   const loadNetworks = useCallback(async () => {
@@ -373,8 +382,8 @@ export default function PartsClient({
   useEffect(() => {
     const request = ++latest.current;
     setRows([]);
-    setTotal(0);
     if (!network || !active || !opened) {
+      setTotal(0);
       setLoading(false);
       return;
     }
@@ -382,13 +391,15 @@ export default function PartsClient({
     const timer = setTimeout(() => {
       void api(
         undefined,
-        `?network=${network}&view=${view}&search=${encodeURIComponent(search)}&page=${page}`,
+        `?network=${network}&view=${view}&search=${encodeURIComponent(search)}&page=${page}&pageSize=${partsPageSize}`,
       )
         .then((d) => {
           if (request !== latest.current) return;
           setRows(d.rows || []);
           setRowRevision(d.member?.revision ?? null);
           setTotal(d.total || 0);
+          const lastPage = partsPageSize === "all" ? 0 : Math.max(0, Math.ceil((d.total || 0) / partsPageSize) - 1);
+          if (page > lastPage) setPage(lastPage);
           setError("");
         })
         .catch((e) => {
@@ -399,7 +410,7 @@ export default function PartsClient({
         });
     }, 250);
     return () => clearTimeout(timer);
-  }, [network, active, view, search, page, refresh, opened]);
+  }, [network, active, view, search, page, partsPageSize, refresh, opened]);
   useEffect(() => {
     if (modal !== "access" || !network || !admin) return;
     let cancelled = false;
@@ -586,13 +597,7 @@ export default function PartsClient({
               }}
             />}
             <div className={styles.cards}>
-              {networks
-                .filter((n) =>
-                  n.name
-                    .toLowerCase()
-                    .includes(listSearch.trim().toLowerCase()),
-                )
-                .map((n) => (
+              {visibleLists.map((n) => (
                   <article
                     key={n.id}
                     className={styles.card}
@@ -678,6 +683,7 @@ export default function PartsClient({
                   </article>
                 ))}
             </div>
+            <ListPagination label="Stocklists pagination" page={visibleListPage} pageCount={listPageCount} pageSize={listPageSize} onPageChange={setListPage} onPageSizeChange={size => { setListPageSize(size); setListPage(1); }} />
             {!loading &&
               !networks.some((n) =>
                 n.name.toLowerCase().includes(listSearch.trim().toLowerCase()),
@@ -848,22 +854,8 @@ export default function PartsClient({
                     <small>
                       Confirm availability and price with the dealer.
                     </small>
-                    {total > 50 && <div className={styles.actions}>
-                      <button
-                        disabled={loading || page === 0}
-                        onClick={() => setPage((p) => p - 1)}
-                      >
-                        Previous
-                      </button>
-                      <span>Page {page + 1}</span>
-                      <button
-                        disabled={loading || (page + 1) * 50 >= total}
-                        onClick={() => setPage((p) => p + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>}
                   </div>
+                  <ListPagination label="Parts pagination" page={page + 1} pageCount={partsPageSize === "all" ? 1 : Math.max(1, Math.ceil(total / partsPageSize))} pageSize={partsPageSize} pageSizeOptions={[20, 40, 60, "all"] as const} disabled={loading} onPageChange={next => setPage(next - 1)} onPageSizeChange={size => { setPartsPageSize(size); setPage(0); }} />
                 </>
               )}
 

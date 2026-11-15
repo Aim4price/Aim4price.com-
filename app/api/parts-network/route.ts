@@ -100,6 +100,7 @@ export async function GET(request: NextRequest) {
         q.get("search") || "",
         Number(q.get("page") || 0),
         q.get("download") === "true",
+        q.get("pageSize") === "all" ? "all" : Number(q.get("pageSize") || 50),
       ),
     );
   } catch (e) {
