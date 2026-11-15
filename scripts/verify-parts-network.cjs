@@ -593,6 +593,7 @@ const appCode =
     await click("Review parts");
     await page.waitForFunction(() => document.body.innerText.includes('reviewed rows'));
     await click("Save & add another");
+    await page.waitForSelector('[aria-label="Part number 1"]');
     const added=actions.filter(a=>a.action==='import').at(-1);
     assert.equal(added.extraFields[0].id,'compatibility');
     assert.equal(parser.parsePartsSnapshot(added.csv,added.columns,added.options)[0].details.compatibility,'Landini 100');
