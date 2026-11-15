@@ -395,7 +395,8 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modal, /function AssetGroupMemberSelect/);
   assert.match(modal, /createPortal/);
   assert.match(modal, /type AssetGroupEditorStep = 1 \| 2 \| 3/);
-  assert.match(modal, /function AssetGroupEditorProgress/);
+  assert.doesNotMatch(modal, /AssetGroupEditorProgress|Umbrella setup progress/);
+  assert.match(modal, /!group && !isAssetPickerStep \? <p className=\{styles.intro\}/);
   assert.match(modal, /Complete one short step at a time/);
   assert.match(modal, /editorStep === 1/);
   assert.match(modal, /editorStep === 2/);
@@ -411,8 +412,6 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.doesNotMatch(modal, /<select value=\{asset\.id === primaryAssetId/);
   assert.match(modalStyles, /\.memberSelectMenu \{[\s\S]*?position: fixed;[\s\S]*?z-index: 1400;/);
   assert.match(modalStyles, /\.memberSelectOptionActive/);
-  assert.match(modalStyles, /\.wizardProgress \{[\s\S]*?display: flex;[\s\S]*?width: 100%;[\s\S]*?max-width: none;/);
-  assert.match(modalStyles, /\.wizardProgressStep:not\(:last-child\)::after \{[\s\S]*?flex: 1 1 auto;[\s\S]*?margin: 0 18px;/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuDanger \{[\s\S]*?grid-column: 1 \/ -1;/);
   assert.doesNotMatch(modalStyles, /\.wizardPanel \{[\s\S]*?min-height: clamp\(20rem, (?:calc\(var\(--website-design-vh(?:, 1vh)?\) \* 43\)|calc\(var\(--website-visible-height(?:, 100vh)?\) \* 0\.43\)), 29rem\)/);
   assert.match(modalStyles, /\.wizardFooter/);
@@ -721,8 +720,6 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   assert.match(groupModalStyles, /\.header \{[\s\S]*?padding: 28px 36px 24px;/);
   assert.match(groupModalStyles, /\.header h2 \{[\s\S]*?font-size: clamp\(28px, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\), 38px\);[\s\S]*?line-height: 1\.04;/);
   assert.match(groupModalStyles, /\.body \{[\s\S]*?padding: 26px 36px 30px;/);
-  assert.match(groupModalStyles, /\.wizardProgressStep > span \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 900;/);
-  assert.match(groupModalStyles, /\.wizardProgressStep > strong \{[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 850;/);
   assert.match(groupModalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px;[\s\S]*?font-weight: 900;/);
   assert.match(groupModalStyles, /\.footer \{[\s\S]*?padding: 18px 36px max\(24px, env\(safe-area-inset-bottom\)\);/);
   assert.match(styles, /\.assetDisposalProgressFour \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
