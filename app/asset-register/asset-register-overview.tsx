@@ -818,7 +818,6 @@ export default function AssetRegisterOverview() {
         >
           <div className={styles.messagePanel}>
             <div className={styles.messageContext}>
-              <span className={`${styles.categoryIcon} ${categoryClassName(openItem.category)}`}>{categoryIcon(openItem.category)}</span>
               <span className={styles.messageCategory}>{categoryLabel(openItem.category)}</span>
               <span className={styles.messageStatus}>{openItem.status}</span>
             </div>

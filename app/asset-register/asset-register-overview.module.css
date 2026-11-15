@@ -555,7 +555,6 @@
 .messageNotedButton { border: 1px solid #12684e; background: #12684e; color: #fff; }
 .messageNotedButton:disabled, .messageAssetLink[aria-disabled=true] { opacity: .55; cursor: wait; }
 .messageAssetLink:focus-visible, .messageNotedButton:focus-visible { outline: 3px solid #229970; outline-offset: 3px; }
-.messageContext { align-items: center; color: var(--app-muted, #5c7067); font-size: .95rem; font-weight: 700; }
 .messageHint { margin: 1.5rem 0 0; color: var(--app-muted, #5c7067); font-size: .88rem; line-height: 1.6; }
 
 /* Overview messages keep the shared dialog controls and a comfortable reading width. */
@@ -563,33 +562,38 @@
   width: min(48rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 40px))) !important;
 }
 .messagePanel {
-  padding: 1.5rem;
-  border: 1px solid var(--app-line, #c9ded4);
-  border-radius: 1.1rem;
-  background: var(--app-surface-soft, #f2f8f5);
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  border: 1px solid var(--app-line, #b9d5c9);
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--app-surface-soft, #e7f1ec));
   color: var(--app-text, #193c2f);
 }
 .messageContext {
   display: flex;
   flex-wrap: wrap;
-  gap: .65rem;
-  margin-bottom: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+  margin-bottom: 1.1rem;
 }
-.messageContext .categoryIcon { flex: 0 0 auto; }
-.messageCategory { color: var(--app-text, #193c2f); font-weight: 750; }
+.messageCategory {
+  color: var(--app-text, #193c2f);
+  font-size: .8rem;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 .messageStatus {
-  margin-left: auto;
-  padding: .35rem .7rem;
-  border: 1px solid var(--app-line, #c9ded4);
-  border-radius: .65rem;
-  background: var(--app-surface, #fff);
+  color: var(--app-muted, #50675c);
   font-size: .85rem;
+  font-weight: 650;
+  line-height: 1.5;
 }
 .messagePanel > p {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
   font-weight: 500;
-  line-height: 1.75;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -599,11 +603,12 @@
   padding-top: 1rem;
   border-top: 1px solid var(--app-line, #c9ded4);
   color: var(--app-muted, #5c7067);
-  font-size: .9rem;
-  line-height: 1.5;
+  font-size: .85rem;
+  font-weight: 500;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.messageHint { margin-top: 1rem; }
+.messageHint { margin-top: 1.1rem; max-width: 65ch; font-size: .82rem; }
 
 /* The hint sits directly on the desktop background, outside the light cards. */
 :global(html[data-background='dark']) .overviewHint,
