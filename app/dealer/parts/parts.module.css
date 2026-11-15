@@ -1589,13 +1589,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) > .entryFooter { margin-top: 12px; padding-top: 12px; }
 }
 
-.stockSheet .stageBody { gap: 12px; min-width: 0; overflow-x: hidden; }
+.stockSheet .stageBody {
+  gap: 12px;
+  min-width: 0;
+  overflow-x: hidden;
+  padding: 2px 12px 12px 3px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #648b7a transparent;
+}
 .stockSheetIntro { display: grid; gap: 4px; }
 .stockSheetIntro h3, .stockSheetIntro p { margin: 0; }
 .stockSheetIntro h3 { font-size: 1rem; }
 .stockSheetIntro p { font-size: .9rem; }
 .stockSheet .stageBody > .actions { margin: 0; flex-wrap: wrap; }
-.entryModal .stockSheet .editorWrap { min-height: min(180px, 28dvh); max-width: 100%; }
+/* The sheet body scrolls vertically; the table wrapper only needs to pan across columns. */
+.entryModal .stockSheet .editorWrap {
+  max-height: none;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #648b7a transparent;
+}
 .sheetBulkTools, .numberCleanup {
   padding: 10px 14px;
   border: 1px solid var(--app-border, #cbded4);
