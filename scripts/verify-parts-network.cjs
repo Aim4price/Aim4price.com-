@@ -125,6 +125,7 @@ const appCode =
       actions = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setViewport({ width: 1440, height: 1000 });
+    let paginationFixture = false;
     let emptyFixture = false;
     let longPickerFixture = false;
     let viewerFixture = false;
@@ -235,7 +236,15 @@ const appCode =
           const rows = [row, ...Array.from({length: 41}, (_, i) => ({...row, part_number: "TEST-" + i}))];
           data = {rows, total: rows.length, member: {...network, revision: 0}};
         }
+        else if (paginationFixture) {
+          const all = Array.from({length:65}, (_, i) => ({...row, part_number:`PAGE-${String(i).padStart(3, "0")}`}));
+          const filtered = all.filter(r => r.part_number.includes(url.searchParams.get("search") || ""));
+          const size = url.searchParams.get("pageSize") === "all" ? filtered.length : Number(url.searchParams.get("pageSize") || 50);
+          const start = Number(url.searchParams.get("page") || 0) * size;
+          data = {rows: filtered.slice(start, start + size), total:filtered.length, member:{...network,revision:0}};
+        }
         else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1, member:{...network,revision:0} };
+        if (paginationFixture && data.networks) data.networks.push(...Array.from({length:15}, (_,i)=>({...network,id:`extra-${i}`,name:`Extra stocklist ${i}`})));
         return r.respond({
           contentType: "application/json",
           body: JSON.stringify(data),
@@ -278,6 +287,22 @@ const appCode =
     await page.waitForFunction(
       () => document.querySelectorAll("article").length === 4,
     );
+
+    paginationFixture = true;
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(() => document.querySelectorAll("article").length === 6);
+    await page.click('[aria-label="Stocklists pagination"] [aria-label="Next page"]');
+    await page.waitForFunction(() => document.querySelector('[aria-label="Stocklists pagination"]').textContent.includes("Page 2 of 4"));
+    await page.type('input[aria-label="Search parts lists"]', "John Deere");
+    await page.waitForFunction(() => document.querySelectorAll("article").length === 1);
+    assert.match(await page.$eval('[aria-label="Stocklists pagination"]', e=>e.textContent), /Page 1 of 1/);
+    await page.click('input[aria-label="Search parts lists"]', {clickCount:3});
+    await page.keyboard.press("Backspace");
+    await page.click('[aria-label="Stocklists pagination"] [aria-label="Show all per page"]');
+    await page.waitForFunction(() => document.querySelectorAll("article").length === 19);
+    paginationFixture = false;
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForSelector("article");
 
     const click = async (text) => {
       await page.waitForFunction(t => [...document.querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
@@ -355,6 +380,19 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Display prices with or without VAT"] button:nth-child(2)',e=>e.getAttribute('aria-pressed')),'true');
     await page.click('[aria-label="Display prices with or without VAT"] button:first-child');
     assert.match(await priceText(), /850[.,]00/);
+    paginationFixture = true;
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForFunction(() => document.querySelectorAll("tbody tr").length === 20);
+    await page.click('[aria-label="Parts pagination"] [aria-label="Next page"]');
+    await page.waitForFunction(() => document.querySelector("tbody")?.textContent.includes("PAGE-020"));
+    for (const size of [40,60,"all"]) {
+      await page.click(`[aria-label="Parts pagination"] [aria-label="Show ${size} per page"]`);
+      await page.waitForFunction(n => document.querySelectorAll("tbody tr").length === n, {}, size === "all" ? 65 : size);
+    }
+    await page.screenshot({path:path.join(output,"parts-pagination.png")});
+    paginationFixture = false;
+    await page.reload({waitUntil:"domcontentloaded"});
+    await page.waitForSelector("tbody tr");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
     assert.ok(await page.$$eval('thead th',els=>els.every(e=>getComputedStyle(e).textAlign==='center')));
     await page.evaluate(()=>{URL.createObjectURL=blob=>{window.exportBlob=blob;return 'blob:fixture';};HTMLAnchorElement.prototype.click=function(){};});
