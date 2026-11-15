@@ -19,6 +19,7 @@ import { AddPartField, PartDetailInputs } from "../../../components/PartsDetailF
 import type { PartDetailField } from "../../../lib/parts-network-csv";
 import PartsImportForm from "../../../components/PartsImportForm";
 import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
+import PartsChoice from "../../../components/PartsChoice";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import VatPriceInput from "../../../components/VatPriceInput";
@@ -175,6 +176,7 @@ function Modal({
   destructive = false,
   download = false,
   access = false,
+  sharing = false,
   progress,
   children,
 }: {
@@ -187,6 +189,7 @@ function Modal({
   destructive?: boolean;
   download?: boolean;
   access?: boolean;
+  sharing?: boolean;
   progress?: { value: number; label: string };
   onClose: () => void;
   busy: boolean;
@@ -204,7 +207,7 @@ function Modal({
     <div className={styles.backdrop} data-website-overlay>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${edit ? styles.partEditorModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""} ${access ? styles.accessModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${edit ? styles.partEditorModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""} ${access ? styles.accessModal : ""} ${sharing ? styles.partsShareModal : ""}`}
         data-download-dialog={download ? "true" : undefined}
         role="dialog"
         aria-describedby={destructive ? "delete-parts-copy" : undefined}
@@ -292,7 +295,7 @@ export default function PartsClient({
     [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
-  const [recipients, setRecipients] = useState<{email:string;business_name:string;town_city:string}[]>([]);
+  const [recipients, setRecipients] = useState<{email:string;business_name:string;town_city:string;account_type?:string;can_contribute?:boolean}[]>([]);
   const [recipientSearch, setRecipientSearch] = useState('');
   const [recipientsLoading, setRecipientsLoading] = useState(false);
   useEffect(()=>{
@@ -1095,7 +1098,7 @@ export default function PartsClient({
               <button
                 data-tone="amber"
                 onClick={() => {
-                  setChannel("link"); setInviteEmail("");
+                  setChannel("link"); setInviteEmail(""); setInviteRole("viewer");
                   setModal("invite");
                 }}
               >
@@ -1107,7 +1110,7 @@ export default function PartsClient({
               </button>
               <button
                 onClick={() => {
-                  setChannel("direct"); setInviteEmail(""); setRecipientSearch("");
+                  setChannel("direct"); setInviteEmail(""); setInviteRole("viewer"); setRecipientSearch("");
                   setModal("invite");
                 }}
               >
@@ -1134,7 +1137,8 @@ export default function PartsClient({
         )}
         {modal === "invite" && (
           <Modal
-            title={channel === "link" ? "Send link" : "Inside Aim4price"}
+            sharing
+            title={channel === "link" ? "Send link" : "Choose a dealer or business"}
             subtitle={current?.name}
             onClose={close}
             busy={busy}
@@ -1166,34 +1170,50 @@ export default function PartsClient({
               </>
             ) : (
               <>
-                <div className={styles.grid}>
-                  {channel==='direct' ? <div>
-                    <label>Find a dealer or business<input aria-label="Find sharing recipient" value={recipientSearch} onChange={e=>setRecipientSearch(e.target.value)} placeholder="Business name or email"/></label>
-                    <label>Paid Aim4price account<select aria-label="Sharing recipient" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}><option value="">{recipientsLoading?'Loading accounts…':'Choose an account'}</option>{inviteEmail&&!recipients.some(r=>r.email===inviteEmail)&&<option value={inviteEmail}>{inviteEmail}</option>}{recipients.map(r=><option key={r.email} value={r.email}>{r.business_name||r.email}{r.town_city?` · ${r.town_city}`:''} — {r.email}</option>)}</select></label>
-                    {!recipientsLoading&&!recipients.length&&<small>No matching paid accounts. Use a private link for other recipients.</small>}
-                  </div> : <label>Recipient email<input type="email" autoComplete="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)}/></label>}
-                  <label>
-                    Access
-                    <select
-                      value={inviteRole}
-                      onChange={(e) => setInviteRole(e.target.value)}
-                    >
-                      {!current?.list_mode && (
-                        <option value="contributor">Contribute parts</option>
-                      )}
-                      <option value="viewer">View parts and enquire</option>
-                      {!current?.list_mode && (
-                        <option value="admin">Manage sharing</option>
-                      )}
-                    </select>
-                  </label>
+                <div className={styles.shareRecipientSection}>
+                  {channel === 'direct' ? <>
+                    <label className={styles.shareSearch}>Find a dealer or business<input aria-label="Find sharing recipient" value={recipientSearch} onChange={e=>{setRecipientSearch(e.target.value);setInviteEmail("");setInviteRole("viewer");}} placeholder="Search business name, email or town"/></label>
+                    <div className={styles.shareRecipientResults} aria-label="Sharing recipients" aria-busy={recipientsLoading}>
+                      <p role="status">{recipientsLoading ? "Searching accounts…" : `${recipients.length}${recipients.length === 50 ? "+" : ""} ${recipients.length === 1 ? "account" : "accounts"}`}</p>
+                      {!recipientsLoading && recipients.map(r=><button type="button" key={r.email} className={styles.shareRecipientCard} aria-pressed={inviteEmail===r.email} onClick={()=>{setInviteEmail(r.email);setInviteRole("viewer");}}>
+                        <span className={styles.shareAccountIcon} aria-hidden="true"><Icon kind="share"/></span>
+                        <span><strong>{r.business_name || r.email}</strong><small>{r.email}</small></span>
+                        <span><strong>{r.town_city || "Location not provided"}</strong><small>{r.account_type === "business" ? "Business account" : "Dealer account"}</small></span>
+                        <span className={styles.shareSelectBadge}>{inviteEmail===r.email ? "Selected" : "Select"}</span>
+                      </button>)}
+                      {!recipientsLoading && !recipients.length && <p>No matching dealer or business accounts. Try another name or town, or use Send link.</p>}
+                    </div>
+                  </> : <label>Recipient email<input type="email" autoComplete="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="name@business.co.za"/></label>}
+                  <PartsChoice label="Their access" value={inviteRole} onChange={setInviteRole} options={[
+                    {value:"viewer",label:"View and enquire",hint:"View and download parts, and send enquiries. Cannot edit parts or manage sharing."},
+                    ...(!current?.list_mode ? [
+                      {value:"contributor",label:"View and contribute",hint:"View, enquire and update their own dealership’s parts. Cannot manage sharing.",disabled:channel==='direct' && !recipients.find(r=>r.email===inviteEmail)?.can_contribute},
+                      {value:"admin",label:"View, contribute and manage sharing",hint:"Also invite accounts, approve access and manage network members.",disabled:channel==='direct' && !recipients.find(r=>r.email===inviteEmail)?.can_contribute}
+                    ] : [])
+                  ]}/>
+                  {current?.list_mode && <p className={styles.shareAccessNote}>Editing this stocklist and managing its sharing stay with the owner.</p>}
                 </div>
                 <p>
                   {channel === "direct"
                     ? "Only this account can accept the share inside Aim4price."
                     : "Only this email can accept the link. They sign in, verify their email and wait for your approval."}
                 </p>
-                <button
+
+              </>
+            )}
+            <div className={styles.modalFooter}>
+              <button
+                disabled={busy}
+                onClick={() => {
+                  setInviteUrl("");
+                  setError("");
+                  setNotice("");
+                  setModal("share");
+                }}
+              >
+                Back
+              </button>
+              {!inviteUrl && (<button
                   className={styles.primary}
                   disabled={busy || !inviteEmail}
                   onClick={() =>
@@ -1219,21 +1239,7 @@ export default function PartsClient({
                   {channel === "link"
                     ? "Create sharing link"
                     : "Share inside Aim4price"}
-                </button>
-              </>
-            )}
-            <div className={styles.modalFooter}>
-              <button
-                disabled={busy}
-                onClick={() => {
-                  setInviteUrl("");
-                  setError("");
-                  setNotice("");
-                  setModal("share");
-                }}
-              >
-                Back
-              </button>
+                </button>)}
             </div>
             {feedback}
           </Modal>

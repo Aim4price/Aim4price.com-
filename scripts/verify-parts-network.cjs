@@ -946,8 +946,13 @@ const appCode =
     await page.goto("https://example.test/parts");
     await click("Share");
     await click("Inside Aim4price");
-    await page.waitForFunction(()=>document.querySelector('[aria-label="Sharing recipient"] option[value="buyer@example.test"]'));
-    await page.select('[aria-label="Sharing recipient"]', 'buyer@example.test');
+    await click('Buyer Dealer');
+    assert.equal(await page.$eval('[aria-label="Sharing recipients"] button', el=>el.getAttribute('aria-pressed')), 'true');
+    assert.equal(await page.$$eval('[class*=partsShareModal] select', els=>els.length), 0);
+    await page.screenshot({path:path.join(output,'share-recipient-picker.png')});
+    await page.setViewport({width:390,height:740});
+    await page.screenshot({path:path.join(output,'share-recipient-phone.png')});
+    await page.setViewport({width:1440,height:1000});
     await click("Share inside Aim4price");
     await page.waitForFunction(() =>
       document.body.innerText.includes("Shared inside Aim4price."),

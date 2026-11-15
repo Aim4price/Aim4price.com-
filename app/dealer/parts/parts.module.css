@@ -1974,3 +1974,30 @@
   .modal.marketplaceChoiceModal .detailPickerChoices button,
   .modal.marketplaceChoiceModal .sheetRowChoices button { padding:14px; gap:12px; }
 }
+
+/* Account discovery and permissions in the parts sharing flow. */
+.partsShareModal { width:min(1100px, calc(100vw - 40px)); }
+.shareRecipientSection { display:grid; gap:24px; }
+.shareSearch { padding:16px; border:1px solid var(--app-line, #d0dfd8); border-radius:18px; background:var(--app-surface-soft, #f3f8f5); }
+.shareSearch input { margin-top:10px; }
+.shareRecipientResults { display:grid; gap:12px; max-height:280px; overflow-y:auto; padding:4px 16px 8px 4px; scrollbar-gutter:stable; }
+.shareRecipientResults > p { margin:0; font-size:14px; font-weight:650; }
+.modal button.shareRecipientCard { display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,0.7fr) auto; align-items:center; gap:18px; padding:20px; text-align:left; border-radius:18px; background:var(--app-surface, #fff); border:1px solid var(--app-line, #c7dcd1); }
+.shareRecipientCard > span { min-width:0; }
+.shareRecipientCard strong, .shareRecipientCard small { display:block; overflow-wrap:anywhere; }
+.shareRecipientCard strong { font-size:16px; font-weight:800; line-height:1.35; }
+.shareRecipientCard small { margin-top:5px; font-size:13px; font-weight:650; color:var(--app-muted, #64746a); line-height:1.4; }
+.shareAccountIcon { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--app-info-line, #bdd5f0); border-radius:12px; background:var(--app-info-soft, #edf5ff); }
+.shareSelectBadge { border:1px solid var(--app-line, #b4d1c1); border-radius:12px; padding:12px 18px; font-weight:750; }
+.modal button.shareRecipientCard[aria-pressed="true"] { border-color:var(--app-primary, #17654c); background:var(--app-success-soft, #e3f2ec); }
+.shareRecipientCard[aria-pressed="true"] .shareSelectBadge { background:var(--app-primary, #17654c); color:#fff; }
+.partsShareModal .partsChoiceOptions { grid-template-columns:1fr; }
+.partsShareModal .partsChoiceOptions label { padding:18px; }
+.shareAccessNote { margin:0; padding:14px 18px; border-left:3px solid var(--app-info, #265b87); background:var(--app-info-soft, #eef5fc); font-size:14px; line-height:1.5; }
+.partsShareModal > p { margin:24px 0; line-height:1.6; }
+.partsShareModal .modalFooter { margin-top:24px; padding-top:20px; }
+@media (max-width:600px) {
+  .modal button.shareRecipientCard { grid-template-columns:36px minmax(0,1fr); padding:14px; gap:12px; }
+  .shareRecipientCard > span:nth-child(3), .shareSelectBadge { grid-column:2; }
+  .shareAccountIcon { width:36px; height:36px; }
+}
