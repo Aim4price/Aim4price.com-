@@ -82,6 +82,7 @@ export async function GET(request: NextRequest) {
       const vat = included ? "Incl. VAT" : "Excl. VAT";
       const title = (q.get("title") || "Parts stock list").slice(0, 150);
       const rows = (data.rows || []).map(row => ({
+        details:Object.fromEntries((data.fields || []).filter(f=>row.details?.[f.id]).map(f=>[f.label+(f.private ? " (private)" : ""),row.details[f.id]])),
         part: row.part_number, description: row.description || "", brand: row.brand || "", quantity: row.quantity,
         price: row.price === null ? null : Number((Number(row.price) * (row.vat_included === included ? 1 : included ? 1.15 : 1 / 1.15)).toFixed(2)),
         vat, dealer: row.business_name, town: row.town || "",

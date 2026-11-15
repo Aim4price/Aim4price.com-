@@ -1730,7 +1730,7 @@
 .sheetToolFields label { display:flex; flex-direction:column; gap:8px; font-weight:700; }
 .sheetToolFields input, .sheetToolFields select { width:100%; min-width:0; padding:12px; border:1px solid var(--app-border, #cbded4); border-radius:12px; background:var(--app-surface-soft, #edf5f1); color:inherit; font:inherit; }
 .sheetColumnChoices { display:grid; gap:16px; }
-.sheetColumnChoices label, .sheetToolFields .sheetCheck { display:flex; flex-direction:row; align-items:center; gap:12px; font-weight:650; }
+.sheetColumnChoices label, .sheetToolFields .sheetCheck, .detailFieldSettings .sheetCheck { display:flex; flex-direction:row; align-items:center; gap:12px; font-weight:650; }
 .sheetColumnChoices small { margin-left:auto; color:var(--app-text-muted, #61766c); }
 .sheetToolDialog input[type="checkbox"] { width:18px; height:18px; min-height:18px; flex:0 0 18px; accent-color:var(--app-primary, #17654c); }
 .sheetToolFooter { display:flex; justify-content:flex-end; gap:12px; padding-top:18px; border-top:1px solid var(--app-border, #cbded4); }
@@ -1807,3 +1807,14 @@
 .entryModal .stockSheet .editorTable .sheetRowAction:focus-visible { outline:2px solid var(--app-primary, #17654c); outline-offset:2px; }
 .entryModal .stockSheet .editorTable tr[data-selected] td { background:var(--app-surface-soft, #e4f2eb); box-shadow:inset 0 1px var(--app-border, #b6d3c4),inset 0 -1px var(--app-border, #b6d3c4); }
 .entryModal .stockSheet .editorTable tr[data-selected] input:not([type="checkbox"]) { background:var(--app-surface-soft, #e4f2eb); }
+
+.detailFieldChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.detailFieldChoices button { display:flex; flex-direction:column; align-items:flex-start; gap:8px; text-align:left; padding:18px; min-height:88px; border:1px solid var(--app-border,#b8d3c5); background:var(--app-surface-soft,#edf5f0); border-radius:16px; }
+.detailFieldChoices button[aria-pressed="true"] { border-color:var(--app-primary,#17654c); box-shadow:inset 0 0 0 1px var(--app-primary,#17654c); }
+.detailFieldChoices span { font-size:12px; font-weight:500; color:var(--app-muted,#60776b); }
+.detailFieldSettings { display:grid; gap:18px; padding-top:24px; }
+.detailFieldSettings p { margin:0; line-height:1.6; }
+.partExtraDetails { display:grid; gap:6px; margin-top:10px; font-size:12px; text-align:left; }
+.partExtraDetails span { overflow-wrap:anywhere; }
+.partExtraDetails strong { font-weight:700; }
+@media(max-width:600px) { .detailFieldChoices { grid-template-columns:1fr; } }

@@ -15,6 +15,8 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../../components/WorkspacePrimitives";
+import { AddPartField, PartDetailInputs } from "../../../components/PartsDetailFields";
+import type { PartDetailField } from "../../../lib/parts-network-csv";
 import PartsImportForm from "../../../components/PartsImportForm";
 import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
 import PartsInbox from "../../../components/PartsInbox";
@@ -46,6 +48,7 @@ type Network = {
   vat_included: boolean;
 };
 type Row = {
+  details?: Record<string,string>;
   dealer_id: string;
   part_number: string;
   quantity: number;
@@ -238,6 +241,7 @@ export default function PartsClient({
   const [listPage, setListPage] = useState(1);
   const [listPageSize, setListPageSize] = useState<ListPageSize>(6);
   const [partsPageSize, setPartsPageSize] = useState<20 | 40 | 60 | "all">(20);
+  const [detailFields,setDetailFields] = useState<PartDetailField[]>([]);
   const [accessLoading, setAccessLoading] = useState(false);
   const [view, setView] = useState("search"),
     [search, setSearch] = useState(""),
@@ -298,10 +302,10 @@ export default function PartsClient({
   const [rowRevision, setRowRevision] = useState<number | null>(null);
   const [importStage, setImportStage] = useState("choose");
   const [editStep, setEditStep] = useState<"intent" | "add" | "edit" | "picker" | "sheet">("intent");
-  const [stock, setStock] = useState<{rows: Row[]; revision: number} | null>(null);
+  const [stock, setStock] = useState<{rows: Row[]; revision: number; fields:PartDetailField[]} | null>(null);
   const [partQuery, setPartQuery] = useState("");
   const [fromPicker, setFromPicker] = useState(false);
-  const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean} | null>(null);
+  const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean;details:Record<string,string>;extraFields:PartDetailField[]} | null>(null);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
   const [enquiryPage, setEnquiryPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<Row[]>([]);
@@ -396,6 +400,7 @@ export default function PartsClient({
         .then((d) => {
           if (request !== latest.current) return;
           setRows(d.rows || []);
+          setDetailFields(d.fields || []);
           setRowRevision(d.member?.revision ?? null);
           setTotal(d.total || 0);
           const lastPage = partsPageSize === "all" ? 0 : Math.max(0, Math.ceil((d.total || 0) / partsPageSize) - 1);
@@ -443,14 +448,14 @@ export default function PartsClient({
     setError("");
     setFromPicker(picker);
     setModal(null);
-    setEditingPart({originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(Number(r.price) / (r.vat_included ? 1.15 : 1)),priceIncluded:r.vat_included,storedVatIncluded:r.vat_included,brand:r.brand || "",description:r.description || "",revision:revision});
+    setEditingPart({details:r.details || {},extraFields:picker ? stock?.fields || detailFields : detailFields,originalPartNumber:r.part_number,partNumber:r.part_number,quantity:String(r.quantity),price:r.price === null ? "" : String(Number(r.price) / (r.vat_included ? 1.15 : 1)),priceIncluded:r.vat_included,storedVatIncluded:r.vat_included,brand:r.brand || "",description:r.description || "",revision:revision});
   }
   async function openStockEditor(step: "picker" | "sheet") {
     await run(async () => {
       const data = await api(undefined, `?network=${encodeURIComponent(network)}&view=mine&download=true`);
       if (!Number.isInteger(data.member?.revision) || !Array.isArray(data.rows) || data.total !== data.rows.length)
         throw new Error("Could not load the complete parts list. Try again.");
-      setStock({rows: data.rows, revision: data.member.revision});
+      setStock({rows: data.rows, revision: data.member.revision,fields:data.fields || []});
       setDetails({businessName: data.member.business_name, town: data.member.town, phone: data.member.phone, email: data.member.email, vatIncluded: data.member.vat_included});
       setPartQuery("");
       setEditStep(step);
@@ -799,7 +804,7 @@ export default function PartsClient({
                             <td className={styles.partIdentity}>
                               <strong>{r.part_number}</strong>
                             </td>
-                            <td className={styles.partDescription}><span className={styles.priceOnRequest}>{r.description || "—"}</span></td>
+                            <td className={styles.partDescription}><span className={styles.priceOnRequest}>{r.description || "—"}{detailFields.some(f=>r.details?.[f.id]) && <div className={styles.partExtraDetails}>{detailFields.filter(f=>r.details?.[f.id]).map(f=><span key={f.id}><strong>{f.label}{f.private ? " (private)" : ""}:</strong> {r.details![f.id]}</span>)}</div>}</span></td>
                             {showBrand && <td className={styles.partBrand}>{r.brand || "—"}</td>}
                             <td className={styles.numeric}>{r.quantity}</td>
                             <td className={styles.numeric}>
@@ -1268,7 +1273,8 @@ export default function PartsClient({
             {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
               onStageChange={setImportStage}
               initialDetails={details}
-              editSnapshot={editStep === "sheet" && stock ? {revision: stock.revision, rows: stock.rows.map(r => [r.part_number, r.description ?? "", String(r.quantity), r.price ?? "", r.brand ?? ""])} : undefined}
+              initialFields={editStep === "sheet" ? stock?.fields || detailFields : detailFields}
+              editSnapshot={editStep === "sheet" && stock ? {revision: stock.revision, rows: stock.rows.map(r => [r.part_number, r.description ?? "", String(r.quantity), r.price ?? "", r.brand ?? "", ...stock.fields.map(f=>r.details?.[f.id] || "")])} : undefined}
               onBack={() => setEditStep(editStep === "sheet" ? "edit" : "intent")}
               request={body => api({ ...body, network })}
               onBusyChange={setBusy}
@@ -1313,7 +1319,7 @@ export default function PartsClient({
                 blob = await response.blob();
               } else {
                 const data=await api(undefined,`?network=${network}&view=${current?.owned ? "mine" : "search"}&search=${encodeURIComponent(search)}&download=true`);
-                const exportRows = (data.rows as Row[]).map(r=>({part:r.part_number,description:r.description || "",brand:r.brand || "",quantity:r.quantity,price:r.price === null ? null : Number(displayedPrice(r).toFixed(2)),vat:vatLabel,dealer:r.business_name,town:r.town || ""}));
+                const exportRows = (data.rows as Row[]).map(r=>({details:Object.fromEntries((data.fields as PartDetailField[] || []).filter(f=>r.details?.[f.id]).map(f=>[f.label+(f.private ? " (private)" : ""),r.details![f.id]])),part:r.part_number,description:r.description || "",brand:r.brand || "",quantity:r.quantity,price:r.price === null ? null : Number(displayedPrice(r).toFixed(2)),vat:vatLabel,dealer:r.business_name,town:r.town || ""}));
                 const book = await buildPartsWorkbook(exportRows);
                 blob = new Blob([new Uint8Array(await book.xlsx.writeBuffer())], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
               }
@@ -1346,6 +1352,7 @@ export default function PartsClient({
                 <small>Leave blank for price on request.</small>
               </div>
             </div>
+            <div className={styles.partEditFields}><PartDetailInputs fields={editingPart.extraFields} values={editingPart.details} onChange={details=>setEditingPart({...editingPart,details})}/><div className={styles.partEditDescription}><AddPartField fields={editingPart.extraFields} onAdd={field=>setEditingPart({...editingPart,extraFields:[...editingPart.extraFields,field]})}/></div></div>
             {feedback}
             <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
           </form>

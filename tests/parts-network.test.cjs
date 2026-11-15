@@ -698,6 +698,32 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   assert.equal((await network.partsData(dealer,id,'mine','',0,true)).rows.length,57);
   await assert.rejects(()=>network.partsData({...dealer,id:'outsider'},id,'mine','',0,true),/approval/);
 
+  const extraFields=[{id:"notes",label:"Notes",private:false},{id:"location",label:"Bin / shelf location",private:true},{id:"custom-size",label:"Dimensions",private:false}];
+  await network.editPartsRow(dealer,id,{...edit,originalPartNumber:'003',revision:3,extraFields,details:{notes:'Unopened box',location:'Shelf A4','custom-size':'001 x 020'}});
+  let own=await network.partsData(dealer,id,'mine','003',0,true);
+  assert.equal(own.rows[0].details.location,'Shelf A4');
+  assert.equal(own.fields.length,3);
+  const viewer={...dealer,id:'shared-reader',email:'reader@example.test'};
+  await db.query("INSERT INTO parts_network_members(network_id,dealer_id,role,status) VALUES($1,$2,'viewer','active')",[id,viewer.id]);
+  const shared=await network.partsData(viewer,id,'search','003',0,true);
+  assert.equal(shared.rows[0].details.notes,'Unopened box');
+  assert.equal(shared.rows[0].details.location,undefined);
+  assert.ok(!JSON.stringify(shared).includes('Shelf A4'));
+  assert.ok(!shared.fields.some(f=>f.id==='location'));
+  // A legacy import that has no extra columns must keep the existing details.
+  await network.importParts(dealer,id,{mode:'merge',csv:'003,8,12',columns,options:{hasHeader:false},businessName:'Dealer',town:'George',phone:'0821234567',email:dealer.email,vatIncluded:false,revision:4},true);
+  own=await network.partsData(dealer,id,'mine','003',0,true);
+  assert.equal(own.rows[0].details.location,'Shelf A4');
+  await assert.rejects(()=>network.editPartsRow(dealer,id,{...edit,originalPartNumber:'003',revision:5,extraFields:extraFields.map(f=>({...f,private:false})),details:{notes:'change'}}),/settings changed/);
+  const imported={mode:'merge',csv:'003,8,12,,New condition',columns:{...columns,details:{notes:3,'custom-size':4}},options:{hasHeader:false},extraFields,businessName:'Dealer',town:'George',phone:'0821234567',email:dealer.email,vatIncluded:false,revision:5};
+  await network.importParts(dealer,id,imported,true);
+  own=await network.partsData(dealer,id,'mine','003',0,true);
+  assert.equal(own.rows[0].details.notes,undefined);
+  assert.equal(own.rows[0].details['custom-size'],'New condition');
+  assert.equal(own.rows[0].details.location,'Shelf A4');
+  assert.throws(()=>csv.validatePartFields([{id:'x',label:'Brand',private:false}]),/already exists/);
+  assert.throws(()=>csv.validatePartDetails({location:'x'.repeat(501)},extraFields),/500/);
+
   await db.close();
 });
 
@@ -707,15 +733,35 @@ test("Parts PDF escapes user text and distinguishes zero prices from price on re
     './report-theme': { REPORT_THEME_CSS: '' },
   });
   const { parseReportPdfRenderRequest } = load('lib/report-pdf-request.ts');
-  const row = { part: '001-AB', description: '<script>alert(1)</script>', brand: 'A&B', quantity: 0, price: 0, vat: 'Excl. VAT', dealer: 'Dealer', town: 'George' };
+  const row = { part: '001-AB', description: '<script>alert(1)</script>', brand: 'A&B', quantity: 0, price: 0, vat: 'Excl. VAT', dealer: 'Dealer', town: 'George', details: {'<Notes>':'<img src=x onerror=alert(1)>', 'Alternative part number':'00123'} };
   const html = buildPartsStockReportHtml('Parts <list>', [row, {...row, part:'002', price:null}], 'Excl. VAT', 'Complete parts list', '15 Nov 2026');
   assert.ok(!html.includes('<script>'));
   assert.match(html, /&lt;script&gt;/);
   assert.match(html, /A&amp;B/);
   assert.match(html, /001-AB/);
+  assert.match(html, /&lt;Notes&gt;/);
+  assert.ok(!html.includes('<img'));
+  assert.match(html, /00123/);
   assert.match(html, /R\s*0[.,]00/);
   assert.equal((html.match(/Price on request/g) || []).length, 1);
   assert.equal(parseReportPdfRenderRequest(JSON.stringify({html,fileName:'Parts.pdf'})).html, html);
+});
+
+test("Excel extra details preserve text identifiers and export column mapping", async () => {
+  const {buildPartsWorkbook} = load('lib/parts-network-report.ts', {
+    './maintenance-report-style': {MAINTENANCE_REPORT_FONT_CSS:'',MAINTENANCE_REPORT_LAYOUT_CSS:''},
+    './report-theme': {REPORT_THEME_CSS:''},
+  });
+  const book = await buildPartsWorkbook([{part:'001',description:'Seal',brand:'',quantity:2,price:12,vat:'Excl. VAT',dealer:'Dealer',town:'',details:{'Alternative part number':'000012','Notes':'=1+1'}}]);
+  const buffer = await book.xlsx.writeBuffer();
+  const Excel = require('exceljs');
+  const restored = new Excel.Workbook();
+  await restored.xlsx.load(buffer);
+  const sheet = restored.getWorksheet('Parts');
+  assert.equal(sheet.getCell('I2').value,'000012');
+  assert.equal(sheet.getCell('J2').value,'=1+1');
+  assert.equal(sheet.getCell('I2').numFmt,'@');
+  assert.equal(csv.guessPartColumns(sheet.getRow(1).values.slice(1)).price,4);
 });
 
 test("Parts PDF uses parts access, full filtered rows, VAT conversion and private responses", async () => {

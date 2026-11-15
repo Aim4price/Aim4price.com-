@@ -457,6 +457,11 @@ const appCode =
       const save=[...e.querySelectorAll('button')].find(b=>b.textContent==='Save changes');
       return Math.abs(save.getBoundingClientRect().right-e.getBoundingClientRect().right)<2;
     }),'Edit footer aligns right');
+    await click('+ Add detail');
+    await click('Bin / shelf location');
+    assert.equal(await page.$eval('dialog input[type="checkbox"]',e=>e.checked),true);
+    await click('Add detail');
+    await page.type('[aria-label="Bin / shelf location"]','Shelf A4');
     await page.screenshot({path:path.join(output,'edit-part.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Edit controls fit phone width');
@@ -470,6 +475,8 @@ const appCode =
     assert.equal(actions.find(a=>a.action==='edit-part').revision,0);
     assert.equal(actions.find(a=>a.action==='edit-part').price,'100.00');
     assert.equal(actions.find(a=>a.action==='edit-part').quantity,'8');
+    assert.equal(actions.find(a=>a.action==='edit-part').details.location,'Shelf A4');
+    assert.equal(actions.find(a=>a.action==='edit-part').extraFields[0].private,true);
     await page.waitForFunction(()=>[...document.querySelectorAll('tbody td')].some(e=>e.textContent.trim()==='8'));
     await page.goto('https://example.test/parts/44444444-4444-4444-8444-444444444444');
     await page.waitForSelector('tbody tr');
@@ -578,11 +585,16 @@ const appCode =
     await page.type('[aria-label="Quantity 1"]', '1');
     await page.type('[aria-label="Brand 1"]', 'Landini');
     await page.type('[aria-label="Description 1"]', 'Dowel');
+    await click('+ Add detail'); await click('Compatible models'); await click('Add detail');
+    await page.type('[aria-label="Compatible models"]','Landini 100');
     await page.screenshot({path:path.join(output,'manual-editor.png')});
     await click("Continue");
     await click("Review parts");
     await page.waitForFunction(() => document.body.innerText.includes('reviewed rows'));
     await click("Save & add another");
+    const added=actions.filter(a=>a.action==='import').at(-1);
+    assert.equal(added.extraFields[0].id,'compatibility');
+    assert.equal(parser.parsePartsSnapshot(added.csv,added.columns,added.options)[0].details.compatibility,'Landini 100');
     await page.waitForSelector('[aria-label="Part number 1"]');
     assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'');
     assert.equal(await page.$$eval('[aria-invalid=true]',els=>els.length),0);
@@ -682,6 +694,17 @@ const appCode =
     }
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
+    await click('+ Add column'); await click('Custom field');
+    await page.type('[aria-label="Custom field name"]','Dimensions');
+    await page.screenshot({path:path.join(output,'add-part-column.png')});
+    await click('Add column');
+    await page.type('[aria-label="Dimensions 1"]','001 x 020');
+    await page.click('[aria-label="Actions for row 1"]'); await click('Edit part');
+    assert.equal(await page.$eval('[aria-label="Edit row Dimensions"]',e=>e.value),'001 x 020');
+    await click('Cancel');
+    // Clear the temporary value so existing blank-row validation stays unchanged.
+    await page.$eval('[aria-label="Dimensions 1"]',e=>e.select());await page.keyboard.press('Backspace');
+
     await page.waitForSelector('[aria-label="Sheet tools"]');
     assert.ok(await page.$('[aria-label="Actions for row 1"]'));
     const addRowCount = await page.$$eval('[aria-label="Parts spreadsheet"] tbody tr', rows=>rows.length);
