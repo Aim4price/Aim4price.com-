@@ -352,15 +352,16 @@ test('Asset Map selects the asset requested by the Manage action', () => {
   assert.match(initialLoad, /setSelectedRegisterId\(ALL_REGISTER_FILTER_ID\)/);
   assert.match(initialLoad, /setSelectedCode\(requestedAsset\.publicAssetCode\)/);
   const compiled = ts.transpileModule(initialLoad, {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
-  const run = (mapped, initial=true, id='asset-1') => {
+  const run = (mapped, initial=true, id='asset-1', mode=initial?'initial':'background') => {
     const result={}; const asset={id:'asset-1',publicAssetCode:'ABC',mapped};
-    new Function('initialLoad','window','data','hasCoordinates','nextRegisterFilters','ALL_REGISTER_FILTER_ID','setAssets','setDataStatus','setRegisterFilters','setSelectedRegisterId','setExportRegisterId','setSearch','setSelectedCode','setLocationDialog','setNotice',compiled)(initial,{location:{search:'?assetId='+id}},{assets:[asset]},a=>a.mapped,[],'all',()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},code=>result.code=code,dialog=>result.dialog=dialog,()=>{});
+    new Function('initialLoad','window','data','hasCoordinates','nextRegisterFilters','ALL_REGISTER_FILTER_ID','setAssets','setDataStatus','setRegisterFilters','setSelectedRegisterId','setExportRegisterId','setSearch','setSelectedCode','setLocationDialog','setNotice','mode','setRefreshStatus',compiled)(initial,{location:{search:'?assetId='+id}},{assets:[asset]},a=>a.mapped,[],'all',()=>{},()=>{},()=>{},()=>{},()=>{},()=>{},code=>result.code=code,dialog=>result.dialog=dialog,()=>{},mode,message=>result.refreshStatus=message);
     return result;
   };
   assert.equal(run(true).code,'ABC');
   assert.equal(run(false).dialog.view,'update');
   assert.equal(run(false).dialog.asset.id,'asset-1');
   assert.deepEqual(run(false,false),{},'background refresh must not reopen setup');
+  assert.deepEqual(run(false,false,'asset-1','manual'),{refreshStatus:'Map refreshed.'},'manual refresh reports success without reopening setup');
   assert.deepEqual(run(false,true,'missing'),{},'unknown assets must not open setup');
 
 });
