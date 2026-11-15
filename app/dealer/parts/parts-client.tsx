@@ -15,15 +15,15 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../../components/WorkspacePrimitives";
-import { AddPartField, PartDetailInputs } from "../../../components/PartsDetailFields";
+
 import type { PartDetailField } from "../../../lib/parts-network-csv";
 import PartsImportForm from "../../../components/PartsImportForm";
 import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
 import PartsChoice from "../../../components/PartsChoice";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
-import VatPriceInput from "../../../components/VatPriceInput";
-import priceStyles from "../../../components/asset-register/AssetDisposal.module.css";
+import PartEditDialog from "../../../components/PartEditDialog";
+
 import styles from "./parts.module.css";
 import reportStyles from "../../../components/ReportDownload.module.css";
 import { appRealmForPath } from "../../../lib/app-realm";
@@ -1279,6 +1279,7 @@ export default function PartsClient({
               <div className={`${styles.actions} ${styles.partEditFooter}`}><button onClick={() => setEditStep("edit")}>Back</button><button onClick={close}>Cancel</button></div>
             </>}
             {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
+              listName={current?.name}
               onStageChange={setImportStage}
               initialDetails={details}
               initialFields={editStep === "sheet" ? stock?.fields || detailFields : detailFields}
@@ -1338,35 +1339,12 @@ export default function PartsClient({
             })}>{busy ? "Preparing…" : `Download ${downloadFormat === "pdf" ? "PDF" : "Excel"}`}</button>
           </footer>
         </Modal>}
-        {editingPart && <Modal edit progress={{value: 80, label: "Edit selected part"}} title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
-          <form className={styles.partEditorForm} onSubmit={e=>{e.preventDefault();void run(async()=>{
+        {editingPart && <PartEditDialog value={editingPart} onChange={setEditingPart} subtitle={current?.name} busy={busy} feedback={feedback} onClose={close}
+          backLabel={fromPicker ? "Back" : "Cancel"} onBack={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}
+          onSave={()=>void run(async()=>{
             await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
             setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");
-          });}}>
-            <div className={styles.partEditorBody}>
-            <div className={styles.partEditFields}>
-              <label>Part number<input required maxLength={100} value={editingPart.partNumber} onChange={e=>setEditingPart({...editingPart,partNumber:e.target.value})}/></label>
-              <label>Brand<input placeholder="Optional" maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
-              <label className={styles.partEditDescription}>Description<input placeholder="Optional" maxLength={500} value={editingPart.description} onChange={e=>setEditingPart({...editingPart,description:e.target.value})}/></label>
-              <label>Quantity<input placeholder="Optional" type="number" min="0" max="999999999" step="1" value={editingPart.quantity} onChange={e=>setEditingPart({...editingPart,quantity:e.target.value})} aria-describedby="part-edit-quantity-hint"/><small id="part-edit-quantity-hint">Leave blank to keep the current quantity.</small></label>
-              <div className={styles.partEditPrice}>
-                <label htmlFor="part-edit-price">Unit price <small>{editingPart.priceIncluded ? "Incl." : "Excl."} VAT</small></label>
-                <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl}`}>
-                  <VatPriceInput id="part-edit-price" valueExVat={editingPart.price} included={editingPart.priceIncluded} vatRate={0.15} onValueChange={price=>setEditingPart({...editingPart,price})} placeholder="Optional" aria-label={`Unit price, ${editingPart.priceIncluded ? "including" : "excluding"} VAT`} />
-                  <div className={priceStyles.amountVatToggle} role="group" aria-label="Unit price VAT basis">
-                    <button type="button" aria-label="Including VAT" aria-pressed={editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:true})}>Incl</button>
-                    <button type="button" aria-label="Excluding VAT" aria-pressed={!editingPart.priceIncluded} onClick={()=>setEditingPart({...editingPart,priceIncluded:false})}>Excl</button>
-                  </div>
-                </div>
-                <small>Leave blank for price on request.</small>
-              </div>
-            </div>
-            {editingPart.extraFields.length > 0 && <div className={styles.partEditFields}><PartDetailInputs fields={editingPart.extraFields} values={editingPart.details} onChange={details=>setEditingPart({...editingPart,details})}/></div>}
-            {feedback}
-            </div>
-            <div className={`${styles.actions} ${styles.partEditFooter}`}><div className={styles.detailFooterAction}><AddPartField fields={editingPart.extraFields} onAdd={field=>setEditingPart({...editingPart,extraFields:[...editingPart.extraFields,field]})}/></div><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
-          </form>
-        </Modal>}
+          })}/>}
         {contact && (
           <Modal enquiry title="Parts enquiry" subtitle={current?.name} onClose={close} busy={busy}>
             <div className={styles.enquiryBody}>
