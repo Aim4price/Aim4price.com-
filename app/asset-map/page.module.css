@@ -1531,33 +1531,6 @@
   cursor: default;
 }
 
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a::after) {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 0.75rem);
-  top: 50%;
-  width: max-content;
-  padding: 0.7rem 1rem;
-  border-radius: 0.75rem;
-  color: #fff;
-  background: #124c3c;
-  box-shadow: 0 8px 20px rgba(10, 47, 37, 0.2);
-  font-family: var(--font-heading, "Montserrat"), sans-serif;
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-50%);
-}
-
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:hover::after),
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:focus-visible::after) {
-  opacity: 1;
-  visibility: visible;
-}
-
 /* Override Leaflet's touch-device end caps as well. */
 .assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:first-child),
 .assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:last-child) {
@@ -2199,15 +2172,15 @@
 .refreshMapIcon {
   display: grid;
   place-items: center;
-  flex: 0 0 2rem;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid #a6c4e2;
+  flex: 0 0 2.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid #245d86;
   border-radius: .65rem;
-  background: #d6e6f5;
-  color: #245d86;
+  background: linear-gradient(145deg, #3476a4, #205477);
+  color: #fff;
 }
-.refreshMapButton .buttonIcon { width: 1.2rem; height: 1.2rem; }
+.refreshMapButton .buttonIcon { width: 1.45rem; height: 1.45rem; }
 .refreshMapButton:hover:not(:disabled),
 .refreshMapButton:focus-visible {
   border-color: #548abb;

@@ -1145,6 +1145,11 @@ export default function AssetMapClient() {
         });
 
         L.control.zoom({ position: "topleft" }).addTo(map);
+        // Use the top-level site tooltip layer, outside Leaflet's stacking context.
+        mapElementRef.current.querySelectorAll<HTMLElement>('.leaflet-control-zoom a').forEach(control => {
+          control.dataset.tooltip = control.getAttribute('title') || control.getAttribute('aria-label') || 'Zoom';
+          control.removeAttribute('title');
+        });
 
         const roadLayer = L.tileLayer(
           "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -2087,7 +2092,7 @@ export default function AssetMapClient() {
                   data-tooltip="Reload the latest asset locations and map tiles."
                   data-tooltip-style="description"
                 >
-                  <span className={styles.refreshMapIcon} aria-hidden="true"><svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></svg></span>
+                  <span className={styles.refreshMapIcon} aria-hidden="true"><svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 15.36-6.36L21 8M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.36 6.36L3 16M8 16H3v5"/></svg></span>
                   <span>{isRefreshing ? "Refreshing…" : "Refresh map"}</span>
                 </button>
               ) : null}
