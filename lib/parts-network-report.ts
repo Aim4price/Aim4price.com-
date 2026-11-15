@@ -2,6 +2,7 @@ import { MAINTENANCE_REPORT_FONT_CSS, MAINTENANCE_REPORT_LAYOUT_CSS } from './ma
 import { REPORT_THEME_CSS } from './report-theme';
 
 export type PartsReportRow = {
+  details?: Record<string,string>;
   part: string;
   description: string;
   brand: string;
@@ -33,7 +34,7 @@ export function buildPartsStockReportHtml(title: string, rows: PartsReportRow[],
   </style></head><body><main class="reportPage fullRegisterPage">
     <header class="topbar"><div class="brand"><div class="assetReportLogoFallback">AIM4PRICE</div><div><h1>Parts stock list</h1><p>Aim4price Parts Stock</p></div></div><div class="meta"><span>Generated</span><strong>${escape(generatedDate)}</strong></div></header>
     <section class="hero"><div class="heroMain"><p class="eyebrow">Parts report</p><h2 class="heroTitle">${escape(title)}</h2><p class="heroMeta">${escape(scope)}</p></div><div class="heroStatus"><span>Parts included</span><strong>${rows.length}</strong><p>Unit prices in ZAR · ${escape(vatLabel)}</p></div></section>
-    <table><colgroup><col style="width:20%"><col style="width:32%"><col style="width:16%"><col style="width:10%"><col style="width:22%"></colgroup><thead><tr><th>Part number</th><th>Description / dealer</th><th>Brand</th><th class="quantity">Quantity</th><th class="number">Unit price · ${escape(vatLabel)}</th></tr></thead><tbody>${rows.map(row => `<tr><td><strong>${escape(row.part)}</strong></td><td>${escape(row.description || '—')}<span class="dealer">${escape([row.dealer, row.town].filter(Boolean).join(' · '))}</span></td><td>${escape(row.brand || '—')}</td><td class="quantity">${escape(row.quantity)}</td><td class="number">${row.price === null ? 'Price on request' : escape(money.format(row.price))}</td></tr>`).join('') || '<tr><td colspan="5">No matching parts.</td></tr>'}</tbody></table>
+    <table><colgroup><col style="width:20%"><col style="width:32%"><col style="width:16%"><col style="width:10%"><col style="width:22%"></colgroup><thead><tr><th>Part number</th><th>Description / dealer</th><th>Brand</th><th class="quantity">Quantity</th><th class="number">Unit price · ${escape(vatLabel)}</th></tr></thead><tbody>${rows.map(row => `<tr><td><strong>${escape(row.part)}</strong></td><td>${escape(row.description || '—')}${Object.entries(row.details || {}).map(([label,value])=>`<span class="dealer"><strong>${escape(label)}:</strong> ${escape(value)}</span>`).join('')}<span class="dealer">${escape([row.dealer, row.town].filter(Boolean).join(' · '))}</span></td><td>${escape(row.brand || '—')}</td><td class="quantity">${escape(row.quantity)}</td><td class="number">${row.price === null ? 'Price on request' : escape(money.format(row.price))}</td></tr>`).join('') || '<tr><td colspan="5">No matching parts.</td></tr>'}</tbody></table>
     <footer class="footer"><div><strong>Powered by Aim4price.com</strong><p>Confirm availability and price with the dealer.</p></div></footer>
   </main></body></html>`;
 }
@@ -53,9 +54,11 @@ export async function buildPartsWorkbook(rows: PartsReportRow[]) {
     { header: 'Dealer', key: 'dealer', width: 32 },
     { header: 'Town', key: 'town', width: 24 },
   ];
-  rows.forEach(row => sheet.addRow(row));
+  const detailLabels = [...new Set(rows.flatMap(r=>Object.keys(r.details || {})))];
+  detailLabels.forEach((label,i)=>{const col=sheet.getColumn(9+i);col.header=label;col.key=`detail-${i}`;col.width=32;col.numFmt="@";});
+  rows.forEach(row => sheet.addRow({...row,...Object.fromEntries(detailLabels.map((label,i)=>[`detail-${i}`,row.details?.[label] || ""]))}));
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
-  sheet.autoFilter = 'A1:H1';
+  sheet.autoFilter = {from:{row:1,column:1},to:{row:1,column:8+detailLabels.length}};
   sheet.getColumn('part').numFmt = '@';
   sheet.getColumn('price').numFmt = '"R" #,##0.00';
   sheet.eachRow((row, index) => {

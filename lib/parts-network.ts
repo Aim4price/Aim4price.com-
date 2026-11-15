@@ -11,6 +11,7 @@ import { getDb } from "./db";
 import { PARTS_NETWORK_SCHEMA } from "./parts-network-schema";
 import type { PartsActor } from "./parts-network-access";
 import {
+  validatePartFields, validatePartDetails, type PartDetailField,
   parsePartsSnapshot,
   snapshotChanges,
   type PartColumns,
@@ -184,7 +185,7 @@ export async function partsData(
     const where = `r.network_id=$1 AND EXISTS (SELECT 1 FROM parts_networks n WHERE n.id=r.network_id AND (NOT n.list_mode OR n.created_by=r.dealer_id)) AND ($2::boolean AND r.dealer_id=$3 OR NOT $2::boolean AND m.status='active' AND m.visible=true AND r.quantity>0) AND ($4='' OR strpos(r.part_key,$4)>0 OR strpos(upper(coalesce(r.description,'')),$4)>0 OR strpos(upper(coalesce(r.brand,'')),$4)>0)`;
     const args = [id, mine, actor.id, query];
     const rows = await db.query(
-      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,r.brand,r.description,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT ${download ? 50001 : size === "all" ? "ALL" : size} OFFSET $5`,
+      `SELECT r.dealer_id,r.part_number,r.quantity,r.price,r.brand,r.description,r.details,m.extra_fields,m.business_name,m.town,m.phone,m.email,m.vat_included,m.uploaded_at FROM parts_network_rows r JOIN parts_network_members m ON m.network_id=r.network_id AND m.dealer_id=r.dealer_id WHERE ${where} ORDER BY (r.part_key=$4) DESC,r.part_key,m.business_name,r.dealer_id LIMIT ${download ? 50001 : size === "all" ? "ALL" : size} OFFSET $5`,
       [...args, download ? 0 : offset],
     );
     if (download && rows.rows.length > 50000) throw new PartsError("Narrow your search to download up to 50,000 parts at a time.");
@@ -196,7 +197,14 @@ export async function partsData(
       "UPDATE parts_network_members SET last_viewed_at=now() WHERE network_id=$1 AND dealer_id=$2",
       [id, actor.id],
     );
-    return { rows: rows.rows, total: count.rows[0].total, member };
+    const fields = new Map<string, PartDetailField>();
+    for (const f of (member.extra_fields || []) as PartDetailField[]) fields.set(f.id, f);
+    const safeRows = rows.rows.map(({extra_fields, details, ...row}) => {
+      const visible = (extra_fields as PartDetailField[] || []).filter(f => !f.private || row.dealer_id === actor.id);
+      visible.forEach(f => fields.set(f.id, f));
+      return {...row, details:Object.fromEntries(visible.filter(f=>details?.[f.id]).map(f=>[f.id,details[f.id]]))};
+    });
+    return { rows: safeRows, total: count.rows[0].total, member, fields:[...fields.values()] };
   });
 }
 export async function createPartsNetwork(
@@ -516,9 +524,19 @@ export async function importParts(
       throw new PartsError("Your list changed. Preview the upload again.", 409);
     if (input.baseRevision !== undefined && (input.mode !== "replace" || input.baseRevision !== member.revision))
       throw new PartsError("Your list changed after opening the sheet. Reopen it to load the latest parts.", 409);
+    let extraFields: PartDetailField[];
+    try {
+      // Existing definitions cannot be silently removed or made public by stale imports.
+      extraFields = validatePartFields([...(member.extra_fields || []), ...validatePartFields(input.extraFields ?? []).filter(f => !(member.extra_fields || []).some((old: PartDetailField) => old.id === f.id))]);
+      for (const field of validatePartFields(input.extraFields ?? [])) {
+        const existing = extraFields.find(f=>f.id === field.id)!;
+        if (existing.label !== field.label || existing.private !== field.private) throw new Error("Field settings changed. Reopen the stocklist before saving.");
+      }
+      rows = rows.map(row=>({...row,details:validatePartDetails(row.details || {},extraFields)}));
+    } catch (e) { throw new PartsError((e as Error).message); }
     const previous = (
       await db.query(
-        "SELECT part_number,quantity,price,brand,description FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
+        "SELECT part_number,quantity,price,brand,description,details FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2",
         [id, actor.id],
       )
     ).rows.map((r) => ({
@@ -527,7 +545,16 @@ export async function importParts(
       price: r.price === null ? null : Number(r.price),
       brand: r.brand,
       description: r.description,
+      details: r.details || {},
     }));
+    // Unmapped extra columns survive legacy imports and partial spreadsheet updates.
+    const previousByNumber = new Map(previous.map(p=>[p.partNumber.toUpperCase(),p]));
+    rows = rows.map(row=>{
+      const old = previousByNumber.get(row.partNumber.toUpperCase());
+      const details = {...old?.details};
+      for (const key of Object.keys((input.columns as PartColumns).details || {})) delete details[key];
+      return {...row, details:{...details,...row.details}};
+    });
     const imported = rows;
     if (input.mode === "merge" || input.mode === "add") {
       const combined = new Map(
@@ -538,6 +565,7 @@ export async function importParts(
           throw new PartsError(`Part ${row.partNumber} already exists. Use Edit parts to change it.`, 409);
         combined.set(row.partNumber.toUpperCase(), {
           ...row,
+          details:row.details || {},
           brand: row.brand || "",
           description: row.description || "",
         });
@@ -577,12 +605,12 @@ export async function importParts(
       [id, actor.id],
     );
     await db.query(
-      `INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price,brand,description) SELECT $1,$2,p->>'partNumber',upper(p->>'partNumber'),(p->>'quantity')::integer,(p->>'price')::numeric,coalesce(p->>'brand',''),coalesce(p->>'description','') FROM jsonb_array_elements($3::jsonb) p`,
+      `INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price,brand,description,details) SELECT $1,$2,p->>'partNumber',upper(p->>'partNumber'),(p->>'quantity')::integer,(p->>'price')::numeric,coalesce(p->>'brand',''),coalesce(p->>'description',''),coalesce(p->'details','{}'::jsonb) FROM jsonb_array_elements($3::jsonb) p`,
       [id, actor.id, JSON.stringify(rows)],
     );
     await db.query(
-      "UPDATE parts_network_members SET business_name=$3,town=$4,phone=$5,email=$6,vat_included=$7,revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2",
-      [id, actor.id, business, town, phone, email, vatIncluded],
+      "UPDATE parts_network_members SET business_name=$3,town=$4,phone=$5,email=$6,vat_included=$7,extra_fields=$8::jsonb,revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2",
+      [id, actor.id, business, town, phone, email, vatIncluded, JSON.stringify(extraFields)],
     );
     await audit(
       db,
@@ -612,12 +640,19 @@ export async function editPartsRow(actor: PartsActor, id: string, input: Record<
     const member = await access(db, actor, id, "write");
     if (!Number.isInteger(input.revision) || input.revision !== member.revision)
       throw new PartsError("This stocklist changed. Close and reopen the part before saving.", 409);
-    const existing = await db.query("SELECT part_key FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey]);
+    const existing = await db.query("SELECT part_key,details FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey]);
     if (!existing.rows.length) throw new PartsError("This part is no longer in your list. Refresh and try again.", 409);
     const duplicate = await db.query("SELECT part_key FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3 AND part_key<>$4", [id, actor.id, row.partNumber.toUpperCase(), originalKey]);
     if (duplicate.rows.length) throw new PartsError("That part number already exists in your list.", 409);
-    await db.query("UPDATE parts_network_rows SET part_number=$4,part_key=upper($4),quantity=COALESCE($5,quantity),price=$6,brand=$7,description=$8 WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey, row.partNumber, keepQuantity ? null : row.quantity, row.price, row.brand || "", row.description || ""]);
-    await db.query("UPDATE parts_network_members SET revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2", [id, actor.id]);
+    let extraFields: PartDetailField[], extraDetails: Record<string,string>;
+    try {
+      const supplied = validatePartFields(input.extraFields ?? []);
+      extraFields = validatePartFields([...(member.extra_fields || []), ...supplied.filter(f=>!(member.extra_fields || []).some((old:PartDetailField)=>old.id===f.id))]);
+      for (const f of supplied) { const old = extraFields.find(x=>x.id===f.id)!; if (old.label!==f.label || old.private!==f.private) throw new Error("Field settings changed. Reopen this part."); }
+      extraDetails = input.details === undefined ? existing.rows[0].details : validatePartDetails(input.details,extraFields);
+    } catch(e) { throw new PartsError((e as Error).message); }
+    await db.query("UPDATE parts_network_rows SET part_number=$4,part_key=upper($4),quantity=COALESCE($5,quantity),price=$6,brand=$7,description=$8,details=$9::jsonb WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey, row.partNumber, keepQuantity ? null : row.quantity, row.price, row.brand || "", row.description || "", JSON.stringify(extraDetails)]);
+    await db.query("UPDATE parts_network_members SET revision=revision+1,uploaded_at=now(),extra_fields=$3::jsonb WHERE network_id=$1 AND dealer_id=$2", [id, actor.id, JSON.stringify(extraFields)]);
     await audit(db, id, actor, "edit-part", row.partNumber);
     return {updated:true};
   });

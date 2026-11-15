@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
+  type PartDetailField,
   guessPartColumns,
   readPartsCsv,
   partsTableCsv,
@@ -11,11 +12,11 @@ import {
   PART_LABELS,
   PART_FIELDS,
   EDITOR_COLUMNS,
-  blankPart,
   pastePartsCells,
   partCellErrors,
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
+import { AddPartField, PartDetailInputs } from "./PartsDetailFields";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
 import styles from "../app/dealer/parts/parts.module.css";
@@ -31,6 +32,7 @@ type Preview = {
   summary: { added: number; updated: number; removed: number; total: number };
 };
 export default function PartsImportForm({
+  initialFields = [],
   initialDetails,
   editSnapshot,
   onBack,
@@ -40,6 +42,7 @@ export default function PartsImportForm({
   onStageChange,
 }: {
   onStageChange?: (stage: string) => void;
+  initialFields?: PartDetailField[];
   initialDetails: Details;
   editSnapshot?: {rows: string[][]; revision: number};
   onBack: () => void;
@@ -50,6 +53,11 @@ export default function PartsImportForm({
   const [source, setSource] = useState<"manual" | "sheet" | "file" | null>(
     editSnapshot ? "sheet" : null,
   );
+  const [extraFields,setExtraFields] = useState<PartDetailField[]>(initialFields);
+  const [importedDetailIds,setImportedDetailIds] = useState<string[]>([]);
+  const labels = [...PART_LABELS,...extraFields.map(f=>f.label)];
+  const emptyRow = () => Array(5 + extraFields.length).fill("") as string[];
+  function addField(field:PartDetailField) {setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setUndo(null);setPreview(null);}
   const [details, setDetails] = useState(initialDetails);
   const [pastedTable, setPastedTable] = useState("");
   const [raw, setRaw] = useState<string[][]>([]);
@@ -59,7 +67,7 @@ export default function PartsImportForm({
   const [sheetIndex, setSheetIndex] = useState(0);
   const [hasHeader, setHasHeader] = useState(true);
   const [columns, setColumns] = useState<PartColumns>(EDITOR_COLUMNS);
-  const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [blankPart()]);
+  const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [emptyRow()]);
   const [stage, setStage] = useState<
     "choose" | "example" | "file" | "entry" | "settings" | "review"
   >(editSnapshot ? "entry" : "choose");
@@ -108,7 +116,7 @@ export default function PartsImportForm({
   function choose(next: "manual" | "sheet" | "file") {
     if (source !== next) {
       setRows(
-        next === "sheet" ? Array.from({ length: 8 }, blankPart) : [blankPart()],
+        next === "sheet" ? Array.from({ length: 8 }, emptyRow) : [emptyRow()],
       );
       setRaw([]);
       setSheets([]);
@@ -154,7 +162,7 @@ export default function PartsImportForm({
     });
     await onComplete(addAnother);
     if (addAnother) {
-      setRows([blankPart()]);
+      setRows([emptyRow()]);
       setPreview(null);
       setStage("entry");
       setAttempted(false);
@@ -204,7 +212,7 @@ export default function PartsImportForm({
     );
   }
   function mapTable() {
-    const indexes = PART_FIELDS.map((k) => columns[k] ?? -1).filter(
+    const indexes = [...PART_FIELDS.map((k) => columns[k] ?? -1), ...extraFields.map(f=>columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1))].filter(
       (i) => i >= 0,
     );
     if (
@@ -220,7 +228,8 @@ export default function PartsImportForm({
       throw new Error("Include between 1 and 20,000 parts.");
     setAttempted(false);
     setTouched({});
-    setRows(data.map((r) => PART_FIELDS.map((k) => r[columns[k] ?? -1] ?? "")));
+    setImportedDetailIds(extraFields.filter(f=>(columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1)) >= 0).map(f=>f.id));
+    setRows(data.map((r) => [...PART_FIELDS.map((k) => r[columns[k] ?? -1] ?? ""), ...extraFields.map(f=>r[columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase() === f.label.toLowerCase()) : -1)] ?? "")]));
     setStage("entry");
     setPage(0);
     setSelected([]);
@@ -228,7 +237,8 @@ export default function PartsImportForm({
   }
   const payload = () => ({
     csv: partsTableCsv(populated),
-    columns: EDITOR_COLUMNS,
+    columns: {...EDITOR_COLUMNS, details:Object.fromEntries(extraFields.flatMap((f,i)=>source !== "file" || importedDetailIds.includes(f.id) || populated.some(r=>r[5+i]?.trim()) ? [[f.id,5+i]] : []))},
+    extraFields,
     options: { hasHeader: false },
     mode,
     ...(editSnapshot ? {baseRevision: editSnapshot.revision} : {}),
@@ -273,9 +283,10 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {tool && <PartsSheetTools tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} onClose={() => setTool(null)} onApply={(next, removing) => {change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
+      {tool && <PartsSheetTools tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing) => {change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
       {sheetEntry && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
+        <AddPartField column fields={extraFields} onAdd={addField}/>
         <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Columns</button>
         <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
         <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
@@ -499,6 +510,7 @@ export default function PartsImportForm({
               )}
             </>
           )}
+          {stage === "file" && raw.length > 0 && <div className={styles.detailFieldSettings}><AddPartField column fields={extraFields} onAdd={addField}/>{extraFields.map(f=><label key={f.id}>{f.label}{f.private ? " (private)" : ""}<select aria-label={`${f.label} column`} value={columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1)} onChange={e=>setColumns({...columns,details:{...columns.details,[f.id]:Number(e.target.value)}})}><option value={-1}>Not in this file</option>{raw[0].map((h,i)=><option key={i} value={i}>Column {i+1}: {h}</option>)}</select></label>)}</div>}
           {stage === "entry" && source === "manual" && (
             <div className={`${styles.partEditFields} ${styles.singlePartForm}`}>
               {[0, 4, 1, 2, 3].map(j => {
@@ -516,7 +528,7 @@ export default function PartsImportForm({
                   aria-invalid={Boolean(error)}
                   aria-describedby={error ? `single-error-${j}` : hint ? "add-part-price-hint" : undefined}
                   onBlur={() => setTouched(t => ({...t, [`0:${j}`]: true}))}
-                  onChange={e => change([(rows[0] || blankPart()).map((v, k) => k === j ? e.target.value : v)])}
+                  onChange={e => change([(rows[0] || emptyRow()).map((v, k) => k === j ? e.target.value : v)])}
                 />;
                 return <div key={label} className={`${styles.partEditPrice} ${j === 1 ? styles.partEditDescription : ""}`}>
                   <label htmlFor={`add-part-field-${j}`}>
@@ -529,12 +541,14 @@ export default function PartsImportForm({
                   {error && <small className={styles.cellError} id={`single-error-${j}`}>{error}</small>}
                 </div>;
               })}
+              <PartDetailInputs fields={extraFields} values={Object.fromEntries(extraFields.map((f,i)=>[f.id,rows[0]?.[5+i] || ""]))} onChange={values=>change([[...rows[0].slice(0,5),...extraFields.map(f=>values[f.id] || "")]])}/>
+              <div className={styles.partEditDescription}><AddPartField fields={extraFields} onAdd={addField}/></div>
             </div>
           )}
           {stage === "entry" && source !== "manual" && (
             <>
               <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
-                <table className={styles.editorTable}>
+                <table className={styles.editorTable} style={extraFields.length ? {minWidth:1000 + (extraFields.length - hiddenColumns.filter(i=>i>=5).length) * 200} : undefined}>
                   <thead>
                     <tr>
                       <th scope="col">
@@ -551,8 +565,8 @@ export default function PartsImportForm({
                           }
                         />}
                       </th>
-                      {PART_LABELS.map((label, i) => (
-                        <th key={label} hidden={hiddenColumns.includes(i)}>
+                      {labels.map((label, i) => (
+                        <th key={label} hidden={hiddenColumns.includes(i)} style={extraFields.length ? {width:i === 1 ? 280 : 180} : undefined}>
                           {label}
                           {i !== 0 && i !== 2 && <small>Optional</small>}
                         </th>
@@ -585,7 +599,7 @@ export default function PartsImportForm({
                           {row.map((cell, j) => (
                             <td key={j} hidden={hiddenColumns.includes(j)}>
                               <input
-                                aria-label={`${PART_LABELS[j]} ${i + 1}`}
+                                aria-label={`${labels[j]} ${i + 1}`}
                                 aria-invalid={Boolean(showError(i, j))}
                                 aria-describedby={
                                   showError(i, j)
@@ -627,7 +641,7 @@ export default function PartsImportForm({
                                         rows,
                                         e.clipboardData.getData("text/plain"),
                                         i,
-                                        j,
+                                        j, labels.length,
                                       ),
                                     );
                                   } catch (err) {
@@ -652,7 +666,7 @@ export default function PartsImportForm({
                 </table>
               </div>
               <div className={styles.actions}>
-                {<button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, blankPart()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
+                {<button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, emptyRow()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
                 <span>
                   {rows.length.toLocaleString()} {rows.length === 1 ? "row" : "rows"}
                   {attempted && invalid ? ` · ${invalid} need attention` : ""}

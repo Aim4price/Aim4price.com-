@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS parts_network_rows (
 ALTER TABLE parts_network_rows ALTER COLUMN price DROP NOT NULL;
 ALTER TABLE parts_network_rows ADD COLUMN IF NOT EXISTS brand text NOT NULL DEFAULT '';
 ALTER TABLE parts_network_rows ADD COLUMN IF NOT EXISTS description text NOT NULL DEFAULT '';
+ALTER TABLE parts_network_rows ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE parts_network_members ADD COLUMN IF NOT EXISTS extra_fields jsonb NOT NULL DEFAULT '[]'::jsonb;
 CREATE INDEX IF NOT EXISTS parts_network_search ON parts_network_rows(network_id,part_key);
 CREATE TABLE IF NOT EXISTS parts_network_invites (
  id uuid PRIMARY KEY, network_id uuid NOT NULL REFERENCES parts_networks(id), email text NOT NULL,

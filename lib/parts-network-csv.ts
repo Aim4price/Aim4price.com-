@@ -1,3 +1,31 @@
+export type PartDetailField = { id: string; label: string; private: boolean };
+export const PART_DETAIL_PRESETS: PartDetailField[] = [
+  {id:"alternative",label:"Alternative part number",private:false},
+  {id:"compatibility",label:"Compatible models",private:false},
+  {id:"condition",label:"Condition",private:false},
+  {id:"type",label:"Part type",private:false},
+  {id:"notes",label:"Notes",private:false},
+  {id:"location",label:"Bin / shelf location",private:true},
+];
+export function validatePartFields(value: unknown): PartDetailField[] {
+  if (!Array.isArray(value) || value.length > 12) throw new Error("Use up to 12 extra fields per stocklist.");
+  const ids = new Set<string>(), labels = new Set<string>();
+  return value.map(f => {
+    if (!f || typeof f.id !== "string" || !/^[a-z][a-z0-9_-]{0,63}$/.test(f.id) || ["__proto__","constructor","prototype"].includes(f.id) || typeof f.label !== "string" || !f.label.trim() || f.label.trim().length > 60 || /[\x00-\x1f]/.test(f.label) || typeof f.private !== "boolean") throw new Error("Choose a field name of up to 60 characters and its visibility.");
+    const label = f.label.trim();
+    if (ids.has(f.id) || labels.has(label.toLowerCase()) || ["part number","description","quantity","unit price","brand","dealer","town","vat basis"].includes(label.toLowerCase())) throw new Error("That field already exists. Choose a different name.");
+    ids.add(f.id); labels.add(label.toLowerCase());
+    return {id:f.id,label,private:f.private};
+  });
+}
+export function validatePartDetails(value: unknown, fields: PartDetailField[]): Record<string,string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Enter valid extra part details.");
+  const allowed = new Set(fields.map(f=>f.id));
+  return Object.fromEntries(Object.entries(value).map(([key,v])=>{
+    if (!allowed.has(key) || typeof v !== "string" || v.length > 500 || /[\x00-\x1f]/.test(v)) throw new Error("Extra details must use a configured field and contain at most 500 characters on one line.");
+    return [key,v.trim()];
+  }).filter(([,v])=>v));
+}
 /** CSV snapshots only. No inventory movements are recorded here. */
 export type PartRow = {
   partNumber: string;
@@ -5,6 +33,7 @@ export type PartRow = {
   price: number | null;
   brand?: string;
   description?: string;
+  details?: Record<string, string>;
 };
 export type PartColumns = {
   partNumber: number;
@@ -12,6 +41,7 @@ export type PartColumns = {
   price: number;
   brand?: number;
   description?: number;
+  details?: Record<string, number>;
 };
 export type PartImportOptions = {
   hasHeader?: boolean;
@@ -83,7 +113,7 @@ export function guessPartColumns(headers: string[]): PartColumns {
       /^(part\s*(number|no\.?|code)|stock\s*code|item\s*code|code)$/i,
     ),
     quantity: find(/^(qty|quantity|on\s*hand|stock\s*quantity)$/i),
-    price: find(/^(price|unit\s*price|selling\s*price)$/i),
+    price: find(/^(price|unit\s*price(?:\s*\(ZAR\))?|selling\s*price)$/i),
     brand: find(/^(brand|make|manufacturer)$/i),
     description: find(/^(description|part\s*description|item\s*description)$/i),
   };
@@ -127,6 +157,7 @@ export function parsePartsSnapshot(
     columns.price,
     columns.brand ?? -1,
     columns.description ?? -1,
+    ...Object.values(columns.details ?? {}),
   ];
   const indexes = [...required, ...optional.filter((i) => i !== -1)];
   if (
@@ -208,6 +239,7 @@ export function parsePartsSnapshot(
           : number(row[columns.price], line, "unit price"),
       ...(rowBrand ? { brand: rowBrand } : {}),
       ...(description ? { description } : {}),
+      ...(columns.details ? {details:Object.fromEntries(Object.entries(columns.details).map(([key,index])=>[key,optionalText(index, "extra detail", 500)]).filter(([,v])=>v))} : {}),
     };
   });
 }
@@ -222,7 +254,8 @@ export function snapshotChanges(previous: PartRow[], next: PartRow[]) {
       before.price !== row.price ||
       before.quantity !== row.quantity ||
       (before.brand || "") !== (row.brand || "") ||
-      (before.description || "") !== (row.description || "")
+      (before.description || "") !== (row.description || "") ||
+      JSON.stringify(Object.entries(before.details || {}).sort()) !== JSON.stringify(Object.entries(row.details || {}).sort())
     )
       updated++;
     old.delete(row.partNumber.toUpperCase());

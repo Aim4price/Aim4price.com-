@@ -31,6 +31,7 @@ export function pastePartsCells(
   text: string,
   row: number,
   column: number,
+  width: number = PART_FIELDS.length,
 ) {
   // Spreadsheet clipboard data is TSV. Never interpret a comma in a part code as a separator.
   const cells = readPartsCsv(text, {
@@ -38,12 +39,12 @@ export function pastePartsCells(
     preserveEmptyRows: true,
   });
   if (row + cells.length > 20000) throw new Error("Use at most 20,000 parts.");
-  if (cells.some((c) => column + c.length > PART_FIELDS.length))
+  if (cells.some((c) => column + c.length > width))
     throw new Error(
       "These cells extend beyond Brand. Paste into the first column or import a file to match columns.",
     );
   const next = rows.map((r) => [...r]);
-  while (next.length < row + cells.length) next.push(blankPart());
+  while (next.length < row + cells.length) next.push(Array(width).fill(""));
   cells.forEach((r, i) =>
     r.forEach((value, j) => {
       next[row + i][column + j] = value;
@@ -57,6 +58,7 @@ export function partCellErrors(rows: string[][]) {
   rows.forEach((row, i) => {
     if (row.every((v) => !v.trim())) return;
     row.forEach((value, col) => {
+      if (col >= 5) { if (value.length > 500 || /[\x00-\x1f]/.test(value)) (errors[i] ||= {})[col] = "Use at most 500 characters on one line."; return; }
       const candidate = ["VALID", "", "1", "", ""];
       candidate[col] = value;
       try {
