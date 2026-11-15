@@ -593,6 +593,11 @@ const appCode =
     assert.ok(await page.$eval('[class*=stageBody]', body=>body.scrollHeight <= body.clientHeight + 1), 'Core fields fit without vertical scrolling');
     await page.screenshot({path:path.join(output,'manual-core-fields.png')});
     await click('+ Add detail');
+    const detailChoices=await page.$$eval('dialog[open] [data-detail]',cards=>cards.map(card=>({id:card.dataset.detail,text:card.querySelector('small').textContent,oneLine:card.querySelector('small').getBoundingClientRect().height<=parseFloat(getComputedStyle(card.querySelector('small')).lineHeight)+1})));
+    assert.equal(detailChoices.length,7,'Every picker keeps all seven choices visible');
+    assert.ok(detailChoices.every(c=>c.oneLine),'Card descriptions stay on one line');
+    assert.ok(detailChoices.some(c=>c.id==='custom'));
+    assert.ok(detailChoices.some(c=>c.text==='Compatible asset models'));
     await page.screenshot({path:path.join(output,'detail-picker-choices.png')});
     await page.click('[aria-label="Close add detail"]');
     await page.setViewport({width:1440,height:1000});
@@ -609,7 +614,7 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Unit price 1"]',e=>e.value),'100');
     await page.click('[aria-label="Remove Brand from this part"]');
     assert.equal(await page.$('[aria-label="Brand 1"]'),null);
-    await click('+ Add detail'); await click('Brand');
+    await click('+ Add detail'); await page.click('dialog[open] summary'); await click('Brand');
     assert.equal(await page.$eval('[aria-label="Brand 1"]',e=>e.value),'');
     await page.type('[aria-label="Brand 1"]','Landini');
 
@@ -741,6 +746,7 @@ const appCode =
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
     await click('+ Add column');
+    assert.deepEqual(await page.$$eval('dialog[open] [data-detail]',cards=>cards.map(c=>c.dataset.detail)),detailChoices.map(c=>c.id),'Sheet and individual detail pickers have the same seven cards');
     await page.screenshot({path:path.join(output,'add-column-grid.png')});
     await click('Custom field');
     await page.type('[aria-label="Custom field name"]','Dimensions');

@@ -2029,7 +2029,11 @@
 .modal.columnPicker .detailPickerChoices button[data-detail="compatibility"],
 .modal.columnPicker .detailPickerChoices button[data-detail="condition"] { border-color:var(--app-success-line,#78b4a1); }
 .columnPicker .detailPickerChoices strong { font-size:1rem; font-weight:800; }
-.columnPicker .detailPickerChoices small { font-size:.88rem; font-weight:650; }
+.columnPicker .detailPickerChoices small { font-size:.88rem; font-weight:650; white-space:nowrap; }
+.modal.columnPicker .detailPickerChoices button:disabled { opacity:.5; cursor:default; }
+.detailRestoreInputs { margin-top:16px; }
+.detailRestoreInputs summary { cursor:pointer; font-weight:650; }
+.detailRestoreInputs > div { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; }
 @media (max-width:1050px) {
   .columnPicker .detailPickerChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
