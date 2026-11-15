@@ -116,6 +116,7 @@ const appCode =
   const browser = await puppeteer.launch({
     executablePath: await chromium.executablePath(),
     args: chromium.args,
+    ignoreDefaultArgs: ["--hide-scrollbars"],
     headless: true,
     pipe: true,
   });
@@ -678,6 +679,22 @@ const appCode =
     await click("Manage columns");
     await page.evaluate(() => [...document.querySelectorAll('dialog label')].find(e => e.querySelector('strong')?.textContent === 'Brand').querySelector('input').click());
     await click("Done");
+    await page.click('[aria-label="Select row 1"]');
+    // Optional core columns can be removed without shifting the CSV schema; Undo restores them.
+    for (const label of ['Description','Unit price','Brand']) {
+      const before = await page.$eval(`[aria-label="${label} 1"]`,e=>e.value);
+      await click('Manage columns');
+      assert.equal(await page.$('[aria-label="Delete Part number column"]'),null);
+      assert.equal(await page.$('[aria-label="Delete Quantity column"]'),null);
+      await page.click(`[aria-label="Delete ${label} column"]`);
+      await click('Delete column from sheet');
+      assert.equal(await page.$eval(`[aria-label="${label} 1"]`,e=>e.getClientRects().length),0);
+      assert.equal(await page.$eval(`[aria-label="${label} 1"]`,e=>e.value),'');
+      assert.equal(await page.$eval('[aria-label="Part number 1"]',e=>e.value),'001-ABC');
+      await click('Undo');
+      assert.equal(await page.$eval(`[aria-label="${label} 1"]`,e=>e.value),before);
+      assert.ok(await page.$eval(`[aria-label="${label} 1"]`,e=>e.getClientRects().length));
+    }
     await page.click('[aria-label="Select row 1"]');
     const originalBrand = await page.$eval('[aria-label="Brand 1"]', e => e.value);
     await click("Bulk edit");

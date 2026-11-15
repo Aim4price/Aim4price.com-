@@ -2135,7 +2135,7 @@
 .modal.columnsDialog { width:min(1120px,calc(100vw - 40px)); }
 .columnsDialog .sheetToolBody { flex:0 1 auto; padding:24px 14px 24px 4px; gap:20px; }
 .columnIntro { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-.columnIntro p { font-weight:650; }
+.columnIntro p, .columnsDialog .bulkPager > span { font-family:inherit; font-size:1rem; font-weight:650; }
 .columnIntro span { color:var(--app-text-muted,#64766c); font-size:.88rem; }
 .columnsDialog .manageColumns { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
 .columnsDialog .manageColumnRow { display:grid; gap:18px; padding:20px; border-radius:20px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
@@ -2153,3 +2153,53 @@
 .columnsDialog .sheetToolFooter { gap:12px; }
 @media(max-width:900px) { .columnsDialog .manageColumns { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:600px) { .modal.columnsDialog { width:calc(100vw - 24px); } .columnsDialog .manageColumns { grid-template-columns:1fr; } .columnIntro { align-items:flex-start; flex-direction:column; gap:4px; } .columnsDialog .sheetToolBody { padding:18px 12px 18px 4px; } }
+
+/* Continuous sheet surfaces: inputs fill the row instead of leaving baseline gaps. */
+.entryModal .stockSheet .independentRows tbody tr { background:var(--app-surface-soft,#edf5f1); }
+.entryModal .stockSheet .independentRows td { background:var(--app-surface-soft,#edf5f1); }
+.entryModal .stockSheet .independentRows td input:not([type="checkbox"]) { display:block; margin:0; min-height:48px; background:transparent; }
+.entryModal .stockSheet .independentRows td:has(.cellError) { background:var(--app-danger-soft,#fff6f6); }
+.entryModal .stockSheet .stageBody { padding-right:20px; scrollbar-color:var(--app-border-strong,#91ada1) transparent; }
+.entryModal .stockSheet .independentRows tr[data-extra-details] { scrollbar-color:var(--app-border-strong,#91ada1) var(--app-surface-soft,#edf5f1); }
+/* Chromium uses the shaped thumb; Firefox retains its slim native scrollbar. */
+@supports selector(::-webkit-scrollbar) {
+  .entryModal .stockSheet .stageBody,
+  .entryModal .stockSheet .independentRows tr[data-extra-details] { scrollbar-width:auto; scrollbar-color:auto; }
+}
+.entryModal .stockSheet .stageBody::-webkit-scrollbar { width:8px; }
+.entryModal .stockSheet .independentRows tr[data-extra-details]::-webkit-scrollbar { height:8px; }
+.entryModal .stockSheet .stageBody::-webkit-scrollbar-track { background:transparent; margin-block:12px; }
+.entryModal .stockSheet .independentRows tr[data-extra-details]::-webkit-scrollbar-track { background:var(--app-surface-soft,#edf5f1); margin-inline:12px; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb { background:var(--app-border-strong,#91ada1); background-clip:padding-box; border:2px solid transparent; border-radius:999px; min-height:40px; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:hover { background-color:var(--app-accent,#648b7a); }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:active { background-color:var(--app-primary,#17654c); }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-button { display:none; width:0; height:0; }
+.entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-corner { background:transparent; }
+
+/* Bulk editing shares the calm, semibold typography of Manage columns. */
+.bulkWizard .bulkProgress,
+.bulkWizard .bulkStage :is(h3,p,legend,label,input,strong,small),
+.bulkWizard .bulkPager > span,
+.bulkWizard .bulkReview > div > span > span {
+  font-family:inherit; font-size:1rem; font-weight:650; line-height:1.45;
+}
+.bulkWizard .bulkProgress { margin:16px 0 20px; gap:20px; }
+.bulkWizard .bulkStage { gap:14px; }
+.bulkWizard .bulkStage > h3 { color:var(--app-text,#163f32); }
+.bulkWizard .bulkStage > p { color:var(--app-text-muted,#64766c); }
+.bulkWizard .partsChoice { margin:0; }
+.bulkWizard .partsChoice legend { margin-bottom:10px; }
+.bulkWizard .partsChoiceOptions { gap:12px; }
+.bulkWizard .partsChoiceOptions label { min-height:64px; padding:14px 16px; border-radius:16px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
+.bulkWizard .partsChoiceOptions label:has(input:checked) { background:var(--app-success-soft,#e1f2e9); }
+.bulkWizard .partsChoiceOptions label:not([data-disabled]):hover { border-color:var(--app-primary,#17654c); }
+.bulkWizard .bulkReview { gap:8px; }
+.bulkWizard .bulkReview > div { padding:10px 16px; gap:16px; border-radius:16px; }
+.bulkWizard .bulkReview > div > span { gap:2px; }
+.bulkWizard .sheetToolBody { padding:2px 14px 10px 2px; }
+.bulkWizard .sheetToolFooter { margin-top:8px; }
+.bulkWizard .bulkPager button { font-family:inherit; font-size:1rem; font-weight:650; padding:9px 14px; }
+@media(max-width:600px) {
+  .bulkWizard .bulkStage .partsChoiceOptions { grid-template-columns:1fr; }
+  .bulkWizard .bulkReview > div { gap:10px; padding:10px; }
+}

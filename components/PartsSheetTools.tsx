@@ -88,9 +88,15 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
     onApply(updated,false,editor.extraFields);onClose();
   }}/>;
   const applyColumnAction=()=>{
-    if(!columnAction)return;
+    if(!columnAction || columnAction.index===0 || columnAction.index===2)return;
     const index=columnAction.index;
-    if(columnAction.kind==="delete") onApply(rows.map(row=>row.filter((_,i)=>i!==index)),false,extraFields.filter((_,i)=>i!==index-5));
+    if(columnAction.kind==="delete") {
+      if(index<5) {
+        // Core CSV positions must remain stable; remove the values and the visible column.
+        onApply(rows.map(row=>row.map((cell,i)=>i===index ? "" : cell)));
+        onHidden([...new Set([...hidden,index])]);
+      } else onApply(rows.map(row=>row.filter((_,i)=>i!==index)),false,extraFields.filter((_,i)=>i!==index-5));
+    }
     else onApply(rows.map((row,i)=>targetSet.has(i) ? row.map((cell,j)=>j===index ? "" : cell) : row));
     onClose();
   };
@@ -111,10 +117,10 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
             <label><input type="checkbox" checked={!hidden.includes(i)} disabled={i===0 || i===2} onChange={e=>onHidden(e.target.checked ? hidden.filter(n=>n!==i) : [...hidden,i])}/><span><strong title={label}>{label}</strong><small>{i===0 || i===2 ? "Required · always visible" : `${count} ${count===1 ? "part" : "parts"} with values`}</small></span></label>
             <div className={styles.columnCardActions}>
               {i===0 || i===2 ? <span>Required column</span> : <button type="button" disabled={!rows.some(row=>row[i]?.trim())} onClick={()=>setColumnAction({index:i,kind:"clear"})} aria-label={`Clear ${label} values`}>Clear values</button>}
-              {i>=5 && <button type="button" className={styles.detailTrash} aria-label={`Delete ${label} column`} disabled={removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id)} title={removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id) ? "Use Edit in a sheet to delete an existing column" : "Delete column"} onClick={()=>setColumnAction({index:i,kind:"delete"})}><DetailIcon kind="delete"/></button>}
+              {i!==0 && i!==2 && <button type="button" className={styles.detailTrash} aria-label={`Delete ${label} column`} disabled={i>=5 && removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id)} title={i>=5 && removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id) ? "Use Edit in a sheet to delete an existing column" : "Delete column"} onClick={()=>setColumnAction({index:i,kind:"delete"})}><DetailIcon kind="delete"/></button>}
             </div>
           </div>})}</div>
-          {labels.length>6 && <div className={styles.bulkPager}><button disabled={!columnPage} onClick={()=>setColumnPage(columnPage-1)}>Previous columns</button><span>{columnPage+1} / {Math.ceil(labels.length/6)}</span><button disabled={(columnPage+1)*6>=labels.length} onClick={()=>setColumnPage(columnPage+1)}>More columns</button></div>}
+          {labels.length>6 && <div className={styles.bulkPager}><button disabled={!columnPage} onClick={()=>setColumnPage(columnPage-1)}>Previous columns</button><span>{columnPage+1} / {Math.ceil(labels.length/6)}</span><button disabled={(columnPage+1)*6>=labels.length} onClick={()=>setColumnPage(columnPage+1)}>Next columns</button></div>}
         </>}
 
       </>}
