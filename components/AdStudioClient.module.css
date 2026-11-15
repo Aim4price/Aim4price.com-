@@ -753,25 +753,57 @@
 .templateFooter button:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
 .templateFooter button:disabled { cursor: default; opacity: .6; }
 
-/* Match the workspace controls to Aim4price; exported advert styles stay independent. */
+/* Match My Advert Showroom controls; exported advert artwork stays independent. */
 .createButton,
 .primaryButton, .secondaryButton, .ghostButton, .smallButton,
 .iconDangerButton, .dangerButton, .backButton, .logoUpload, .logoRemove {
-  display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
-  min-height: 3rem; padding: .75rem 1.1rem; border: 1px solid;
-  border-radius: 1rem; font-family: "Montserrat", sans-serif;
-  font-size: 1rem; font-weight: 750; line-height: 1.25;
+  display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+  min-height: 3rem; padding: .65rem 1.1rem; border: 1px solid;
+  border-radius: .78rem; font-family: "Montserrat", sans-serif;
+  font-size: .98rem; font-weight: 650; line-height: 1.25;
   text-decoration: none; white-space: nowrap; cursor: pointer;
+  box-shadow: none;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
 }
-.createButton { color: var(--app-warning, #854616); border-color: var(--app-warning-line, #eba967); background: var(--app-warning-soft, #fff6ec); }
-.secondaryButton, .smallButton, .logoUpload { color: var(--app-info, #205888); border-color: var(--app-info-line, #b8d4f5); background: var(--app-info-soft, #f2f8ff); }
-.ghostButton, .backButton { border-color: var(--app-line, #d3dfe8); background: var(--app-surface-soft, #f2f5f8); }
-.primaryButton { border-color: var(--studio-green); }
-.iconDangerButton, .dangerButton, .logoRemove { border-color: var(--app-danger-line, #edc0ba); background: var(--app-danger-soft, #fff6f4); }
-.createButton:hover:not(:disabled) { border-color: var(--app-warning, #b47435); box-shadow: 0 5px 16px var(--app-shadow-colour, #173b2f12); }
-.createButton:focus-visible { outline: 2px solid var(--app-accent, #237454); outline-offset: 3px; }
-.kitCardActions button { min-height: 2.75rem; padding: .65rem .85rem; font-size: .88rem; }
-.kitCardActions .studioIcon, .studioIcon { width: 1.2rem; height: 1.2rem; }
+.createButton, .primaryButton {
+  padding: .85rem 1.25rem; border-radius: 1.2rem;
+  font-size: 1rem; font-weight: 800;
+}
+.createButton {
+  color: var(--app-text, #0d5a42); border-color: var(--app-accent, #75c79a);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #ecf9f1));
+}
+.createButton:hover:not(:disabled) {
+  border-color: var(--app-accent, #4daf78);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #ddf3e6));
+}
+.secondaryButton, .smallButton, .logoUpload, .ghostButton, .backButton {
+  color: var(--app-text, #165340); border-color: var(--app-line, #cddbd5);
+  background: var(--app-surface, #fff);
+}
+.secondaryButton:hover:not(:disabled), .smallButton:hover:not(:disabled),
+.logoUpload:hover, .ghostButton:hover:not(:disabled), .backButton:hover:not(:disabled) {
+  border-color: var(--app-accent, #43836a); background: var(--app-surface, #f8fbfa);
+}
+.primaryButton {
+  color: #fff; border-color: #23775c;
+  background: linear-gradient(180deg, #197657, #105640);
+}
+.primaryButton:hover:not(:disabled) { background: linear-gradient(180deg, #16664c, #104737); }
+.iconDangerButton, .dangerButton, .logoRemove {
+  color: var(--app-danger, #a63832); border-color: var(--app-danger-line, #edc0ba);
+  background: var(--app-danger-soft, #fff6f4);
+}
+.createButton:hover:not(:disabled), .primaryButton:hover:not(:disabled) {
+  transform: translateY(-1px); box-shadow: 0 6px 16px var(--app-shadow-colour, #173b2f18);
+}
+.createButton:focus-visible, .primaryButton:focus-visible, .secondaryButton:focus-visible,
+.smallButton:focus-visible, .ghostButton:focus-visible, .iconDangerButton:focus-visible,
+.dangerButton:focus-visible, .backButton:focus-visible, .logoUpload:focus-within, .logoRemove:focus-visible {
+  outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px;
+}
+.kitCardActions button { min-height: 2.85rem; padding: .65rem 1.1rem; font-size: .98rem; }
+.kitCardActions .studioIcon, .studioIcon { width: 20px; height: 20px; }
 .kitCardBody { padding: 1rem; }
 .kitCardTitle strong { font-size: 1rem; font-weight: 800; line-height: 1.3; letter-spacing: -.02em; }
 .sectionHeader p, .editorHeader p, .stepIntro p,
