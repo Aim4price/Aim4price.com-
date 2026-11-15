@@ -16,6 +16,7 @@ import {
   partCellErrors,
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
+import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
 import styles from "../app/dealer/parts/parts.module.css";
 type Details = {
@@ -76,6 +77,15 @@ export default function PartsImportForm({
   const [attempted, setAttempted] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState("");
+  const [tool, setTool] = useState<SheetTool | null>(null);
+  const [hiddenColumns, setHiddenColumns] = useState<number[]>([]);
+  const addRowFocus = useRef<number | null>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (addRowFocus.current === null) return;
+    const input = sheetRef.current?.querySelector<HTMLInputElement>(`[aria-label="Part number ${addRowFocus.current + 1}"]`);
+    if (input) { input.focus(); input.scrollIntoView({block: "nearest"}); addRowFocus.current = null; }
+  });
   const [undo, setUndo] = useState<string[][] | null>(null);
   const [selected, updateSelected] = useState<number[]>([]);
   function setSelected(next: number[]) { updateSelected(next); setCleanup(false); }
@@ -124,6 +134,7 @@ export default function PartsImportForm({
       return;
     }
     if (invalid) {
+      setHiddenColumns([]);
       setError("Check the highlighted cells.");
       setPage(Math.floor(Number(Object.keys(errors)[0]) / 50));
       return;
@@ -170,7 +181,7 @@ export default function PartsImportForm({
   }
   function change(next: string[][], removing = false) {
     if (editSnapshot && !removing && rows.some((row, i) => row.some(v => v.trim()) && !next[i]?.some(v => v.trim()))) {
-      setError("Use Remove selected to remove parts. Clearing cells does not remove a saved part.");
+      setError("Use the row actions to delete parts. Clearing cells does not remove a saved part.");
       return;
     }
     setUndo(rows);
@@ -349,6 +360,13 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
+      {tool && <PartsSheetTools tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} onClose={() => setTool(null)} onApply={(next, removing) => {change(next, removing);setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
+      {editSnapshot && stage === "entry" && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
+        <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
+        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Columns</button>
+        <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
+        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);setCleanup(false);}}}>Undo</button>
+      </div>}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
           {stage === "choose" && (
@@ -640,12 +658,12 @@ export default function PartsImportForm({
                 </button>
               </div>
               </>}
-              <div className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
+              <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={styles.editorTable}>
                   <thead>
                     <tr>
                       <th scope="col">
-                        {editSnapshot ? "#" : <input
+                        {<input
                           type="checkbox"
                           aria-label="Select all rows"
                           checked={
@@ -659,7 +677,7 @@ export default function PartsImportForm({
                         />}
                       </th>
                       {PART_LABELS.map((label, i) => (
-                        <th key={label}>
+                        <th key={label} hidden={!!editSnapshot && hiddenColumns.includes(i)}>
                           {label}
                           {i !== 0 && i !== 2 && <small>Optional</small>}
                         </th>
@@ -672,7 +690,7 @@ export default function PartsImportForm({
                       return (
                         <tr key={i}>
                           <td>
-                            {!editSnapshot && <input
+                            {<input
                               type="checkbox"
                               aria-label={`Select row ${i + 1}`}
                               checked={selected.includes(i)}
@@ -685,9 +703,10 @@ export default function PartsImportForm({
                               }
                             />}
                             <small>{i + 1}</small>
+                            {editSnapshot && <button type="button" className={styles.sheetRowAction} aria-label={`Actions for row ${i + 1}`} onClick={() => setTool({kind: "row", index: i})}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m9 3-.5 3-2 .9L4 6l-2 3 2.2 2v2L2 15l2 3 2.5-.9 2 .9.5 3h4l.5-3 2-.9L18 18l2-3-2.2-2v-2L20 9l-2-3-2.5.9-2-.9-.5-3Z"/><circle cx="11" cy="12" r="3"/></svg></button>}
                           </td>
                           {row.map((cell, j) => (
-                            <td key={j}>
+                            <td key={j} hidden={!!editSnapshot && hiddenColumns.includes(j)}>
                               <input
                                 aria-label={`${PART_LABELS[j]} ${i + 1}`}
                                 aria-invalid={Boolean(showError(i, j))}
@@ -725,6 +744,7 @@ export default function PartsImportForm({
                                   e.preventDefault();
                                   try {
                                     setError("");
+                                    if (editSnapshot && hiddenColumns.length && e.clipboardData.getData("text/plain").includes("\t")) throw new Error("Show all columns before pasting multiple columns so values stay aligned.");
                                     change(
                                       pastePartsCells(
                                         rows,
@@ -755,8 +775,9 @@ export default function PartsImportForm({
                 </table>
               </div>
               <div className={styles.actions}>
+                {editSnapshot && <button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, blankPart()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
                 <span>
-                  {rows.length.toLocaleString()} rows
+                  {rows.length.toLocaleString()} {rows.length === 1 ? "row" : "rows"}
                   {attempted && invalid ? ` · ${invalid} need attention` : ""}
                 </span>
                 {attempted && invalid > 0 && (
