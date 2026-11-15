@@ -1680,3 +1680,17 @@
 }
 @keyframes partsSlideProgress { from { transform: scaleX(.7); opacity: .5; } to { transform: scaleX(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .partsProgress > span { animation: none; } }
+.downloadScope {
+  margin: 0;
+  color: var(--app-muted, #60756d);
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.modal .downloadName input {
+  background: var(--app-surface-soft, #edf5f1);
+  font-weight: 700;
+  border-radius: 14px;
+  min-height: 52px;
+}

@@ -21,6 +21,8 @@ import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import VatPriceInput from "../../../components/VatPriceInput";
 import priceStyles from "../../../components/asset-register/AssetDisposal.module.css";
 import styles from "./parts.module.css";
+import reportStyles from "../../../components/ReportDownload.module.css";
+import { appRealmForPath } from "../../../lib/app-realm";
 type Network = {
   owner_business_name?: string;
   owner_town?: string;
@@ -166,6 +168,7 @@ function Modal({
   entry = false,
   enquiry = false,
   destructive = false,
+  download = false,
   progress,
   children,
 }: {
@@ -175,6 +178,7 @@ function Modal({
   entry?: boolean;
   enquiry?: boolean;
   destructive?: boolean;
+  download?: boolean;
   progress?: { value: number; label: string };
   onClose: () => void;
   busy: boolean;
@@ -192,17 +196,19 @@ function Modal({
     <div className={styles.backdrop} data-website-overlay>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""}`}
+        data-download-dialog={download ? "true" : undefined}
         role="dialog"
         aria-describedby={destructive ? "delete-parts-copy" : undefined}
         aria-modal="true"
         aria-label={title}
       >
-        <div className={styles.closeWrap}>
+        {!download && <div className={styles.closeWrap}>
           <ShareModalCloseButton onClick={onClose} disabled={busy} />
-        </div>
-        <header className={styles.dialogHeader}>
-          <h2>{title}</h2>
+        </div>}
+        <header className={styles.dialogHeader} data-download-header={download ? "true" : undefined}>
+          {download ? <div><h2>{title}</h2></div> : <h2>{title}</h2>}
+          {download && <ShareModalCloseButton onClick={onClose} disabled={busy} />}
           {subtitle && <p>{subtitle}</p>}
           {progress && <div className={styles.partsProgress} role="progressbar" aria-label="Parts workflow" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.value} aria-valuetext={progress.label}>
             <span key={progress.label} style={{width: `${progress.value}%`}} />
@@ -239,6 +245,8 @@ export default function PartsClient({
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [refresh, setRefresh] = useState(0);
+  const [downloadFormat, setDownloadFormat] = useState<"pdf" | "xlsx">("pdf");
+  const [reportName, setReportName] = useState("");
   const [modal, setModal] = useState<
       | "download"
       | "access"
@@ -504,7 +512,7 @@ export default function PartsClient({
           Manage
         </button>
       )}
-      <button className={styles.primary} onClick={()=>setModal("download")}><Icon kind="download" />Download</button>
+      <button className={styles.primary} onClick={()=>{setReportName(current?.name || "Parts");setDownloadFormat("pdf");setModal("download");}}><Icon kind="download" />Download</button>
       {view === "members" && (
         <button
           onClick={() =>
@@ -1367,23 +1375,46 @@ export default function PartsClient({
             />}
           </Modal>
         )}
-        {modal === "download" && <Modal title="Download parts" subtitle={current?.name} onClose={close} busy={busy}>
-          <p>Download {search.trim() ? "all matching parts" : "the complete stocklist"}, including description, brand, quantity, unit price and VAT basis.</p>
-          <div className={styles.actions}>
-            {(["xlsx", "csv"] as const).map(format=><button key={format} disabled={busy} onClick={()=>void run(async()=>{
+        {modal === "download" && <Modal title="Download parts" onClose={close} busy={busy} download>
+          <div data-download-body="true">
+            <label className={styles.downloadName}>PARTS LIST / REPORT NAME<input maxLength={150} value={reportName} disabled={busy} onChange={e=>setReportName(e.target.value)} /></label>
+            <div data-download-grid="true" aria-label="Parts download format">
+              {(["pdf", "xlsx"] as const).map(format=><button key={format} type="button" data-download-option="true" aria-pressed={downloadFormat === format} disabled={busy} onClick={()=>setDownloadFormat(format)}>
+                <span data-download-icon="true"><img src={format === "pdf" ? "/brand/pdf.png" : "/brand/sheet.png"} alt="" /></span>
+                <span data-download-copy="true"><strong>{format === "pdf" ? "PDF report" : "XLSX workbook"}</strong><small>{format === "pdf" ? "Printable parts stock list." : "Parts records in Excel."}</small></span>
+              </button>)}
+            </div>
+            <p className={styles.downloadScope}>{search.trim() ? `Matching parts for “${search.trim()}”` : "Complete parts list"} · {displayVatIncluded ? "Incl. VAT" : "Excl. VAT"}</p>
+          </div>
+          {feedback}
+          <footer data-download-footer="true">
+            <button type="button" disabled={busy} onClick={close}>Cancel</button>
+            <button type="button" data-download-primary="true" disabled={busy || !reportName.trim()} onClick={()=>void run(async()=>{
               const data=await api(undefined,`?network=${network}&view=${current?.owned ? "mine" : "search"}&search=${encodeURIComponent(search)}&download=true`);
-              const Excel=await import("exceljs");
-              const book=new Excel.Workbook();const sheet=book.addWorksheet("Parts");
-              sheet.columns=[{header:"Part number",key:"part",width:24},{header:"Description",key:"description",width:48},{header:"Brand",key:"brand",width:22},{header:"Quantity",key:"quantity",width:14},{header:"Unit price (ZAR)",key:"price",width:22},{header:"VAT basis",key:"vat",width:18},{header:"Dealer",key:"dealer",width:32},{header:"Town",key:"town",width:24}];
-              const safe=(value:string)=>format === "csv" && /^[\s]*[=+@-]/.test(value) ? "'"+value : value;
-              (data.rows as Row[]).forEach(r=>sheet.addRow({part:safe(r.part_number),description:safe(r.description||""),brand:safe(r.brand||""),quantity:r.quantity,price:r.price===null?null:Number(displayedPrice(r).toFixed(2)),vat:displayVatIncluded?"Incl. VAT":"Excl. VAT",dealer:safe(r.business_name),town:safe(r.town||"")}));
-              sheet.getRow(1).font={bold:true};sheet.views=[{state:"frozen",ySplit:1}];sheet.getColumn("part").numFmt="@";sheet.getColumn("price").numFmt='"R" #,##0.00';
-              const buffer=format==="xlsx"?await book.xlsx.writeBuffer():await book.csv.writeBuffer();
-              const url=URL.createObjectURL(new Blob([new Uint8Array(buffer)],{type:format==="xlsx"?"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":"text/csv;charset=utf-8"}));
-              const a=document.createElement("a");a.href=url;a.download=(current?.name||"Parts").replace(/[^a-zA-Z0-9 _-]/g,"")+"."+format;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+              const { buildPartsStockReportHtml, buildPartsWorkbook } = await import("../../../lib/parts-network-report");
+              const vatLabel = displayVatIncluded ? "Incl. VAT" : "Excl. VAT";
+              const exportRows = (data.rows as Row[]).map(r=>({part:r.part_number,description:r.description || "",brand:r.brand || "",quantity:r.quantity,price:r.price === null ? null : Number(displayedPrice(r).toFixed(2)),vat:vatLabel,dealer:r.business_name,town:r.town || ""}));
+              const fileName = reportName.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/\.+$/g, "") || "Parts";
+              let blob: Blob;
+              if (downloadFormat === "pdf") {
+                const html = buildPartsStockReportHtml(reportName.trim(), exportRows, vatLabel, search.trim() ? `Matching parts for “${search.trim()}”` : "Complete parts list", new Intl.DateTimeFormat("en-ZA", {dateStyle:"medium",timeZone:"Africa/Johannesburg"}).format(new Date()));
+                const response = await fetch("/api/reports/render-pdf", {
+                  method:"POST", credentials:"same-origin", cache:"no-store", signal:AbortSignal.timeout(90000),
+                  headers:{"Content-Type":"application/json","x-aim4price-client-realm":appRealmForPath(window.location.pathname) ?? "website"},
+                  body:JSON.stringify({html,fileName:fileName+".pdf"}),
+                });
+                if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) throw new Error("The PDF could not be prepared. Please try again.");
+                blob = await response.blob();
+              } else {
+                const book = await buildPartsWorkbook(exportRows);
+                blob = new Blob([new Uint8Array(await book.xlsx.writeBuffer())], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+              }
+              const url=URL.createObjectURL(blob);
+              const link=document.createElement("a");link.href=url;link.download=fileName+"."+downloadFormat;
+              document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
               setModal(null);setNotice("Parts download ready.");
-            })}><Icon kind="download" />{format==="xlsx"?"Excel":"CSV"}</button>)}
-          </div>{feedback}
+            })}>{busy ? "Preparing…" : `Download ${downloadFormat === "pdf" ? "PDF" : "Excel"}`}</button>
+          </footer>
         </Modal>}
         {editingPart && <Modal progress={{value: 80, label: "Edit selected part"}} title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
           <form onSubmit={e=>{e.preventDefault();void run(async()=>{

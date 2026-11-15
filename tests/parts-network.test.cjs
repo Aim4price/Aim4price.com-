@@ -684,3 +684,20 @@ test("row edits are scoped, validated and reject stale saves", async () => {
 
   await db.close();
 });
+
+test("Parts PDF escapes user text and distinguishes zero prices from price on request", () => {
+  const { buildPartsStockReportHtml } = load("lib/parts-network-report.ts", {
+    './maintenance-report-style': { MAINTENANCE_REPORT_FONT_CSS: '', MAINTENANCE_REPORT_LAYOUT_CSS: '' },
+    './report-theme': { REPORT_THEME_CSS: '' },
+  });
+  const { parseReportPdfRenderRequest } = load('lib/report-pdf-request.ts');
+  const row = { part: '001-AB', description: '<script>alert(1)</script>', brand: 'A&B', quantity: 0, price: 0, vat: 'Excl. VAT', dealer: 'Dealer', town: 'George' };
+  const html = buildPartsStockReportHtml('Parts <list>', [row, {...row, part:'002', price:null}], 'Excl. VAT', 'Complete parts list', '15 Nov 2026');
+  assert.ok(!html.includes('<script>'));
+  assert.match(html, /&lt;script&gt;/);
+  assert.match(html, /A&amp;B/);
+  assert.match(html, /001-AB/);
+  assert.match(html, /R\s*0[.,]00/);
+  assert.equal((html.match(/Price on request/g) || []).length, 1);
+  assert.equal(parseReportPdfRenderRequest(JSON.stringify({html,fileName:'Parts.pdf'})).html, html);
+});
