@@ -582,6 +582,15 @@ const appCode =
     assert.equal(actions.find((a) => a.action === "import").revision, 1);
     await click("Add / edit parts"); await click("Add parts");
     await click("Add one part");
+    await page.waitForSelector('[aria-label="Part number 1"]');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.evaluate(()=>{const add=[...document.querySelectorAll('button')].find(b=>b.textContent==='+ Add detail');return Boolean(add && add.closest('[class*=entryFooter]')); }),'Add detail sits outside the scrolling fields');
+    assert.ok(await page.$eval('[class*=stageBody]', body=>body.scrollHeight <= body.clientHeight + 1), 'Core fields fit without vertical scrolling');
+    await page.screenshot({path:path.join(output,'manual-core-fields.png')});
+    await click('+ Add detail');
+    await page.screenshot({path:path.join(output,'detail-picker-choices.png')});
+    await page.click('[aria-label="Close add detail"]');
+    await page.setViewport({width:1440,height:1000});
     await page.type('[aria-label="Part number 1"]', '000123');
     await page.type('[aria-label="Quantity 1"]', '1');
     await page.type('[aria-label="Brand 1"]', 'Landini');

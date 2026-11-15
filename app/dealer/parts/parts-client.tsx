@@ -1355,10 +1355,10 @@ export default function PartsClient({
                 <small>Leave blank for price on request.</small>
               </div>
             </div>
-            <div className={styles.partEditFields}><PartDetailInputs fields={editingPart.extraFields} values={editingPart.details} onChange={details=>setEditingPart({...editingPart,details})}/><div className={styles.partEditDescription}><AddPartField fields={editingPart.extraFields} onAdd={field=>setEditingPart({...editingPart,extraFields:[...editingPart.extraFields,field]})}/></div></div>
+            {editingPart.extraFields.length > 0 && <div className={styles.partEditFields}><PartDetailInputs fields={editingPart.extraFields} values={editingPart.details} onChange={details=>setEditingPart({...editingPart,details})}/></div>}
             {feedback}
             </div>
-            <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
+            <div className={`${styles.actions} ${styles.partEditFooter}`}><div className={styles.detailFooterAction}><AddPartField fields={editingPart.extraFields} onAdd={field=>setEditingPart({...editingPart,extraFields:[...editingPart.extraFields,field]})}/></div><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
           </form>
         </Modal>}
         {contact && (

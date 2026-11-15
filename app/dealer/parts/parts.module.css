@@ -1882,3 +1882,44 @@
 .sheetToolDialog .sheetToolBody::-webkit-scrollbar, .partEditorBody::-webkit-scrollbar { width:10px; height:10px; }
 .sheetToolDialog .sheetToolBody::-webkit-scrollbar-track, .partEditorBody::-webkit-scrollbar-track { background:var(--app-surface-soft, #edf5f1); border-radius:10px; margin-block:6px; }
 .sheetToolDialog .sheetToolBody::-webkit-scrollbar-thumb, .partEditorBody::-webkit-scrollbar-thumb { background:var(--app-accent, #648b7a); border:2px solid var(--app-surface-soft, #edf5f1); border-radius:10px; }
+
+/* Optional details belong with the actions, not below the core part fields. */
+.detailFooterAction { margin-right:auto; flex:0 0 auto; }
+.modal .detailFooterAction button { color:var(--app-info, #265b87); background:var(--app-info-soft, #eef5fc); border-color:var(--app-info-line, #b7cfe8); }
+.modal.detailPicker { width:min(940px, calc(100vw - 40px)); padding:28px; }
+.detailPicker .sheetToolBody { padding:24px 20px 24px 4px; gap:20px; scrollbar-width:auto; }
+.detailPickerChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.modal .detailPickerChoices button { display:flex; align-items:center; gap:16px; padding:18px; min-height:96px; text-align:left; border:1px solid var(--app-border, #c5d9cf); border-radius:18px; background:var(--app-surface, #fff); box-shadow:0 4px 12px var(--app-shadow-colour, #153c3109); }
+.detailPickerChoices button > span:nth-child(2) { display:grid; gap:7px; flex:1; min-width:0; }
+.detailPickerChoices strong { font-size:16px; font-weight:750; line-height:1.3; }
+.detailPickerChoices small { font-size:13px; font-weight:500; line-height:1.5; color:var(--app-text-muted, #61766c); }
+.detailIcon { display:flex; align-items:center; justify-content:center; width:44px; height:44px; flex:0 0 44px; border-radius:13px; background:var(--app-success-soft, #e2f3eb); color:var(--app-primary, #17654c); }
+.detailIcon svg { width:24px; height:24px; }
+[data-detail="alternative"] .detailIcon, [data-detail="compatibility"] .detailIcon { background:var(--app-info-soft, #e9f2fd); color:var(--app-info, #265b87); }
+[data-detail="notes"] .detailIcon, [data-detail="location"] .detailIcon { background:var(--app-warning-soft, #fff3e5); color:var(--app-warning, #92541e); }
+.modal .detailPickerChoices button[data-detail="custom"] { grid-column:1/-1; min-height:76px; background:var(--app-surface-soft, #f4f8f6); border-style:dashed; }
+.detailArrow { font-size:25px; color:var(--app-text-muted, #61766c); }
+.modal .detailPickerChoices button:hover { border-color:var(--app-primary, #17654c); background:var(--app-surface-soft, #f4f8f6); }
+.detailSelection { display:flex; align-items:center; gap:16px; padding:18px; background:var(--app-surface-soft, #edf5f1); border:1px solid var(--app-border, #c5d9cf); border-radius:16px; }
+.detailSelection > div { flex:1; min-width:0; }
+.detailSelection strong { font-size:17px; }
+.detailSelection p { font-size:13px; margin:5px 0 0; }
+.detailPicker .detailFieldSettings { gap:18px; padding:4px; }
+.detailPicker .sheetCheck { padding:16px; border:1px solid var(--app-border, #c5d9cf); border-radius:14px; background:var(--app-surface-soft, #f4f8f6); }
+.partEditorBody, .entryModal:has(.singlePartForm) .stageBody { padding-right:20px; scrollbar-width:auto; }
+@media (max-width:600px) {
+  .modal.detailPicker { padding:18px; width:calc(100vw - 24px); }
+  .detailPickerChoices { grid-template-columns:1fr; gap:10px; }
+  .modal .detailPickerChoices button { padding:15px; min-height:88px; gap:12px; }
+  .detailPicker .sheetToolBody { padding:16px 14px 16px 2px; }
+  .detailSelection { flex-wrap:wrap; }
+  .detailFooterAction { margin-right:auto; }
+  .partEditFooter { flex-wrap:wrap; gap:10px; }
+  .modal .partEditFooter button { padding:10px 12px; font-size:13px; }
+}
+.entryModal:has(.singlePartForm) { padding:28px; }
+.entryModal:has(.singlePartForm) .dialogHeader { padding-bottom:18px; margin-bottom:18px; }
+.entryModal:has(.singlePartForm) .dialogHeader h2 { font-size:30px; }
+.entryModal .singlePartForm { gap:18px 22px; }
+
+@media (max-width:600px) { .entryModal:has(.singlePartForm) { padding:22px; } }

@@ -543,7 +543,7 @@ export default function PartsImportForm({
                 </div>;
               })}
               <PartDetailInputs fields={extraFields} values={Object.fromEntries(extraFields.map((f,i)=>[f.id,rows[0]?.[5+i] || ""]))} onChange={values=>change([[...rows[0].slice(0,5),...extraFields.map(f=>values[f.id] || "")]])}/>
-              <div className={styles.partEditDescription}><AddPartField fields={extraFields} onAdd={addField}/></div>
+
             </div>
           )}
           {stage === "entry" && source !== "manual" && (
@@ -759,6 +759,7 @@ export default function PartsImportForm({
         {stage === "choose" && <div className={styles.entryFooter}><button onClick={onBack}>Back</button></div>}
         {stage !== "choose" && (
           <div className={`${styles.entryFooter} ${stage === "entry" && source === "manual" ? styles.partEditFooter : ""}`}>
+            {stage === "entry" && source === "manual" && <div className={styles.detailFooterAction}><AddPartField fields={extraFields} onAdd={addField}/></div>}
             <button
               onClick={() => {
                 setError("");
