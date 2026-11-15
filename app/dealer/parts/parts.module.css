@@ -1190,11 +1190,6 @@
 .entryModal .importForm { min-height: 0; display: flex; flex-direction: column; gap: 16px; flex: 1 1 auto; }
 .entryModal .importFields { display: contents; }
 .stageBody { flex: 1 1 auto; min-height: 5rem; overflow: auto; display: flex; flex-direction: column; gap: 20px; padding: 2px 3px 16px; }
-.entrySteps { list-style: none; display: flex; gap: 24px; padding: 0; margin: 0; flex: 0 0 auto; }
-.entrySteps li { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--app-muted, #63796f); }
-.entrySteps li span { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid var(--app-border, #cbded4); border-radius: 50%; }
-.entrySteps li[aria-current] { color: var(--app-text, #173f33); }
-.entrySteps li[aria-current] span { background: var(--app-primary, #17654c); color: #fff; border-color: transparent; }
 .entryFooter { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--app-border, #cbded4); }
 .entryModal .entryFooter button { min-height: 44px; padding: 10px 20px; font-size: 15px; }
 .entryMethods { grid-template-columns: repeat(3, minmax(0,1fr)); }
@@ -1223,8 +1218,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .dialogHeader { padding-bottom: 14px; margin-bottom: 14px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .dialogHeader h2 { font-size: 24px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryMethods { grid-template-columns: 1fr; gap: 10px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entrySteps { gap: 14px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entrySteps li { font-size: 12px; gap: 5px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryFooter { align-items: flex-end; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryFooter .actions { justify-content: flex-end; gap: 6px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryFooter button { padding: 10px 12px; font-size: 13px; }
@@ -1598,13 +1591,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) > .entryFooter { margin-top: 12px; padding-top: 12px; }
 }
 
-.stockSheet .stageBody { gap: 12px; min-width: 0; overflow-x: hidden; }
+.stockSheet .stageBody {
+  gap: 12px;
+  min-width: 0;
+  overflow-x: hidden;
+  padding: 2px 12px 12px 3px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #648b7a transparent;
+}
 .stockSheetIntro { display: grid; gap: 4px; }
 .stockSheetIntro h3, .stockSheetIntro p { margin: 0; }
 .stockSheetIntro h3 { font-size: 1rem; }
 .stockSheetIntro p { font-size: .9rem; }
 .stockSheet .stageBody > .actions { margin: 0; flex-wrap: wrap; }
-.entryModal .stockSheet .editorWrap { min-height: min(180px, 28dvh); max-width: 100%; }
+/* The sheet body scrolls vertically; the table wrapper only needs to pan across columns. */
+.entryModal .stockSheet .editorWrap {
+  max-height: none;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #648b7a transparent;
+}
 .sheetBulkTools, .numberCleanup {
   padding: 10px 14px;
   border: 1px solid var(--app-border, #cbded4);

@@ -347,23 +347,6 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {editSnapshot && stage !== "choose" && stage !== "example" && (
-        <ol className={styles.entrySteps} aria-label="Add parts steps">
-          {(editSnapshot ? ["Edit stock", "Review changes"] : ["Parts", "Settings", "Review"]).map((label, i) => (
-            <li
-              key={label}
-              aria-current={
-                (stage === "settings" ? 1 : stage === "review" ? (editSnapshot ? 1 : 2) : 0) === i
-                  ? "step"
-                  : undefined
-              }
-            >
-              <span>{i + 1}</span>
-              {label}
-            </li>
-          ))}
-        </ol>
-      )}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage === "example" ? "example" : "parts"} className={styles.stageBody}>
           {stage === "choose" && (
