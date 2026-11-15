@@ -593,6 +593,11 @@ const appCode =
     assert.ok(await page.$eval('[class*=stageBody]', body=>body.scrollHeight <= body.clientHeight + 1), 'Core fields fit without vertical scrolling');
     await page.screenshot({path:path.join(output,'manual-core-fields.png')});
     await click('+ Add detail');
+    const detailChoices=await page.$$eval('dialog[open] [data-detail]',cards=>cards.map(card=>({id:card.dataset.detail,text:card.querySelector('small').textContent,oneLine:card.querySelector('small').getBoundingClientRect().height<=parseFloat(getComputedStyle(card.querySelector('small')).lineHeight)+1})));
+    assert.equal(detailChoices.length,7,'Every picker keeps all seven choices visible');
+    assert.ok(detailChoices.every(c=>c.oneLine),'Card descriptions stay on one line');
+    assert.ok(detailChoices.some(c=>c.id==='custom'));
+    assert.ok(detailChoices.some(c=>c.text==='Compatible asset models'));
     await page.screenshot({path:path.join(output,'detail-picker-choices.png')});
     await page.click('[aria-label="Close add detail"]');
     await page.setViewport({width:1440,height:1000});
@@ -609,7 +614,7 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Unit price 1"]',e=>e.value),'100');
     await page.click('[aria-label="Remove Brand from this part"]');
     assert.equal(await page.$('[aria-label="Brand 1"]'),null);
-    await click('+ Add detail'); await click('Brand');
+    await click('+ Add detail'); await page.click('dialog[open] summary'); await click('Brand');
     assert.equal(await page.$eval('[aria-label="Brand 1"]',e=>e.value),'');
     await page.type('[aria-label="Brand 1"]','Landini');
 
@@ -649,6 +654,7 @@ const appCode =
     assert.equal(await page.$$eval('[aria-label="Parts to edit"] button', buttons => buttons.length), 42);
     assert.ok(await page.$eval('[aria-label="Parts to edit"]', list => list.scrollHeight > list.clientHeight));
     assert.ok(await page.$eval('[aria-label="Choose part"]', dialog => !/Page 1 of|Previous|Next/.test(dialog.textContent)));
+    await page.screenshot({path:path.join(output,'choose-part-refined.png')});
     await page.type('[aria-label="Search parts to edit"]', '001-ABC');
     await click("001-ABC");
     await page.waitForSelector('[aria-label="Edit part"]');
@@ -674,8 +680,19 @@ const appCode =
     const originalBrand = await page.$eval('[aria-label="Brand 1"]', e => e.value);
     await click("Bulk edit");
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
+    await page.setViewport({width:1440,height:720});
+    for(let stage=0;stage<3;stage++) {
+      assert.equal(await page.$eval('[aria-label="Bulk edit progress"]',e=>Number(e.getAttribute('aria-valuenow'))),stage+1);
+      assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk stage fits without scrolling');
+      await page.screenshot({path:path.join(output,`bulk-stage-${stage+1}.png`)});
+      if(stage<2) await click('Continue');
+    }
     await page.type('dialog input:not([type=checkbox]):not([type=radio])', 'Test brand');
     await click("Preview changes");
+    assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk review fits without scrolling');
+    await click('Back');
+    assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'Test brand','Going back preserves the change');
+    await click('Preview changes');
     await page.screenshot({path:path.join(output,'sheet-bulk-preview.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.$eval('dialog[open]', e => e.getBoundingClientRect().right <= innerWidth && e.getBoundingClientRect().left >= 0));
@@ -689,13 +706,17 @@ const appCode =
     await page.click('[aria-label="Select row 1"]');
     await click("Bulk edit");
     await page.click('dialog input[type=radio][value=selected]');
+    await click('Continue');
     await page.click('dialog input[type=radio][value="2"]');
+    await click('Continue');
     await page.type('dialog input:not([type=checkbox]):not([type=radio])', '-1');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.querySelector('[role=alert]') && [...e.querySelectorAll('button')].some(b => b.textContent.includes('Apply to') && b.disabled)));
     await page.click('[aria-label="Close sheet tool"]');
     await click("Bulk edit");
+    await click('Continue');
     await page.click('dialog input[type=radio][value="0"]');
+    await click('Continue');
     await page.type('dialog input[placeholder="e.g. 01."]', '001-');
     await click("Preview changes");
     assert.ok(await page.$eval('dialog', e => e.textContent.includes('001-ABC') && e.textContent.includes('ABC')));
@@ -741,6 +762,7 @@ const appCode =
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
     await click('+ Add column');
+    assert.deepEqual(await page.$$eval('dialog[open] [data-detail]',cards=>cards.map(c=>c.dataset.detail)),detailChoices.map(c=>c.id),'Sheet and individual detail pickers have the same seven cards');
     await page.screenshot({path:path.join(output,'add-column-grid.png')});
     await click('Custom field');
     await page.type('[aria-label="Custom field name"]','Dimensions');
@@ -754,6 +776,19 @@ const appCode =
 
     await click('Add column');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
+    await click('+ Add row');
+    const scrollState=await page.evaluate(()=>{
+      const first=document.querySelector('[aria-label="Part row 1"]');
+      const second=document.querySelector('[aria-label="Part row 2"]');
+      first.scrollLeft=first.scrollWidth;
+      return {firstPopulated:first.hasAttribute('data-extra-details'),secondPopulated:second.hasAttribute('data-extra-details'),firstScroll:first.scrollLeft,secondScroll:second.scrollLeft,emptyScrollbar:getComputedStyle(second).scrollbarWidth};
+    });
+    assert.ok(scrollState.firstPopulated && !scrollState.secondPopulated);
+    assert.ok(scrollState.firstScroll>0 && scrollState.secondScroll===0,'Only the active row pans');
+    assert.equal(scrollState.emptyScrollbar,'none','Empty extra fields do not show a row scrollbar');
+    await page.screenshot({path:path.join(output,'independent-row-scroll.png')});
+    await page.click('[aria-label="Actions for row 2"]'); await click('Delete row'); await click('Delete row from sheet');
+
     await click('Manage columns');
     await page.click('[aria-label="Clear Dimensions values"]');
     await click('Clear values in sheet');
@@ -789,7 +824,9 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Quantity 2"]',e=>e.value),'9');
     await page.click('[aria-label="Select all rows"]');
     await click('Bulk edit');
+    await click('Continue');
     await page.click('dialog input[type=radio][value="0"]');
+    await click('Continue');
     await page.type('dialog input[placeholder="e.g. 01."]','01.');
     await click('Preview changes');
     assert.ok(await page.evaluate(()=>document.body.innerText.includes('01.3657074')&&document.body.innerText.includes('3657074')));
