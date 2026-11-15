@@ -2178,7 +2178,48 @@
 }
 
 /* Keep refresh next to the search area, clear of zoom and map-style controls. */
-.refreshMapButton { left: 5.4rem; right: auto; font-weight: 650; }
-.refreshMapButton:disabled { opacity: .65; cursor: wait; }
-.refreshMapButton:focus-visible { outline: 3px solid #438b70; outline-offset: 3px; }
+.refreshMapButton {
+  left: 5.4rem;
+  right: auto;
+  min-width: 10.5rem;
+  min-height: 3rem;
+  gap: .65rem;
+  padding: .4rem .95rem .4rem .4rem;
+  border-color: #83add5;
+  border-radius: .95rem;
+  background: linear-gradient(135deg, #f3f7fc, #dce9f6);
+  color: #173f4f;
+  font-size: .9rem;
+  font-weight: 750;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 5px 16px rgba(24, 65, 91, .14), inset 0 1px 0 rgba(255, 255, 255, .9);
+  transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+.refreshMapIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #a6c4e2;
+  border-radius: .65rem;
+  background: #d6e6f5;
+  color: #245d86;
+}
+.refreshMapButton .buttonIcon { width: 1.2rem; height: 1.2rem; }
+.refreshMapButton:hover:not(:disabled),
+.refreshMapButton:focus-visible {
+  border-color: #548abb;
+  background: linear-gradient(135deg, #e9f1fa, #cfdfef);
+  box-shadow: 0 7px 20px rgba(24, 65, 91, .2);
+}
+.refreshMapButton:disabled { opacity: .8; cursor: wait; }
+.refreshMapButton[aria-busy="true"] .buttonIcon { animation: refreshMapSpin 1s linear infinite; }
+.refreshMapButton:focus-visible { outline: 3px solid #4384b6; outline-offset: 3px; }
+@keyframes refreshMapSpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .refreshMapButton { transition: none; }
+  .refreshMapButton[aria-busy="true"] .buttonIcon { animation: none; }
+}
 .refreshStatus { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
