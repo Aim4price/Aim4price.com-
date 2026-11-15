@@ -126,6 +126,7 @@ const appCode =
     page.on("pageerror", (e) => errors.push(e.message));
     await page.setViewport({ width: 1440, height: 1000 });
     let emptyFixture = false;
+    let longPickerFixture = false;
     let viewerFixture = false;
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
@@ -223,6 +224,10 @@ const appCode =
             ],
             invites: [],
           };
+        else if (longPickerFixture && url.searchParams.get("view") === "mine" && url.searchParams.get("download") === "true") {
+          const rows = [row, ...Array.from({length: 41}, (_, i) => ({...row, part_number: "TEST-" + i}))];
+          data = {rows, total: rows.length, member: {...network, revision: 0}};
+        }
         else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1, member:{...network,revision:0} };
         return r.respond({
           contentType: "application/json",
@@ -522,8 +527,12 @@ const appCode =
     await page.waitForFunction(() => !document.querySelector('[role=dialog]'));
     assert.equal(actions.filter(a => a.action === 'import').at(-1).mode, 'add');
     assert.equal(parser.parsePartsSnapshot(actions.filter(a => a.action === 'import').at(-1).csv, {partNumber:0,description:1,quantity:2,price:3,brand:4}, {hasHeader:false})[0].partNumber, '000123');
-    await click("Add / edit parts"); await click("Edit parts"); await click("Edit one part");
+    await click("Add / edit parts"); await click("Edit parts"); longPickerFixture = true; await click("Edit one part");
     await page.waitForSelector('[aria-label="Search parts to edit"]');
+    longPickerFixture = false;
+    assert.equal(await page.$$eval('[aria-label="Parts to edit"] button', buttons => buttons.length), 42);
+    assert.ok(await page.$eval('[aria-label="Parts to edit"]', list => list.scrollHeight > list.clientHeight));
+    assert.ok(await page.$eval('[aria-label="Choose part"]', dialog => !/Page 1 of|Previous|Next/.test(dialog.textContent)));
     await page.type('[aria-label="Search parts to edit"]', '001-ABC');
     await click("001-ABC");
     await page.waitForSelector('[aria-label="Edit part"]');

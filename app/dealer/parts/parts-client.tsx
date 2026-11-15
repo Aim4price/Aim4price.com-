@@ -280,7 +280,6 @@ export default function PartsClient({
   const [editStep, setEditStep] = useState<"intent" | "add" | "edit" | "picker" | "sheet">("intent");
   const [stock, setStock] = useState<{rows: Row[]; revision: number} | null>(null);
   const [partQuery, setPartQuery] = useState("");
-  const [partPage, setPartPage] = useState(0);
   const [fromPicker, setFromPicker] = useState(false);
   const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean} | null>(null);
   const [enquiryCompose, setEnquiryCompose] = useState(false);
@@ -427,7 +426,6 @@ export default function PartsClient({
       setStock({rows: data.rows, revision: data.member.revision});
       setDetails({businessName: data.member.business_name, town: data.member.town, phone: data.member.phone, email: data.member.email, vatIncluded: data.member.vat_included});
       setPartQuery("");
-      setPartPage(0);
       setEditStep(step);
     });
   }
@@ -1329,11 +1327,14 @@ export default function PartsClient({
             </>}
             {editStep === "picker" && stock && <>
               <div className={styles.partPickerSearch}>
-                <input aria-label="Search parts to edit" placeholder="Search part number, description or brand" value={partQuery} onChange={e => {setPartQuery(e.target.value);setPartPage(0);}} />
-                <button disabled={!partQuery} onClick={() => {setPartQuery("");setPartPage(0);}}>Clear</button>
+                <input aria-label="Search parts to edit" placeholder="Search part number, description or brand" value={partQuery} onChange={e => {setPartQuery(e.target.value);}} />
+                <button disabled={!partQuery} onClick={() => {setPartQuery("");}}>Clear</button>
               </div>
-              <div className={styles.partPickerResults}>
-                {matchingParts.slice(partPage * 25, partPage * 25 + 25).map(r => (
+              <p className={styles.partPickerCount} role="status">
+                {matchingParts.length.toLocaleString()} {partQuery.trim() ? "matching " : ""}{matchingParts.length === 1 ? "part" : "parts"}
+              </p>
+              <div key={partQuery} className={styles.partPickerResults} role="region" aria-label="Parts to edit" tabIndex={0}>
+                {matchingParts.map(r => (
                   <button key={r.part_number} onClick={() => startPartEdit(r, stock.revision, true)}>
                     <span><strong>{r.part_number}</strong>{r.description && <small>{r.description}</small>}<small>{[r.brand, `Quantity: ${r.quantity}`].filter(Boolean).join(" · ")}</small></span>
                     <Icon kind="edit"/>
@@ -1341,11 +1342,6 @@ export default function PartsClient({
                 ))}
                 {!matchingParts.length && <p>{partQuery.trim() ? "No matching parts." : "There are no parts to edit yet."}</p>}
               </div>
-              {matchingParts.length > 25 && <div className={styles.actions}>
-                <button disabled={partPage === 0} onClick={() => setPartPage(p => p - 1)}>Previous</button>
-                <span>Page {partPage + 1} of {Math.ceil(matchingParts.length / 25)}</span>
-                <button disabled={(partPage + 1) * 25 >= matchingParts.length} onClick={() => setPartPage(p => p + 1)}>Next</button>
-              </div>}
               <div className={`${styles.actions} ${styles.partEditFooter}`}><button onClick={() => setEditStep("edit")}>Back</button><button onClick={close}>Cancel</button></div>
             </>}
             {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
