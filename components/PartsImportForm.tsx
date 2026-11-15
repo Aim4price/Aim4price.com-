@@ -16,7 +16,8 @@ import {
   partCellErrors,
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
-import { AddPartField, PartDetailInputs } from "./PartsDetailFields";
+import { AddPartField, PartDetailInputs, PartInput } from "./PartsDetailFields";
+import VatPriceInput from "./VatPriceInput";
 import PartsChoice from "./PartsChoice";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
@@ -56,11 +57,14 @@ export default function PartsImportForm({
   const [source, setSource] = useState<"manual" | "sheet" | "file" | null>(
     editSnapshot ? "sheet" : null,
   );
+  const [hiddenInputs,setHiddenInputs]=useState<number[]>([]);
+  const [hiddenDetails,setHiddenDetails]=useState<string[]>([]);
+  const [priceIncluded,setPriceIncluded]=useState(initialDetails.vatIncluded);
   const [extraFields,setExtraFields] = useState<PartDetailField[]>(initialFields);
   const [importedDetailIds,setImportedDetailIds] = useState<string[]>([]);
   const labels = [...PART_LABELS,...extraFields.map(f=>f.label)];
   const emptyRow = () => Array(5 + extraFields.length).fill("") as string[];
-  function addField(field:PartDetailField) {setUndo({rows,fields:extraFields,hidden:hiddenColumns});setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
+  function addField(field:PartDetailField) {if(extraFields.some(f=>f.id===field.id)){setHiddenDetails(hiddenDetails.filter(id=>id!==field.id));return;}setUndo({rows,fields:extraFields,hidden:hiddenColumns});setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
   const [details, setDetails] = useState(initialDetails);
   const [pastedTable, setPastedTable] = useState("");
   const [raw, setRaw] = useState<string[][]>([]);
@@ -240,40 +244,14 @@ export default function PartsImportForm({
   }
   const payload = () => ({
     csv: partsTableCsv(populated),
-    columns: {...EDITOR_COLUMNS, details:Object.fromEntries(extraFields.flatMap((f,i)=>source !== "file" || importedDetailIds.includes(f.id) || populated.some(r=>r[5+i]?.trim()) ? [[f.id,5+i]] : []))},
-    extraFields,
+    columns: {...EDITOR_COLUMNS, details:Object.fromEntries(extraFields.flatMap((f,i)=>(source !== "manual" || !hiddenDetails.includes(f.id)) && (source !== "file" || importedDetailIds.includes(f.id) || populated.some(r=>r[5+i]?.trim())) ? [[f.id,5+i]] : []))},
+    extraFields:source==="manual" ? extraFields.filter(f=>!hiddenDetails.includes(f.id) || initialFields.some(old=>old.id===f.id)) : extraFields,
     removedFieldIds: initialFields.filter(f=>!extraFields.some(next=>next.id===f.id)).map(f=>f.id),
     options: { hasHeader: false },
     mode,
     ...(editSnapshot ? {baseRevision: editSnapshot.revision} : {}),
     ...details,
   });
-  async function template(excel: boolean) {
-    let blob: Blob;
-    if (excel) {
-      const Excel = await import("exceljs");
-      const book = new Excel.Workbook();
-      const sheet = book.addWorksheet("Parts");
-      sheet.addRow(PART_LABELS);
-      EXAMPLE_PARTS.forEach((r) => sheet.addRow(r));
-      sheet.getColumn(1).numFmt = "@";
-      sheet.columns.forEach((c) => {
-        c.width = 22;
-      });
-      blob = new Blob([(await book.xlsx.writeBuffer()) as ArrayBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-    } else
-      blob = new Blob([partsTableCsv([PART_LABELS, ...EXAMPLE_PARTS])], {
-        type: "text/csv;charset=utf-8",
-      });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `parts-example.${excel ? "xlsx" : "csv"}`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
   const visible = rows.slice(page * 50, page * 50 + 50);
   return (
     <div className={`${styles.importForm} ${sheetEntry ? styles.stockSheet : ""}`}>
@@ -368,14 +346,7 @@ export default function PartsImportForm({
                     </tbody>
                   </table>
                 </div>
-                <div className={styles.actions}>
-                  <button onClick={() => void run(() => template(false))}>
-                    Download CSV example
-                  </button>
-                  <button onClick={() => void run(() => template(true))}>
-                    Download Excel example
-                  </button>
-                </div>
+
               </section>
           )}
           {stage === "file" && (
@@ -517,7 +488,7 @@ export default function PartsImportForm({
           {stage === "file" && raw.length > 0 && <div className={styles.detailFieldSettings}><AddPartField column fields={extraFields} onAdd={addField}/>{extraFields.map(f=><label key={f.id}>{f.label}{f.private ? " (private)" : ""}<select aria-label={`${f.label} column`} value={columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1)} onChange={e=>setColumns({...columns,details:{...columns.details,[f.id]:Number(e.target.value)}})}><option value={-1}>Not in this file</option>{raw[0].map((h,i)=><option key={i} value={i}>Column {i+1}: {h}</option>)}</select></label>)}</div>}
           {stage === "entry" && source === "manual" && (
             <div className={`${styles.partEditFields} ${styles.singlePartForm}`}>
-              {[0, 4, 1, 2, 3].map(j => {
+              {[0, 4, 1, 2, 3].filter(j=>!hiddenInputs.includes(j)).map(j => {
                 const label = PART_LABELS[j];
                 const required = j === 0 || j === 2;
                 const error = showError(0, j);
@@ -536,16 +507,17 @@ export default function PartsImportForm({
                 />;
                 return <div key={label} className={`${styles.partEditPrice} ${j === 1 ? styles.partEditDescription : ""}`}>
                   <label htmlFor={`add-part-field-${j}`}>
-                    {label}{j === 3 && <small>{details.vatIncluded ? "Incl." : "Excl."} VAT</small>}
+                    {label}{j === 3 && <small>{priceIncluded ? "Incl." : "Excl."} VAT</small>}
                   </label>
-                  {j === 3 ? <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl} ${styles.addPartAmount}`}>
-                    <span aria-hidden="true">R</span>{input}
-                  </div> : input}
+                  <PartInput label={label} required={required} onRemove={()=>{setHiddenInputs([...hiddenInputs,j]);change([(rows[0] || emptyRow()).map((v,k)=>k===j ? "" : v)]);}}>{j === 3 ? <div className={`${priceStyles.amountControl} ${styles.partEditPriceControl}`}>
+                    <VatPriceInput id={`add-part-field-${j}`} aria-label={`${label} 1`} placeholder="Optional" aria-invalid={Boolean(error)} aria-describedby={error ? `single-error-${j}` : "add-part-price-hint"} onBlur={() => setTouched(t => ({...t, [`0:${j}`]: true}))} included={priceIncluded} vatRate={.15} valueExVat={rows[0]?.[3]?.trim() ? String(Number(rows[0][3])/(details.vatIncluded ? 1.15 : 1)) : ""} onValueChange={price=>change([(rows[0] || emptyRow()).map((v,k)=>k===3 ? (price.trim() && Number.isFinite(Number(price)) ? String(Number(price)*(details.vatIncluded ? 1.15 : 1)) : price) : v)])}/>
+                    <div className={priceStyles.amountVatToggle} role="group" aria-label="Unit price VAT basis"><button type="button" aria-label="Including VAT" aria-pressed={priceIncluded} onClick={()=>setPriceIncluded(true)}>Incl</button><button type="button" aria-label="Excluding VAT" aria-pressed={!priceIncluded} onClick={()=>setPriceIncluded(false)}>Excl</button></div>
+                  </div> : input}</PartInput>
                   {hint && <small id="add-part-price-hint">{hint}</small>}
                   {error && <small className={styles.cellError} id={`single-error-${j}`}>{error}</small>}
                 </div>;
               })}
-              <PartDetailInputs fields={extraFields} values={Object.fromEntries(extraFields.map((f,i)=>[f.id,rows[0]?.[5+i] || ""]))} onChange={values=>change([[...rows[0].slice(0,5),...extraFields.map(f=>values[f.id] || "")]])}/>
+              <PartDetailInputs fields={extraFields.filter(f=>!hiddenDetails.includes(f.id))} onRemove={id=>{setHiddenDetails([...hiddenDetails,id]);change([[...rows[0].slice(0,5),...extraFields.map((f,i)=>f.id===id ? "" : rows[0]?.[5+i] || "")]]);}} values={Object.fromEntries(extraFields.map((f,i)=>[f.id,rows[0]?.[5+i] || ""]))} onChange={values=>change([[...rows[0].slice(0,5),...extraFields.map(f=>values[f.id] || "")]])}/>
 
             </div>
           )}
@@ -705,9 +677,8 @@ export default function PartsImportForm({
           )}
           {stage === "settings" && (
             <>
-              <p className={styles.stageHint}>Blank prices show as “Price on request”. Existing part numbers cannot be overwritten from Add parts.</p>
-              <section aria-label="Contact details and VAT">
-                <h3>Contact details &amp; VAT</h3>
+              <section className={styles.partContactStep} aria-label="Contact details">
+                <h3>Contact details</h3>
                 <div className={styles.grid}>
                   {(["businessName", "town", "phone", "email"] as const).map(
                     (key, i) => (
@@ -729,7 +700,7 @@ export default function PartsImportForm({
                       </label>
                     ),
                   )}
-                  <PartsChoice label="Price VAT basis" value={String(details.vatIncluded)} onChange={value=>setDetails({...details,vatIncluded:value === "true"})} options={[{value:"false",label:"Exclude VAT",hint:"Prices before VAT"},{value:"true",label:"Include VAT",hint:"Prices already include VAT"}]} />
+                  {source!=="manual" && <PartsChoice label="Price VAT basis" value={String(details.vatIncluded)} onChange={value=>setDetails({...details,vatIncluded:value === "true"})} options={[{value:"false",label:"Exclude VAT",hint:"Prices before VAT"},{value:"true",label:"Include VAT",hint:"Prices already include VAT"}]} />}
                 </div>
               </section>
             </>
@@ -763,7 +734,7 @@ export default function PartsImportForm({
         {stage === "choose" && <div className={styles.entryFooter}><button onClick={onBack}>Back</button></div>}
         {stage !== "choose" && (
           <div className={`${styles.entryFooter} ${stage === "entry" && source === "manual" ? styles.partEditFooter : ""}`}>
-            {stage === "entry" && source === "manual" && <div className={styles.detailFooterAction}><AddPartField fields={extraFields} onAdd={addField}/></div>}
+            {stage === "entry" && source === "manual" && <div className={styles.detailFooterAction}><AddPartField restoreInputs={hiddenInputs.map(i=>({id:String(i),label:PART_LABELS[i]}))} onRestoreInput={id=>setHiddenInputs(hiddenInputs.filter(i=>i!==Number(id)))} restorableFields={extraFields.filter(f=>hiddenDetails.includes(f.id))} fields={extraFields.filter(f=>!hiddenDetails.includes(f.id))} onAdd={addField}/></div>}
             <button
               onClick={() => {
                 setError("");
