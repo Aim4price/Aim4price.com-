@@ -1653,7 +1653,10 @@
 /* Match the parts entry reference across the related action and sharing cards. */
 .entryModal .entryMethods button[data-tone],
 .manageGrid button,
-.shareChoices button {
+.manageGrid button[data-tone],
+.manageGrid .deleteAction,
+.shareChoices button,
+.shareChoices button[data-tone] {
   --choice-colour: #178361;
   --action-tint: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--choice-colour));
   --action-line: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--choice-colour));
