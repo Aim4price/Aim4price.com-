@@ -1792,3 +1792,18 @@
 @media (max-width:640px) { .accessAction { grid-column:1; } }
 .accessStatus { justify-self:end; }
 @media (max-width:640px) { .accessStatus { justify-self:start; } }
+
+/* Shared Add/Edit sheet controls: one aligned rail instead of inline elements. */
+.entryModal .stockSheet .editorTable th:first-child { width:132px; padding:12px 10px; }
+.entryModal .stockSheet .editorTable td:first-child { padding:0 10px; vertical-align:middle; background:var(--app-surface-soft, #f4f8f6); }
+.sheetRowControls { display:grid; grid-template-columns:20px minmax(26px,1fr) 36px; align-items:center; gap:8px; min-height:48px; }
+.sheetRowNumber { font-size:12px; font-weight:650; font-variant-numeric:tabular-nums; color:var(--app-text-muted, #62796e); text-align:center; line-height:1; }
+.entryModal .stockSheet .editorTable input[type="checkbox"] { appearance:none; display:block; width:20px; height:20px; min-height:20px; padding:0; margin:0; border:1.5px solid var(--app-border-strong, #88a79a); border-radius:5px; background:var(--app-surface, #fff); cursor:pointer; }
+.entryModal .stockSheet .editorTable input[type="checkbox"]:checked { background-color:var(--app-primary, #17654c); border-color:var(--app-primary, #17654c); background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='m4 10 4 4 8-8' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.entryModal .stockSheet .editorTable input[type="checkbox"]:focus-visible { outline:2px solid var(--app-primary, #17654c); outline-offset:2px; }
+.entryModal .stockSheet .editorTable .sheetRowAction { width:36px; height:36px; min-height:36px; margin:0; padding:8px; border:1px solid var(--app-border, #bdd7ca); border-radius:10px; background:var(--app-surface, #fff); color:var(--app-primary, #17654c); box-shadow:0 2px 4px #123c3008; }
+.sheetRowAction svg { width:20px; height:20px; flex:0 0 20px; }
+.entryModal .stockSheet .editorTable .sheetRowAction:hover { background:var(--app-surface-soft, #e0f0e7); border-color:var(--app-primary, #17654c); }
+.entryModal .stockSheet .editorTable .sheetRowAction:focus-visible { outline:2px solid var(--app-primary, #17654c); outline-offset:2px; }
+.entryModal .stockSheet .editorTable tr[data-selected] td { background:var(--app-surface-soft, #e4f2eb); box-shadow:inset 0 1px var(--app-border, #b6d3c4),inset 0 -1px var(--app-border, #b6d3c4); }
+.entryModal .stockSheet .editorTable tr[data-selected] input:not([type="checkbox"]) { background:var(--app-surface-soft, #e4f2eb); }
