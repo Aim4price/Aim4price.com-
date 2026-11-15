@@ -128,6 +128,7 @@ const appCode =
     let emptyFixture = false;
     let longPickerFixture = false;
     let viewerFixture = false;
+    let accessInvites = [];
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
       name: "Landini parts",
@@ -228,7 +229,7 @@ const appCode =
                 email: "buyer@example.test",
               },
             ],
-            invites: [],
+            invites: accessInvites,
           };
         else if (longPickerFixture && url.searchParams.get("view") === "mine" && url.searchParams.get("download") === "true") {
           const rows = [row, ...Array.from({length: 41}, (_, i) => ({...row, part_number: "TEST-" + i}))];
@@ -714,6 +715,10 @@ const appCode =
     );
     await page.screenshot({ path: path.join(output, "manage-mobile.png") });
     await page.setViewport({ width: 1440, height: 1000 });
+    await page.$eval('[role=dialog] button[data-tone="green"]', button=>button.click());
+    await page.waitForSelector('[aria-label="Parts download format"]');
+    assert.equal(await page.$eval('[role=dialog] input',input=>input.value),'Landini parts');
+    await click('Cancel');await click('Manage');
     await click("Delete list");
     await page.waitForSelector('[aria-label="Delete this parts list?"]');
     await page.screenshot({path:path.join(output,"delete-parts.png")});
@@ -736,7 +741,13 @@ const appCode =
     );
     assert.equal(page.url(), accessUrl, "access opens without navigation");
     assert.equal(await page.$eval("[role=dialog]", e=>e.getAttribute("aria-label")), "Sharing & access");
+    assert.equal(await page.$$eval('[role=dialog] table',tables=>tables.length),0);
+    assert.ok(await page.$eval('[role=dialog]',dialog=>dialog.textContent.includes('List owner') && dialog.textContent.includes('No invitations yet')));
     await page.screenshot({path:path.join(output,"sharing-access-modal.png")});
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.$eval('[role=dialog]',dialog=>dialog.scrollWidth <= dialog.clientWidth + 2));
+    await page.screenshot({path:path.join(output,"sharing-access-phone.png")});
+    await page.setViewport({width:1440,height:1000});
     await click("Remove access");
     await page.waitForSelector("[role=dialog]");
     await page.keyboard.press("Escape");
@@ -745,6 +756,19 @@ const appCode =
       "cancel does not change membership",
     );
     await page.keyboard.press("Escape");
+    accessInvites = [
+      {id:'pending-invite',email:'parts@example.test',role:'viewer',expires_at:'2099-01-01'},
+      {id:'expired-invite',email:'expired@example.test',role:'viewer',expires_at:'2000-01-01'},
+      {id:'accepted-invite',email:'accepted@example.test',role:'viewer',expires_at:'2099-01-01',consumed_at:'2026-11-15'},
+    ];
+    await click('Manage');await click('Sharing & access');
+    await page.waitForFunction(()=>document.body.innerText.includes('parts@example.test'));
+    assert.ok(await page.$eval('[role=dialog]',dialog=>['Pending','Expired','Accepted'].every(status=>dialog.textContent.includes(status))));
+    assert.equal(await page.$$eval('[role=dialog] button',buttons=>buttons.filter(button=>button.textContent==='Revoke invitation').length),1);
+    await click('Revoke invitation');
+    await page.waitForFunction(()=>!document.querySelector('[role=dialog] [aria-busy="true"]'));
+    assert.ok(actions.some(action=>action.action==='revoke' && action.id==='pending-invite'));
+    await page.keyboard.press('Escape');
     await page.setViewport({ width: 390, height: 844 });
     await page.waitForSelector("tbody tr");
     assert.ok(
