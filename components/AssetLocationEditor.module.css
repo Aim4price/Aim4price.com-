@@ -1,0 +1,17 @@
+/* Shared by the map, register and partner location flows. */
+.editor.editor.editor { font-family: var(--font-heading, 'Montserrat'), sans-serif; gap: 1.15rem !important; }
+.editor.editor.editor [data-location-action] strong { font-size: 1rem !important; font-weight: 650 !important; line-height: 1.45 !important; letter-spacing: -.015em !important; }
+.editor.editor.editor [data-location-action] { min-height: 5.5rem !important; }
+.editor.editor.editor strong { font-weight: 650; }
+.editor.editor.editor p { margin: .35rem 0 0; font-size: .95rem; font-weight: 500; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.editor.editor.editor label > span { font-size: .85rem !important; font-weight: 600 !important; line-height: 1.5; letter-spacing: 0 !important; text-transform: none !important; }
+.editor.editor.editor :is(input, textarea) { font-family: inherit !important; font-size: 1rem !important; font-weight: 500 !important; line-height: 1.5 !important; letter-spacing: 0 !important; font-variant-numeric: tabular-nums; }
+.editor.editor.editor :is(button, a) { font-family: inherit !important; font-weight: 650 !important; }
+.editor.editor.editor textarea::placeholder { font-weight: 400; }
+
+/* Join the existing typing layer so its global weight does not mask this editor. */
+@layer aim4price-typing-surfaces {
+  @media screen and (forced-colors: none) {
+    .editor.editor.editor.editor :is(input, textarea) { font-weight: 500 !important; }
+  }
+}

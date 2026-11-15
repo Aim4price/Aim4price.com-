@@ -31,7 +31,7 @@ import accountStyles from "../account/page.module.css";
 
 type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
-type FetchMode = "initial" | "background";
+type FetchMode = "initial" | "background" | "manual";
 type ExportFormat = "pdf" | "xlsx";
 type ExportStep = "format" | "scope";
 type RegisterFilterId = string;
@@ -683,6 +683,8 @@ export default function AssetMapClient() {
   const closePhotoViewer=useCallback(()=>{setPhotoViewer(null);requestAnimationFrame(()=>photoTrigger.current?.focus());},[]);
   const locationTrigger=useRef<HTMLButtonElement|null>(null);
   function closeLocationDialog(){setLocationDialog(null);requestAnimationFrame(()=>locationTrigger.current?.focus());}
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshStatus, setRefreshStatus] = useState("");
   const [assets, setAssets] = useState<AssetMapItem[]>([]);
   const [registerFilters, setRegisterFilters] = useState<
     RegisterFilterOption[]
@@ -755,7 +757,11 @@ export default function AssetMapClient() {
 
   const fetchMapData = useCallback(
     async (mode: FetchMode = "initial") => {
+      // A scheduled refresh must not interrupt a user-requested refresh.
+      if (mode === "background" && mapDataAbortControllerRef.current) return;
       const initialLoad = mode === "initial";
+      setIsRefreshing(true);
+      if (mode === "manual") setRefreshStatus("Refreshing map…");
       const requestId = mapDataRequestIdRef.current + 1;
       mapDataRequestIdRef.current = requestId;
       mapDataAbortControllerRef.current?.abort();
@@ -816,6 +822,7 @@ export default function AssetMapClient() {
           }
         }
         setNotice(null);
+        if (mode === "manual") setRefreshStatus("Map refreshed.");
       } catch (error) {
         if (
           controller.signal.aborted ||
@@ -824,6 +831,7 @@ export default function AssetMapClient() {
           return;
         }
 
+        if (mode === "manual") setRefreshStatus("Could not refresh the map. Please try again.");
         setDataStatus((currentStatus) =>
           currentStatus === "ready" ? currentStatus : "error",
         );
@@ -837,6 +845,7 @@ export default function AssetMapClient() {
       } finally {
         if (mapDataAbortControllerRef.current === controller) {
           mapDataAbortControllerRef.current = null;
+          setIsRefreshing(false);
         }
       }
     },
@@ -2085,6 +2094,27 @@ export default function AssetMapClient() {
                   </div>
                 </article>
               ) : null}
+
+              {dataStatus === "ready" ? (
+                <button
+                  type="button"
+                  className={`${styles.fitMapButton} ${styles.refreshMapButton}`}
+                  disabled={isRefreshing}
+                  aria-busy={isRefreshing}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void fetchMapData("manual");
+                    Object.values(baseLayersRef.current).forEach(layer => layer?.redraw());
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  data-tooltip="Reload the latest asset locations and map tiles."
+                  data-tooltip-style="description"
+                >
+                  <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 17.9 17"/></svg>
+                  <span>{isRefreshing ? "Refreshing…" : "Refresh"}</span>
+                </button>
+              ) : null}
+              <span className={styles.refreshStatus} role="status">{refreshStatus}</span>
 
               {dataStatus === "ready" &&
               mapRendererStatus === "ready" &&

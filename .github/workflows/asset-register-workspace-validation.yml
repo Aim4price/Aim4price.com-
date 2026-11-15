@@ -11,6 +11,7 @@ on:
       - "next.config.mjs"
       - "tests/**"
       - "scripts/verify-website-canvas.cjs"
+      - "scripts/verify-map-refresh.cjs"
       - "scripts/verify-umbrella-cards.cjs"
       - "scripts/verify-move-asset-picker.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
@@ -58,6 +59,8 @@ jobs:
         run: node --test tests/asset-checklist.test.cjs tests/asset-parts.test.cjs tests/app-maintenance-access.test.cjs tests/maintenance-catalogue.test.cjs
       - name: Service quick edits and parts in browser
         run: node scripts/verify-service-quick-edit.cjs
+      - name: Asset map refresh and location dialog
+        run: node scripts/verify-map-refresh.cjs
       - name: Production bundle validation
         shell: bash
         run: |

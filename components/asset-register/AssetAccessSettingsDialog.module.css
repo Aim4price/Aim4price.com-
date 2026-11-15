@@ -162,7 +162,7 @@
 
 /* Match Advanced settings' compact location chooser and its horizontal action cards. */
 .dialog.locationDialog {
-  width: min(46rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 2rem))) !important;
+  width: min(52rem, var(--website-dialog-reference-width, calc(var(--website-visible-width, 100vw) - 2rem))) !important;
   padding: 2rem !important;
   border-radius: 1.55rem !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
@@ -172,10 +172,10 @@
   padding: 0 0 1.15rem !important;
 }
 .dialog.locationDialog .header h3 {
-  font-size: 2rem !important;
-  font-weight: 800 !important;
-  line-height: 1.08 !important;
-  letter-spacing: -.04em;
+  font-size: 1.85rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -.025em;
 }
 .dialog.locationDialog .header p {
   font-size: .88rem !important;
