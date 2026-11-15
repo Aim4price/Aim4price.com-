@@ -9,10 +9,10 @@ const start=source.indexOf('  function backFromShareModal()');
 const handler=source.slice(start,source.indexOf('  async function loadQuotePartners(',start));
 function navigate(overrides={}) {
  const calls=[];
- const state={isSendingQuoteLead:false,isExporting:false,isQuoteMapExpanded:false,
+ const state={isSendingQuoteLead:false,isExporting:false,
   quoteLeadStep:null,selectedQuoteOption:null,directoryShareReturnRef:{current:null},
   assetShareDestination:'inside',isRegisterShareModalOpen:false,...overrides};
- for(const name of ['setIsQuoteMapExpanded','goBackToQuoteLeadMessage','closeQuoteLeadStep','goBackToQuoteOptions','setQuoteAsset','setSelectedQuoteLeadType','setQuoteScope','setIsRegisterShareModalOpen','setAssetShareDestination','setQuoteDirectoryStage','closeRegisterShareModal','closeAssetQuoteModal'])state[name]=(...args)=>calls.push([name,...args]);
+ for(const name of ['goBackToQuoteLeadMessage','closeQuoteLeadStep','goBackToQuoteOptions','setQuoteAsset','setSelectedQuoteLeadType','setQuoteScope','setIsRegisterShareModalOpen','setAssetShareDestination','setQuoteDirectoryStage','closeRegisterShareModal','closeAssetQuoteModal'])state[name]=(...args)=>calls.push([name,...args]);
  vm.runInNewContext(handler+'\nbackFromShareModal();',state);
  return calls;
 }
@@ -29,12 +29,11 @@ test('external business share restores its directory and original asset scope',(
  for(const register of [false,true]) {
   const asset={id:'selected-asset'};
   assert.deepEqual(navigate({assetShareDestination:'outside',directoryShareReturnRef:{current:{asset,leadType:'insurance',register}}}),[
-   ['setQuoteAsset',asset],['setSelectedQuoteLeadType','insurance'],['setQuoteScope',register?'register':'asset'],['setIsRegisterShareModalOpen',false],['setAssetShareDestination','inside'],['setQuoteDirectoryStage','map']
+   ['setQuoteAsset',asset],['setSelectedQuoteLeadType','insurance'],['setQuoteScope',register?'register':'asset'],['setIsRegisterShareModalOpen',false],['setAssetShareDestination','inside'],['setQuoteDirectoryStage','directory']
   ]);
  }
 });
 test('nested share steps return one level and sending cannot be interrupted',()=>{
- assert.deepEqual(navigate({isQuoteMapExpanded:true}),[['setIsQuoteMapExpanded',false]]);
  assert.deepEqual(navigate({quoteLeadStep:'consent'}),[['goBackToQuoteLeadMessage']]);
  assert.deepEqual(navigate({quoteLeadStep:'message'}),[['closeQuoteLeadStep']]);
  assert.deepEqual(navigate({isSendingQuoteLead:true}),[]);

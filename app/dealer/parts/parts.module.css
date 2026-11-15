@@ -1650,18 +1650,35 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.singlePartForm) .dialogHeader h2 { font-size: 25px; }
 }
 
-/* Distinct, readable choices throughout the parts entry flow. */
-.entryModal .entryMethods button[data-tone] {
+/* Match the parts entry reference across the related action and sharing cards. */
+.entryModal .entryMethods button[data-tone],
+.manageGrid button,
+.manageGrid button[data-tone],
+.manageGrid .deleteAction,
+.shareChoices button,
+.shareChoices button[data-tone] {
   --choice-colour: #178361;
   --action-tint: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--choice-colour));
   --action-line: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--choice-colour));
   border-width: 2px;
 }
-.entryModal .entryMethods button[data-tone="blue"] { --choice-colour: #347bc4; }
-.entryModal .entryMethods button[data-tone="amber"] { --choice-colour: #c47b23; }
-.entryModal .entryMethods button small { color: var(--app-text, #34564b); }
-.entryModal .entryMethods button svg { background: var(--action-tint); border-width: 2px; }
-.entryModal .entryMethods button:hover { background: var(--action-tint); }
+.entryModal .entryMethods button[data-tone="blue"],
+.manageGrid button[data-tone="blue"],
+.shareChoices button[data-tone="blue"] { --choice-colour: #347bc4; }
+.entryModal .entryMethods button[data-tone="amber"],
+.shareChoices button[data-tone="amber"] { --choice-colour: #c47b23; }
+.manageGrid .deleteAction { --choice-colour: #b34242; }
+.entryModal .entryMethods button small,
+.manageGrid button small,
+.shareChoices button small { color: var(--app-text, #34564b); }
+.entryModal .entryMethods button svg,
+.manageGrid button svg,
+.shareChoices button svg { background: var(--action-tint); border-width: 2px; }
+.entryModal .entryMethods button:hover:not(:disabled),
+.manageGrid button:hover:not(:disabled),
+.shareChoices button:hover:not(:disabled) { background: var(--action-tint); }
+.shareChoices button:focus-visible,
+.manageGrid button:focus-visible { outline: 3px solid var(--choice-colour); outline-offset: -4px; }
 .partsProgress {
   height: 5px;
   width: 100%;
