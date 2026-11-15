@@ -2031,9 +2031,8 @@
 .columnPicker .detailPickerChoices strong { font-size:1rem; font-weight:800; }
 .columnPicker .detailPickerChoices small { font-size:.88rem; font-weight:650; white-space:nowrap; }
 .modal.columnPicker .detailPickerChoices button:disabled { opacity:.5; cursor:default; }
-.detailRestoreInputs { margin-top:16px; }
-.detailRestoreInputs summary { cursor:pointer; font-weight:650; }
-.detailRestoreInputs > div { display:flex; flex-wrap:wrap; gap:12px; margin-top:12px; }
+.detailRestoreInputs { margin-top:4px; padding-top:22px; border-top:1px solid var(--app-border,#cbded4); }
+.detailRestoreInputs h3 { margin:0 0 16px; font-size:1rem; font-weight:750; color:var(--app-text,#163f32); }
 @media (max-width:1050px) {
   .columnPicker .detailPickerChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
@@ -2131,3 +2130,26 @@
 @media(max-width:600px) { .modal.bulkWizard { width:calc(100vw - 24px); } .bulkStage .partsChoiceOptions { grid-template-columns:repeat(2,minmax(0,1fr)); } .bulkCleanup { grid-template-columns:1fr; } .bulkReview > div { gap:10px; padding:12px; } }
 
 .bulkStage .partsChoiceOptions:has(> label:nth-child(2):last-child) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+/* Compact column cards and focused confirmation stages match the parts wizard. */
+.modal.columnsDialog { width:min(1120px,calc(100vw - 40px)); }
+.columnsDialog .sheetToolBody { flex:0 1 auto; padding:24px 14px 24px 4px; gap:20px; }
+.columnIntro { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.columnIntro p { font-weight:650; }
+.columnIntro span { color:var(--app-text-muted,#64766c); font-size:.88rem; }
+.columnsDialog .manageColumns { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.columnsDialog .manageColumnRow { display:grid; gap:18px; padding:20px; border-radius:20px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
+.columnsDialog .manageColumnRow label span { min-width:0; gap:6px; }
+.columnsDialog .manageColumnRow strong { font-size:1rem; font-weight:750; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.columnsDialog .manageColumnRow small { font-size:.82rem; white-space:nowrap; }
+.columnCardActions { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; }
+.columnCardActions > span { font-size:.8rem; color:var(--app-text-muted,#64766c); }
+.modal .columnCardActions > button:not(.detailTrash) { padding:8px 14px; min-height:38px; font-size:.85rem; border-radius:10px; }
+.columnActionStage { display:grid; gap:24px; }
+.columnActionHeading { display:flex; align-items:center; gap:18px; }
+.columnActionHeading > .detailIcon { color:var(--app-danger,#b4232f); background:var(--app-danger-soft,#fff6f6); border-radius:14px; padding:12px; width:48px; height:48px; }
+.columnActionHeading h3 { margin:0 0 6px; font-size:1.3rem; font-weight:750; }
+.columnImpact { display:grid; gap:8px; padding:20px; border:1px solid var(--app-danger-line,#ebcccc); border-radius:16px; background:var(--app-danger-soft,#fff6f6); }
+.columnsDialog .sheetToolFooter { gap:12px; }
+@media(max-width:900px) { .columnsDialog .manageColumns { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { .modal.columnsDialog { width:calc(100vw - 24px); } .columnsDialog .manageColumns { grid-template-columns:1fr; } .columnIntro { align-items:flex-start; flex-direction:column; gap:4px; } .columnsDialog .sheetToolBody { padding:18px 12px 18px 4px; } }

@@ -614,7 +614,9 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Unit price 1"]',e=>e.value),'100');
     await page.click('[aria-label="Remove Brand from this part"]');
     assert.equal(await page.$('[aria-label="Brand 1"]'),null);
-    await click('+ Add detail'); await page.click('dialog[open] summary'); await click('Brand');
+    await click('+ Add detail');
+    await page.screenshot({path:path.join(output,'restore-fields.png')});
+    await page.click('[aria-label="Restore Brand"]');
     assert.equal(await page.$eval('[aria-label="Brand 1"]',e=>e.value),'');
     await page.type('[aria-label="Brand 1"]','Landini');
 
@@ -796,10 +798,17 @@ const appCode =
     await click('Undo');
     assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
     await click('Manage columns');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.$eval('[data-columns-body]',e=>e.scrollHeight<=e.clientHeight+1),'Column cards fit at laptop height');
+    assert.equal(await page.$$eval('[class*="manageColumnRow"]',e=>e.length),6);
     await page.screenshot({path:path.join(output,'manage-columns.png')});
     await page.click('[aria-label="Delete Dimensions column"]');
     await page.screenshot({path:path.join(output,'delete-column-confirmation.png')});
+    await click('Back');
+    assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020','Back preserves column values');
+    await page.click('[aria-label="Delete Dimensions column"]');
     await click('Delete column from sheet');
+    await page.setViewport({width:1440,height:1000});
     assert.equal(await page.$('[aria-label="Dimensions 1"]'),null);
     await click('Undo');
     assert.equal(await page.$eval('[aria-label="Dimensions 1"]',e=>e.value),'001 x 020');
