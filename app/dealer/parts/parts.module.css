@@ -2011,3 +2011,30 @@
   .modal.marketplaceChoiceModal .sheetToolBody { padding:18px; }
   .modal.sharedPartEditor { width:calc(100vw - 24px); padding:20px; }
 }
+
+/* Stocklist columns use the compact three-across asset management layout. */
+.modal.columnPicker { width:min(1400px, calc(100vw - 40px)); }
+.columnPicker .detailPickerChoices { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.modal.columnPicker .detailPickerChoices button {
+  grid-column:auto; min-height:108px; padding:22px 24px; gap:18px;
+  border:1.5px solid var(--app-border, #a7b5bf); border-radius:20px;
+  background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#f0f3f4));
+}
+.columnPicker .detailPickerChoices .detailIcon {
+  flex:0 0 30px; width:30px; height:30px;
+  border:0; border-radius:0; background:transparent; box-shadow:none;
+  color:var(--app-text-muted,#526774);
+}
+.columnPicker .detailPickerChoices .detailIcon svg { width:24px; height:24px; }
+.modal.columnPicker .detailPickerChoices button[data-detail="compatibility"],
+.modal.columnPicker .detailPickerChoices button[data-detail="condition"] { border-color:var(--app-success-line,#78b4a1); }
+.columnPicker .detailPickerChoices strong { font-size:1rem; font-weight:800; }
+.columnPicker .detailPickerChoices small { font-size:.88rem; font-weight:650; }
+@media (max-width:1050px) {
+  .columnPicker .detailPickerChoices { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px) {
+  .modal.columnPicker { width:calc(100vw - 24px); }
+  .columnPicker .detailPickerChoices { grid-template-columns:minmax(0,1fr); gap:12px; }
+  .modal.columnPicker .detailPickerChoices button { padding:18px; min-height:96px; }
+}

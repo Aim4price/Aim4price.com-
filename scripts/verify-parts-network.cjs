@@ -712,7 +712,9 @@ const appCode =
     }
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
-    await click('+ Add column'); await click('Custom field');
+    await click('+ Add column');
+    await page.screenshot({path:path.join(output,'add-column-grid.png')});
+    await click('Custom field');
     await page.type('[aria-label="Custom field name"]','Dimensions');
     await page.screenshot({path:path.join(output,'add-part-column.png')});
     await page.setViewport({width:1366,height:650});
