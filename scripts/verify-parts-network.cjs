@@ -920,6 +920,13 @@ const appCode =
     );
     await page.screenshot({ path: path.join(output, "manage-mobile.png") });
     await page.setViewport({ width: 1440, height: 1000 });
+    await page.$eval('[role=dialog]', dialog => {
+      [...dialog.querySelectorAll('button')].find(button => button.querySelector('strong')?.textContent === 'Share').click();
+    });
+    await page.waitForFunction(() => document.querySelector('[role=dialog]')?.textContent.includes('Send link'));
+    assert.equal(await page.$$eval('[role=dialog]', dialogs => dialogs.length), 1, 'Manage Share opens the existing share modal');
+    await page.$eval('[role=dialog] button[aria-label="Close dialog"]', button => button.click());
+    await click('Manage');
     await page.$eval('[role=dialog] button[data-tone="green"]', button=>button.click());
     await page.waitForSelector('[aria-label="Parts download format"]');
     assert.equal(await page.$eval('[role=dialog] input',input=>input.value),'Landini parts');
