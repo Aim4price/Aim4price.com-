@@ -794,18 +794,22 @@ const appCode =
     await page.setViewport({width:1440,height:1000});
 
     await click('Next');
+    assert.ok(await page.$eval('[aria-label="Dimensions 1"]',input=>{
+      const cell=input.getBoundingClientRect(),sheet=input.closest('[aria-label="Parts spreadsheet"]').getBoundingClientRect();
+      return cell.left>=sheet.left && cell.right<=sheet.right+1;
+    }),'New column is visible immediately before review');
     await page.type('[aria-label="Dimensions 1"]','001 x 020');
     await click('+ Add row');
-    const scrollState=await page.evaluate(()=>{
-      const first=document.querySelector('[aria-label="Part row 1"]');
-      const second=document.querySelector('[aria-label="Part row 2"]');
-      first.scrollLeft=first.scrollWidth;
-      return {firstPopulated:first.hasAttribute('data-extra-details'),secondPopulated:second.hasAttribute('data-extra-details'),firstScroll:first.scrollLeft,secondScroll:second.scrollLeft,emptyScrollbar:getComputedStyle(second).scrollbarWidth};
-    });
-    assert.ok(scrollState.firstPopulated && !scrollState.secondPopulated);
-    assert.ok(scrollState.firstScroll>0 && scrollState.secondScroll===0,'Only the active row pans');
-    assert.equal(scrollState.emptyScrollbar,'none','Empty extra fields do not show a row scrollbar');
-    await page.screenshot({path:path.join(output,'independent-row-scroll.png')});
+    await page.$eval('[aria-label="Scroll sheet columns"]', bar=>{bar.scrollLeft=bar.scrollWidth;bar.dispatchEvent(new Event('scroll'));});
+    assert.ok(await page.$eval('[aria-label="Parts spreadsheet"]',sheet=>{
+      const rows=[...sheet.querySelectorAll('tr')];
+      return rows[0].scrollLeft>0 && rows.every(row=>Math.abs(row.scrollLeft-rows[0].scrollLeft)<=1);
+    }),'Footer scrollbar pans every row and header together');
+    assert.ok(await page.$$eval('[aria-label="Parts spreadsheet"] tbody tr',rows=>rows.every(row=>getComputedStyle(row).scrollbarWidth==='none')),'No row has an embedded scrollbar');
+    const barTop=await page.$eval('[aria-label="Scroll sheet columns"]',e=>e.getBoundingClientRect().top);
+    await page.$eval('[aria-label="Parts spreadsheet"]',sheet=>{sheet.parentElement.scrollTop=sheet.parentElement.scrollHeight;});
+    assert.equal(await page.$eval('[aria-label="Scroll sheet columns"]',e=>e.getBoundingClientRect().top),barTop,'Horizontal bar stays fixed while rows scroll vertically');
+    await page.screenshot({path:path.join(output,'fixed-sheet-scroll.png')});
     await page.click('[aria-label="Actions for row 2"]'); await click('Delete row'); await click('Delete row from sheet');
 
     await click('Manage columns');

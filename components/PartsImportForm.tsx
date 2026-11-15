@@ -64,7 +64,7 @@ export default function PartsImportForm({
   const [importedDetailIds,setImportedDetailIds] = useState<string[]>([]);
   const labels = [...PART_LABELS,...extraFields.map(f=>f.label)];
   const emptyRow = () => Array(5 + extraFields.length).fill("") as string[];
-  function addField(field:PartDetailField) {if(extraFields.some(f=>f.id===field.id)){setHiddenDetails(hiddenDetails.filter(id=>id!==field.id));return;}setUndo({rows,fields:extraFields,hidden:hiddenColumns});setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
+  function addField(field:PartDetailField) {if(extraFields.some(f=>f.id===field.id)){setHiddenDetails(hiddenDetails.filter(id=>id!==field.id));return;}setUndo({rows,fields:extraFields,hidden:hiddenColumns});revealColumn.current = true;setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
   const [details, setDetails] = useState(initialDetails);
   const [pastedTable, setPastedTable] = useState("");
   const [raw, setRaw] = useState<string[][]>([]);
@@ -95,7 +95,38 @@ export default function PartsImportForm({
   const [tool, setTool] = useState<SheetTool | null>(null);
   const [hiddenColumns, setHiddenColumns] = useState<number[]>([]);
   const addRowFocus = useRef<number | null>(null);
+  const [page, setPage] = useState(0);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const horizontalRef = useRef<HTMLDivElement>(null);
+  const revealColumn = useRef(false);
+  const horizontalPosition = useRef(0);
+  const [horizontalSize, setHorizontalSize] = useState({width: 0, content: 0});
+  function panSheet(left: number) {
+    horizontalPosition.current = left;
+    sheetRef.current?.querySelectorAll("tr").forEach(row => {
+      if (Math.abs(row.scrollLeft - left) > 1) row.scrollLeft = left;
+    });
+    if (horizontalRef.current && Math.abs(horizontalRef.current.scrollLeft - left) > 1) horizontalRef.current.scrollLeft = left;
+  }
+  useLayoutEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+    const measure = () => {
+      const header = sheet.querySelector("thead tr");
+      if (!header) return;
+      setHorizontalSize({width: header.clientWidth, content: header.scrollWidth});
+      const left = revealColumn.current ? header.scrollWidth - header.clientWidth : Math.min(horizontalPosition.current, header.scrollWidth - header.clientWidth);
+      revealColumn.current = false;
+      panSheet(left);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(sheet);
+    return () => observer.disconnect();
+  }, [stage, source, extraFields, hiddenColumns, rows.length, page]);
+  useLayoutEffect(() => {
+    if (horizontalRef.current) horizontalRef.current.scrollLeft = horizontalPosition.current;
+  }, [horizontalSize]);
   useLayoutEffect(() => {
     if (addRowFocus.current === null) return;
     const input = sheetRef.current?.querySelector<HTMLInputElement>(`[aria-label="Part number ${addRowFocus.current + 1}"]`);
@@ -104,7 +135,7 @@ export default function PartsImportForm({
   const sheetEntry = stage === "entry" && source !== "manual";
   const [undo, setUndo] = useState<{rows:string[][];fields:PartDetailField[];hidden:number[]} | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
-  const [page, setPage] = useState(0);
+
   const mode = editSnapshot ? "replace" : "add";
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -553,7 +584,7 @@ export default function PartsImportForm({
                     {visible.map((row, offset) => {
                       const i = page * 50 + offset;
                       return (
-                        <tr key={i} tabIndex={0} aria-label={`Part row ${i + 1}`} data-extra-details={row.some((v,j)=>j>=5 && !hiddenColumns.includes(j) && v.trim()) || undefined} data-selected={selected.includes(i) || undefined} onFocusCapture={e=>{const header=sheetRef.current?.querySelector("thead tr");if(header) header.scrollLeft=e.currentTarget.scrollLeft;}} onScroll={e=>{const header=sheetRef.current?.querySelector("thead tr");if(header) header.scrollLeft=e.currentTarget.scrollLeft;}}>
+                        <tr key={i} tabIndex={0} aria-label={`Part row ${i + 1}`} data-extra-details={row.some((v,j)=>j>=5 && !hiddenColumns.includes(j) && v.trim()) || undefined} data-selected={selected.includes(i) || undefined} onScroll={e=>panSheet(e.currentTarget.scrollLeft)}>
                           <td>
                             <div className={styles.sheetRowControls}>
                             {<input
@@ -731,6 +762,7 @@ export default function PartsImportForm({
             </>
           )}
         </div>
+        {sheetEntry && horizontalSize.content > horizontalSize.width + 1 && <div ref={horizontalRef} className={styles.sheetHorizontalScroll} style={{width: horizontalSize.width}} role="region" aria-label="Scroll sheet columns" tabIndex={0} onScroll={e=>panSheet(e.currentTarget.scrollLeft)}><div style={{width: horizontalSize.content, height: 1}} /></div>}
         {stage === "choose" && <div className={styles.entryFooter}><button onClick={onBack}>Back</button></div>}
         {stage !== "choose" && (
           <div className={`${styles.entryFooter} ${stage === "entry" && source === "manual" ? styles.partEditFooter : ""}`}>

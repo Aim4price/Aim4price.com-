@@ -27,7 +27,7 @@ export function PartInput({children,label,required=false,onRemove}:{children:Rea
 
 export function AddPartField({ fields, onAdd, column = false, restorableFields = [], restoreInputs = [], onRestoreInput }: { restoreInputs?:{id:string;label:string}[];onRestoreInput?:(id:string)=>void; restorableFields?:PartDetailField[]; fields: PartDetailField[]; onAdd: (field:PartDetailField)=>void; column?:boolean }) {
   const [open,setOpen] = useState(false);
-  return <><button type="button" disabled={fields.length >= 12 && !restoreInputs.length && !restorableFields.length} onClick={()=>setOpen(true)}>+ {column ? "Next" : "Add detail"}</button>{open && <FieldPicker restoreInputs={restoreInputs} onRestoreInput={id=>{onRestoreInput?.(id);setOpen(false);}} restorableFields={restorableFields} fields={fields} onClose={()=>setOpen(false)} onAdd={f=>{onAdd(f);setOpen(false);}} column={column}/>}</>;
+  return <><button type="button" disabled={fields.length >= 12 && !restoreInputs.length && !restorableFields.length} onClick={()=>setOpen(true)}>+ {column ? "Add column" : "Add detail"}</button>{open && <FieldPicker restoreInputs={restoreInputs} onRestoreInput={id=>{onRestoreInput?.(id);setOpen(false);}} restorableFields={restorableFields} fields={fields} onClose={()=>setOpen(false)} onAdd={f=>{onAdd(f);setOpen(false);}} column={column}/>}</>;
 }
 function FieldPicker({fields,onAdd,onClose,column,restorableFields,restoreInputs,onRestoreInput}:{restoreInputs:{id:string;label:string}[];onRestoreInput:(id:string)=>void;restorableFields:PartDetailField[];fields:PartDetailField[];onAdd:(field:PartDetailField)=>void;onClose:()=>void;column:boolean}) {
   const dialog = useRef<HTMLDialogElement>(null);
