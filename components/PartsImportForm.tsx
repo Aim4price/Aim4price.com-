@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   guessPartColumns,
   readPartsCsv,
@@ -36,7 +36,9 @@ export default function PartsImportForm({
   request,
   onComplete,
   onBusyChange,
+  onStageChange,
 }: {
+  onStageChange?: (stage: string) => void;
   initialDetails: Details;
   editSnapshot?: {rows: string[][]; revision: number};
   onBack: () => void;
@@ -60,6 +62,7 @@ export default function PartsImportForm({
   const [stage, setStage] = useState<
     "choose" | "example" | "file" | "entry" | "settings" | "review"
   >(editSnapshot ? "entry" : "choose");
+  useEffect(() => { onStageChange?.(stage); }, [stage, onStageChange]);
   const exampleHeading = useRef<HTMLHeadingElement>(null);
   const exampleButton = useRef<HTMLButtonElement>(null);
   const returningFromExample = useRef(false);
