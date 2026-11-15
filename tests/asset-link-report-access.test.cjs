@@ -46,6 +46,7 @@ for(const [file,path,selector] of [
    [other.id,{latitude:-29.987654,longitude:25.987654,captured_at:'2026-10-18T08:00:00Z'}],
   ]);}},
   '../../../../lib/asset-groups-shared':{projectAssetGroupsToAssets:()=>new Map(),decorateAssetsWithGroups:items=>items,assetCountsTowardRegisterTotalFromMeta:()=>true},
+  '../../../../lib/asset-usage':load('lib/asset-usage.ts',{}),
   '../../../../lib/report-branding':{selectReportLogoUrl:()=>''},
   '../../../../lib/simple-xlsx':{createXlsxWorkbook:sheets=>Buffer.from(JSON.stringify(sheets))},
  });
