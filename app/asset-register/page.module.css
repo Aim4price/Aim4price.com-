@@ -16636,18 +16636,18 @@
 }
 
 .page .headerOptionsButton {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-danger-soft, var(--action-clay-bg)) 100%) !important;
-  border: 1.5px solid var(--app-danger-line, var(--action-clay-border)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-copper-soft, var(--action-clay-bg)) 100%) !important;
+  border: 1.5px solid var(--app-copper-line, var(--action-clay-border)) !important;
   box-shadow:
     0 10px 22px var(--app-shadow-colour, rgba(109, 63, 18, 0.085)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .page .headerOptionsButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-danger-soft, var(--action-clay-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--action-clay-border-hover)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-copper-soft, var(--action-clay-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--action-clay-border-hover)) !important;
   box-shadow:
     0 13px 26px var(--app-shadow-colour, rgba(109, 63, 18, 0.12)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
@@ -16673,33 +16673,33 @@
 }
 
 .page .assetHeaderActions .cardOptionsButton {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-danger-soft, var(--action-clay-bg)) 100%) !important;
-  border: 1.5px solid var(--app-danger-line, var(--action-clay-border)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-copper-soft, var(--action-clay-bg)) 100%) !important;
+  border: 1.5px solid var(--app-copper-line, var(--action-clay-border)) !important;
   box-shadow:
     0 10px 22px var(--app-shadow-colour, rgba(109, 63, 18, 0.085)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .page .assetHeaderActions .cardOptionsButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-danger-soft, var(--action-clay-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--action-clay-border-hover)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-copper-soft, var(--action-clay-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--action-clay-border-hover)) !important;
   box-shadow:
     0 13px 26px var(--app-shadow-colour, rgba(109, 63, 18, 0.12)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .page .assetHeaderActions .cardAccountantNoteButton {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-danger-soft, var(--action-clay-bg)) 100%) !important;
-  border: 1.5px solid var(--app-danger-line, var(--action-clay-border)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-copper-soft, var(--action-clay-bg)) 100%) !important;
+  border: 1.5px solid var(--app-copper-line, var(--action-clay-border)) !important;
 }
 
 .page .assetHeaderActions .cardAccountantNoteButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-danger-soft, var(--action-clay-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--action-clay-border-hover)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf4) 0%, var(--app-copper-soft, var(--action-clay-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--action-clay-border-hover)) !important;
 }
 
 .page .filterTriggerButtonActive,
@@ -16940,9 +16940,9 @@
 
 .page .headerOptionsButton,
 .page .assetHeaderActions .cardOptionsButton {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf5) 0%, var(--app-danger-soft, var(--action-clay-bg)) 100%) !important;
-  border-color: var(--app-danger-line, var(--action-clay-border)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-copper-soft, #fffaf5) 0%, var(--app-copper-soft, var(--action-clay-bg)) 100%) !important;
+  border-color: var(--app-copper-line, var(--action-clay-border)) !important;
   box-shadow:
     0 10px 22px var(--app-shadow-colour, rgba(114, 59, 13, 0.1)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
@@ -16950,9 +16950,9 @@
 
 .page .headerOptionsButton:hover:not(:disabled),
 .page .assetHeaderActions .cardOptionsButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--action-clay-text)) !important;
-  background: linear-gradient(180deg, var(--app-danger-soft, #fff7f0) 0%, var(--app-danger-soft, var(--action-clay-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--action-clay-border-hover)) !important;
+  color: var(--app-copper, var(--action-clay-text)) !important;
+  background: linear-gradient(180deg, var(--app-copper-soft, #fff7f0) 0%, var(--app-copper-soft, var(--action-clay-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--action-clay-border-hover)) !important;
   box-shadow:
     0 14px 28px var(--app-shadow-colour, rgba(114, 59, 13, 0.15)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
@@ -28451,18 +28451,18 @@ button.documentOpenLink {
 }
 
 .page .registerHeader .headerShareButton {
-  color: var(--app-danger, var(--header-action-copper-text)) !important;
-  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf5) 0%, var(--app-danger-soft, var(--header-action-copper-bg)) 100%) !important;
-  border: 1.5px solid var(--app-danger-line, var(--header-action-copper-border)) !important;
+  color: var(--app-copper, var(--header-action-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-copper-soft, #fffaf5) 0%, var(--app-copper-soft, var(--header-action-copper-bg)) 100%) !important;
+  border: 1.5px solid var(--app-copper-line, var(--header-action-copper-border)) !important;
   box-shadow:
     0 10px 22px var(--app-shadow-colour, var(--header-action-copper-shadow)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .page .registerHeader .headerShareButton:hover:not(:disabled) {
-  color: var(--app-danger, var(--header-action-copper-text)) !important;
-  background: linear-gradient(180deg, var(--app-danger-soft, #fff7f0) 0%, var(--app-danger-soft, var(--header-action-copper-bg-hover)) 100%) !important;
-  border-color: var(--app-danger-line, var(--header-action-copper-border-hover)) !important;
+  color: var(--app-copper, var(--header-action-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-copper-soft, #fff7f0) 0%, var(--app-copper-soft, var(--header-action-copper-bg-hover)) 100%) !important;
+  border-color: var(--app-copper-line, var(--header-action-copper-border-hover)) !important;
   box-shadow:
     0 14px 28px var(--app-shadow-colour, rgba(114, 59, 13, 0.15)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
@@ -41910,4 +41910,18 @@ button.documentOpenLink {
 .paperworkPanel .assetStatusSubActions {
   position: static;
   margin-top: 0.5rem;
+}
+
+/* Carry the parts action contrast through legacy Owner and shared Manage flows. */
+.ownerCommandDangerAction.ownerCommandDangerAction,
+.ownerCommandChoiceAction.ownerCommandChoiceAction {
+  border-width: 2px !important;
+}
+.ownerCommandChoiceAction.ownerCommandChoiceAction.optionFeaturedButton {
+  border-color: var(--app-success-line, #74b59f) !important;
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--app-success-soft, #e1efea)) !important;
+}
+.ownerCommandChoiceAction.ownerCommandChoiceAction :is(small, p),
+.ownerCommandDangerAction.ownerCommandDangerAction small {
+  color: var(--app-text, #34564b) !important;
 }

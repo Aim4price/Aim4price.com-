@@ -345,3 +345,16 @@
 .publishSuccess strong { display: flex; align-items: center; gap: .5rem; }
 .publishSuccess strong svg { width: 1.2rem; height: 1.2rem; }
 .publishSuccess p { margin: .4rem 0 0; color: var(--app-muted, #657c71); font-size: .85rem; line-height: 1.5; }
+
+/* Source choices use the same coloured surfaces as the parts chooser. */
+.sourceCard {
+  --source-colour: #178361;
+  --source-fill: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--source-colour));
+  border: 2px solid color-mix(in srgb, var(--app-surface, #fff) 40%, var(--source-colour));
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--source-fill));
+}
+.sourceCard[data-source='asset'] { --source-colour: #347bc4; }
+.sourceCard[data-source='estimate'] { --source-colour: #c47b23; }
+.sourceCard .optionIcon { background: var(--source-fill); }
+.sourceCard:hover:not(:disabled) { background: var(--source-fill); }
+:global(html[data-app-theme='dark']) .sourceCard .optionIcon { color: var(--app-text); }

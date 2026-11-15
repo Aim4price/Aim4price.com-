@@ -1,14 +1,15 @@
 .grid > :is(button, a)[data-manage-action] {
-  --action-tint: #f3f5f6;
-  --action-border: #d9e0e3;
+  --action-colour: #647888;
+  --action-tint: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--action-colour));
+  --action-border: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--action-colour));
   --action-ink: #52616b;
 }
 .grid.grid[data-manage-actions] > :is(button, a)[data-manage-action] {
-  background: linear-gradient(120deg, var(--app-surface, #fff), color-mix(in srgb, var(--app-surface, #fff) 15%, var(--action-tint))) !important;
-  border-color: var(--action-border) !important;
+  background: linear-gradient(120deg, var(--app-surface, #fff), var(--action-tint)) !important;
+  border: 2px solid var(--action-border) !important;
 }
 .grid > :is(button, a)[data-manage-action='location'] {
-  --action-tint: #edf8f2; --action-border: #c4dfd0; --action-ink: #24614a;
+  --action-colour: #178361; --action-ink: #24614a;
 }
 .grid > :is(button, a)[data-manage-action='maintenanceReports'],
 .grid > :is(button, a)[data-manage-action='loggedProblems'],
@@ -17,15 +18,15 @@
 .grid > :is(button, a)[data-manage-action='maintenanceSchedules'],
 .grid > :is(button, a)[data-manage-action='viewParts'],
 .grid > :is(button, a)[data-manage-action='addParts'] {
-  --action-tint: #fff7e9; --action-border: #ebd9b8; --action-ink: #826124;
+  --action-colour: #c47b23; --action-ink: #826124;
 }
 .grid > :is(button, a)[data-manage-action='fuel'] {
-  --action-tint: #fff0ee; --action-border: #efcbc6; --action-ink: #a34f45;
+  --action-colour: #be6558; --action-ink: #a34f45;
 }
 .grid > :is(button, a)[data-manage-action='budget'],
 .grid > :is(button, a)[data-manage-action='addCosts'],
 .grid > :is(button, a)[data-manage-action='costOfOwnership'] {
-  --action-tint: #f5f0fc; --action-border: #dcd0ed; --action-ink: #695089;
+  --action-colour: #7950b5; --action-ink: #695089;
 }
 .grid > :is(button, a)[data-manage-action] > svg { color: var(--action-ink) !important; }
 .grid > :is(button, a)[data-manage-action]:hover:not(:disabled) { box-shadow: 0 6px 18px #173b2f12; }
@@ -33,7 +34,7 @@
 
 /* Submenus inherit the category colour of their parent Manage action. */
 .grid.maintenance > :is(button, a)[data-manage-action] {
-  --action-tint: #fff7e9; --action-border: #ebd9b8; --action-ink: #826124;
+  --action-colour: #c47b23; --action-ink: #826124;
 }
 
 .grid:is(.maintenance, .pricing) > :is(button, a)[data-manage-action] > svg {
@@ -47,17 +48,21 @@
 .grid.pricing > :is(button, a)[data-manage-action],
 .grid > .ownerPricingAction[data-manage-action],
 .grid.pricing.ownerPricing > :is(button, a)[data-manage-action] {
-  --action-tint: #f0f7ff;
-  --action-border: #c6ddf4;
+  --action-colour: #347bc4;
   --action-ink: #235b89;
 }
 
 /* Keep category accents legible without bright cards in dark mode. */
 :global(html[data-app-theme="dark"]) .grid.grid[data-manage-actions] > :is(button, a)[data-manage-action] {
-  background: linear-gradient(120deg, var(--app-surface, #182522), color-mix(in srgb, var(--app-surface, #182522) 88%, var(--action-tint))) !important;
+  background: linear-gradient(120deg, var(--app-surface, #182522), var(--action-tint)) !important;
   border-color: color-mix(in srgb, var(--app-surface, #182522) 60%, var(--action-border)) !important;
 }
 :global(html[data-app-theme="dark"]) .grid > :is(button, a)[data-manage-action] > svg {
   color: color-mix(in srgb, var(--action-ink) 45%, white) !important;
   background: transparent !important;
+}
+
+/* Supporting copy stays readable against the stronger category fill. */
+.grid.grid[data-manage-actions] > :is(button, a)[data-manage-action] small {
+  color: var(--app-text, #34564b) !important;
 }

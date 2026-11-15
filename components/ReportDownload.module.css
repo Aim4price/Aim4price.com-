@@ -116,7 +116,7 @@
   min-height: 5.9rem !important;
   height: auto !important;
   padding: 1rem !important;
-  border: 1px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
+  border: 2px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
   border-radius: 1rem !important;
   background: linear-gradient(180deg,var(--app-surface, #fff),var(--app-info-soft, #f5f8fb)) !important;
   color: var(--app-text, #10352b) !important;
@@ -147,7 +147,7 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: 1px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
+  border: 2px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
   border-radius: 1rem !important;
   background: var(--app-surface, #fff) !important;
   padding: 0 !important;
@@ -323,28 +323,28 @@
 /* Shared category colours for owner, dealer and shared-asset reports. */
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="valuation"])),
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="depreciation"])) {
-  --report-tint: #f0f7ff; --report-border: #c6ddf4; --report-icon-ink: #235b89;
+  --report-tint: #e5eef7; --report-border: #85b0dc; --report-icon-ink: #235b89;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="maintenance"])) {
-  --report-tint: #fff7e9; --report-border: #ebd9b8; --report-icon-ink: #826124;
+  --report-tint: #f7eee2; --report-border: #dcb075; --report-icon-ink: #826124;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="fuel"])) {
-  --report-tint: #fff0ee; --report-border: #efcbc6; --report-icon-ink: #a34f45;
+  --report-tint: #f7ebe9; --report-border: #d8a397; --report-icon-ink: #a34f45;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="ownership"])) {
-  --report-tint: #f5f0fc; --report-border: #dcd0ed; --report-icon-ink: #695089;
+  --report-tint: #eee8f5; --report-border: #af96d3; --report-icon-ink: #695089;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind="map"])) {
-  --report-tint: #edf8f2; --report-border: #c4dfd0; --report-icon-ink: #24614a;
+  --report-tint: #e1efea; --report-border: #74b59f; --report-icon-ink: #24614a;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind])) {
   background: linear-gradient(120deg, var(--app-surface, #fff), var(--report-tint)) !important;
-  border-color: var(--report-border) !important;
+  border: 2px solid var(--report-border) !important;
 }
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg:global([data-report-kind]) {
   color: var(--report-icon-ink) !important;
-  background: color-mix(in srgb, var(--report-icon-ink) 8%, var(--app-surface, #fff)) !important;
-  border-color: color-mix(in srgb, var(--report-icon-ink) 24%, var(--app-surface, #fff)) !important;
+  background: color-mix(in srgb, var(--report-icon-ink) 13%, var(--app-surface, #fff)) !important;
+  border-color: color-mix(in srgb, var(--report-icon-ink) 60%, var(--app-surface, #fff)) !important;
   stroke-width: 1.8;
 }
 :global(html[data-app-theme="dark"]) .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):has(> svg:global([data-report-kind])) {

@@ -18,6 +18,7 @@ on:
       - 'public/middleman/offline.html'
       - 'public/app-offline/**'
       - 'public/field-manager-sw.js'
+      - 'scripts/verify-action-colours.cjs'
       - 'tests/app-theme.test.mjs'
       - 'tests/helpers/light-theme-source.mjs'
       - '.github/workflows/app-theme-validation.yml'
@@ -39,3 +40,4 @@ jobs:
       - run: npm ci
       - run: npm run test:app-theme
       - run: npm run typecheck
+      - run: node scripts/verify-action-colours.cjs
