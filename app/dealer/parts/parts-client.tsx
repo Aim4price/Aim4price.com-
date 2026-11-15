@@ -170,6 +170,7 @@ function Modal({
   subtitle,
   manage = false,
   entry = false,
+  edit = false,
   enquiry = false,
   destructive = false,
   download = false,
@@ -181,6 +182,7 @@ function Modal({
   subtitle?: string;
   manage?: boolean;
   entry?: boolean;
+  edit?: boolean;
   enquiry?: boolean;
   destructive?: boolean;
   download?: boolean;
@@ -202,7 +204,7 @@ function Modal({
     <div className={styles.backdrop} data-website-overlay>
       <section
         ref={ref}
-        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""} ${access ? styles.accessModal : ""}`}
+        className={`${styles.modal} ${manage ? styles.manageModal : ""} ${entry ? styles.entryModal : ""} ${edit ? styles.partEditorModal : ""} ${enquiry ? styles.enquiryModal : ""} ${destructive ? styles.deleteModal : ""} ${download ? reportStyles.dialog : ""} ${access ? styles.accessModal : ""}`}
         data-download-dialog={download ? "true" : undefined}
         role="dialog"
         aria-describedby={destructive ? "delete-parts-copy" : undefined}
@@ -1330,11 +1332,12 @@ export default function PartsClient({
             })}>{busy ? "Preparing…" : `Download ${downloadFormat === "pdf" ? "PDF" : "Excel"}`}</button>
           </footer>
         </Modal>}
-        {editingPart && <Modal progress={{value: 80, label: "Edit selected part"}} title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
-          <form onSubmit={e=>{e.preventDefault();void run(async()=>{
+        {editingPart && <Modal edit progress={{value: 80, label: "Edit selected part"}} title="Edit part" subtitle={current?.name} onClose={close} busy={busy}>
+          <form className={styles.partEditorForm} onSubmit={e=>{e.preventDefault();void run(async()=>{
             await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
             setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");
           });}}>
+            <div className={styles.partEditorBody}>
             <div className={styles.partEditFields}>
               <label>Part number<input required maxLength={100} value={editingPart.partNumber} onChange={e=>setEditingPart({...editingPart,partNumber:e.target.value})}/></label>
               <label>Brand<input placeholder="Optional" maxLength={100} value={editingPart.brand} onChange={e=>setEditingPart({...editingPart,brand:e.target.value})}/></label>
@@ -1354,6 +1357,7 @@ export default function PartsClient({
             </div>
             <div className={styles.partEditFields}><PartDetailInputs fields={editingPart.extraFields} values={editingPart.details} onChange={details=>setEditingPart({...editingPart,details})}/><div className={styles.partEditDescription}><AddPartField fields={editingPart.extraFields} onAdd={field=>setEditingPart({...editingPart,extraFields:[...editingPart.extraFields,field]})}/></div></div>
             {feedback}
+            </div>
             <div className={`${styles.actions} ${styles.partEditFooter}`}><button type="button" disabled={busy} onClick={fromPicker ? () => {setEditingPart(null);setError("");setModal("upload");} : close}>{fromPicker ? "Back" : "Cancel"}</button><button className={styles.primary} disabled={busy} type="submit">{busy ? "Saving…" : "Save changes"}</button></div>
           </form>
         </Modal>}

@@ -17,6 +17,7 @@ import {
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
 import { AddPartField, PartDetailInputs } from "./PartsDetailFields";
+import PartsChoice from "./PartsChoice";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
 import styles from "../app/dealer/parts/parts.module.css";
@@ -725,21 +726,7 @@ export default function PartsImportForm({
                       </label>
                     ),
                   )}
-                  <label>
-                    Prices
-                    <select
-                      value={String(details.vatIncluded)}
-                      onChange={(e) =>
-                        setDetails({
-                          ...details,
-                          vatIncluded: e.target.value === "true",
-                        })
-                      }
-                    >
-                      <option value="false">Exclude VAT</option>
-                      <option value="true">Include VAT</option>
-                    </select>
-                  </label>
+                  <PartsChoice label="Price VAT basis" value={String(details.vatIncluded)} onChange={value=>setDetails({...details,vatIncluded:value === "true"})} options={[{value:"false",label:"Exclude VAT",hint:"Prices before VAT"},{value:"true",label:"Include VAT",hint:"Prices already include VAT"}]} />
                 </div>
               </section>
             </>
