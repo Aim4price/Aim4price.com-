@@ -525,11 +525,23 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
   await assert.rejects(() =>
     parts.acceptDirectPartsShare(stranger, invitation.id),
   );
-  await assert.rejects(()=>parts.invitePartsMember(owner,a,stranger.email,"viewer","direct"), /paid dealer/);
+  await assert.rejects(()=>parts.invitePartsMember(owner,a,stranger.email,"viewer","direct"), /active dealer/);
   assert.equal((await parts.partsRecipients(owner,a,'buyer')).recipients[0].email,buyer.email);
   await db.exec(`INSERT INTO "user"(id,email) VALUES('paid-business','paid@example.test'),('free-business','free@example.test'); INSERT INTO account_profiles(user_id,business_name,account_type,account_status) VALUES('paid-business','Paid workshop','business','active'),('free-business','Free workshop','business','active'); INSERT INTO sharing_account_access(user_id,plan) VALUES('paid-business','desktop'),('free-business','free');`);
-  assert.deepEqual((await parts.partsRecipients(owner,a,'workshop')).recipients.map(r=>r.email),['paid@example.test']);
-  await assert.rejects(()=>parts.invitePartsMember(owner,a,'free@example.test','viewer','direct'),/paid dealer/);
+  assert.deepEqual((await parts.partsRecipients(owner,a,'workshop')).recipients.map(r=>r.email),['free@example.test','paid@example.test']);
+  await parts.invitePartsMember(owner,a,'free@example.test','viewer','direct');
+  const freeBusiness = {...owner,id:'free-business',email:'free@example.test',viewerOnly:true,canContribute:false};
+  const freeInvite = (await parts.partsInbox(freeBusiness)).invitations[0];
+  await parts.acceptDirectPartsShare(freeBusiness,freeInvite.id);
+  assert.equal((await parts.partsData(freeBusiness,a,'search','',0)).total,1);
+  await assert.rejects(()=>parts.importParts(freeBusiness,a,input,false));
+  await db.exec(`UPDATE account_profiles SET town_city='Knysna' WHERE user_id='free-business';`);
+  assert.equal((await parts.partsRecipients(owner,a,'knysna')).recipients[0].email,'free@example.test');
+  const legacy = (await parts.createPartsNetwork(owner,'Shared network',false)).id;
+  await assert.rejects(()=>parts.invitePartsMember(owner,legacy,'free@example.test','admin','direct'), /view and enquire access only/);
+  await db.exec(`UPDATE account_profiles SET account_status='suspended' WHERE user_id='free-business';`);
+  assert.equal((await parts.partsRecipients(owner,a,'free@example.test')).recipients.length,0);
+  await assert.rejects(()=>parts.invitePartsMember(owner,a,'free@example.test','viewer','direct'),/active dealer/);
 
   await assert.rejects(()=>parts.partsRecipients(buyer,a,''));
   await parts.acceptDirectPartsShare(buyer, invitation.id);
@@ -601,7 +613,7 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
     "Landini spares",
   );
   await parts.managePartsList(owner, a, "", true);
-  assert.equal((await parts.listPartsNetworks(owner)).length, 1);
+  assert.equal((await parts.listPartsNetworks(owner)).length, 2);
   await assert.rejects(() => parts.partsData(owner, a, "mine", "", 0));
   await assert.rejects(() =>
     parts.partsInvitePin(stranger, new URL(link.url).searchParams.get("token")),

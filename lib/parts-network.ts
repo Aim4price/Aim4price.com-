@@ -269,13 +269,15 @@ export async function invitePartsMember(
       throw new PartsError("Choose a sharing method.");
     if (channel === "direct") {
       const eligible = await db.query(
-        `SELECT u.id FROM "user" u JOIN account_profiles p ON p.user_id=u.id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE lower(u.email)=$1 AND u.id<>$2 AND ${PAID_PARTS_RECIPIENT}`,
+        `SELECT u.id, (p.account_type='dealer' AND coalesce(a.plan,'desktop')='desktop') AS can_contribute FROM "user" u JOIN account_profiles p ON p.user_id=u.id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE lower(u.email)=$1 AND u.id<>$2 AND ${PARTS_RECIPIENT}`,
         [email, actor.id],
       );
       if (!eligible.rows.length)
         throw new PartsError(
-          "Choose an active paid dealer or business account, or share a private link instead.",
+          "Choose an active dealer or business account, or share a private link instead.",
         );
+      if (memberRole !== "viewer" && !eligible.rows[0].can_contribute)
+        throw new PartsError("This account can receive view and enquire access only.");
     }
     await db.query(
       "UPDATE parts_network_invites SET revoked_at=now() WHERE network_id=$1 AND email=$2 AND consumed_at IS NULL AND revoked_at IS NULL",
@@ -900,8 +902,8 @@ export async function resolvePartsShare(actor: PartsActor, token: unknown) {
   return { signedIn: true, accepted: false };
 }
 
-const PAID_PARTS_RECIPIENT =
-  "p.account_type IN ('dealer','business') AND p.account_status='active' AND coalesce(p.account_subtype,'') NOT IN ('middleman','machinery-middleman','equipment-middleman') AND coalesce(a.plan,CASE WHEN p.account_type='business' THEN 'free' ELSE 'desktop' END)='desktop'";
+const PARTS_RECIPIENT =
+  "p.account_type IN ('dealer','business') AND p.account_status='active' AND coalesce(p.account_subtype,'') NOT IN ('middleman','machinery-middleman','equipment-middleman')";
 export async function partsRecipients(
   actor: PartsActor,
   id: string,
@@ -913,7 +915,7 @@ export async function partsRecipients(
     return {
       recipients: (
         await db.query(
-          `SELECT u.email,p.business_name,p.town_city FROM "user" u JOIN account_profiles p ON p.user_id=u.id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE u.id<>$1 AND ${PAID_PARTS_RECIPIENT} AND ($2='' OR strpos(lower(coalesce(p.business_name,'')||' '||u.email),$2)>0) ORDER BY p.business_name,u.email LIMIT 50`,
+          `SELECT u.email,p.business_name,p.town_city,p.account_type,(p.account_type='dealer' AND coalesce(a.plan,'desktop')='desktop') AS can_contribute FROM "user" u JOIN account_profiles p ON p.user_id=u.id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE u.id<>$1 AND ${PARTS_RECIPIENT} AND ($2='' OR strpos(lower(coalesce(p.business_name,'')||' '||u.email||' '||coalesce(p.town_city,'')),$2)>0) ORDER BY p.business_name,u.email LIMIT 50`,
           [actor.id, str(search, 100).toLowerCase()],
         )
       ).rows,
