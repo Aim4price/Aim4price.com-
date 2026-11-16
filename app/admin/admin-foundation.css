@@ -1,166 +1,109 @@
+/* Admin uses the same Montserrat hierarchy and calm green controls as Owner accounts. */
 .adminWorkspaceRoot {
-  min-height: calc(var(--website-design-vh, 1vh) * 100);
-  color-scheme: light;
-  scrollbar-color: #9bbcaf #eff5f2;
-  --admin-control-radius: 0.7rem;
-  --admin-card-radius: 1rem;
-}
-
-.adminWorkspaceRoot :where(button, a, input, select, textarea) {
-  font-family: inherit;
-}
-
-.adminWorkspaceRoot :where(button, input, select, textarea) {
-  border-radius: var(--admin-control-radius);
-}
-
-.adminWorkspaceRoot :where(button, a, input, select, textarea):focus-visible {
-  outline: 3px solid rgba(38, 126, 94, 0.24);
-  outline-offset: 2px;
-}
-
-/* One compact hierarchy across every Admin workspace. */
-.adminWorkspaceRoot :where(
-  [class*="titleBlock"] > p,
-  [class*="eyebrow"],
-  [class*="sectionLabel"],
-  [class*="sectionKicker"],
-  [class*="tableEyebrow"],
-  [class*="tableTitle"] > p,
-  [class*="panelTitle"] > p,
-  th,
-  dt,
-  legend,
-  label > span:first-child
-) {
-  font-size: max(0.76rem, 12px) !important;
-  font-weight: 750 !important;
-  letter-spacing: normal !important;
-  line-height: 1.35 !important;
-  text-transform: none !important;
-}
-
-.adminWorkspaceRoot :where(h1, h2, h3) {
-  text-wrap: pretty;
-  overflow-wrap: anywhere;
-}
-
-.adminWorkspaceRoot :where([class*="titleBlock"] > p, [class*="titleBlock"] > span) {
-  display: none !important;
-}
-
-.adminWorkspaceRoot :where([class*="titleBlock"] h1) {
-  margin: 0 !important;
-  font-size: clamp(2.25rem, calc(var(--website-design-vw, 1vw) * 3.3), 3.25rem) !important;
-  line-height: 1 !important;
-  white-space: normal;
-}
-
-.adminWorkspaceRoot :where(
-  [class*="badge"],
-  [class*="Badge"],
-  [class*="chip"],
-  [class*="Chip"],
-  [class*="pill"],
-  [class*="Pill"]
-) {
-  border-radius: 0 !important;
-}
-
-:where(html:has([data-website-canvas])) .adminWorkspaceRoot :where([role="tab"], th, label > span:first-child) {
-    white-space: nowrap;
-  }
-
-@media (min-width: 761px) {
-  :where(html:not(:has([data-website-canvas]))) .adminWorkspaceRoot :where([role="tab"], th, label > span:first-child) {
-    white-space: nowrap;
-  }
-}
-
-.adminWorkspaceRoot :where(button, a) {
-  -webkit-tap-highlight-color: transparent;
-}
-
-@media (max-width: 760px) {
-  :where(html:not(:has([data-website-canvas]))) .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
-    font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 7.2), 2.4rem) !important;
-  }
-
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .adminWorkspaceRoot *,
-  .adminWorkspaceRoot *::before,
-  .adminWorkspaceRoot *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
-
-/* Data-heavy pages need readable content as well as compact controls. */
-.adminWorkspaceRoot {
-  background: #f5f8f6;
-}
-.adminWorkspaceRoot :where([class*="topBar"]) {
-  flex-wrap: wrap;
-  row-gap: 1rem;
-}
-.adminWorkspaceRoot :where([class*="titleBlock"] h1) {
-  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3), 2.8rem) !important;
-  line-height: 1.15 !important;
-}
-.adminWorkspaceRoot :where(td) {
-  font-variant-numeric: tabular-nums;
-}
-.adminWorkspaceRoot :where([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"]) {
-  scrollbar-width: thin;
-  scrollbar-color: #9bbcaf #eff5f2;
-}
-.adminWorkspaceRoot :where(button:disabled) {
-  cursor: not-allowed;
-}
-
-/* Shared Admin design tokens. Page-specific layouts remain in their modules. */
-.adminWorkspaceRoot {
-  --admin-ink: var(--text-strong, #243c35);
-  --admin-muted: var(--text-muted, #6f7a75);
-  --admin-line: #e2e9e5;
+  --admin-ink: #173c31;
+  --admin-muted: #52665d;
+  --admin-line: #dce6df;
   --admin-surface: #fff;
   --admin-canvas: var(--surface, #f7f8f7);
-  --admin-control-radius: 0.5rem;
-  --admin-card-radius: 0.85rem;
+  --admin-control-radius: .9rem;
+  --admin-card-radius: 1rem;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
+  color-scheme: light;
   color: var(--admin-ink);
   background: var(--admin-canvas);
-  font-family: var(--font-body), 'Montserrat', sans-serif;
+  font: 650 1rem/1.5 var(--font-body, 'Montserrat'), sans-serif;
+  scrollbar-color: #9bbcaf #eff5f2;
 }
 .adminWorkspaceRoot *, .adminWorkspaceRoot *::before, .adminWorkspaceRoot *::after { box-sizing: border-box; }
 .adminWorkspaceRoot #admin-workspace-content > main { width: 100%; max-width: none; margin: 0; padding: 0; min-height: auto; background: transparent; }
-.adminWorkspaceRoot :where([class*="titleBlock"] h1) { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem) !important; font-weight: 800; letter-spacing: -0.045em; line-height: 1.25 !important; }
-.adminWorkspaceRoot #admin-workspace-content h1 { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.25; }
-.adminWorkspaceRoot :where(h2, h3) { font-weight: 800; }
-.adminWorkspaceRoot :where(th, dt, legend, label > span:first-child) { font-weight: 650 !important; color: #718278; }
-.adminWorkspaceRoot :where(td) { line-height: 1.5; }
-.adminWorkspaceRoot :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { accent-color: #22664b; }
-.adminWorkspaceRoot :where(input, select, textarea):focus-visible { outline: 2px solid #7cae93; outline-offset: 2px; }
+.adminWorkspaceRoot :where(button, a, input, select, textarea) { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+.adminWorkspaceRoot :where(button, input, select, textarea) { border-radius: var(--admin-control-radius); }
+.adminWorkspaceRoot :where(button, a, input, select, textarea):focus-visible { outline: 2px solid #7cae93; outline-offset: 2px; }
 .adminWorkspaceRoot :where(button, a) { transition: background-color .15s, border-color .15s, color .15s; }
-.adminWorkspaceRoot :where(button:disabled) { opacity: .5; }
-.adminWorkspaceRoot :where([role="dialog"], dialog) h2 { font-weight: 800; letter-spacing: -.025em; }
-.adminWorkspaceRoot :where([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"]) { scrollbar-width: auto; scrollbar-color: #b8c9bf #f4f7f5; }
-@media print { .adminWorkspaceRoot { background: white; } .adminWorkspaceRoot #admin-workspace-content > main { padding: 0; } }
-.adminAiConnectionPage > main { min-height: auto; }
-.adminAiConnectionPage > main > div { width: 100%; max-width: none; padding: 0; }
-.adminAiConnectionPage h2 { font-size: 1.1rem; font-weight: 800; }
-.adminAiConnectionPage h3 { font-size: .9rem; font-weight: 800; }
-.adminAiConnectionPage p { font-size: .82rem; line-height: 1.7; }
-
-/* Match the existing Showroom's Montserrat headings and 650-weight controls. */
+.adminWorkspaceRoot :where(button:disabled) { cursor: not-allowed; opacity: .55; }
+.adminWorkspaceRoot :where([class*="titleBlock"] > p, [class*="titleBlock"] > span) { display: none !important; }
+.adminWorkspaceRoot #admin-workspace-content h1 { margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -.045em; line-height: 1.25; }
 .adminWorkspaceRoot #admin-workspace-content :is(h2, h3) { font-weight: 800; }
+.adminWorkspaceRoot :where([role="dialog"], dialog) h2 { font-weight: 800; letter-spacing: -.025em; }
+.adminWorkspaceRoot :where(th, dt, legend, label > span:first-child, [class*="eyebrow"], [class*="sectionLabel"], [class*="sectionKicker"], [class*="tableEyebrow"]) {
+  color: var(--admin-muted);
+  font-size: .95rem !important;
+  font-weight: 650 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  line-height: 1.5 !important;
+}
 .adminWorkspaceRoot #admin-workspace-content :is(button, input, select, textarea) { font-family: var(--font-body, 'Montserrat'), sans-serif; }
 .adminWorkspaceRoot #admin-workspace-content button:not([data-modal-close]) { font-weight: 650; }
-.adminWorkspaceRoot #admin-workspace-content :is(input, select, textarea) { font-size: .88rem; }
-.adminWorkspaceRoot #admin-workspace-content :is(th, td) { font-size: .85rem; }
-.adminWorkspaceRoot #admin-workspace-content :is(th, dt, legend) { color: #64746a; }
+.adminWorkspaceRoot #admin-workspace-content :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { font-size: 1rem; accent-color: #22664b; }
+.adminWorkspaceRoot #admin-workspace-content :is(th, td) { font-size: 1rem; line-height: 1.5; }
+.adminWorkspaceRoot td { font-variant-numeric: tabular-nums; }
+.adminWorkspaceRoot :where([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"]) { max-width: 100%; overflow-x: auto; scrollbar-width: auto; scrollbar-color: #9bbcaf #eff5f2; }
+.adminWorkspaceRoot :where([class*="topBar"]) { flex-wrap: wrap; row-gap: 1rem; }
 
-.adminWorkspaceRoot #admin-workspace-content h1 { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Keep each piece of copy on one line. Long data stays available through local scrolling. */
+.adminWorkspaceRoot :is(h1, h2, h3, p, dt, dd, th, td, label, legend, summary, button, a, small, strong, span),
+html:has(.adminWorkspaceRoot) #aim4price-website-overlays :is(h2, h3, p, label, button, small, strong, span) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-wrap: nowrap;
+}
+.adminWorkspaceRoot :is(h1, h2, h3, p, dd) { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+.adminWorkspaceRoot :is(textarea, pre) { white-space: pre-wrap; overflow-wrap: anywhere; }
+.adminWorkspaceRoot :where([class*="badge"], [class*="Badge"], [class*="chip"], [class*="Chip"], [class*="pill"], [class*="Pill"]) { border-radius: .65rem; }
+.adminAiConnectionPage > main { min-height: auto; }
+.adminAiConnectionPage > main > div { width: 100%; max-width: none; padding: 0; }
+.adminAiConnectionPage h2 { font-size: 1.35rem; font-weight: 800; }
+.adminAiConnectionPage h3 { font-size: 1.1rem; font-weight: 800; }
+.adminAiConnectionPage p { font-size: 1rem; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) {
+  .adminWorkspaceRoot *, .adminWorkspaceRoot *::before, .adminWorkspaceRoot *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+@media print { .adminWorkspaceRoot { background: white; } .adminWorkspaceRoot #admin-workspace-content > main { padding: 0; } }
+
+/* Consistent, centred disclosure arrows instead of browser markers or text glyphs. */
+.adminWorkspaceRoot #admin-workspace-content summary {
+  list-style: none;
+  position: relative;
+  padding-right: 2.5rem;
+  min-height: 3rem;
+  align-content: center;
+  cursor: pointer;
+}
+.adminWorkspaceRoot #admin-workspace-content summary::-webkit-details-marker { display: none; }
+.adminWorkspaceRoot #admin-workspace-content summary::marker { content: ''; }
+.adminWorkspaceRoot #admin-workspace-content summary::after {
+  content: '';
+  position: absolute;
+  right: .5rem;
+  top: 50%;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 0;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m7 10 5 5 5-5' fill='none' stroke='black' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  transform: translateY(-50%);
+}
+.adminWorkspaceRoot #admin-workspace-content details[open] > summary::after { transform: translateY(-50%) rotate(180deg); }
+.adminWorkspaceRoot #admin-workspace-content summary [class*="disclosureMark"] { display: none; }
+.adminWorkspaceRoot #admin-workspace-content input::placeholder,
+.adminWorkspaceRoot #admin-workspace-content textarea::placeholder { color: #64766c; opacity: 1; }
+
+/* Let data tables grow inside their scroller; never squeeze or overlap single-line cells. */
+.adminWorkspaceRoot #admin-workspace-content table { width: max-content; min-width: 100%; table-layout: auto; }
+.adminWorkspaceRoot #admin-workspace-content :is(th, td) { width: auto; max-width: none; white-space: nowrap; }
+.adminWorkspaceRoot #admin-workspace-content :is(th, td) :is(span, strong, a, p, small, div, button) { white-space: nowrap; overflow-wrap: normal; max-width: none; text-overflow: clip; }
+.adminWorkspaceRoot #admin-workspace-content td :is(span, strong) { overflow: visible; }
+.adminWorkspaceRoot #admin-workspace-content summary:has([class*="Chevron"]) { padding-right: 0; }
+.adminWorkspaceRoot #admin-workspace-content summary:has([class*="Chevron"])::after { display: none; }
+.adminWorkspaceRoot [data-site-workspace-zoom-controls] button { font-size: .95rem; }
+.adminWorkspaceRoot [class*="featuredCard"] :is(h2, dt, a) { color: #e2f1e8 !important; }
+.adminWorkspaceRoot [data-admin-annual-review] :is(p, small, label, dt, [class*="stageLabel"]) { font-size: 1rem; }
+.adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"]) { scrollbar-width: auto; scrollbar-color: #91b2a1 #eef4f0; }
+.adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"])::-webkit-scrollbar { width: 12px; height: 12px; }
+.adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"])::-webkit-scrollbar-track { background: #eef4f0; }
+.adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"])::-webkit-scrollbar-thumb { border: 2px solid #eef4f0; border-radius: 8px; background: #91b2a1; }
+.adminWorkspaceRoot [data-admin-annual-review] :is(p, small, label, dt, button) { font-size: 1rem; }
+.adminWorkspaceRoot [data-admin-annual-review] [class*="confirmation"] h3 { white-space: nowrap !important; overflow-x: auto !important; }
+.adminWorkspaceRoot [data-admin-annual-review] :is([class*="badge"], [class*="rangeLabels"], [class*="stageLabel"], [class*="previewLabel"], [class*="welcomeFacts"] strong) { font-size: 1rem; font-weight: 650; }

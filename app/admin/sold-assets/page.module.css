@@ -51,8 +51,8 @@
   margin-bottom: -1px;
   padding: 0.7rem 0.1rem 0.65rem;
   border-bottom: 2px solid transparent;
-  color: #6b7d77;
-  font-size: 0.78rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
   text-decoration: none;
   white-space: nowrap;
@@ -88,7 +88,7 @@
 
 .metrics article > span {
   color: #587069;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 730;
   line-height: 1.25;
   overflow: hidden;
@@ -108,8 +108,8 @@
 }
 
 .metrics article > small {
-  color: #788983;
-  font-size: 0.67rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 610;
   line-height: 1.25;
   overflow: hidden;
@@ -158,7 +158,7 @@
 .tableTitle > strong {
   flex: 0 0 auto;
   color: #286c55;
-  font-size: 0.77rem;
+  font-size: 0.95rem;
   white-space: nowrap;
 }
 
@@ -179,7 +179,7 @@
 
 .filters label > span {
   color: #526961;
-  font-size: 0.71rem;
+  font-size: 0.95rem;
   font-weight: 720;
   white-space: nowrap;
 }
@@ -200,7 +200,7 @@
   color: #1a3d33;
   background: #fbfdfc;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 630;
 }
 
@@ -210,7 +210,7 @@
 }
 
 .filters input::placeholder {
-  color: #95a29d;
+  color: #52665d;
 }
 
 .filters input:focus,
@@ -233,7 +233,7 @@
 }
 
 .filters > button:disabled {
-  color: #9aaba5;
+  color: #52665d;
   border-color: #e1e7e4;
   background: #f5f7f6;
   cursor: default;
@@ -250,8 +250,8 @@
 }
 
 .resultSummary span {
-  color: #6e7f79;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
   white-space: nowrap;
 }
@@ -274,10 +274,10 @@
 .tableScroller th {
   padding: 0.82rem 1rem;
   border-bottom: 1px solid #e4ebe8;
-  color: #60736c;
+  color: #52665d;
   background: #f5f9f7;
-  font-size: 0.69rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-align: left;
   white-space: nowrap;
 }
@@ -286,7 +286,7 @@
   padding: 1rem;
   border-bottom: 1px solid #e8eeeb;
   color: #344d45;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 590;
   line-height: 1.45;
   vertical-align: middle;
@@ -314,19 +314,19 @@
 
 .tableScroller td > strong {
   color: #183f34;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .tableScroller td > span {
   margin-left: 0.3rem;
-  color: #71827c;
+  color: #52665d;
 }
 
 .tableScroller td > small {
   margin-left: 0.3rem;
-  color: #84938e;
-  font-size: 0.67rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .assetCell {
@@ -344,7 +344,7 @@
   display: grid;
   align-items: start;
   gap: 0.3rem;
-  white-space: normal;
+  white-space: nowrap;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
@@ -354,17 +354,17 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
+  white-space: nowrap;
   overflow-wrap: anywhere;
 }
 
 .assetButton strong {
   color: #183f34;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .assetButton span {
-  color: #71827c;
+  color: #52665d;
 }
 
 .assetButton:hover strong,
@@ -391,8 +391,8 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-align: center;
 }
 
@@ -412,14 +412,14 @@
 
 .priceCell > strong {
   color: #146248 !important;
-  font-size: 0.94rem !important;
+  font-size: 0.95rem !important;
   white-space: nowrap;
 }
 
 .priceCell > em {
   margin-top: 0.48rem;
   color: #277158;
-  font-size: 0.65rem;
+  font-size: 0.95rem;
   font-style: normal;
   font-weight: 690;
 }
@@ -435,7 +435,7 @@
 .statusText {
   margin-left: 0 !important;
   color: #596f67 !important;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -454,7 +454,7 @@
   color: #176149;
   background: #ffffff;
   font: inherit;
-  font-size: 0.68rem;
+  font-size: 0.95rem;
   font-weight: 730;
   cursor: pointer;
 }
@@ -481,7 +481,7 @@
 
 .empty {
   padding: 3rem 1rem;
-  color: #778781;
+  color: #52665d;
   display: grid;
   place-items: center;
   gap: 0.35rem;
@@ -493,7 +493,7 @@
 }
 
 .empty span {
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .pagination {
@@ -507,8 +507,8 @@
 }
 
 .pagination > span {
-  color: #71817c;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
 }
 
@@ -526,7 +526,7 @@
   color: #1c664d;
   background: #ffffff;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 720;
   cursor: pointer;
 }
@@ -542,7 +542,7 @@
 
 .pagination strong {
   color: #38544b;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
 }
 
 .detailOverlay {
@@ -663,14 +663,14 @@
 }
 
 .detailGrid dt {
-  color: #6c7f78;
-  font-size: 0.69rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .detailGrid dd {
   color: #234a3e;
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   font-weight: 640;
 }
 
@@ -681,7 +681,7 @@
 
 .accountSearch span {
   color: #526961;
-  font-size: 0.71rem;
+  font-size: 0.95rem;
   font-weight: 720;
   white-space: nowrap;
 }
@@ -696,7 +696,7 @@
   color: #173f33;
   background: #fbfdfc;
   font: inherit;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .accountSearch input:focus {
@@ -753,13 +753,13 @@
 
 .accountList strong {
   color: #173f33;
-  font-size: 0.77rem;
+  font-size: 0.95rem;
 }
 
 .accountList span,
 .accountList p {
-  color: #71827c;
-  font-size: 0.69rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
 }
 
@@ -774,7 +774,7 @@
   overflow-x: auto;
   color: #843b35;
   background: #fff7f5;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   white-space: nowrap;
 }
 
@@ -785,7 +785,7 @@
   border-top: 1px solid #f1d5d1;
   color: #9c3731;
   background: #fff7f5;
-  font-size: 0.73rem;
+  font-size: 0.95rem;
   font-weight: 680;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -811,7 +811,7 @@
   color: #245c48;
   background: #ffffff;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 730;
   cursor: pointer;
   white-space: nowrap;
@@ -960,7 +960,7 @@
 
 /* Constrain long asset names so remaining columns stay reachable. */
 .tableScroller table { table-layout: fixed; }
-.tableScroller td { white-space: normal; overflow-wrap: anywhere; }
+.tableScroller td { white-space: nowrap; overflow-wrap: anywhere; }
 .tableScroller td > strong,
 .tableScroller td > span,
 .tableScroller td > small,
@@ -986,13 +986,13 @@
 /* Shared ledger rhythm with page-specific filters and actions preserved. */
 .metrics { gap: .75rem; }
 .metrics > * { box-shadow: none; border-color: #e2e9e5; border-radius: .75rem; background: #fff; padding: 1rem; }
-.metrics strong { font-size: 1.35rem; font-weight: 600; letter-spacing: -.035em; }
-.metrics span { font-size: .7rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.metrics strong { font-size: 1.35rem; font-weight: 650; letter-spacing: -.035em; }
+.metrics span { font-size: 0.95rem; font-weight: 650; text-transform: none; letter-spacing: 0; }
 .tableCard { border: 1px solid #e2e9e5; border-radius: .85rem; background: #fff; box-shadow: none; overflow: hidden; }
 .filters { gap: .75rem; padding: 1rem 1.2rem; background: #fafcfb; }
-.filters input, .filters select { min-height: 40px; font-size: .75rem; font-weight: 500; border-color: #dfe7e2; border-radius: .5rem; }
-.tableScroller th { font-size: .68rem; font-weight: 500; background: #f8faf9; color: #7e8e83; text-transform: none; letter-spacing: 0; }
-.tableScroller td { padding: 1rem; font-size: .76rem; border-color: #edf1ee; }
+.filters input, .filters select { min-height: 40px; font-size: 0.95rem; font-weight: 650; border-color: #dfe7e2; border-radius: .5rem; }
+.tableScroller th { font-size: 0.95rem; font-weight: 650; background: #f8faf9; color: #52665d; text-transform: none; letter-spacing: 0; }
+.tableScroller td { padding: 1rem; font-size: 0.95rem; border-color: #edf1ee; }
 .tableScroller tbody tr:hover { background: #f6faf7; }
-.tableScroller td strong { font-weight: 550; }
-.tableScroller td small { font-size: .68rem; color: #7e8e83; }
+.tableScroller td strong { font-weight: 650; }
+.tableScroller td small { font-size: 0.95rem; color: #52665d; }

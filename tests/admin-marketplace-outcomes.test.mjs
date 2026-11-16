@@ -97,7 +97,7 @@ test('Outcome styles cover both ledgers with readable record text and no pills',
   assert.match(styles, /@media \(max-width: 680px\)[\s\S]*?\.detailGrid\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 680px\)[\s\S]*?\.detailGrid \.detailWide\s*\{[\s\S]*?grid-column:\s*auto/);
   assert.doesNotMatch(styles, /border-radius:\s*999px/);
-  assert.match(styles, /\.tableScroller td \{ white-space: normal; overflow-wrap: anywhere;/);
+  assert.match(styles, /\.tableScroller td \{ white-space: nowrap; overflow-wrap: anywhere;/);
 });
 
 test('Admin Asset Outcomes keeps the white responsive Aim4price layout', () => {

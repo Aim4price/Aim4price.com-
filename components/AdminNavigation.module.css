@@ -57,7 +57,7 @@
 }
 
 .manageCopy {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
@@ -155,7 +155,7 @@
 }
 
 .verificationModal .modalHeader h2 {
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .verificationBody {
@@ -177,7 +177,7 @@
   background: transparent;
   color: #176c50;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -213,7 +213,7 @@
 
 .link strong {
   color: #173e32;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -265,11 +265,11 @@
 }
 
 .navigationGroups { display: grid; gap: 1.4rem; padding-top: 1.2rem; }
-.navigationGroup h3 { margin: 0; color: #60716a; font-size: 0.82rem; font-weight: 700; }
+.navigationGroup h3 { margin: 0; color: #52665d; font-size: 0.95rem; font-weight: 700; }
 .navigationGroups .optionGrid { padding-top: 0.65rem; }
 .navigationGroups > .optionGrid { padding-top: 0; }
 .navigationGroups .link { min-height: 3.5rem; box-shadow: none; }
-.navigationGroups .link strong { white-space: normal; }
+.navigationGroups .link strong { white-space: nowrap; }
 .modal { width: min(64rem, var(--website-dialog-reference-width, 100%)); }
 .navigationGroups { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
 .navigationGroups > .optionGrid { grid-column: 1 / -1; }
@@ -287,10 +287,10 @@
 .manageButton:hover { background: #f2f7f3; box-shadow: none; transform: none; }
 .manageIcon { background: #eef4f0; width: 1.3rem; height: 1.3rem; }
 .manageIcon i { background: #64816f; }
-.manageCopy { font-size: .85rem; font-weight: 650; }
+.manageCopy { font-size: 0.95rem; font-weight: 650; }
 .modal { box-shadow: 0 28px 100px #14352926; border-radius: 1rem; padding: 1.5rem; }
 .modalHeader h2 { font-size: 1.4rem; font-weight: 800; }
-.navigationGroup h3 { font-weight: 650; font-size: .85rem; color: #64746a; }
+.navigationGroup h3 { font-weight: 650; font-size: 0.95rem; color: #52665d; }
 .navigationGroups .link { background: #fafcfb; border-color: #e6ece8; border-radius: .6rem; min-height: 3rem; }
-.navigationGroups .link strong { font-size: .85rem; font-weight: 650; }
+.navigationGroups .link strong { font-size: 0.95rem; font-weight: 650; }
 .active, .active:hover { background: #edf5ef; }

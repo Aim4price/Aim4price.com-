@@ -43,8 +43,8 @@
 }
 
 .copy span {
-  color: #60716a;
-  font-size: 0.61rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 900;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -59,13 +59,13 @@
 
 .copy strong {
   color: #17362c;
-  font-size: 0.84rem;
+  font-size: 0.95rem;
   font-weight: 920;
 }
 
 .copy small {
-  color: #6f7f79;
-  font-size: 0.66rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
@@ -91,7 +91,7 @@
   align-items: center;
   justify-content: center;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   font-weight: 900;
   text-decoration: none;
   white-space: nowrap;

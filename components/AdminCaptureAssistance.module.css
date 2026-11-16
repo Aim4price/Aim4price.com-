@@ -1,6 +1,6 @@
 .panel { margin: 16px 0; border: 1px solid #d5e3de; border-radius: 18px; background: #fff; overflow: hidden; color: #173f31; }
 .toggle { display: flex; align-items: center; gap: 18px; width: 100%; border: 0; padding: 20px 24px; background: #edf5f1; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
-.toggle strong { margin-left: auto; font-size: 14px; }
+.toggle strong { margin-left: auto; font-size: 0.95rem; }
 .body { padding: 20px 24px; }
 .tableWrap { overflow-x: auto; margin: 18px 0; }
 .tableWrap table { width: 100%; border-collapse: collapse; text-align: left; }

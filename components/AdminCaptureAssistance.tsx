@@ -40,10 +40,10 @@ export default function AdminCaptureAssistance() {
       <label><input type="checkbox" checked={openOnly} onChange={event => { setOpenOnly(event.target.checked); setOffset(0); }} /> Outstanding follow-ups only</label>
       {!rows.length ? <p>No capture-limit activity to show.</p> : <div className={styles.tableWrap}><table><thead><tr><th>Account / contact</th><th>Ledger</th><th>Modal shown</th><th>Assistance</th><th>Follow-up</th></tr></thead><tbody>
         {rows.map(row => <tr key={row.id}>
-          <td><strong>{row.owner_name}</strong><br />{row.owner_email}<br /><small>Opened by {row.actor_name || row.actor_email} · {row.actor_email}</small></td>
+          <td><strong>{row.owner_name}</strong> · {row.owner_email} · <small>Opened by {row.actor_name || row.actor_email} · {row.actor_email}</small></td>
           <td>{row.request_type === 'invoice' ? 'Cost' : 'Fuel'}</td>
           <td>{date(row.shown_at)}</td>
-          <td>{row.requested_at ? <><strong>Requested</strong><br />{date(row.requested_at)}</> : 'Modal shown only'}{row.note ? <p>{row.note}</p> : null}</td>
+          <td>{row.requested_at ? <><strong>Requested</strong> · {date(row.requested_at)}</> : 'Modal shown only'}{row.note ? <p>{row.note}</p> : null}</td>
           <td>{row.resolved_at ? <p>Followed up {date(row.resolved_at)}</p> : null}<button type="button" disabled={!!busy} onClick={() => void resolve(row)}>{busy === row.id ? 'Saving…' : row.resolved_at ? 'Reopen' : 'Mark followed up'}</button></td>
         </tr>)}
       </tbody></table></div>}

@@ -118,7 +118,7 @@
   padding: 16px 0;
 }
 .page small {
-  font-size: 12px;
+  font-size: 0.95rem;
 }
 .page a {
   color: #245c3b;
@@ -181,12 +181,12 @@
 }
 .list button { background: #fff; }
 .list button:hover { border-color: #478661; }
-.list button strong { white-space: normal; overflow-wrap: anywhere; }
+.list button strong { white-space: nowrap; overflow-wrap: anywhere; }
 .panel { background: #fff; border-radius: 0.8rem; }
 
 .toolbar, .panel { background: #fff; border-color: #e2e9e5; border-radius: .8rem; box-shadow: none; }
 .toolbar { padding: 1.1rem; gap: .8rem; }
 .panel { padding: 1.2rem; }
 .item { border-color: #e6ece8; border-radius: .6rem; background: #fafcfb; }
-.page h2 { font-size: 1rem; font-weight: 600; }
-.page label, .page button, .filters { font-size: .78rem; }
+.page h2 { font-size: 1rem; font-weight: 650; }
+.page label, .page button, .filters { font-size: 0.95rem; }

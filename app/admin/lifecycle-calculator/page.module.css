@@ -35,9 +35,9 @@
 
 .eyebrow {
   margin: 0 0 0.18rem;
-  color: #60716a;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -54,8 +54,8 @@
 .titleBlock span {
   display: inline-block;
   margin-top: 0.42rem;
-  color: #697973;
-  font-size: 0.93rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -80,8 +80,8 @@
   background: #ffffff;
   text-decoration: none;
   font: inherit;
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
   cursor: pointer;
@@ -139,17 +139,17 @@
 }
 
 .flowProgressCopy span {
-  color: #71817b;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.055em;
 }
 
 .flowProgressCopy strong {
   color: #0f684f;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .flowProgressTrack {
@@ -182,7 +182,7 @@
   padding: 0.55rem 0.35rem;
   border: 0;
   border-radius: 0.9rem;
-  color: #77867f;
+  color: #52665d;
   background: transparent;
   display: flex;
   align-items: center;
@@ -206,18 +206,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #65776f;
+  color: #52665d;
   background: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .flowSteps button > strong {
   overflow: hidden;
   text-overflow: ellipsis;
   color: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -253,8 +253,8 @@
 .flowIntro > p:last-child {
   max-width: 48rem;
   margin: 0.42rem 0 0;
-  color: #64756e;
-  font-size: 0.88rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.5;
 }
@@ -293,9 +293,9 @@
 .summaryHeading > div:first-child > span {
   display: inline-block;
   margin-top: 0.28rem;
-  color: #71817b;
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .summaryActions {
@@ -342,16 +342,16 @@
 .resultMeta span {
   min-width: 10rem;
   color: #3e554d;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
 .resultMeta b {
   display: block;
   margin-bottom: 0.12rem;
-  color: #75857e;
-  font-size: 0.68rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.045em;
 }
@@ -368,9 +368,9 @@
 }
 
 .metric > span {
-  color: #60716a;
-  font-size: 0.7rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.25;
   text-transform: uppercase;
   letter-spacing: 0.035em;
@@ -380,13 +380,13 @@
   overflow-wrap: anywhere;
   color: #17362c;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 650;
   line-height: 1.15;
 }
 
 .metric > small {
-  color: #74847e;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.35;
 }
@@ -442,8 +442,8 @@
   justify-content: center;
   color: #0f684f;
   background: #e9f6f0;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .sectionHeading h2,
@@ -458,8 +458,8 @@
 .sectionHeading p,
 .detailsCard summary p {
   margin: 0.25rem 0 0;
-  color: #697973;
-  font-size: 0.82rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.4;
   font-weight: 650;
 }
@@ -479,13 +479,13 @@
 
 .field > span {
   color: #52645d;
-  font-size: 0.73rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .field > small {
-  color: #7a8984;
-  font-size: 0.7rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.35;
   font-weight: 620;
 }
@@ -512,9 +512,9 @@
 
 .inputShell b {
   flex: 0 0 auto;
-  color: #76867f;
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .inputShell input,
@@ -527,8 +527,8 @@
   color: #17362c;
   background: transparent;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .inputShell select {
@@ -538,8 +538,8 @@
 
 .inputShell input::placeholder,
 .notesField textarea::placeholder {
-  color: #9aa8a2;
-  font-weight: 600;
+  color: #52665d;
+  font-weight: 650;
 }
 
 .notesField {
@@ -581,12 +581,12 @@
 
 .toggleRow strong {
   color: #17362c;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .toggleRow small {
-  color: #71817b;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.35;
 }
 
@@ -599,13 +599,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .inlineResult strong {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .splitResult {
@@ -624,12 +624,12 @@
 
 .stepNote strong {
   color: #0f5f48;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .stepNote span {
-  font-size: 0.74rem;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.42;
 }
@@ -642,7 +642,7 @@
   border-radius: 0.9rem;
   color: #665b3c;
   background: #fffbef;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   line-height: 1.48;
 }
 
@@ -670,9 +670,9 @@
 
 .packageGrid span,
 .scenarioCard > span {
-  color: #687872;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.035em;
 }
@@ -681,13 +681,13 @@
 .scenarioCard > strong {
   color: #17362c;
   font-size: 1.35rem;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.035em;
 }
 
 .packageGrid small {
-  color: #667770;
-  font-size: 0.78rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -718,15 +718,15 @@
 }
 
 .contributionBar span {
-  color: #71817b;
-  font-size: 0.7rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .contributionBar strong {
   color: #17362c;
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .scenarioCard {
@@ -737,13 +737,13 @@
 .scenarioCard h3 {
   margin: 0;
   color: #17362c;
-  font-size: 0.93rem;
+  font-size: 0.95rem;
 }
 
 .scenarioCard p {
   margin: 0.3rem 0 0;
-  color: #697973;
-  font-size: 0.75rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
@@ -771,7 +771,7 @@
   border-bottom: 1px solid #e8eeeb;
   text-align: right;
   white-space: nowrap;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .tableWrap th:first-child,
@@ -784,7 +784,7 @@
 .tableWrap th {
   color: #52645d;
   background: #f5f8f6;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .tableWrap td {
@@ -814,15 +814,15 @@
 }
 
 .calculationTrail span {
-  color: #65766f;
-  font-size: 0.76rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .calculationTrail strong {
   color: #17362c;
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .calculationTotal {
@@ -849,22 +849,22 @@
 
 .equityFlow > i {
   align-self: center;
-  color: #799087;
+  color: #52665d;
   font-style: normal;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .equityFlow span {
-  color: #687a73;
-  font-size: 0.7rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .equityFlow strong {
   color: #17362c;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .equityResult {
@@ -899,7 +899,7 @@
   color: #0f684f;
   background: #ffffff;
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .detailsCard[open] summary::after {
@@ -963,8 +963,8 @@
   background: #eef8f3;
   display: grid;
   place-items: center;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .packageChoiceCopy {
@@ -975,13 +975,13 @@
 
 .packageChoiceCopy strong {
   font-size: 1.03rem;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.025em;
 }
 
 .packageChoiceCopy small {
   color: rgba(18, 53, 45, 0.62);
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -989,14 +989,14 @@
 .packageChoiceCopy b {
   margin-top: 0.15rem;
   color: #176047;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .packageChoiceCheck {
   color: rgba(18, 53, 45, 0.38);
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 650;
   text-align: center;
 }
 
@@ -1021,20 +1021,20 @@
 
 .selectionNote span {
   color: rgba(18, 53, 45, 0.58);
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .selectionNote strong {
   color: #12553e;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
 .selectionNote small {
   color: rgba(18, 53, 45, 0.58);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   text-align: right;
 }
 
@@ -1059,15 +1059,15 @@
 .financePreview span,
 .projectionStrip span {
   color: rgba(18, 53, 45, 0.58);
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .financePreview strong,
 .projectionStrip strong {
   color: var(--owner-ink);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .includedBanner {
@@ -1085,8 +1085,8 @@
   background: #278b67;
   display: grid;
   place-items: center;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .includedBanner > div {
@@ -1096,12 +1096,12 @@
 
 .includedBanner strong {
   color: #12553e;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .includedBanner small {
   color: rgba(18, 53, 45, 0.62);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
 }
 
 .calculatedInput {
@@ -1112,8 +1112,8 @@
 .calculatedInput output {
   width: 100%;
   color: #12553e;
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .assetProjection {
@@ -1134,14 +1134,14 @@
 
 .assetProjection span {
   color: rgba(18, 53, 45, 0.6);
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .assetProjection strong {
   color: #12553e;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .financePackagePicker {
@@ -1166,21 +1166,21 @@
 
 .financePackagePicker > div:last-child strong {
   color: #12553e;
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .financePackagePicker > div:last-child span {
   color: rgba(18, 53, 45, 0.65);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.4;
 }
 
 .financePackagePicker > div:last-child small {
   color: #176047;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .vatControl {
@@ -1202,14 +1202,14 @@
 
 .vatControl strong {
   color: #17362c;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .vatControl small,
 .financePreview small {
-  color: #71817b;
-  font-size: 0.7rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.4;
   font-weight: 650;
 }
@@ -1233,8 +1233,8 @@
   color: #52645d;
   background: transparent;
   font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -1273,12 +1273,12 @@
 
 .choiceHeading strong {
   color: var(--owner-ink);
-  font-size: 0.84rem;
+  font-size: 0.95rem;
 }
 
 .choiceHeading span {
   color: rgba(18, 53, 45, 0.62);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   line-height: 1.4;
 }
 
@@ -1313,19 +1313,19 @@
   background: #eef8f3;
   display: grid;
   place-items: center;
-  font-size: 0.62rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .conditionChoice strong {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .conditionChoice small {
   min-height: 2.25rem;
   color: rgba(18, 53, 45, 0.58);
-  font-size: 0.63rem;
+  font-size: 0.95rem;
   font-weight: 620;
   line-height: 1.35;
 }
@@ -1333,8 +1333,8 @@
 .conditionChoice b {
   margin-top: auto;
   color: #176047;
-  font-size: 0.77rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .conditionChoiceActive {
@@ -1355,7 +1355,7 @@
   border-radius: 0.9rem;
   color: rgba(18, 53, 45, 0.68);
   background: #f1f6f3;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.5;
 }
@@ -1386,19 +1386,19 @@
   align-self: center;
   color: rgba(18, 53, 45, 0.4);
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .tradeFlow span {
   color: rgba(18, 53, 45, 0.58);
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .tradeFlow strong {
   color: var(--owner-ink);
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .tradeFlowPositive {
@@ -1430,8 +1430,8 @@
   background: transparent;
   padding: 0 0.7rem;
   font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -1483,14 +1483,14 @@
 
 .resultLines span {
   color: rgba(18, 53, 45, 0.62);
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
 .resultLines strong {
   color: var(--owner-ink);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-align: right;
 }
 
@@ -1502,7 +1502,7 @@
 .resultLineTotal span,
 .resultLineTotal strong {
   color: #12553e;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .resultHeroValue {
@@ -1515,13 +1515,13 @@
 }
 
 .resultHeroValue span {
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .resultHeroValue strong {
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.03em;
 }
 
@@ -1555,8 +1555,8 @@
   padding: 0 1.05rem;
   border-radius: 0.9rem;
   font: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -1599,7 +1599,7 @@
   min-height: 2rem;
   padding: 0 0.5rem;
   border: 0;
-  color: #5d7068;
+  color: #52665d;
   background: transparent;
   text-decoration: underline;
   text-underline-offset: 0.2rem;
@@ -1607,26 +1607,26 @@
 
 .flowActionStatus {
   min-width: 0;
-  color: #73837c;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-align: center;
 }
 
 .positive {
   color: #0c7153 !important;
-  font-weight: 600 !important;
+  font-weight: 650 !important;
 }
 
 .negative {
   color: #ad3434 !important;
-  font-weight: 600 !important;
+  font-weight: 650 !important;
 }
 
 .footerDisclaimer {
   padding: 1rem;
-  color: #687872;
-  font-size: 0.75rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.5;
   font-weight: 650;
   text-align: center;
@@ -1919,7 +1919,7 @@
   .tableWrap th,
   .tableWrap td {
     padding: 0.4rem;
-    font-size: 0.62rem;
+    font-size: 0.95rem;
   }
 }
 
@@ -1959,8 +1959,8 @@
   display: block;
   max-width: 52rem;
   margin-top: 0.2rem;
-  color: #697b73;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.45;
 }
@@ -1984,8 +1984,8 @@
   padding: 0.55rem 0.9rem;
   border-radius: 0.75rem;
   font: inherit;
-  font-size: 0.73rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
   transition: 160ms ease;
 }
@@ -2019,8 +2019,8 @@
   border-radius: 0.85rem;
   color: #842f2f;
   background: #fff4f4;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .workspaceNav {
@@ -2048,8 +2048,8 @@
   align-items: center;
   gap: 0.55rem;
   text-decoration: none;
-  font-size: 0.71rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   transition: 160ms ease;
 }
 
@@ -2069,7 +2069,7 @@
   background: #1f7658;
   display: grid;
   place-items: center;
-  font-size: 0.65rem;
+  font-size: 0.95rem;
 }
 
 .workspaceNav span {
@@ -2111,15 +2111,15 @@
 }
 
 .decisionHeading > p span {
-  color: #71817b;
-  font-size: 0.62rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
 }
 
 .decisionHeading > p strong {
   color: #176047;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 
 .answerStrip {
@@ -2162,16 +2162,16 @@
   position: absolute;
   top: 0.82rem;
   right: 0.82rem;
-  color: #71817b;
-  font-size: 0.8rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1;
 }
 
 .scenarioChoice > strong {
   overflow: hidden;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2180,15 +2180,15 @@
   overflow: hidden;
   margin-top: 0.18rem;
   color: #12372d;
-  font-size: 0.91rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .scenarioChoice > small {
-  color: #6d7d76;
-  font-size: 0.64rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 680;
   line-height: 1.35;
 }
@@ -2257,8 +2257,8 @@
   display: block;
   max-width: 54rem;
   margin-top: 0.3rem;
-  color: #64756e;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.42;
 }
@@ -2266,8 +2266,8 @@
 .flowSectionLead > span {
   min-width: 0;
   overflow: hidden;
-  color: #64756e;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2293,13 +2293,13 @@
 .resultsLead > div:last-child span,
 .resultsLead > div:last-child small {
   color: rgba(255, 255, 255, 0.72);
-  font-size: 0.62rem;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
 .resultsLead > div:last-child strong {
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .workspace .card {
@@ -2316,8 +2316,8 @@
   display: inline-block;
   margin: 0 0 0.34rem;
   color: #257457;
-  font-size: 0.64rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -2330,7 +2330,7 @@
 .workspace .sectionHeading p {
   max-width: 44rem;
   margin-top: 0.3rem;
-  font-size: 0.74rem;
+  font-size: 0.95rem;
 }
 
 .workspace .formGrid {
@@ -2339,7 +2339,7 @@
 }
 
 .workspace .field > span {
-  font-size: 0.69rem;
+  font-size: 0.95rem;
 }
 
 .workspace .inputShell {
@@ -2381,8 +2381,8 @@
   color: #52665d;
   background: transparent;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -2412,9 +2412,9 @@
 .equityHero span,
 .nextCycleFlow span,
 .independenceNote span {
-  color: #6b7a74;
-  font-size: 0.63rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .vatBreakdown strong,
@@ -2423,8 +2423,8 @@
 .nextCycleFlow strong,
 .independenceNote strong {
   color: #15392f;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .independenceNote {
@@ -2445,7 +2445,7 @@
 .independenceNote small {
   grid-column: 1 / -1;
   color: #557067;
-  font-size: 0.67rem;
+  font-size: 0.95rem;
   line-height: 1.45;
 }
 
@@ -2521,7 +2521,7 @@
   border-collapse: separate;
   border-spacing: 0;
   color: #1c3c33;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
 }
 
 .comparisonTable th,
@@ -2572,7 +2572,7 @@
 .dealerTable thead th {
   color: #ffffff;
   background: #234d3d;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .comparisonTable thead th:not(:first-child) {
@@ -2583,7 +2583,7 @@
 .comparisonTable thead span {
   display: block;
   margin-bottom: 0.4rem;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .comparisonTable button {
@@ -2591,7 +2591,7 @@
   border: 1px solid rgba(255, 255, 255, 0.38);
   color: #ffffff;
   background: rgba(255, 255, 255, 0.08);
-  font-size: 0.64rem;
+  font-size: 0.95rem;
 }
 
 .comparisonTable .structureSelected {
@@ -2610,8 +2610,8 @@
 
 .comparisonStrong {
   color: #0f5c44;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .adviceGrid {
@@ -2631,20 +2631,20 @@
 
 .adviceGrid span {
   color: #207257;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
 }
 
 .adviceGrid strong {
-  font-size: 0.77rem;
+  font-size: 0.95rem;
   line-height: 1.38;
 }
 
 .adviceGrid p {
   margin: 0;
-  color: #667770;
-  font-size: 0.69rem;
+  color: #52665d;
+  font-size: 0.95rem;
   line-height: 1.42;
 }
 
@@ -2662,8 +2662,8 @@
 .inlineDetails summary,
 .advancedGrid details > summary {
   color: #215c48;
-  font-size: 0.74rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -2705,18 +2705,18 @@
 }
 
 .equityRows span {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .equityRows small {
-  color: #71817b;
-  font-size: 0.66rem;
+  color: #52665d;
+  font-size: 0.95rem;
 }
 
 .equityRows strong {
   color: #155942;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   text-align: right;
 }
 
@@ -2755,9 +2755,9 @@
 
 .nextCycleFlow i {
   align-self: center;
-  color: #7a9489;
+  color: #52665d;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .advancedGrid details > summary {
@@ -2782,7 +2782,7 @@
   right: 0;
   color: #215c48;
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 650;
   line-height: 1.2rem;
 }
 
@@ -2979,10 +2979,10 @@
 
 .fieldHelp {
   color: #52685e;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.5;
-  white-space: normal;
+  white-space: nowrap;
 }
 .fieldHelp summary { cursor: pointer; color: #176047; }
 .fieldHelp p { margin: 0.4rem 0 0; }
@@ -2996,9 +2996,9 @@
 
 .card, .summaryPanel, .decisionPanel, .futurePanel, .detailsCard { background: #fff; border-color: #e2e9e5; border-radius: .85rem; box-shadow: none; }
 .workspaceNav { border-color: #e2e9e5; background: #fff; border-radius: .7rem; box-shadow: 0 4px 16px #203b3306; }
-.workspaceNav a { font-size: .74rem; font-weight: 500; }
-.sectionHeading h2, .workspaceHeader h2 { font-size: 1.1rem; font-weight: 600; }
-.field { font-size: .76rem; }
+.workspaceNav a { font-size: 0.95rem; font-weight: 650; }
+.sectionHeading h2, .workspaceHeader h2 { font-size: 1.1rem; font-weight: 650; }
+.field { font-size: 0.95rem; }
 .inputShell { border-color: #dfe7e2; border-radius: .5rem; background: #fcfdfc; }
 .scenarioChoice { border-radius: .65rem; border-color: #e2e9e5; box-shadow: none; }
 .scenarioChoiceActive { background: #edf5ef; border-color: #9bbca7; }
@@ -3008,3 +3008,11 @@
 :global(:where(html:has([data-website-canvas]))) .futurePanel { position: static; grid-column: 1 / -1; }
 @media (max-width: 1650px) { :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .futurePanel { position: static; grid-column: 1 / -1; } }
 @media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid, :global(:where(html:not(:has([data-website-canvas])))) .provisionGrid, :global(:where(html:not(:has([data-website-canvas])))) .outcomeGrid, :global(:where(html:not(:has([data-website-canvas])))) .advancedGrid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Keep larger labels inside the calculator; give the four-step replacement plan a full row. */
+.card { grid-template-columns: minmax(0, 1fr); }
+.card > *, .formGrid > *, .metricGrid > * { min-width: 0; }
+.nextCycleCard { grid-column: 1 / -1; }
+.nextCycleFlow { overflow-x: auto; }
+.nextCycleFlow > div { min-width: max-content; }
+.metric > span, .metric > small, .field > span { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }

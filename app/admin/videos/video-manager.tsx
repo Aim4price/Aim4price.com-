@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import AssetModalSelect from '../../../components/AssetModalSelect';
+import AdminSelect from '../../../components/AdminSelect';
 import { tutorialCatalogue, tutorialPageHref, type TutorialAudience } from '../../../lib/tutorial-catalogue';
 import type { VideoSlot } from '../../../lib/tutorial-videos';
 import { MAX_TUTORIAL_VIDEO_BYTES } from '../../../lib/tutorial-video-policy';
@@ -25,7 +25,7 @@ export default function VideoManager({initialSlots}:{initialSlots:VideoSlot[]}){
    setSlots(data.slots);setPreviewed(null);setNotice(action==='upload'?'Draft uploaded. Preview it, then publish when ready.':action==='publish'?'Published to the private guide.':action==='unpublish'?'Video unpublished. It is available as a draft.':'Draft discarded. Any published video remains unchanged.');
   }catch(e){setError(e instanceof Error?e.message:'Unable to save video.');}finally{setBusy(false);setProgress(null);if(fileInput.current)fileInput.current.value='';}
  }
- return <><section className={styles.toolbar}><AssetModalSelect label="Audience" value={audience} options={Object.entries(tutorialCatalogue).map(([value,x])=>({value,label:x.label}))} onChange={value=>{if(!busy){setAudience(value as TutorialAudience);choose('welcome');setQuery('');}}}/><label>Find a feature<input type="search" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Search video topics"/></label><Link href={tutorialPageHref(audience)} target="_blank" rel="noopener noreferrer">Open private page</Link></section>
+ return <><section className={styles.toolbar}><label>Audience<AdminSelect value={audience} disabled={busy} onChange={event=>{setAudience(event.target.value as TutorialAudience);choose('welcome');setQuery('');}}>{Object.entries(tutorialCatalogue).map(([value,item])=><option key={value} value={value}>{item.label}</option>)}</AdminSelect></label><label>Find a feature<input type="search" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Search video topics"/></label><Link href={tutorialPageHref(audience)} target="_blank" rel="noopener noreferrer">Open private page</Link></section>
  <div className={styles.workspace}><aside className={styles.list}><h2>{catalogue.label}</h2><nav aria-label="Video topics">{choices.filter(x=>x.title.toLowerCase().includes(query.toLowerCase())).map(x=>{const row=slots.find(s=>s.audience===audience&&s.feature===x.id);return <button disabled={busy} key={x.id} aria-current={feature===x.id?'true':undefined} onClick={()=>choose(x.id)}><span>{x.id==='welcome'?'Welcome':`${choices.indexOf(x)}. ${x.title}`}</span><small>{status(row)}</small></button>;})}{!choices.some(x=>x.title.toLowerCase().includes(query.toLowerCase()))&&<p>No matching topics. Try another search.</p>}</nav></aside>
  <section className={styles.editor} aria-label="Selected video"><div className={styles.title}><div><p>{catalogue.label}</p><h2>{selected.title}</h2></div><span className={styles.badge}>{status(slot)}</span></div>
  <p className={styles.help}>{slot?.draft_id&&slot.published_id?'A published video is still live. This replacement stays private to admins until you publish it.':'Upload a recording, check the preview, then publish it to the private guide.'}</p>

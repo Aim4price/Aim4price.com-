@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -541,7 +542,7 @@ export default function AdminDiscoveryClient({
             </form>
             <label>
               <span>Owner</span>
-              <select
+              <AdminSelect
                 value={filters.ownerUserId}
                 onChange={(event) => updateFilter("ownerUserId", event.target.value)}
                 disabled={loading}
@@ -552,11 +553,11 @@ export default function AdminDiscoveryClient({
                     {option.label} ({option.count})
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Province</span>
-              <select
+              <AdminSelect
                 value={filters.province}
                 onChange={(event) => updateFilter("province", event.target.value)}
                 disabled={loading}
@@ -567,11 +568,11 @@ export default function AdminDiscoveryClient({
                     {option.label} ({option.count})
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sector</span>
-              <select
+              <AdminSelect
                 value={filters.sector}
                 onChange={(event) => updateFilter("sector", event.target.value)}
                 disabled={loading}
@@ -582,11 +583,11 @@ export default function AdminDiscoveryClient({
                     {option.label} ({option.count})
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Participation</span>
-              <select
+              <AdminSelect
                 value={filters.participation}
                 onChange={(event) =>
                   updateFilter(
@@ -599,11 +600,11 @@ export default function AdminDiscoveryClient({
                 <option value="all">All participation</option>
                 <option value="enabled">Enabled</option>
                 <option value="disabled">Admin only</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>GPS status</span>
-              <select
+              <AdminSelect
                 value={filters.location}
                 onChange={(event) =>
                   updateFilter("location", event.target.value as AdminAssetLocationFilter)
@@ -613,11 +614,11 @@ export default function AdminDiscoveryClient({
                 <option value="all">All GPS</option>
                 <option value="mapped">Mapped</option>
                 <option value="missing">Missing</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Lifecycle</span>
-              <select
+              <AdminSelect
                 value={filters.lifecycleState}
                 onChange={(event) => updateFilter("lifecycleState", event.target.value)}
                 disabled={loading}
@@ -628,11 +629,11 @@ export default function AdminDiscoveryClient({
                     {option.label} ({option.count})
                   </option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sort</span>
-              <select
+              <AdminSelect
                 value={filters.sort}
                 onChange={(event) => updateFilter("sort", event.target.value as AdminAssetSort)}
                 disabled={loading}
@@ -645,7 +646,7 @@ export default function AdminDiscoveryClient({
                 <option value="value-low">Lowest value</option>
                 <option value="owner">Owner A-Z</option>
                 <option value="asset">Asset A-Z</option>
-              </select>
+              </AdminSelect>
             </label>
             {activeFilterCount ? (
               <button

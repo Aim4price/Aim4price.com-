@@ -1,5 +1,6 @@
 'use client';
 
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -485,41 +486,41 @@ export default function AdminValuationsClient({
             </div>
             <label>
               <span>Record</span>
-              <select value={filters.recordType} onChange={(event) => updateFilter('recordType', event.target.value as ValuationFilterState['recordType'])}>
+              <AdminSelect value={filters.recordType} onChange={(event) => updateFilter('recordType', event.target.value as ValuationFilterState['recordType'])}>
                 <option value="all">All records</option>
                 <option value="estimate">Estimate results</option>
                 <option value="saved">Saved valuations</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Valuation</span>
-              <select value={filters.valuationMode} onChange={(event) => updateFilter('valuationMode', event.target.value as ValuationFilterState['valuationMode'])}>
+              <AdminSelect value={filters.valuationMode} onChange={(event) => updateFilter('valuationMode', event.target.value as ValuationFilterState['valuationMode'])}>
                 <option value="all">All valuation types</option>
                 <option value="generic">General assets</option>
                 <option value="tractor">Tractors</option>
                 <option value="unknown">Historical unknown</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Account</span>
-              <select value={filters.account} onChange={(event) => updateFilter('account', event.target.value as ValuationFilterState['account'])}>
+              <AdminSelect value={filters.account} onChange={(event) => updateFilter('account', event.target.value as ValuationFilterState['account'])}>
                 <option value="all">All accounts</option>
                 <option value="known">Known accounts</option>
                 <option value="unknown">Unknown / guest</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sector</span>
-              <select value={filters.sector} onChange={(event) => updateFilter('sector', event.target.value)}>
+              <AdminSelect value={filters.sector} onChange={(event) => updateFilter('sector', event.target.value)}>
                 <option value="">All sectors</option>
                 {report.options.sectors.map((option) => (
                   <option key={option.value} value={option.value}>{option.label} ({option.count})</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Completed</span>
-              <select value={filters.period} onChange={(event) => updateFilter('period', event.target.value)}>
+              <AdminSelect value={filters.period} onChange={(event) => updateFilter('period', event.target.value)}>
                 <option value="all">All time</option>
                 <option value="last-7-days">Last 7 days</option>
                 <option value="last-30-days">Last 30 days</option>
@@ -527,18 +528,18 @@ export default function AdminValuationsClient({
                 {report.options.years.map((option) => (
                   <option key={option.value} value={`year:${option.value}`}>{option.label} ({option.count})</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sort</span>
-              <select value={filters.sort} onChange={(event) => updateFilter('sort', event.target.value as ValuationFilterState['sort'])}>
+              <AdminSelect value={filters.sort} onChange={(event) => updateFilter('sort', event.target.value as ValuationFilterState['sort'])}>
                 <option value="latest">Latest first</option>
                 <option value="oldest">Oldest first</option>
                 <option value="value-high">Highest estimate</option>
                 <option value="value-low">Lowest estimate</option>
                 <option value="account">Account A-Z</option>
                 <option value="asset">Asset A-Z</option>
-              </select>
+              </AdminSelect>
             </label>
           </div>
         </header>

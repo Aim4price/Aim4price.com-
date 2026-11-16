@@ -2,7 +2,9 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
-const canonical=Boolean(process.env.ADMIN_CANONICAL_QA);
+const sharedStyles=fs.readFileSync(path.join(root,'app/globals.css'),'utf8').replace(/@font-face\s*\{[^}]*\}/g,'');
+// Exercise the same canvas and shared CSS shipped by the Admin layout.
+const canonical=!process.env.ADMIN_NATIVE_QA;
 if(canonical)process.env.ADMIN_WORKSPACE_QA='1';
 let cssIndex=0;
 const stubs={
@@ -55,6 +57,10 @@ const entries={
 };
 if (process.env.ADMIN_WORKSPACE_QA) Object.assign(entries, {videos:'app/admin/videos/video-manager', 'asset-values':'app/admin/asset-values/values-client', 'annual-review':'app/admin/annual-review/annual-review-client'});
 if(canonical)Object.assign(entries,{'asset-emails':'app/admin/asset-emails/page',sharing:'app/admin/sharing/page','ai-connect':'app/account/ai-connect/connection-view'});
+if(process.env.ADMIN_OWNER_STYLE_QA){
+ entries['select-probe']='test/AdminSelectProbe';
+ modules['test/AdminSelectProbe']=`const React=require('react'),Select=require('components/AdminSelect').default;exports.default=()=>{const [value,setValue]=React.useState('0');return React.createElement('main',null,React.createElement('h1',null,'Selector validation'),React.createElement('label',null,'Account',React.createElement(Select,{value,onChange:e=>setValue(e.target.value)},Array.from({length:24},(_,i)=>React.createElement('option',{key:i,value:String(i),disabled:i===1},'Account '+i)))),React.createElement('button',{id:'after-select'},'Next action'),React.createElement('output',{'data-selected-value':true},value),React.createElement(Select,{disabled:true,'aria-label':'Unavailable'},React.createElement('option',null,'Unavailable')));};`;
+}
 Object.values(entries).forEach(add);
 add('components/AdminNavigation');
 add('components/AdminWorkspace');
@@ -99,6 +105,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(url.endsWith('/brand/aim4price-mark-black.png')) return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});
    if(url.includes('/api/admin/asset-values') && failValues) return respond({error:'Value search unavailable'},503);
    if(url.includes('/api/admin/asset-values')) return respond({items:[{id:'fixture',user_id:'owner',title:'2022 New Holland TT4.90',email:'owner@example.test',value:327133,pending:2}]});
+   if(url.includes('/api/admin/users/owner/qr-labels'))return respond({ok:true,assets:[{...asset,hasQr:true,registerName:'Farm equipment'}]});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
     return respond({invoices:billingIssued?[{id:'invoice-test',userId:'owner',accountStatus:'active',contactPhone:'0821234567',contactEmail:user.email,number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
@@ -134,20 +141,96 @@ const evidence=path.join(root,'.next/admin-review-validation');
    errors.length=0;
    await page.setViewport({width,height:1000,isMobile:canonical && width<600,hasTouch:canonical && width<600});await page.goto('https://admin.test/');
    const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
-   await page.setContent('<meta name="viewport" content="width=device-width, initial-scale=1"><style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
+   await page.setContent('<meta name="viewport" content="width=device-width, initial-scale=1"><style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sharedStyles+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+'</style><div id="app"></div>');
    if(canonical)await page.evaluate(w=>{Object.defineProperty(window,'outerWidth',{configurable:true,value:w});sessionStorage.setItem('aim4price.website-landscape-entry.v1','portrait');},width);
    await page.evaluate(section=>{window.fixturePathname=section==='accounts'?'/admin':'/admin/'+({lifecycle:'lifecycle-calculator',outcomes:'sold-assets',maintenance:'maintenance-catalogue'}[section]||section);},section);
    await page.evaluate(()=>{window.fixtureDashboard={cards:['free-estimates','paid-estimates','total-assets-saved','total-accounts-created','owner-accounts-created','average-user-time','marketplace-advertised'].map(id=>({id,title:id,values:[{label:'This month',value:'12'},{label:'This year',value:'54'}]})),storage:{sources:[],customerUsage:{accountCountLabel:'4',averageLabel:'20 MB',medianLabel:'12 MB',p90Label:'100 MB',addedLast30DaysLabel:'10 MB',pendingBucketUploadsLabel:'0',failedBucketUploadsLabel:'0'}}};});
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
-   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review','asset-emails','sharing','ai-connect'].includes(section);
+   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review','asset-emails','sharing','ai-connect','select-probe'].includes(section);
    const cssFile=section==='outcomes'||section==='asset-outcomes'?'sold-assets':section==='lifecycle'?'lifecycle-calculator':section;
    const wrapper=section==='asset-values'||section==='videos'?`React.createElement("main",null,React.createElement("h1",null,${JSON.stringify(titles[section])}),child)`:ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
-   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${['dashboard','asset-emails','sharing'].includes(section)?`await Component(${JSON.stringify(props[section]||{})})`:`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${canonical ? `React.createElement(require("components/SiteWorkspaceZoom").default,{footer:null,operational:null},React.createElement(require("components/AdminWorkspace").default,null,${wrapper}))` : process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
+   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${['dashboard','asset-emails','sharing'].includes(section)?`await Component(${JSON.stringify(props[section]||{})})`:`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${canonical ? `React.createElement(require("components/SiteWorkspaceZoom").default,{footer:null,operational:null},React.createElement("div",{className:"adminWorkspaceRoot"},React.createElement(require("components/AdminWorkspace").default,null,${wrapper})))` : process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
    await page.waitForSelector('h1');
    await page.evaluate(()=>document.fonts.ready);
    assert.deepEqual(errors,[],section+' runtime');
   }
-  if (canonical) {
+  if (process.env.ADMIN_OWNER_STYLE_QA) {
+   let count=0;
+   for (const section of (process.env.ADMIN_QA_SECTIONS?.split(',') ?? Object.keys(entries))) {
+    captureMode=section==='capture-queue';
+    await open(section,1440);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,section+' contains horizontal scrolling');
+    await page.evaluate(()=>document.querySelectorAll('details').forEach(e=>e.open=true));
+    assert.equal(await page.$$eval('select',els=>els.filter(e=>e.getClientRects().length).length),0,section+' has no visible native select');
+    const total=await page.$$eval('[data-admin-select]',els=>els.length);
+    for(let index=0;index<total;index++) {
+     const trigger=await page.evaluateHandle(i=>document.querySelectorAll('[data-admin-select]')[i].querySelector('button'),index);
+     if(await trigger.evaluate(e=>e.disabled || !e.getClientRects().length))continue;
+     await trigger.evaluate(e=>e.scrollIntoView({block:'center'}));
+     await trigger.click();await page.waitForSelector('[data-admin-select-menu]');
+     const alignment=await trigger.evaluate(e=>{const a=e.getBoundingClientRect(),b=e.querySelector('svg').getBoundingClientRect();return Math.abs(a.top+a.height/2-b.top-b.height/2);});
+     assert.ok(alignment<1,section+' centred chevron');
+     assert.ok(await page.$eval('[data-admin-select-menu]',e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1;}),section+' dropdown fits viewport');
+     assert.ok(await page.$eval('[data-admin-select-menu] [role="option"]',e=>parseFloat(getComputedStyle(e).fontSize)>=15),section+' readable options');
+     await page.keyboard.press('Escape');
+     await page.waitForSelector('[data-admin-select-menu]',{hidden:true});
+     assert.equal(await trigger.evaluate(e=>document.activeElement===e),true,section+' restores focus');
+     await trigger.click();await page.waitForSelector('[data-admin-select-menu]');
+     await page.evaluate(()=>{window.selectChanges=[];document.addEventListener('change',e=>{if(e.target.tagName==='SELECT')window.selectChanges.push(e.target.value);},{once:true});});
+     await page.$eval('[data-admin-select-menu] [role="option"]:not([disabled])',e=>e.click());
+     assert.equal(await page.evaluate(()=>window.selectChanges.length),1,section+' preserves change events');
+     await trigger.click();await page.waitForSelector('[data-admin-select-menu]');
+     await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+     assert.equal(await page.$('[data-admin-select-menu]'),null,section+' keyboard selection');
+     count++;
+    }
+    await page.screenshot({path:path.join(evidence,`owner-style-expanded-${section}.png`),fullPage:true});
+    assert.deepEqual(errors,[],section+' dropdown runtime');
+    console.log('PASS Owner-style controls '+section);
+   }
+   await open('select-probe',1440);
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.type('[data-admin-select-menu] input','Account 23');
+   await page.keyboard.press('Enter');
+   await page.waitForFunction(()=>document.querySelector('[data-selected-value]').textContent==='23');
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.type('[data-admin-select-menu] input','No match');
+   await page.waitForSelector('[data-admin-select-menu] [role="status"]');
+   await page.keyboard.press('Escape');
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.keyboard.press('Tab');
+   assert.equal(await page.evaluate(()=>document.activeElement.id),'after-select');
+   await open('accounts',1440);
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.$$eval('[data-admin-select-menu] [role="option"]',els=>els.find(e=>e.textContent.includes('Suspended')).click());
+   await page.waitForFunction(()=>document.querySelector('tbody').textContent.includes('No accounts'));
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.keyboard.press('Home');await page.keyboard.press('Enter');
+   await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===2);
+   await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   await page.keyboard.press('Tab');
+   assert.equal(await page.$('[data-admin-select-menu]'),null,'Tab closes the menu');
+   for(const [action,closeLabel] of [['Manage asset names','Close Asset Name Manager modal'],['Print QR labels','Close QR label modal'],['Send message','Close notification composer']]){
+    props.accounts.initialAccountId='owner';await open('accounts',1440);delete props.accounts.initialAccountId;
+    await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
+    await page.$$eval('[aria-labelledby="admin-account-action-modal-title"] button',(els,text)=>els.find(e=>e.textContent.trim()===text).click(),action);
+    await page.waitForSelector(`[aria-label="${closeLabel}"]`);
+    await page.screenshot({path:path.join(evidence,`owner-account-${action.replaceAll(' ','-').toLowerCase()}.png`),fullPage:true});
+    await page.$eval(`[aria-label="${closeLabel}"]`,e=>e.click());
+    assert.equal(await page.$(`[aria-label="${closeLabel}"]`),null);
+   }
+   await open('accounts',1440);
+   await page.click('[aria-label="Zoom in"]');await page.waitForSelector('dialog[open]');
+   await page.$eval('#website-zoom-slider',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'125');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+   await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.25);
+   await page.keyboard.press('Escape');await page.click('[data-admin-select] button');await page.waitForSelector('[data-admin-select-menu]');
+   assert.ok(await page.$eval('[data-admin-select-menu]',e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1;}),'Owner-style dropdown remains in view at 125%');
+   await page.screenshot({path:path.join(evidence,'owner-dropdown-125.png'),fullPage:true});
+   await page.keyboard.press('Escape');
+   console.log('PASS '+count+' custom dropdowns, native events, keyboard, focus, alignment and Account status filtering');
+   return;
+  }
+  if (canonical && process.env.ADMIN_CANONICAL_QA) {
    const baseline={};
    async function setZoom(value){
     await page.click('[aria-label="Zoom in"]');await page.waitForSelector('dialog[open]');
@@ -172,7 +255,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.equal(await page.$eval('#website-zoom-title',e=>e.textContent),'Page size');
    await page.$eval('#website-zoom-slider',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'125');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
    await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.25);
-   await page.$$eval('dialog button',bs=>bs.find(b=>b.textContent==='Fit to screen').click());
+   await page.$$eval('dialog[open] button',bs=>bs.find(b=>b.textContent==='Fit to screen').click());
    await page.waitForFunction(()=>document.querySelector('[data-site-workspace-zoom-controls]').dataset.zoomPreference==='auto');
    await page.keyboard.press('Escape');assert.equal(await page.$('dialog[open]'),null);
    await open('accounts',1440);await setZoom(125);
@@ -189,7 +272,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    console.log('PASS shared Page size modal, all-page manual zoom, fit, account dialog and scaled picker');
    return;
   }
-  if (process.env.ADMIN_WORKSPACE_QA) {
+  if (process.env.ADMIN_WORKSPACE_QA && !canonical) {
    for (const width of [390, 768, 1024, 1440, 1920]) {
     for (const section of (process.env.ADMIN_QA_SECTIONS ? process.env.ADMIN_QA_SECTIONS.split(',') : Object.keys(entries))) {
      await open(section, width);
@@ -236,7 +319,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   for(const width of [390,1440]){
    verificationAccounts=[];
    await open('businesses',width);
-   await page.click('button[aria-haspopup="dialog"]');
+   await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent.includes('Business verification')).click());
    await page.waitForFunction(()=>document.body.textContent.includes('No Business accounts found.'));
    assert.equal(await page.$eval('[role="dialog"] h2',e=>e.textContent),'Business verification');
@@ -244,7 +327,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.keyboard.press('Escape');
    assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Manage');
    verificationAccounts=[{user_id:'business',business_name:'Example Oil and Filter Company',email:'workshop@example.test',email_verified:true,account_status:'active',phone:'0821234567',website:'https://example.test',evidence:'Confirmed premises and contact details.',verified_at:null,review_note:''}];
-   await page.click('button[aria-haspopup="dialog"]');
+   await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent.includes('Business verification')).click());
    await page.waitForSelector('[role="dialog"] details');
    await page.click('[role="dialog"] summary');
@@ -307,25 +390,25 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.equal(billingRequests.at(-1).hourlyRateCents,20000);
    assert.deepEqual(billingRequests.at(-1).workSessionIds,['work-one']);
    await page.waitForSelector('dialog[open] iframe');
-   await page.waitForFunction(()=>[...document.querySelectorAll('dialog button')].some(b=>b.textContent==='Issue & email'&&!b.disabled));
-   assert.equal(await page.$eval('dialog a[download]',e=>e.textContent),'Download draft PDF');
+   await page.waitForFunction(()=>[...document.querySelectorAll('dialog[open] button')].some(b=>b.textContent==='Issue & email'&&!b.disabled));
+   assert.equal(await page.$eval('dialog[open] a[download]',e=>e.textContent),'Download draft PDF');
    await page.screenshot({path:path.join(evidence,'billing-draft-preview-'+width+'.png'),fullPage:true});
    if(width===1440){
     page.once('dialog',dialog=>dialog.accept());
-    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & email').click());
-    await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft');
-    await page.waitForSelector('dialog a[download]');
+    await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Issue & email').click());
+    await page.waitForFunction(()=>document.querySelector('dialog[open] h2')?.textContent!=='Preview invoice draft');
+    await page.waitForSelector('dialog[open] a[download]');
     assert.equal(billingRequests.at(-1).action,'issue');
     assert.equal(billingRequests.at(-1).version,1);
    }
    if(width===390){
     page.once('dialog',dialog=>dialog.accept());
-    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & download PDF').click());
+    await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Issue & download PDF').click());
     await page.waitForFunction(()=>document.body.textContent.includes('Invoice issued. No email sent.'));
     assert.equal(billingRequests.at(-1).action,'issue');assert.equal(billingRequests.at(-1).sendEmail,false);
    }
-   await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft'&&document.querySelector('dialog [aria-label="Close invoice preview"]')?.disabled===false);
-   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
+   await page.waitForFunction(()=>document.querySelector('dialog[open] h2')?.textContent!=='Preview invoice draft'&&document.querySelector('dialog[open] [aria-label="Close invoice preview"]')?.disabled===false);
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
 
   }
   console.log('PASS billing work selection, responsive composer and save-to-preview flow');
@@ -360,11 +443,11 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.equal(await page.$eval('[aria-label="Choose billing account"]',e=>e.getAttribute('aria-expanded')),'false');
   previewFailure=true;
   await (await page.evaluateHandle(()=>[...document.querySelectorAll('button')].find(e=>e.textContent==='View invoice'))).click();
-  await page.waitForSelector('dialog [role="alert"]');
-  assert.equal(await page.$('dialog a[download]'),null,'failed preview cannot download');
-  previewFailure=false;await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Try again').click());
-  await page.waitForSelector('dialog a[download]');
-  assert.equal(await page.$eval('dialog iframe',e=>e.getAttribute('sandbox')),'');
+  await page.waitForSelector('dialog[open] [role="alert"]');
+  assert.equal(await page.$('dialog[open] a[download]'),null,'failed preview cannot download');
+  previewFailure=false;await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Try again').click());
+  await page.waitForSelector('dialog[open] a[download]');
+  assert.equal(await page.$eval('dialog[open] iframe',e=>e.getAttribute('sandbox')),'');
   await page.screenshot({path:path.join(evidence,'billing-preview-1440.png'),fullPage:true});
   await page.click('[aria-label="Close invoice preview"]');
   assert.equal(await page.evaluate(()=>document.activeElement.textContent),'View invoice');
@@ -374,9 +457,9 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.$$eval('button',els=>els.find(e=>e.textContent==='Share').focus());
    await page.keyboard.press('Enter');
    await page.waitForSelector('dialog[open]');
-   assert.match(await page.$eval('dialog a[href^="https://wa.me/"]',e=>e.href),/^https:\/\/wa.me\/27821234567\?text=/);
-   assert.match(await page.$eval('dialog a[href^="mailto:"]',e=>e.href),/^mailto:/);
-   assert.equal(await page.$eval('dialog',e=>e.getBoundingClientRect().right<=innerWidth),true);
+   assert.match(await page.$eval('dialog[open] a[href^="https://wa.me/"]',e=>e.href),/^https:\/\/wa.me\/27821234567\?text=/);
+   assert.match(await page.$eval('dialog[open] a[href^="mailto:"]',e=>e.href),/^mailto:/);
+   assert.equal(await page.$eval('dialog[open]',e=>e.getBoundingClientRect().right<=innerWidth),true);
    await page.screenshot({path:path.join(evidence,`billing-share-${width}.png`),fullPage:true});
    await page.keyboard.press('Escape');
    assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Share');
@@ -386,14 +469,14 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(e=>e.textContent==='Suspend account'));
    await page.$$eval('button',els=>{const button=els.find(e=>e.textContent==='Suspend account');button.focus();button.click();});
    await page.waitForSelector('dialog[open]');
-   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),true);
-   await page.type('dialog textarea','Payment is outstanding. Please contact Aim4price to resolve this invoice.');
-   await page.click('dialog input[type="checkbox"]');
-   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),false);
-   assert.equal(await page.$eval('dialog',e=>e.getBoundingClientRect().right<=innerWidth),true);
+   assert.equal(await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),true);
+   await page.type('dialog[open] textarea','Payment is outstanding. Please contact Aim4price to resolve this invoice.');
+   await page.click('dialog[open] input[type="checkbox"]');
+   assert.equal(await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),false);
+   assert.equal(await page.$eval('dialog[open]',e=>e.getBoundingClientRect().right<=innerWidth),true);
    await page.screenshot({path:path.join(evidence,`billing-suspension-${width}.png`),fullPage:true});
    if(width===1440){
-    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').click());
+    await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Confirm suspension').click());
     await page.waitForFunction(()=>document.body.textContent.includes('Account suspended. The customer will see'));
     const command=billingRequests.at(-1);assert.equal(command.action,'suspend_account');assert.equal(command.id,'invoice-test');assert.equal(command.version,2);assert.match(command.reason,/Payment is outstanding/);
    }else{
@@ -403,11 +486,11 @@ const evidence=path.join(root,'.next/admin-review-validation');
   for(const width of [390,1440]){
    await open('billing',width);await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(e=>e.textContent==='Hard delete'));
    await page.$$eval('button',els=>{const button=els.find(e=>e.textContent==='Hard delete');button.focus();button.click();});await page.waitForSelector('dialog[open]');
-   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),true);
-   await page.type('dialog textarea','Mistaken test invoice');await page.type('dialog input:not([type="checkbox"])','A4P-2026-000001');await page.click('dialog input[type="checkbox"]');
-   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),false);
+   assert.equal(await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),true);
+   await page.type('dialog[open] textarea','Mistaken test invoice');await page.type('dialog[open] input:not([type="checkbox"])','A4P-2026-000001');await page.click('dialog[open] input[type="checkbox"]');
+   assert.equal(await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),false);
    await page.screenshot({path:path.join(evidence,`billing-delete-${width}.png`),fullPage:true});
-   if(width===1440){await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').click());await page.waitForFunction(()=>document.body.textContent.includes('Invoice permanently deleted.'));assert.equal(billingRequests.at(-1).action,'hard_delete');assert.equal(billingRequests.at(-1).confirmation,'A4P-2026-000001');}else{await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Hard delete');}
+   if(width===1440){await page.$$eval('dialog[open] button',els=>els.find(e=>e.textContent==='Permanently delete').click());await page.waitForFunction(()=>document.body.textContent.includes('Invoice permanently deleted.'));assert.equal(billingRequests.at(-1).action,'hard_delete');assert.equal(billingRequests.at(-1).confirmation,'A4P-2026-000001');}else{await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Hard delete');}
   }
   console.log('PASS hard delete requires a reason, exact number and explicit confirmation');
   console.log('PASS suspension confirmation, reason, invoice scope and responsive layout');
@@ -440,13 +523,13 @@ const evidence=path.join(root,'.next/admin-review-validation');
   console.log('PASS billing account picker keyboard selection, clear search and responsive layout');
 
   await open('accounts');
-  await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
-  assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),18);
-  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/asset-emails"]',el=>el.textContent.trim()),/^Asset emails/);
-  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/videos"]',el=>el.textContent.trim()),/^Video Manager/);
-  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/ai-connect"]',el=>el.textContent.trim()),/^AI connections/);
-  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/asset-values"]',el=>el.textContent.trim()),/^Asset values/);
-  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/annual-review"]',el=>el.textContent.trim()),/^Preview annual review/);
+  await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
+  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),18);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-emails"]',el=>el.textContent.trim()),/^Asset emails/);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/videos"]',el=>el.textContent.trim()),/^Video Manager/);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/ai-connect"]',el=>el.textContent.trim()),/^AI connections/);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-values"]',el=>el.textContent.trim()),/^Asset values/);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/annual-review"]',el=>el.textContent.trim()),/^Preview annual review/);
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
   console.log('PASS 18-section navigation, Escape and focus restoration');
@@ -469,7 +552,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
    const box=await page.$eval('[aria-labelledby="admin-account-action-modal-title"]',el=>{const r=el.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right};});
    assert.ok(box.left>=0 && box.right<=width+1,'account modal stays inside the viewport');
-   if(width>=1440)assert.ok(box.width>=760 && box.width<=1000,'account modal stays compact and readable');
+   if(width>=1440){const scale=canonical?await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)):1;assert.ok(box.width/scale>=760 && box.width/scale<=1000,'account modal stays compact and readable');}
    assert.equal(await page.$$eval('[aria-labelledby="admin-account-action-modal-title"] button',els=>els.some(el=>el.textContent.trim()==='Delete account'&&!el.disabled)),true);
    await page.screenshot({path:path.join(evidence,`account-modal-wide-${width}.png`),fullPage:true});
   }
@@ -498,8 +581,8 @@ const evidence=path.join(root,'.next/admin-review-validation');
   console.log('PASS queue pagination, explicit All requests, page reset and scoped deep links');
   workMode=true;props['work-tracker'].initialAccountId='owner';await open('work-tracker');await page.waitForSelector('textarea');
   assert.equal(workRequests.at(-1).get('clientUserId'),'owner');
-  await page.type('textarea',' updated');const editedNote=await page.$eval('textarea',e=>e.value);await page.click('button[aria-haspopup="dialog"]');
-  page.once('dialog',dialog=>dialog.dismiss());await page.click('a[href="/admin"]');
+  await page.type('textarea',' updated');const editedNote=await page.$eval('textarea',e=>e.value);await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
+  page.once('dialog',dialog=>dialog.dismiss());await page.click('[role="dialog"] a[href="/admin"]');
   assert.equal(await page.$eval('textarea',e=>e.value),editedNote);
   console.log('PASS scoped work history and unsaved note navigation protection');
   page.once('dialog',dialog=>dialog.accept());workMode=false;delete props['work-tracker'].initialAccountId;
@@ -521,9 +604,9 @@ const evidence=path.join(root,'.next/admin-review-validation');
   await page.$$eval('button',els=>els.find(e=>e.textContent.includes('Small Field Tractor')).click());
   await page.waitForSelector('input[value="Tractor checklist"]');
   await page.type('input[value="Tractor checklist"]',' updated');
-  await page.click('button[aria-haspopup="dialog"]');
+  await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
   page.once('dialog',dialog=>dialog.dismiss());
-  await page.click('a[href="/admin"]');
+  await page.click('[role="dialog"] a[href="/admin"]');
   assert.ok(await page.$('input[value="Tractor checklist updated"]'),'cancelled navigation preserves unsaved edits');
   console.log('PASS checklist discard confirmation preserves edits');
   // Dismiss the existing dirty page before opening the next isolated fixture.
@@ -540,5 +623,5 @@ const evidence=path.join(root,'.next/admin-review-validation');
   await usageInput.click({clickCount:3});await usageInput.type('1200');
   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(e=>e.textContent.trim()==='Update hours'&&e.disabled));
   console.log('PASS invoice usage edits immediately enable valid increases and block lower readings');
- }finally{await browser.close();}
+ }catch(error){fs.mkdirSync(evidence,{recursive:true});const pages=await browser.pages();await pages.at(-1)?.screenshot({path:path.join(evidence,'failure.png'),fullPage:true});throw error;}finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

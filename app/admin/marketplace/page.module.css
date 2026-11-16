@@ -58,8 +58,8 @@
 
 .metrics article > span {
   color: #587069;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -78,8 +78,8 @@
 }
 
 .metrics article > small {
-  color: #7a8984;
-  font-size: 0.67rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.25;
   overflow: hidden;
@@ -132,7 +132,7 @@
 .tableTitle > strong {
   flex: 0 0 auto;
   color: #286c55;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   white-space: nowrap;
 }
 
@@ -159,8 +159,8 @@
   display: inline-flex;
   align-items: center;
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -192,8 +192,8 @@
 
 .filters label > span {
   color: #526961;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -213,7 +213,7 @@
   color: #1a3d33;
   background: #fbfdfc;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 680;
 }
 
@@ -223,7 +223,7 @@
 }
 
 .filters input::placeholder {
-  color: #95a29d;
+  color: #52665d;
 }
 
 .filters input:focus,
@@ -242,7 +242,7 @@
 }
 
 .filters > button:disabled {
-  color: #9aaba5;
+  color: #52665d;
   background: #f6f8f7;
   cursor: default;
 }
@@ -258,8 +258,8 @@
 }
 
 .resultSummary span {
-  color: #6e7f79;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -282,10 +282,10 @@
 .tableScroller th {
   padding: 0.82rem 1rem;
   border-bottom: 1px solid #e4ebe8;
-  color: #60736c;
+  color: #52665d;
   background: #f5f9f7;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-align: left;
   white-space: nowrap;
 }
@@ -294,7 +294,7 @@
   padding: 1rem;
   border-bottom: 1px solid #e8eeeb;
   color: #344d45;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   font-weight: 620;
   line-height: 1.4;
   vertical-align: middle;
@@ -321,18 +321,18 @@
 
 .tableScroller td > strong {
   color: #183f34;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .tableScroller td > span {
   margin-left: 0.3rem;
-  color: #71827c;
+  color: #52665d;
 }
 
 .tableScroller td > small {
   margin-top: 0.2rem;
-  color: #8a9893;
-  font-size: 0.68rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 630;
 }
 
@@ -361,8 +361,8 @@
   padding: 0;
   border: 0;
   border-radius: 0;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -382,7 +382,7 @@
 }
 
 .status_other {
-  color: #5b6081 !important;
+  color: #52665d !important;
   background: transparent;
 }
 
@@ -406,20 +406,20 @@
   display: inline;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.68rem;
+  font-size: 0.95rem;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .repeatFlag span {
   color: #d08c1d;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .moneyCell {
   color: #17644a !important;
-  font-size: 0.82rem !important;
-  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
   white-space: nowrap;
 }
 
@@ -437,8 +437,8 @@
   border: 1px solid #cfe1d9;
   border-radius: 0.4rem;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -452,7 +452,7 @@
 }
 
 .activityButton:disabled {
-  color: #8da09a;
+  color: #52665d;
   background: #eef2f0;
   cursor: default;
 }
@@ -466,7 +466,7 @@
 .empty,
 .activityEmpty {
   padding: 2.5rem 1rem;
-  color: #778781;
+  color: #52665d;
   display: grid;
   place-items: center;
   gap: 0.35rem;
@@ -489,8 +489,8 @@
 }
 
 .pagination > span {
-  color: #71817c;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 660;
 }
 
@@ -514,7 +514,7 @@
 
 .pagination strong {
   color: #38544b;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
 }
 
 .modalLayer,
@@ -628,9 +628,9 @@
 }
 
 .activitySummary span {
-  color: #71817c;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .repeatBanner {
@@ -648,13 +648,13 @@
 
 .repeatBanner > span {
   color: #99713a;
-  font-size: 0.72rem;
+  font-size: 0.95rem;
   font-weight: 620;
   white-space: nowrap;
 }
 
 .repeatBanner strong {
-  font-size: 0.84rem;
+  font-size: 0.95rem;
 }
 
 .viewerSection,
@@ -677,8 +677,8 @@
 }
 
 .activityHeading span {
-  color: #7a8984;
-  font-size: 0.7rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
 }
 
@@ -713,8 +713,8 @@
   background: #2c8163;
   display: grid;
   place-items: center;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .viewerList article > div:nth-child(2) {
@@ -726,7 +726,7 @@
 .viewerList article > div:nth-child(2) strong {
   overflow: hidden;
   color: #21483c;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -734,8 +734,8 @@
 .viewerList article > div:nth-child(2) span,
 .viewerList article > div:nth-child(2) small {
   overflow: hidden;
-  color: #71827c;
-  font-size: 0.67rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 630;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -750,9 +750,9 @@
 .viewerCount em {
   margin-bottom: 0.18rem;
   color: #a06917;
-  font-size: 0.62rem;
+  font-size: 0.95rem;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .viewerCount strong {
@@ -762,8 +762,8 @@
 }
 
 .viewerCount > span {
-  color: #7d8b86;
-  font-size: 0.63rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 680;
 }
 
@@ -806,18 +806,18 @@
 
 .timeline strong {
   color: #21493c;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .timeline article > div span {
-  color: #74847f;
-  font-size: 0.68rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
 }
 
 .timeline time {
-  color: #5e736b;
-  font-size: 0.68rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
   white-space: nowrap;
 }
@@ -861,7 +861,7 @@
 .activityLoading strong {
   grid-column: 1 / -1;
   color: #526a61;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
 }
 
 .activityError strong {
@@ -869,8 +869,8 @@
 }
 
 .activityError span {
-  color: #7c6c69;
-  font-size: 0.75rem;
+  color: #52665d;
+  font-size: 0.95rem;
 }
 
 .activityError button {
@@ -881,8 +881,8 @@
   color: #1c654c;
   background: #eef8f3;
   font: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -902,20 +902,20 @@
 
 .deleteSummary strong {
   color: #20483b;
-  font-size: 0.84rem;
+  font-size: 0.95rem;
 }
 
 .deleteSummary span {
-  color: #73847e;
-  font-size: 0.72rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 640;
 }
 
 .deleteDescription,
 .deleteError {
   margin: 0.85rem 1.2rem 0;
-  color: #5f706a;
-  font-size: 0.77rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
   line-height: 1.55;
 }
@@ -941,8 +941,8 @@
   color: #31584b;
   background: #ffffff;
   font: inherit;
-  font-size: 0.74rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -1136,7 +1136,7 @@
 
 /* Constrain long asset names so remaining columns stay reachable. */
 .tableScroller table { table-layout: fixed; }
-.tableScroller td { white-space: normal; overflow-wrap: anywhere; }
+.tableScroller td { white-space: nowrap; overflow-wrap: anywhere; }
 .tableScroller td > strong,
 .tableScroller td > span,
 .tableScroller td > small,
@@ -1159,13 +1159,13 @@
 /* Shared ledger rhythm with page-specific filters and actions preserved. */
 .metrics { gap: .75rem; }
 .metrics > * { box-shadow: none; border-color: #e2e9e5; border-radius: .75rem; background: #fff; padding: 1rem; }
-.metrics strong { font-size: 1.35rem; font-weight: 600; letter-spacing: -.035em; }
-.metrics span { font-size: .7rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.metrics strong { font-size: 1.35rem; font-weight: 650; letter-spacing: -.035em; }
+.metrics span { font-size: 0.95rem; font-weight: 650; text-transform: none; letter-spacing: 0; }
 .tableCard { border: 1px solid #e2e9e5; border-radius: .85rem; background: #fff; box-shadow: none; overflow: hidden; }
 .filters { gap: .75rem; padding: 1rem 1.2rem; background: #fafcfb; }
-.filters input, .filters select { min-height: 40px; font-size: .75rem; font-weight: 500; border-color: #dfe7e2; border-radius: .5rem; }
-.tableScroller th { font-size: .68rem; font-weight: 500; background: #f8faf9; color: #7e8e83; text-transform: none; letter-spacing: 0; }
-.tableScroller td { padding: 1rem; font-size: .76rem; border-color: #edf1ee; }
+.filters input, .filters select { min-height: 40px; font-size: 0.95rem; font-weight: 650; border-color: #dfe7e2; border-radius: .5rem; }
+.tableScroller th { font-size: 0.95rem; font-weight: 650; background: #f8faf9; color: #52665d; text-transform: none; letter-spacing: 0; }
+.tableScroller td { padding: 1rem; font-size: 0.95rem; border-color: #edf1ee; }
 .tableScroller tbody tr:hover { background: #f6faf7; }
-.tableScroller td strong { font-weight: 550; }
-.tableScroller td small { font-size: .68rem; color: #7e8e83; }
+.tableScroller td strong { font-weight: 650; }
+.tableScroller td small { font-size: 0.95rem; color: #52665d; }

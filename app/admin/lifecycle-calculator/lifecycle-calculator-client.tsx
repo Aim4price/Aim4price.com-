@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSelect from "../../../components/AdminSelect";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ConditionKey } from "../../../lib/tractor-data";
 import {
@@ -251,13 +252,13 @@ function SelectField<T extends string>({
     <label className={styles.field}>
       <span>{label}</span>
       <div className={styles.inputShell}>
-        <select value={value} onChange={(event) => onChange(event.target.value as T)}>
+        <AdminSelect value={value} onChange={(event) => onChange(event.target.value as T)}>
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </AdminSelect>
       </div>
       <FieldHelp text={help} />
     </label>
