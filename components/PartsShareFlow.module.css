@@ -58,3 +58,17 @@ label.permissionCard:has(input:checked) { background:var(--permission-soft,var(-
 .permissionOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.permissionOption{display:flex;align-items:center;gap:.85rem;min-width:0;padding:1rem;border:1px solid var(--app-line,#cddfd5);border-radius:1rem;background:var(--app-surface,#fff);cursor:pointer}.permissionOption .permissionIcon{flex-shrink:0}.permissionCopy{display:grid;gap:.3rem;min-width:0}.permissionToggle{margin-left:auto;display:grid;justify-items:center;gap:.4rem;flex-shrink:0}.permissionToggle small{font-size:.7rem;font-weight:750;color:var(--app-muted,#64746a);white-space:nowrap}.permissionToggle input[type=checkbox]{appearance:none!important;position:relative;width:2.6rem!important;height:1.5rem!important;border:1px solid var(--app-line,#bdcfc5);border-radius:2rem;background:var(--app-surface-soft,#e5ebe7);cursor:pointer}.permissionToggle input:before{content:'';position:absolute;top:3px;left:3px;width:1rem;height:1rem;border-radius:50%;background:var(--app-muted,#64746a);transition:transform .15s}.permissionToggle input:checked{background:var(--app-accent,#176b4d);border-color:var(--app-accent,#176b4d)}.permissionToggle input:checked:before{transform:translateX(1.1rem);background:#fff}.permissionOption:has(input:checked){background:var(--app-surface-soft,#edf6f1);border-color:var(--app-accent,#176b4d);box-shadow:inset 0 0 0 1px var(--app-accent,#176b4d)}.permissionOption:has(input:checked) .permissionToggle small{color:var(--app-accent,#176b4d)}.permissionOption:has(input:focus-visible){outline:3px solid var(--app-accent,#176b4d);outline-offset:3px}.permissionOption:hover{border-color:var(--app-accent,#176b4d)}
 @media(max-width:720px){:global(body:not(:has([data-website-canvas]))) .permissionOptions{grid-template-columns:1fr}:global(body:not(:has([data-website-canvas]))) .viewAccess{flex-wrap:wrap}:global(body:not(:has([data-website-canvas]))) .viewAccess .included{margin-left:0}}
 @media(prefers-reduced-motion:reduce){.permissionToggle input:before{transition:none}}
+
+/* Keep the short permission form compact, with consistent section spacing. */
+.settingsContent { gap:.85rem; }
+.settingsContent .viewAccess { padding:.7rem 1rem; }
+.settingsContent .permissionOption { padding:.8rem 1rem; }
+.settingsContent .passwordPanel { padding:.85rem 1rem; gap:1.25rem; }
+.settingsContent .check { margin:0; padding:.15rem 0; }
+.historyPanel.historyPanel { gap:1.2rem; }
+.historyPanel.historyPanel > p { margin:0; }
+.historyPanel .historyList { margin:0; padding:.25rem; overflow:visible; flex-shrink:0; }
+.historyPanel .linkConfirmation { display:grid; gap:.65rem; margin:0 .25rem; padding:1.25rem; }
+.historyPanel .linkConfirmation > p { margin:0; }
+.historyPanel .linkConfirmation > div { margin-top:.5rem; gap:.75rem; }
+.historyPanel.historyPanel > footer { margin-top:0; padding-top:1rem; gap:.85rem; }
