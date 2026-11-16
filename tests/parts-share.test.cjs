@@ -41,6 +41,32 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:'new-password',allowDownload:false,allowEnquiry:false});
  await assert.rejects(()=>api.openPartsShare(token,viewer,proof,{}),e=>e.status===423);
  await assert.rejects(()=>api.openPartsShare(token,null,'',{action:'unlock',password:'first-password'}),/incorrect/);
+
+ // Exercise the HTTP unlock response and cookie using the real SQL/password implementation.
+ const route=load('app/api/parts-share/[token]/route.ts',{
+  '../../../../lib/parts-network':{PartsError},'../../../../lib/parts-share':api,
+  '../../../../lib/auth-session':{getServerSession:async()=>null},
+  '../../../../lib/account-profile':{getAccountProfile:async()=>({})},
+  '../../../../lib/trusted-request-origin':{isTrustedRequestOrigin:()=>true}
+ });
+ const {NextRequest}=require('next/server');
+ const post=async(input,cookie='')=>route.POST(new NextRequest('https://example.test/api/parts-share/'+token,{method:'POST',headers:{origin:'https://example.test','Content-Type':'application/json',cookie},body:JSON.stringify(input)}),{params:{token}});
+ assert.equal((await post({action:'unlock',password:'first-password'})).status,403);
+ const unlocked=await post({action:'unlock',password:'new-password'});
+ assert.equal(unlocked.status,200);
+ const unlockedData=await unlocked.json();assert.equal(unlockedData.rows[0].part_number,'001');assert.ok(!('proof' in unlockedData));assert.ok(!('ownerId' in unlockedData));
+ const cookie=unlocked.headers.get('set-cookie');assert.match(cookie,/HttpOnly/i);assert.match(cookie,/Secure/i);assert.match(cookie,/SameSite=lax/i);
+ const cookiePair=cookie.split(';')[0];
+ assert.equal((await post({action:'view'},cookiePair)).status,200);
+ await db.query('UPDATE parts_share_sessions SET expires_at=now()-interval \'1 second\' WHERE link_id=$1',[link.id]);
+ assert.equal((await post({action:'view'},cookiePair)).status,423);
+ // Exact mixed-case, Unicode, punctuation and spaces round-trip without mutation.
+ for(const value of ['MiXeD-123!','Pässword 🔑',' padded-password ']){
+  await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:value});
+  const result=await post({action:'unlock',password:value});assert.equal(result.status,200);
+  assert.equal((await result.json()).rows[0].part_number,'001');
+ }
+ await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:'new-password'});
  const next=await api.openPartsShare(token,null,'',{action:'unlock',password:'new-password'});
  await assert.rejects(()=>api.openPartsShare(token,viewer,next.proof,{action:'download'}),e=>e.status===403);
  await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:'',allowDownload:false,allowEnquiry:false});

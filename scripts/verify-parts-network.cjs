@@ -177,7 +177,7 @@ const appCode =
       if (r.url().includes('/api/parts-share/')) {
         const input=JSON.parse(r.postData()||'{}');
         if(input.action==='landing')return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1})});
-        if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:'{"ok":true}'});}
+        if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{}}]})});}
         if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
         return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
       }
@@ -1214,10 +1214,14 @@ const appCode =
     await page.waitForFunction(()=>document.body.innerText.includes('The password is incorrect.'));
     assert.equal(await page.$('tbody tr'),null);
     await page.$eval('input[type=password]',el=>{el.select();});
-    await page.type('input[type=password]','example-password');
+    await page.type('input[type=password]','stale-form-state');
     await click('Show password');
     assert.equal(await page.$eval('input[autocomplete=current-password]',el=>el.type),'text');
     await click('Hide password');
+    await page.setViewport({width:1440,height:900});
+    await page.screenshot({path:path.join(output,'parts-link-password-modal.png')});
+    // Password managers may fill the DOM without dispatching React change events.
+    await page.$eval('input[name=linkPassword]',el=>{el.value='example-password';});
     await page.$eval('dialog form',form=>form.requestSubmit());
     await page.waitForSelector('tbody tr');
     assert.equal(await page.$('dialog'),null,'Successful unlock opens the list directly');

@@ -26,7 +26,12 @@ export async function POST(request:NextRequest,{params}:{params:{token:string}})
   }
   const cookie=`parts-share-${params.token.slice(0,16)}`;
   const data=await openPartsShare(params.token,viewer,request.cookies.get(cookie)?.value||'',input);
-  if('proof' in data){const response=NextResponse.json({ok:true},{headers});response.cookies.set(cookie,data.proof!,{httpOnly:true,secure:request.nextUrl.protocol==='https:',sameSite:'lax',path:`/api/parts-share/${params.token}`,maxAge:8*3600});return response;}
+  if('proof' in data){
+   // Return the unlocked view immediately; do not depend on a second browser request
+   // observing the newly set cookie before the password modal can close.
+   const view=await openPartsShare(params.token,viewer,data.proof!,{action:'view'});
+   if('ownerId' in view) delete (view as {ownerId?:string}).ownerId;
+   const response=NextResponse.json({...view,access:accountAccess},{headers});response.cookies.set(cookie,data.proof!,{httpOnly:true,secure:request.nextUrl.protocol==='https:',sameSite:'lax',path:`/api/parts-share/${params.token}`,maxAge:8*3600});return response;}
   if(input.action==='download' && data.rows) {
    const {buildPartsStockReportHtml}=await import('../../../../lib/parts-network-report');
    const {renderReportHtmlToPdf}=await import('../../../../lib/report-pdf');
