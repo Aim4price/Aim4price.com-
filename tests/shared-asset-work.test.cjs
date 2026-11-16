@@ -9,7 +9,7 @@ test('details enforce separate permissions, locked writes, canonical fields, his
  const query=(s,a)=>/create extension/i.test(s)?Promise.resolve({rows:[]}):a?pg.query(s,a):pg.exec(s).then(r=>r.at(-1));const db={getDb:()=>({query,connect:async()=>({query,release(){}})})};
  const state={allow:{yearModel:true,usage:false,condition:true,addMaintenance:false},revoked:false};class Denied extends Error{constructor(m,status=403){super(m);this.status=status;}}
  const source=fs.readFileSync('lib/asset-register-db.ts','utf8').split('/** Restricted shared edits')[1];const out={};
- const helpers={getAssetRegisterSchema:async()=>({}),buildSelectList:()=>'*',mapAssetRegisterRow:r=>({...r,id:r.id,yearModel:r.year_model,hours:Number(r.hours),condition:r.condition,specsJson:r.specs_json,lifeWorkedPercent:null}),resolveSharedAssetUsage:a=>({metric:'hours',value:a.hours}),normalizeConditionForDb:v=>v,buildYearModelSpecsJson:s=>s,buildValuationStaleReasons:()=>['details'],markValuationNeedsUpdate:s=>({...s,valuationNeedsUpdate:true}),pushField:(fields,_schema,names,value,cast)=>fields.push({name:names[0],value:cast?JSON.stringify(value):value,cast:cast||''}),buildUpdateSetClause:fields=>({clause:fields.map((f,i)=>`${f.name}=$${i+3}${f.cast}`).join(','),values:fields.map(f=>f.value)})};
+ const helpers={confirmedAssetUsage:load('lib/asset-usage.ts',{}).confirmedAssetUsage,getAssetRegisterSchema:async()=>({}),buildSelectList:()=>'*',mapAssetRegisterRow:r=>({...r,id:r.id,yearModel:r.year_model,hours:Number(r.hours),condition:r.condition,specsJson:r.specs_json,lifeWorkedPercent:null}),resolveSharedAssetUsage:a=>({metric:'hours',value:a.hours}),normalizeConditionForDb:v=>v,buildYearModelSpecsJson:s=>s,buildValuationStaleReasons:()=>['details'],markValuationNeedsUpdate:s=>({...s,valuationNeedsUpdate:true}),pushField:(fields,_schema,names,value,cast)=>fields.push({name:names[0],value:cast?JSON.stringify(value):value,cast:cast||''}),buildUpdateSetClause:fields=>({clause:fields.map((f,i)=>`${f.name}=$${i+3}${f.cast}`).join(','),values:fields.map(f=>f.value)})};
  new Function(...Object.keys(helpers),'exports',ts.transpileModule('export '+source.slice(source.indexOf('async function')),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(...Object.values(helpers),out);
  const foundation=load('lib/sharing-foundation.ts',{'./db':db});const activity=load('lib/shared-asset-activity.ts',{'./db':db});
  const scope={ownerId:'owner',assetId:id,user:{id:'recipient',name:'Workshop',email:'r@example.test'},token:'link',lock:async()=>{if(state.revoked)throw new Denied('revoked');}};
@@ -40,6 +40,11 @@ test('details enforce separate permissions, locked writes, canonical fields, his
  assert.equal((await send({title:'Updated tractor'})).status,200);
  assert.equal((await pg.query('SELECT title FROM asset_register_items')).rows[0].title,'Updated tractor');
  assert.equal((await pg.query("SELECT after_data FROM shared_asset_activity WHERE action='Asset details updated' ORDER BY created_at DESC LIMIT 1")).rows[0].after_data.title,'Updated tractor');
+ // A permitted dealer can replace an estimate with a lower actual reading, but not move below the confirmed baseline.
+ await pg.query("UPDATE asset_register_items SET hours=150,specs_json=specs_json||$1::jsonb",[JSON.stringify({trackingUsage:{estimated:true,metric:'hours',baselineValue:120}})]);
+ assert.equal((await send({usage:119})).status,400);
+ assert.equal((await send({usage:125})).status,200);
+ assert.equal(Number((await pg.query('SELECT hours FROM asset_register_items')).rows[0].hours),125);
  state.revoked=true;assert.equal((await complete({...work,requestId:randomUUID()})).status,403);assert.equal((await send({condition:'fair'})).status,403);row=(await pg.query('SELECT * FROM asset_register_items')).rows[0];assert.equal(row.condition,'excellent');
  }finally{await pg.close();}
 });

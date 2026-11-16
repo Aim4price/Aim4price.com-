@@ -16,10 +16,10 @@ import colours from './ManageActionGrid.module.css';
 import local from './SharedAssetUpdateDialog.module.css';
 
 export type SharedUpdateField='current'|'year'|'usage'|'condition'|'finance'|'insurance'|'license'|'serial'|'replacement'|'documents';
-type Asset={id:string;title:string;kind:string;categoryLabel?:string;brand?:string;model?:string;serialNumber?:string;note?:string;yearModel:number|null;usageReading:number|null;usageMetric:string;condition:string;replacementPriceExVat?:number|null;currentValue?:number|null;insuredValue?:number|null;photos?:string[]};
+type Asset={id:string;title:string;kind:string;categoryLabel?:string;brand?:string;model?:string;serialNumber?:string;note?:string;yearModel:number|null;usageReading:number|null;usageMetric:string;usageEstimated?:boolean;lastConfirmedUsage?:number|null;condition:string;replacementPriceExVat?:number|null;currentValue?:number|null;insuredValue?:number|null;photos?:string[]};
 type Draft={title:string;brand:string;model:string;note:string;year:string;usage:string;condition:string};
 type Document={id:string;title:string;fileName:string};
-function draftFor(a:Asset):Draft{return {title:a.title,brand:a.brand||'',model:a.model||'',note:a.note||'',year:String(a.yearModel??''),usage:String(a.usageReading??''),condition:a.condition||''};}
+function draftFor(a:Asset):Draft{return {title:a.title,brand:a.brand||'',model:a.model||'',note:a.note||'',year:String(a.yearModel??''),usage:a.usageEstimated?'':String(a.usageReading??''),condition:a.condition||''};}
 export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onSaved,initialField}:{endpoint:string;assetTitle:string;onClose:()=>void;onSaved?:()=>void;initialField?:SharedUpdateField}) {
  const router=useRouter();
  const [valueField,setValueField]=useState<'current'|'replacement'|null>(initialField==='current'||initialField==='replacement'?initialField:null);
@@ -44,11 +44,12 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
   const patch:Record<string,unknown>={};
   for(const key of ['title','brand','model','note','year','usage','condition'] as const){
    const permission=key==='year'?'yearModel':key;
+   if (key==='usage' && next.usage.trim()==='') continue;
    if(permissions[permission]&&next[key]!==baseline.current[key])patch[permission]=key==='year'?(next.year?Number(next.year):null):key==='usage'?Number(next.usage):next[key];
   }
   if(!Object.keys(patch).length)return;
   saving.current=true;setBusy(true);setError('');setStatus('Saving…');
-  try{const r=await fetch(endpoint+'/details',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch,requestId:requestId.current})}),data=await r.json();if(!r.ok)throw Error(data.error||'Could not save.');baseline.current=next;requestId.current=crypto.randomUUID();setAsset(a=>a?{...a,title:next.title}:a);setStatus('Saved automatically');saved();}
+  try{const r=await fetch(endpoint+'/details',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patch,requestId:requestId.current})}),data=await r.json();if(!r.ok)throw Error(data.error||'Could not save.');baseline.current=next;requestId.current=crypto.randomUUID();setAsset(a=>a?{...a,title:next.title,...('usage' in patch?{usageEstimated:false,usageReading:Number(patch.usage),lastConfirmedUsage:Number(patch.usage)}:{})}:a);setStatus('Saved automatically');saved();}
   catch(e){setError(e instanceof Error?e.message:'Could not save.');setStatus('Changes not saved');}
   finally{saving.current=false;setBusy(false);}
  }
@@ -83,13 +84,14 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
    </div>
    <div className={`${styles.modalScrollBody} ${section==='menu'?styles.assetUpdateMenuBody:styles.manualStepScrollBody} ${local.body}`}>
     {error&&<p role="alert" className={local.error}>{error}</p>}
+    {section==='details' && asset?.usageEstimated && <p role="note">Estimated usage: {asset.usageReading} {asset.usageMetric}. Last confirmed: {asset.lastConfirmedUsage ?? 'Not recorded'} {asset.usageMetric}. Enter the actual meter reading to replace the estimate; it may be lower than the estimate.</p>}
     {!asset||!draft?<p>Loading asset…</p>:section==='menu'?<div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${colours.grid} ${local.menu}`} data-manage-actions>{cards.filter(c=>c.allowed).map(c=><button key={c.key} type="button" data-manage-action={c.icon} className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setSection(c.key)}>{c.key==='paperwork'?<svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></svg>:<AssetActionIcon action={c.key==='documents'?'documents':'details'} className={styles.buttonIcon}/>}<span><strong>{c.label}</strong><small>{c.copy}</small></span></button>)}</div>:section==='paperwork'?<SharedAssetPaperwork endpoint={endpoint} initialSection={paperFocus} onDirtyChange={setPaperDirty} onUpload={permissions.addDocuments?()=>setUpload(true):undefined} onSaved={saved}/>:section==='documents'?<>
      <p className={local.notice}><strong>Asset documents only — no invoices.</strong> Use Add cost for invoices and expenses.</p>
      <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
       {permissions.addDocuments&&<div className={styles.field}><span>Other documents</span><div className={`${styles.documentUploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} onClick={()=>setUpload(true)}>Add documents</button><span className={styles.uploadCount}>{documents.length}</span></div></div></div>}
       {permissions.addPhotos&&<div className={styles.field}><span>Photos</span><div className={`${styles.uploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} disabled={busy} onClick={()=>photoInput.current?.click()}>Add photos</button><span className={styles.uploadCount}>{asset.photos?.length||0} / 12</span><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={e=>void addPhotos(e.target.files)}/></div></div></div>}
      </div>
-     {(documents.length > 0 || !!asset.photos?.length) && <SharedAssetExport title={title} photos={asset.photos || []} asset={{serialNumber:asset.serialNumber,yearModel:asset.yearModel,usage:asset.usageReading == null ? "" : `${asset.usageReading} ${asset.usageMetric}`,condition:asset.condition,replacementPriceExVat:asset.replacementPriceExVat,valueExVat:asset.currentValue}} attachments={documents.map(d => ({name:d.title || d.fileName, url:endpoint+'/documents?id='+encodeURIComponent(d.id)}))}/>}
+     {(documents.length > 0 || !!asset.photos?.length) && <SharedAssetExport title={title} photos={asset.photos || []} asset={{serialNumber:asset.serialNumber,yearModel:asset.yearModel,usage:asset.usageReading == null ? "" : `${asset.usageReading} ${asset.usageMetric}${asset.usageEstimated ? ' · Estimated' : ''}`,condition:asset.condition,replacementPriceExVat:asset.replacementPriceExVat,valueExVat:asset.currentValue}} attachments={documents.map(d => ({name:d.title || d.fileName, url:endpoint+'/documents?id='+encodeURIComponent(d.id)}))}/>}
      {!!documents.length&&<div className={local.documents}>{documents.map(d=><a key={d.id} href={endpoint+'/documents?id='+encodeURIComponent(d.id)} target="_blank" rel="noreferrer">{d.title||d.fileName}</a>)}</div>}
      {!!asset.photos?.length&&<div className={local.photos}>{asset.photos.map((src,i)=><img key={src+i} src={src} alt={`${title} — photo ${i+1}`}/>)}</div>}
     </>:<form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={e=>e.preventDefault()}>

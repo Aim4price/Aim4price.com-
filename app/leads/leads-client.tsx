@@ -984,7 +984,7 @@ function snapshotUsageValue(snapshot: Record<string, unknown>): string {
   const unit = usageMetric.toLowerCase() === 'km' || usageMetric.toLowerCase() === 'kilometres' || usageMetric.toLowerCase() === 'kilometers' ? 'km' : 'hours';
 
   if (hours !== null && hours > 0) {
-    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}`;
+    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}${asRecord(specs?.trackingUsage)?.estimated === true ? ' · Estimated' : ''}`;
   }
 
   if (percent !== null) {
@@ -1233,7 +1233,7 @@ function assetUsageValue(lead: AssetLead): string {
   }
 
   if (hasHours) {
-    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}`;
+    return `${Math.round(hours).toLocaleString('en-ZA')} ${unit}${asRecord(specs?.trackingUsage)?.estimated === true ? ' · Estimated' : ''}`;
   }
 
   if (percent !== null) {

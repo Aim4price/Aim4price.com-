@@ -283,3 +283,11 @@ export function confirmedUsageTypeChange(existing: AssetUsageInput, next: AssetU
   }
   return usage;
 }
+
+/** An estimate is never the minimum accepted real meter reading. */
+export function confirmedAssetUsage(input: AssetUsageInput): number | null {
+  const usage = resolveAssetUsage(input);
+  const metadata = asRecord(asRecord(input.specsJson).trackingUsage);
+  const baseline = Number(metadata.baselineValue);
+  return usage.estimated && metadata.baselineValue != null && Number.isFinite(baseline) && baseline >= 0 ? baseline : usage.value;
+}

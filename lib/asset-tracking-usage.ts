@@ -21,14 +21,14 @@ export function trackingUsageBucket(points: TrackingPoint[], day: number, baseli
 }
 
 export async function trackingUsageStatus(client: Pick<PoolClient, 'query'>, ownerId: string, assetId: string) {
-  const row = (await client.query(`SELECT a.hours,a.kind,a.specs_json,c.enabled,c.metric,c.baseline_value,c.baseline_at,
+  const row = (await client.query(`SELECT a.hours,a.kind,a.specs_json,c.enabled,c.mode,c.daily_usage,c.working_days,c.metric,c.baseline_value,c.baseline_at,
    (SELECT last_tracked_at FROM public.asset_tracking_usage_buckets WHERE asset_id=a.id AND last_tracked_at IS NOT NULL ORDER BY bucket_start DESC LIMIT 1) AS last_tracked_at
    FROM public.asset_register_items a LEFT JOIN public.asset_tracking_usage c ON c.asset_id=a.id AND c.owner_id=a.user_id
    WHERE a.id=$1 AND a.user_id=$2`, [assetId, ownerId])).rows[0];
   if (!row) throw Error('ASSET_UNAVAILABLE');
   const usage = resolveAssetUsage({hours: row.hours, kind: row.kind, specsJson: row.specs_json});
   const estimated = usage.estimated === true;
-  return {enabled: row.enabled === true && row.metric === usage.metric, metric: usage.metric, reading: usage.value, estimated,
+  return {mode: row.mode || 'tracking', dailyUsage: row.daily_usage == null ? null : Number(row.daily_usage), workingDays: row.working_days || [1,2,3,4,5], enabled: row.enabled === true && row.metric === usage.metric, metric: usage.metric, reading: usage.value, estimated,
     baselineValue: row.metric !== usage.metric || row.baseline_value == null ? null : Number(row.baseline_value),
     baselineAt: row.metric === usage.metric && row.baseline_at ? iso(row.baseline_at) : null,
     lastTrackedAt: row.last_tracked_at ? iso(row.last_tracked_at) : null};
@@ -37,7 +37,7 @@ export async function trackingUsageStatus(client: Pick<PoolClient, 'query'>, own
 /** Caller holds the asset lock before any device lock. Recalculate only affected half-hour buckets. */
 export async function refreshTrackingUsage(client: PoolClient, ownerId: string, assetId: string, capturedAt: string[]) {
   if (!capturedAt.length) return;
-  const config = (await client.query(`SELECT * FROM public.asset_tracking_usage WHERE asset_id=$1 AND owner_id=$2 AND enabled=true FOR UPDATE`, [assetId, ownerId])).rows[0];
+  const config = (await client.query(`SELECT * FROM public.asset_tracking_usage WHERE asset_id=$1 AND owner_id=$2 AND enabled=true AND mode='tracking' FOR UPDATE`, [assetId, ownerId])).rows[0];
   if (!config) return;
   const baseline = new Date(config.baseline_at).getTime();
   const asset = (await client.query('SELECT hours,kind,specs_json FROM public.asset_register_items WHERE id=$1 AND user_id=$2', [assetId, ownerId])).rows[0];
@@ -98,6 +98,8 @@ export async function configureTrackingUsage(client: PoolClient, ownerId: string
   input: {enabled: boolean; reading?: number; action: 'enable' | 'pause' | 'confirm'}) {
   const asset = (await client.query('SELECT * FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE', [assetId, ownerId])).rows[0];
   if (!asset) throw Error('ASSET_UNAVAILABLE');
+  const config = (await client.query('SELECT mode,enabled FROM public.asset_tracking_usage WHERE asset_id=$1', [assetId])).rows[0];
+  if (config?.mode === 'average' && (config.enabled || input.action !== 'enable')) throw Error('AVERAGE_USAGE_ACTIVE');
   if (input.action === 'pause') {
     await client.query('UPDATE public.asset_tracking_usage SET enabled=false,updated_at=now() WHERE asset_id=$1 AND owner_id=$2', [assetId, ownerId]);
     await client.query(`INSERT INTO public.asset_tracking_usage_events(asset_id,owner_id,action,reading,metric,baseline_value,baseline_at)
@@ -113,7 +115,7 @@ export async function configureTrackingUsage(client: PoolClient, ownerId: string
    VALUES($1,$2,$3,$4,$5,$4,now())`, [assetId, ownerId, input.action === 'enable' ? 'Automatic updates enabled' : 'Meter reading confirmed', reading, usage.metric]);
   await client.query(`INSERT INTO public.asset_tracking_usage(asset_id,owner_id,enabled,metric,baseline_value,baseline_at)
    VALUES($1,$2,$3,$4,$5,now()) ON CONFLICT(asset_id) DO UPDATE SET owner_id=EXCLUDED.owner_id,enabled=EXCLUDED.enabled,
-   metric=EXCLUDED.metric,baseline_value=EXCLUDED.baseline_value,baseline_at=EXCLUDED.baseline_at,moving_seconds=0,distance_km=0,updated_at=now()`,
+   mode='tracking',daily_usage=NULL,last_estimated_date=NULL,metric=EXCLUDED.metric,baseline_value=EXCLUDED.baseline_value,baseline_at=EXCLUDED.baseline_at,moving_seconds=0,distance_km=0,updated_at=now()`,
   [assetId, ownerId, input.enabled, usage.metric, reading]);
   await client.query('DELETE FROM public.asset_tracking_usage_buckets WHERE asset_id=$1', [assetId]);
   await client.query("SELECT set_config('aim4price.tracking_usage_write','on',true),set_config('aim4price.audit_source','Tracking · confirmed meter reading',true)");

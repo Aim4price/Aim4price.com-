@@ -94,6 +94,8 @@ type MaintenanceRecord = {
   dueUsage: number | null;
   usageMetric: UsageMetric | null;
   currentUsage: number | null;
+  estimatedUsage?: number | null;
+  estimatedDueDate?: string | null;
   remainingUsage: number | null;
   daysUntilDue: number | null;
   alertBeforeValue: number | null;
@@ -1445,6 +1447,7 @@ export default function MaintenanceClient({
                           <span>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</span>
                           <span>Assigned to: {record.assignedName || 'Unassigned'}</span>
                         </p> : null}
+                        {record.estimatedDueDate && <p className={styles.scheduleRecordMeta}>Estimated service date: {record.estimatedDueDate}. Confirm the actual reading before booking.</p>}
                         <div className={styles.ledgerBadges}>
                           <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}><span aria-hidden="true" className={styles.statusSymbol}>{isDone ? '✓' : record.status === 'cancelled' ? '−' : needsAttention ? '!' : '◷'}</span>{statusText}</span>
                           {maintenanceTimingLabel(record) ? <span className={styles.timingLabel}>{maintenanceTimingLabel(record)}</span> : null}

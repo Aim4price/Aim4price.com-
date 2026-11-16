@@ -135,6 +135,8 @@ export type DealerMaintenanceRecordSummary = {
   computedStatusLabel: string;
   dueDate: string | null;
   dueUsage: number | null;
+  estimatedUsage?: number | null;
+  estimatedDueDate?: string | null;
   currentUsage: number | null;
   remainingUsage: number | null;
   usageMetric: AssetMaintenanceUsageMetric | null;
@@ -412,6 +414,8 @@ function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordS
     dueDate: record.dueDate,
     dueUsage: record.dueUsage,
     currentUsage: record.currentUsage,
+    estimatedUsage: record.estimatedUsage,
+    estimatedDueDate: record.estimatedDueDate,
     remainingUsage: record.remainingUsage,
     usageMetric: record.usageMetric,
     alertBeforeValue: record.alertBeforeValue,
@@ -1882,6 +1886,7 @@ function usageLabel(value: number | null, metric: AssetMaintenanceUsageMetric | 
 
 function notificationBody(asset: DealerMaintenanceTrackedAsset, record: DealerMaintenanceRecordSummary): string {
   const label = record.maintenanceType === 'checkup' ? 'checkup' : 'service';
+  if (record.estimatedUsage != null) return `${asset.assetTitle}: ${label} is ${record.computedStatus === 'due_soon' ? 'approaching' : 'estimated to be due'}. Confirm the actual meter reading.${record.estimatedDueDate ? ` Estimated service date: ${record.estimatedDueDate}.` : ''}`;
   if (record.computedStatus === 'overdue') {
     return record.triggerType === 'usage'
       ? `${asset.assetTitle} is overdue for ${label} by ${usageLabel(Math.abs(record.remainingUsage ?? 0), record.usageMetric)}.`

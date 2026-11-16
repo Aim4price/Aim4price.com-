@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useId, useState } from 'react';
 import styles from './AssetTrackingUsage.module.css';
-type Usage = {enabled: boolean; metric: string; reading: number | null; estimated: boolean; baselineValue: number | null; baselineAt: string | null; lastTrackedAt: string | null; events?: {id: string; action: string; reading: number; metric: string; created_at: string}[]};
+type Usage = {mode?: string; enabled: boolean; metric: string; reading: number | null; estimated: boolean; baselineValue: number | null; baselineAt: string | null; lastTrackedAt: string | null; events?: {id: string; action: string; reading: number; metric: string; created_at: string}[]};
 const number = (value: number | null) => value == null ? 'Not captured' : value.toLocaleString('en-ZA', {maximumFractionDigits: 2});
 const date = (value: string) => new Date(value).toLocaleString('en-ZA', {timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short'});
 export default function AssetTrackingUsage({assetId}: {assetId: string}) {
@@ -33,6 +33,7 @@ export default function AssetTrackingUsage({assetId}: {assetId: string}) {
   }
   if (!usage) return <div className={styles.card}><p role={error ? 'alert' : 'status'}>{error || 'Loading automatic usage…'}</p></div>;
   if (!['hours','km'].includes(usage.metric)) return null;
+  if (usage.mode === 'average' && usage.enabled) return <section className={styles.card}><h4>Average usage</h4><p>This asset uses average-based estimates. Manage them in Advanced settings → Average usage. Location tracking continues separately.</p></section>;
   const valid = reading.trim() !== '' && Number.isFinite(Number(reading)) && Number(reading) >= 0 && Number(reading) < 1e12;
   return <section className={styles.card} aria-labelledby={`${id}-title`}>
     <div className={styles.heading}><span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3 2"/></svg></span><div><h4 id={`${id}-title`}>Automatic {usage.metric === 'hours' ? 'hours' : 'kilometres'}</h4><p>{usage.metric === 'hours' ? 'Add tracked moving time to estimated hours.' : 'Add tracked distance to estimated kilometres.'}</p></div><span className={styles.badge}>{usage.enabled ? 'On' : 'Off'}</span></div>
