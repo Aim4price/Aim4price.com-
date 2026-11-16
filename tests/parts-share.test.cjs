@@ -76,7 +76,7 @@ test('public share API only passes verified, non-suspended identities and reject
  assert.equal((await route.POST(request('https://other.test'),{params:{token}})).status,403);
  let response=await route.POST(request(),{params:{token}});assert.equal(response.status,200);assert.equal(seen.viewer,null);assert.equal(response.headers.get('cache-control'),'private, no-store');
  user={id:'viewer',email:'viewer@example.test',emailVerified:false};
- await route.POST(request(),{params:{token}});assert.equal(seen.viewer,null);
+ response=await route.POST(request(),{params:{token}});assert.equal(seen.viewer,null);assert.equal((await response.json()).access,'verify-email');
  user.emailVerified=true;await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');
  accountStatus='suspended';await route.POST(request(),{params:{token}});assert.equal(seen.viewer,null);
 });

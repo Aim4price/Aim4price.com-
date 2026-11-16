@@ -8,6 +8,7 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'};
 export async function POST(request:NextRequest,{params}:{params:{token:string}}) {
+ let accountAccess='sign-in';
  try {
   if(!isTrustedRequestOrigin(request.headers.get('origin'),request.nextUrl.origin)) throw new PartsError('Invalid request origin.',403);
   const reader=request.body?.getReader(); if(!reader) throw new PartsError('Request required.');
@@ -20,7 +21,8 @@ export async function POST(request:NextRequest,{params}:{params:{token:string}})
   let viewer=null;
   if(user?.id && user.email) {
    const profile=await getAccountProfile(user);
-   if(profile.accountStatus!=='suspended' && user.emailVerified===true) viewer={id:user.id,email:user.email};
+   accountAccess=profile.accountStatus==='suspended'?'suspended':user.emailVerified!==true?'verify-email':'active';
+   if(accountAccess==='active') viewer={id:user.id,email:user.email};
   }
   const cookie=`parts-share-${params.token.slice(0,16)}`;
   const data=await openPartsShare(params.token,viewer,request.cookies.get(cookie)?.value||'',input);
@@ -39,6 +41,6 @@ export async function POST(request:NextRequest,{params}:{params:{token:string}})
   }
   // Internal owner identity is used for branding only.
   if('ownerId' in data) delete (data as {ownerId?:string}).ownerId;
-  return NextResponse.json(data,{headers});
- } catch(error){if(error instanceof PartsError)return NextResponse.json({error:error.message},{status:error.status,headers});console.error('Parts share failed',error);return NextResponse.json({error:'Unable to open this parts link. Please try again.'},{status:500,headers});}
+  return NextResponse.json({...data,access:accountAccess},{headers});
+ } catch(error){if(error instanceof PartsError)return NextResponse.json({error:error.message,access:accountAccess==='active'?'wrong-recipient':accountAccess},{status:error.status,headers});console.error('Parts share failed',error);return NextResponse.json({error:'Unable to open this parts link. Please try again.'},{status:500,headers});}
 }
