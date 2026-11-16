@@ -11,7 +11,7 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
   const [editing,setEditing]=useState(false),[correction,setCorrection]=useState(false);
   const [screen,setScreen]=useState<'reading'|'usage'|'calculator'|'review'>('reading');
   const screenHeading=useRef<HTMLHeadingElement>(null);
-  useEffect(()=>{screenHeading.current?.focus();},[screen,editing]);
+  useEffect(()=>{screenHeading.current?.focus({preventScroll:true});},[screen,editing]);
   const endpoint=`/api/asset-register/${encodeURIComponent(assetId)}/average-usage`;
   function fill(data:Usage){setUsage(data);setReading('');setDate(usageToday());setDaily(String(data.dailyUsage??''));setDays(data.workingDays);setServiceDate(data.yearModel&&data.yearModel<new Date().getFullYear()?`${data.yearModel}-01-01`:'');}
   useEffect(()=>{const controller=new AbortController();fetch(endpoint,{cache:'no-store',signal:controller.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);fill(d);}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[endpoint]);
@@ -32,36 +32,36 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
   const overview=active&&!editing;
   function begin(correctOnly:boolean){setCorrection(correctOnly);setScreen('reading');setReading('');setError('');setSuccess('');setEditing(true);}
   function navigate(next:typeof screen){setError('');setScreen(next);}
-  const title=screen==='reading'?'Start with a real meter reading':screen==='usage'?'How much does this asset work?':screen==='calculator'?'Calculate a suggested average':'Check your settings';
-  return <section className={styles.panel} aria-labelledby={`${id}-heading`}>
-    <div className={styles.heading}><div><h4 id={`${id}-heading`}>Average usage</h4><p>Estimate {unit} between actual readings.</p></div><span className={styles.badge}>{active?'On':configured?'Paused':'Off'}</span></div>
+  const title=screen==='reading'?'Meter reading':screen==='usage'?'Usual usage':screen==='calculator'?'Calculate average':'Review settings';
+  return <section className={styles.panel} aria-label="Average usage settings">
     {overview?<>
+      <div className={styles.heading}><h4>Usage estimates</h4><span className={styles.badge}>On</span></div>
       <div className={styles.summary}><div><span>{usage.estimated?'Estimated current usage':'Current meter reading'}</span><strong>{number(usage.reading)} {usage.metric}</strong></div>{usage.baselineAt&&<div><span>Last confirmed reading</span><strong>{number(usage.baselineValue)} {usage.metric}</strong><small>{new Date(usage.baselineAt).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</small></div>}</div>
       <p>{number(usage.dailyUsage)} {usage.metric} per working day · {workingDays.map(d=>labels[d].slice(0,3)).join(', ')}.</p>
       <p>Actual fuel, service and manual readings replace the estimate.</p>
       <div className={styles.actions}><button onClick={()=>begin(true)} disabled={busy}>Correct meter reading</button><button onClick={()=>begin(false)} disabled={busy}>Change average usage</button><button onClick={()=>void save('pause')} disabled={busy}>{busy?'Saving…':'Pause estimates'}</button></div>
     </>:<form className={styles.form} onSubmit={e=>{e.preventDefault();if(screen==='reading'&&validReading){if(correction)void save('confirm');else navigate('usage');}else if(screen==='usage'&&valid)navigate('review');else if(screen==='review'&&valid)void save('enable');}}>
-      <div className={styles.intro}><h5 ref={screenHeading} tabIndex={-1}>{correction?'Correct the meter reading':title}</h5><p>{screen==='reading'?'Read the meter on the asset and enter the date you checked it.':screen==='usage'?'Enter a typical working day, then choose the days it is normally used.':screen==='calculator'?'Use the asset’s age and total reading as a starting point.':active?'Review your changes before saving.':'Nothing is switched on until you confirm below.'}</p></div>
+      <div className={styles.heading}><h5 ref={screenHeading} tabIndex={-1} className={styles.screenTitle}>{correction?'Correct reading':title}</h5><span className={styles.badge}>{active?'On':configured?'Paused':'Off'}</span></div>
       {screen==='reading'&&<>
-        <p className={styles.notice}>{usage.estimated?'Current estimate':'Saved reading'}: <strong>{number(usage.reading)} {usage.metric}</strong>. Enter the actual meter reading below, even if it is lower.</p>
-        <div className={styles.fields}><label htmlFor={`${id}-reading`}>Actual meter reading ({usage.metric})<input id={`${id}-reading`} type="number" min="0" max="999999999999" step="0.01" inputMode="decimal" required value={reading} onChange={e=>setReading(e.target.value)} placeholder={usage.metric==='hours'?'For example, 14014':'For example, 90000'} disabled={busy}/></label>
-        <label htmlFor={`${id}-date`}>Date of this reading<input id={`${id}-date`} type="date" min="1900-01-01" max={usageToday()} required value={date} onChange={e=>setDate(e.target.value)} disabled={busy}/></label></div>
-        {configured&&!active&&<button className={styles.suggest} type="button" disabled={busy||!validReading} onClick={()=>void save('confirm')}>Save reading only · keep estimates paused</button>}
+        <p className={styles.notice}>{usage.estimated?'Current estimate':'Saved reading'}: <strong>{number(usage.reading)} {usage.metric}</strong></p>
+        <div className={styles.fields}><label htmlFor={`${id}-reading`}>Actual reading ({usage.metric})<input id={`${id}-reading`} type="number" min="0" max="999999999999" step="0.01" inputMode="decimal" required value={reading} onChange={e=>setReading(e.target.value)} placeholder={usage.metric==='hours'?'For example, 14014':'For example, 90000'} disabled={busy}/></label>
+        <label htmlFor={`${id}-date`}>Reading date<input id={`${id}-date`} type="date" min="1900-01-01" max={usageToday()} required value={date} onChange={e=>setDate(e.target.value)} disabled={busy}/></label></div>
+        {configured&&!active&&<button className={styles.suggest} type="button" disabled={busy||!validReading} onClick={()=>void save('confirm')}>Save reading · stay paused</button>}
       </>}
       {screen==='usage'&&<>
-        <label htmlFor={`${id}-daily`}>Average {unit} on a working day<input id={`${id}-daily`} type="number" min="0.0001" max={usage.metric==='hours'?24:10000} step="0.0001" inputMode="decimal" required value={daily} onChange={e=>setDaily(e.target.value)} placeholder={usage.metric==='hours'?'For example, 8':'For example, 100'} disabled={busy}/><small>{usage.metric==='hours'?'Enter up to 24 hours per day.':'Enter the distance covered on a typical working day.'}</small></label>
-        <fieldset disabled={busy}><legend>Which days is it normally used?</legend><div className={styles.days}>{[1,2,3,4,5,6,0].map(day=><label key={day}><input type="checkbox" checked={days.includes(day)} onChange={e=>setDays(e.target.checked?[...days,day].sort():days.filter(d=>d!==day))}/>{labels[day]}</label>)}</div><small>{days.length?'Estimates increase only on the selected days.':'Choose at least one working day to continue.'}</small></fieldset>
-        <button className={styles.suggest} type="button" disabled={busy||!days.length} onClick={()=>navigate('calculator')}>Not sure? Help calculate my average</button>
+        <label htmlFor={`${id}-daily`}>{unit==='hours'?'Hours':'Kilometres'} per working day<input id={`${id}-daily`} type="number" min="0.0001" max={usage.metric==='hours'?24:10000} step="0.0001" inputMode="decimal" required value={daily} onChange={e=>setDaily(e.target.value)} placeholder={usage.metric==='hours'?'For example, 8':'For example, 100'} disabled={busy}/>{usage.metric==='hours'&&<small>Maximum 24 hours.</small>}</label>
+        <fieldset disabled={busy}><legend>Working days</legend><div className={styles.days}>{[1,2,3,4,5,6,0].map(day=><label key={day} title={labels[day]}><input type="checkbox" aria-label={labels[day]} checked={days.includes(day)} onChange={e=>setDays(e.target.checked?[...days,day].sort():days.filter(d=>d!==day))}/>{labels[day].slice(0,3)}</label>)}</div>{!days.length&&<small>Choose at least one day.</small>}</fieldset>
+        <button className={styles.suggest} type="button" disabled={busy||!days.length} onClick={()=>navigate('calculator')}>Help calculate average</button>
       </>}
       {screen==='calculator'&&<>
-        <label htmlFor={`${id}-service`}>When was this asset first used?<input id={`${id}-service`} type="date" min="1900-01-01" max={date} value={serviceDate} onChange={e=>setServiceDate(e.target.value)} disabled={busy}/><small>The model year supplies an approximate date. Change it if needed.</small></label>
-        <p>We divide {number(Number(reading))} {usage.metric} by the selected working days since this date. This assumes the meter started at zero; current use may be different.</p>
-        {suggestion!==null&&suggestion>0&&suggestion<=(usage.metric==='hours'?24:10000)?<div className={styles.notice}>Suggested average: <strong>{number(suggestion)} {usage.metric} per working day</strong></div>:<p role="status">{suggestion!==null&&suggestion>(usage.metric==='hours'?24:10000)?'This average is too high. Check the start date or enter your own average.':'Choose an earlier start date to calculate a suggestion.'}</p>}
+        <label htmlFor={`${id}-service`}>First used on<input id={`${id}-service`} type="date" min="1900-01-01" max={date} value={serviceDate} onChange={e=>setServiceDate(e.target.value)} disabled={busy}/><small>Model-year estimate. Adjust if needed.</small></label>
+        <p>Total reading ÷ working days since first use. Assumes a zero starting reading; current use may differ.</p>
+        {suggestion!==null&&suggestion>0&&suggestion<=(usage.metric==='hours'?24:10000)?<div className={styles.notice}>Suggested average: <strong>{number(suggestion)} {usage.metric} per working day</strong></div>:<p role="status">{suggestion!==null&&suggestion>(usage.metric==='hours'?24:10000)?'Average too high. Check the date.':'Choose an earlier date.'}</p>}
       </>}
       {screen==='review'&&<>
-        <dl className={styles.review}><div><dt>Actual reading</dt><dd>{number(Number(reading))} {usage.metric} · {date.split('-').reverse().join('/')}</dd></div><div><dt>Average working day</dt><dd>{number(Number(daily))} {usage.metric}</dd></div><div><dt>Working days</dt><dd>{workingDays.map(d=>labels[d].slice(0,3)).join(', ')}</dd></div><div><dt>Estimated weekly usage</dt><dd>{number(Number(daily)*days.length)} {usage.metric}</dd></div></dl>
-        <p className={styles.notice}>Fuel, service and manual readings always take priority. Dealers and businesses with Update usage permission can correct the reading.</p>
-        <p>You can change the average or pause estimates here at any time.</p>
+        <dl className={styles.review}><div><dt>Actual reading</dt><dd>{number(Number(reading))} {usage.metric} · {date.split('-').reverse().join('/')}</dd></div><div><dt>Per working day</dt><dd>{number(Number(daily))} {usage.metric}</dd></div><div><dt>Working days</dt><dd>{workingDays.map(d=>labels[d].slice(0,3)).join(', ')}</dd></div><div><dt>Per week (estimated)</dt><dd>{number(Number(daily)*days.length)} {usage.metric}</dd></div></dl>
+        <p className={styles.notice}>Actual readings take priority. Authorised dealers and businesses can correct them.</p>
+
         {usage.mode==='tracking'&&usage.enabled&&<p className={styles.notice}>This replaces GPS-based usage estimates. Location tracking stays on.</p>}
       </>}
       <div className={styles.actions}>
