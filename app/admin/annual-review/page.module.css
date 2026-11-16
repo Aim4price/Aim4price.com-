@@ -10,7 +10,7 @@
 .page :is(button, input):focus-visible { outline: 3px solid var(--app-accent, #25805f); outline-offset: 3px; }
 .page .primary { background: var(--app-accent, #176b50); color: white; }
 .page .primary:hover:not(:disabled) { background: var(--app-accent, #176b50); filter: brightness(1.08); }
-.dialog { width: min(980px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); padding: 0; }
+.dialog { width: min(980px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); padding: 0; }
 .dialog[open] { display: flex; flex-direction: column; }
 .dialog::backdrop { background: rgba(12, 29, 25, .65); backdrop-filter: blur(6px); }
 .dialog h2:focus { outline: none; }
@@ -25,7 +25,7 @@
 .welcome, .confirmation { text-align: center; padding: .4rem 0 1rem; }
 .heroIcon { display: grid; place-items: center; width: 4rem; height: 4rem; margin: 0 auto 1rem; border-radius: 1.25rem; color: var(--app-accent, #176b50); background: var(--app-surface-soft, #eaf5ef); border: 1px solid var(--app-line, #d6e4dd); }
 .heroIcon svg { width: 2rem; height: 2rem; }
-.year { display: block; font-size: clamp(3.5rem, 8vw, 6rem); font-weight: 600; letter-spacing: -.06em; line-height: 1.1; margin: .5rem 0 1rem; color: var(--app-accent, #176b50); }
+.year { display: block; font-size: clamp(3.5rem, calc(var(--website-design-vw, 1vw) * 8), 6rem); font-weight: 600; letter-spacing: -.06em; line-height: 1.1; margin: .5rem 0 1rem; color: var(--app-accent, #176b50); }
 .welcome > p { max-width: 38rem; margin-inline: auto; }
 .welcome .muted { margin-top: 1.5rem; font-size: .8rem; }
 .intro { text-align: center; max-width: 44rem; margin: 0 auto 1.3rem; }
@@ -35,7 +35,7 @@
 .options strong { font-size: 1rem; }
 .options small { font-weight: 500; font-size: .8rem; line-height: 1.5; color: var(--app-muted, #64766e); }
 .dialog .note { font-size: .8rem; line-height: 1.55; margin-top: 1rem; text-align: center; }
-.sliderCard { display: grid; justify-items: center; gap: .8rem; padding: 1.3rem clamp(1rem, 4vw, 3rem); border: 1px solid var(--app-line, #d6e4dd); background: var(--app-surface-soft, #eaf5ef); border-radius: 1.2rem; }
+.sliderCard { display: grid; justify-items: center; gap: .8rem; padding: 1.3rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 4), 3rem); border: 1px solid var(--app-line, #d6e4dd); background: var(--app-surface-soft, #eaf5ef); border-radius: 1.2rem; }
 .sliderCard label { text-align: center; }
 .sliderCard output { font-size: 3rem; font-weight: 600; letter-spacing: -.04em; color: var(--app-accent, #176b50); }
 .sliderCard input { width: 100%; min-height: 44px; accent-color: var(--app-accent, #176b50); cursor: pointer; }
@@ -66,7 +66,7 @@
 .page .error { color: var(--app-danger, #ac3441); }
 
 /* Annual review: compact, consistent panels with clear decision hierarchy. */
-.dialog { width: min(1040px, calc(100vw - 2rem)); }
+.dialog { width: min(1040px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); }
 .eyebrow { display: block; font-size: .66rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--app-accent, #176b50); margin-bottom: .65rem; }
 .reviewStatus { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem 2rem; background: var(--app-surface-soft, #edf6f1); }
 .previewLabel { padding: 0; background: transparent; font-size: .7rem; justify-content: flex-start; }
@@ -81,9 +81,9 @@
 .yearPanel::after { bottom: -190px; left: -110px; width: 380px; height: 380px; }
 .yearPanel .heroIcon { background: #ffffff12; color: #dcf1e7; border-color: #ffffff26; width: 3rem; height: 3rem; margin-bottom: .8rem; }
 .yearPanel .heroIcon svg { width: 1.5rem; height: 1.5rem; }
-.yearPanel .year { color: #fff; font-size: clamp(4rem, 7vw, 6rem); letter-spacing: -.07em; margin: 0; }
+.yearPanel .year { color: #fff; font-size: clamp(4rem, calc(var(--website-design-vw, 1vw) * 7), 6rem); letter-spacing: -.07em; margin: 0; }
 .yearCaption { margin-top: .7rem; font-size: .85rem; color: #c8e4d7; }
-.welcomeCopy h3 { font-size: clamp(1.6rem, 3vw, 2.25rem); line-height: 1.13; font-weight: 600; }
+.welcomeCopy h3 { font-size: clamp(1.6rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem); line-height: 1.13; font-weight: 600; }
 .welcomeCopy > p { max-width: 29rem; font-size: .85rem; }
 .welcomeFacts { display: grid; gap: .9rem; margin: 1.3rem 0; }
 .welcomeFacts > span { display: grid; grid-template-columns: 2rem 1fr; column-gap: .6rem; align-items: center; }
@@ -117,7 +117,7 @@
 .totals article { padding: 1.2rem; background: linear-gradient(145deg, var(--app-surface, #fff), var(--app-surface-soft, #f0f7f3)); }
 .totals dl { margin: 1rem 0; gap: .7rem; }
 .totals dl div:last-child { display: grid; padding-top: .7rem; border-top: 1px solid var(--app-line, #d6e4dd); gap: .25rem; }
-.totals dl div:last-child dd { font-size: clamp(1.5rem, 2.5vw, 2rem); letter-spacing: -.04em; line-height: 1.2; }
+.totals dl div:last-child dd { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem); letter-spacing: -.04em; line-height: 1.2; }
 .totals dt { font-size: .73rem; }
 .totals dd { font-size: .95rem; }
 .totals .delta { font-size: .8rem; border: 0; padding: .55rem .7rem; border-radius: .5rem; background: var(--app-surface, #fff); }
@@ -126,22 +126,22 @@
 .confirmTotals > span { border: 1px solid var(--app-line, #d6e4dd); text-align: left; }
 .page .primary { box-shadow: 0 4px 10px #103e3215; }
 @media (max-width: 600px) {
-  .dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
-  .reviewStatus { padding: .6rem 1.25rem; }
-  .stageLabel { display: none; }
-  .welcome { grid-template-columns: 1fr; gap: 1.2rem; }
-  .yearPanel { min-height: 150px; }
-  .yearPanel .heroIcon { display: none; }
-  .yearPanel .year { font-size: 4.5rem; }
-  .yearCaption { margin-top: .15rem; }
-  .welcomeCopy h3 br { display: none; }
-  .welcomeFacts { margin: 1rem 0; }
-  .sliderCard { padding: 1rem; }
-  .page .options button { padding: 1rem; gap: .4rem; }
-  .options svg { margin-bottom: 0; }
-  .footer { gap: .5rem; }
-  .footer button { font-size: .78rem; }
-  .totals dl div:last-child dd { font-size: 1.7rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog { width: calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem); max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 1rem); }
+  :global(:where(html:not(:has([data-website-canvas])))) .reviewStatus { padding: .6rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stageLabel { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcome { grid-template-columns: 1fr; gap: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearPanel { min-height: 150px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearPanel .heroIcon { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearPanel .year { font-size: 4.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearCaption { margin-top: .15rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcomeCopy h3 br { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcomeFacts { margin: 1rem 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sliderCard { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .page .options button { padding: 1rem; gap: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .options svg { margin-bottom: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { gap: .5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer button { font-size: .78rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .totals dl div:last-child dd { font-size: 1.7rem; }
 }
 @media (prefers-reduced-motion: reduce) { .page .options button { transition: none; } }
 
@@ -156,10 +156,10 @@
 .dialog .note, .previewLabel, .resultIntro p { font-size: .85rem; }
 .confirmTotals > span { font-size: .9rem; }
 @media (max-width: 600px) {
-  .welcomeTop { padding: .8rem 1.25rem; }
-  .welcomeTop .previewLabel { font-size: .75rem; }
-  .yearPanel { min-height: 190px; }
-  .welcomeTitle { font-size: 1.45rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcomeTop { padding: .8rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcomeTop .previewLabel { font-size: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .yearPanel { min-height: 190px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .welcomeTitle { font-size: 1.45rem; }
 }
 
 /* One crisp icon family, with colour inherited from the relevant panel. */
@@ -182,11 +182,11 @@
 .disclosureMark::before { width: 10px; height: 2px; left: 3px; top: 7px; }
 .disclosureMark::after { width: 2px; height: 10px; top: 3px; left: 7px; }
 .calculationDetails[open] .disclosureMark::after { display: none; }
-@media (max-width: 600px) { .page .options button { padding: 1rem; } }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .page .options button { padding: 1rem; } }
 
 /* A single, compact heading replaces the repeated status strips. */
 .dialog .reviewHeader { align-items: center; gap: 1rem; background: linear-gradient(110deg, var(--app-surface-soft, #edf6f1), var(--app-surface, #fff)); }
-.reviewHeader h2 { margin: 0; flex: 1; font-size: clamp(1.4rem, 2.8vw, 2rem); line-height: 1.2; }
+.reviewHeader h2 { margin: 0; flex: 1; font-size: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2.8), 2rem); line-height: 1.2; }
 .reviewName { font-size: 1rem; font-weight: 650; }
 .dialog .welcomeHeader { padding-block: 1rem !important; }
 .reviewHeader > button { flex-shrink: 0; margin-left: auto; }
@@ -195,7 +195,7 @@
 .valueBreakdown > div { display: flex; justify-content: space-between; gap: 1rem; }
 .valueBreakdown dd { margin: 0; white-space: nowrap; font-weight: 650; font-variant-numeric: tabular-nums; }
 .valueBreakdown > div:last-child { border-top: 1px solid var(--app-line, #d6e4dd); padding-top: .7rem; }
-@media (max-width: 600px) { .valueBreakdown > div { flex-direction: column; gap: .2rem; } }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .valueBreakdown > div { flex-direction: column; gap: .2rem; } }
 
 .dialog .confirmation h3 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
 
@@ -229,10 +229,10 @@
 .affectedAssets summary { font-weight: 650; }
 .affectedAssets ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .45rem 1.5rem; padding-left: 1.2rem; margin: .4rem 0; line-height: 1.5; }
 @media (max-width: 600px) {
-  .dialog.dialog .reviewHeader.reviewHeader.reviewHeader.reviewHeader,
-  .dialog.dialog .body.body.body.body { padding: 1rem !important; }
-  .dialog.dialog .footer.footer.footer.footer { padding: .75rem 1rem !important; }
-  .setup > label:first-child { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .reviewHeader.reviewHeader.reviewHeader.reviewHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .body.body.body.body { padding: 1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog.dialog .footer.footer.footer.footer { padding: .75rem 1rem !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .setup > label:first-child { flex-basis: 100%; }
 }
 
 /* Comfortable targets throughout the review, with stable footer actions. */
@@ -270,9 +270,9 @@
 .calculationDetails[open] > summary .disclosureMark::after { display: none; }
 .calculationDetails[open] .affectedAssets:not([open]) .disclosureMark::after { display: block; }
 @media (max-width: 600px) {
-  .page .footer > button { flex: 1 1 0; min-width: 0; padding: .8rem .65rem; font-size: .85rem; }
-  .page .footer > .primary { flex-grow: 1.5; min-width: 0; }
-  .page .footer > .closeAction { margin-right: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .page .footer > button { flex: 1 1 0; min-width: 0; padding: .8rem .65rem; font-size: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .page .footer > .primary { flex-grow: 1.5; min-width: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .page .footer > .closeAction { margin-right: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .page .dialog button { transition: none; } }
 

@@ -3,7 +3,7 @@
   --owner-green-dark: #1d3929;
   --owner-ink: #12352d;
   --owner-muted: #64746a;
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: var(--owner-ink);
   background:
     radial-gradient(circle at 8% 12%, rgba(169, 220, 196, 0.12), transparent 26rem),
@@ -15,7 +15,7 @@
 .shell {
   width: 100%;
   margin: 0 auto;
-  padding: 1.35rem clamp(1rem, 3vw, 4rem) 3rem;
+  padding: 1.35rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 4rem) 3rem;
   box-sizing: border-box;
   display: grid;
   gap: 0.85rem;
@@ -45,7 +45,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.75rem);
   line-height: 0.98;
   letter-spacing: -0.055em;
   white-space: nowrap;
@@ -234,7 +234,7 @@
 }
 
 .flowIntro {
-  padding: clamp(1.1rem, 2vw, 1.6rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
   border: 1px solid #dfe8e3;
   border-radius: 1.35rem;
   background:
@@ -245,7 +245,7 @@
 .flowIntro h2 {
   margin: 0;
   color: #10372d;
-  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2), 1.8rem);
   line-height: 1.1;
   letter-spacing: -0.035em;
 }
@@ -1633,235 +1633,235 @@
 }
 
 @media (max-width: 1380px) {
-  .summaryGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1120px) {
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: stretch;
     flex-direction: column;
     gap: 1rem;
   }
 
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     justify-content: flex-start;
   }
 
-  .summaryPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryPanel {
     position: static;
   }
 
-  .summaryGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .contentGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .contentGrid {
     grid-template-columns: 1fr;
   }
 
-  .fullWidth {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullWidth {
     grid-column: auto;
   }
 }
 
 @media (max-width: 800px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 0.9rem 0.65rem 2rem;
   }
 
-  .summaryHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryHeading {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .summaryActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryActions {
     justify-content: stretch;
   }
 
-  .summaryActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryActions > button {
     flex: 1 1 0;
   }
 
-  .flowSteps {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowSteps {
     display: flex;
     overflow-x: auto;
     padding-bottom: 0.2rem;
   }
 
-  .flowSteps li {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowSteps li {
     flex: 0 0 7.4rem;
   }
 
-  .flowSteps button {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowSteps button {
     justify-content: flex-start;
   }
 
-  .summaryGrid,
-  .metricGrid,
-  .splitResult {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .metricGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .splitResult {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .packageGrid,
-  .scenarioGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .packageGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .scenarioGrid {
     grid-template-columns: 1fr;
   }
 
-  .contributionBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .contributionBar > div:nth-child(2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar > div:nth-child(2) {
     border-right: 0;
   }
 
-  .contributionBar > div:nth-child(-n + 2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar > div:nth-child(-n + 2) {
     border-bottom: 1px solid #dfe8e3;
   }
 
-  .equityFlow {
+  :global(:where(html:not(:has([data-website-canvas])))) .equityFlow {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .equityFlow > i {
+  :global(:where(html:not(:has([data-website-canvas])))) .equityFlow > i {
     justify-self: center;
   }
 
-  .conditionChoices {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionChoices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .projectionStrip {
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionStrip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .resultSnapshot {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSnapshot {
     grid-template-columns: 1fr;
   }
 
-  .financePackagePicker {
+  :global(:where(html:not(:has([data-website-canvas])))) .financePackagePicker {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .vatControl {
+  :global(:where(html:not(:has([data-website-canvas])))) .vatControl {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .vatButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .vatButtons {
     width: 100%;
     box-sizing: border-box;
   }
 
-  .tradeFlow {
+  :global(:where(html:not(:has([data-website-canvas])))) .tradeFlow {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .tradeFlow > i {
+  :global(:where(html:not(:has([data-website-canvas])))) .tradeFlow > i {
     justify-self: center;
   }
 }
 
 @media (max-width: 560px) {
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     flex-direction: column;
   }
 
-  .adminButton,
-  .printButton,
-  .summaryActions .secondaryFlowButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .printButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryActions .secondaryFlowButton {
     width: 100%;
     box-sizing: border-box;
   }
 
-  .summaryActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryActions {
     flex-direction: column;
   }
 
-  .flowProgressCopy {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowProgressCopy {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.2rem;
   }
 
-  .flowActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowActions {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .flowActionStatus {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowActionStatus {
     grid-column: 1 / -1;
     grid-row: 1;
   }
 
-  .primaryFlowButton,
-  .secondaryFlowButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .primaryFlowButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .secondaryFlowButton {
     width: 100%;
   }
 
-  .summaryGrid,
-  .metricGrid,
-  .splitResult,
-  .formGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .metricGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .splitResult,
+  :global(:where(html:not(:has([data-website-canvas])))) .formGrid {
     grid-template-columns: 1fr;
   }
 
-  .conditionChoices {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionChoices {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .resultTabs {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultTabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .selectionNote {
+  :global(:where(html:not(:has([data-website-canvas])))) .selectionNote {
     grid-template-columns: auto 1fr;
   }
 
-  .selectionNote small {
+  :global(:where(html:not(:has([data-website-canvas])))) .selectionNote small {
     grid-column: 1 / -1;
     text-align: left;
   }
 
-  .financePreview,
-  .projectionStrip,
-  .assetProjection {
+  :global(:where(html:not(:has([data-website-canvas])))) .financePreview,
+  :global(:where(html:not(:has([data-website-canvas])))) .projectionStrip,
+  :global(:where(html:not(:has([data-website-canvas])))) .assetProjection {
     grid-template-columns: 1fr;
   }
 
-  .vatButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .vatButtons {
     grid-template-columns: 1fr;
   }
 
-  .packageChoice {
+  :global(:where(html:not(:has([data-website-canvas])))) .packageChoice {
     grid-template-columns: 2.65rem minmax(0, 1fr) 1.5rem;
     padding: 0.9rem;
   }
 
-  .packageChoiceIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .packageChoiceIcon {
     width: 2.65rem;
     height: 2.65rem;
   }
 
-  .notesField {
+  :global(:where(html:not(:has([data-website-canvas])))) .notesField {
     grid-column: auto;
   }
 
-  .contributionBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar {
     grid-template-columns: 1fr;
   }
 
-  .contributionBar > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar > div {
     border-right: 0;
     border-bottom: 1px solid #dfe8e3;
   }
 
-  .contributionBar > div:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .contributionBar > div:last-child {
     border-bottom: 0;
   }
 }
@@ -1950,7 +1950,7 @@
 
 .workspaceHeader h2 {
   margin: 0;
-  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.2rem);
   line-height: 1.08;
   letter-spacing: -0.035em;
 }
@@ -2811,119 +2811,119 @@
 }
 
 @media (max-width: 1380px) {
-  .assumptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .futurePanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .futurePanel {
     position: static;
     grid-column: 1 / -1;
   }
 
-  .positionRows {
+  :global(:where(html:not(:has([data-website-canvas])))) .positionRows {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0 1.2rem;
   }
 
-  .positionRows .positionTotal {
+  :global(:where(html:not(:has([data-website-canvas])))) .positionRows .positionTotal {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 1060px) {
-  .answerStrip {
+  :global(:where(html:not(:has([data-website-canvas])))) .answerStrip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .provisionGrid,
-  .outcomeGrid,
-  .advancedGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .provisionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .outcomeGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .advancedGrid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 980px) {
-  .workspaceHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .workspaceHeader {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .headerActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerActions {
     justify-content: stretch;
   }
 
-  .headerActions button {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerActions button {
     flex: 1 1 9rem;
   }
 
-  .answerStrip,
-  .assumptionGrid,
-  .provisionGrid,
-  .outcomeGrid,
-  .advancedGrid,
-  .workspace .formGrid,
-  .adviceGrid,
-  .equityHero,
-  .tradeControls,
-  .positionRows {
+  :global(:where(html:not(:has([data-website-canvas])))) .answerStrip,
+  :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .provisionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .outcomeGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .advancedGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .workspace .formGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .adviceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .equityHero,
+  :global(:where(html:not(:has([data-website-canvas])))) .tradeControls,
+  :global(:where(html:not(:has([data-website-canvas])))) .positionRows {
     grid-template-columns: 1fr;
   }
 
-  .workspaceNav {
+  :global(:where(html:not(:has([data-website-canvas])))) .workspaceNav {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .decisionHeading,
-  .resultsLead {
+  :global(:where(html:not(:has([data-website-canvas])))) .decisionHeading,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLead {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .decisionHeading > p {
+  :global(:where(html:not(:has([data-website-canvas])))) .decisionHeading > p {
     justify-items: start;
   }
 
-  .resultsLead > div:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLead > div:last-child {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
     text-align: left;
   }
 
-  .futurePanel,
-  .positionRows .positionTotal {
+  :global(:where(html:not(:has([data-website-canvas])))) .futurePanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .positionRows .positionTotal {
     grid-column: auto;
   }
 
-  .vatControl {
+  :global(:where(html:not(:has([data-website-canvas])))) .vatControl {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .segmentedButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .segmentedButtons {
     width: 100%;
     box-sizing: border-box;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .vatBreakdown {
+  :global(:where(html:not(:has([data-website-canvas])))) .vatBreakdown {
     grid-template-columns: 1fr;
   }
 
-  .nextCycleFlow {
+  :global(:where(html:not(:has([data-website-canvas])))) .nextCycleFlow {
     flex-direction: column;
   }
 
-  .nextCycleFlow i {
+  :global(:where(html:not(:has([data-website-canvas])))) .nextCycleFlow i {
     transform: rotate(90deg);
   }
 
-  .equityRows > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .equityRows > div {
     grid-template-columns: 1fr;
   }
 
-  .equityRows strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .equityRows strong {
     text-align: left;
   }
 }
@@ -2990,7 +2990,7 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 
@@ -3004,5 +3004,7 @@
 .scenarioChoiceActive { background: #edf5ef; border-color: #9bbca7; }
 .workspace, .shell > *, .assumptionGrid > *, .provisionGrid > *, .outcomeGrid > * { min-width: 0; }
 .assumptionGrid { grid-template-columns: minmax(0, 1.25fr) minmax(0, .9fr) minmax(0, .85fr); }
-@media (max-width: 1650px) { .assumptionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .futurePanel { position: static; grid-column: 1 / -1; } }
-@media (max-width: 980px) { .assumptionGrid, .provisionGrid, .outcomeGrid, .advancedGrid { grid-template-columns: minmax(0, 1fr); } }
+:global(:where(html:has([data-website-canvas]))) .assumptionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+:global(:where(html:has([data-website-canvas]))) .futurePanel { position: static; grid-column: 1 / -1; }
+@media (max-width: 1650px) { :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .futurePanel { position: static; grid-column: 1 / -1; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .assumptionGrid, :global(:where(html:not(:has([data-website-canvas])))) .provisionGrid, :global(:where(html:not(:has([data-website-canvas])))) .outcomeGrid, :global(:where(html:not(:has([data-website-canvas])))) .advancedGrid { grid-template-columns: minmax(0, 1fr); } }

@@ -531,7 +531,7 @@ export default function SoldAssetsClient({
       </section>
 
       {actionDialog ? (
-        <div className={styles.detailOverlay}>
+        <div data-website-overlay="true" className={styles.detailOverlay}>
           <button
             type="button"
             className={styles.detailBackdrop}

@@ -194,7 +194,7 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
       </button>
 
       {isOpen ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button
             type="button"
             className={styles.backdrop}

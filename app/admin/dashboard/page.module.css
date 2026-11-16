@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #142f28;
   background: #f6f8f7;
 }
@@ -7,7 +7,7 @@
 .shell {
   width: 100%;
   margin: 0 auto;
-  padding: 1.1rem clamp(1rem, 3vw, 4rem) 3rem;
+  padding: 1.1rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 4rem) 3rem;
   box-sizing: border-box;
   display: grid;
   gap: 1rem;
@@ -28,7 +28,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(1.8rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.25rem);
   line-height: 1.05;
   letter-spacing: -0.04em;
   white-space: nowrap;
@@ -302,54 +302,54 @@
 }
 
 @media (max-width: 1180px) {
-  .grid {
+  :global(:where(html:not(:has([data-website-canvas])))) .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 980px) {
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: stretch;
     flex-direction: column;
     gap: 1rem;
   }
 
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     justify-content: stretch;
   }
 
-  .sectionHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .adminButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminButton {
     flex: 1 1 0;
   }
 
-  .grid {
+  :global(:where(html:not(:has([data-website-canvas])))) .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .storageCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .storageCard {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 620px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 0.9rem 0.65rem 2rem;
   }
 
-  .grid {
+  :global(:where(html:not(:has([data-website-canvas])))) .grid {
     grid-template-columns: 1fr;
   }
 
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     flex-direction: column;
   }
 
-  .adminButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminButton {
     width: 100%;
   }
 
@@ -367,7 +367,7 @@
 .attentionCard small { color: #53675d; line-height: 1.5; }
 .attentionUrgent { border-color: #dab4aa; background: #fff8f5; }
 .attentionAction { font-size: .8rem; font-weight: 600; }
-@media (max-width: 1000px) { .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { :global(:where(html:not(:has([data-website-canvas])))) .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .refreshButton { border: 1px solid #dce6df; border-radius: .4rem; background: #fff; color: #24583f; padding: .6rem .8rem; font: inherit; font-size: .8rem; cursor: pointer; }
 .refreshButton:disabled { opacity: .5; }
@@ -375,7 +375,7 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 
@@ -406,6 +406,6 @@
 .storageRow { font-size: .72rem; padding-bottom: .65rem; border-bottom: 1px solid #edf1ee; }
 .storageRow strong { font-size: .78rem; font-weight: 550; }
 .storageDivider { grid-column: 1 / -1; }
-@media (max-width: 1100px) { .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) { .attentionGrid, .storageRows { grid-template-columns: 1fr; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .card { padding: 1rem; } }
-@media (max-width: 380px) { .grid { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { :global(:where(html:not(:has([data-website-canvas])))) .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .attentionGrid, :global(:where(html:not(:has([data-website-canvas])))) .storageRows { grid-template-columns: 1fr; } :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .card { padding: 1rem; } }
+@media (max-width: 380px) { :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns: 1fr; } }

@@ -131,7 +131,7 @@
 
 .options {
   min-height: 0;
-  max-height: min(18rem, 50vh);
+  max-height: min(18rem, calc(var(--website-design-vh, 1vh) * 50));
   padding: 0.35rem;
   overflow-x: hidden;
   overflow-y: auto;

@@ -169,7 +169,7 @@ jobs:
         run: node scripts/verify-admin-review.cjs
 
       - name: Verify responsive Admin workspace
-        run: ADMIN_WORKSPACE_QA=1 node scripts/verify-admin-review.cjs
+        run: ADMIN_CANONICAL_QA=1 node scripts/verify-admin-review.cjs
 
       - name: Save Admin browser evidence
         if: always()

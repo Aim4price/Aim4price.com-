@@ -2,9 +2,15 @@
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
+const canonical=Boolean(process.env.ADMIN_CANONICAL_QA);
+if(canonical)process.env.ADMIN_WORKSPACE_QA='1';
 let cssIndex=0;
 const stubs={
- 'lib/account-access':'exports.requireAdminPageAccess=async()=>{};',
+ 'lib/account-access':'exports.requireAdminPageAccess=async()=>({user:{id:"admin"}});',
+ 'components/AppPatternBackground':'exports.AppViewportBackground=()=>null;',
+ 'lib/db':'exports.getDb=()=>({query:async(q)=>({rows:q.includes("count(*)")?[{accepted:12,pending:0,review:0}]:[]})});',
+ 'lib/maintenance-email-delivery':'exports.ensureAssetEmailDelivery=async()=>{};exports.emailRollout=()=>({enabled:true});',
+ 'lib/sharing-admin':'exports.sharingAdminAccounts=async()=>[];',
  'lib/admin-attention':'exports.getAdminAttention=async()=>[{label:"Pending accounts",count:3,href:"/admin?status=pending_payment",description:"Review access before activating."},{label:"Overdue capture",count:5,href:"/admin/capture-queue?status=overdue",description:"Open requests past their deadline.",urgent:true},{label:"Unclaimed capture",count:2,href:"/admin/capture-queue?status=unassigned",description:"Open requests without an assigned admin."},{label:"Needs matching",count:1,href:"/admin/capture-queue?status=needs_matching",description:"Confirm the customer and destination."},{label:"Needs information",count:0,href:"/admin/capture-queue?status=needs_information",description:"Follow up on missing details."},{label:"Awaiting owner",count:2,href:"/admin/capture-queue?status=awaiting_owner",description:"Documents awaiting owner review."}];',
  'lib/admin-dashboard':'exports.getAdminDashboardStats=async()=>window.fixtureDashboard;',
 };
@@ -48,13 +54,15 @@ const entries={
  lifecycle:'app/admin/lifecycle-calculator/lifecycle-calculator-client', maintenance:'app/admin/maintenance-catalogue/maintenance-catalogue-client',
 };
 if (process.env.ADMIN_WORKSPACE_QA) Object.assign(entries, {videos:'app/admin/videos/video-manager', 'asset-values':'app/admin/asset-values/values-client', 'annual-review':'app/admin/annual-review/annual-review-client'});
+if(canonical)Object.assign(entries,{'asset-emails':'app/admin/asset-emails/page',sharing:'app/admin/sharing/page','ai-connect':'app/account/ai-connect/connection-view'});
 Object.values(entries).forEach(add);
 add('components/AdminNavigation');
 add('components/AdminWorkspace');
+if(canonical)add('components/SiteWorkspaceZoom');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
- 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>window.fixturePathname||"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
+ 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/image")return ({priority,...props})=>React.createElement("img",props);if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>window.fixturePathname||"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
 const now='2026-09-20T10:00:00Z';
 const user={userId:'owner',name:'Example Agricultural Equipment and Orchard Management',email:'accounts@example.test',phone:'0821234567',accountType:'owner',accountSubtype:'farmer',province:'Western Cape',introducedBy:'Direct',introducedByOption:'direct',introducedByName:'',accountStatus:'active',accountStatusLabel:'Active',passwordStatus:'Set',lastActiveAtIso:now,createdAtIso:now,storageBytes:197000000,storageLabel:'197 MB',storageGigabytesLabel:'0.2 GB',storageFileCount:378,postgresStorageBytes:0,postgresStorageLabel:'0 B',bucketStorageBytes:197000000,bucketStorageLabel:'197 MB'};
 const asset={id:'one',ownerUserId:'owner',registerId:'register',registerLabel:'Farm equipment',title:'2022 New Holland TT4.90 4WD Openstation Small Field Tractor',kind:'tractor',assetTypeLabel:'Small Field Tractor',sectorKey:'agricultural',sectorLabel:'Agriculture',value:327133,hasSavedValue:true,selectedMethod:'basic',brandName:'New Holland',modelName:'TT4.90',typedModelName:'',yearModel:2022,hours:1250,lifeWorkedPercent:null,usageMetric:'hours',condition:'good',serialNumber:'SERIAL-123',registrationNumber:'',publicAssetCode:'ABC123',plateLabel:'',qrStatus:'active',lifecycleState:'active',lastScannedAtIso:null,lastKnownLat:null,lastKnownLng:null,lastKnownLocationText:'George',createdAtIso:now,updatedAtIso:now,totalViews:8,accountViews:5,unknownViews:3,uniqueViewers:3,lastViewedAtIso:now,repeatViewerViews:4,repeatViewerLabel:'Example Buyer',repeatViewerAccountType:'owner',repeatViewerLastViewedAtIso:now,hasRepeatInterest:true,owner:{...user,label:user.name,businessName:user.name,townCity:'George',addressLine1:'',addressLine2:'',discoveryParticipationEnabled:true}};
@@ -73,6 +81,8 @@ props.videos={initialSlots:[]};
 Object.assign(titles,{videos:'Video Manager','asset-values':'Asset values','annual-review':'Annual asset review'});
 const catalogue={version:1,profiles:[{key:'tractor',label:'Tractor checklist',items:[{id:'oil',label:'Engine oil',checkLabel:'Check oil',serviceLabel:'Change oil',description:'Check with engine stopped.'}]}],families:[{source:'basic',sector:'agricultural',familyKey:'small-field-tractor',label:'Small Field Tractor',profileKey:'tractor'}]};
 const capture={id:'request-one',publicReference:'INV-TEST',requestType:'invoice',submissionChannel:'owner_upload',status:'in_progress',senderDisplayName:'Example Sender',ownerDisplayName:user.name,assetDisplayName:asset.title,assetReference:'ABC123',fuelStorageDisplayName:'',assignedAdminDisplayName:'Admin',submittedAtIso:now,dueAtIso:'2026-09-22T10:00:00Z',updatedAtIso:now,version:1,fileCount:0,ownerUserId:'owner',assetId:'one',fuelStorageId:'',senderEmail:'sender@example.test',senderPhone:'',senderBusinessName:'',senderNote:'',adminNote:'',needsInformationReason:'',candidatePayload:{},capturedPayload:{usageMetric:'hours',usageReading:'1250'}};
+Object.assign(props,{'ai-connect':{audience:'admin',account:{name:'Admin',email:'admin@example.test'},connections:[],resource:'https://admin.test/mcp'},sharing:{searchParams:{}}});
+Object.assign(titles,{'asset-emails':'Asset emails',sharing:'Sharing usage','ai-connect':'Admin AI connections'});
 const evidence=path.join(root,'.next/admin-review-validation');
 (async()=>{
  fs.mkdirSync(evidence,{recursive:true});
@@ -122,19 +132,62 @@ const evidence=path.join(root,'.next/admin-review-validation');
   });
   async function open(section,width=1440){
    errors.length=0;
-   await page.setViewport({width,height:1000});await page.goto('https://admin.test/');
+   await page.setViewport({width,height:1000,isMobile:canonical && width<600,hasTouch:canonical && width<600});await page.goto('https://admin.test/');
    const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
-   await page.setContent('<style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
+   await page.setContent('<meta name="viewport" content="width=device-width, initial-scale=1"><style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
+   if(canonical)await page.evaluate(w=>{Object.defineProperty(window,'outerWidth',{configurable:true,value:w});sessionStorage.setItem('aim4price.website-landscape-entry.v1','portrait');},width);
    await page.evaluate(section=>{window.fixturePathname=section==='accounts'?'/admin':'/admin/'+({lifecycle:'lifecycle-calculator',outcomes:'sold-assets',maintenance:'maintenance-catalogue'}[section]||section);},section);
    await page.evaluate(()=>{window.fixtureDashboard={cards:['free-estimates','paid-estimates','total-assets-saved','total-accounts-created','owner-accounts-created','average-user-time','marketplace-advertised'].map(id=>({id,title:id,values:[{label:'This month',value:'12'},{label:'This year',value:'54'}]})),storage:{sources:[],customerUsage:{accountCountLabel:'4',averageLabel:'20 MB',medianLabel:'12 MB',p90Label:'100 MB',addedLast30DaysLabel:'10 MB',pendingBucketUploadsLabel:'0',failedBucketUploadsLabel:'0'}}};});
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
-   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review'].includes(section);
+   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review','asset-emails','sharing','ai-connect'].includes(section);
    const cssFile=section==='outcomes'||section==='asset-outcomes'?'sold-assets':section==='lifecycle'?'lifecycle-calculator':section;
    const wrapper=section==='asset-values'||section==='videos'?`React.createElement("main",null,React.createElement("h1",null,${JSON.stringify(titles[section])}),child)`:ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
-   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${section==='dashboard'?'await Component()':`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
+   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${['dashboard','asset-emails','sharing'].includes(section)?`await Component(${JSON.stringify(props[section]||{})})`:`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${canonical ? `React.createElement(require("components/SiteWorkspaceZoom").default,{footer:null,operational:null},React.createElement(require("components/AdminWorkspace").default,null,${wrapper}))` : process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
    await page.waitForSelector('h1');
    await page.evaluate(()=>document.fonts.ready);
    assert.deepEqual(errors,[],section+' runtime');
+  }
+  if (canonical) {
+   const baseline={};
+   async function setZoom(value){
+    await page.click('[aria-label="Zoom in"]');await page.waitForSelector('dialog[open]');
+    await page.$eval('#website-zoom-slider',(e,v)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,String(v));e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},value);
+    await page.waitForFunction(v=>Math.abs(Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)-v/100)<.001,{},value);
+    await page.keyboard.press('Escape');
+   }
+   for (const width of (process.env.ADMIN_QA_INTERACTIONS_ONLY ? [] : [1440,390,768,1024,1920])) {
+    for(const section of (process.env.ADMIN_QA_SECTIONS ? process.env.ADMIN_QA_SECTIONS.split(',') : Object.keys(entries))) {
+     await open(section,width);
+     await page.waitForSelector('[data-site-workspace-zoom-controls]');
+     const metrics=await page.evaluate(()=>{const c=document.querySelector('[data-website-canvas]'),s=Number(c.dataset.websiteScale),main=document.querySelector('#admin-workspace-content'),side=document.querySelector('aside[aria-label="Admin workspace"]');return {scale:s,width:c.offsetWidth,content:Math.round(main.getBoundingClientRect().width/s),sidebar:getComputedStyle(side).display};});
+     assert.equal(metrics.width,1440);assert.ok(Math.abs(metrics.scale-Math.min(1.2,width/1440))<.02);assert.notEqual(metrics.sidebar,'none');
+     if(width===1440)baseline[section]=metrics.content;else assert.ok(Math.abs(metrics.content-baseline[section])<=1,section+' canonical composition');
+     await page.screenshot({path:path.join(evidence,`canonical-${section}-${width}.png`),fullPage:true});
+     if(width===1440){for(const zoom of [80,125]){await setZoom(zoom);assert.equal(await page.$eval('[data-website-canvas]',e=>e.offsetWidth),1440);assert.deepEqual(errors,[],section+' zoom runtime');}}
+    }
+    console.log('PASS canonical pages at '+width);
+   }
+   await open('accounts',1440);await page.waitForSelector('[data-site-workspace-zoom-controls]');
+   await page.click('[aria-label="Zoom in"]');await page.waitForSelector('dialog[open]');
+   assert.equal(await page.$eval('#website-zoom-title',e=>e.textContent),'Page size');
+   await page.$eval('#website-zoom-slider',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'125');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+   await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.25);
+   await page.$$eval('dialog button',bs=>bs.find(b=>b.textContent==='Fit to screen').click());
+   await page.waitForFunction(()=>document.querySelector('[data-site-workspace-zoom-controls]').dataset.zoomPreference==='auto');
+   await page.keyboard.press('Escape');assert.equal(await page.$('dialog[open]'),null);
+   await open('accounts',1440);await setZoom(125);
+   await page.$eval('tbody button',e=>e.click());await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
+   const modal=await page.$eval('[aria-labelledby="admin-account-action-modal-title"]',e=>{const r=e.getBoundingClientRect();return{left:r.left,right:r.right,width:r.width};});
+   await page.screenshot({path:path.join(evidence,'canonical-account-modal-125.png'),fullPage:true});
+   assert.ok(modal.left>=0 && modal.right<=1441 && Math.abs(modal.width/1.25-960)<2,'Enlarged account dialog remains reachable '+JSON.stringify(modal));
+   delete props.accounts.initialAccountId;
+   await open('work-tracker',1440);await setZoom(125);
+   await page.click('button[aria-haspopup="listbox"]');await page.waitForSelector('[role="listbox"]');
+   const picker=await page.evaluate(()=>{const trigger=document.querySelector('button[aria-haspopup="listbox"][aria-expanded="true"]').getBoundingClientRect(),menu=document.querySelector('[role="combobox"]').closest('[style]').getBoundingClientRect();return {trigger:{left:trigger.left,bottom:trigger.bottom},menu:{left:menu.left,top:menu.top,width:menu.width},viewport:window.visualViewport?.width ?? innerWidth,inCanvas:Boolean(document.querySelector('[data-website-canvas] [role="listbox"]'))};});
+   assert.equal(picker.inCanvas,true);assert.ok(Math.abs(picker.menu.left-Math.min(Math.max(picker.trigger.left,15),picker.viewport-picker.menu.width-15))<2,'Picker uses logical left at 125% '+JSON.stringify(picker));assert.ok(Math.abs(picker.menu.top-picker.trigger.bottom-10)<2,'Picker uses logical top at 125% '+JSON.stringify(picker));
+   await page.keyboard.press('Escape');
+   console.log('PASS shared Page size modal, all-page manual zoom, fit, account dialog and scaled picker');
+   return;
   }
   if (process.env.ADMIN_WORKSPACE_QA) {
    for (const width of [390, 768, 1024, 1440, 1920]) {

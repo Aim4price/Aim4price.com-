@@ -157,7 +157,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     const bindControls = () => {
       syncOverlayWidths();
       const header = canvas.querySelector('a[aria-label="Go to Aim4price home"]')?.closest('header');
-      const zoomHost = header?.querySelector('[data-website-zoom-host]');
+      const zoomHost = canvas.querySelector('[data-admin-zoom-host]') ?? header?.querySelector('[data-website-zoom-host]');
       setControlHost(zoomHost instanceof HTMLElement ? zoomHost : null);
     };
     bindControls();

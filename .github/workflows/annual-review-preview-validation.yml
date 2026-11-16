@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'app/admin/annual-review/**'
+      - 'app/admin/admin-foundation.css'
+      - 'components/SiteWorkspaceZoom*'
+      - 'lib/website-canvas.ts'
       - 'app/annual-review/**'
       - 'app/api/annual-review/**'
       - 'app/asset-register/page.tsx'

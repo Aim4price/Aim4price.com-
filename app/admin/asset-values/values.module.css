@@ -20,6 +20,6 @@
 .empty strong { font-weight: 650; color: #4f6b59; }
 .error { margin: 1rem; padding: .8rem; background: #fff5f3; color: #9a4e40; font-size: .78rem; border-radius: .6rem; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-@media(max-width: 600px) { .heading { flex-direction: column; } }
+@media(max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .heading { flex-direction: column; } }
 
 .resultsContext { margin: 0; padding: .85rem 1.3rem; color: #64746a; font-size: .82rem; line-height: 1.5; }

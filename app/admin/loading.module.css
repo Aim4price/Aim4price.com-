@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #12372d;
   background:
     radial-gradient(circle at 8% 16%, rgba(99, 196, 157, 0.14), transparent 24rem),
@@ -21,7 +21,7 @@
 }
 
 .header > div {
-  width: min(40rem, 70vw);
+  width: min(40rem, calc(var(--website-design-vw, 1vw) * 70));
 }
 
 .skeleton {
@@ -103,17 +103,17 @@
 }
 
 @media (max-width: 980px) {
-  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .manage { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .manage { display: none; }
 }
 
 @media (max-width: 620px) {
-  .shell { width: min(100% - 1.2rem, 112rem); padding-top: 1rem; }
-  .cards { grid-template-columns: 1fr; }
-  .card:nth-child(n + 4) { display: none; }
-  .panelHeader { display: grid; }
-  .panelTitle,
-  .filter { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .shell { width: min(100% - 1.2rem, 112rem); padding-top: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cards { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .card:nth-child(n + 4) { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeader { display: grid; }
+  :global(:where(html:not(:has([data-website-canvas])))) .panelTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .filter { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -123,4 +123,4 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }

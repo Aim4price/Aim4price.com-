@@ -651,7 +651,7 @@ export default function AdminValuationsClient({
       </section>
 
       {selectedValuation ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Close valuation details" onClick={() => { if (!openingAccount) setSelectedValuation(null); }} />
           <section ref={detailsRef} className={styles.detailsModal} role="dialog" aria-modal="true" aria-labelledby="admin-valuation-detail-title" tabIndex={-1}>
             <header className={styles.modalHeader}>
@@ -759,7 +759,7 @@ export default function AdminValuationsClient({
       ) : null}
 
       {deleteTargets ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button
             type="button"
             className={styles.backdrop}

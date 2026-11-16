@@ -1,6 +1,7 @@
 "use client";
 
-import { createPortal } from "react-dom";
+import { createPortal } from "../../../components/WebsitePortal";
+import { websiteLogicalRect, websiteVisibleViewport } from "../../../lib/website-canvas";
 import {
   Fragment,
   useEffect,
@@ -191,13 +192,14 @@ export default function AccountPicker({
     function positionMenu() {
       const button = buttonRef.current;
       if (!button) return;
-      const rect = button.getBoundingClientRect();
+      const rect = websiteLogicalRect(button.getBoundingClientRect());
+      const viewport = websiteVisibleViewport();
       const edge = 12;
       const gap = 8;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const viewportTop = window.visualViewport?.offsetTop ?? 0;
-      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+      const viewportHeight = viewport.height;
+      const viewportWidth = viewport.width;
+      const viewportTop = viewport.top;
+      const viewportLeft = viewport.left;
       const width = Math.min(Math.max(rect.width, 340), viewportWidth - edge * 2);
       const estimatedHeight = 360;
       const below = viewportTop + viewportHeight - rect.bottom - edge - gap;
@@ -238,6 +240,7 @@ export default function AccountPicker({
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleEscape);
     window.addEventListener("resize", queuePositionMenu);
+    window.addEventListener("aim4price:canvas-geometry", queuePositionMenu);
     window.addEventListener("scroll", queuePositionMenu, true);
     window.visualViewport?.addEventListener("resize", queuePositionMenu);
     window.visualViewport?.addEventListener("scroll", queuePositionMenu);
@@ -246,6 +249,7 @@ export default function AccountPicker({
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
       window.removeEventListener("resize", queuePositionMenu);
+      window.removeEventListener("aim4price:canvas-geometry", queuePositionMenu);
       window.removeEventListener("scroll", queuePositionMenu, true);
       window.visualViewport?.removeEventListener("resize", queuePositionMenu);
       window.visualViewport?.removeEventListener("scroll", queuePositionMenu);

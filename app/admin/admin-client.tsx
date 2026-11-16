@@ -1780,7 +1780,7 @@ export default function AdminClient({
 
       {groupNotificationComposer ? (
         <div
-          className={styles.modalBackdrop}
+          data-website-overlay="true" className={styles.modalBackdrop}
           onMouseDown={(event) => {
             if (
               event.target === event.currentTarget &&
@@ -2005,7 +2005,7 @@ export default function AdminClient({
 
       {accountActionModal ? (
         <div
-          className={styles.modalBackdrop}
+          data-website-overlay="true" className={styles.modalBackdrop}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && busyUserAction === null) {
               setAccountActionModal(null);
@@ -2410,7 +2410,7 @@ export default function AdminClient({
       ) : null}
 
       {qrModal ? (
-        <div className={styles.modalBackdrop}>
+        <div data-website-overlay="true" className={styles.modalBackdrop}>
           <section
             className={`${styles.qrModal} ${pickerStyles.modal}`}
             role="dialog"
@@ -2579,7 +2579,7 @@ export default function AdminClient({
       ) : null}
 
       {assetNameModal ? (
-        <div className={styles.modalBackdrop}>
+        <div data-website-overlay="true" className={styles.modalBackdrop}>
           <section
             className={`${styles.qrModal} ${styles.nameModal}`}
             role="dialog"

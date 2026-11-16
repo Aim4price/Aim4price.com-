@@ -5,7 +5,7 @@
   --green-dark: #0f523d;
   --green-soft: #edf8f3;
   --line: #d7e5de;
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: var(--ink);
   background: #f5f8f6;
   font-family: Montserrat, Arial, sans-serif;
@@ -32,7 +32,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0b3027;
-  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.6rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
   white-space: nowrap;
@@ -99,7 +99,7 @@
 .metrics article > strong {
   margin: auto 0 0.32rem;
   color: #145f47;
-  font-size: clamp(1.35rem, 1.7vw, 1.75rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.75rem);
   line-height: 1;
   letter-spacing: -0.045em;
   overflow: hidden;
@@ -570,8 +570,8 @@
 .detailModal {
   position: relative;
   z-index: 1;
-  width: min(64rem, calc(100vw - 2rem));
-  max-height: min(48rem, calc(100vh - 2rem));
+  width: min(64rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(48rem, calc(calc(var(--website-design-vh, 1vh) * 100) - 2rem));
   overflow: hidden;
   border: 1px solid #cbded5;
   border-radius: 0.8rem;
@@ -834,102 +834,106 @@
   cursor: default;
 }
 
+:global(:where(html:has([data-website-canvas]))) .metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
 @media (max-width: 1480px) {
-  .metrics {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 980px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     width: min(100% - 1.5rem, 112rem);
     padding-top: 1.35rem;
   }
 
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .topBar > :last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar > :last-child {
     align-self: stretch;
   }
 
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     overflow: visible;
   }
 
-  .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchField {
     grid-column: 1 / -1;
   }
 
-  .filters > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters > button {
     width: 100%;
   }
 }
 
 @media (max-width: 680px) {
-  .metrics {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .metrics article {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics article {
     min-height: 6.5rem;
   }
 
-  .tableHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .tableHeader {
     padding: 1rem;
   }
 
-  .tableTitle,
-  .pagination {
+  :global(:where(html:not(:has([data-website-canvas])))) .tableTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .pagination > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination > div {
     width: 100%;
   }
 
-  .pagination button {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination button {
     flex: 1;
   }
 
-  .detailGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailGrid {
     min-width: 0;
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .detailGrid .detailWide {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailGrid .detailWide {
     grid-column: auto;
   }
 }
 
 @media (max-width: 540px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     width: min(100% - 1rem, 112rem);
   }
 
-  .titleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .titleBlock h1 {
     font-size: 2rem;
   }
 
-  .metrics,
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics,
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     grid-template-columns: 1fr;
   }
 
-  .metrics article {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics article {
     min-height: 6.5rem;
   }
 
-  .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchField {
     grid-column: auto;
   }
 
-  .resultSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSummary {
     display: flex;
   }
 }
@@ -950,8 +954,8 @@
   grid-column: span 2;
 }
 @media (max-width: 600px) {
-  .filters { grid-template-columns: minmax(0, 1fr); }
-  .filters .searchField { grid-column: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters .searchField { grid-column: auto; }
 }
 
 /* Constrain long asset names so remaining columns stay reachable. */
@@ -975,7 +979,7 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 
