@@ -940,9 +940,9 @@ const appCode =
     await page.$eval('[role=dialog]', dialog => {
       [...dialog.querySelectorAll('button')].find(button => button.querySelector('strong')?.textContent === 'Share').click();
     });
-    await page.waitForFunction(() => document.querySelector('dialog[open]')?.textContent.includes('Share link'));
-    assert.equal(await page.$$eval('dialog[open]', dialogs => dialogs.length), 1, 'Manage Share opens the managed share modal');
-    await page.$eval('dialog[open] button[aria-label="Close dialog"]', button => button.click());
+    await page.waitForFunction(() => document.querySelector('[role=dialog]')?.textContent.includes('Share link'));
+    assert.equal(await page.$$eval('[role=dialog]', dialogs => dialogs.length), 1, 'Manage Share opens the managed share modal');
+    await page.$eval('[role=dialog] button[aria-label^="Close"]', button => button.click());
     await click('Manage');
     await page.$eval('[role=dialog] button[data-tone="green"]', button=>button.click());
     await page.waitForSelector('[aria-label="Parts download format"]');
