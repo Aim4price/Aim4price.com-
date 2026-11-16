@@ -192,6 +192,8 @@ const appCode =
         if (r.method() === "POST") {
           const b = JSON.parse(r.postData());
           actions.push(b);
+          if (b.action === "revoke-share") shareLinks=shareLinks.map(link=>link.id===b.id?{...link,revoked_at:new Date().toISOString()}:link);
+          if (b.action === "delete-share") shareLinks=shareLinks.filter(link=>link.id!==b.id);
           if (b.action === "edit-part") row.quantity = Number(b.quantity);
           data =
             b.action === "share-history" ? {links:shareLinks} : b.action === "preview"
@@ -350,7 +352,7 @@ const appCode =
     );
     await page.keyboard.press("Escape");
     await click("Share");
-    await page.waitForSelector('dialog[open]');
+    await page.waitForSelector('[role="dialog"]');
     assert.ok(
       await page.evaluate(
         () =>
@@ -1127,15 +1129,21 @@ const appCode =
     await page.click('dialog[open] button[aria-label="Close dialog"]');await page.waitForFunction(()=>!document.querySelector('dialog'));  await click('Share');await click('Sharing history');
     await page.waitForFunction(()=>document.body.innerText.includes('Password protected'));
     await page.screenshot({path:path.join(output,'parts-share-history.png')});
+    assert.ok(await page.$('[data-share-history]'),'Parts uses the owner sharing history layout');
     await click('Settings');
-    await page.$$eval('dialog[open] input[type=checkbox]',inputs=>inputs.at(-1).click());
-    await page.type('dialog[open] input[type=password]','replacement-password');
+    await page.$$eval('[role=dialog] input[type=checkbox]',inputs=>inputs.at(-1).click());
+    await page.type('[role=dialog] input[type=password]','replacement-password');
     await click('Save settings');
     await page.waitForFunction(()=>document.body.innerText.includes('Manage your shared links'));
     assert.equal(actions.filter(a=>a.action==='update-share').at(-1).password,'replacement-password');
-    await click('Settings');await click('Revoke access');
+    await click('Revoke access');
     await click('Keep link');
     assert.ok(!actions.some(a=>a.action==='revoke-share'),'Cancelled revocation leaves the link active');
+    await click('Revoke access');await click('Confirm revoke');
+    await page.waitForFunction(()=>document.body.innerText.includes('Access revoked'));
+    assert.equal(await page.$('[data-share-history] a'),null,'Revoked links cannot be opened from history');
+    await click('Delete');await click('Confirm delete');
+    await page.waitForFunction(()=>document.body.innerText.includes('No shared links yet.'));
     viewerFixture=true;
     await page.goto('https://example.test/parts');await page.waitForSelector('article');
     assert.ok(await page.evaluate(()=>![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Add parts list')));
