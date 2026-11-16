@@ -19243,7 +19243,7 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
-              {assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
+              {assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && assetSettingsView !== 'average' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
                 <button
                   type="button"
                   className={styles.assetSettingsBackButton}

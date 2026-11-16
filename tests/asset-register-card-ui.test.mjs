@@ -325,7 +325,12 @@ test('Manage map setup is a focused workflow without the Settings back button', 
   assert.equal(titleFor(true, 'location', 'hours', usageHeading), 'Map asset');
   assert.equal(titleFor(false, 'menu', 'hours', usageHeading), 'Advanced settings');
   assert.equal(titleFor(false, 'usage', 'hours', usageHeading), 'Correct hours');
-  assert.match(settingsModal, /assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
+  const backCondition = settingsModal.match(/\{(assetSettingsView !== 'menu'[^\n]+) \? \(/)?.[1];
+  assert.ok(backCondition, 'settings back button must have a visibility condition');
+  const showsBack = new Function('assetSettingsView', 'isManageMapLocationFlow', `return (${backCondition});`);
+  for (const view of ['menu', 'usage', 'average']) assert.equal(showsBack(view, false), false, `${view} must hide the outer Back button`);
+  assert.equal(showsBack('location', true), false, 'direct map setup hides Back');
+  for (const view of ['location', 'locationManual', 'locationMap', 'tracking', 'lifetime']) assert.equal(showsBack(view, false), true, `${view} retains settings navigation`);
   assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
   const editor = readFileSync(new URL('../components/AssetLocationEditor.tsx', import.meta.url), 'utf8');
   assert.match(settingsModal, /<AssetLocationEditor/);

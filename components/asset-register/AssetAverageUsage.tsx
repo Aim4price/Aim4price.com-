@@ -8,7 +8,7 @@ const labels=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Satur
 export default function AssetAverageUsage({assetId}:{assetId:string}) {
   const id=useId(),[usage,setUsage]=useState<Usage|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[success,setSuccess]=useState('');
   const [reading,setReading]=useState(''),[date,setDate]=useState(usageToday()),[daily,setDaily]=useState(''),[days,setDays]=useState([1,2,3,4,5]),[serviceDate,setServiceDate]=useState('');
-  const [editing,setEditing]=useState(false),[correction,setCorrection]=useState(false);
+  const [editing,setEditing]=useState(false),[correction,setCorrection]=useState(false),[setup,setSetup]=useState(false);
   const [screen,setScreen]=useState<'reading'|'usage'|'calculator'|'review'>('reading');
   const screenHeading=useRef<HTMLHeadingElement>(null);
   useEffect(()=>{screenHeading.current?.focus({preventScroll:true});},[screen,editing]);
@@ -18,7 +18,7 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
   async function save(action:'enable'|'pause'|'confirm') {
     if(busy)return;setBusy(true);setError('');setSuccess('');
     try {const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,reading:reading.trim()===''?null:Number(reading),readingDate:date,dailyUsage:daily.trim()===''?null:Number(daily),workingDays:days})});
-      const data=await response.json();if(!response.ok)throw Error(data.error||'Could not save average usage.');fill(data);setEditing(false);setCorrection(false);setScreen('reading');setSuccess(action==='pause'?'Average usage paused.':action==='confirm'?'Actual reading saved.':'Average usage enabled.');window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated',{detail:{assetId}}));
+      const data=await response.json();if(!response.ok)throw Error(data.error||'Could not save average usage.');fill(data);setSetup(false);setEditing(false);setCorrection(false);setScreen('reading');setSuccess(action==='pause'?'Average usage turned off.':action==='confirm'?'Actual reading saved.':'Average usage enabled.');window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated',{detail:{assetId}}));
     } catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{setBusy(false);}
   }
   if(!usage)return <p role={error?'alert':'status'}>{error||'Loading average usage…'}</p>;
@@ -32,21 +32,23 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
   const overview=active&&!editing;
   function begin(correctOnly:boolean){setCorrection(correctOnly);setScreen('reading');setReading('');setError('');setSuccess('');setEditing(true);}
   function navigate(next:typeof screen){setError('');setScreen(next);}
+  const toggle=<button type="button" role="switch" aria-label="Average usage" aria-checked={active||setup} aria-describedby={!active&&setup?`${id}-pending`:undefined} className={styles.toggle} disabled={busy} onClick={()=>{if(active){void save('pause');}else{setSetup(!setup);setScreen('reading');setError('');setSuccess('');}}}><span className={styles.toggleTrack} aria-hidden="true"><span/></span><span>{busy?'Saving…':active||setup?'On':'Off'}</span></button>;
   const title=screen==='reading'?'Meter reading':screen==='usage'?'Usual usage':screen==='calculator'?'Calculate average':'Review settings';
   return <section className={styles.panel} aria-label="Average usage settings">
-    {overview?<>
-      <div className={styles.heading}><h4>Usage estimates</h4><span className={styles.badge}>On</span></div>
+    {!active&&!setup?<><div className={styles.heading}><h4>Usage estimates</h4>{toggle}</div><p>Turn on to set up daily usage estimates.</p></>:overview?<>
+      <div className={styles.heading}><h4>Usage estimates</h4>{toggle}</div>
       <div className={styles.summary}><div><span>{usage.estimated?'Estimated current usage':'Current meter reading'}</span><strong>{number(usage.reading)} {usage.metric}</strong></div>{usage.baselineAt&&<div><span>Last confirmed reading</span><strong>{number(usage.baselineValue)} {usage.metric}</strong><small>{new Date(usage.baselineAt).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</small></div>}</div>
       <p>{number(usage.dailyUsage)} {usage.metric} per working day · {workingDays.map(d=>labels[d].slice(0,3)).join(', ')}.</p>
       <p>Actual fuel, service and manual readings replace the estimate.</p>
-      <div className={styles.actions}><button onClick={()=>begin(true)} disabled={busy}>Correct meter reading</button><button onClick={()=>begin(false)} disabled={busy}>Change average usage</button><button onClick={()=>void save('pause')} disabled={busy}>{busy?'Saving…':'Pause estimates'}</button></div>
+      <div className={styles.actions}><button onClick={()=>begin(true)} disabled={busy}>Correct meter reading</button><button onClick={()=>begin(false)} disabled={busy}>Change average usage</button></div>
     </>:<form className={styles.form} onSubmit={e=>{e.preventDefault();if(screen==='reading'&&validReading){if(correction)void save('confirm');else navigate('usage');}else if(screen==='usage'&&valid)navigate('review');else if(screen==='review'&&valid)void save('enable');}}>
-      <div className={styles.heading}><h5 ref={screenHeading} tabIndex={-1} className={styles.screenTitle}>{correction?'Correct reading':title}</h5><span className={styles.badge}>{active?'On':configured?'Paused':'Off'}</span></div>
+      <div className={styles.heading}><h5 ref={screenHeading} tabIndex={-1} className={styles.screenTitle}>{correction?'Correct reading':title}</h5>{toggle}</div>
+      {!active&&setup&&<small id={`${id}-pending`}>Starts after you save.</small>}
       {screen==='reading'&&<>
         <p className={styles.notice}>{usage.estimated?'Current estimate':'Saved reading'}: <strong>{number(usage.reading)} {usage.metric}</strong></p>
         <div className={styles.fields}><label htmlFor={`${id}-reading`}>Actual reading ({usage.metric})<input id={`${id}-reading`} type="number" min="0" max="999999999999" step="0.01" inputMode="decimal" required value={reading} onChange={e=>setReading(e.target.value)} placeholder={usage.metric==='hours'?'For example, 14014':'For example, 90000'} disabled={busy}/></label>
         <label htmlFor={`${id}-date`}>Reading date<input id={`${id}-date`} type="date" min="1900-01-01" max={usageToday()} required value={date} onChange={e=>setDate(e.target.value)} disabled={busy}/></label></div>
-        {configured&&!active&&<button className={styles.suggest} type="button" disabled={busy||!validReading} onClick={()=>void save('confirm')}>Save reading · stay paused</button>}
+        {configured&&!active&&<button className={styles.suggest} type="button" disabled={busy||!validReading} onClick={()=>void save('confirm')}>Save reading · stay off</button>}
       </>}
       {screen==='usage'&&<>
         <label htmlFor={`${id}-daily`}>{unit==='hours'?'Hours':'Kilometres'} per working day<input id={`${id}-daily`} type="number" min="0.0001" max={usage.metric==='hours'?24:10000} step="0.0001" inputMode="decimal" required value={daily} onChange={e=>setDaily(e.target.value)} placeholder={usage.metric==='hours'?'For example, 8':'For example, 100'} disabled={busy}/>{usage.metric==='hours'&&<small>Maximum 24 hours.</small>}</label>
