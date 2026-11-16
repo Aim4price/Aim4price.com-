@@ -1209,6 +1209,11 @@ const appCode =
     await page.screenshot({path:path.join(output,'shared-parts-landing.png')});
     await click('Open parts list');
     await page.waitForSelector('tbody tr');
+    assert.equal(await page.$('[aria-label="Stocklist actions"]'),null,'Shared list has no owner action bar');
+    assert.ok(await page.$('form button[type="button"]'),'Download is beside search');
+    assert.ok(await page.$eval('form',el=>el.getBoundingClientRect().height<120),'Search toolbar stays compact');
+    assert.ok(await page.$('button[aria-label^="Enquire about"]'),'Shared rows offer enquiries');
+    await page.screenshot({path:path.join(output,'shared-parts-owner-layout.png')});
     await click('Download PDF');
     await page.waitForSelector('a[href^="/business/join?"]');
     assert.ok(await page.$eval('a[href^="/business/join?"]',a=>decodeURIComponent(a.href).includes('/parts-share/')));

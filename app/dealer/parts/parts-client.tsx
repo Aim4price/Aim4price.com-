@@ -749,7 +749,7 @@ export default function PartsClient({
 
                 </div>
               </div>
-              {detailActions}
+              {current?.owned && detailActions}
               {view !== "members" && (
                 <>
                   <div className={styles.partsPanel}>
@@ -777,6 +777,7 @@ export default function PartsClient({
                       }}
                     />
                   </div>
+                  {!current?.owned && <button className={styles.primary} onClick={openDownload}><Icon kind="download" />Download</button>}
                   </div>
                   {!current?.owned && <div className={styles.selectionBar}>
                     <span>{selectedParts.length} selected · Choose up to 50 parts from one dealer</span>
