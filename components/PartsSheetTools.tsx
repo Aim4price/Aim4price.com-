@@ -103,7 +103,6 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
   const title = tool.kind === "columns" ? "Manage columns" : tool.kind === "bulk" ? "Bulk edit parts" : rowMode === "delete" ? "Delete row?" : "Part actions";
   return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${tool.kind === "bulk" ? styles.bulkWizard : ""} ${tool.kind === "columns" ? styles.columnsDialog : ""} ${tool.kind === "row" && rowMode === "choose" ? styles.marketplaceChoiceModal : ""}`} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }}>
     <header className={styles.sheetToolHeader}><div><h2>{title}</h2>{tool.kind === "row" && <p>{rows[tool.index][0] || `Row ${tool.index + 1}`}</p>}</div><ShareModalCloseButton aria-label="Close sheet tool" onClick={onClose} /></header>
-    {tool.kind==="bulk" && <div className={styles.bulkProgress}><span>Step {bulkStep+1} of 4</span><div role="progressbar" aria-label="Bulk edit progress" aria-valuemin={1} aria-valuemax={4} aria-valuenow={bulkStep+1}><span style={{width:`${(bulkStep+1)*25}%`}}/></div></div>}
     <div className={styles.sheetToolBody} data-columns-body={tool.kind==="columns" || undefined} data-bulk-body={tool.kind==="bulk" || undefined}>
       {tool.kind === "columns" && <>
         {columnAction ? <section className={styles.columnActionStage}>
