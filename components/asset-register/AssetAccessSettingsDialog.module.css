@@ -293,7 +293,7 @@
 .dialog.compactDialog .header h3 { font-size:1.8rem !important; font-weight:800; letter-spacing:-.035em; }
 .dialog.compactDialog .body.body.body {
   flex:0 1 auto;
-  padding:.95rem .85rem .95rem .35rem !important;
+  padding:.65rem .85rem .65rem .35rem !important;
   margin:0 -.35rem;
   border:0;
   scrollbar-gutter:auto;
