@@ -286,11 +286,24 @@
 /* A compact surface for short settings forms; long asset permissions retain their layout. */
 .dialog.compactDialog {
   width:min(70rem,var(--website-dialog-reference-width,100%)) !important;
-  padding:1.8rem !important;
+  padding:1.35rem 1.6rem !important;
   font-family:var(--font-heading,'Montserrat'),var(--font-body,'Inter'),sans-serif;
 }
-.dialog.compactDialog .header { padding-bottom:1.15rem !important; }
+.dialog.compactDialog .header { padding-bottom:.85rem !important; }
 .dialog.compactDialog .header h3 { font-size:1.8rem !important; font-weight:800; letter-spacing:-.035em; }
-.dialog.compactDialog .body.body.body { padding:1.35rem .4rem !important; margin:0 -.4rem; scrollbar-gutter:auto; }
+.dialog.compactDialog .body.body.body {
+  flex:0 1 auto;
+  padding:.95rem .85rem .95rem .35rem !important;
+  margin:0 -.35rem;
+  border:0;
+  scrollbar-gutter:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--app-accent,#6d9788) var(--app-surface-soft,#edf4f0);
+  scroll-padding:1rem;
+}
+.dialog.compactDialog .body::-webkit-scrollbar { width:8px; }
+.dialog.compactDialog .body::-webkit-scrollbar-track { margin-block:1rem; border-radius:999px; background:var(--app-surface-soft,#edf4f0); }
+.dialog.compactDialog .body::-webkit-scrollbar-thumb { border:2px solid var(--app-surface-soft,#edf4f0); border-radius:999px; background:var(--app-accent,#6d9788); }
+.dialog.compactDialog .body > * { flex-shrink:0; }
 .dialog.compactDialog .footer { margin:0; padding:1rem 0 0; background:transparent; }
 .dialog.compactDialog .footer [data-access-actions] { justify-content:space-between; }

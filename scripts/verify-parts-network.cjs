@@ -1115,7 +1115,7 @@ const appCode =
     await page.click('[aria-label="Hide password"]');
     assert.equal(await page.$eval('[data-asset-link-dialog] input[autocomplete="new-password"]',el=>el.value),'example-password');
     await page.click('[data-asset-link-dialog] input[type=checkbox]');
-    await page.setViewport({width:1440,height:720});
+    await page.setViewport({width:1440,height:650});
     assert.ok(await page.$eval('[data-asset-link-dialog]',d=>{const body=d.children[1],r=d.getBoundingClientRect();return body.scrollHeight<=body.clientHeight+2&&r.top>=0&&r.bottom<=innerHeight;}),'Parts link settings fit a short desktop without scrolling');
     await page.screenshot({path:path.join(output,'share-permissions.png')});
     await page.setViewport({width:1440,height:1000});
@@ -1133,10 +1133,16 @@ const appCode =
     await click('Settings');
     await page.$$eval('[role=dialog] input[type=checkbox]',inputs=>inputs.at(-1).click());
     await page.type('[role=dialog] input[type=password]','replacement-password');
+    await page.setViewport({width:1440,height:650});
+    assert.ok(await page.$eval('[role=dialog]',d=>{const body=d.children[1];return body.scrollHeight<=body.clientHeight+2;}),'Editing a password fits the short desktop without scrolling');
+    await page.screenshot({path:path.join(output,'share-settings-spacing.png')});
+    await page.setViewport({width:1440,height:1000});
     await click('Save settings');
     await page.waitForFunction(()=>document.body.innerText.includes('Manage your shared links'));
     assert.equal(actions.filter(a=>a.action==='update-share').at(-1).password,'replacement-password');
     await click('Revoke access');
+    assert.ok(await page.$eval('[aria-label="Confirm link change"]',confirmation=>confirmation.getBoundingClientRect().top-confirmation.previousElementSibling.getBoundingClientRect().bottom>=16),'Confirmation is separated from the history rows');
+    await page.screenshot({path:path.join(output,'share-confirmation-spacing.png')});
     await click('Keep link');
     assert.ok(!actions.some(a=>a.action==='revoke-share'),'Cancelled revocation leaves the link active');
     await click('Revoke access');await click('Confirm revoke');
