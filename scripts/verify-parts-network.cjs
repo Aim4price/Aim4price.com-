@@ -1209,12 +1209,18 @@ const appCode =
     await page.screenshot({path:path.join(output,'shared-parts-landing.png')});
     await click('Open parts list');
     await page.waitForSelector('tbody tr');
+    assert.equal(await page.$('[aria-label="Stocklist actions"]'),null,'Shared list has no owner action bar');
+    assert.ok(await page.$('form button[type="button"]'),'Download is beside search');
+    assert.ok(await page.$eval('form',el=>el.getBoundingClientRect().height<120),'Search toolbar stays compact');
+    assert.ok(await page.$('button[aria-label^="Enquire about"]'),'Shared rows offer enquiries');
+    await page.screenshot({path:path.join(output,'shared-parts-owner-layout.png')});
     await click('Download PDF');
     await page.waitForSelector('a[href^="/business/join?"]');
     assert.ok(await page.$eval('a[href^="/business/join?"]',a=>decodeURIComponent(a.href).includes('/parts-share/')));
     await page.screenshot({path:path.join(output,'shared-parts-account-gate.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    assert.ok(await page.$eval('table',table=>table.getBoundingClientRect().width>=1100),'Shared table preserves readable columns on phone');
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
     shareLocked=true;
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));

@@ -30,6 +30,9 @@ test('managed shares enforce passwords, permissions, directory identity, private
  const {proof}=await api.openPartsShare(token,null,'',{action:'unlock',password:'first-password'});
  const data=await api.openPartsShare(token,null,proof,{});
  assert.equal(data.total,1);assert.deepEqual(data.rows[0].details,{Notes:'Public'});assert.equal(Number(data.rows[0].price),0);
+ assert.equal((await api.openPartsShare(token,null,proof,{action:'view',search:'001'})).total,1);
+ assert.equal((await api.openPartsShare(token,null,proof,{action:'view',search:'missing'})).total,0);
+ assert.equal((await api.openPartsShare(token,null,proof,{action:'view',search:'%'})).total,0);
  await assert.rejects(()=>api.openPartsShare(token,null,proof,{action:'download'}),e=>e.status===401);
  await assert.rejects(()=>api.openPartsShare(token,null,proof,{action:'enquire',message:'Hi'}),e=>e.status===401);
  const viewer={id:'viewer',email:'viewer@example.test'};

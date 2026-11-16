@@ -78,7 +78,7 @@ export type PartsShareViewer = {id:string;email:string} | null;
 async function linkFor(token: string, viewer: PartsShareViewer) {
  await ensure();
  if(!/^[a-f0-9]{64}$/.test(token)) throw new PartsError('This parts link is unavailable.',404);
- const link=(await getDb().query(`SELECT s.*,n.name,m.business_name,m.vat_included,m.extra_fields FROM parts_share_links s JOIN parts_networks n ON n.id=s.network_id JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=n.created_by WHERE s.token=$1 AND s.revoked_at IS NULL AND NOT n.archived AND m.visible AND m.status='active'`,[token])).rows[0];
+ const link=(await getDb().query(`SELECT s.*,n.name,m.business_name,m.town,m.uploaded_at,m.vat_included,m.extra_fields FROM parts_share_links s JOIN parts_networks n ON n.id=s.network_id JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=n.created_by WHERE s.token=$1 AND s.revoked_at IS NULL AND NOT n.archived AND m.visible AND m.status='active'`,[token])).rows[0];
  if(!link) throw new PartsError('This parts link is unavailable or has been revoked.',404);
  if(link.recipient_id && viewer?.id!==link.recipient_id && viewer?.id!==link.owner_id) throw new PartsError('Sign in with the business account this list was shared with.',401);
  return link;
@@ -122,8 +122,10 @@ export async function openPartsShare(token:string, viewer:PartsShareViewer, sess
   return {ok:true};
  }
  const page=Math.max(0,Math.min(100000,Math.floor(Number(input.page)||0)));
+ const search=action==='view'&&typeof input.search==='string'?input.search.trim().slice(0,200):'';
+ const filter=" AND ($5='' OR strpos(lower(part_number||' '||coalesce(description,'')||' '||coalesce(brand,'')),lower($5))>0)";
  const fields=(link.extra_fields||[]).filter((f:any)=>!f.private);
- const rows=(await getDb().query(`SELECT part_number,description,brand,quantity,price,details FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND quantity>0 ORDER BY part_key LIMIT $3 OFFSET $4`,[link.network_id,link.owner_id,action==='download'?50000:30,action==='download'?0:page*30])).rows.map(r=>({...r,details:Object.fromEntries(fields.filter((f:any)=>r.details?.[f.id]).map((f:any)=>[f.label,r.details[f.id]]))}));
- const total=Number((await getDb().query('SELECT count(*) FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND quantity>0',[link.network_id,link.owner_id])).rows[0].count);
- return {name:link.name,owner:link.business_name,ownerId:link.owner_id,vatIncluded:link.vat_included,allowDownload:link.allow_download,allowEnquiry:link.allow_enquiry,signedIn:!!viewer,rows,total,page};
+ const rows=(await getDb().query(`SELECT part_number,description,brand,quantity,price,details FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND quantity>0${filter} ORDER BY part_key LIMIT $3 OFFSET $4`,[link.network_id,link.owner_id,action==='download'?50000:30,action==='download'?0:page*30,search])).rows.map(r=>({...r,details:Object.fromEntries(fields.filter((f:any)=>r.details?.[f.id]).map((f:any)=>[f.label,r.details[f.id]]))}));
+ const total=Number((await getDb().query(`SELECT count(*) FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND quantity>0${filter.replaceAll('$5','$3')}`,[link.network_id,link.owner_id,search])).rows[0].count);
+ return {name:link.name,owner:link.business_name,town:link.town,updatedAt:link.uploaded_at,ownerId:link.owner_id,vatIncluded:link.vat_included,allowDownload:link.allow_download,allowEnquiry:link.allow_enquiry,signedIn:!!viewer,rows,total,page};
 }

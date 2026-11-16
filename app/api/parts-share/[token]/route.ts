@@ -38,8 +38,9 @@ export async function POST(request:NextRequest,{params}:{params:{token:string}})
    const {getAssetRegisterReportLogoUrl}=await import('../../../../lib/asset-registers');
    const {resolveReportLogoUrlForHtml}=await import('../../../../lib/report-logo');
    const logoUrl=await resolveReportLogoUrlForHtml(await getAssetRegisterReportLogoUrl(data.ownerId).catch(()=>''),request.url);
-   const vat=data.vatIncluded?'Incl. VAT':'Excl. VAT';
-   const rows=data.rows.map(r=>({part:r.part_number,description:r.description,brand:r.brand,quantity:r.quantity,price:r.price===null?null:Number(r.price),details:r.details,vat,dealer:data.owner,town:''}));
+   const displayVat=typeof input.vatIncluded==='boolean'?input.vatIncluded:data.vatIncluded;
+   const vat=displayVat?'Incl. VAT':'Excl. VAT';
+   const rows=data.rows.map(r=>({part:r.part_number,description:r.description,brand:r.brand,quantity:r.quantity,price:r.price===null?null:Number((Number(r.price)*(displayVat===data.vatIncluded?1:displayVat?1.15:1/1.15)).toFixed(2)),details:r.details,vat,dealer:data.owner,town:''}));
    const html=buildPartsStockReportHtml(data.name,rows,vat,'Shared parts list',new Intl.DateTimeFormat('en-ZA',{dateStyle:'medium',timeZone:'Africa/Johannesburg'}).format(new Date()),{logoUrl});
    const pdf=await renderReportHtmlToPdf(html,{baseUrl:request.url});
    return new NextResponse(pdf,{headers:{...headers,'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="Shared-parts.pdf"','X-Content-Type-Options':'nosniff'}});
