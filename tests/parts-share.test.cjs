@@ -93,7 +93,7 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await assert.rejects(()=>api.openPartsShare(direct,owner,'',{}),e=>e.status===404);
  await db.close();
 });
-test('public share API only passes verified, non-suspended identities and rejects foreign origins',async()=>{
+test('public share API passes signed-in, non-suspended identities without requiring email verification and rejects foreign origins',async()=>{
  let user=null,accountStatus='active',seen;
  const route=load('app/api/parts-share/[token]/route.ts',{
   '../../../../lib/parts-network':{PartsError},
@@ -104,11 +104,16 @@ test('public share API only passes verified, non-suspended identities and reject
  });
  const {NextRequest}=require('next/server');
  const token='a'.repeat(64);
- const request=(origin='https://example.test')=>new NextRequest('https://example.test/api/parts-share/'+token,{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({action:'view'})});
+ const request=(origin='https://example.test',action='view')=>new NextRequest('https://example.test/api/parts-share/'+token,{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify({action})});
  assert.equal((await route.POST(request('https://other.test'),{params:{token}})).status,403);
  let response=await route.POST(request(),{params:{token}});assert.equal(response.status,200);assert.equal(seen.viewer,null);assert.equal(response.headers.get('cache-control'),'private, no-store');
  user={id:'viewer',email:'viewer@example.test',emailVerified:false};
- response=await route.POST(request(),{params:{token}});assert.equal(seen.viewer,null);assert.equal((await response.json()).access,'verify-email');
+ response=await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');assert.equal((await response.json()).access,'active');
+ delete user.emailVerified;await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');
+ for(const action of ['download','enquire']){
+  const result=await route.POST(request('https://example.test',action),{params:{token}});
+  assert.equal(result.status,200);assert.equal(seen.viewer.id,'viewer');assert.equal(seen.input.action,action);
+ }
  user.emailVerified=true;await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');
  accountStatus='suspended';await route.POST(request(),{params:{token}});assert.equal(seen.viewer,null);
 });

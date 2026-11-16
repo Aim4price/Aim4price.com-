@@ -86,13 +86,13 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
  </AssetAccessSettingsDialog>;
  if(step==='risk') return <ShareDisclosureDialog title="Before you share" titleId={titleId} closeLabel="Close dialog" onClose={onClose} className={ownerStyles.inviteDialog}>
    <form className={ownerStyles.form} onSubmit={e=>e.preventDefault()}><fieldset disabled={busy}>
-   <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} disclosure={`${channel==='link'?'Anyone with this link':recipients.find(r=>r.email===email)?.business_name||email} can view the shared parts${password?' after entering the password':''}. ${download?'Downloads are allowed. ':''}${enquiry?'Enquiries are allowed. ':''}Downloads and enquiries require a verified Aim4price account. Links can be forwarded. Private fields stay private.`}/>
+   <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} disclosure={`${channel==='link'?'Anyone with this link':recipients.find(r=>r.email===email)?.business_name||email} can view the shared parts${password?' after entering the password':''}. ${download?'Downloads are allowed. ':''}${enquiry?'Enquiries are allowed. ':''}Downloads and enquiries require an Aim4price account. Links can be forwarded. Private fields stay private.`}/>
    {footer}
    </fieldset></form>{error?<p role="alert">{error}</p>:null}
  </ShareDisclosureDialog>;
  if(step==='send') return <ShareDisclosureDialog title="Send link" titleId={titleId} closeLabel="Close dialog" onClose={onClose} className={ownerStyles.inviteDialog}>
    <ShareLinkDelivery link={url} copy={{subject:name,body:`Parts shared with you: ${url}`}} description="The selected parts list will be shared with the same permissions." previewLabel="Preview parts"
-   hint={`Choose the recipient in WhatsApp or your email app. ${channel==='direct'?'Only the selected business account can open this link.':'Anyone with this link can view the shared parts.'} Downloads and enquiries require a verified Aim4price account and the permissions you selected. ${password?'Send the password separately. ':''}You can revoke the link in History.`}/>
+   hint={`Choose the recipient in WhatsApp or your email app. ${channel==='direct'?'Only the selected business account can open this link.':'Anyone with this link can view the shared parts.'} Downloads and enquiries require an Aim4price account and the permissions you selected. ${password?'Send the password separately. ':''}You can revoke the link in History.`}/>
  </ShareDisclosureDialog>;
  return <PartsBusinessPicker name={name} count={count} network={network} api={api} selected={email} onSelect={business=>{setEmail(business?.email||'');setRecipients(business?[business]:[]);setAccepted(false);}} onContinue={()=>setStep('permissions')} onClose={()=>setStep('choose')}/>;
 }

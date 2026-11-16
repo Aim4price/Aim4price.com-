@@ -21,7 +21,7 @@ export async function POST(request:NextRequest,{params}:{params:{token:string}})
   let viewer=null;
   if(user?.id && user.email) {
    const profile=await getAccountProfile(user);
-   accountAccess=profile.accountStatus==='suspended'?'suspended':user.emailVerified!==true?'verify-email':'active';
+   accountAccess=profile.accountStatus==='suspended'?'suspended':'active';
    if(accountAccess==='active') viewer={id:user.id,email:user.email};
   }
   const cookie=`parts-share-${params.token.slice(0,16)}`;
