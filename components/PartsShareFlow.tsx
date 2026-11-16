@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useId, useState } from 'react';
+import PartsBusinessPicker from './PartsBusinessPicker';
 import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from './PartsShareFlow.module.css';
 import AssetAccessSettingsDialog from './asset-register/AssetAccessSettingsDialog';
@@ -18,7 +19,7 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
  const passwordId=useId();
  const [showPassword,setShowPassword]=useState(false);
  const [step,setStep]=useState('choose'),[channel,setChannel]=useState('link'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
- const [email,setEmail]=useState(''),[search,setSearch]=useState(''),[recipients,setRecipients]=useState<Recipient[]>([]),[searched,setSearched]=useState(false);
+ const [email,setEmail]=useState(''),[recipients,setRecipients]=useState<Recipient[]>([]);
  const [download,setDownload]=useState(false),[enquiry,setEnquiry]=useState(false),[password,setPassword]=useState(''),[replacePassword,setReplacePassword]=useState(false),[accepted,setAccepted]=useState(false),[url,setUrl]=useState('');
  const [links,setLinks]=useState<LinkItem[]>([]),[selected,setSelected]=useState<LinkItem|null>(null),[page,setPage]=useState(0),[confirm,setConfirm]=useState<'revoke-share'|'delete-share'|null>(null);
  useEffect(()=>setShowPassword(false),[step]);
@@ -89,16 +90,5 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
    <ShareLinkDelivery link={url} copy={{subject:name,body:`Parts shared with you: ${url}`}} description="The selected parts list will be shared with the same permissions." previewLabel="Preview parts"
    hint={`Choose the recipient in WhatsApp or your email app. ${channel==='direct'?'Only the selected business account can open this link.':'Anyone with this link can view the shared parts.'} Downloads and enquiries require a verified Aim4price account and the permissions you selected. ${password?'Send the password separately. ':''}You can revoke the link in History.`}/>
  </ShareDisclosureDialog>;
- return <ShareDisclosureDialog title={titles[step]} titleId={titleId} closeLabel="Close dialog" onClose={onClose} className={styles.dialog}>
-  <div className={styles.body} aria-busy={busy}>
-   {step==='recipient'?<><p className={styles.lead}>Choose one approved business.</p><form className={styles.search} onSubmit={e=>{e.preventDefault();void run(async()=>{setEmail('');const data=await api(undefined,`?view=recipients&network=${encodeURIComponent(network)}&search=${encodeURIComponent(search)}`);setRecipients(data.recipients||[]);setSearched(true);setPage(0);});}}><input aria-label="Find sharing recipient" placeholder="Business name or town" value={search} onChange={e=>{setSearch(e.target.value);setEmail('');}}/><button disabled={busy}>Search</button></form>
-    <p className={styles.hint}>Only approved directory businesses with an active Aim4price account are listed.</p>
-    {recipients.slice(page*3,page*3+3).map(r=><button className={styles.recipient} key={r.email} aria-pressed={email===r.email} onClick={()=>setEmail(r.email)}><span><strong>{r.business_name||r.email}</strong><small>{r.town_city||r.email}</small></span><span>{email===r.email?'Selected':'Select'}</span></button>)}
-    {searched&&!recipients.length?<p>No matching businesses. Try another name or use Share link.</p>:null}
-    {recipients.length>3?<nav className={styles.pager}><button disabled={!page} onClick={()=>setPage(page-1)}>Previous businesses</button><span>{page+1} / {Math.ceil(recipients.length/3)}</span><button disabled={(page+1)*3>=recipients.length} onClick={()=>setPage(page+1)}>Next businesses</button></nav>:null}
-   </>:null}
-   {error?<p role="alert" className={styles.error}>{error}</p>:null}{notice?<p role="status">{notice}</p>:null}
-  </div>
-  {footer}
- </ShareDisclosureDialog>;
+ return <PartsBusinessPicker name={name} count={count} network={network} api={api} selected={email} onSelect={business=>{setEmail(business?.email||'');setRecipients(business?[business]:[]);setAccepted(false);}} onContinue={()=>setStep('permissions')} onClose={()=>setStep('choose')}/>;
 }

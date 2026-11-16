@@ -1094,12 +1094,15 @@ const appCode =
     await page.goto("https://example.test/parts");
     await click("Share");
     await click("Inside Aim4price");
-    await click('Search');
-    await click('Buyer Dealer');
+    await page.waitForFunction(()=>document.body.innerText.includes('Buyer Dealer'));
+    await click('Details');
+    assert.ok(await page.$('dialog[open] dl'),'Directory business details expand inline');
+    await click('Hide details');
+    await click('Select');
     assert.equal(await page.$eval('dialog[open] button[aria-pressed]',el=>el.getAttribute('aria-pressed')),'true');
     await page.type('[aria-label="Find sharing recipient"]','Another business');
     assert.ok(await page.$eval('dialog[open] footer button:last-child',b=>b.disabled),'Changing the business search clears the previous selection');
-    await click('Search');await click('Buyer Dealer');
+    await click('Search');await click('Select');
     await page.screenshot({path:path.join(output,'share-recipient-picker.png')});
     await page.setViewport({width:390,height:740});
     assert.ok(await page.$eval('dialog[open]',d=>d.scrollWidth<=d.clientWidth+2));
