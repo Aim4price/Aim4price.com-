@@ -68,7 +68,7 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
       <div id="admin-workspace-content" className={styles.pageContent} tabIndex={-1}>{children}</div>
     </div>
     <dialog ref={drawer} className={styles.drawer} aria-label="Admin navigation" onClose={() => menuButton.current?.focus()} onClick={event => { if (event.target === event.currentTarget) drawer.current?.close(); }}>
-      <div className={styles.drawerHeader}><strong>Aim4price Admin</strong><button type="button" className={styles.collapseButton} aria-label="Close Admin navigation" onClick={() => drawer.current?.close()}>×</button></div>
+      <div className={styles.drawerHeader}><strong>Aim4price Admin</strong><button type="button" className={styles.collapseButton} data-modal-close aria-label="Close Admin navigation" onClick={() => drawer.current?.close()}>×</button></div>
       {navigation()}
     </dialog>
   </div>;
