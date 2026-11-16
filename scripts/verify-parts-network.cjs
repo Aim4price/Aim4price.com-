@@ -714,7 +714,7 @@ const appCode =
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
     await page.setViewport({width:1440,height:720});
     for(let stage=0;stage<3;stage++) {
-      assert.equal(await page.$eval('[aria-label="Bulk edit progress"]',e=>Number(e.getAttribute('aria-valuenow'))),stage+1);
+      assert.equal(await page.$('[aria-label="Bulk edit progress"]'),null);
       assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk stage fits without scrolling');
       await page.screenshot({path:path.join(output,`bulk-stage-${stage+1}.png`)});
       if(stage<2) await click('Continue');

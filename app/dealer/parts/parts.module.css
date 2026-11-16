@@ -2104,10 +2104,6 @@
 
 .modal.bulkWizard { width:min(960px,calc(100vw - 40px)); }
 .bulkWizard .sheetToolHeader { padding-bottom:18px; }
-.bulkProgress { display:flex; align-items:center; gap:20px; margin:16px 0 24px; font-size:.8rem; font-weight:650; color:var(--app-text-muted,#61766c); }
-.bulkProgress > span { white-space:nowrap; }
-.bulkProgress > div { flex:1; height:5px; border-radius:8px; background:var(--app-border,#dce7e1); overflow:hidden; }
-.bulkProgress > div > span { display:block; height:100%; background:var(--app-primary,#17654c); border-radius:8px; }
 .bulkWizard .sheetToolBody { padding:2px 12px 16px 2px; flex:0 1 auto; }
 .bulkStage { display:grid; gap:20px; min-width:0; }
 .bulkStage h3 { margin:0; font-size:1.3rem; font-weight:750; outline:none; }
@@ -2177,13 +2173,11 @@
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-corner { background:transparent; }
 
 /* Bulk editing shares the calm, semibold typography of Manage columns. */
-.bulkWizard .bulkProgress,
 .bulkWizard .bulkStage :is(h3,p,legend,label,input,strong,small),
 .bulkWizard .bulkPager > span,
 .bulkWizard .bulkReview > div > span > span {
   font-family:inherit; font-size:1rem; font-weight:650; line-height:1.45;
 }
-.bulkWizard .bulkProgress { margin:16px 0 20px; gap:20px; }
 .bulkWizard .bulkStage { gap:14px; }
 .bulkWizard .bulkStage > h3 { color:var(--app-text,#163f32); }
 .bulkWizard .bulkStage > p { color:var(--app-text-muted,#64766c); }
