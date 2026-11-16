@@ -1092,9 +1092,8 @@ const appCode =
     await page.screenshot({path:path.join(output,'share-recipient-phone.png')});
     await page.setViewport({width:1440,height:1000});
     await click('Continue');
-    await click('Choose permissions');
-    await page.screenshot({path:path.join(output,'share-permissions.png')});
-    await click('Continue');
+    await click('View only');
+    assert.ok(!actions.some(a=>a.action==='create-share'),'Choosing view only does not create a link');
     assert.ok(await page.$eval('dialog[open] footer button:last-child',b=>b.disabled),'Risk consent is required');
     await page.click('dialog[open] input[type=checkbox]');
     await click('Create parts link');
@@ -1113,6 +1112,7 @@ const appCode =
     await page.click('[aria-label="Hide password"]');
     assert.equal(await page.$eval('[data-asset-link-dialog] input[autocomplete="new-password"]',el=>el.value),'example-password');
     await page.click('[data-asset-link-dialog] input[type=checkbox]');
+    await page.screenshot({path:path.join(output,'share-permissions.png')});
     await click('Continue');
     await page.click('dialog[open] input[type=checkbox]');
     await click('Create parts link');

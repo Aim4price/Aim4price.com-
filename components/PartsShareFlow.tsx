@@ -49,7 +49,7 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
  if(step==='permissions') return <AssetAccessSettingsDialog key={channel} title="Parts link settings" assetTitle={name} linkSettings onClose={onClose}
    guideDescription={channel==='link'?'Anyone with your link can view the shared parts.':'Only the selected business can open your link.'}
    permissionsDescription="Choose downloads and enquiries."
-   onViewOnly={()=>{setDownload(false);setEnquiry(false);setAccepted(false);}}
+   onViewOnly={()=>{setDownload(false);setEnquiry(false);setAccepted(false);setStep('risk');}}
    footer={<div data-access-actions className={assetStyles.formActions}><button type="button" className={assetStyles.secondaryButton} onClick={()=>setStep(channel==='direct'?'recipient':'choose')}>Back</button><button type="button" className={assetStyles.primaryButton} disabled={busy||!!password&&password.length<8} onClick={()=>setStep('risk')}>Continue</button></div>}>
    {passwordSettings}
    {error?<p role="alert">{error}</p>:null}
