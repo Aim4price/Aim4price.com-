@@ -48,7 +48,7 @@
   border-radius: 0.52rem;
   font: inherit;
   font-size: 0.8rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -96,7 +96,7 @@
   overflow: hidden;
   color: #697b74;
   font-size: 0.72rem;
-  font-weight: 780;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -135,7 +135,7 @@
   justify-content: space-between;
   gap: 1rem;
   font-size: 0.84rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .successNotice {
@@ -199,7 +199,7 @@
 .queueHeadingActions > span {
   color: #667972;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -228,7 +228,7 @@
 .exceptionPanel label > span {
   color: #60736b;
   font-size: 0.69rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -297,7 +297,7 @@
   color: #6a7d75;
   background: #f8faf9;
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0;
   text-align: left;
   white-space: nowrap;
@@ -364,7 +364,7 @@
   display: inline !important;
   color: #385b4f !important;
   font-size: 0.64rem !important;
-  font-weight: 850 !important;
+  font-weight: 600 !important;
   white-space: nowrap;
 }
 
@@ -419,7 +419,7 @@
   display: grid;
   place-items: center;
   font-size: 0.84rem;
-  font-weight: 780;
+  font-weight: 600;
 }
 
 .workbenchHeader {
@@ -487,7 +487,7 @@
 .panelHeading a {
   color: #17664c;
   font-size: 0.73rem;
-  font-weight: 850;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -506,7 +506,7 @@
   color: #486159;
   background: #fff;
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -555,7 +555,7 @@
 
 .viewerEmpty a {
   color: #17664c;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .securityLock {
@@ -595,7 +595,7 @@
   background: #fff;
   font: inherit;
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -657,7 +657,7 @@
 .senderCard span {
   color: #74827d;
   font-size: 0.64rem;
-  font-weight: 780;
+  font-weight: 600;
 }
 
 .senderCard strong {
@@ -733,7 +733,7 @@
   overflow: hidden;
   color: #65786f;
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -751,7 +751,7 @@
   color: #1c694d;
   font-size: 0.62rem;
   font-style: normal;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .selectedMatchCopy {
@@ -766,14 +766,14 @@
   color: #60776d;
   font-size: 0.69rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .selectedMatchCopy strong {
   color: #1c5a42;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -792,7 +792,7 @@
   border-radius: 0.6rem;
   font: inherit;
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -819,7 +819,7 @@
 .matchConfirmedText {
   color: #15573f;
   font-size: 0.69rem;
-  font-weight: 900;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -903,14 +903,14 @@
   flex: 1 1 auto;
   color: #506a60;
   font-size: 0.69rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .targetEmpty {
   padding: 0.9rem;
   color: #6f7f78;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -934,7 +934,7 @@
 .usageUpdateHeading strong {
   color: #214a3d;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -957,13 +957,13 @@
 .usageComparison span {
   color: #6b7d75;
   font-size: 0.65rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .usageComparison strong {
   color: #1f493b;
   font-size: 0.94rem;
-  font-weight: 900;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
@@ -1056,7 +1056,7 @@ fieldset.formGrid {
 .capturePanel .naControl > span {
   color: inherit;
   font-size: 0.69rem;
-  font-weight: 830;
+  font-weight: 600;
 }
 
 .capturePanel input:disabled,
@@ -1126,7 +1126,7 @@ fieldset.formGrid {
   padding: 0.82rem 0.9rem;
   color: #3b5b50;
   font-size: 0.74rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1353,10 +1353,31 @@ fieldset.formGrid {
 .accountScope, .pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .85rem 1rem; background: #f1f6f2; border: 1px solid #dce6df; border-radius: .6rem; font-size: .85rem; }
 .accountScope { margin: .5rem 1rem; }
 .accountScope a, .workbenchLinks a { color: #24583f; text-underline-offset: 3px; }
-.accountScope button, .pagination button { padding: .6rem .85rem; border: 1px solid #bdcfc2; border-radius: .4rem; background: #fff; color: #244e39; font-weight: 750; cursor: pointer; }
+.accountScope button, .pagination button { padding: .6rem .85rem; border: 1px solid #bdcfc2; border-radius: .4rem; background: #fff; color: #244e39; font-weight: 600; cursor: pointer; }
 .pagination > div, .workbenchLinks { display: flex; gap: .6rem; }
 .pagination button:disabled { opacity: .45; cursor: not-allowed; }
 .workbenchLinks { margin-top: .6rem; font-size: .8rem; }
 .kpiGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .queueTable td > strong, .queueTable td > span { display: block; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
 .queueTable td > span { margin-top: .2rem; }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }
+
+.topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
+
+.kpiGrid { gap: .65rem; }
+.kpiCard { border-color: #e2e9e5; border-radius: .75rem; box-shadow: none; background: #fff; padding: .95rem; }
+.kpiCard span { font-size: .68rem; font-weight: 500; color: #7b8b81; }
+.kpiCard strong { font-size: 1.4rem; font-weight: 600; }
+.queueCard, .workbench { border: 1px solid #e2e9e5; border-radius: .85rem; box-shadow: none; background: #fff; }
+.queueHeading { padding: 1.2rem; }
+.filters { padding: 1rem 1.2rem; background: #fafcfb; border-color: #e8eeea; }
+.filters input, .filters select { font-size: .76rem; font-weight: 500; min-height: 40px; border-color: #dfe7e2; }
+.queueTable th { font-size: .68rem; font-weight: 500; background: #f8faf9; text-transform: none; letter-spacing: 0; }
+.queueTable td { padding: 1rem; font-size: .77rem; border-color: #edf1ee; }
+.queueHint { font-size: .7rem; color: #829087; }
+.documentPanel, .capturePanel { border-radius: .7rem; border-color: #e2e9e5; }
+.emptyCell { padding: 3rem 1rem; color: #829087; }

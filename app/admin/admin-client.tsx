@@ -6,7 +6,7 @@ import pickerStyles from '../../components/AssetPicker.module.css';
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { isAim4priceAdminEmail } from "../../lib/account-constants";
-import { adminAccountStatusFilter, type AdminAccountStatusFilter } from "../../lib/admin-operations-shared";
+import { adminAccountStatusFilter, adminSignupDateRange, formatAdminAccountDate, formatAdminLastActive, type AdminAccountStatusFilter } from "../../lib/admin-operations-shared";
 import AdminNavigation from "../../components/AdminNavigation";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
@@ -302,45 +302,8 @@ const PROVINCE_FILTER_OPTIONS: Array<{ value: ProvinceFilter; label: string }> =
     { value: "__unknown__", label: "Unknown / not saved" },
   ];
 
-function formatDate(value: string | null): string {
-  if (!value) return "Unknown";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Unknown";
-
-  return new Intl.DateTimeFormat("en-ZA", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(parsed);
-}
-
-function formatLastActive(value: string | null): string {
-  if (!value) return "Never";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Never";
-
-  const now = new Date();
-  const startOfToday = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-  );
-  const startOfParsedDay = new Date(
-    parsed.getFullYear(),
-    parsed.getMonth(),
-    parsed.getDate(),
-  );
-  const dayDifference = Math.round(
-    (startOfToday.getTime() - startOfParsedDay.getTime()) / 86_400_000,
-  );
-
-  if (dayDifference === 0) return "Today";
-  if (dayDifference === 1) return "Yesterday";
-
-  return formatDate(value);
-}
+const formatDate = formatAdminAccountDate;
+const formatLastActive = formatAdminLastActive;
 
 function formatAccountValue(value: string): string {
   return value
@@ -479,40 +442,7 @@ function matchesProvinceFilter(
         normalizeProvinceSearchValue(filter);
 }
 
-function getSignupDateRange(filter: SignupDateFilter): {
-  start: Date;
-  end: Date;
-} | null {
-  if (filter === "all") {
-    return null;
-  }
-
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-  if (filter === "week") {
-    const daysSinceMonday = (today.getDay() + 6) % 7;
-    const start = new Date(today);
-    start.setDate(today.getDate() - daysSinceMonday);
-
-    const end = new Date(start);
-    end.setDate(start.getDate() + 7);
-
-    return { start, end };
-  }
-
-  if (filter === "month") {
-    return {
-      start: new Date(today.getFullYear(), today.getMonth(), 1),
-      end: new Date(today.getFullYear(), today.getMonth() + 1, 1),
-    };
-  }
-
-  return {
-    start: new Date(today.getFullYear(), 0, 1),
-    end: new Date(today.getFullYear() + 1, 0, 1),
-  };
-}
+const getSignupDateRange = adminSignupDateRange;
 
 function matchesSignupDateFilter(
   user: AdminUserRow,
@@ -2119,7 +2049,7 @@ export default function AdminClient({
             <section className={styles.accountToolSection} aria-label="Work on this account">
               <div className={styles.accountSectionIntro}>
                 <h3>Work on this account</h3>
-                <p>Open the account with time tracking, browse without tracking, or send a message.</p>
+
               </div>
               <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
                 <button
@@ -2278,7 +2208,7 @@ export default function AdminClient({
               <section className={styles.accountToolSection} aria-label="Account workspaces">
                 <div className={styles.accountSectionIntro}>
                   <h3>Account workspaces</h3>
-                  <p>Billing, requests and activity for this account.</p>
+
                 </div>
 
                 <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
@@ -2291,7 +2221,7 @@ export default function AdminClient({
               <section className={styles.accountToolSection} aria-label="Asset tools">
                 <div className={styles.accountSectionIntro}>
                   <h3>Asset tools</h3>
-                  <p>Keep asset records and identification organised.</p>
+
                 </div>
                 <div className={styles.accountActionGrid}>
                   <button

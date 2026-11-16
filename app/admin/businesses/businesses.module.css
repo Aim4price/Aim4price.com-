@@ -19,7 +19,7 @@
   gap: 0.5rem;
   flex: 1 1 20rem;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 600;
   color: #52685e;
 }
 .toolbar input {
@@ -40,7 +40,7 @@
   border-radius: 0.6rem;
   font: inherit;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 600;
   cursor: pointer;
   justify-self: start;
   background: #fff;
@@ -70,7 +70,7 @@
   padding: 1rem;
   cursor: pointer;
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 .invitationBody {
   padding: 0 1rem 1rem;
@@ -81,7 +81,7 @@
   margin: 0;
   color: #687d72;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 .businessCard {
   display: grid;
@@ -97,7 +97,7 @@
 .businessCard h2 {
   margin: 0;
   font-size: 1.05rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 .status {
   padding: 0.3rem 0.6rem;
@@ -105,7 +105,7 @@
   background: #edf5f0;
   color: #32674f;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .emptyState {
@@ -117,3 +117,10 @@
 }
 .emptyState p { margin: 0 0 0.75rem; }
 .emptyState p:last-child { margin-bottom: 0; }
+
+.toolbar { border-color: #e2e9e5; border-radius: .8rem; padding: 1.2rem; }
+.toolbar label { font-size: .74rem; font-weight: 500; }
+.businessCard { border: 1px solid #e2e9e5; border-radius: .85rem; background: #fff; box-shadow: none; padding: 1.2rem; }
+.businessCard h2 { font-size: 1.05rem; font-weight: 600; }
+.businessCard p { font-size: .78rem; line-height: 1.65; color: #7a897f; }
+.primary, .secondary { font-size: .75rem; font-weight: 500; border-radius: .5rem; box-shadow: none; }

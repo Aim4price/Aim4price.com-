@@ -7,7 +7,7 @@
 .label {
   color: #52645d;
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -55,7 +55,7 @@
   overflow: hidden;
   color: #17362c;
   font-size: 0.8rem;
-  font-weight: 850;
+  font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -120,7 +120,7 @@
   background: #f9fbfa;
   font: inherit;
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .searchRow input:focus {
@@ -160,7 +160,7 @@
   padding: 0.48rem 0.65rem 0.3rem;
   color: #74837d;
   font-size: 0.61rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -203,7 +203,7 @@
   display: grid;
   place-items: center;
   font-size: 0.72rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .option:not(.optionSelected) .check {
@@ -238,3 +238,8 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.root { grid-template-columns: minmax(0, 1fr); }
+.trigger { min-width: 0; min-height: 42px; border-radius: .5rem; }
+.label { font-size: .68rem; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.triggerCopy strong, .optionCopy strong { font-weight: 500; font-size: .76rem; }

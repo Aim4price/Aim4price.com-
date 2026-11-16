@@ -25,7 +25,7 @@ export type AdminSection =
   | "annual-review"
   | "lifecycle";
 
-const ADMIN_LINKS: Array<{
+export const ADMIN_LINKS: Array<{
   key: AdminSection;
   href: string;
   label: string;
@@ -98,7 +98,7 @@ const ADMIN_LINKS: Array<{
   },
 ];
 
-const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
+export const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
   { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker", "businesses"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
   { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },

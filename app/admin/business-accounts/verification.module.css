@@ -26,7 +26,7 @@
 .account[open] summary { border-bottom: 1px solid #dce6e0; }
 .identity { display: grid; gap: 0.2rem; min-width: 0; flex: 1; }
 .identity > span { color: #52685e; font-size: 0.8rem; }
-.status { font-size: 0.75rem; font-weight: 700; color: #32674f; }
+.status { font-size: 0.75rem; font-weight: 600; color: #32674f; }
 .account > section { border: 0; box-shadow: none; border-radius: 0 0 0.8rem 0.8rem; padding: 1rem; }
 .account form { grid-template-columns: minmax(0, 1fr); }
 .account :is(input, textarea) { min-width: 0; }
@@ -34,7 +34,7 @@
 .retry { padding: 0.6rem 1rem; border: 1px solid #cdded4; border-radius: 0.6rem; background: #fff; color: #176c50; font: inherit; cursor: pointer; }
 
 .filters { display:flex; flex-wrap:wrap; gap:.65rem; }
-.filters button { min-height:2.75rem; padding:.65rem 1rem; border:1px solid #cdded4; border-radius:.7rem; background:#fff; color:#18372e; font:inherit; font-weight:700; cursor:pointer; }
+.filters button { min-height:2.75rem; padding:.65rem 1rem; border:1px solid #cdded4; border-radius:.7rem; background:#fff; color:#18372e; font:inherit; font-weight: 600; cursor:pointer; }
 .filters button[aria-pressed="true"] { background:#176c50; border-color:#176c50; color:#fff; }
 .filters button:disabled { opacity:.6; cursor:wait; }
 .filters button:focus-visible { outline:3px solid #74ac92; outline-offset:2px; }

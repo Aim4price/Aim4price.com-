@@ -14,7 +14,7 @@
 .dialog[open] { display: flex; flex-direction: column; }
 .dialog::backdrop { background: rgba(12, 29, 25, .65); backdrop-filter: blur(6px); }
 .dialog h2:focus { outline: none; }
-.dialog h3 { font-size: 1.25rem; line-height: 1.35; letter-spacing: -.025em; margin: 0; font-weight: 750; }
+.dialog h3 { font-size: 1.25rem; line-height: 1.35; letter-spacing: -.025em; margin: 0; font-weight: 600; }
 .dialog p { font-size: .9rem; margin: .65rem 0; }
 .previewLabel { display: flex; align-items: center; justify-content: center; flex-shrink: 0; gap: .5rem; padding: .55rem 1rem; font-size: .75rem; font-weight: 650; background: var(--app-surface-soft, #eaf5ef); }
 .previewLabel svg { width: 1rem; height: 1rem; }
@@ -25,7 +25,7 @@
 .welcome, .confirmation { text-align: center; padding: .4rem 0 1rem; }
 .heroIcon { display: grid; place-items: center; width: 4rem; height: 4rem; margin: 0 auto 1rem; border-radius: 1.25rem; color: var(--app-accent, #176b50); background: var(--app-surface-soft, #eaf5ef); border: 1px solid var(--app-line, #d6e4dd); }
 .heroIcon svg { width: 2rem; height: 2rem; }
-.year { display: block; font-size: clamp(3.5rem, 8vw, 6rem); font-weight: 800; letter-spacing: -.06em; line-height: 1.1; margin: .5rem 0 1rem; color: var(--app-accent, #176b50); }
+.year { display: block; font-size: clamp(3.5rem, 8vw, 6rem); font-weight: 600; letter-spacing: -.06em; line-height: 1.1; margin: .5rem 0 1rem; color: var(--app-accent, #176b50); }
 .welcome > p { max-width: 38rem; margin-inline: auto; }
 .welcome .muted { margin-top: 1.5rem; font-size: .8rem; }
 .intro { text-align: center; max-width: 44rem; margin: 0 auto 1.3rem; }
@@ -37,12 +37,12 @@
 .dialog .note { font-size: .8rem; line-height: 1.55; margin-top: 1rem; text-align: center; }
 .sliderCard { display: grid; justify-items: center; gap: .8rem; padding: 1.3rem clamp(1rem, 4vw, 3rem); border: 1px solid var(--app-line, #d6e4dd); background: var(--app-surface-soft, #eaf5ef); border-radius: 1.2rem; }
 .sliderCard label { text-align: center; }
-.sliderCard output { font-size: 3rem; font-weight: 800; letter-spacing: -.04em; color: var(--app-accent, #176b50); }
+.sliderCard output { font-size: 3rem; font-weight: 600; letter-spacing: -.04em; color: var(--app-accent, #176b50); }
 .sliderCard input { width: 100%; min-height: 44px; accent-color: var(--app-accent, #176b50); cursor: pointer; }
 .rangeLabels { width: 100%; display: flex; justify-content: space-between; font-size: .8rem; color: var(--app-muted, #64766e); }
 .sliderCard small { text-align: center; font-size: .75rem; color: var(--app-muted, #64766e); }
 .resultIntro { text-align: center; margin-bottom: 1rem; }
-.badge { display: inline-block; padding: .5rem .85rem; border-radius: 2rem; background: var(--app-surface-soft, #eaf5ef); color: var(--app-accent, #176b50); font-size: .85rem; font-weight: 700; }
+.badge { display: inline-block; padding: .5rem .85rem; border-radius: 2rem; background: var(--app-surface-soft, #eaf5ef); color: var(--app-accent, #176b50); font-size: .85rem; font-weight: 600; }
 .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 1rem; }
 .totals article { padding: 1.2rem; border: 1px solid var(--app-line, #d6e4dd); border-radius: 1rem; }
 .metricIcon { display: grid; place-items: center; width: 2.5rem; height: 2.5rem; border-radius: .8rem; background: var(--app-surface-soft, #eaf5ef); margin-bottom: .75rem; }
@@ -52,7 +52,7 @@
 .totals dl { margin: 1.25rem 0; display: grid; gap: .65rem; }
 .totals dl div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; }
 .totals dt { font-size: .85rem; color: var(--app-muted, #64766e); }
-.totals dd { margin: 0; font-weight: 750; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.totals dd { margin: 0; font-weight: 600; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
 .totals .delta { margin: 0; border-top: 1px solid var(--app-line, #d6e4dd); padding-top: .8rem; font-size: .85rem; font-weight: 650; color: var(--app-text, #153d31); }
 .calculating { display: grid; gap: .6rem; margin-bottom: 1rem; font-size: .85rem; }
 .calculating progress { width: 100%; accent-color: var(--app-accent, #176b50); }
@@ -67,7 +67,7 @@
 
 /* Annual review: compact, consistent panels with clear decision hierarchy. */
 .dialog { width: min(1040px, calc(100vw - 2rem)); }
-.eyebrow { display: block; font-size: .66rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--app-accent, #176b50); margin-bottom: .65rem; }
+.eyebrow { display: block; font-size: .66rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--app-accent, #176b50); margin-bottom: .65rem; }
 .reviewStatus { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .6rem 2rem; background: var(--app-surface-soft, #edf6f1); }
 .previewLabel { padding: 0; background: transparent; font-size: .7rem; justify-content: flex-start; }
 .stageLabel { font-size: .7rem; font-weight: 650; color: var(--app-muted, #64766e); }
@@ -83,7 +83,7 @@
 .yearPanel .heroIcon svg { width: 1.5rem; height: 1.5rem; }
 .yearPanel .year { color: #fff; font-size: clamp(4rem, 7vw, 6rem); letter-spacing: -.07em; margin: 0; }
 .yearCaption { margin-top: .7rem; font-size: .85rem; color: #c8e4d7; }
-.welcomeCopy h3 { font-size: clamp(1.6rem, 3vw, 2.25rem); line-height: 1.13; font-weight: 750; }
+.welcomeCopy h3 { font-size: clamp(1.6rem, 3vw, 2.25rem); line-height: 1.13; font-weight: 600; }
 .welcomeCopy > p { max-width: 29rem; font-size: .85rem; }
 .welcomeFacts { display: grid; gap: .9rem; margin: 1.3rem 0; }
 .welcomeFacts > span { display: grid; grid-template-columns: 2rem 1fr; column-gap: .6rem; align-items: center; }
@@ -97,7 +97,7 @@
 .page .options button:first-child { border-color: var(--app-accent, #25805f); background: linear-gradient(135deg, var(--app-surface-soft, #eaf5ef), var(--app-surface, #fff)); }
 .page .options button:hover:not(:disabled) { box-shadow: 0 8px 24px #143d3112; }
 .options svg { box-sizing: content-box; width: 1.4rem; height: 1.4rem; padding: .7rem; border-radius: .8rem; background: var(--app-surface, #fff); border: 1px solid var(--app-line, #d6e4dd); margin-bottom: .4rem; }
-.options strong { font-size: 1.05rem; font-weight: 700; }
+.options strong { font-size: 1.05rem; font-weight: 600; }
 .dialog .note { font-size: .73rem; margin-top: .8rem; }
 .sliderCard { position: relative; gap: .45rem; padding: 1rem 2rem; background: linear-gradient(135deg, var(--app-surface-soft, #eaf5ef), var(--app-surface, #fff)); }
 .sliderCard label { font-size: .8rem; color: var(--app-muted, #64766e); }
@@ -147,7 +147,7 @@
 
 /* Keep the review focused on one decision per screen. */
 .welcomeTop { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 2rem; }
-.welcomeTitle { margin: 0; text-align: center; color: #fff; font-size: 1.65rem; font-weight: 750; line-height: 1.25; letter-spacing: -.03em; }
+.welcomeTitle { margin: 0; text-align: center; color: #fff; font-size: 1.65rem; font-weight: 600; line-height: 1.25; letter-spacing: -.03em; }
 .welcomeTitle .year { margin-top: .5rem; }
 .welcomeFacts svg { grid-row: auto; }
 .calculationDetails { margin-top: 1rem; color: var(--app-muted, #64766e); font-size: .85rem; }
@@ -241,7 +241,7 @@
   min-width: 136px;
   padding: .9rem 1.5rem;
   font-size: .95rem;
-  font-weight: 750;
+  font-weight: 600;
   touch-action: manipulation;
 }
 .page .footer > .primary { min-width: 176px; }
@@ -275,3 +275,9 @@
   .page .footer > .closeAction { margin-right: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .page .dialog button { transition: none; } }
+
+.setup { border-color: #e2e9e5; border-radius: .85rem; background: #fff; padding: 1.4rem; }
+.page h1 { margin-top: 1rem; }
+.page p { font-size: .82rem; color: #78877d; }
+.dialog { border: 1px solid #e2e9e5; border-radius: 1rem; box-shadow: 0 28px 100px #14352926; }
+.page button { font-size: .78rem; font-weight: 500; border-radius: .55rem; }

@@ -47,12 +47,14 @@ const entries={
  'work-tracker':'app/admin/work-tracker/work-tracker-client', 'capture-queue':'app/admin/capture-queue/capture-queue-client',
  lifecycle:'app/admin/lifecycle-calculator/lifecycle-calculator-client', maintenance:'app/admin/maintenance-catalogue/maintenance-catalogue-client',
 };
+if (process.env.ADMIN_WORKSPACE_QA) Object.assign(entries, {videos:'app/admin/videos/video-manager', 'asset-values':'app/admin/asset-values/values-client', 'annual-review':'app/admin/annual-review/annual-review-client'});
 Object.values(entries).forEach(add);
 add('components/AdminNavigation');
+add('components/AdminWorkspace');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
- 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
+ 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>window.fixturePathname||"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
 const now='2026-09-20T10:00:00Z';
 const user={userId:'owner',name:'Example Agricultural Equipment and Orchard Management',email:'accounts@example.test',phone:'0821234567',accountType:'owner',accountSubtype:'farmer',province:'Western Cape',introducedBy:'Direct',introducedByOption:'direct',introducedByName:'',accountStatus:'active',accountStatusLabel:'Active',passwordStatus:'Set',lastActiveAtIso:now,createdAtIso:now,storageBytes:197000000,storageLabel:'197 MB',storageGigabytesLabel:'0.2 GB',storageFileCount:378,postgresStorageBytes:0,postgresStorageLabel:'0 B',bucketStorageBytes:197000000,bucketStorageLabel:'197 MB'};
 const asset={id:'one',ownerUserId:'owner',registerId:'register',registerLabel:'Farm equipment',title:'2022 New Holland TT4.90 4WD Openstation Small Field Tractor',kind:'tractor',assetTypeLabel:'Small Field Tractor',sectorKey:'agricultural',sectorLabel:'Agriculture',value:327133,hasSavedValue:true,selectedMethod:'basic',brandName:'New Holland',modelName:'TT4.90',typedModelName:'',yearModel:2022,hours:1250,lifeWorkedPercent:null,usageMetric:'hours',condition:'good',serialNumber:'SERIAL-123',registrationNumber:'',publicAssetCode:'ABC123',plateLabel:'',qrStatus:'active',lifecycleState:'active',lastScannedAtIso:null,lastKnownLat:null,lastKnownLng:null,lastKnownLocationText:'George',createdAtIso:now,updatedAtIso:now,totalViews:8,accountViews:5,unknownViews:3,uniqueViewers:3,lastViewedAtIso:now,repeatViewerViews:4,repeatViewerLabel:'Example Buyer',repeatViewerAccountType:'owner',repeatViewerLastViewedAtIso:now,hasRepeatInterest:true,owner:{...user,label:user.name,businessName:user.name,townCity:'George',addressLine1:'',addressLine2:'',discoveryParticipationEnabled:true}};
@@ -67,6 +69,8 @@ const valuations={generatedAtIso:now,valuations:[valuation],summary:{totalValuat
 const outcome={outcomeId:'outcome',listingId:'listing-one',sourceAssetId:'one',accountUserId:'owner',sellerLabel:user.name,sellerEmail:user.email,title:asset.title,sectorKey:'agricultural',sectorLabel:'Agriculture',reason:'created_by_mistake',outcomeNote:'',aim4priceHelped:false,finalSalePriceExVat:null,askingPriceExVat:327133,aim4priceValueExVat:327133,totalViewsAtClose:8,accountViewsAtClose:5,unknownViewsAtClose:3,uniqueViewersAtClose:3,sourceSurface:'marketplace',publishedAtIso:now,closedAtIso:now,actorType:'owner'};
 const titles={billing:'Billing',accounts:'Accounts',businesses:'Business Directory',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
 const props={billing:{clients:[user,{userId:'dealer-test',name:'Example Equipment Dealer',email:'dealer@example.test',accountType:'dealer'},{userId:'farm-test',name:'River Farm',email:'farm@example.test',accountType:'owner'}],initialAccount:'owner',initialWork:'work-one'},accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
+props.videos={initialSlots:[]};
+Object.assign(titles,{videos:'Video Manager','asset-values':'Asset values','annual-review':'Annual asset review'});
 const catalogue={version:1,profiles:[{key:'tractor',label:'Tractor checklist',items:[{id:'oil',label:'Engine oil',checkLabel:'Check oil',serviceLabel:'Change oil',description:'Check with engine stopped.'}]}],families:[{source:'basic',sector:'agricultural',familyKey:'small-field-tractor',label:'Small Field Tractor',profileKey:'tractor'}]};
 const capture={id:'request-one',publicReference:'INV-TEST',requestType:'invoice',submissionChannel:'owner_upload',status:'in_progress',senderDisplayName:'Example Sender',ownerDisplayName:user.name,assetDisplayName:asset.title,assetReference:'ABC123',fuelStorageDisplayName:'',assignedAdminDisplayName:'Admin',submittedAtIso:now,dueAtIso:'2026-09-22T10:00:00Z',updatedAtIso:now,version:1,fileCount:0,ownerUserId:'owner',assetId:'one',fuelStorageId:'',senderEmail:'sender@example.test',senderPhone:'',senderBusinessName:'',senderNote:'',adminNote:'',needsInformationReason:'',candidatePayload:{},capturedPayload:{usageMetric:'hours',usageReading:'1250'}};
 const evidence=path.join(root,'.next/admin-review-validation');
@@ -82,6 +86,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
    if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
+   if(url.includes('/api/admin/asset-values')) return respond({items:[{id:'fixture',user_id:'owner',title:'2022 New Holland TT4.90',email:'owner@example.test',value:327133,pending:2}]});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
     return respond({invoices:billingIssued?[{id:'invoice-test',userId:'owner',accountStatus:'active',contactPhone:'0821234567',contactEmail:user.email,number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
@@ -118,15 +123,41 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.setViewport({width,height:1000});await page.goto('https://admin.test/');
    const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
    await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
+   await page.evaluate(section=>{window.fixturePathname=section==='accounts'?'/admin':'/admin/'+({lifecycle:'lifecycle-calculator',outcomes:'sold-assets',maintenance:'maintenance-catalogue'}[section]||section);},section);
    await page.evaluate(()=>{window.fixtureDashboard={cards:['free-estimates','paid-estimates','total-assets-saved','total-accounts-created','owner-accounts-created','average-user-time','marketplace-advertised'].map(id=>({id,title:id,values:[{label:'This month',value:'12'},{label:'This year',value:'54'}]})),storage:{sources:[],customerUsage:{accountCountLabel:'4',averageLabel:'20 MB',medianLabel:'12 MB',p90Label:'100 MB',addedLast30DaysLabel:'10 MB',pendingBucketUploadsLabel:'0',failedBucketUploadsLabel:'0'}}};});
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
-   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance'].includes(section);
+   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review'].includes(section);
    const cssFile=section==='outcomes'||section==='asset-outcomes'?'sold-assets':section==='lifecycle'?'lifecycle-calculator':section;
-   const wrapper=ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
-   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${section==='dashboard'?'await Component()':`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${wrapper});})().catch(error=>{window.renderError=error.message;});`});
+   const wrapper=section==='asset-values'||section==='videos'?`React.createElement("main",null,React.createElement("h1",null,${JSON.stringify(titles[section])}),child)`:ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
+   await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${section==='dashboard'?'await Component()':`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
    await page.waitForSelector('h1');
    await page.evaluate(()=>document.fonts.ready);
    assert.deepEqual(errors,[],section+' runtime');
+  }
+  if (process.env.ADMIN_WORKSPACE_QA) {
+   for (const width of [390, 768, 1024, 1440, 1920]) {
+    for (const section of (process.env.ADMIN_QA_SECTIONS ? process.env.ADMIN_QA_SECTIONS.split(',') : Object.keys(entries))) {
+     await open(section, width);
+     if(section==='maintenance')await page.waitForFunction(()=>document.body.textContent.includes('Small Field Tractor'));
+     await page.screenshot({path:path.join(evidence,`workspace-${section}-${width}.png`),fullPage:true});
+     const leaks=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>e.getBoundingClientRect().right>innerWidth+2 && getComputedStyle(e).position!=='fixed' && !e.closest('table')).slice(0,12).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width})));
+     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,section+' workspace overflow at '+width+' '+JSON.stringify(leaks));
+     await page.screenshot({path:path.join(evidence,`workspace-${section}-${width}.png`),fullPage:true});
+    }
+    console.log('PASS workspace pages at '+width);
+   }
+   await open('accounts',1440);
+   await page.click('[aria-label="Collapse sidebar"]');
+   assert.equal(await page.$eval('[aria-label="Expand sidebar"]',e=>e.getAttribute('aria-expanded')),'false');
+   await page.click('[aria-label="Expand sidebar"]');
+   await open('accounts',390);
+   await page.click('[aria-label="Open Admin navigation"]');
+   await page.waitForSelector('dialog[open]');
+   await page.keyboard.press('Escape');
+   assert.equal(await page.$('dialog[open]'),null);
+   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Open Admin navigation');
+   console.log('PASS sidebar collapse and mobile drawer keyboard recovery');
+   return;
   }
   for(const width of [390,1440]){
    verificationAccounts=[];
@@ -364,7 +395,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
    const box=await page.$eval('[aria-labelledby="admin-account-action-modal-title"]',el=>{const r=el.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right};});
    assert.ok(box.left>=0 && box.right<=width+1,'account modal stays inside the viewport');
-   if(width>=1440)assert.ok(box.width>=1200,'desktop account modal is widened');
+   if(width>=1440)assert.ok(box.width>=760 && box.width<=1000,'account modal stays compact and readable');
    assert.equal(await page.$$eval('[aria-labelledby="admin-account-action-modal-title"] button',els=>els.some(el=>el.textContent.trim()==='Delete account'&&!el.disabled)),true);
    await page.screenshot({path:path.join(evidence,`account-modal-wide-${width}.png`),fullPage:true});
   }

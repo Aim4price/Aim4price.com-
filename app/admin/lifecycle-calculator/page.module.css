@@ -37,7 +37,7 @@
   margin: 0 0 0.18rem;
   color: #60716a;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -81,7 +81,7 @@
   text-decoration: none;
   font: inherit;
   font-size: 0.84rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
   box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
   cursor: pointer;
@@ -141,7 +141,7 @@
 .flowProgressCopy span {
   color: #71817b;
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.055em;
 }
@@ -149,7 +149,7 @@
 .flowProgressCopy strong {
   color: #0f684f;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .flowProgressTrack {
@@ -209,7 +209,7 @@
   color: #65776f;
   background: #ffffff;
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .flowSteps button > strong {
@@ -217,7 +217,7 @@
   text-overflow: ellipsis;
   color: inherit;
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -295,7 +295,7 @@
   margin-top: 0.28rem;
   color: #71817b;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .summaryActions {
@@ -351,7 +351,7 @@
   margin-bottom: 0.12rem;
   color: #75857e;
   font-size: 0.68rem;
-  font-weight: 850;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.045em;
 }
@@ -370,7 +370,7 @@
 .metric > span {
   color: #60716a;
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
   line-height: 1.25;
   text-transform: uppercase;
   letter-spacing: 0.035em;
@@ -380,7 +380,7 @@
   overflow-wrap: anywhere;
   color: #17362c;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1.15;
 }
 
@@ -443,7 +443,7 @@
   color: #0f684f;
   background: #e9f6f0;
   font-size: 0.78rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .sectionHeading h2,
@@ -480,7 +480,7 @@
 .field > span {
   color: #52645d;
   font-size: 0.73rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .field > small {
@@ -514,7 +514,7 @@
   flex: 0 0 auto;
   color: #76867f;
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .inputShell input,
@@ -528,7 +528,7 @@
   background: transparent;
   font: inherit;
   font-size: 0.85rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .inputShell select {
@@ -600,12 +600,12 @@
   justify-content: space-between;
   gap: 1rem;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .inlineResult strong {
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .splitResult {
@@ -625,7 +625,7 @@
 .stepNote strong {
   color: #0f5f48;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .stepNote span {
@@ -672,7 +672,7 @@
 .scenarioCard > span {
   color: #687872;
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.035em;
 }
@@ -681,7 +681,7 @@
 .scenarioCard > strong {
   color: #17362c;
   font-size: 1.35rem;
-  font-weight: 950;
+  font-weight: 600;
   letter-spacing: -0.035em;
 }
 
@@ -720,13 +720,13 @@
 .contributionBar span {
   color: #71817b;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .contributionBar strong {
   color: #17362c;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .scenarioCard {
@@ -784,7 +784,7 @@
 .tableWrap th {
   color: #52645d;
   background: #f5f8f6;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .tableWrap td {
@@ -816,13 +816,13 @@
 .calculationTrail span {
   color: #65766f;
   font-size: 0.76rem;
-  font-weight: 780;
+  font-weight: 600;
 }
 
 .calculationTrail strong {
   color: #17362c;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .calculationTotal {
@@ -852,19 +852,19 @@
   color: #799087;
   font-style: normal;
   font-size: 1.2rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .equityFlow span {
   color: #687a73;
   font-size: 0.7rem;
-  font-weight: 820;
+  font-weight: 600;
 }
 
 .equityFlow strong {
   color: #17362c;
   font-size: 0.95rem;
-  font-weight: 920;
+  font-weight: 600;
 }
 
 .equityResult {
@@ -899,7 +899,7 @@
   color: #0f684f;
   background: #ffffff;
   font-size: 1.1rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .detailsCard[open] summary::after {
@@ -964,7 +964,7 @@
   display: grid;
   place-items: center;
   font-size: 0.9rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .packageChoiceCopy {
@@ -975,7 +975,7 @@
 
 .packageChoiceCopy strong {
   font-size: 1.03rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: -0.025em;
 }
 
@@ -990,13 +990,13 @@
   margin-top: 0.15rem;
   color: #176047;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .packageChoiceCheck {
   color: rgba(18, 53, 45, 0.38);
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -1022,7 +1022,7 @@
 .selectionNote span {
   color: rgba(18, 53, 45, 0.58);
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -1060,14 +1060,14 @@
 .projectionStrip span {
   color: rgba(18, 53, 45, 0.58);
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .financePreview strong,
 .projectionStrip strong {
   color: var(--owner-ink);
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .includedBanner {
@@ -1086,7 +1086,7 @@
   display: grid;
   place-items: center;
   font-size: 0.78rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .includedBanner > div {
@@ -1113,7 +1113,7 @@
   width: 100%;
   color: #12553e;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .assetProjection {
@@ -1135,13 +1135,13 @@
 .assetProjection span {
   color: rgba(18, 53, 45, 0.6);
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .assetProjection strong {
   color: #12553e;
   font-size: 0.95rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .financePackagePicker {
@@ -1167,7 +1167,7 @@
 .financePackagePicker > div:last-child strong {
   color: #12553e;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .financePackagePicker > div:last-child span {
@@ -1180,7 +1180,7 @@
 .financePackagePicker > div:last-child small {
   color: #176047;
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .vatControl {
@@ -1203,7 +1203,7 @@
 .vatControl strong {
   color: #17362c;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .vatControl small,
@@ -1234,7 +1234,7 @@
   background: transparent;
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1314,12 +1314,12 @@
   display: grid;
   place-items: center;
   font-size: 0.62rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .conditionChoice strong {
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .conditionChoice small {
@@ -1334,7 +1334,7 @@
   margin-top: auto;
   color: #176047;
   font-size: 0.77rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .conditionChoiceActive {
@@ -1386,19 +1386,19 @@
   align-self: center;
   color: rgba(18, 53, 45, 0.4);
   font-style: normal;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .tradeFlow span {
   color: rgba(18, 53, 45, 0.58);
   font-size: 0.65rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .tradeFlow strong {
   color: var(--owner-ink);
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .tradeFlowPositive {
@@ -1431,7 +1431,7 @@
   padding: 0 0.7rem;
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1490,7 +1490,7 @@
 .resultLines strong {
   color: var(--owner-ink);
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
   text-align: right;
 }
 
@@ -1502,7 +1502,7 @@
 .resultLineTotal span,
 .resultLineTotal strong {
   color: #12553e;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .resultHeroValue {
@@ -1516,12 +1516,12 @@
 
 .resultHeroValue span {
   font-size: 0.68rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .resultHeroValue strong {
   font-size: 1.2rem;
-  font-weight: 950;
+  font-weight: 600;
   letter-spacing: -0.03em;
 }
 
@@ -1556,7 +1556,7 @@
   border-radius: 0.9rem;
   font: inherit;
   font-size: 0.8rem;
-  font-weight: 880;
+  font-weight: 600;
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -1609,18 +1609,18 @@
   min-width: 0;
   color: #73837c;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
 }
 
 .positive {
   color: #0c7153 !important;
-  font-weight: 900 !important;
+  font-weight: 600 !important;
 }
 
 .negative {
   color: #ad3434 !important;
-  font-weight: 900 !important;
+  font-weight: 600 !important;
 }
 
 .footerDisclaimer {
@@ -1985,7 +1985,7 @@
   border-radius: 0.75rem;
   font: inherit;
   font-size: 0.73rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
   transition: 160ms ease;
 }
@@ -2020,7 +2020,7 @@
   color: #842f2f;
   background: #fff4f4;
   font-size: 0.78rem;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .workspaceNav {
@@ -2049,7 +2049,7 @@
   gap: 0.55rem;
   text-decoration: none;
   font-size: 0.71rem;
-  font-weight: 850;
+  font-weight: 600;
   transition: 160ms ease;
 }
 
@@ -2113,7 +2113,7 @@
 .decisionHeading > p span {
   color: #71817b;
   font-size: 0.62rem;
-  font-weight: 820;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -2164,14 +2164,14 @@
   right: 0.82rem;
   color: #71817b;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 600;
   line-height: 1;
 }
 
 .scenarioChoice > strong {
   overflow: hidden;
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2181,7 +2181,7 @@
   margin-top: 0.18rem;
   color: #12372d;
   font-size: 0.91rem;
-  font-weight: 950;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2299,7 +2299,7 @@
 
 .resultsLead > div:last-child strong {
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .workspace .card {
@@ -2317,7 +2317,7 @@
   margin: 0 0 0.34rem;
   color: #257457;
   font-size: 0.64rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -2382,7 +2382,7 @@
   background: transparent;
   font: inherit;
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -2414,7 +2414,7 @@
 .independenceNote span {
   color: #6b7a74;
   font-size: 0.63rem;
-  font-weight: 780;
+  font-weight: 600;
 }
 
 .vatBreakdown strong,
@@ -2424,7 +2424,7 @@
 .independenceNote strong {
   color: #15392f;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .independenceNote {
@@ -2572,7 +2572,7 @@
 .dealerTable thead th {
   color: #ffffff;
   background: #234d3d;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .comparisonTable thead th:not(:first-child) {
@@ -2611,7 +2611,7 @@
 .comparisonStrong {
   color: #0f5c44;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .adviceGrid {
@@ -2632,7 +2632,7 @@
 .adviceGrid span {
   color: #207257;
   font-size: 0.65rem;
-  font-weight: 900;
+  font-weight: 600;
   text-transform: uppercase;
 }
 
@@ -2663,7 +2663,7 @@
 .advancedGrid details > summary {
   color: #215c48;
   font-size: 0.74rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -2706,7 +2706,7 @@
 
 .equityRows span {
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .equityRows small {
@@ -2757,7 +2757,7 @@
   align-self: center;
   color: #7a9489;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 600;
 }
 
 .advancedGrid details > summary {
@@ -2782,7 +2782,7 @@
   right: 0;
   color: #215c48;
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1.2rem;
 }
 
@@ -2986,3 +2986,23 @@
 }
 .fieldHelp summary { cursor: pointer; color: #176047; }
 .fieldHelp p { margin: 0.4rem 0 0; }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }
+
+.topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
+
+.card, .summaryPanel, .decisionPanel, .futurePanel, .detailsCard { background: #fff; border-color: #e2e9e5; border-radius: .85rem; box-shadow: none; }
+.workspaceNav { border-color: #e2e9e5; background: #fff; border-radius: .7rem; box-shadow: 0 4px 16px #203b3306; }
+.workspaceNav a { font-size: .74rem; font-weight: 500; }
+.sectionHeading h2, .workspaceHeader h2 { font-size: 1.1rem; font-weight: 600; }
+.field { font-size: .76rem; }
+.inputShell { border-color: #dfe7e2; border-radius: .5rem; background: #fcfdfc; }
+.scenarioChoice { border-radius: .65rem; border-color: #e2e9e5; box-shadow: none; }
+.scenarioChoiceActive { background: #edf5ef; border-color: #9bbca7; }
+.workspace, .shell > *, .assumptionGrid > *, .provisionGrid > *, .outcomeGrid > * { min-width: 0; }
+.assumptionGrid { grid-template-columns: minmax(0, 1.25fr) minmax(0, .9fr) minmax(0, .85fr); }
+@media (max-width: 1650px) { .assumptionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .futurePanel { position: static; grid-column: 1 / -1; } }
+@media (max-width: 980px) { .assumptionGrid, .provisionGrid, .outcomeGrid, .advancedGrid { grid-template-columns: minmax(0, 1fr); } }

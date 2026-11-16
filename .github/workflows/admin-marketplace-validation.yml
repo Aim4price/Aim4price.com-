@@ -29,6 +29,7 @@ on:
       - 'app/api/middleman-showroom/**'
       - 'app/marketplace/marketplace-client.tsx'
       - 'components/AdminNavigation*'
+      - 'components/AdminWorkspace*'
       - 'components/AppHeader.tsx'
       - 'components/AccountantAssetManageModal.tsx'
       - 'components/MarketplaceOutcomeModal*'
@@ -166,6 +167,9 @@ jobs:
 
       - name: Verify Admin layouts and recovery
         run: node scripts/verify-admin-review.cjs
+
+      - name: Verify responsive Admin workspace
+        run: ADMIN_WORKSPACE_QA=1 node scripts/verify-admin-review.cjs
 
       - name: Save Admin browser evidence
         if: always()
