@@ -86,3 +86,34 @@ test('attention cards retain available sources and show unavailable when a sourc
   const original = console.error;console.error=()=>{};
   try { const cards=await module.getAdminAttention();assert.equal(cards[0].count,4);assert.ok(cards.slice(1).every(card=>card.count===null));assert.equal(cards[0].href,'/admin?status=pending_payment'); } finally { console.error=original; }
 });
+
+test('account signup periods and activity dates follow SAST independently of the host timezone', () => {
+  const previous = process.env.TZ;
+  try {
+    for (const zone of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo', 'Africa/Johannesburg']) {
+      process.env.TZ = zone;
+      const now = new Date('2026-12-31T22:30:00Z');
+      for (const period of ['month', 'year']) {
+        const range = shared.adminSignupDateRange(period, now);
+        assert.equal(range.start.toISOString(), '2026-12-31T22:00:00.000Z', zone);
+        assert.equal(range.end.toISOString(), period === 'month' ? '2027-01-31T22:00:00.000Z' : '2027-12-31T22:00:00.000Z');
+        assert.ok(new Date('2026-12-31T21:59:59Z') < range.start);
+        assert.ok(new Date('2026-12-31T22:00:00Z') >= range.start);
+      }
+      const week = shared.adminSignupDateRange('week', new Date('2026-11-15T22:30:00Z'));
+      assert.equal(week.start.toISOString(), '2026-11-15T22:00:00.000Z');
+      assert.equal(week.end.toISOString(), '2026-11-22T22:00:00.000Z');
+      const leap = shared.adminSignupDateRange('month', new Date('2028-02-28T23:30:00Z'));
+      assert.equal(leap.end.toISOString(), '2028-02-29T22:00:00.000Z');
+      assert.equal(shared.formatAdminLastActive('2026-12-31T22:00:00Z', now), 'Today');
+      assert.equal(shared.formatAdminLastActive('2026-12-31T21:59:59Z', now), 'Yesterday');
+      assert.equal(shared.formatAdminLastActive(null, now), 'Never');
+      assert.equal(shared.formatAdminLastActive('invalid', now), 'Never');
+      assert.equal(shared.formatAdminAccountDate('2026-12-31T22:00:00Z'), '01 Jan 2027');
+      assert.equal(shared.formatAdminAccountDate('invalid'), 'Unknown');
+      assert.equal(shared.adminSignupDateRange('all', now), null);
+    }
+  } finally {
+    if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous;
+  }
+});
