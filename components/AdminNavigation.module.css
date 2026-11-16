@@ -287,10 +287,10 @@
 .manageButton:hover { background: #f2f7f3; box-shadow: none; transform: none; }
 .manageIcon { background: #eef4f0; width: 1.3rem; height: 1.3rem; }
 .manageIcon i { background: #64816f; }
-.manageCopy { font-size: .75rem; font-weight: 500; }
+.manageCopy { font-size: .85rem; font-weight: 650; }
 .modal { box-shadow: 0 28px 100px #14352926; border-radius: 1rem; padding: 1.5rem; }
-.modalHeader h2 { font-size: 1.4rem; font-weight: 600; }
-.navigationGroup h3 { font-weight: 500; font-size: .72rem; color: #829087; }
+.modalHeader h2 { font-size: 1.4rem; font-weight: 800; }
+.navigationGroup h3 { font-weight: 650; font-size: .85rem; color: #64746a; }
 .navigationGroups .link { background: #fafcfb; border-color: #e6ece8; border-radius: .6rem; min-height: 3rem; }
-.navigationGroups .link strong { font-size: .77rem; font-weight: 500; }
+.navigationGroups .link strong { font-size: .85rem; font-weight: 650; }
 .active, .active:hover { background: #edf5ef; }

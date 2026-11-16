@@ -41,9 +41,8 @@
 }
 
 .adminWorkspaceRoot :where(h1, h2, h3) {
-  text-wrap: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 .adminWorkspaceRoot :where([class*="titleBlock"] > p, [class*="titleBlock"] > span) {
@@ -54,7 +53,7 @@
   margin: 0 !important;
   font-size: clamp(2.25rem, 3.3vw, 3.25rem) !important;
   line-height: 1 !important;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .adminWorkspaceRoot :where(
@@ -121,11 +120,11 @@
 
 /* Shared Admin design tokens. Page-specific layouts remain in their modules. */
 .adminWorkspaceRoot {
-  --admin-ink: #203b33;
-  --admin-muted: #76867d;
+  --admin-ink: var(--text-strong, #243c35);
+  --admin-muted: var(--text-muted, #6f7a75);
   --admin-line: #e2e9e5;
   --admin-surface: #fff;
-  --admin-canvas: #f5f7f8;
+  --admin-canvas: var(--surface, #f7f8f7);
   --admin-control-radius: 0.5rem;
   --admin-card-radius: 0.85rem;
   color: var(--admin-ink);
@@ -134,20 +133,30 @@
 }
 .adminWorkspaceRoot *, .adminWorkspaceRoot *::before, .adminWorkspaceRoot *::after { box-sizing: border-box; }
 .adminWorkspaceRoot #admin-workspace-content > main { width: 100%; max-width: none; margin: 0; padding: 0; min-height: auto; background: transparent; }
-.adminWorkspaceRoot :where([class*="titleBlock"] h1) { font-size: clamp(1.5rem, 2.2vw, 2rem) !important; font-weight: 600; letter-spacing: -0.045em; line-height: 1.25 !important; }
-.adminWorkspaceRoot #admin-workspace-content h1 { font-size: clamp(1.5rem, 2.2vw, 2rem); font-weight: 600; letter-spacing: -.045em; line-height: 1.25; }
-.adminWorkspaceRoot :where(h2, h3) { font-weight: 600; }
-.adminWorkspaceRoot :where(th, dt, legend, label > span:first-child) { font-weight: 600 !important; color: #718278; }
+.adminWorkspaceRoot :where([class*="titleBlock"] h1) { font-size: clamp(1.5rem, 2.2vw, 2rem) !important; font-weight: 800; letter-spacing: -0.045em; line-height: 1.25 !important; }
+.adminWorkspaceRoot #admin-workspace-content h1 { font-size: clamp(1.5rem, 2.2vw, 2rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.25; }
+.adminWorkspaceRoot :where(h2, h3) { font-weight: 800; }
+.adminWorkspaceRoot :where(th, dt, legend, label > span:first-child) { font-weight: 650 !important; color: #718278; }
 .adminWorkspaceRoot :where(td) { line-height: 1.5; }
 .adminWorkspaceRoot :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) { accent-color: #22664b; }
 .adminWorkspaceRoot :where(input, select, textarea):focus-visible { outline: 2px solid #7cae93; outline-offset: 2px; }
 .adminWorkspaceRoot :where(button, a) { transition: background-color .15s, border-color .15s, color .15s; }
 .adminWorkspaceRoot :where(button:disabled) { opacity: .5; }
-.adminWorkspaceRoot :where([role="dialog"], dialog) h2 { font-weight: 600; letter-spacing: -.025em; }
+.adminWorkspaceRoot :where([role="dialog"], dialog) h2 { font-weight: 800; letter-spacing: -.025em; }
 .adminWorkspaceRoot :where([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"]) { scrollbar-width: auto; scrollbar-color: #b8c9bf #f4f7f5; }
 @media print { .adminWorkspaceRoot { background: white; } .adminWorkspaceRoot #admin-workspace-content > main { padding: 0; } }
 .adminAiConnectionPage > main { min-height: auto; }
 .adminAiConnectionPage > main > div { width: 100%; max-width: none; padding: 0; }
-.adminAiConnectionPage h2 { font-size: 1.1rem; font-weight: 600; }
-.adminAiConnectionPage h3 { font-size: .9rem; font-weight: 600; }
+.adminAiConnectionPage h2 { font-size: 1.1rem; font-weight: 800; }
+.adminAiConnectionPage h3 { font-size: .9rem; font-weight: 800; }
 .adminAiConnectionPage p { font-size: .82rem; line-height: 1.7; }
+
+/* Match the existing Showroom's Montserrat headings and 650-weight controls. */
+.adminWorkspaceRoot #admin-workspace-content :is(h2, h3) { font-weight: 800; }
+.adminWorkspaceRoot #admin-workspace-content :is(button, input, select, textarea) { font-family: var(--font-body, 'Montserrat'), sans-serif; }
+.adminWorkspaceRoot #admin-workspace-content button:not([data-modal-close]) { font-weight: 650; }
+.adminWorkspaceRoot #admin-workspace-content :is(input, select, textarea) { font-size: .88rem; }
+.adminWorkspaceRoot #admin-workspace-content :is(th, td) { font-size: .85rem; }
+.adminWorkspaceRoot #admin-workspace-content :is(th, dt, legend) { color: #64746a; }
+
+.adminWorkspaceRoot #admin-workspace-content h1 { white-space: normal; overflow: visible; text-overflow: clip; }

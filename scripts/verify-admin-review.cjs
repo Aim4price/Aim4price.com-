@@ -80,12 +80,14 @@ const evidence=path.join(root,'.next/admin-review-validation');
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let verificationAccounts=[],verificationFailure=false; const verificationWrites=[];
-  let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
+  let failValues=false,failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
   const queueRequests=[],workRequests=[],billingRequests=[];let billingIssued=false,previewFailure=false;
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
    if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
+   if(url.endsWith('/brand/aim4price-mark-black.png')) return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});
+   if(url.includes('/api/admin/asset-values') && failValues) return respond({error:'Value search unavailable'},503);
    if(url.includes('/api/admin/asset-values')) return respond({items:[{id:'fixture',user_id:'owner',title:'2022 New Holland TT4.90',email:'owner@example.test',value:327133,pending:2}]});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
@@ -122,7 +124,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    errors.length=0;
    await page.setViewport({width,height:1000});await page.goto('https://admin.test/');
    const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
-   await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
+   await page.setContent('<style>@font-face{font-family:Montserrat;font-weight:100 900;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;color:#14392e;background:#f5f8f6;--modal-backdrop-color:rgba(10,30,23,.5);--modal-backdrop-filter:blur(6px)}button,input,select{font:inherit}'+sheets.join('\n')+'\n'+fs.readFileSync(path.join(root,'app/admin/admin-foundation.css'),'utf8')+'\n'+fs.readFileSync(path.join(root,'app/modal-close.css'),'utf8')+'</style><div id="app" class="adminWorkspaceRoot"></div>');
    await page.evaluate(section=>{window.fixturePathname=section==='accounts'?'/admin':'/admin/'+({lifecycle:'lifecycle-calculator',outcomes:'sold-assets',maintenance:'maintenance-catalogue'}[section]||section);},section);
    await page.evaluate(()=>{window.fixtureDashboard={cards:['free-estimates','paid-estimates','total-assets-saved','total-accounts-created','owner-accounts-created','average-user-time','marketplace-advertised'].map(id=>({id,title:id,values:[{label:'This month',value:'12'},{label:'This year',value:'54'}]})),storage:{sources:[],customerUsage:{accountCountLabel:'4',averageLabel:'20 MB',medianLabel:'12 MB',p90Label:'100 MB',addedLast30DaysLabel:'10 MB',pendingBucketUploadsLabel:'0',failedBucketUploadsLabel:'0'}}};});
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
@@ -156,7 +158,26 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.keyboard.press('Escape');
    assert.equal(await page.$('dialog[open]'),null);
    assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Open Admin navigation');
-   console.log('PASS sidebar collapse and mobile drawer keyboard recovery');
+   await page.click('[aria-label="Open Admin navigation"]');
+   await page.setViewport({width:1440,height:1000});
+   await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   assert.equal(await page.$eval('[aria-label="Aim4price Admin dashboard"] img',img=>img.complete && img.naturalWidth>0),true,'Actual Aim4price logo loads');
+   assert.equal(await page.$eval('#admin-workspace-content h1',e=>getComputedStyle(e).fontWeight),'800');
+   await open('asset-values',1440);
+   await page.waitForFunction(()=>document.querySelector('tbody').textContent.includes('New Holland'));
+   failValues=true;
+   await page.type('[data-search-input]','Missing asset');
+   await page.$eval('form',e=>e.requestSubmit());
+   await page.waitForSelector('[role="alert"]');
+   assert.match(await page.$eval('[role="status"]',e=>e.textContent),/last successful results/);
+   assert.equal(await page.$eval('tbody button',e=>e.disabled),true,'Failed search cannot act on stale rows');
+   failValues=false;
+   await page.$$eval('button',buttons=>buttons.find(b=>b.textContent==='Try again').click());
+   await page.waitForFunction(()=>!document.querySelector('[role="alert"]') && !document.querySelector('tbody button').disabled);
+   assert.match(await page.$eval('[role="status"]',e=>e.textContent),/Missing asset/);
+   await page.$$eval('button',buttons=>buttons.find(b=>b.textContent==='Clear search').click());
+   await page.waitForFunction(()=>document.querySelector('[data-search-input]').value==='' && document.querySelector('[role="status"]').textContent==='All assets');
+   console.log('PASS logo, typography, sidebar, drawer resize/focus, asset value failure/retry and clear search');
    return;
   }
   for(const width of [390,1440]){
