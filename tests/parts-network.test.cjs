@@ -717,6 +717,9 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   assert.equal(own.fields.length,3);
   const viewer={...dealer,id:'shared-reader',email:'reader@example.test'};
   await db.query("INSERT INTO parts_network_members(network_id,dealer_id,role,status) VALUES($1,$2,'viewer','active')",[id,viewer.id]);
+  assert.equal(await network.partsReportOwnerId(viewer,id),dealer.id,'Shared downloads use the list owner');
+  assert.equal(await network.partsReportOwnerId(dealer,id),dealer.id);
+  await assert.rejects(()=>network.partsReportOwnerId({...viewer,id:'outsider'},id),/approval/);
   const shared=await network.partsData(viewer,id,'search','003',0,true);
   assert.equal(shared.rows[0].details.notes,'Unopened box');
   assert.equal(shared.rows[0].details.location,undefined);
@@ -772,6 +775,9 @@ test("Parts PDF escapes user text and distinguishes zero prices from price on re
   assert.match(html, /&lt;Notes&gt;/);
   assert.ok(!html.includes('<img'));
   assert.match(html, /00123/);
+  const branded=buildPartsStockReportHtml('Parts',[], 'Excl. VAT','Complete parts list','16 Nov 2026',{logoUrl:'/owner-logo.png?x=1&y=2'});
+  assert.match(branded, /class="assetReportLogo" src="\/owner-logo.png\?x=1&amp;y=2"/);
+  assert.ok(!branded.includes('assetReportLogoFallback'));
   assert.match(html, /R\s*0[.,]00/);
   assert.equal((html.match(/Price on request/g) || []).length, 1);
   assert.equal(parseReportPdfRenderRequest(JSON.stringify({html,fileName:'Parts.pdf'})).html, html);
@@ -805,10 +811,13 @@ test("Parts PDF uses parts access, full filtered rows, VAT conversion and privat
     '../../../lib/parts-network-access': {getPartsActor:async (...args)=>{actorArgs=args;return actor;}},
     '../../../lib/parts-network': {
       PartsError, networkId:value=>value,
+      partsReportOwnerId:async (caller,id)=>{assert.equal(caller.id,"dealer-1");assert.equal(id,"list-1");return "list-owner";},
       partsData:async (...args)=>{requestArgs=args;if(denied)throw new PartsError('No access',403);return {rows:[{part_number:'001',quantity:2,price:'100',vat_included:false,business_name:'Dealer',description:'Filter'},{part_number:'002',quantity:0,price:null,vat_included:false,business_name:'Dealer'}]};},
     },
     '../../../lib/parts-network-report': {buildPartsStockReportHtml:(...args)=>{reportArgs=args;return '<html>report</html>';}},
     '../../../lib/report-pdf': {renderReportHtmlToPdf:async()=>{renderCalls++;return Buffer.from('%PDF-1.7');}},
+    '../../../lib/asset-registers': {getAssetRegisterReportLogoUrl:async id=>{assert.equal(id,'list-owner');return '/owner-logo.png';}},
+    '../../../lib/report-logo': {resolveReportLogoUrlForHtml:async logo=>{assert.equal(logo,'/owner-logo.png');return 'data:image/png;base64,OWNER';}},
     '../../../lib/report-pdf-request': load('lib/report-pdf-request.ts'),
   });
   const url = new URL('https://example.test/api/parts-network?network=list-1&view=mine&format=pdf&vat=incl&search=Filter&title=Landini&desktopMembershipId=team-1');
@@ -823,6 +832,7 @@ test("Parts PDF uses parts access, full filtered rows, VAT conversion and privat
   assert.equal(reportArgs[1][0].price,115);
   assert.equal(reportArgs[1][1].price,null);
   assert.equal(reportArgs[2],'Incl. VAT');
+  assert.deepEqual(reportArgs[5],{logoUrl:'data:image/png;base64,OWNER'});
   denied=true;
   assert.equal((await GET(request)).status,403);
   actor=null;

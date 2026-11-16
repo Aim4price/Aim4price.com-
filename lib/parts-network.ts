@@ -146,6 +146,15 @@ export async function listPartsNetworks(actor: PartsActor) {
     )
   ).rows.filter(row => !actor.team || actor.team.grant.partsListIds?.includes(row.id));
 }
+/** Resolve branding only for a list the caller is permitted to read. */
+export async function partsReportOwnerId(actor: PartsActor, id: string): Promise<string> {
+  return transaction(async db => {
+    await access(db, actor, id);
+    const result = await db.query("SELECT created_by FROM parts_networks WHERE id=$1", [id]);
+    return result.rows[0].created_by;
+  });
+}
+
 export async function partsData(
   actor: PartsActor,
   id: string,
