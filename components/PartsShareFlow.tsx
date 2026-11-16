@@ -22,14 +22,15 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
  async function run(fn:()=>Promise<void>){setBusy(true);setError('');setNotice('');try{await fn();}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
  async function history(){const data=await api({action:'share-history',network});setLinks(data.links||[]);setPage(0);setStep('history');setSelected(null);setConfirm(null);}
  const titles:Record<string,string>={choose:name,recipient:'Choose a business',permissions:'Parts link settings',risk:'Before you share',send:'Send link',history:'Sharing history',settings:'Link settings'};
+ const permissionIcon=(kind:'view'|'download'|'enquiry'|'lock')=><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{kind==='view'?<><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>:kind==='download'?<><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></>:kind==='enquiry'?<><path d="M4 4h16v12H9l-5 4V4Z"/><path d="M8 8h8M8 12h5"/></>:<><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></>}</svg>;
  const permissions=<>
   <p className={styles.lead}>Choose what recipients can do.</p>
-  <div className={ownerStyles.permissions} data-permission-grid>
-   <div className={ownerStyles.permission}><strong>View parts</strong><span>{channel==='link'?'Anyone with the link can view.':'Only the selected business can view.'}</span></div>
-   <label className={ownerStyles.permission}><input type="checkbox" checked={download} onChange={e=>{setDownload(e.target.checked);setAccepted(false);}}/><span><strong>Download parts</strong><small>Save the owner’s branded PDF</small></span></label>
-   <label className={ownerStyles.permission}><input type="checkbox" checked={enquiry} onChange={e=>{setEnquiry(e.target.checked);setAccepted(false);}}/><span><strong>Send enquiries</strong><small>Contact you about this parts list</small></span></label>
+  <div className={styles.permissionCards}>
+   <div className={`${styles.permissionCard} ${styles.includedCard}`}><span className={styles.permissionIcon}>{permissionIcon('view')}</span><span className={styles.included}>Included</span><strong>View parts</strong><small>{channel==='link'?'Anyone with your link can view.':'Only your chosen business can view.'}</small></div>
+   <label className={`${styles.permissionCard} ${styles.downloadCard}`}><span className={styles.permissionIcon}>{permissionIcon('download')}</span><input type="checkbox" checked={download} onChange={e=>{setDownload(e.target.checked);setAccepted(false);}}/><strong>Download parts</strong><small>Save a PDF with your branding.</small></label>
+   <label className={`${styles.permissionCard} ${styles.enquiryCard}`}><span className={styles.permissionIcon}>{permissionIcon('enquiry')}</span><input type="checkbox" checked={enquiry} onChange={e=>{setEnquiry(e.target.checked);setAccepted(false);}}/><strong>Send enquiries</strong><small>Contact you about these parts.</small></label>
   </div>
-  <p className={styles.hint}>Downloads and enquiries require a verified Aim4price account. Editing and sharing controls stay with you.</p>
+  <p className={styles.accessNote}>{permissionIcon('lock')}<span>Downloads and enquiries require a verified account. Only you can edit or manage sharing.</span></p>
  </>;
  const isOwnerStep=['permissions','settings','risk','send'].includes(step);
  const footer=(
@@ -41,12 +42,12 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
    {step==='settings'&&!confirm?<button className={isOwnerStep?ownerStyles.primary:styles.primary} disabled={busy||!!selected?.revoked_at||replacePassword&&!!password&&password.length<8} onClick={()=>void run(async()=>{await api({action:'update-share',network,id:selected?.id,allowDownload:download,allowEnquiry:enquiry,...(replacePassword?{password}:{})});await history();})}>Save settings</button>:null}
    {step==='send'||step==='history'?<button className={isOwnerStep?ownerStyles.primary:styles.primary} onClick={onClose}>Done</button>:null}
   </footer>);
- const passwordSettings=(<>{permissions}
+ const passwordSettings=(<div className={styles.settingsContent}>{permissions}
     {step==='settings'?<label className={styles.check}><input type="checkbox" checked={replacePassword} onChange={e=>setReplacePassword(e.target.checked)}/>Change or remove the password</label>:null}
-    {(step==='permissions'||replacePassword)?<div className={styles.field}><label htmlFor={passwordId}>Link password <span className={styles.hint}>(optional)</span></label><div className={styles.password}><input id={passwordId} type={showPassword?"text":"password"} autoComplete="new-password" maxLength={128} value={password} onChange={e=>{setPassword(e.target.value);setAccepted(false);}} placeholder="At least 8 characters"/><button type="button" aria-label={showPassword?'Hide password':'Show password'} aria-controls={passwordId} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{showPassword?<path d="m3 3 18 18"/>:null}</svg></button></div><small>{step==='settings'?'Leave blank to remove password protection.':'Send the password separately to your recipient.'}</small></div>:null}
-</>
+    {(step==='permissions'||replacePassword)?<div className={styles.passwordPanel}><div className={styles.passwordHeading}><span className={styles.permissionIcon}>{permissionIcon('lock')}</span><div><label htmlFor={passwordId}>Link password <span>(optional)</span></label><p>Send the password separately.</p></div></div><div className={styles.passwordControl}><div className={styles.password}><input id={passwordId} type={showPassword?"text":"password"} autoComplete="new-password" maxLength={128} value={password} onChange={e=>{setPassword(e.target.value);setAccepted(false);}} placeholder="At least 8 characters"/><button type="button" aria-label={showPassword?'Hide password':'Show password'} aria-controls={passwordId} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{showPassword?<path d="m3 3 18 18"/>:null}</svg></button></div><small>{step==='settings'?'Leave blank to remove protection.':password?(password.length<8?'Use at least 8 characters.':'Password protection is enabled.'):'Leave blank for access without a password.'}</small></div></div>:null}
+</div>
 );
- if(step==='permissions') return <AssetAccessSettingsDialog key={channel} title="Parts link settings" assetTitle={name} linkSettings onClose={onClose}
+ if(step==='permissions') return <AssetAccessSettingsDialog key={channel} title="Parts link settings" assetTitle={name} compactLayout linkSettings onClose={onClose}
    guideDescription={channel==='link'?'Anyone with your link can view the shared parts.':'Only the selected business can open your link.'}
    permissionsDescription="Choose downloads and enquiries."
    onViewOnly={()=>{setDownload(false);setEnquiry(false);setAccepted(false);setStep('risk');}}

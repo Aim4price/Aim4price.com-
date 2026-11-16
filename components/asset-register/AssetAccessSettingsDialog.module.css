@@ -282,3 +282,15 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+/* A compact surface for short settings forms; long asset permissions retain their layout. */
+.dialog.compactDialog {
+  width:min(70rem,var(--website-dialog-reference-width,100%)) !important;
+  padding:1.8rem !important;
+  font-family:var(--font-heading,'Montserrat'),var(--font-body,'Inter'),sans-serif;
+}
+.dialog.compactDialog .header { padding-bottom:1.15rem !important; }
+.dialog.compactDialog .header h3 { font-size:1.8rem !important; font-weight:800; letter-spacing:-.035em; }
+.dialog.compactDialog .body.body.body { padding:1.35rem .4rem !important; margin:0 -.4rem; scrollbar-gutter:auto; }
+.dialog.compactDialog .footer { margin:0; padding:1rem 0 0; background:transparent; }
+.dialog.compactDialog .footer [data-access-actions] { justify-content:space-between; }
