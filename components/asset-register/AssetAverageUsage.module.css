@@ -50,3 +50,8 @@
 .review>div { display:grid; align-content:start; gap:.15rem; }
 .review>div+div { border-top:0; }
 .review>div:nth-child(n+3) { border-top:1px solid var(--app-border,#cfdfd7); }
+
+.panel .toggle { display:inline-flex; align-items:center; gap:.55rem; flex-shrink:0; border:0; padding:.25rem; min-height:2.75rem; background:transparent; }
+.toggleTrack { display:flex; align-items:center; width:2.8rem; height:1.6rem; padding:.2rem; box-sizing:border-box; border-radius:2rem; background:#7c8984; }
+.toggleTrack>span { width:1.2rem; height:1.2rem; border-radius:50%; background:white; box-shadow:0 1px 3px #0003; }
+.toggle[aria-checked=true] .toggleTrack { background:#176b52; justify-content:flex-end; }
