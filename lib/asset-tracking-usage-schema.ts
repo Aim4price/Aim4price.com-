@@ -7,6 +7,10 @@ CREATE TABLE IF NOT EXISTS public.asset_tracking_usage (
  baseline_value numeric(14,2) NOT NULL CHECK(baseline_value>=0),
  baseline_at timestamptz NOT NULL, moving_seconds double precision NOT NULL DEFAULT 0, distance_km double precision NOT NULL DEFAULT 0, updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE public.asset_tracking_usage ADD COLUMN IF NOT EXISTS mode text NOT NULL DEFAULT 'tracking' CHECK(mode IN ('tracking','average'));
+ALTER TABLE public.asset_tracking_usage ADD COLUMN IF NOT EXISTS daily_usage numeric(14,4);
+ALTER TABLE public.asset_tracking_usage ADD COLUMN IF NOT EXISTS working_days integer[] NOT NULL DEFAULT ARRAY[1,2,3,4,5];
+ALTER TABLE public.asset_tracking_usage ADD COLUMN IF NOT EXISTS last_estimated_date date;
 CREATE TABLE IF NOT EXISTS public.asset_tracking_usage_buckets (
  asset_id uuid NOT NULL REFERENCES public.asset_tracking_usage(asset_id) ON DELETE CASCADE,
  bucket_start timestamptz NOT NULL, moving_seconds double precision NOT NULL DEFAULT 0,
@@ -42,7 +46,7 @@ BEGIN
  IF NEW.hours IS DISTINCT FROM OLD.hours OR confirm_reading THEN
   INSERT INTO public.asset_tracking_usage_events(asset_id,owner_id,action,reading,metric,baseline_value,baseline_at)
    VALUES(NEW.id,NEW.user_id,'Meter reading confirmed',NEW.hours,config.metric,config.baseline_value,config.baseline_at);
-  UPDATE public.asset_tracking_usage SET baseline_value=coalesce(NEW.hours,0),baseline_at=clock_timestamp(),moving_seconds=0,distance_km=0,
+  UPDATE public.asset_tracking_usage SET baseline_value=coalesce(NEW.hours,0),baseline_at=clock_timestamp(),moving_seconds=0,distance_km=0,last_estimated_date=NULL,
    enabled=enabled AND NEW.hours IS NOT NULL,updated_at=clock_timestamp() WHERE asset_id=NEW.id;
   DELETE FROM public.asset_tracking_usage_buckets WHERE asset_id=NEW.id;
   NEW.specs_json:=(NEW.specs_json-'trackingUsage') || jsonb_build_object('hours',NEW.hours,'usageAmount',NEW.hours,

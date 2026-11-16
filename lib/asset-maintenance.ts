@@ -1,10 +1,11 @@
+import {estimatedServiceDate} from './average-usage-math';
 import {installMaintenanceAssetLifecycle} from './maintenance-asset-lifecycle';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
-import { resolveAssetUsage } from './asset-usage';
+import { resolveAssetUsage, confirmedAssetUsage } from './asset-usage';
 import { ensureOwnerAppTables, listOwnerAppUsers } from './owner-app';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
 import {
@@ -72,6 +73,8 @@ export type AssetMaintenanceRecord = {
   dueUsage: number | null;
   usageMetric: AssetMaintenanceUsageMetric | null;
   currentUsage: number | null;
+  estimatedUsage?: number | null;
+  estimatedDueDate?: string | null;
   remainingUsage: number | null;
   daysUntilDue: number | null;
   alertBeforeValue: number | null;
@@ -746,7 +749,12 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
   const dueDate = toDateOnly(row.due_date);
   const dueUsage = asNumber(row.due_usage);
   const usageMetric = triggerType === 'usage' ? normalizeUsageMetric(row.usage_metric, asset.usageMetric) : null;
-  const currentUsage = triggerType === 'usage' ? asset.usageReading : null;
+  const meter = {hours:asNumber(row.asset_hours),lifeWorkedPercent:asNumber(row.asset_life_worked_percent),kind:asText(row.asset_kind),specsJson:isRecord(row.asset_specs_json)?row.asset_specs_json:{}};
+  const metadata = isRecord(meter.specsJson.trackingUsage) ? meter.specsJson.trackingUsage : {};
+  const estimatedUsage = status === 'upcoming' && triggerType === 'usage' && metadata.source === 'Average usage' && metadata.estimated === true && metadata.metric === usageMetric ? asset.usageReading : null;
+  const currentUsage = triggerType === 'usage' ? confirmedAssetUsage(meter) : null;
+  const estimatedDueDate = status === 'upcoming' && triggerType === 'usage' && metadata.source === 'Average usage' && metadata.enabled === true && metadata.metric === usageMetric && dueUsage !== null && asset.usageReading !== null
+    ? estimatedServiceDate(asset.usageReading,dueUsage,Number(metadata.dailyUsage),Array.isArray(metadata.workingDays)?metadata.workingDays:[]) : null;
   const alertBeforeValue = asNumber(row.alert_before_value);
   const alertBeforeUnit = row.alert_before_unit ? normalizeIntervalUnit(row.alert_before_unit, triggerType === 'date' ? 'days' : usageMetric ?? 'hours') : null;
   const statusInfo = computeRecordStatus({
@@ -754,7 +762,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     triggerType,
     dueDate,
     dueUsage,
-    currentUsage,
+    currentUsage: estimatedUsage ?? currentUsage,
     alertBeforeValue,
     alertBeforeUnit,
     usageMetric,
@@ -778,7 +786,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     triggerType,
     status,
     computedStatus: statusInfo.computedStatus,
-    computedStatusLabel: statusLabel(statusInfo.computedStatus),
+    computedStatusLabel: `${estimatedUsage !== null ? 'Estimated · ' : ''}${statusLabel(statusInfo.computedStatus)}`,
     title: asText(row.title),
     notes: asLongText(row.notes),
     assignedFieldManagerId: asText(row.assigned_field_manager_id) || null,
@@ -787,6 +795,8 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     dueUsage,
     usageMetric,
     currentUsage,
+    estimatedUsage,
+    estimatedDueDate,
     remainingUsage: statusInfo.remainingUsage,
     daysUntilDue: statusInfo.daysUntilDue,
     alertBeforeValue,
@@ -1451,6 +1461,17 @@ async function verifyAssetBelongsToUser(userId: string, assetId: string): Promis
   return asset;
 }
 
+/** Service evidence supersedes estimates, never a newer confirmed meter or another usage unit. */
+async function confirmMaintenanceMeterReading(client: PoolClient,userId:string,assetId:string,actual:number|null,date:string,metric:string) {
+  if (actual === null || date !== todayJohannesburgDateOnly() || !['hours','km'].includes(metric)) return;
+  const live = (await client.query('SELECT hours,kind,specs_json FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE',[assetId,userId])).rows[0];
+  if (!live || resolveAssetUsage({hours:live.hours,kind:live.kind,specsJson:live.specs_json}).metric !== metric) return;
+  const confirmed = confirmedAssetUsage({hours:live.hours,kind:live.kind,specsJson:live.specs_json});
+  if (confirmed !== null && actual < confirmed) throw Error('COMPLETION_USAGE_LOWER_THAN_CURRENT');
+  await client.query("SELECT set_config('aim4price.confirm_usage','on',true)");
+  await client.query('UPDATE public.asset_register_items SET hours=$3,updated_at=now() WHERE id=$1 AND user_id=$2',[assetId,userId,actual]);
+}
+
 export async function recordStandaloneAssetMaintenanceCompletion(
   userId: string,
   input: AssetMaintenanceStandaloneCompletionInput,
@@ -1582,6 +1603,8 @@ export async function recordStandaloneAssetMaintenanceCompletion(
         JSON.stringify(maintenanceWork),
       ],
     );
+
+    if (result.rows[0]?.id) await confirmMaintenanceMeterReading(client,userId,assetId,completedUsage,toDateOnly(input.completedAt) || todayJohannesburgDateOnly(),usageMetric);
 
     const record = result.rows[0]?.id
       ? await getAssetMaintenanceRecordByIdWithClient(
@@ -2028,6 +2051,7 @@ export async function completeAssetMaintenanceRecord(
       const prior = await client.query<{ maintenance_id: string }>('select maintenance_id::text from public.app_offline_completions where user_id = $1 and event_id = $2', [userId, input.offlineEventId]);
       if (prior.rows[0] && prior.rows[0].maintenance_id !== maintenanceId) throw new Error('COMPLETION_EVENT_REUSED');
     }
+    await client.query(`SELECT id FROM public.asset_register_items WHERE user_id=$1 AND id=(SELECT asset_register_item_id FROM public.asset_maintenance_records WHERE id=$2::uuid AND user_id=$1) FOR UPDATE`,[userId,maintenanceId]);
     const existing = await getAssetMaintenanceRecordByIdWithClient(
       client,
       userId,
@@ -2133,6 +2157,8 @@ export async function completeAssetMaintenanceRecord(
           input.continueSchedule !== false,
         ],
       );
+
+      if (!sourceScanEventId) await confirmMaintenanceMeterReading(client,userId,existing.assetId,nonNegativeNumber(input.completedUsage),completedDate || todayJohannesburgDateOnly(),existing.assetUsageMetric);
 
       const updated = await getAssetMaintenanceRecordByIdWithClient(client, userId, maintenanceId);
       if (!updated || updated.status !== 'done') throw new Error('MAINTENANCE_NOT_FOUND');

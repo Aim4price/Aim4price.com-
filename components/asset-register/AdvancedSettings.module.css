@@ -86,3 +86,5 @@
 .trackingDetails { border-top: 1px solid var(--app-border, #d4e3dc); padding-top: .9rem; }
 .trackingDetails summary { cursor: pointer; font-weight: 600; color: var(--app-text, #153d31); padding: .4rem 0; }
 .trackingDetails[open] summary { margin-bottom: .75rem; }
+
+.menu.menu.menu > button[data-settings-action="average"] > svg { color:#146d68!important; background:#e6f6f3!important; border-color:#b5ded6!important; }

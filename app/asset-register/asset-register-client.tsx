@@ -1,4 +1,5 @@
 'use client';
+import AssetAverageUsage from '../../components/asset-register/AssetAverageUsage';
 import { PageHelpHeading } from '../../components/PageHelp';
 import MarketplacePublishReview from '../../components/MarketplacePublishReview';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
@@ -75,7 +76,7 @@ import BusinessDirectoryTools from '../../components/business-network/BusinessDi
 import directoryStyles from '../../components/business-network/PartnerDirectory.module.css';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
-import { resolveAssetUsage } from '../../lib/asset-usage';
+import { resolveAssetUsage, confirmedAssetUsage } from '../../lib/asset-usage';
 
 import { websiteLogicalRect, websiteVisibleViewport, currentWebsiteScale, WEBSITE_DESIGN_WIDTH } from '../../lib/website-canvas';
 
@@ -1376,7 +1377,7 @@ const USAGE_OVERRIDE_CONFIRMATION_TEXT =
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
 type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice' | 'savingMap';
-type AssetSettingsView = 'tracking' | 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage' | 'lifetime';
+type AssetSettingsView = 'average' | 'tracking' | 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage' | 'lifetime';
 type AssetUsageOverrideRequest = {
   mode: Exclude<AssetSettingsUsageMode, 'none'>;
   value: number;
@@ -3118,7 +3119,7 @@ function getAssetSettingsUsageCurrentValue(asset: RegisterAsset, mode: AssetSett
   }
 
   if (mode === 'hours' || mode === 'km') {
-    const savedUsage = Number(asset.hours);
+    const savedUsage = Number(confirmedAssetUsage(asset));
     return Number.isFinite(savedUsage) && savedUsage >= 0 ? Math.round(savedUsage) : null;
   }
 
@@ -5066,7 +5067,7 @@ const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
 function getAssetSavedUsageReading(asset: RegisterAsset | null | undefined): number | null {
   if (!asset || asset.hours === null || typeof asset.hours === 'undefined') return null;
 
-  const savedUsage = Number(asset.hours);
+  const savedUsage = Number(confirmedAssetUsage(asset));
   return Number.isFinite(savedUsage) && savedUsage >= 0 ? Math.round(savedUsage) : null;
 }
 
@@ -9316,7 +9317,7 @@ export default function AssetRegisterClient({
   const lowerUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const lowerUsageText = lowerUsageMode === 'percent' ? assetDraft.lifeWorkedPercent : assetDraft.hours;
   const lowerUsageValue = parseAssetSettingsUsageInput(lowerUsageMode, lowerUsageText);
-  const savedUsageValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, lowerUsageMode) : null;
+  const savedUsageValue = editingAsset ? (lowerUsageMode === 'percent' ? getAssetSettingsUsageCurrentValue(editingAsset, lowerUsageMode) : confirmedAssetUsage(editingAsset)) : null;
   const hasLowerUsageDraft = (!editingAsset || assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric) && lowerUsageValue !== null && savedUsageValue !== null && lowerUsageValue < savedUsageValue;
 
   useEffect(() => {
@@ -12719,6 +12720,7 @@ export default function AssetRegisterClient({
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: hoursForSave,
+        preserveUsageReading: Boolean(editingAsset && !usageTypeChangeConfirmed && assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric && assetDraft.hours === buildDraftFromAsset(editingAsset).hours),
         usageTypeChangeConfirmed,
         usageMetric: isPropertyAsset || !showUsageHoursField ? null : assetDraft.usageMetric === 'km' ? 'km' : 'hours',
         lifeWorkedPercent: roundedLifeWorkedPercent,
@@ -19308,6 +19310,13 @@ export default function AssetRegisterClient({
                     </>
                   ) : null}
 
+                  {!desktopAccess && ['hours','km'].includes(resolveAssetUsage(editingAsset).metric) ? (
+                    <button type="button" className={styles.assetSettingsOptionButton} data-settings-action="average" onClick={() => setAssetSettingsView('average')} disabled={isAssetSettingsBusy}>
+                      <TrendIcon className={styles.assetSettingsOptionIcon}/>
+                      <span><strong>Average usage</strong><small>Estimate usage between actual readings.</small></span>
+                    </button>
+                  ) : null}
+
                   {isSavedAim4priceAsset(editingAsset) && shouldShowRevalueLifetimeInput(editingAsset) ? (
                     <button type="button" className={styles.assetSettingsOptionButton} data-settings-action="lifetime" onClick={openAssetLifetimeView} disabled={isAssetSettingsBusy}>
                       <TrendIcon className={styles.assetSettingsOptionIcon} />
@@ -19331,6 +19340,8 @@ export default function AssetRegisterClient({
                   ) : null}
                 </div>
               ) : null}
+
+              {assetSettingsView === 'average' && !desktopAccess && ['hours','km'].includes(resolveAssetUsage(editingAsset).metric) ? <AssetAverageUsage assetId={editingAsset.id}/> : null}
 
               {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel assetId={editingAsset.id}/> : null}
 

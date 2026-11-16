@@ -630,7 +630,9 @@ function RecordCard({ record, asset }: { record: DealerMaintenanceRecordSummary;
       </header>
       <div className={styles.recordGrid}>
         <div><span>Service due</span><strong>{dueLabel(record, asset.usageMetric)}</strong></div>
-        <div><span>Current usage</span><strong>{formatUsage(record.currentUsage, record.usageMetric || asset.usageMetric)}</strong></div>
+        <div><span>Last confirmed usage</span><strong>{formatUsage(record.currentUsage, record.usageMetric || asset.usageMetric)}</strong></div>
+        {record.estimatedUsage != null && <div><span>Estimated usage</span><strong>{formatUsage(record.estimatedUsage,record.usageMetric || asset.usageMetric)}</strong></div>}
+        {record.estimatedDueDate && <div><span>Estimated service date</span><strong>{formatDate(record.estimatedDueDate)}</strong></div>}
         <div><span>{record.status === 'done' ? 'Completed usage' : 'Remaining'}</span><strong>{record.status === 'done' ? formatUsage(record.completedUsage, record.usageMetric || asset.usageMetric) : remainingLabel(record, asset.usageMetric)}</strong></div>
         <div><span>Assigned to</span><strong>{record.assignedName || 'Unassigned'}</strong></div>
         <div><span>Recurring</span><strong>{recurringLabel(record)}</strong></div>

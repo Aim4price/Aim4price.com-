@@ -850,6 +850,7 @@ export async function PUT(request: NextRequest) {
     const item = await updateAssetRegisterItem(session.user.id, {
       assetId,
       usageTypeChangeConfirmed: body.usageTypeChangeConfirmed === true,
+      preserveUsageReading: body.preserveUsageReading === true,
       kind,
       title,
       value,

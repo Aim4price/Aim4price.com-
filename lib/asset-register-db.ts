@@ -1,5 +1,5 @@
 import {installAssetHistoryTriggers} from './asset-history-schema';
-import { resolveAssetUsage as resolveSharedAssetUsage, confirmedUsageTypeChange } from './asset-usage';
+import { resolveAssetUsage as resolveSharedAssetUsage, confirmedAssetUsage, confirmedUsageTypeChange } from './asset-usage';
 import { hydrateLegacyValuationRow, normalizeSavedValuationMethod } from './asset-register-legacy-valuation';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
@@ -161,6 +161,7 @@ export type UpdateAssetRegisterItemInput = {
   condition?: ConditionKey | null;
   allowUsageDecrease?: boolean;
   usageTypeChangeConfirmed?: boolean;
+  preserveUsageReading?: boolean;
 };
 
 export type UpdateAssetRegisterItemNamesInput = {
@@ -3213,13 +3214,16 @@ export async function updateAssetRegisterItem(
     specsJson: {...input.specsJson, ...(input.usageTypeChangeConfirmed ? {usageTypeConfirmed: true} : {})},
   }, input.usageTypeChangeConfirmed === true);
   const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
-  const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
+  const incomingHours = input.preserveUsageReading && !usageChange ? existing.hours : input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
   const nextYearModel = incomingYearModel;
   const nextHours = usageChange ? (usageChange.metric === 'hours' || usageChange.metric === 'km' ? incomingHours : null) : existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
   const incomingCondition = normalizeConditionForDb(input.condition);
   const existingCondition = normalizeConditionForDb(existing.condition);
   const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
+  if (input.preserveUsageReading && !usageChange) {
+    for (const key of ['hours','usageAmount','usage_amount','engine_hours','km','kilometres','kilometers']) baseSpecsJson[key] = nextHours;
+  }
   // Ordinary edits cannot replace an owner-approved valuation anchor.
   baseSpecsJson.approved_value_baseline = existing.specsJson.approved_value_baseline ?? null;
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
@@ -3251,7 +3255,7 @@ export async function updateAssetRegisterItem(
       };
   const fields: SqlField[] = [];
 
-  if (!input.allowUsageDecrease && !usageChange && incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
+  if (!input.allowUsageDecrease && !usageChange && incomingHours !== null && existing.hours !== null && incomingHours < (confirmedAssetUsage(existing) ?? existing.hours)) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
 
@@ -3367,6 +3371,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
   preserveUsageReading?: boolean;
+  confirmUsageReading?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
@@ -3406,7 +3411,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   if (
     input.allowUsageDecrease !== true &&
     existing.hours !== null &&
-    savedUsage !== null && savedUsage < existing.hours
+    savedUsage !== null && savedUsage < (confirmedAssetUsage(existing) ?? existing.hours)
   ) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
@@ -3464,6 +3469,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   );
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
+  if (input.confirmUsageReading && input.transaction) await db.query("SELECT set_config('aim4price.confirm_usage','on',true)");
   const update = buildUpdateSetClause(fields);
   const result = await db.query<AssetRegisterRow>(
     `
@@ -3524,6 +3530,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
   preserveUsageReading?: boolean;
+  confirmUsageReading?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = input.transaction ?? getDb();
   const schema = await getAssetRegisterSchema();
@@ -3571,7 +3578,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     input.allowUsageDecrease !== true &&
     nextUsageAmount !== null &&
     existingUsageAmount !== null &&
-    nextUsageAmount < existingUsageAmount
+    nextUsageAmount < (confirmedAssetUsage(existing) ?? existingUsageAmount)
   ) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
@@ -3645,6 +3652,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
+  if (input.confirmUsageReading && input.transaction) await db.query("SELECT set_config('aim4price.confirm_usage','on',true)");
   const update = buildUpdateSetClause(fields);
   const result = await db.query<AssetRegisterRow>(
     `
@@ -4034,7 +4042,7 @@ export async function updateSharedAssetDetails(client: import('pg').PoolClient, 
  const metric=resolveSharedAssetUsage(existing).metric;
  if(patch.usage!==undefined&&metric==='not_applicable')throw new Error('Usage does not apply to this asset.');
  const percentage=metric==='percentage';
- const current=resolveSharedAssetUsage(existing).value;
+ const current=confirmedAssetUsage(existing);
  if(patch.usage!==undefined && ((!options.allowUsageDecrease&&patch.usage<(current||0))||patch.usage<0||!Number.isFinite(patch.usage)||(percentage&&patch.usage>100)))throw new Error('Usage cannot decrease. Ask the owner to correct the reading in Settings.');
  const hours=patch.usage!==undefined&&!percentage?patch.usage:existing.hours;
  const life=patch.usage!==undefined&&percentage?patch.usage:existing.lifeWorkedPercent;

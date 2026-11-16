@@ -1,3 +1,4 @@
+import {confirmedAssetUsage} from './asset-usage';
 import type { PoolClient } from 'pg';
 import { saveAssetRevaluation } from './asset-revaluation-save';
 import {applyApprovedValueBaseline} from './approved-value-baseline';
@@ -715,7 +716,7 @@ async function revalueTractorAsset(input: {
     hasUsageAmountOverride &&
     usageAmountOverride !== null &&
     savedHours !== null &&
-    usageAmountOverride < savedHours &&
+    usageAmountOverride < (confirmedAssetUsage(input.asset) ?? savedHours) &&
     input.allowUsageDecrease !== true
   ) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
@@ -829,6 +830,7 @@ async function revalueTractorAsset(input: {
       expectedUpdatedAtIso: input.asset.updatedAtIso,
       saveReplacementPrice: input.saveReplacementPrice === true,
       allowUsageDecrease: input.allowUsageDecrease === true,
+      confirmUsageReading: input.usageAmountOverride !== undefined,
       preserveUsageReading: input.usageAmountOverride === undefined && (asRecord(input.asset.specsJson.trackingUsage).estimated === true || (input.asset.hours !== null && !Number.isInteger(input.asset.hours))),
     });
     return { saved, item };
@@ -942,7 +944,7 @@ async function revalueGenericAsset(input: {
     hasUsageAmountOverride &&
     usageAmountOverride !== null &&
     savedUsageAmount !== null &&
-    usageAmountOverride < savedUsageAmount &&
+    usageAmountOverride < (confirmedAssetUsage(input.asset) ?? savedUsageAmount) &&
     input.allowUsageDecrease !== true
   ) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
@@ -1024,6 +1026,7 @@ async function revalueGenericAsset(input: {
       expectedUpdatedAtIso: input.asset.updatedAtIso,
       saveReplacementPrice: input.saveReplacementPrice === true,
       allowUsageDecrease: input.allowUsageDecrease === true,
+      confirmUsageReading: input.usageAmountOverride !== undefined,
       preserveUsageReading: input.usageAmountOverride === undefined && (asRecord(input.asset.specsJson.trackingUsage).estimated === true || (input.asset.hours !== null && !Number.isInteger(input.asset.hours))),
     });
     return { saved, item };

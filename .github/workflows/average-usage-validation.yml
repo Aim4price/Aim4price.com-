@@ -1,0 +1,25 @@
+name: Average usage validation
+on:
+  pull_request:
+    paths:
+      - 'lib/average-usage*'
+      - 'lib/asset-tracking-usage*'
+      - 'lib/asset-usage.ts'
+      - 'lib/asset-maintenance.ts'
+      - 'app/api/asset-register/**/average-usage/**'
+      - 'components/asset-register/AssetAverageUsage*'
+      - 'tests/average-usage*'
+      - '.github/workflows/average-usage-validation.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/average-usage.test.mjs tests/average-usage-access.test.cjs tests/asset-tracking-usage.test.mjs tests/shared-asset-work.test.cjs tests/maintenance-reminders.test.cjs tests/fuel-ledger-integrity.test.mjs
