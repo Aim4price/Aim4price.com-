@@ -925,6 +925,7 @@ export async function partsRecipients(
   actor: PartsActor,
   id: string,
   search: string,
+  area: string = "",
 ) {
   await ensureSharingFoundation();
   await (await import("./business-network")).ensureBusinessNetwork();
@@ -933,8 +934,8 @@ export async function partsRecipients(
     return {
       recipients: (
         await db.query(
-          `SELECT u.email,p.business_name,p.town_city,p.account_type,(p.account_type='dealer' AND coalesce(a.plan,'desktop')='desktop') AS can_contribute FROM "user" u JOIN account_profiles p ON p.user_id=u.id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE u.id<>$1 AND ${PARTS_RECIPIENT} AND ($2='' OR strpos(lower(coalesce(p.business_name,'')||' '||u.email||' '||coalesce(p.town_city,'')),$2)>0) ORDER BY p.business_name,u.email LIMIT 50`,
-          [actor.id, str(search, 100).toLowerCase()],
+          `SELECT u.email,coalesce(nullif(b.details->>'name',''),p.business_name) AS business_name,coalesce(nullif(b.details->>'town',''),p.town_city) AS town_city,b.details->>'address' AS address,b.details->>'phone' AS phone,(SELECT string_agg(value, ', ') FROM jsonb_array_elements_text(coalesce(b.details->'services','[]'::jsonb))) AS services,CASE WHEN l.logo_data<>'' THEN '/api/directory-logo/'||b.id ELSE '' END AS logo_url,p.account_type,(p.account_type='dealer' AND coalesce(a.plan,'desktop')='desktop') AS can_contribute FROM "user" u JOIN account_profiles p ON p.user_id=u.id JOIN account_directory_listings l ON l.user_id=u.id JOIN business_network b ON b.id=l.business_id LEFT JOIN sharing_account_access a ON a.user_id=u.id WHERE u.id<>$1 AND ${PARTS_RECIPIENT} AND b.status='active' AND b.accepted_at IS NOT NULL AND ($3='' OR coalesce((b.details->>'nationwide')::boolean,false) OR NOT EXISTS (SELECT 1 FROM unnest(string_to_array($3,',')) area WHERE strpos(lower(coalesce(b.details->>'town','')||' '||coalesce(b.details->>'address','')||' '||coalesce(b.details->>'serviceArea','')||' '||coalesce(p.town_city,'')),trim(area))=0)) AND ($2='' OR strpos(lower(coalesce(b.details->>'name','')||' '||coalesce(p.business_name,'')||' '||u.email||' '||coalesce(p.town_city,'')),$2)>0) ORDER BY p.business_name,u.email LIMIT 50`,
+          [actor.id, str(search, 100).toLowerCase(),str(area,100).toLowerCase()],
         )
       ).rows,
     };

@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
           actor,
           networkId(q.get("network")),
           q.get("search") || "",
+          q.get("area") || "",
         ),
       );
     if (q.get("view") === "inbox") return reply(await partsInbox(actor));
