@@ -2280,39 +2280,39 @@
 .headerActions { gap: .55rem; flex-direction: row; align-items: center; flex-wrap: wrap; }
 .userSummary { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(170px, 1.4fr); gap: .8rem; }
 .userSummary article, .userSummary > button { min-height: 96px; padding: 1rem 1.15rem; border-color: #e2e9e5; border-radius: .8rem; box-shadow: none; grid-template-columns: 1fr; gap: .5rem; background: #fff !important; }
-.userSummary span { font-size: .72rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.userSummary span { font-size: .85rem; font-weight: 650; text-transform: none; letter-spacing: 0; }
 .userSummary strong { grid-column: 1; grid-row: auto; font-size: 1.8rem; font-weight: 600; letter-spacing: -.04em; }
 .userSummary .summaryStorage { grid-column: auto; }
 .summaryStorage strong { font-size: .95rem; line-height: 1.65; letter-spacing: -.02em; }
 .userSummary > button[aria-pressed="true"] { border-color: #9cbdab; box-shadow: inset 0 3px #397354; background: #fbfdfb !important; }
 .filterPanel { padding: 1.1rem 1.2rem; gap: .9rem; border-color: #e2e9e5; box-shadow: none; border-radius: .8rem; }
 .filterBar { grid-template-columns: minmax(190px, 1.6fr) repeat(4, minmax(105px, 1fr)); gap: .8rem; }
-.searchField input, .signupFilter select { min-height: 40px; font-size: .76rem; font-weight: 500; border-color: #dfe7e2; background: #fcfdfc; }
-.searchField span, .signupFilter span { font-size: .68rem; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.searchField input, .signupFilter select { min-height: 40px; font-size: .85rem; font-weight: 650; border-color: #dfe7e2; background: #fcfdfc; }
+.searchField span, .signupFilter span { font-size: .85rem; text-transform: none; letter-spacing: 0; font-weight: 650; }
 .signupFilter, .provinceFilter { min-width: 0; }
 .tableWrap { border-color: #e2e9e5; border-radius: .8rem; box-shadow: none; scrollbar-gutter: auto; max-height: none; }
-.userTable th { font-size: .68rem; font-weight: 500; background: #f9fbfa; color: #7c8b82; text-transform: none; letter-spacing: 0; padding: .85rem 1.2rem; }
-.userTable td { padding: 1rem 1.2rem; font-size: .77rem; border-bottom-color: #eff2f0; }
+.userTable th { font-size: .85rem; font-weight: 650; background: #f9fbfa; color: #7c8b82; text-transform: none; letter-spacing: 0; padding: .85rem 1.2rem; }
+.userTable td { padding: 1rem 1.2rem; font-size: .85rem; border-bottom-color: #eff2f0; }
 .userTable tbody tr:hover { background: #f5faf7; }
 .nameCell { font-weight: 600; color: #264838; font-size: .8rem; }
-.rowAccountButton > span, .accountTypeCell span { font-size: .69rem; font-weight: 400; color: #859087; }
-.accountTypeCell strong { font-weight: 500; }
-.groupNotificationButton { background: #174d3e; border-color: #174d3e; box-shadow: none; font-weight: 500; font-size: .75rem; min-height: 38px; }
-.signOutButton { font-size: .75rem; font-weight: 500; min-height: 38px; border-color: #e0e7e3; }
+.rowAccountButton > span, .accountTypeCell span { font-size: .85rem; font-weight: 500; color: #64746a; }
+.accountTypeCell strong { font-weight: 650; }
+.groupNotificationButton { background: #174d3e; border-color: #174d3e; box-shadow: none; font-weight: 650; font-size: .85rem; min-height: 38px; }
+.signOutButton { font-size: .85rem; font-weight: 650; min-height: 38px; border-color: #e0e7e3; }
 .accountActionModal { width: min(960px, calc(100vw - 3rem)); padding: 1.6rem; gap: 1.15rem; background: #fff; border-radius: 1.1rem; box-shadow: 0 28px 100px #14352926; }
 .accountActionModal .qrModalHeader { padding-bottom: 1.1rem; }
 .accountActionModal .qrModalHeader h2 { font-size: 1.5rem; font-weight: 600; }
 .accountToolSection { padding: 0; border: 0; background: transparent; gap: .8rem; }
-.accountSectionIntro h3 { font-size: .72rem; font-weight: 500; color: #7c8b82; }
+.accountSectionIntro h3 { font-size: .85rem; font-weight: 650; color: #7c8b82; }
 .accountPrimaryActions { grid-template-columns: 1.25fr 1fr 1fr; gap: .6rem; }
-.accountToolSection .accountActionButton { min-height: 43px; font-size: .75rem; font-weight: 500; border-radius: .55rem; box-shadow: none; }
+.accountToolSection .accountActionButton { min-height: 43px; font-size: .85rem; font-weight: 650; border-radius: .55rem; box-shadow: none; }
 .accountToolsLayout { padding-top: 1.1rem; border-top: 1px solid #e7ede9; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; }
 .accountActionModal .accountWorkspaceLinks { gap: .5rem; }
 .accountActionModal .accountWorkspaceLinks a { min-height: 67px; border: 1px solid #e6ece8; background: #fafcfb; padding: .8rem 1.7rem .8rem .8rem; }
-.accountWorkspaceLinks a strong { font-size: .75rem; font-weight: 550; }
-.accountWorkspaceLinks a span { font-size: .66rem; }
+.accountWorkspaceLinks a strong { font-size: .85rem; font-weight: 650; }
+.accountWorkspaceLinks a span { font-size: .85rem; }
 .accountDisclosure { border: 0; border-top: 1px solid #e7ede9; border-radius: 0; padding: 0; }
-.accountDisclosure > summary { min-height: 3rem; font-size: .8rem; font-weight: 500; }
-.accountDisclosure > summary span { font-size: .68rem; }
+.accountDisclosure > summary { min-height: 3rem; font-size: .8rem; font-weight: 650; }
+.accountDisclosure > summary span { font-size: .85rem; }
 @media (max-width: 1250px) { .userSummary { grid-template-columns: repeat(4, minmax(0, 1fr)); } .userSummary .summaryStorage { grid-column: 1 / -1; min-height: auto; display: flex; justify-content: space-between; } .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filterBar .searchField { grid-column: 1 / -1; } }
 @media (max-width: 760px) { .topBar { flex-direction: row; align-items: center; } .headerActions > .groupNotificationButton, .headerActions > .signOutButton { width: auto; } .userSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filterBar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .accountToolsLayout { grid-template-columns: 1fr; } .accountActionModal { width: 100%; padding: 1.1rem; } .accountActionModal .accountPrimaryActions { grid-template-columns: 1fr; } .userSummary article, .userSummary > button { min-height: 85px; } }

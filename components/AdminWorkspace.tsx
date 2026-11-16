@@ -36,9 +36,16 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const drawer = useRef<HTMLDialogElement>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const current = ADMIN_LINKS.find(item => item.href === pathname);
+  const current = ADMIN_LINKS.find(item => item.href === pathname || (item.href !== '/admin' && pathname.startsWith(item.href + '/')));
+  const isCurrent = (href: string) => current?.href === href;
   useEffect(() => { try { setCollapsed(localStorage.getItem('aim4price.admin.sidebar') === 'collapsed'); } catch {} }, []);
   useEffect(() => { drawer.current?.close(); }, [pathname]);
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 981px)');
+    const closeDrawerOnDesktop = () => { if (desktop.matches) drawer.current?.close(); };
+    desktop.addEventListener('change', closeDrawerOnDesktop);
+    return () => desktop.removeEventListener('change', closeDrawerOnDesktop);
+  }, []);
   function toggleSidebar() {
     setCollapsed(value => { const next = !value; try { localStorage.setItem('aim4price.admin.sidebar', next ? 'collapsed' : 'expanded'); } catch {} return next; });
   }
@@ -47,7 +54,7 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
       <Link href="/admin/dashboard" prefetch={false} className={`${styles.item} ${pathname === '/admin/dashboard' ? styles.selected : ''}`} aria-current={pathname === '/admin/dashboard' ? 'page' : undefined} title={compact ? 'Dashboard' : undefined} onClick={() => drawer.current?.close()}><AdminIcon name="dashboard" /><span>Dashboard</span></Link>
       {ADMIN_GROUPS.map(group => <section key={group.title} className={styles.group} aria-label={group.title}>
         <h2>{group.title}</h2>
-        {group.keys.filter(key => key !== 'dashboard').map(key => ADMIN_LINKS.find(item => item.key === key)!).map(item => <Link key={item.key} href={item.href} prefetch={false} title={compact ? item.label : undefined} className={`${styles.item} ${pathname === item.href ? styles.selected : ''}`} aria-current={pathname === item.href ? 'page' : undefined} onClick={() => drawer.current?.close()}><AdminIcon name={item.key} /><span>{item.key === 'annual-review' ? 'Annual review' : item.label}</span></Link>)}
+        {group.keys.filter(key => key !== 'dashboard').map(key => ADMIN_LINKS.find(item => item.key === key)!).map(item => <Link key={item.key} href={item.href} prefetch={false} title={compact ? item.label : undefined} className={`${styles.item} ${isCurrent(item.href) ? styles.selected : ''}`} aria-current={isCurrent(item.href) ? 'page' : undefined} onClick={() => drawer.current?.close()}><AdminIcon name={item.key} /><span>{item.key === 'annual-review' ? 'Annual review' : item.label}</span></Link>)}
       </section>)}
       <Link href="/admin/sharing" prefetch={false} className={`${styles.item} ${pathname === '/admin/sharing' ? styles.selected : ''}`} aria-current={pathname === '/admin/sharing' ? 'page' : undefined} title={compact ? 'Sharing & access' : undefined} onClick={() => drawer.current?.close()}><AdminIcon name="sharing" /><span>Sharing & access</span></Link>
     </nav>;
@@ -55,9 +62,9 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
   return <div className={`${styles.workspace} ${collapsed ? styles.collapsed : ''}`}>
     <a className={styles.skipLink} href="#admin-workspace-content">Skip to page content</a>
     <aside className={styles.sidebar} aria-label="Admin workspace">
-      <Link href="/admin/dashboard" className={styles.brand} aria-label="Aim4price Admin dashboard"><span className={styles.brandMark}>A<span>4</span></span><span className={styles.brandText}>Aim4price<small>Admin workspace</small></span></Link>
+      <Link href="/admin/dashboard" className={styles.brand} aria-label="Aim4price Admin dashboard"><img className={styles.brandLogo} src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><span className={styles.brandText}>Aim4price<small>Admin workspace</small></span></Link>
       {navigation(collapsed)}
-      <div className={styles.sidebarFooter}><span className={styles.adminAvatar}>A</span><span className={styles.adminIdentity}>Administrator<small>Aim4price</small></span><button type="button" className={styles.collapseButton} onClick={toggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}>{collapsed ? '›' : '‹'}</button></div>
+      <div className={styles.sidebarFooter}><img className={styles.adminAvatar} src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><span className={styles.adminIdentity}>Administrator<small>Aim4price</small></span><button type="button" className={styles.collapseButton} onClick={toggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}>{collapsed ? '›' : '‹'}</button></div>
     </aside>
     <div className={styles.content}>
       <header className={styles.workspaceBar}>
@@ -67,8 +74,8 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
       </header>
       <div id="admin-workspace-content" className={styles.pageContent} tabIndex={-1}>{children}</div>
     </div>
-    <dialog ref={drawer} className={styles.drawer} aria-label="Admin navigation" onClose={() => menuButton.current?.focus()} onClick={event => { if (event.target === event.currentTarget) drawer.current?.close(); }}>
-      <div className={styles.drawerHeader}><strong>Aim4price Admin</strong><button type="button" className={styles.collapseButton} data-modal-close aria-label="Close Admin navigation" onClick={() => drawer.current?.close()}>×</button></div>
+    <dialog ref={drawer} className={styles.drawer} aria-label="Admin navigation" onClose={() => { if (window.matchMedia('(max-width: 980px)').matches) menuButton.current?.focus(); }} onClick={event => { if (event.target === event.currentTarget) drawer.current?.close(); }}>
+      <div className={styles.drawerHeader}><span className={styles.drawerBrand}><img src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><strong>Aim4price Admin</strong></span><button type="button" className={styles.collapseButton} data-modal-close aria-label="Close Admin navigation" onClick={() => drawer.current?.close()}>×</button></div>
       {navigation()}
     </dialog>
   </div>;
