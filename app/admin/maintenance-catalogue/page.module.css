@@ -124,20 +124,20 @@
   color: #245c3b;
 }
 @media (max-width: 700px) {
-  .layout {
+  :global(:where(html:not(:has([data-website-canvas])))) .layout {
     grid-template-columns: 1fr;
   }
-  .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .header {
     align-items: stretch;
     flex-direction: column;
   }
-  .list {
+  :global(:where(html:not(:has([data-website-canvas])))) .list {
     max-height: 280px;
   }
-  .page {
+  :global(:where(html:not(:has([data-website-canvas])))) .page {
     padding: 16px;
   }
-  .panel {
+  :global(:where(html:not(:has([data-website-canvas])))) .panel {
     padding: 16px;
   }
 }

@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #14342b;
   background: #f4f7f5;
 }
@@ -7,7 +7,7 @@
 .shell {
   width: 100%;
   margin: 0 auto;
-  padding: 1.15rem clamp(1rem, 3vw, 3.5rem) 3rem;
+  padding: 1.15rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 3.5rem) 3rem;
   box-sizing: border-box;
   display: grid;
   gap: 0.8rem;
@@ -28,7 +28,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0d3126;
-  font-size: clamp(1.8rem, 2.4vw, 2.3rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.3rem);
   line-height: 1;
   letter-spacing: -0.045em;
   white-space: nowrap;
@@ -518,7 +518,7 @@
 }
 
 .documentViewer {
-  height: min(62vh, 43rem);
+  height: min(calc(var(--website-design-vh, 1vh) * 62), 43rem);
   min-height: 30rem;
   margin-top: 0.75rem;
   overflow: auto;
@@ -1226,105 +1226,105 @@ fieldset.formGrid {
 }
 
 @media (max-width: 1280px) {
-  .kpiGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .kpiGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     grid-template-columns: minmax(15rem, 1.4fr) repeat(2, minmax(10rem, 1fr));
   }
 
-  .filters label:nth-of-type(4) {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters label:nth-of-type(4) {
     grid-column: 1 / 2;
   }
 
-  .workbenchGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .workbenchGrid {
     grid-template-columns: minmax(23rem, 0.85fr) minmax(29rem, 1.15fr);
   }
 }
 
 @media (max-width: 980px) {
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .workbenchGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .workbenchGrid {
     display: block;
   }
 
-  .documentPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .documentPanel {
     border-right: 0;
     border-bottom: 1px solid #dfe8e3;
   }
 
-  .documentViewer {
+  :global(:where(html:not(:has([data-website-canvas])))) .documentViewer {
     height: 32rem;
     min-height: 24rem;
   }
 }
 
 @media (max-width: 720px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 0.9rem 0.7rem 2rem;
   }
 
-  .kpiGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .kpiGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .filters,
-  .formGrid,
-  .primaryActions,
-  .exceptionActions,
-  .usageComparison {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters,
+  :global(:where(html:not(:has([data-website-canvas])))) .formGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .primaryActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .exceptionActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .usageComparison {
     grid-template-columns: 1fr;
   }
 
-  .usageUpdateHeading,
-  .usageUpdateFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .usageUpdateHeading,
+  :global(:where(html:not(:has([data-website-canvas])))) .usageUpdateFooter {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .updateUsageButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .updateUsageButton {
     width: 100%;
   }
 
-  .filters label:nth-of-type(4),
-  .fullField {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters label:nth-of-type(4),
+  :global(:where(html:not(:has([data-website-canvas])))) .fullField {
     grid-column: auto;
   }
 
-  .queueHeading,
-  .workbenchHeader,
-  .panelHeading,
-  .fileMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .queueHeading,
+  :global(:where(html:not(:has([data-website-canvas])))) .workbenchHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeading,
+  :global(:where(html:not(:has([data-website-canvas])))) .fileMeta {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .workbenchHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .workbenchHeaderActions {
     width: 100%;
     justify-content: space-between;
   }
 
-  .workbenchTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .workbenchTitle {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.2rem;
   }
 
-  .documentViewer {
+  :global(:where(html:not(:has([data-website-canvas])))) .documentViewer {
     height: 26rem;
     min-height: 20rem;
   }
 
-  .senderCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .senderCard {
     grid-template-columns: 1fr;
   }
 
-  .senderCard p {
+  :global(:where(html:not(:has([data-website-canvas])))) .senderCard p {
     grid-column: auto;
   }
 }
@@ -1345,8 +1345,8 @@ fieldset.formGrid {
   grid-column: span 2;
 }
 @media (max-width: 600px) {
-  .filters { grid-template-columns: minmax(0, 1fr); }
-  .filters .searchField { grid-column: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters .searchField { grid-column: auto; }
 }
 
 .queueHint { margin: .2rem 1rem 1rem; color: #52645d; font-size: .78rem; line-height: 1.5; }
@@ -1364,7 +1364,7 @@ fieldset.formGrid {
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 

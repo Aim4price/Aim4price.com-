@@ -70,6 +70,7 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
       <header className={styles.workspaceBar}>
         <button ref={menuButton} type="button" className={styles.menuButton} onClick={() => drawer.current?.showModal()} aria-label="Open Admin navigation" aria-haspopup="dialog"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button>
         <div className={styles.breadcrumb}><span>Workspace</span><span aria-hidden="true">/</span><strong>{current?.label || (pathname === '/admin/sharing' ? 'Sharing & access' : 'Admin')}</strong></div>
+        <div className={styles.zoomHost} data-website-zoom-host="ready" data-admin-zoom-host />
         <span className={styles.accessLabel}><span />Admin access</span>
       </header>
       <div id="admin-workspace-content" className={styles.pageContent} tabIndex={-1}>{children}</div>

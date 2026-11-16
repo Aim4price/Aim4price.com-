@@ -19,10 +19,9 @@ CSS zoom scales fixed descendants while preserving their viewport attachment. `w
 These prefixes, with exact segment boundaries, bypass the canvas entirely:
 
 - `/owner-app/**`, `/dealer/**`, `/field-manager/**`
-- `/admin/**`
 - `/scan/**`, `/fuel-scan/**`
 
-The dedicated app implementations and nested device-width viewports are unchanged. Admin and the two scan workflows explicitly retain the previous 980 viewport inherited from the former root. Account pages that manage app access remain normal website pages.
+The dedicated app implementations and nested device-width viewports are unchanged. The two scan workflows retain their dedicated viewports. Admin now uses the canonical canvas and shared Page size toolbar, with a device-width viewport. Account pages that manage app access remain normal website pages.
 
 Shared responsive styles remain scoped to documents without a website canvas. Canonical equivalents use the website context and fixed design variables. Website clients that reuse Dealer/Field Manager controls select extracted website CSS through `useWebsiteStyles`; the original app styles remain intact. Accessibility, print, hover and pointer media behavior is retained. Valuation's coarse-pointer/video-autoplay detection is interaction behavior, not a layout selector.
 
@@ -65,3 +64,7 @@ Listeners support both modern `MediaQueryList` events and legacy `addListener`. 
 `node --test tests/website-phone.test.mjs tests/site-workspace-zoom.test.mjs` checks eligibility and listener fallbacks. `scripts/verify-phone-rotation.cjs` mounts the actual website shell and exercises seven feature profiles in Chromium, Firefox and WebKit: modern screen orientation, legacy events, layout-only fallback, desktop mode, blocked storage, desktop and tablet exclusions. It also verifies both rotations, unlocking the canvas, and the portrait bypass. CI installs Playwright 1.56.1 and its three engines independently of production dependencies.
 
 These engine/feature tests do not certify every branded browser, old browser version, physical phone, or embedded WebView. Real-device checks remain appropriate for Safari/iOS, Chrome/Android, Samsung Internet, Firefox, Edge, Opera, Brave and embedded browsers. A device with rotation locked can always use Continue in portrait. This change does not add support for obsolete browsers unsupported by the rest of the Next.js application.
+
+## Admin workspace
+
+All Admin routes use the shared 1440-pixel canvas and Page size dialog. The toolbar is attached to the workspace header through `data-admin-zoom-host`. Admin geometry is held at the 1440-pixel composition; native responsive fallbacks remain scoped outside the canvas. The sidebar follows the visible viewport height and canvas origin. Account picker portals use logical canvas coordinates and respond to zoom changes. `ADMIN_CANONICAL_QA=1 node scripts/verify-admin-review.cjs` checks the real Admin components with synthetic data across screen sizes, plus the shared zoom dialog and recovery controls.

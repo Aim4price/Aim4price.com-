@@ -89,7 +89,7 @@
 .modal {
   position: relative;
   width: min(46rem, var(--website-dialog-reference-width, 100%));
-  max-height: min(43rem, calc(100vh - 2rem));
+  max-height: min(43rem, calc(calc(var(--website-design-vh, 1vh) * 100) - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
   padding: 1.4rem;
@@ -112,7 +112,7 @@
 .modalHeader h2 {
   margin: 0;
   color: #10362c;
-  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3), 2rem);
   letter-spacing: -0.04em;
   white-space: nowrap;
 }
@@ -236,24 +236,24 @@
 }
 
 @media (max-width: 980px) {
-  .nav { margin-left:auto; }
-  .manageButton { width:auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .nav { margin-left:auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .manageButton { width:auto; }
 }
 
 @media (max-width: 560px) {
-  .modalLayer {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalLayer {
     padding: 0.55rem;
     place-items: end center;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     width: var(--website-dialog-reference-width, 100%);
-    max-height: calc(100vh - 1.1rem);
+    max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 1.1rem);
     padding: 0.9rem;
     border-radius: 1.2rem;
   }
 
-  .optionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .optionGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -275,11 +275,11 @@
 .navigationGroups > .optionGrid { grid-column: 1 / -1; }
 .navigationGroup .optionGrid { grid-template-columns: 1fr; }
 @media (max-width: 760px) {
-  .navigationGroups { grid-template-columns: 1fr; }
-  .navigationGroup .optionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroups { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroup .optionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 450px) {
-  .navigationGroup .optionGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroup .optionGrid { grid-template-columns: 1fr; }
 }
 
 /* Page tools stay available; primary navigation lives in the workspace sidebar. */

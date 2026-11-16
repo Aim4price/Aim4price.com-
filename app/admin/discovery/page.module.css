@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #142f28;
   background: #f5f7f6;
 }
@@ -8,7 +8,7 @@
   width: 100%;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 1.5rem clamp(1rem, 3vw, 4rem) 3rem;
+  padding: 1.5rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 4rem) 3rem;
   display: grid;
   gap: 1rem;
 }
@@ -28,7 +28,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(2rem, 3vw, 2.5rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem);
   line-height: 1;
   letter-spacing: -0.045em;
   white-space: nowrap;
@@ -66,7 +66,7 @@
 .metrics strong {
   overflow: hidden;
   color: #176047;
-  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem);
   font-weight: 600;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
@@ -516,7 +516,7 @@
 .detailsModal {
   position: relative;
   width: min(58rem, 100%);
-  max-height: min(49rem, calc(100vh - 2rem));
+  max-height: min(49rem, calc(calc(var(--website-design-vh, 1vh) * 100) - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
   padding: 1.08rem;
@@ -530,7 +530,7 @@
 .activityModal {
   position: relative;
   width: min(66rem, 100%);
-  max-height: min(53rem, calc(100vh - 2rem));
+  max-height: min(53rem, calc(calc(var(--website-design-vh, 1vh) * 100) - 2rem));
   overflow: auto;
   box-sizing: border-box;
   border: 1px solid #d6e3dd;
@@ -1043,145 +1043,145 @@
 }
 
 @media (max-width: 1360px) {
-  .metrics {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .filterHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterHeader {
     grid-template-columns: 1fr;
   }
 
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     grid-template-columns: minmax(280px, 1.7fr) repeat(4, minmax(115px, 1fr));
   }
 }
 
 @media (max-width: 980px) {
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.8rem;
   }
 
-  .metrics {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .interestBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .interestBar {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .viewerList {
+  :global(:where(html:not(:has([data-website-canvas])))) .viewerList {
     grid-template-columns: 1fr;
   }
 
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchField {
     grid-column: 1 / -1;
   }
 
-  .detailColumns {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailColumns {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 620px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 1rem 0.65rem 2rem;
   }
 
-  .metrics,
-  .filters {
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics,
+  :global(:where(html:not(:has([data-website-canvas])))) .filters {
     grid-template-columns: 1fr;
   }
 
-  .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchField {
     grid-column: auto;
   }
 
-  .interestTabs {
+  :global(:where(html:not(:has([data-website-canvas])))) .interestTabs {
     width: 100%;
   }
 
-  .activitySummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .activitySummary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .activityHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .activityHeading {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.1rem;
   }
 
-  .timeline article {
+  :global(:where(html:not(:has([data-website-canvas])))) .timeline article {
     grid-template-columns: 1fr;
     gap: 0.28rem;
   }
 
-  .pagination {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination {
     grid-template-columns: 1fr;
     justify-items: stretch;
   }
 
-  .pagination > span {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination > span {
     text-align: center;
   }
 
-  .pagination > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination > div {
     width: 100%;
     justify-self: stretch;
   }
 
-  .pagination button {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination button {
     flex: 1;
   }
 
-  .modalLayer {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalLayer {
     padding: 0.55rem;
     place-items: end center;
   }
 
-  .detailsModal {
-    max-height: calc(100vh - 1.1rem);
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModal {
+    max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 1.1rem);
     padding: 0.86rem;
     border-radius: 1.1rem;
   }
 
-  .activityModal {
-    max-height: calc(100vh - 1.1rem);
+  :global(:where(html:not(:has([data-website-canvas])))) .activityModal {
+    max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 1.1rem);
     border-radius: 1.1rem;
   }
 
-  .activityBody,
-  .activityModalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .activityBody,
+  :global(:where(html:not(:has([data-website-canvas])))) .activityModalHeader {
     padding: 0.9rem;
   }
 
-  .viewerList article {
+  :global(:where(html:not(:has([data-website-canvas])))) .viewerList article {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .viewerCount {
+  :global(:where(html:not(:has([data-website-canvas])))) .viewerCount {
     grid-column: 2;
     justify-items: start;
     text-align: left;
   }
 
-  .ownerHero {
+  :global(:where(html:not(:has([data-website-canvas])))) .ownerHero {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .detailColumns dl > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailColumns dl > div {
     grid-template-columns: 1fr;
     gap: 0.12rem;
   }
 
-  .modalActions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalActions > * {
     width: 100%;
   }
 }
@@ -1211,8 +1211,8 @@
   grid-column: span 2;
 }
 @media (max-width: 600px) {
-  .filters { grid-template-columns: minmax(0, 1fr); }
-  .filters .searchField { grid-column: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters .searchField { grid-column: auto; }
 }
 
 .tableScroller table { table-layout: fixed; min-width: 82rem; }
@@ -1243,7 +1243,7 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 

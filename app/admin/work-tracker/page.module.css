@@ -1,12 +1,12 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #17362c;
   background: #f4f7f5;
 }
 
 .shell {
   width: 100%;
-  padding: 1.35rem clamp(1rem, 3vw, 4rem) 7rem;
+  padding: 1.35rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 4rem) 7rem;
   display: grid;
   gap: 1rem;
   box-sizing: border-box;
@@ -36,7 +36,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.75rem);
   line-height: 0.98;
   letter-spacing: -0.055em;
   white-space: nowrap;
@@ -723,106 +723,106 @@
 }
 
 @media (max-width: 1180px) {
-  .reportBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .reportBar {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .reportBar small {
+  :global(:where(html:not(:has([data-website-canvas])))) .reportBar small {
     grid-column: 1 / -1;
   }
 
-  .summaryGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .summaryFacts {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryFacts {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 980px) {
-  .topBar,
-  .historyToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar,
+  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .adminNav {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminNav {
     align-self: stretch;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     border-radius: 0.9rem;
   }
 
-  .periodControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .periodControls {
     justify-content: space-between;
   }
 
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 0.9rem 0.65rem 8rem;
   }
 
-  .adminNav,
-  .startRow,
-  .activeDetails,
-  .reportBar,
-  .summaryGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminNav,
+  :global(:where(html:not(:has([data-website-canvas])))) .startRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .activeDetails,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportBar,
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid {
     grid-template-columns: 1fr;
   }
 
-  .periodControls,
-  .activeActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .periodControls,
+  :global(:where(html:not(:has([data-website-canvas])))) .activeActions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .periodToggle,
-  .periodMove {
+  :global(:where(html:not(:has([data-website-canvas])))) .periodToggle,
+  :global(:where(html:not(:has([data-website-canvas])))) .periodMove {
     width: 100%;
     box-sizing: border-box;
   }
 
-  .periodMove {
+  :global(:where(html:not(:has([data-website-canvas])))) .periodMove {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .reportBar small {
+  :global(:where(html:not(:has([data-website-canvas])))) .reportBar small {
     grid-column: auto;
   }
 
-  .sessionHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionHeader {
     align-items: flex-start;
   }
 
-  .summaryFacts {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryFacts {
     grid-column: auto;
     grid-template-columns: 1fr;
   }
 
-  .sessionMainControls,
-  .reportOptionControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionMainControls,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportOptionControls {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .sessionMainControls label,
-  .sessionMainControls button,
-  .reportOptionControls label,
-  .activeActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionMainControls label,
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionMainControls button,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportOptionControls label,
+  :global(:where(html:not(:has([data-website-canvas])))) .activeActions > button {
     width: 100%;
     box-sizing: border-box;
   }
 
-  .activeNoteDetails {
+  :global(:where(html:not(:has([data-website-canvas])))) .activeNoteDetails {
     width: 100%;
   }
 }
 
 @media (max-width: 620px) {
-  .sessionHeader,
-  .sessionMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .sessionMeta {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -831,7 +831,7 @@
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 
@@ -843,4 +843,4 @@
 .sessionMeta { color: #809087; font-size: .72rem; }
 .periodToggle { background: #f3f6f4; border-color: #e3eae5; }
 .emptyState { background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .7rem; padding: 2.5rem 1.5rem; color: #849188; font-size: .8rem; }
-@media (max-width: 980px) { .startRow, .activeDetails, .reportBar, .summaryGrid { grid-template-columns: minmax(0, 1fr); } .sectionHeading { flex-wrap: wrap; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .startRow, :global(:where(html:not(:has([data-website-canvas])))) .activeDetails, :global(:where(html:not(:has([data-website-canvas])))) .reportBar, :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid { grid-template-columns: minmax(0, 1fr); } :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { flex-wrap: wrap; } }

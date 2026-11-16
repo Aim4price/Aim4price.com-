@@ -1,5 +1,5 @@
 .adminWorkspaceRoot {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color-scheme: light;
   scrollbar-color: #9bbcaf #eff5f2;
   --admin-control-radius: 0.7rem;
@@ -51,7 +51,7 @@
 
 .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
   margin: 0 !important;
-  font-size: clamp(2.25rem, 3.3vw, 3.25rem) !important;
+  font-size: clamp(2.25rem, calc(var(--website-design-vw, 1vw) * 3.3), 3.25rem) !important;
   line-height: 1 !important;
   white-space: normal;
 }
@@ -67,8 +67,12 @@
   border-radius: 0 !important;
 }
 
+:where(html:has([data-website-canvas])) .adminWorkspaceRoot :where([role="tab"], th, label > span:first-child) {
+    white-space: nowrap;
+  }
+
 @media (min-width: 761px) {
-  .adminWorkspaceRoot :where([role="tab"], th, label > span:first-child) {
+  :where(html:not(:has([data-website-canvas]))) .adminWorkspaceRoot :where([role="tab"], th, label > span:first-child) {
     white-space: nowrap;
   }
 }
@@ -78,8 +82,8 @@
 }
 
 @media (max-width: 760px) {
-  .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
-    font-size: clamp(1.65rem, 7.2vw, 2.4rem) !important;
+  :where(html:not(:has([data-website-canvas]))) .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
+    font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 7.2), 2.4rem) !important;
   }
 
 }
@@ -104,7 +108,7 @@
   row-gap: 1rem;
 }
 .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
-  font-size: clamp(1.8rem, 3vw, 2.8rem) !important;
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3), 2.8rem) !important;
   line-height: 1.15 !important;
 }
 .adminWorkspaceRoot :where(td) {
@@ -133,8 +137,8 @@
 }
 .adminWorkspaceRoot *, .adminWorkspaceRoot *::before, .adminWorkspaceRoot *::after { box-sizing: border-box; }
 .adminWorkspaceRoot #admin-workspace-content > main { width: 100%; max-width: none; margin: 0; padding: 0; min-height: auto; background: transparent; }
-.adminWorkspaceRoot :where([class*="titleBlock"] h1) { font-size: clamp(1.5rem, 2.2vw, 2rem) !important; font-weight: 800; letter-spacing: -0.045em; line-height: 1.25 !important; }
-.adminWorkspaceRoot #admin-workspace-content h1 { font-size: clamp(1.5rem, 2.2vw, 2rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.25; }
+.adminWorkspaceRoot :where([class*="titleBlock"] h1) { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem) !important; font-weight: 800; letter-spacing: -0.045em; line-height: 1.25 !important; }
+.adminWorkspaceRoot #admin-workspace-content h1 { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem); font-weight: 800; letter-spacing: -.045em; line-height: 1.25; }
 .adminWorkspaceRoot :where(h2, h3) { font-weight: 800; }
 .adminWorkspaceRoot :where(th, dt, legend, label > span:first-child) { font-weight: 650 !important; color: #718278; }
 .adminWorkspaceRoot :where(td) { line-height: 1.5; }

@@ -751,7 +751,7 @@ export default function AdminDiscoveryClient({
       </section>
 
       {activityTarget ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button
             type="button"
             className={styles.backdrop}
@@ -888,7 +888,7 @@ export default function AdminDiscoveryClient({
       ) : null}
 
       {selectedAsset ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button
             type="button"
             className={styles.backdrop}

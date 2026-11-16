@@ -8,4 +8,4 @@
 .body button, .panel > p button { border: 1px solid #d5e3de; border-radius: 10px; padding: 10px 16px; color: #173f31; background: #f3f7f5; font: inherit; cursor: pointer; }
 .body button:disabled { opacity: .5; cursor: default; }
 .pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-@media (max-width: 600px) { .toggle { flex-wrap: wrap; padding: 16px; } .toggle strong { margin-left: 0; } .body { padding: 16px; } }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .toggle { flex-wrap: wrap; padding: 16px; } :global(:where(html:not(:has([data-website-canvas])))) .toggle strong { margin-left: 0; } :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 16px; } }

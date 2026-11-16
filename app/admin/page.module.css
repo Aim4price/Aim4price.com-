@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #142f28;
   background: #f6f8f7;
 }
@@ -8,7 +8,7 @@
   width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding: 1.1rem clamp(1rem, 3vw, 4rem) 3rem;
+  padding: 1.1rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 4rem) 3rem;
   box-sizing: border-box;
   display: grid;
   gap: 1rem;
@@ -29,7 +29,7 @@
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(1.8rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.25rem);
   line-height: 1.05;
   letter-spacing: -0.04em;
   white-space: nowrap;
@@ -408,7 +408,7 @@
 .tableWrap {
   overflow-x: auto;
   overflow-y: auto;
-  max-height: calc(100vh - 13rem);
+  max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 13rem);
   border: 1px solid #dfe8e3;
   border-radius: 0.7rem;
   background: #ffffff;
@@ -765,16 +765,16 @@
   z-index: 80;
   display: grid;
   place-items: center;
-  padding: clamp(0.75rem, 2vw, 1.4rem);
+  padding: clamp(0.75rem, calc(var(--website-design-vw, 1vw) * 2), 1.4rem);
   background: var(--modal-backdrop-color);
   -webkit-backdrop-filter: var(--modal-backdrop-filter);
   backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .qrModal {
-  --modal-padding: clamp(1rem, 2vw, 1.35rem);
+  --modal-padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.35rem);
   width: min(100%, 64rem);
-  max-height: min(92vh, 58rem);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 92), 58rem);
   display: grid;
   grid-template-rows: auto auto auto minmax(12rem, 1fr) auto auto;
   gap: 1rem;
@@ -802,9 +802,9 @@
 .qrModalHeader h2 {
   margin: 0;
   color: #0e2e26;
-  max-width: calc(100vw - 8rem);
+  max-width: calc(calc(var(--website-design-vw, 1vw) * 100) - 8rem);
   overflow: hidden;
-  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem);
   line-height: 1.1;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
@@ -845,7 +845,7 @@
 
 .accountActionModal {
   width: min(100%, 78rem);
-  max-height: min(92vh, 56rem);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 92), 56rem);
   grid-template-rows: auto;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -864,7 +864,7 @@
 
 .groupNotificationModal {
   width: min(100%, 50rem);
-  max-height: min(92vh, 58rem);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 92), 58rem);
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
@@ -1700,7 +1700,7 @@
 
 .nameModal {
   width: min(100%, 88rem);
-  max-height: min(92vh, 62rem);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 92), 62rem);
   grid-template-rows: auto auto auto minmax(12rem, 1fr) auto auto auto;
 }
 
@@ -1919,272 +1919,272 @@
 }
 
 @media (max-width: 1320px) {
-  .userSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .userSummary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .summaryStorage {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryStorage {
     grid-column: span 2;
   }
 }
 
 @media (max-width: 980px) {
-  .topBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .topBar {
     align-items: stretch;
     flex-direction: column;
     gap: 1rem;
   }
 
-  .titleBlock {
+  :global(:where(html:not(:has([data-website-canvas])))) .titleBlock {
     min-width: 0;
   }
 
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     width: 100%;
     align-items: stretch;
     justify-content: stretch;
   }
 
-  .headerActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerActions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .adminNav {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminNav {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     border-radius: 0.9rem;
   }
 
-  .userSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .userSummary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .summaryStorage {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryStorage {
     grid-column: span 2;
   }
 
-  .filterBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterBar {
     grid-template-columns: 1fr 1fr;
   }
 
-  .userTable {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable {
     min-width: 900px;
   }
 
-  .userTable th:nth-child(3),
-  .userTable td:nth-child(3),
-  .userTable th:nth-child(6),
-  .userTable td:nth-child(6) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(3),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(3),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(6),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(6) {
     display: none;
   }
 
-  .userTable th:nth-child(1),
-  .userTable td:nth-child(1) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(1),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(1) {
     width: 34%;
   }
 
-  .userTable th:nth-child(2),
-  .userTable td:nth-child(2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(2),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(2) {
     width: 22%;
   }
 
-  .userTable th:nth-child(4),
-  .userTable td:nth-child(4) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(4),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(4) {
     width: 24%;
   }
 
-  .userTable th:nth-child(5),
-  .userTable td:nth-child(5) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(5),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(5) {
     width: 20%;
   }
 
-  .filterBar .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterBar .searchField {
     grid-column: 1 / -1;
   }
 
-  .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchField {
     width: 100%;
   }
 
-  .qrModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrModal {
     width: min(100%, 48rem);
   }
 
-  .accountActionSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionSummary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .nameModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .nameModal {
     width: min(100%, 56rem);
   }
 
-  .namePreviewSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .namePreviewSummary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .qrLayoutGrid,
-  .qrAssetControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrLayoutGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .qrAssetControls {
     grid-template-columns: 1fr;
   }
 
-  .qrAssetControlButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrAssetControlButtons {
     justify-content: stretch;
   }
 
-  .qrAssetControlButtons button {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrAssetControlButtons button {
     flex: 1 1 0;
   }
 }
 
 @media (max-width: 760px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     padding: 0.9rem 0.65rem 2rem;
   }
 
-  .toolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbar {
     flex-direction: column;
   }
 
-  .adminNav,
-  .userSummary,
-  .filterBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .adminNav,
+  :global(:where(html:not(:has([data-website-canvas])))) .userSummary,
+  :global(:where(html:not(:has([data-website-canvas])))) .filterBar {
     grid-template-columns: 1fr;
   }
 
-  .summaryStorage {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryStorage {
     grid-column: auto;
   }
 
-  .filterBar .searchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterBar .searchField {
     grid-column: auto;
   }
 
-  .filterHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterHeading {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .clearFiltersButton,
-  .headerActions > .groupNotificationButton,
-  .headerActions > .signOutButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .clearFiltersButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .headerActions > .groupNotificationButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .headerActions > .signOutButton {
     width: 100%;
   }
 
-  .signupFilter,
-  .provinceFilter,
-  .signupFilter select,
-  .signOutButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupFilter,
+  :global(:where(html:not(:has([data-website-canvas])))) .provinceFilter,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupFilter select,
+  :global(:where(html:not(:has([data-website-canvas])))) .signOutButton {
     width: 100%;
   }
 
-  .tableWrap {
+  :global(:where(html:not(:has([data-website-canvas])))) .tableWrap {
     max-height: none;
     overflow-x: auto;
     overflow-y: visible;
   }
 
-  .userTable th:nth-child(2),
-  .userTable td:nth-child(2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(2),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(2) {
     display: none;
   }
 
-  .userTable th:nth-child(1),
-  .userTable td:nth-child(1) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(1),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(1) {
     width: 46%;
   }
 
-  .userTable th:nth-child(4),
-  .userTable td:nth-child(4) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(4),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(4) {
     width: 30%;
   }
 
-  .userTable th:nth-child(5),
-  .userTable td:nth-child(5) {
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable th:nth-child(5),
+  :global(:where(html:not(:has([data-website-canvas])))) .userTable td:nth-child(5) {
     width: 24%;
   }
 
-  .paginationBar {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationBar {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .paginationControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationControls {
     justify-content: stretch;
   }
 
-  .paginationControls button {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationControls button {
     flex: 1 1 6rem;
   }
 
-  .modalBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalBackdrop {
     align-items: start;
     padding: 0.55rem;
     overflow-y: auto;
   }
 
-  .qrModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrModal {
     max-height: none;
     border-radius: 1.05rem;
   }
 
-  .accountActionSummary,
-  .accountActionGrid,
-  .accountPrimaryActions,
-  .accountStorageOverview {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionSummary,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPrimaryActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountStorageOverview {
     grid-template-columns: 1fr;
   }
 
-  .accountActionDanger {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionDanger {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .accountActionDanger .accountActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionDanger .accountActionButton {
     width: 100%;
   }
 
-  .notificationComposerActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationComposerActions {
     align-items: stretch;
     flex-direction: column-reverse;
   }
 
-  .notificationComposerActions button {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationComposerActions button {
     width: 100%;
   }
 
-  .groupNotificationModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .groupNotificationModal {
     grid-template-rows: auto;
     overflow: visible;
   }
 
-  .groupNotificationForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .groupNotificationForm {
     overflow: visible;
   }
 
-  .notificationAudienceGrid,
-  .notificationPriorityPicker > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationAudienceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPriorityPicker > div {
     grid-template-columns: 1fr;
   }
 
-  .qrModalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .qrModalFooter {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .generateQrButton,
-  .nameSecondaryButton,
-  .uploadCsvButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .generateQrButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .nameSecondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .uploadCsvButton {
     width: 100%;
   }
 
-  .nameManagerActions,
-  .nameModalFooterButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .nameManagerActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .nameModalFooterButtons {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .namePreviewSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .namePreviewSummary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -2218,7 +2218,7 @@
 .accountWorkspaceLinks { display: flex; flex-wrap: wrap; gap: .6rem; margin: .8rem 0; }
 .accountWorkspaceLinks a { padding: .65rem .8rem; border: 1px solid #dce6df; border-radius: .45rem; color: #24583f; text-decoration: none; font-weight: 600; font-size: .8rem; }
 .accountWorkspaceLinks a:hover, .accountWorkspaceLinks a:focus-visible { background: #edf5ee; }
-@media(max-width: 1150px) { .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filterBar .searchField { grid-column: 1 / -1; } }
+@media(max-width: 1150px) { :global(:where(html:not(:has([data-website-canvas])))) .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .filterBar .searchField { grid-column: 1 / -1; } }
 
 /* Keep everyday work visible and infrequent account controls grouped. */
 .accountToolSection {
@@ -2257,22 +2257,22 @@
 .accountDisclosure .accountToolSection { padding: 0.5rem 0 1rem; border: 0; }
 .accountDisclosure > summary:focus-visible { outline: 3px solid #8ab9a5; outline-offset: 2px; border-radius: 0.4rem; }
 @media (max-width: 850px) {
-  .accountToolsLayout { grid-template-columns: 1fr; }
-  .accountToolsLayout .accountActionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountToolsLayout { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountToolsLayout .accountActionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .accountActionModal .accountPrimaryActions,
-  .accountActionModal .accountActionGrid,
-  .accountActionModal .accountWorkspaceLinks,
-  .accountDisclosure .accountActionSummary { grid-template-columns: 1fr; }
-  .accountToolSection { padding: 0.85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionModal .accountPrimaryActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionModal .accountActionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountActionModal .accountWorkspaceLinks,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountDisclosure .accountActionSummary { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountToolSection { padding: 0.85rem; }
 }
 .accountIdentity { margin: 0.5rem 0 0; color: #60716a; font-size: 0.8rem; line-height: 1.5; overflow-wrap: anywhere; }
 
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
 .shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
-@media (max-width: 980px) { .shell { padding: 0; } }
+@media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
 
@@ -2299,7 +2299,7 @@
 .accountTypeCell strong { font-weight: 650; }
 .groupNotificationButton { background: #174d3e; border-color: #174d3e; box-shadow: none; font-weight: 650; font-size: .85rem; min-height: 38px; }
 .signOutButton { font-size: .85rem; font-weight: 650; min-height: 38px; border-color: #e0e7e3; }
-.accountActionModal { width: min(960px, calc(100vw - 3rem)); padding: 1.6rem; gap: 1.15rem; background: #fff; border-radius: 1.1rem; box-shadow: 0 28px 100px #14352926; }
+.accountActionModal { width: min(960px, calc(calc(var(--website-design-vw, 1vw) * 100) - 3rem)); padding: 1.6rem; gap: 1.15rem; background: #fff; border-radius: 1.1rem; box-shadow: 0 28px 100px #14352926; }
 .accountActionModal .qrModalHeader { padding-bottom: 1.1rem; }
 .accountActionModal .qrModalHeader h2 { font-size: 1.5rem; font-weight: 600; }
 .accountToolSection { padding: 0; border: 0; background: transparent; gap: .8rem; }
@@ -2314,5 +2314,5 @@
 .accountDisclosure { border: 0; border-top: 1px solid #e7ede9; border-radius: 0; padding: 0; }
 .accountDisclosure > summary { min-height: 3rem; font-size: .8rem; font-weight: 650; }
 .accountDisclosure > summary span { font-size: .85rem; }
-@media (max-width: 1250px) { .userSummary { grid-template-columns: repeat(4, minmax(0, 1fr)); } .userSummary .summaryStorage { grid-column: 1 / -1; min-height: auto; display: flex; justify-content: space-between; } .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filterBar .searchField { grid-column: 1 / -1; } }
-@media (max-width: 760px) { .topBar { flex-direction: row; align-items: center; } .headerActions > .groupNotificationButton, .headerActions > .signOutButton { width: auto; } .userSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .filterBar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .accountToolsLayout { grid-template-columns: 1fr; } .accountActionModal { width: 100%; padding: 1.1rem; } .accountActionModal .accountPrimaryActions { grid-template-columns: 1fr; } .userSummary article, .userSummary > button { min-height: 85px; } }
+@media (max-width: 1250px) { :global(:where(html:not(:has([data-website-canvas])))) .userSummary { grid-template-columns: repeat(4, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .userSummary .summaryStorage { grid-column: 1 / -1; min-height: auto; display: flex; justify-content: space-between; } :global(:where(html:not(:has([data-website-canvas])))) .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .filterBar .searchField { grid-column: 1 / -1; } }
+@media (max-width: 760px) { :global(:where(html:not(:has([data-website-canvas])))) .topBar { flex-direction: row; align-items: center; } :global(:where(html:not(:has([data-website-canvas])))) .headerActions > .groupNotificationButton, :global(:where(html:not(:has([data-website-canvas])))) .headerActions > .signOutButton { width: auto; } :global(:where(html:not(:has([data-website-canvas])))) .userSummary { grid-template-columns: repeat(2, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .filterBar { grid-template-columns: repeat(2, minmax(0, 1fr)); } :global(:where(html:not(:has([data-website-canvas])))) .accountToolsLayout { grid-template-columns: 1fr; } :global(:where(html:not(:has([data-website-canvas])))) .accountActionModal { width: 100%; padding: 1.1rem; } :global(:where(html:not(:has([data-website-canvas])))) .accountActionModal .accountPrimaryActions { grid-template-columns: 1fr; } :global(:where(html:not(:has([data-website-canvas])))) .userSummary article, :global(:where(html:not(:has([data-website-canvas])))) .userSummary > button { min-height: 85px; } }

@@ -596,7 +596,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
       </section>
 
       {activityTarget ? (
-        <div className={styles.modalLayer}>
+        <div data-website-overlay="true" className={styles.modalLayer}>
           <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Close Marketplace view activity" onClick={closeActivityModal} />
           <section
             ref={activityModalRef}
