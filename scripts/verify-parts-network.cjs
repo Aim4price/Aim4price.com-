@@ -1220,6 +1220,7 @@ const appCode =
     await page.screenshot({path:path.join(output,'shared-parts-account-gate.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    assert.ok(await page.$eval('table',table=>table.getBoundingClientRect().width>=1100),'Shared table preserves readable columns on phone');
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
     shareLocked=true;
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
