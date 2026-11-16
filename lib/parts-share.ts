@@ -85,6 +85,11 @@ async function linkFor(token: string, viewer: PartsShareViewer) {
 }
 export async function openPartsShare(token:string, viewer:PartsShareViewer, session:string, input:Record<string,unknown>) {
  const link=await linkFor(token,viewer);
+ // Welcome metadata only: protected rows remain behind the password check below.
+ if(input.action==='landing') {
+  const total=Number((await getDb().query('SELECT count(*) FROM parts_network_rows WHERE network_id=$1 AND dealer_id=$2 AND quantity>0',[link.network_id,link.owner_id])).rows[0].count);
+  return {name:link.name,owner:link.business_name,total};
+ }
  if(input.action==='unlock') {
   await limitBusinessAction(`parts-password:${link.id}`,30);
   if(typeof input.password!=='string'||input.password.length>128) throw new PartsError('Enter the link password.',403);
