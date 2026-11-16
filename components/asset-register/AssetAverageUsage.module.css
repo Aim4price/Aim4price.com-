@@ -18,7 +18,7 @@
 .days input { accent-color:#176b52; width:1.1rem; height:1.1rem; }
 .actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.65rem; }
 .panel button { font:inherit; font-weight:600; padding:.7rem 1rem; min-height:2.8rem; border:1px solid var(--app-border,#bfd8ce); border-radius:.7rem; background:var(--app-surface-soft,#edf5f1); color:inherit; cursor:pointer; }
-.actions button[type=submit] { background:#176b52; color:white; border-color:#176b52; }
+.actions button[type=submit],.actions .primary { background:#176b52; color:white; border-color:#176b52; }
 .panel button:disabled { opacity:.55; cursor:not-allowed; }
 .panel :is(input,button,summary):focus-visible { outline:3px solid #319b74; outline-offset:3px; }
 .suggest { justify-self:start; }
@@ -33,3 +33,13 @@
   :global(:where(html:not(:has([data-website-canvas])))) .summary {grid-template-columns:1fr}
   :global(:where(html:not(:has([data-website-canvas])))) .actions>button {flex:1 1 auto}
 }
+
+.intro { display:grid; gap:.35rem; }
+.intro h5 { margin:0; font:inherit; font-size:1.25rem; font-weight:700; line-height:1.4; }
+.intro h5:focus { outline:none; }
+.review { display:grid; gap:0; margin:0; border:1px solid var(--app-border,#cfdfd7); border-radius:1rem; padding:0 1rem; }
+.review>div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.4rem 1rem; padding:.8rem 0; }
+.review>div+div { border-top:1px solid var(--app-border,#cfdfd7); }
+.review dt { color:var(--app-text-muted,#526d61); }
+.review dd { margin:0; font-weight:600; }
+.actions { border-top:1px solid var(--app-border,#cfdfd7); padding-top:1rem; margin-top:.25rem; }
