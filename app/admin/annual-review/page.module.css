@@ -10,7 +10,7 @@
 .page :is(button, input):focus-visible { outline: 3px solid var(--app-accent, #25805f); outline-offset: 3px; }
 .page .primary { background: var(--app-accent, #176b50); color: white; }
 .page .primary:hover:not(:disabled) { background: var(--app-accent, #176b50); filter: brightness(1.08); }
-.dialog { width: min(980px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 2rem); padding: 0; }
+.dialog { width: min(980px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); padding: 0; }
 .dialog[open] { display: flex; flex-direction: column; }
 .dialog::backdrop { background: rgba(12, 29, 25, .65); backdrop-filter: blur(6px); }
 .dialog h2:focus { outline: none; }
