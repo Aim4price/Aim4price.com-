@@ -21,10 +21,11 @@ function HelpDialog({ topic, id, onClose }: { topic: PageHelpTopic; id: string; 
   return <div className={styles.overlay} data-website-overlay="true" onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <section id={`${id}-dialog`} ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-purpose`} className={styles.dialog}>
       <header className={styles.header}>
-        <div><span className={styles.eyebrow}>About this page</span><h2 id={`${id}-title`}>{content.title}</h2></div>
+        <div className={styles.title}><span className={styles.titleIcon}><InfoIcon /></span><h2 id={`${id}-title`}>{content.title}</h2></div>
         <button type="button" className={styles.close} onClick={onClose} aria-label="Close page information" data-modal-close="true">×</button>
       </header>
       <div className={styles.body}>
+        <h3>Why it was built</h3>
         <p className={styles.purpose} id={`${id}-purpose`}>{content.purpose}</p>
         <h3>What you can do here</h3>
         <ul className={styles.features}>{content.actions.map(action => <li key={action}><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m4 10 4 4 8-8"/></svg><span>{action}</span></li>)}</ul>
