@@ -1112,7 +1112,10 @@ const appCode =
     await page.click('[aria-label="Hide password"]');
     assert.equal(await page.$eval('[data-asset-link-dialog] input[autocomplete="new-password"]',el=>el.value),'example-password');
     await page.click('[data-asset-link-dialog] input[type=checkbox]');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.$eval('[data-asset-link-dialog]',d=>{const body=d.children[1],r=d.getBoundingClientRect();return body.scrollHeight<=body.clientHeight+2&&r.top>=0&&r.bottom<=innerHeight;}),'Parts link settings fit a short desktop without scrolling');
     await page.screenshot({path:path.join(output,'share-permissions.png')});
+    await page.setViewport({width:1440,height:1000});
     await click('Continue');
     await page.click('dialog[open] input[type=checkbox]');
     await click('Create parts link');
