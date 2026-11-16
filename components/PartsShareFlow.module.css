@@ -72,3 +72,18 @@ label.permissionCard:has(input:checked) { background:var(--permission-soft,var(-
 .historyPanel .linkConfirmation > p { margin:0; }
 .historyPanel .linkConfirmation > div { margin-top:.5rem; gap:.75rem; }
 .historyPanel.historyPanel > footer { margin-top:0; padding-top:1rem; gap:.85rem; }
+
+.passwordSlide {display:grid;gap:1.25rem;padding:.35rem 0;}
+.passwordChoices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
+.passwordChoices>button {display:flex;align-items:flex-start;text-align:left;gap:1rem;padding:1.25rem;border:1px solid var(--app-line,#cddfd5);border-radius:1.1rem;background:var(--app-surface,#fff);color:var(--app-text,#173f31);font:inherit;cursor:pointer;}
+.passwordChoices>button[aria-pressed=true] {border-color:var(--app-accent,#176b4d);background:var(--app-surface-soft,#edf7f1);box-shadow:inset 0 0 0 1px var(--app-accent,#176b4d);}
+.passwordChoices>button:focus-visible {outline:3px solid #74ac92;outline-offset:3px;}
+.passwordChoices>button>span:last-child {display:grid;gap:.5rem;min-width:0;}
+.passwordChoices strong,.passwordSummary strong {font-size:1rem;font-weight:750;}
+.passwordChoices small,.passwordSummary p {font-size:.85rem;line-height:1.55;color:var(--app-muted,#647b70);}
+.passwordChoices .permissionIcon {flex-shrink:0;}
+.passwordSlide .settingsContent:empty {display:none;}
+.passwordSlide .passwordPanel {gap:1rem;}
+.passwordSummary {display:flex;align-items:center;gap:1rem;padding:1.2rem;border:1px solid var(--app-line,#cddfd5);border-radius:1.1rem;background:var(--app-surface-soft,#edf7f1);}
+.passwordSummary p {margin:.4rem 0 0;}
+@media(max-width:600px){:global(body:not(:has([data-website-canvas]))) .passwordChoices {grid-template-columns:1fr;}}
