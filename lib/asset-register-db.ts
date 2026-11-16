@@ -161,6 +161,7 @@ export type UpdateAssetRegisterItemInput = {
   condition?: ConditionKey | null;
   allowUsageDecrease?: boolean;
   usageTypeChangeConfirmed?: boolean;
+  preserveUsageReading?: boolean;
 };
 
 export type UpdateAssetRegisterItemNamesInput = {
@@ -3213,13 +3214,16 @@ export async function updateAssetRegisterItem(
     specsJson: {...input.specsJson, ...(input.usageTypeChangeConfirmed ? {usageTypeConfirmed: true} : {})},
   }, input.usageTypeChangeConfirmed === true);
   const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
-  const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
+  const incomingHours = input.preserveUsageReading && !usageChange ? existing.hours : input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
   const nextYearModel = incomingYearModel;
   const nextHours = usageChange ? (usageChange.metric === 'hours' || usageChange.metric === 'km' ? incomingHours : null) : existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
   const incomingCondition = normalizeConditionForDb(input.condition);
   const existingCondition = normalizeConditionForDb(existing.condition);
   const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
+  if (input.preserveUsageReading && !usageChange) {
+    for (const key of ['hours','usageAmount','usage_amount','engine_hours','km','kilometres','kilometers']) baseSpecsJson[key] = nextHours;
+  }
   // Ordinary edits cannot replace an owner-approved valuation anchor.
   baseSpecsJson.approved_value_baseline = existing.specsJson.approved_value_baseline ?? null;
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;

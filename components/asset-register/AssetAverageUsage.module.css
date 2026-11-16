@@ -28,4 +28,8 @@
 .history { display:grid; gap:.75rem; padding-left:1.4rem; }
 .history li>span { display:block; font-size:.85rem; margin-top:.25rem; }
 .panel summary { cursor:pointer; font-weight:600; }
-@media(max-width:620px){.fields,.summary{grid-template-columns:1fr}.actions>button{flex:1 1 auto}}
+@media(max-width:620px){
+  :global(:where(html:not(:has([data-website-canvas])))) .fields,
+  :global(:where(html:not(:has([data-website-canvas])))) .summary {grid-template-columns:1fr}
+  :global(:where(html:not(:has([data-website-canvas])))) .actions>button {flex:1 1 auto}
+}

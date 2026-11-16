@@ -119,7 +119,7 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
     insert into asset_register_items values('${assetId}','${owner}','Test tractor','tractor',100,'{}',38,1);`);
   const asset = { id: assetId, title: 'Test tractor', userId: owner, kind: 'tractor', hours: 100, equipmentFamilyId: 38, sectorId: 1, specsJson: {} };
   const mod = load('lib/asset-maintenance.ts', {
-    './db': { getDb: () => db }, './maintenance-catalogue': shared,
+    './db': { getDb: () => db }, './maintenance-catalogue': shared, './average-usage-math': load('lib/average-usage-math.ts'),
     './asset-register-db': { getAssetRegisterItemById: async (user, id) => user === owner && id === assetId ? asset : null },
     './asset-registers': {}, './asset-usage': load('lib/asset-usage.ts'),
     './owner-app': { ensureOwnerAppTables: async () => {}, listOwnerAppUsers: async () => [] }, './scan-assets': {},
@@ -181,6 +181,15 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
       assert.equal(card.remainingUsage, remaining);
       assert.equal(card.computedStatus, status);
     }
+    await pg.query('update asset_register_items set hours=980,specs_json=$1 where id=$2',[JSON.stringify({trackingUsage:{source:'Average usage',enabled:true,estimated:true,metric:'hours',baselineValue:900,dailyUsage:10,workingDays:[1,2,3,4,5]}}),assetId]);
+    const forecast = await mod.getAssetMaintenanceRecordById(owner,meterId);
+    assert.equal(forecast.currentUsage,900);
+    assert.equal(forecast.estimatedUsage,980);
+    assert.equal(forecast.remainingUsage,20);
+    assert.match(forecast.computedStatusLabel,/Estimated/);
+    assert.match(forecast.estimatedDueDate,/^\d{4}-\d{2}-\d{2}$/);
+    await pg.query("update asset_register_items set specs_json=jsonb_set(specs_json,'{trackingUsage,enabled}','false') where id=$1",[assetId]);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).estimatedDueDate,null);
     await pg.query("update asset_maintenance_records set due_usage=20000, usage_metric='km' where id=$1", [meterId]);
     await pg.query("update asset_register_items set kind='vehicle', hours=null, specs_json=$1 where id=$2", [JSON.stringify({usage_metric:'km',km:18500}),assetId]);
     assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).remainingUsage,1500);

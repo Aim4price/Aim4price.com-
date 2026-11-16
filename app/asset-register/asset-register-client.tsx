@@ -12720,6 +12720,7 @@ export default function AssetRegisterClient({
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: hoursForSave,
+        preserveUsageReading: Boolean(editingAsset && !usageTypeChangeConfirmed && assetDraft.usageMetric === buildDraftFromAsset(editingAsset).usageMetric && assetDraft.hours === buildDraftFromAsset(editingAsset).hours),
         usageTypeChangeConfirmed,
         usageMetric: isPropertyAsset || !showUsageHoursField ? null : assetDraft.usageMetric === 'km' ? 'km' : 'hours',
         lifeWorkedPercent: roundedLifeWorkedPercent,
