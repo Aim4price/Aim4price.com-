@@ -171,15 +171,20 @@ const appCode =
     await page.setRequestInterception(true);
     let pdfRequest;
     let shareLocked=false;
+    let shareAccess='sign-in';
+    const sharedActions=[];
     let shareLinks=[{id:"share-1",url:"https://example.test/parts-share/"+"a".repeat(64),created_at:"2026-11-16",protected:true,allow_download:true,allow_enquiry:true,recipient_name:"",revoked_at:null}];
     page.on("request", (r) => {
       if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
       if (r.url().includes('/api/parts-share/')) {
         const input=JSON.parse(r.postData()||'{}');
+        sharedActions.push(input);
+        if(input.action==='download')return r.respond({contentType:'application/pdf',body:'%PDF-1.7 fixture'});
+        if(input.action==='enquire')return r.respond({contentType:'application/json',body:JSON.stringify({ok:true})});
         if(input.action==='landing')return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1})});
-        if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{}}]})});}
+        if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{}}]})});}
         if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
-        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
+        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
         pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
@@ -1214,14 +1219,46 @@ const appCode =
     assert.ok(await page.$eval('form',el=>el.getBoundingClientRect().height<120),'Search toolbar stays compact');
     assert.ok(await page.$('button[aria-label^="Enquire about"]'),'Shared rows offer enquiries');
     await page.screenshot({path:path.join(output,'shared-parts-owner-layout.png')});
+    assert.equal(await page.$('dialog'),null,'Account gate is hidden until an action is selected');
     await click('Download PDF');
-    await page.waitForSelector('a[href^="/business/join?"]');
+    await page.waitForSelector('dialog a[href^="/business/join?"]');
     assert.ok(await page.$eval('a[href^="/business/join?"]',a=>decodeURIComponent(a.href).includes('/parts-share/')));
     await page.screenshot({path:path.join(output,'shared-parts-account-gate.png')});
     await page.setViewport({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     assert.ok(await page.$eval('table',table=>table.getBoundingClientRect().width>=1100),'Shared table preserves readable columns on phone');
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
+    await page.setViewport({width:1440,height:900});
+    shareAccess='verify-email';
+    await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
+    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
+    await click('Open parts list');await page.waitForSelector('tbody tr');
+    assert.equal(await page.$('dialog'),null,'Unverified readers can browse without a verification banner');
+    assert.ok(!(await page.evaluate(()=>document.body.innerText)).includes('Verify your email'));
+    await page.click('button[aria-label^="Enquire about"]');
+    await page.waitForSelector('dialog');
+    assert.ok(await page.$eval('dialog',el=>el.innerText.includes('Verify your email')));
+    await click('I’ve verified my email');
+    await page.waitForFunction(()=>document.querySelector('dialog')?.innerText.includes('not verified yet'));
+    assert.equal(await page.$('textarea'),null,'Unverified readers cannot enter an enquiry');
+    await page.screenshot({path:path.join(output,'shared-parts-verification-modal.png')});
+    shareAccess='active';await click('I’ve verified my email');
+    await page.waitForSelector('dialog textarea');
+    assert.ok(await page.$eval('dialog textarea',el=>el.value.includes('001-ABC')),'Verification resumes the selected part enquiry');
+    await page.screenshot({path:path.join(output,'shared-parts-contact-modal.png')});
+    await click('Send enquiry');await page.waitForFunction(()=>!document.querySelector('dialog'));
+    assert.ok(sharedActions.some(a=>a.action==='enquire'&&a.message.includes('001-ABC')));
+    shareAccess='verify-email';
+    await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
+    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
+    await click('Open parts list');await page.waitForSelector('tbody tr');
+    const downloadsBefore=sharedActions.filter(a=>a.action==='download').length;
+    await click('Download PDF');await page.waitForSelector('dialog');
+    assert.equal(sharedActions.filter(a=>a.action==='download').length,downloadsBefore);
+    shareAccess='active';await click('I’ve verified my email');
+    await page.waitForFunction(()=>!document.querySelector('dialog'));
+    assert.equal(sharedActions.filter(a=>a.action==='download').length,downloadsBefore+1,'Verification resumes download');
+    shareAccess='sign-in';
     shareLocked=true;
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
     await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
