@@ -90,6 +90,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
         '../asset-register/AssetAccessSettingsDialog':'dialog',
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
+    '../asset-register/ShareLinkDelivery':'share-delivery',
     '../asset-register/AssetLinkAccessSummary':()=>null,
         '../../lib/external-file-share':load('lib/external-file-share.ts'),
         '../asset-register/ShareDisclosureDialog':'dialog',
@@ -114,7 +115,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       await new Promise(resolve=>setImmediate(resolve));render();
       assert.deepEqual(JSON.parse(sent.get('assetIds')),ids,'Original complete selection is preserved');assert.equal(sent.get('includePhotos'),'true');assert.equal(JSON.parse(sent.get('details')).permissions.allReports,true);
       if(failed){assert.ok(walk(view,node=>node.props?.role==='alert'));assert.ok(!button('Copy link'));}
-      else assert.ok(button('Copy link'));
+      else assert.ok(walk(view,node=>node.type==='share-delivery'));
       walk(view,node=>node.type==='dialog').props.onClose();render();
       walk(view,node=>node.type==='button').props.onClick();render();
       button('Continue view only').props.onClick();render();
@@ -151,6 +152,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
     '../asset-register/AssetAccessSettingsDialog':'dialog',
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
+    '../asset-register/ShareLinkDelivery':'share-delivery',
     '../asset-register/AssetLinkAccessSummary':()=>null,
     '../../lib/external-file-share':load('lib/external-file-share.ts'),
     '../asset-register/ShareDisclosureDialog':'dialog',
@@ -173,10 +175,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    assert.equal(details.accessMode,'signed-in');assert.equal(details.permissions.allReports,true);assert.equal(sent.body.get('includePhotos'),'true');for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(details.permissions[key],false);
    if(failed){assert.ok(walk(view,n=>n.props?.role==='alert'));assert.ok(!button('Copy link'));}
    else {
-    assert.ok(walk(view,n=>n.type==='a'&&n.props.href===`https://aim4price.test/asset-share/${token}`));
-    // Node has no clipboard; a denied/unavailable clipboard must leave a selectable URL.
-    await button('Copy link').props.onClick();await new Promise(resolve=>setImmediate(resolve));render();
-    assert.equal(walk(view,n=>n.type==='input'&&n.props['aria-label']==='Asset link').props.value,`https://aim4price.test/asset-share/${token}`);
+    assert.equal(walk(view,n=>n.type==='share-delivery').props.link,`https://aim4price.test/asset-share/${token}`);
    }
    walk(view,n=>n.type==='dialog').props.onClose();
    if(failed){assert.equal(closed,false);render();assert.ok(button('Continue'));walk(view,n=>n.type==='dialog').props.onClose();}
@@ -209,3 +208,19 @@ test('access summary distinguishes viewing from document submissions and standal
   }
   assert.match(render({documents:true}),/Submit invoices and quotes for review/);
 });
+
+ test('shared asset and parts delivery keeps branded channels and a clipboard fallback',async()=>{
+ let cursor=0,view;const slots=[];
+ const hook=initial=>{const i=cursor++;if(!(i in slots))slots[i]=initial;return[slots[i],v=>{slots[i]=v;}];};
+ const Delivery=load('components/asset-register/ShareLinkDelivery.tsx',{
+  react:{...React,useEffect:()=>{},useRef:v=>({current:v}),useState:hook},
+  '../../lib/asset-external-share':{buildEmailShareUrl:()=> 'mailto:test',buildWhatsAppShareUrl:()=> 'https://wa.me/test'},
+ }).default;
+ const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray(node.props?.children).map(child=>walk(child,predicate)).find(Boolean);
+ const render=()=>{cursor=0;view=Delivery({link:'https://example.test/shared',copy:{subject:'Shared',body:'Link'},description:'Shared parts',hint:'Choose a recipient',previewLabel:'Preview parts'});};
+ render();
+ assert.ok(walk(view,n=>n.type==='a'&&n.props.href==='https://wa.me/test'));
+ assert.ok(walk(view,n=>n.type==='a'&&n.props.href==='mailto:test'));
+ await walk(view,n=>n.type==='button').props.onClick();render();
+ assert.equal(walk(view,n=>n.type==='input').props.value,'https://example.test/shared');
+ });
