@@ -119,3 +119,8 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after { animation: none; }
 }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }

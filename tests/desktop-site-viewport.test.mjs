@@ -130,11 +130,11 @@ test('Estimate PDF Saleability price only follows a matching refined plan', asyn
   assert.match(polishSource, /HTMLFormElement\.prototype\.submit === submitWithSaleabilityPrice/);
 });
 
-test('admin preserves its former inherited viewport settings', async () => {
+test('admin uses a native responsive viewport for its sidebar and mobile drawer', async () => {
   for (const route of ['admin']) {
     const source = await readFile(new URL('../app/' + route + '/layout.tsx', import.meta.url), 'utf8');
-    assert.match(source, /width: 980/);
-    assert.match(source, /initialScale: -1/);
+    assert.match(source, /width: 'device-width'/);
+    assert.match(source, /initialScale: 1/);
     assert.match(source, /userScalable: true/);
   }
 });

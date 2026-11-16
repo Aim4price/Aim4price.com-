@@ -2049,7 +2049,7 @@ export default function AdminClient({
             <section className={styles.accountToolSection} aria-label="Work on this account">
               <div className={styles.accountSectionIntro}>
                 <h3>Work on this account</h3>
-                <p>Open the account with time tracking, browse without tracking, or send a message.</p>
+
               </div>
               <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
                 <button
@@ -2208,7 +2208,7 @@ export default function AdminClient({
               <section className={styles.accountToolSection} aria-label="Account workspaces">
                 <div className={styles.accountSectionIntro}>
                   <h3>Account workspaces</h3>
-                  <p>Billing, requests and activity for this account.</p>
+
                 </div>
 
                 <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
@@ -2221,7 +2221,7 @@ export default function AdminClient({
               <section className={styles.accountToolSection} aria-label="Asset tools">
                 <div className={styles.accountSectionIntro}>
                   <h3>Asset tools</h3>
-                  <p>Keep asset records and identification organised.</p>
+
                 </div>
                 <div className={styles.accountActionGrid}>
                   <button

@@ -5,3 +5,14 @@
 .card h2{margin:0 0 12px}.card p{line-height:1.6}.card a{color:inherit;text-decoration:underline}
 .totals{display:flex;flex-wrap:wrap;gap:20px}.totals .card{flex:1 1 220px;display:flex;flex-direction:column;gap:10px}.totals strong{font-size:30px}
 .entry{padding:18px 0;border-top:1px solid var(--border,#d7e5dc)}.entry h3{font-size:17px;margin:0 0 10px}.entry p{margin:8px 0}
+
+.page { max-width: none; padding: 0; }
+.header { padding-bottom: 1.2rem; border-bottom: 1px solid #e2e9e5; }
+.header p { font-size: .8rem; color: #7b8b81; }
+.card { border-color: #e2e9e5; border-radius: .85rem; padding: 1.4rem; }
+.card h2 { font-size: .95rem; font-weight: 600; }
+.card p { font-size: .78rem; color: #78887e; line-height: 1.7; }
+.totals { gap: 1rem; }
+.totals strong { font-size: 2rem; font-weight: 600; letter-spacing: -.05em; }
+.totals span { font-size: .75rem; color: #7b8b81; }
+.entry { padding: 1rem 0; }

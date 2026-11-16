@@ -25,11 +25,11 @@
 .error { padding:14px; background:#fff2ee; border:1px solid #dcb6a9; border-radius:8px; color:#853b29; }
 .success { padding:14px; background:#eaf5ef; border:1px solid #b9d0c5; border-radius:8px; }
 .line { display:grid; grid-template-columns:minmax(180px,1fr) 90px 150px 100px; gap:10px; margin:12px 0; align-items:end; }
-.total { margin:20px 0; padding:15px; background:#eaf5ef; text-align:right; font-size:20px; font-weight:750; }
+.total { margin:20px 0; padding:15px; background:#eaf5ef; text-align:right; font-size:20px; font-weight: 600; }
 .workList { display:grid; gap:10px; margin:15px 0; max-height:250px; overflow:auto; }
 .workList label { padding:10px; background:#f4f8f5; border-radius:6px; display:flex; gap:10px; font-size:13px; }
 .details { margin:16px 0; padding:16px; border:1px solid #d6e4dd; border-radius:8px; }
-.details summary { cursor:pointer; font-weight:700; }
+.details summary { cursor:pointer; font-weight: 600; }
 .history { font-size:13px; line-height:1.8; overflow-wrap:anywhere; }
 @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}.line{grid-template-columns:minmax(130px,1fr) 65px 110px 85px}.panel{padding:16px}}
 @media(max-width:600px){.grid{grid-template-columns:1fr}.line{grid-template-columns:1fr 1fr}.line .field:first-child{grid-column:1/-1}.page{padding:16px}.header h1{font-size:26px}}
@@ -44,8 +44,8 @@
 .sectionHeading { display:flex; justify-content:space-between; align-items:start; gap:16px; margin-bottom:22px; }
 .sectionHeading h2 { margin-bottom:6px; }
 .sectionHeading p { margin:0; }
-.draftLabel { font-size:12px; font-weight:700; color:#6a796f; padding-top:3px; }
-.sectionLabel { font-size:13px; font-weight:700; margin:24px 0 14px; padding-bottom:10px; border-bottom:1px solid #e2ebe5; }
+.draftLabel { font-size:12px; font-weight: 600; color:#6a796f; padding-top:3px; }
+.sectionLabel { font-size:13px; font-weight: 600; margin:24px 0 14px; padding-bottom:10px; border-bottom:1px solid #e2ebe5; }
 .total { display:flex; justify-content:space-between; align-items:center; text-align:left; padding:18px 20px; border-radius:8px; }
 .total>span { font-size:13px; font-weight:600; }
 .total small { display:block; color:#60756d; font-size:12px; font-weight:400; margin-top:5px; }
@@ -71,7 +71,7 @@
 
 .billingPaths { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:20px 0; }
 .pathCard { display:flex; flex-direction:column; gap:10px; text-align:left; padding:24px; border:1px solid #d9e3de; border-radius:16px; background:#fff; color:#173c32; font:inherit; cursor:pointer; }
-.pathCard strong { font-size:23px; font-weight:700; }
+.pathCard strong { font-size:23px; font-weight: 600; }
 .pathCard > span:last-child { font-size:14px; line-height:1.6; color:#53675e; }
 .pathSelected { border:2px solid #28644d; padding:23px; background:#f0f7f3; box-shadow:0 5px 18px #173c320b; }
 .pathEyebrow { font-size:12px; font-weight:600; color:#527161; }
@@ -107,7 +107,7 @@
 .pickerTrigger:hover { border-color:#769e8a; }
 .pickerTrigger[aria-expanded=true] { border-color:#28644d; box-shadow:0 0 0 3px #28644d14; }
 .pickerTrigger:focus-visible { outline:2px solid #28644d; outline-offset:3px; }
-.accountAvatar { display:flex; flex:0 0 38px; width:38px; height:38px; align-items:center; justify-content:center; border-radius:10px; background:#eaf3ee; color:#28644d; font-size:12px; font-weight:700; }
+.accountAvatar { display:flex; flex:0 0 38px; width:38px; height:38px; align-items:center; justify-content:center; border-radius:10px; background:#eaf3ee; color:#28644d; font-size:12px; font-weight: 600; }
 .pickerTrigger .accountIdentity,.pickerOptions .accountIdentity { flex:1; min-width:0; }
 .pickerTrigger .accountIdentity strong,.pickerOptions .accountIdentity strong { font-size:14px; line-height:1.45; }
 .pickerTrigger .accountIdentity small,.pickerOptions .accountIdentity small { font-size:12px; line-height:1.45; margin-top:3px; }
@@ -169,3 +169,27 @@
 .check { display:flex; align-items:flex-start; gap:10px; font-size:13px; line-height:1.6; }.check input { margin-top:4px; accent-color:#1a654d; }
 
 .shareHeader>div { min-width:0; }.shareHeader h2 { overflow-wrap:anywhere; }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }
+
+/* Billing keeps account selection, billing mode and invoice history distinct. */
+.header { padding-bottom: 1.1rem; border-bottom: 1px solid #e2e9e5; }
+.panel { padding: 1.3rem; border-color: #e2e9e5; border-radius: .85rem; }
+.panel h2 { font-size: .95rem; font-weight: 600; }
+.billingPaths { gap: .8rem; }
+.pathCard { padding: 1.15rem; background: #fff; border-color: #e2e9e5; box-shadow: none; }
+.pathSelected { background: #f0f7f2; border-color: #9bbca6; }
+.pathEyebrow { font-size: .67rem; color: #809084; font-weight: 500; }
+.field { font-size: .74rem; font-weight: 500; gap: .45rem; }
+.field input, .field select, .field textarea, .line input { border-color: #dde6df; border-radius: .5rem; background: #fcfdfc; font-size: .8rem; padding: .7rem .8rem; }
+.button, .primary, .danger { border-radius: .5rem; font-size: .74rem; font-weight: 500; box-shadow: none; }
+.table th { padding: .8rem 1rem; background: #f8faf9; color: #7e8c83; font-weight: 500; font-size: .7rem; }
+.table td { padding: 1rem; font-size: .76rem; border-color: #edf1ee; }
+.emptyState { padding: 3rem 1.5rem; background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .8rem; text-align: center; }
+.pickerTrigger { min-height: 44px; box-shadow: none; border-color: #dde6df; border-radius: .6rem; }
+.pathCard { white-space: normal; min-width: 0; }
+.pathCard strong { font-size: 1.15rem; }
+.pathCard > span:last-child { font-size: .76rem; }

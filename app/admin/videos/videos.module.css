@@ -32,3 +32,17 @@
 .confirm p { line-height:1.5; margin:.6rem 0; }
 .page :is(button,a,input):focus-visible { outline:3px solid #7eb493; outline-offset:3px; }
 @media(max-width:760px){ :global(html:not(:has([data-website-canvas]))) .workspace,:global(html:not(:has([data-website-canvas]))) .toolbar{grid-template-columns:1fr;} :global(html:not(:has([data-website-canvas]))) .list nav{max-height:14rem;} }
+
+.page { width: 100%; margin: 0; padding: 0; }
+.heading { padding-bottom: 1.2rem; border-bottom: 1px solid #e2e9e5; margin: 1.2rem 0 1.5rem; }
+.heading p { font-size: .8rem; color: #7b8b81; line-height: 1.6; }
+.toolbar { background: #fff; border-color: #e2e9e5; border-radius: .8rem; padding: 1.1rem; gap: 1rem; }
+.toolbar label { font-size: .74rem; font-weight: 500; }
+.workspace { grid-template-columns: minmax(220px, .8fr) minmax(0, 2fr); gap: 1rem; }
+.list, .editor { background: #fff; border-color: #e2e9e5; border-radius: .85rem; padding: 1.3rem; }
+.list button { padding: .8rem .7rem; font-size: .78rem; }
+.list small { font-size: .67rem; }
+.title h2 { font-size: 1.2rem; font-weight: 600; }
+.placeholder { border-radius: .7rem; background: #f5f8f6; color: #7e9084; }
+@media (max-width: 1000px) { .toolbar { grid-template-columns: 1fr 1fr; } .workspace { grid-template-columns: 1fr; } .list nav { max-height: 260px; } }
+@media (max-width: 600px) { .toolbar { grid-template-columns: 1fr; } }

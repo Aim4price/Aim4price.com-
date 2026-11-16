@@ -6,5 +6,5 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export default async function AnnualReviewPage() {
   await requireAdminPageAccess();
-  return <main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1rem' }}><AdminNavigation active="annual-review" /><AnnualReviewClient /></main>;
+  return <main className="adminAnnualReviewPage"><AdminNavigation active="annual-review" /><AnnualReviewClient /></main>;
 }

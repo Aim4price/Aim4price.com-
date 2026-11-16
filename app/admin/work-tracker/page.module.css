@@ -28,7 +28,7 @@
   margin: 0 0 0.18rem;
   color: #60716a;
   font-size: 0.7rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -71,7 +71,7 @@
   justify-content: center;
   text-decoration: none;
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -99,7 +99,7 @@
 .notice {
   padding: 0.82rem 1rem;
   font-size: 0.86rem;
-  font-weight: 820;
+  font-weight: 600;
 }
 
 .noticeSuccess {
@@ -149,14 +149,14 @@
   margin: 0;
   color: #17362c;
   font-size: 1.2rem;
-  font-weight: 940;
+  font-weight: 600;
   letter-spacing: -0.025em;
 }
 
 .liveTime {
   color: #176047;
   font-size: 1.35rem;
-  font-weight: 950;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -178,7 +178,7 @@
 .noteField > span {
   color: #52645d;
   font-size: 0.68rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -211,7 +211,7 @@
   border-radius: 0.82rem;
   font: inherit;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -270,7 +270,7 @@
 .activeDetails span {
   color: #6d7d77;
   font-size: 0.64rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -279,7 +279,7 @@
   overflow: hidden;
   color: #17362c;
   font-size: 0.77rem;
-  font-weight: 850;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -327,7 +327,7 @@
   padding: 0.7rem 0.78rem;
   color: #36584c;
   font-size: 0.7rem;
-  font-weight: 850;
+  font-weight: 600;
   list-style: none;
   cursor: pointer;
 }
@@ -404,7 +404,7 @@
   background: transparent;
   font: inherit;
   font-size: 0.7rem;
-  font-weight: 880;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -434,7 +434,7 @@
   align-self: center;
   color: #708079;
   font-size: 0.67rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.35;
 }
 
@@ -457,7 +457,7 @@
 .summaryGrid span {
   color: #687a73;
   font-size: 0.64rem;
-  font-weight: 900;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -465,7 +465,7 @@
 .summaryGrid strong {
   color: #17362c;
   font-size: 1.15rem;
-  font-weight: 950;
+  font-weight: 600;
 }
 
 .reportableSummary {
@@ -529,13 +529,13 @@
 .sessionHeader strong {
   color: #17362c;
   font-size: 0.88rem;
-  font-weight: 920;
+  font-weight: 600;
 }
 
 .sessionHeader span {
   color: #6e7e78;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -548,7 +548,7 @@
 .sessionMeta b {
   color: #176047;
   font-size: 0.9rem;
-  font-weight: 950;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -557,7 +557,7 @@
   padding: 0;
   border-radius: 0;
   font-size: 0.59rem !important;
-  font-weight: 850 !important;
+  font-weight: 600 !important;
   white-space: nowrap;
 }
 
@@ -605,7 +605,7 @@
   color: #31574a;
   background: transparent;
   font-size: 0.65rem;
-  font-weight: 760;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -643,7 +643,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.65rem;
-  font-weight: 820;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -664,7 +664,7 @@
   background: #ffffff;
   font: inherit;
   font-size: 0.65rem;
-  font-weight: 880;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -695,7 +695,7 @@
   border-width: 1px;
   font: inherit;
   font-size: 0.61rem;
-  font-weight: 850;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -827,3 +827,20 @@
     flex-direction: column;
   }
 }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }
+
+.topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
+
+.activeCard, .historyCard { background: #fff; border: 1px solid #e2e9e5; border-radius: .85rem; box-shadow: none; padding: 1.3rem; }
+.activeCardRunning { border-color: #9fbea9; background: #f7fbf8; }
+.sectionHeading h2 { font-size: .95rem; font-weight: 600; }
+.startButton, .stopButton, .secondaryButton, .reportButton { font-size: .75rem; font-weight: 500; min-height: 40px; border-radius: .5rem; box-shadow: none; }
+.sessionCard { border: 1px solid #e7ede9; border-radius: .7rem; box-shadow: none; background: #fff; padding: 1.1rem; }
+.sessionMeta { color: #809087; font-size: .72rem; }
+.periodToggle { background: #f3f6f4; border-color: #e3eae5; }
+.emptyState { background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .7rem; padding: 2.5rem 1.5rem; color: #849188; font-size: .8rem; }
+@media (max-width: 980px) { .startRow, .activeDetails, .reportBar, .summaryGrid { grid-template-columns: minmax(0, 1fr); } .sectionHeading { flex-wrap: wrap; } }

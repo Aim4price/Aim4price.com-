@@ -53,7 +53,7 @@
   background: #ffffff;
   text-decoration: none;
   font-size: 0.84rem;
-  font-weight: 850;
+  font-weight: 600;
   white-space: nowrap;
   box-shadow: none;
   transition:
@@ -151,7 +151,7 @@
   width: fit-content;
   color: #176047;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -215,7 +215,7 @@
   display: grid;
   place-items: center;
   font-size: 1.15rem;
-  font-weight: 850;
+  font-weight: 600;
 }
 
 .detailsSection[open] > summary > div::after {
@@ -240,7 +240,7 @@
   margin: 0;
   color: #60716a;
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -260,7 +260,7 @@
   overflow: hidden;
   color: #17362c;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -270,7 +270,7 @@
   overflow: hidden;
   color: #8b9a94;
   font-size: 0.72rem;
-  font-weight: 750;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -362,12 +362,50 @@
 .attentionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
 .attentionCard { display: grid; gap: .6rem; padding: 1rem; border: 1px solid #dce6df; border-radius: .7rem; background: #fff; color: #173e30; text-decoration: none; }
 .attentionCard:hover, .attentionCard:focus-visible { border-color: #367e60; outline: 2px solid #a9cdb7; outline-offset: 2px; }
-.attentionCard > span:first-child { font-weight: 750; font-size: .9rem; }
+.attentionCard > span:first-child { font-weight: 600; font-size: .9rem; }
 .attentionCard strong { font-size: 1.65rem; }
 .attentionCard small { color: #53675d; line-height: 1.5; }
 .attentionUrgent { border-color: #dab4aa; background: #fff8f5; }
-.attentionAction { font-size: .8rem; font-weight: 750; }
+.attentionAction { font-size: .8rem; font-weight: 600; }
 @media (max-width: 1000px) { .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .refreshButton { border: 1px solid #dce6df; border-radius: .4rem; background: #fff; color: #24583f; padding: .6rem .8rem; font: inherit; font-size: .8rem; cursor: pointer; }
 .refreshButton:disabled { opacity: .5; }
+
+/* Outer spacing is owned by AdminWorkspace. */
+.page { background: transparent; min-height: auto; }
+.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+@media (max-width: 980px) { .shell { padding: 0; } }
+
+.topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
+
+/* An overview that gives priority to work requiring a decision. */
+.dashboardSection { gap: 1rem; margin-bottom: .65rem; }
+.sectionHeading h2 { font-size: .88rem; font-weight: 600; }
+.attentionHint { color: #839087; font-size: .72rem; margin: -.35rem 0 .2rem; }
+.attentionGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.attentionCard { position: relative; grid-template-columns: 1fr auto; padding: 1.1rem 1.2rem; gap: .5rem 1rem; border-color: #e2e9e5; border-radius: .8rem; }
+.attentionCard > span:first-child { font-size: .77rem; font-weight: 550; align-self: center; }
+.attentionCard strong { font-size: 1.6rem; font-weight: 600; grid-column: 2; grid-row: 1; letter-spacing: -.05em; }
+.attentionCard small { font-size: .68rem; grid-column: 1 / -1; color: #859187; }
+.attentionCard .attentionAction { font-size: .66rem; color: #45745a; margin-top: .35rem; }
+.attentionUrgent { background: #fffaf4; border-color: #e9d7bd; }
+.grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .85rem; }
+.card { padding: 1.3rem; border-color: #e2e9e5; border-radius: .8rem; box-shadow: none; gap: 1.15rem; }
+.cardHeader h2 { font-size: .78rem; font-weight: 500; color: #718278; }
+.overviewGrid .card { border-color: #e2e9e5; }
+.featuredCard { background: #174d3e !important; border-color: #174d3e !important; }
+.featuredCard .cardHeader h2, .featuredCard .valueRow dt, .featuredCard .cardLink { color: #c0d6c8; }
+.featuredCard .valueRow strong { color: #fff; }
+.valueRow strong { font-size: 1.05rem; font-weight: 600; letter-spacing: -.025em; }
+.valueRow dt { font-size: .7rem; }
+.values { gap: .7rem; }
+.cardLink { font-size: .68rem; font-weight: 500; }
+.storageCard { padding: 1.4rem; border-color: #e2e9e5; box-shadow: none; }
+.storageRows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem 2rem; }
+.storageRow { font-size: .72rem; padding-bottom: .65rem; border-bottom: 1px solid #edf1ee; }
+.storageRow strong { font-size: .78rem; font-weight: 550; }
+.storageDivider { grid-column: 1 / -1; }
+@media (max-width: 1100px) { .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .attentionGrid, .storageRows { grid-template-columns: 1fr; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .card { padding: 1rem; } }
+@media (max-width: 380px) { .grid { grid-template-columns: 1fr; } }
