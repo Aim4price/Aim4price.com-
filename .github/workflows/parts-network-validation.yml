@@ -3,6 +3,12 @@ on:
   pull_request:
     paths:
       - 'lib/parts-network*'
+      - 'lib/parts-share.ts'
+      - 'components/PartsShareFlow*'
+      - 'components/SharedParts*'
+      - 'app/parts-share/**'
+      - 'app/api/parts-share/**'
+      - 'tests/parts-share.test.cjs'
       - 'lib/parts-editor.ts'
       - 'components/PartsImportForm.tsx'
       - 'components/PartsSheetTools.tsx'
@@ -32,7 +38,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/parts-network.test.cjs tests/signup-wizard-flow.test.mjs tests/separate-app-sessions.test.mjs
+      - run: node --test tests/parts-share.test.cjs tests/parts-network.test.cjs tests/signup-wizard-flow.test.mjs tests/separate-app-sessions.test.mjs
       - run: node scripts/verify-parts-network.cjs
       - uses: actions/upload-artifact@v4
         if: always()

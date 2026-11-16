@@ -89,6 +89,7 @@ function add(file) {
 const entry = "app/dealer/parts/parts-client";
 add(entry);
 add("app/parts/join/join-client");
+add("components/SharedParts");
 const react = fs.readFileSync(
   path.join(
     path.dirname(require.resolve("react/package.json")),
@@ -104,14 +105,15 @@ const reactDOM = fs.readFileSync(
   "utf8",
 );
 const excelScript = fs.readFileSync(require.resolve('exceljs/dist/exceljs.min.js'), 'utf8');
+const fontCss = `@font-face{font-family:PartsPreview;src:url(data:font/woff;base64,${fs.readFileSync(path.join(root,"public/fonts/montserrat-latin.woff")).toString("base64")})}:root{--font-body:PartsPreview;--font-heading:PartsPreview}body{font-family:PartsPreview,Arial,sans-serif}`;
 const appCode =
   "const sources=" +
   JSON.stringify(modules) +
   ",cache={};" +
   'function require(name){if(name==="next/link")return {__esModule:true,default:({children,...props})=>React.createElement("a",props,children)};if(name==="exceljs")return ExcelJS;if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}' +
-  "const Component=require(location.pathname === '/parts/join' ? 'app/parts/join/join-client' : " +
+  "const Component=require(location.pathname.startsWith('/parts-share/') ? 'components/SharedParts' : location.pathname === '/parts/join' ? 'app/parts/join/join-client' : " +
   JSON.stringify(entry) +
-  ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true,listId:location.pathname.split("/")[2]||""}));';
+  ').default;ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(Component,{website:true,token:location.pathname.split("/")[2],listId:location.pathname.split("/")[2]||""}));';
 (async () => {
   const browser = await puppeteer.launch({
     executablePath: await chromium.executablePath(),
@@ -168,8 +170,16 @@ const appCode =
     };
     await page.setRequestInterception(true);
     let pdfRequest;
+    let shareLocked=false;
+    let shareLinks=[{id:"share-1",url:"https://example.test/parts-share/"+"a".repeat(64),created_at:"2026-11-16",protected:true,allow_download:true,allow_enquiry:true,recipient_name:"",revoked_at:null}];
     page.on("request", (r) => {
       if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
+      if (r.url().includes('/api/parts-share/')) {
+        const input=JSON.parse(r.postData()||'{}');
+        if(input.action==='unlock'){shareLocked=false;return r.respond({contentType:'application/json',body:'{"ok":true}'});}
+        if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
+        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
+      }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
         pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
         return r.respond({status:200,contentType:"application/pdf",body:"%PDF-1.7\nfixture"});
@@ -183,14 +193,14 @@ const appCode =
           actions.push(b);
           if (b.action === "edit-part") row.quantity = Number(b.quantity);
           data =
-            b.action === "preview"
+            b.action === "share-history" ? {links:shareLinks} : b.action === "preview"
               ? {
                   revision: 1,
                   summary: { added: 1, updated: 1, removed: b.mode === "replace" ? 1 : 0, total: 2 },
                   sample: parser.parsePartsSnapshot(b.csv, b.columns, b.options).slice(0,5),
                 }
-              : b.action === "invite"
-                ? { url: "https://example.test/parts/join?token=example" }
+              : b.action === "invite" || b.action === "create-share"
+                ? { url: "https://example.test/parts-share/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
                 : { ok: true };
         } else if (!url.search)
           data = {
@@ -253,7 +263,7 @@ const appCode =
       }
       return r.respond({
         contentType: "text/html",
-        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + sheets.join("\n") + '</style></head><body><div id="app"></div><div id="aim4price-website-overlays"></div><script>' + excelScript + '</script><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
+        body: '<html><head><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;background:#eef4f0}' + fontCss + sheets.join("\n") + '</style></head><body><div id="app"></div><div id="aim4price-website-overlays"></div><script>' + excelScript + '</script><script>' + react + '</script><script>' + reactDOM + '</script><script>' + appCode.replace(/<\/script/gi, '<\\/script') + '</script></body></html>',
       });
     });
     await page.goto("https://example.test/parts");
@@ -339,12 +349,12 @@ const appCode =
     );
     await page.keyboard.press("Escape");
     await click("Share");
-    await page.waitForSelector('[role="dialog"]');
+    await page.waitForSelector('dialog[open]');
     assert.ok(
       await page.evaluate(
         () =>
           document.body.innerText.includes("Inside Aim4price") &&
-          document.body.innerText.includes("Send link"),
+          document.body.innerText.includes("Share link"),
       ),
     );
     await page.screenshot({
@@ -927,9 +937,9 @@ const appCode =
     await page.$eval('[role=dialog]', dialog => {
       [...dialog.querySelectorAll('button')].find(button => button.querySelector('strong')?.textContent === 'Share').click();
     });
-    await page.waitForFunction(() => document.querySelector('[role=dialog]')?.textContent.includes('Send link'));
-    assert.equal(await page.$$eval('[role=dialog]', dialogs => dialogs.length), 1, 'Manage Share opens the existing share modal');
-    await page.$eval('[role=dialog] button[aria-label="Close dialog"]', button => button.click());
+    await page.waitForFunction(() => document.querySelector('dialog[open]')?.textContent.includes('Share link'));
+    assert.equal(await page.$$eval('dialog[open]', dialogs => dialogs.length), 1, 'Manage Share opens the managed share modal');
+    await page.$eval('dialog[open] button[aria-label="Close dialog"]', button => button.click());
     await click('Manage');
     await page.$eval('[role=dialog] button[data-tone="green"]', button=>button.click());
     await page.waitForSelector('[aria-label="Parts download format"]');
@@ -1070,35 +1080,48 @@ const appCode =
     await page.goto("https://example.test/parts");
     await click("Share");
     await click("Inside Aim4price");
+    await click('Search');
     await click('Buyer Dealer');
-    assert.equal(await page.$eval('[aria-label="Sharing recipients"] button', el=>el.getAttribute('aria-pressed')), 'true');
-    assert.equal(await page.$$eval('[class*=partsShareModal] select', els=>els.length), 0);
+    assert.equal(await page.$eval('dialog[open] button[aria-pressed]',el=>el.getAttribute('aria-pressed')),'true');
     await page.screenshot({path:path.join(output,'share-recipient-picker.png')});
     await page.setViewport({width:390,height:740});
+    assert.ok(await page.$eval('dialog[open]',d=>d.scrollWidth<=d.clientWidth+2));
     await page.screenshot({path:path.join(output,'share-recipient-phone.png')});
     await page.setViewport({width:1440,height:1000});
-    await click("Share inside Aim4price");
-    await page.waitForFunction(() =>
-      document.body.innerText.includes("Shared inside Aim4price."),
-    );
-    assert.equal(actions.find((a) => a.action === "invite").channel, "direct");
-    assert.equal(actions.find((a) => a.action === "invite").role, "viewer");
-    await click("Share");
-    await page.screenshot({ path: path.join(output, "share-dark.png") });
-    await page.setViewport({ width: 390, height: 844 });
-    await page.screenshot({ path: path.join(output, "share-mobile-dark.png") });
-    await page.setViewport({ width: 1440, height: 1000 });
-    await click("Send link");
-    await page.waitForSelector('input[type="email"]');
-    await page.type('input[type="email"]', "other@example.test");
-    await click("Create sharing link");
-    await page.waitForFunction(() =>
-      document.body.innerText.includes("Copy link"),
-    );
-    assert.equal(
-      actions.filter((a) => a.action === "invite").at(-1).channel,
-      "link",
-    );
+    await click('Continue');
+    await page.screenshot({path:path.join(output,'share-permissions.png')});
+    await click('Continue');
+    assert.ok(await page.$eval('dialog[open] footer button:last-child',b=>b.disabled),'Risk consent is required');
+    await page.click('dialog[open] input[type=checkbox]');
+    await click('Create parts link');
+    await page.waitForFunction(()=>document.body.innerText.includes('Your link is ready'));
+    assert.equal(actions.find(a=>a.action==='create-share').channel,'direct');
+    assert.equal(actions.find(a=>a.action==='create-share').accepted,true);
+    await click('Done');
+    await click('Share');
+    await page.screenshot({path:path.join(output,'share-dark.png')});
+    await click('Share link');
+    await page.type('dialog[open] input[type=password]','example-password');
+    await page.click('dialog[open] input[type=checkbox]');
+    await click('Continue');
+    await page.click('dialog[open] input[type=checkbox]');
+    await click('Create parts link');
+    await page.waitForFunction(()=>document.body.innerText.includes('Copy link'));
+    assert.equal(actions.filter(a=>a.action==='create-share').at(-1).channel,'link');
+    assert.equal(actions.filter(a=>a.action==='create-share').at(-1).allowDownload,true);
+    await page.screenshot({path:path.join(output,'share-send.png')});
+    await click('Done');await click('Share');await click('Sharing history');
+    await page.waitForFunction(()=>document.body.innerText.includes('Password protected'));
+    await page.screenshot({path:path.join(output,'parts-share-history.png')});
+    await click('Settings');
+    await page.$$eval('dialog[open] input[type=checkbox]',inputs=>inputs.at(-1).click());
+    await page.type('dialog[open] input[type=password]','replacement-password');
+    await click('Save settings');
+    await page.waitForFunction(()=>document.body.innerText.includes('Manage your shared links'));
+    assert.equal(actions.filter(a=>a.action==='update-share').at(-1).password,'replacement-password');
+    await click('Settings');await click('Revoke access');
+    await click('Keep link');
+    assert.ok(!actions.some(a=>a.action==='revoke-share'),'Cancelled revocation leaves the link active');
     viewerFixture=true;
     await page.goto('https://example.test/parts');await page.waitForSelector('article');
     assert.ok(await page.evaluate(()=>![...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Add parts list')));
@@ -1117,6 +1140,26 @@ const appCode =
     await page.screenshot({path:path.join(output,"invitation-desktop.png")});
     await page.setViewport({width:390,height:844});
     await page.screenshot({path:path.join(output,"invitation-phone.png")});
+    await page.setViewport({width:1440,height:1000});
+    await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
+    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
+    await page.screenshot({path:path.join(output,'shared-parts-landing.png')});
+    await click('Open parts list');
+    await page.waitForSelector('tbody tr');
+    await click('Download PDF');
+    await page.waitForSelector('a[href^="/business/join?"]');
+    assert.ok(await page.$eval('a[href^="/business/join?"]',a=>decodeURIComponent(a.href).includes('/parts-share/')));
+    await page.screenshot({path:path.join(output,'shared-parts-account-gate.png')});
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
+    shareLocked=true;
+    await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
+    await page.waitForSelector('input[type=password]');
+    assert.equal(await page.$('tbody tr'),null,'Locked links do not render parts');
+    await page.type('input[type=password]','example-password');
+    await click('Open parts');
+    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
     assert.deepEqual(errors, []);
     console.log(
       "Parts network UI: table, contact, CSV review/import, membership cancellation, phone and dark mode passed.",

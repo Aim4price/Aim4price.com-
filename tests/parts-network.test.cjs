@@ -120,6 +120,7 @@ test("private network membership, import replacement and invitation lifecycle us
     "./parts-network-schema": load("lib/parts-network-schema.ts"),
     "./parts-network-csv": csv,
     "./sharing-foundation": { ensureSharingFoundation: async () => {} },
+    "./business-network": {ensureBusinessNetwork:async()=>{await db.exec("CREATE TABLE IF NOT EXISTS business_network(id text,status text,accepted_at timestamptz); CREATE TABLE IF NOT EXISTS account_directory_listings(user_id text,business_id text);");}},
     "./email": {
       getSiteOrigin: () => "https://example.test",
       sendAim4priceEmail: async (m) => messages.push(m),
@@ -461,6 +462,7 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
     "./parts-network-schema": schema,
     "./parts-network-csv": csv,
     "./sharing-foundation": { ensureSharingFoundation: async () => {} },
+    "./business-network": {ensureBusinessNetwork:async()=>{await db.exec("CREATE TABLE IF NOT EXISTS business_network(id text,status text,accepted_at timestamptz); CREATE TABLE IF NOT EXISTS account_directory_listings(user_id text,business_id text);");}},
     "./email": { getSiteOrigin: () => "https://example.test" },
   });
   const owner = {
@@ -518,6 +520,9 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
 
   await db.query('INSERT INTO "user"(id,email) VALUES($1,$2) ON CONFLICT DO NOTHING',[buyer.id,buyer.email]);
   await db.query("INSERT INTO account_profiles(user_id,account_type,account_status) VALUES($1,'dealer','active')",[buyer.id]);
+  await db.exec("CREATE TABLE IF NOT EXISTS business_network(id text,status text,accepted_at timestamptz); CREATE TABLE IF NOT EXISTS account_directory_listings(user_id text,business_id text);");
+  await db.query("INSERT INTO business_network VALUES($1,'active',now());",[buyer.id]);
+  await db.query("INSERT INTO account_directory_listings VALUES($1,$1);",[buyer.id]);
   await parts.invitePartsMember(owner, a, buyer.email, "viewer", "direct");
   const invitation = (await parts.partsInbox(buyer)).invitations[0];
   assert.equal(invitation.name, "Landini");
@@ -528,6 +533,7 @@ test("named lists isolate CSVs, direct shares, enquiries and archived access", a
   await assert.rejects(()=>parts.invitePartsMember(owner,a,stranger.email,"viewer","direct"), /active dealer/);
   assert.equal((await parts.partsRecipients(owner,a,'buyer')).recipients[0].email,buyer.email);
   await db.exec(`INSERT INTO "user"(id,email) VALUES('paid-business','paid@example.test'),('free-business','free@example.test'); INSERT INTO account_profiles(user_id,business_name,account_type,account_status) VALUES('paid-business','Paid workshop','business','active'),('free-business','Free workshop','business','active'); INSERT INTO sharing_account_access(user_id,plan) VALUES('paid-business','desktop'),('free-business','free');`);
+  await db.exec("INSERT INTO business_network VALUES('paid-business','active',now()),('free-business','active',now()); INSERT INTO account_directory_listings VALUES('paid-business','paid-business'),('free-business','free-business');");
   assert.deepEqual((await parts.partsRecipients(owner,a,'workshop')).recipients.map(r=>r.email),['free@example.test','paid@example.test']);
   await parts.invitePartsMember(owner,a,'free@example.test','viewer','direct');
   const freeBusiness = {...owner,id:'free-business',email:'free@example.test',viewerOnly:true,canContribute:false};
@@ -643,6 +649,8 @@ test('clipboard pastes preserve row alignment, punctuation, blanks and existing 
 });
 test('parts signup continuations stay local and narrowly scoped',()=>{
  const {sharedEnquiryReturnTo:back}=load('lib/external-share-permissions.ts');
+ assert.equal(back('/parts-share/'+'a'.repeat(64)), '/parts-share/'+'a'.repeat(64));
+ for(const value of ['/parts-share/x','/parts-share/'+'a'.repeat(64)+'?redirect=evil','//evil.test/parts-share/'+'a'.repeat(64)])assert.equal(back(value),null);
  const link='/parts/join?token='+'a'.repeat(64);assert.equal(back(link),link);
  for(const value of ['https://evil.test/parts','//evil.test/parts','/parts/join?token=x','/parts/../admin','/parts?redirect=https://evil.test'])assert.equal(back(value),null);
 });
@@ -676,6 +684,7 @@ test("row edits are scoped, validated and reject stale saves", async () => {
     "./parts-network-schema": load("lib/parts-network-schema.ts"),
     "./parts-network-csv": csv,
     "./sharing-foundation": { ensureSharingFoundation: async () => {} },
+    "./business-network": {ensureBusinessNetwork:async()=>{await db.exec("CREATE TABLE IF NOT EXISTS business_network(id text,status text,accepted_at timestamptz); CREATE TABLE IF NOT EXISTS account_directory_listings(user_id text,business_id text);");}},
     "./email": {
       getSiteOrigin: () => "https://example.test",
       sendAim4priceEmail: async (m) => messages.push(m),

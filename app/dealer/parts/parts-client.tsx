@@ -19,6 +19,7 @@ import {
 import type { PartDetailField } from "../../../lib/parts-network-csv";
 import PartsImportForm from "../../../components/PartsImportForm";
 import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
+import PartsShareFlow from "../../../components/PartsShareFlow";
 import PartsChoice from "../../../components/PartsChoice";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
@@ -1094,7 +1095,8 @@ export default function PartsClient({
             </div>
           </Modal>
         )}
-        {modal === "share" && (
+        {modal === "share" && current?.list_mode && <PartsShareFlow name={current.name} count={current.part_count || 0} network={network} api={api} onClose={close}/> }
+        {modal === "share" && !current?.list_mode && (
           <Modal
             title={current?.name || "Parts list"}
             subtitle={`${current?.part_count || 0} ${current?.part_count === 1 ? "part" : "parts"} · Private dealer sharing`}
