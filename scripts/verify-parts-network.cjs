@@ -316,13 +316,13 @@ const appCode =
     await page.waitForSelector("article");
 
     const click = async (text) => {
-      await page.waitForFunction(t => [...([...document.querySelectorAll("dialog[open]")].at(-1) || document).querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
+      await page.waitForFunction(t => [...([...document.querySelectorAll("dialog[open]")].at(-1) || document).querySelectorAll("button")].some(b => (b.textContent.trim() === t || b.getAttribute("aria-label") === t || b.querySelector("strong")?.textContent.trim() === t) && !b.matches(":disabled")), {}, text);
       const navigation = text === "Open" ? page.waitForNavigation({waitUntil:"domcontentloaded"}) : null;
       assert.ok(
         await page.evaluate((t) => {
           const b = [...([...document.querySelectorAll("dialog[open]")].at(-1) || document).querySelectorAll("button")].find(
             (b) =>
-              (b.textContent.trim() === t ||
+              (b.textContent.trim() === t || b.getAttribute("aria-label") === t ||
                 b.querySelector("strong")?.textContent.trim() === t) &&
               !b.matches(":disabled"),
           );
@@ -1092,20 +1092,27 @@ const appCode =
     await page.screenshot({path:path.join(output,'share-recipient-phone.png')});
     await page.setViewport({width:1440,height:1000});
     await click('Continue');
+    await click('Choose permissions');
     await page.screenshot({path:path.join(output,'share-permissions.png')});
     await click('Continue');
     assert.ok(await page.$eval('dialog[open] footer button:last-child',b=>b.disabled),'Risk consent is required');
     await page.click('dialog[open] input[type=checkbox]');
     await click('Create parts link');
-    await page.waitForFunction(()=>document.body.innerText.includes('Your link is ready'));
+    await page.waitForFunction(()=>document.body.innerText.includes('Copy link'));
     assert.equal(actions.find(a=>a.action==='create-share').channel,'direct');
     assert.equal(actions.find(a=>a.action==='create-share').accepted,true);
-    await click('Done');
+    await page.click('dialog[open] button[aria-label="Close dialog"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
     await click('Share');
     await page.screenshot({path:path.join(output,'share-dark.png')});
     await click('Share link');
-    await page.type('dialog[open] input[type=password]','example-password');
-    await page.click('dialog[open] input[type=checkbox]');
+    await page.screenshot({path:path.join(output,'share-access-choice.png')});
+    await click('Choose permissions');
+    await page.type('[data-asset-link-dialog] input[type=password]','example-password');
+    await page.click('[aria-label="Show password"]');
+    assert.equal(await page.$eval('[data-asset-link-dialog] input[autocomplete="new-password"]',el=>el.type),'text');
+    await page.click('[aria-label="Hide password"]');
+    assert.equal(await page.$eval('[data-asset-link-dialog] input[autocomplete="new-password"]',el=>el.value),'example-password');
+    await page.click('[data-asset-link-dialog] input[type=checkbox]');
     await click('Continue');
     await page.click('dialog[open] input[type=checkbox]');
     await click('Create parts link');
@@ -1113,7 +1120,7 @@ const appCode =
     assert.equal(actions.filter(a=>a.action==='create-share').at(-1).channel,'link');
     assert.equal(actions.filter(a=>a.action==='create-share').at(-1).allowDownload,true);
     await page.screenshot({path:path.join(output,'share-send.png')});
-    await click('Done');await click('Share');await click('Sharing history');
+    await page.click('dialog[open] button[aria-label="Close dialog"]');await page.waitForFunction(()=>!document.querySelector('dialog'));  await click('Share');await click('Sharing history');
     await page.waitForFunction(()=>document.body.innerText.includes('Password protected'));
     await page.screenshot({path:path.join(output,'parts-share-history.png')});
     await click('Settings');

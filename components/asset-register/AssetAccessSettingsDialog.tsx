@@ -7,8 +7,8 @@ import layout from './AssetAccessSettingsDialog.module.css';
 import styles from '../../app/asset-register/page.module.css';
 
 /** The same settings surface for inside sharing and asset links. */
-export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false}: {
-  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;documentsLayout?:boolean;
+export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false,guideDescription='The recipient signs in to use your link.',permissionsDescription='Choose allowed updates and reports.'}: {
+  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;documentsLayout?:boolean;guideDescription?:string;permissionsDescription?:string;
 }) {
   const titleId=useId();
   const [showGuide,setShowGuide]=useState(linkSettings);
@@ -33,7 +33,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
       </div>
       <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody} ${layout.body}`}>{showGuide ? <div className={layout.guideBody}>
         <p className={layout.guideHeading}>Choose the access you want to share</p>
-        <p className={layout.guideDescription}>The recipient signs in to use your link.</p>
+        <p className={layout.guideDescription}>{guideDescription}</p>
         <div className={layout.accessChoices}>
           {onViewOnly && <button type="button" aria-label="View only" className={`${layout.accessChoice} ${layout.viewChoice}`} onClick={()=>{onViewOnly();setShowGuide(false);}}>
             <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
@@ -43,7 +43,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
           <button type="button" aria-label="Choose permissions" data-access-start className={`${layout.accessChoice} ${layout.permissionsChoice}`} onClick={()=>setShowGuide(false)}>
             <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="9" cy="18" r="2" fill="currentColor"/></svg></span>
             <span className={layout.choiceTitle}>Choose permissions</span>
-            <span className={layout.choiceDescription}>Choose allowed updates and reports.</span>
+            <span className={layout.choiceDescription}>{permissionsDescription}</span>
           </button>
         </div>
       </div> : children}</div>

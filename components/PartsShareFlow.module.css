@@ -9,3 +9,5 @@
 @media(prefers-reduced-motion:reduce){.dialog button,.dialog a{transition:none}}
 
 .dialog.dialog h2{font-family:var(--font-heading,var(--font-body,Montserrat,Arial,sans-serif));font-size:clamp(26px,calc(var(--website-design-vw, 1vw) * 3),34px);font-weight:750}.icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.password{position:relative}.password input{padding-right:3.5rem}.password button{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--app-text,#173f31);cursor:pointer}.password button:hover{background:var(--app-surface-soft,#edf5f0)}.password button:focus-visible{outline:3px solid #74ac92;outline-offset:2px}.password svg{width:22px;height:22px}
