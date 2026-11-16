@@ -176,7 +176,8 @@ const appCode =
       if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
       if (r.url().includes('/api/parts-share/')) {
         const input=JSON.parse(r.postData()||'{}');
-        if(input.action==='unlock'){shareLocked=false;return r.respond({contentType:'application/json',body:'{"ok":true}'});}
+        if(input.action==='landing')return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1})});
+        if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:'{"ok":true}'});}
         if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
         return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:false,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
       }
@@ -1168,11 +1169,24 @@ const appCode =
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
     shareLocked=true;
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
+    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
+    assert.equal(await page.$('input[type=password]'),null,'Welcome screen appears before the password prompt');
+    await click('Open parts list');
+    await page.screenshot({path:path.join(output,'shared-parts-protected-landing.png')});
     await page.waitForSelector('input[type=password]');
     assert.equal(await page.$('tbody tr'),null,'Locked links do not render parts');
+    await page.type('input[type=password]','wrong-password');
+    await page.$eval('dialog form',form=>form.requestSubmit());
+    await page.waitForFunction(()=>document.body.innerText.includes('The password is incorrect.'));
+    assert.equal(await page.$('tbody tr'),null);
+    await page.$eval('input[type=password]',el=>{el.select();});
     await page.type('input[type=password]','example-password');
-    await click('Open parts');
-    await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
+    await click('Show password');
+    assert.equal(await page.$eval('input[autocomplete=current-password]',el=>el.type),'text');
+    await click('Hide password');
+    await page.$eval('dialog form',form=>form.requestSubmit());
+    await page.waitForSelector('tbody tr');
+    assert.equal(await page.$('dialog'),null,'Successful unlock opens the list directly');
     assert.deepEqual(errors, []);
     console.log(
       "Parts network UI: table, contact, CSV review/import, membership cancellation, phone and dark mode passed.",

@@ -22,6 +22,9 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await assert.rejects(()=>api.managePartsShare({...owner,id:'other'},network,{action:'share-history'}),/Only/);
  await assert.rejects(()=>api.managePartsShare({...owner,staff:true},network,{action:'share-history'}),/Only/);
  const {url}=await create({password:'first-password',allowDownload:true,allowEnquiry:true});const token=url.split('/').at(-1);
+ const landing=await api.openPartsShare(token,null,'',{action:'landing'});
+ assert.deepEqual(Object.keys(landing).sort(),['name','owner','total']);
+ assert.equal(landing.total,1);
  await assert.rejects(()=>api.openPartsShare(token,null,'',{}),e=>e.status===423);
  await assert.rejects(()=>api.openPartsShare(token,null,'',{action:'unlock',password:'wrong'}),/incorrect/);
  const {proof}=await api.openPartsShare(token,null,'',{action:'unlock',password:'first-password'});
