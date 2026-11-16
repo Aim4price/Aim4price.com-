@@ -263,6 +263,7 @@ export async function invitePartsMember(
   channel: unknown = "link",
 ) {
   await ensureSharingFoundation();
+  await (await import("./business-network")).ensureBusinessNetwork();
   const email = str(emailInput, 254).toLowerCase(),
     memberRole = role(roleInput);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
@@ -919,13 +920,14 @@ export async function resolvePartsShare(actor: PartsActor, token: unknown) {
 }
 
 const PARTS_RECIPIENT =
-  "p.account_type IN ('dealer','business') AND p.account_status='active' AND coalesce(p.account_subtype,'') NOT IN ('middleman','machinery-middleman','equipment-middleman')";
+  "EXISTS (SELECT 1 FROM account_directory_listings l JOIN business_network b ON b.id=l.business_id WHERE l.user_id=u.id AND b.status='active' AND b.accepted_at IS NOT NULL) AND p.account_type IN ('dealer','business') AND p.account_status='active' AND coalesce(p.account_subtype,'') NOT IN ('middleman','machinery-middleman','equipment-middleman')";
 export async function partsRecipients(
   actor: PartsActor,
   id: string,
   search: string,
 ) {
   await ensureSharingFoundation();
+  await (await import("./business-network")).ensureBusinessNetwork();
   return transaction(async (db) => {
     await access(db, actor, id, "admin");
     return {

@@ -172,6 +172,10 @@ export async function POST(request: NextRequest) {
       return reply({ ok: true });
     }
     const id = networkId(body.network);
+    if (["create-share","share-history","update-share","revoke-share","delete-share"].includes(String(body.action))) {
+      const { managePartsShare } = await import("../../../lib/parts-share");
+      return reply(await managePartsShare(actor, id, body));
+    }
     if (body.action === "edit-part") return reply(await editPartsRow(actor, id, body));
     if (body.action === "rename" || body.action === "archive") {
       await managePartsList(actor, id, body.name, body.action === "archive");
