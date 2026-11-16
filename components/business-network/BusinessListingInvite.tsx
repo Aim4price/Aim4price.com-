@@ -105,7 +105,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
 
         {error && <p role="alert">{error}</p>}
         {link && <>
-        <ShareLinkDelivery descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint="Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History." previewLabel="Preview enquiry" />
+        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint="Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History." previewLabel="Preview enquiry" />
         </>}
       </Dialog>}
   </>;

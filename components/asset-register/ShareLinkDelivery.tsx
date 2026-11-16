@@ -4,14 +4,14 @@ import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-exter
 import styles from '../business-network/BusinessListingInvite.module.css';
 
 /** Shared delivery screen for owner asset links and parts links. */
-export default function ShareLinkDelivery({link,copy,description,hint,previewLabel,descriptionId}: {
- link:string; copy:{subject:string;body:string}; description:string; hint:string; previewLabel:string; descriptionId?:string;
+export default function ShareLinkDelivery({link,copy,description,hint,previewLabel,descriptionId,linkLabel='Sharing link',copiedMessage='Link copied.'}: {
+ link:string; copy:{subject:string;body:string}; description:string; hint:string; previewLabel:string; descriptionId?:string; linkLabel?:string; copiedMessage?:string;
 }) {
  const copyButton=useRef<HTMLButtonElement>(null);
  useEffect(()=>{copyButton.current?.focus();},[link]);
  const [notice,setNotice]=useState('');
  const [showCopyField,setShowCopyField]=useState(false);
- async function copyLink(){try{await navigator.clipboard.writeText(link);setNotice('Link copied.');}catch{setShowCopyField(true);setNotice('Select and copy the link below.');}}
+ async function copyLink(){try{await navigator.clipboard.writeText(link);setNotice(copiedMessage);}catch{setShowCopyField(true);setNotice('Select and copy the link below.');}}
  return <><p id={descriptionId} className={styles.description}>{description}</p>
         <div className={styles.actions}>
           <a className={styles.whatsapp} href={buildWhatsAppShareUrl(copy)} target="_blank" rel="noopener noreferrer">
@@ -32,6 +32,6 @@ export default function ShareLinkDelivery({link,copy,description,hint,previewLab
           </button>
           {notice && <p className={styles.notice} role="status">{notice}</p>}
         </footer>
-        {showCopyField && <input className={styles.copyField} aria-label={"Sharing link"} readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
+        {showCopyField && <input className={styles.copyField} aria-label={linkLabel} readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
  </>;
 }
