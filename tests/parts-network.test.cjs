@@ -854,3 +854,31 @@ test("Parts PDF uses parts access, full filtered rows, VAT conversion and privat
   assert.equal((await GET(request)).status,403);
   assert.equal(renderCalls,1,'Unauthorized requests never render a report');
 });
+
+test('Import matches only recognisable headings and keeps unknown columns for a decision', () => {
+  const mapping = load('lib/parts-import-mapping.ts', {'./parts-network-csv': csv});
+  const detected = mapping.inspectPartsTable([
+    ['Description','Qty','Part number','Notes','Bin / shelf location','Supplier'],
+    ['Dowel','16','000123','Keep dry','A2','Example'],
+  ], []);
+  assert.equal(detected.hasHeader, true);
+  assert.deepEqual(detected.mapping, ['description','quantity','partNumber','detail:notes','detail:location','']);
+  assert.equal(detected.addedFields.find(f=>f.id==='location').private, true);
+  assert.deepEqual(mapping.mappedPartColumns(detected.mapping), {partNumber:2,description:0,quantity:1,price:-1,brand:-1,details:{notes:3,location:4}});
+  assert.deepEqual(mapping.inspectPartsTable([['000123','Dowel','16']], []).mapping, ['','','']);
+  const duplicate = mapping.inspectPartsTable([['Part number','Qty','Qty'],['001','2','3']], []);
+  assert.deepEqual(duplicate.mapping, ['partNumber','quantity','']);
+  assert.throws(()=>mapping.mappedPartColumns(['quantity','quantity']));
+  assert.equal(mapping.columnLetter(26), 'AA');
+  assert.equal(mapping.columnLetter(99), 'CV');
+});
+
+test('Import includes late populated columns and recognises headers without quantity', () => {
+  const mapping = load('lib/parts-import-mapping.ts', {'./parts-network-csv': csv});
+  const table = Array.from({length:101},()=>['001','1']);
+  table.push(['002','2','Do not lose this']);
+  assert.equal(mapping.inspectPartsTable(table, []).mapping.length,3);
+  assert.deepEqual(mapping.inspectPartsTable([['Part number','Something else'],['001','1']], []).mapping,['partNumber','']);
+  assert.throws(()=>mapping.inspectPartsTable([Array(101).fill('x')],[]));
+  assert.throws(()=>mapping.inspectPartsTable([['','']],[]));
+});

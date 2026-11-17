@@ -1183,6 +1183,15 @@
 .stocklistTitle > div { gap: 1.25rem; }
 .stocklistTitle h1 { flex: 1 1 0; }
 
+/* File imports keep the source, column choices and review in one compact frame. */
+.entryModal:has([data-parts-import]) { width:min(1040px,100%); }
+.entryModal:has([data-parts-import]) .dialogHeader { padding-bottom:16px; margin-bottom:18px; }
+.entryModal:has([data-parts-import]) .dialogHeader p { margin:8px 0 0; font-size:15px; color:var(--app-text,#254c40); }
+.entryModal:has([data-parts-import]) [data-parts-import] .stageBody { padding:2px 4px 4px; gap:16px; }
+.entryModal:has([data-parts-import]) .entryFooter { flex-wrap:wrap; }
+.entryModal [data-parts-import] .independentRows [data-column] { flex-grow:1; }
+.entryModal [data-parts-import] .sheetToolbar { flex-wrap:wrap; justify-content:flex-start; padding:8px 0 14px; }
+
 /* Keep wizard actions in view when there is room, with a scrollable dialog on short screens. */
 .entryModal { width: min(1240px, 100%); max-height: min(900px, calc(var(--website-visible-height, 100dvh) - 48px)); display: flex; flex-direction: column; padding: 28px; }
 .entryModal .dialogHeader { flex: 0 0 auto; margin-bottom: 20px; padding-bottom: 20px; }

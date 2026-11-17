@@ -2,11 +2,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   type PartDetailField,
-  guessPartColumns,
+  PART_DETAIL_PRESETS,
   readPartsCsv,
   partsTableCsv,
-  type PartColumns,
 } from "../lib/parts-network-csv";
+import { columnLetter, inspectPartsTable, mappedPartColumns } from "../lib/parts-import-mapping";
 import { readPartsExcel } from "../lib/parts-network-excel";
 import {
   PART_LABELS,
@@ -77,12 +77,18 @@ export default function PartsImportForm({
   );
   const [sheetIndex, setSheetIndex] = useState(0);
   const [hasHeader, setHasHeader] = useState(true);
-  const [columns, setColumns] = useState<PartColumns>(EDITOR_COLUMNS);
+  const [mapping, setMapping] = useState<string[]>([]);
+  const columns = useMemo(() => mappedPartColumns(mapping), [mapping]);
+  const mappedSignature = useRef("");
+  const [dragging, setDragging] = useState(false);
+  const [issuesOnly, setIssuesOnly] = useState(false);
+  const importHeading = useRef<HTMLHeadingElement>(null);
   const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [emptyRow()]);
   const [stage, setStage] = useState<
     "choose" | "example" | "file" | "mapping" | "entry" | "settings" | "review"
   >(editSnapshot ? "entry" : "choose");
-  useEffect(() => { onStageChange?.(stage); }, [stage, onStageChange]);
+  useLayoutEffect(() => { importHeading.current?.focus(); }, [stage]);
+  useEffect(() => { onStageChange?.(source === "file" && stage !== "choose" ? `import-${stage}` : stage); }, [stage, source, onStageChange]);
   const exampleHeading = useRef<HTMLHeadingElement>(null);
   const exampleButton = useRef<HTMLButtonElement>(null);
   const returningFromExample = useRef(false);
@@ -166,6 +172,9 @@ export default function PartsImportForm({
       setUndo(null);
       setPage(0);
     }
+    setHiddenColumns([]);
+    setIssuesOnly(false);
+    setPreview(null);
     setSource(next);
     setStage(next === "file" ? "file" : "entry");
     setError("");
@@ -180,19 +189,19 @@ export default function PartsImportForm({
       return;
     }
     if (invalid) {
-      setHiddenColumns([]);
+      setHiddenColumns(current => source === "file" ? current.filter(j => !Object.values(cellErrors).some(cells => cells[j])) : []);
       setError("Check the highlighted cells.");
-      setPage(Math.floor(Number(Object.keys(errors)[0]) / 50));
+      setPage(issuesOnly ? 0 : Math.floor(Number(Object.keys(errors)[0]) / 50));
       return;
     }
     setError("");
-    if (editSnapshot) void review();
+    if (editSnapshot || source === "file") void review();
     else setStage("settings");
   }
   async function review() {
     await run(async () => {
       setPreview(await request({action: "preview", ...payload()}));
-      setStage("review");
+      if (source !== "file") setStage("review");
     });
   }
   async function save(addAnother = false) {
@@ -236,54 +245,74 @@ export default function PartsImportForm({
 
   }
   function loadTable(table: string[][]) {
-    if (!table.length) throw new Error("The table is empty.");
+    table = table.filter(row => row.some(cell => cell.trim()));
+    const result = inspectPartsTable(table, extraFields);
     setRaw(table);
+    setHasHeader(result.hasHeader);
+    setMapping(result.mapping);
+    setExtraFields([...extraFields, ...result.addedFields]);
+    mappedSignature.current = "";
     setStage("mapping");
-    const guessed = guessPartColumns(table[0]);
-    const header = guessed.partNumber >= 0 && guessed.quantity >= 0;
-    setHasHeader(header);
-    setColumns(
-      header
-        ? guessed
-        : {
-            partNumber: 0,
-            quantity: -1,
-            price: -1,
-            brand: -1,
-            description: -1,
-          },
-    );
+    setPreview(null);
+  }
+  function changeHeader(checked: boolean) {
+    setHasHeader(checked);
+    // Re-detect headings only when requested; existing manual choices stay in place.
+    if (checked) {
+      const result = inspectPartsTable(raw, extraFields, true);
+      const next = [...mapping];
+      result.mapping.forEach((key, i) => { if (!next[i] && key && !next.includes(key)) next[i] = key; });
+      setMapping(next);
+      setExtraFields([...extraFields, ...result.addedFields]);
+    }
+  }
+  async function loadFile(file: File) {
+    await run(async () => {
+      if (file.name.toLowerCase().endsWith(".xlsx")) {
+        if (file.size > 5000000) throw new Error("Use an Excel file smaller than 5 MB.");
+        const result = await readPartsExcel(await file.arrayBuffer());
+        if (!result.length) throw new Error("No populated worksheets found.");
+        loadTable(result[0].rows);
+        setSheets(result);
+        setSheetIndex(0);
+      } else {
+        if (!file.name.toLowerCase().endsWith(".csv")) throw new Error("Choose a CSV or .xlsx file.");
+        if (file.size > 2000000) throw new Error("Use a CSV file smaller than 2 MB.");
+        loadTable(readPartsCsv(await file.text()));
+        setSheets([]);
+      }
+      setFileName(file.name);
+    });
   }
   function mapTable() {
-    const indexes = [...PART_FIELDS.map((k) => columns[k] ?? -1), ...extraFields.map(f=>columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1))].filter(
-      (i) => i >= 0,
-    );
-    if (
-      columns.partNumber < 0 ||
-      columns.quantity < 0 ||
-      new Set(indexes).size !== indexes.length
-    )
-      throw new Error(
-        "Choose different columns. Part number and quantity are required.",
-      );
-    const data = raw.slice(hasHeader ? 1 : 0);
-    if (!data.length || data.length > 20000)
-      throw new Error("Include between 1 and 20,000 parts.");
-    setAttempted(false);
+    if (mappingIssue) throw new Error(mappingIssue);
+    const data = raw.slice(hasHeader ? 1 : 0).filter(row => row.some(cell => cell.trim()));
+    if (!data.length || data.length > 20000) throw new Error("Include between 1 and 20,000 parts.");
+    const signature = JSON.stringify([hasHeader, mapping]);
+    // Going back to check the mapping must not erase edits in an unchanged preview.
+    if (signature !== mappedSignature.current) {
+      setRows(data.map(r => [...PART_FIELDS.map(k => r[columns[k] ?? -1] ?? ""), ...extraFields.map(f => r[columns.details?.[f.id] ?? -1] ?? "")]));
+      setImportedDetailIds(extraFields.filter(f => (columns.details?.[f.id] ?? -1) >= 0).map(f => f.id));
+      setHiddenColumns([...PART_FIELDS.map((k, i) => (columns[k] ?? -1) < 0 ? i : -1), ...extraFields.map((f, i) => (columns.details?.[f.id] ?? -1) < 0 ? 5 + i : -1)].filter(i => i >= 0));
+      setPreview(null);
+      setUndo(null);
+      mappedSignature.current = signature;
+    }
+    setAttempted(true);
     setTouched({});
-    setImportedDetailIds(extraFields.filter(f=>(columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase()===f.label.toLowerCase()) : -1)) >= 0).map(f=>f.id));
-    setRows(data.map((r) => [...PART_FIELDS.map((k) => r[columns[k] ?? -1] ?? ""), ...extraFields.map(f=>r[columns.details?.[f.id] ?? (hasHeader ? raw[0].findIndex(h=>h.replace(/ \(private\)$/i, "").trim().toLowerCase() === f.label.toLowerCase()) : -1)] ?? "")]));
+    setIssuesOnly(false);
     setStage("entry");
     setPage(0);
     setSelected([]);
-    setUndo(null);
   }
-  const columnCount = Math.max(0,...raw.slice(0,100).map(row=>row.length));
-  const sampleFor = (index:number) => index<0 ? 'Not included in this import' : `Sample: ${raw.slice(hasHeader?1:0,(hasHeader?1:0)+3).map(row=>row[index]||'—').join(' · ')}`;
-  const columnOptions = Array.from({length:columnCount},(_,i)=>({value:String(i),label:`Column ${i+1}${hasHeader&&raw[0]?.[i]?` · ${raw[0][i]}`:''}`,description:sampleFor(i)}));
-  const detailColumn = (id:string,label:string) => columns.details?.[id] ?? (hasHeader ? raw[0]?.findIndex(h=>h.replace(/ \(private\)$/i,'').trim().toLowerCase()===label.toLowerCase()) ?? -1 : -1);
-  const mappedIndexes = [...PART_FIELDS.map(key=>columns[key]??-1),...extraFields.map(f=>detailColumn(f.id,f.label))].filter(i=>i>=0);
-  const mappingIssue = columns.partNumber<0||columns.quantity<0 ? 'Choose a column for part number and quantity to continue.' : new Set(mappedIndexes).size!==mappedIndexes.length ? 'Each file column can only be used once. Check the repeated selections.' : '';
+  const columnCount = mapping.length;
+  const availableFields = [...extraFields, ...PART_DETAIL_PRESETS.filter(p => extraFields.length < 12 && !extraFields.some(f => f.id === p.id || f.label.toLowerCase() === p.label.toLowerCase()))];
+  const fieldOptions = [...PART_FIELDS.map((key, i) => ({value: key, label: PART_LABELS[i]})), ...availableFields.map(f => ({value: `detail:${f.id}`, label: `${f.label}${f.private ? " (private)" : ""}`}))];
+  const missingRequired = [columns.partNumber < 0 ? "part number" : "", columns.quantity < 0 ? "quantity" : ""].filter(Boolean);
+  const unmatched = mapping.filter(value => !value).length;
+  const mappingIssue = missingRequired.length ? `Choose a column for ${missingRequired.join(" and ")}.` : unmatched ? `Choose a field or Skip for ${unmatched} ${unmatched === 1 ? "column" : "columns"}.` : "";
+  const skipped = mapping.filter(value => value === "skip").length;
+  const sourceRows = raw.slice(hasHeader ? 1 : 0).filter(row => row.some(cell => cell.trim()));
   const payload = () => ({
     csv: partsTableCsv(populated),
     columns: {...EDITOR_COLUMNS, details:Object.fromEntries(extraFields.flatMap((f,i)=>(source !== "manual" || !hiddenDetails.includes(f.id)) && (source !== "file" || importedDetailIds.includes(f.id) || populated.some(r=>r[5+i]?.trim())) ? [[f.id,5+i]] : []))},
@@ -294,9 +323,19 @@ export default function PartsImportForm({
     ...(editSnapshot ? {baseRevision: editSnapshot.revision} : {}),
     ...details,
   });
-  const visible = rows.slice(page * 50, page * 50 + 50);
+  const visibleIndexes = rows.map((_, i) => i).filter(i => !issuesOnly || Boolean(cellErrors[i]));
+  const visible = visibleIndexes.slice(page * 50, page * 50 + 50);
+  useEffect(() => { setPage(current => Math.min(current, Math.max(0, Math.ceil(visibleIndexes.length / 50) - 1))); }, [visibleIndexes.length]);
+  const fileFlow = source === "file" && stage !== "choose";
+  const sheetTools = <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
+        <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
+        <AddPartField column fields={extraFields} onAdd={addField}/>
+        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Manage columns</button>
+        <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
+        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo.rows);setExtraFields(undo.fields);setHiddenColumns(undo.hidden);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
+      </div>;
   return (
-    <div className={`${styles.importForm} ${sheetEntry ? styles.stockSheet : ""}`}>
+    <div data-parts-import={fileFlow || undefined} className={`${styles.importForm} ${sheetEntry ? styles.stockSheet : ""}`}>
       {error && (
         <p role="alert" className={styles.error}>
           {error}
@@ -307,14 +346,8 @@ export default function PartsImportForm({
           {saved}
         </p>
       )}
-      {tool && <PartsSheetTools removableFieldIds={extraFields.filter(f=>editSnapshot || !initialFields.some(old=>old.id===f.id)).map(f=>f.id)} listName={listName} extraFields={extraFields} tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing, fields) => {change(next, removing);if(fields) {setExtraFields(fields);setHiddenColumns(hiddenColumns.flatMap(i=>i<5 ? [i] : fields.some(f=>f.id===extraFields[i-5]?.id) ? [5+fields.findIndex(f=>f.id===extraFields[i-5]?.id)] : []));}setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
-      {sheetEntry && <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
-        <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
-        <AddPartField column fields={extraFields} onAdd={addField}/>
-        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Manage columns</button>
-        <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
-        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo.rows);setExtraFields(undo.fields);setHiddenColumns(undo.hidden);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
-      </div>}
+      {tool && <PartsSheetTools removableFieldIds={extraFields.filter(f=>editSnapshot || !initialFields.some(old=>old.id===f.id)).map(f=>f.id)} listName={listName} extraFields={extraFields} tool={tool} vatIncluded={details.vatIncluded} rows={rows} selected={selected} hidden={hiddenColumns} onHidden={setHiddenColumns} labels={labels} onClose={() => setTool(null)} onApply={(next, removing, fields) => {change(next, removing);if(fields) {setExtraFields(fields);setMapping(mapping.map(value => value.startsWith("detail:") && !fields.some(f => `detail:${f.id}` === value) ? "" : value));setHiddenColumns(hiddenColumns.flatMap(i=>i<5 ? [i] : fields.some(f=>f.id===extraFields[i-5]?.id) ? [5+fields.findIndex(f=>f.id===extraFields[i-5]?.id)] : []));}setError("");if (removing) {setSelected([]);setPage(Math.min(page, Math.max(0, Math.ceil(next.length / 50) - 1)));}}} />}
+      {sheetEntry && source !== "file" && sheetTools}
       <fieldset disabled={busy} className={styles.importFields}>
         <div key={stage} className={styles.stageBody}>
           {stage === "choose" && (
@@ -392,52 +425,52 @@ export default function PartsImportForm({
               </section>
           )}
           {stage === "file" && <section className={importStyles.upload}>
-            <div className={importStyles.heading}><span className={importStyles.eyebrow}>STEP 1 · IMPORT</span><h3>Bring in your parts</h3><p>Upload a stocklist or paste cells. You’ll match the columns and check every part before saving.</p></div>
+            <div className={importStyles.heading}><h3 ref={importHeading} tabIndex={-1}>Upload your stocklist</h3><p>Choose a file or paste cells from Excel.</p></div>
             <div className={importStyles.tabs} role="group" aria-label="Import source">
-              <button type="button" aria-pressed={!pasteMode} onClick={()=>setPasteMode(false)}>Upload a file</button>
-              <button type="button" aria-pressed={pasteMode} onClick={()=>setPasteMode(true)}>Paste from a spreadsheet</button>
+              <button type="button" aria-pressed={!pasteMode} onClick={() => setPasteMode(false)}>Upload file</button>
+              <button type="button" aria-pressed={pasteMode} onClick={() => setPasteMode(true)}>Paste cells</button>
             </div>
-            {!pasteMode ? <label className={importStyles.drop}>
-              <span className={importStyles.uploadIcon} aria-hidden="true">↑</span><strong>Choose your stocklist</strong><span>CSV or Excel (.xlsx)</span><small>CSV up to 2 MB · Excel up to 5 MB</small>
-              <input aria-label="Upload parts file" type="file" accept=".csv,.xlsx" onChange={e=>{
-                const file=e.target.files?.[0]; if(!file)return;
-                setRaw([]);setSheets([]);setFileName(file.name);
-                void run(async()=>{
-                  if(file.name.toLowerCase().endsWith('.xlsx')){
-                    if(file.size>5000000)throw new Error('Use an Excel file smaller than 5 MB.');
-                    const result=await readPartsExcel(await file.arrayBuffer());
-                    if(!result.length)throw new Error('No populated worksheets found.');
-                    setSheets(result);setSheetIndex(0);loadTable(result[0].rows);
-                  }else{
-                    if(!file.name.toLowerCase().endsWith('.csv'))throw new Error('Choose CSV or .xlsx.');
-                    if(file.size>2000000)throw new Error('Use a CSV file smaller than 2 MB.');
-                    loadTable(readPartsCsv(await file.text()));
-                  }
-                });
-              }}/>
+            {!pasteMode ? <label className={importStyles.drop} data-dragging={dragging || undefined}
+              onDragOver={e => {e.preventDefault(); if (!busy) setDragging(true);}}
+              onDragLeave={() => setDragging(false)}
+              onDrop={e => {e.preventDefault(); setDragging(false); if (!busy && e.dataTransfer.files[0]) void loadFile(e.dataTransfer.files[0]);}}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8m-8 4h5"/></svg>
+              <strong>Drop your file here, or browse</strong><span>CSV or Excel (.xlsx)</span>
+              <input aria-label="Upload parts file" type="file" accept=".csv,.xlsx" onChange={e => {const file = e.target.files?.[0]; e.target.value = ""; if (file) void loadFile(file);}}/>
             </label> : <div className={importStyles.paste}>
-              <label>Cells from Excel / Sheets<textarea aria-label="Paste spreadsheet cells" value={pastedTable} onChange={e=>setPastedTable(e.target.value)} placeholder="Paste your cells here, with or without column headings."/></label>
-              <p>Keep the original column order. You can match each column in the next step.</p>
-              <button disabled={!pastedTable.trim()} onClick={()=>void run(async()=>{setSheets([]);setFileName('Pasted spreadsheet');loadTable(readPartsCsv(pastedTable,{delimiter:'\t',preserveEmptyRows:true}));})}>Match pasted columns</button>
+              <label>Cells from Excel or Sheets<textarea aria-label="Paste spreadsheet cells" value={pastedTable} onChange={e => setPastedTable(e.target.value)} placeholder="Copy your cells, then paste them here."/></label>
             </div>}
+            <p className={importStyles.uploadHint}>{pasteMode ? "With or without headings. Keep your columns in any order." : "CSV up to 2 MB · Excel up to 5 MB"}</p>
           </section>}
           {stage === "mapping" && <section className={importStyles.mapping}>
-            <div className={importStyles.heading}><span className={importStyles.eyebrow}>STEP 2 · MATCH COLUMNS</span><h3>Match your file to the parts list</h3><p>Choose where each detail comes from. Sample values help you pick the right column.</p></div>
-            <div className={importStyles.fileSummary}><div><strong>{fileName}</strong><small>{Math.max(0,raw.length-(hasHeader?1:0)).toLocaleString()} rows · {columnOptions.length} columns</small></div><button onClick={()=>setStage('file')}>Change source</button></div>
-            <div className={importStyles.mappingControls}>
-              {sheets.length>1&&<ModalSelect label="Worksheet" buttonLabel="Worksheet" value={String(sheetIndex)} options={sheets.map((sheet,i)=>({value:String(i),label:sheet.name,description:`${sheet.rows.length} rows`}))} onChange={value=>{const i=Number(value);setSheetIndex(i);loadTable(sheets[i].rows);}}/>}
-              <label className={styles.importCheck}><input type="checkbox" checked={hasHeader} onChange={e=>setHasHeader(e.target.checked)}/>First row contains column headings</label>
+            <div className={importStyles.heading}><h3 ref={importHeading} tabIndex={-1}>Check your columns</h3></div>
+            <div className={importStyles.fileSummary}><div><strong>{fileName}</strong><span>{sourceRows.length.toLocaleString()} {sourceRows.length === 1 ? "part" : "parts"} · {columnCount} columns</span></div>{sheets.length > 1 && <ModalSelect className={importStyles.worksheet} label="Worksheet" buttonLabel="Worksheet" value={String(sheetIndex)} options={sheets.map((sheet, i) => ({value: String(i), label: sheet.name}))} onChange={value => {const i = Number(value); setSheetIndex(i); loadTable(sheets[i].rows);}}/>}<button onClick={() => setStage("file")}>Change file</button></div>
+
+            <label className={importStyles.headerChoice}><input aria-label="First row is headings" type="checkbox" checked={hasHeader} onChange={e => changeHeader(e.target.checked)}/><span>First row is headings<small>{raw[0]?.join(" · ")}</small></span></label>
+            <div className={importStyles.columnList} role="group" aria-label="File columns">
+              <div className={importStyles.columnHead} aria-hidden="true"><span>Your file</span><span>Sample values</span><span>Use as</span></div>
+              {mapping.map((value, i) => <div key={i} className={importStyles.columnRow} data-skipped={value === "skip" || undefined}>
+                <div className={importStyles.columnName}><span className={importStyles.letter}>{columnLetter(i)}</span><strong>{hasHeader && raw[0]?.[i] ? raw[0][i] : `Column ${columnLetter(i)}`}</strong></div>
+                <div className={importStyles.samples}>{sourceRows.slice(0, 2).map((row, n) => <span key={n}>{row[i]?.trim() || "—"}</span>)}</div>
+                <ModalSelect className={importStyles.columnSelect} label={`Use column ${columnLetter(i)} as`} buttonLabel={`Use column ${columnLetter(i)} as`} value={value} placeholder="Choose a field" showDescriptions={false} options={[{value: "", label: "Choose a field"}, ...fieldOptions.filter(option => option.value === value || !mapping.includes(option.value)), {value: "skip", label: "Skip this column"}]} onChange={key => {
+                  const field = availableFields.find(f => `detail:${f.id}` === key);
+                  if (field && !extraFields.some(f => f.id === field.id)) setExtraFields([...extraFields, field]);
+                  setMapping(mapping.map((old, index) => index === i ? key : old));
+                }}/>
+              </div>)}
             </div>
-            {[true,false].map(required=><section key={String(required)} className={importStyles.group} data-optional={!required||undefined}>
-              <div className={importStyles.groupHeading}><h4>{required?'Required details':'Optional details'}</h4><span>{required?'Match both to continue':'Leave out anything your file doesn’t include'}</span></div>
-              <div className={importStyles.fields}>{PART_FIELDS.map((key,i)=>{if((i===0||i===2)!==required)return null;return <div key={key} className={importStyles.field}>
-                <ModalSelect label={PART_LABELS[i]} buttonLabel={`${PART_LABELS[i]} column`} value={String(columns[key]??-1)} options={[{value:'-1',label:required?'Choose column':'Not supplied',description:required?'Select the matching column from your file':'Leave this detail blank'},...columnOptions]} onChange={value=>setColumns({...columns,[key]:Number(value)})}/>
-                <small>{sampleFor(columns[key]??-1)}</small>
-              </div>;})}</div>
-            </section>)}
-            <div className={importStyles.extraFields}><AddPartField column fields={extraFields} onAdd={addField}/>{extraFields.map(f=><ModalSelect key={f.id} label={`${f.label}${f.private?' (private)':''}`} buttonLabel={`${f.label} column`} value={String(detailColumn(f.id,f.label))} options={[{value:'-1',label:'Not in this file'},...columnOptions]} onChange={value=>setColumns({...columns,details:{...columns.details,[f.id]:Number(value)}})}/>)}</div>
-            {mappingIssue&&<p className={importStyles.mappingHint} role="status">{mappingIssue}</p>}
+            <div className={importStyles.mappingExtras}><span>Need another field?</span><AddPartField fields={extraFields} onAdd={addField}/></div>
           </section>}
+          {stage === "entry" && source === "file" && <>
+            <div className={importStyles.reviewHeading}><div className={importStyles.heading}><h3 ref={importHeading} tabIndex={-1}>Review parts</h3><p>{invalid ? `${invalid} ${invalid === 1 ? "part needs" : "parts need"} attention` : `${populated.length.toLocaleString()} ${populated.length === 1 ? "part" : "parts"} ready`} · Edit any cell below.</p></div>{invalid > 0 || issuesOnly ? <button aria-pressed={issuesOnly} onClick={() => {setIssuesOnly(!issuesOnly); setPage(0); setHiddenColumns(current => current.filter(j => !Object.values(cellErrors).some(cells => cells[j])));}}>{issuesOnly ? "Show all parts" : "Show issues"}</button> : null}</div>
+            <details className={importStyles.importSettings}><summary>Contact &amp; prices <span>{details.businessName} · {details.vatIncluded ? "Incl." : "Excl."} VAT</span></summary><div className={styles.grid}>
+              {(["businessName", "town", "phone", "email"] as const).map((key, i) => <label key={key}>{["Business", "Town", "Phone", "Email"][i]}<input value={details[key]} onChange={e => {setDetails({...details, [key]: e.target.value}); setPreview(null);}}/></label>)}
+              <PartsChoice label="Prices in this file" value={String(details.vatIncluded)} onChange={value => {setDetails({...details, vatIncluded: value === "true"}); setPreview(null);}} options={[{value: "false", label: "Exclude VAT"}, {value: "true", label: "Include VAT"}]}/>
+            </div></details>
+            <details className={importStyles.importSettings}><summary>Editing tools</summary>{sheetTools}</details>
+            {initialFields.some(f => !extraFields.some(next => next.id === f.id)) && <p className={styles.error}>Columns to delete: {initialFields.filter(f => !extraFields.some(next => next.id === f.id)).map(f => f.label).join(", ")}. Their values will be removed from every part.</p>}
+            {preview && <div role="status" className={importStyles.importSummary}><strong>Ready to import</strong><span>{preview.summary.added} new · {preview.summary.updated} updated · {preview.summary.removed} removed</span><small>Parts not in this file stay unchanged.</small></div>}
+          </>}
           {stage === "entry" && source === "manual" && (
             <div className={`${styles.partEditFields} ${styles.singlePartForm}`}>
               {[0, 4, 1, 2, 3].filter(j=>!hiddenInputs.includes(j)).map(j => {
@@ -482,15 +515,11 @@ export default function PartsImportForm({
                       <th scope="col">
                         {<input
                           type="checkbox"
-                          aria-label="Select all rows"
-                          checked={
-                            rows.length > 0 && selected.length === rows.length
-                          }
-                          onChange={(e) =>
-                            setSelected(
-                              e.target.checked ? rows.map((_, i) => i) : [],
-                            )
-                          }
+                          aria-label={issuesOnly ? "Select all rows with issues" : "Select all rows"}
+                          checked={visibleIndexes.length > 0 && visibleIndexes.every(i => selected.includes(i))}
+                          onChange={e => setSelected(e.target.checked
+                            ? [...new Set([...selected, ...visibleIndexes])]
+                            : selected.filter(i => !visibleIndexes.includes(i)))}
                         />}
                       </th>
                       {labels.map((label, i) => (
@@ -502,8 +531,8 @@ export default function PartsImportForm({
                     </tr>
                   </thead>
                   <tbody>
-                    {visible.map((row, offset) => {
-                      const i = page * 50 + offset;
+                    {visible.map(i => {
+                      const row = rows[i];
                       return (
                         <tr key={i} tabIndex={0} aria-label={`Part row ${i + 1}`} data-extra-details={row.some((v,j)=>j>=5 && !hiddenColumns.includes(j) && v.trim()) || undefined} data-selected={selected.includes(i) || undefined} onScroll={e=>panSheet(e.currentTarget.scrollLeft)}>
                           <td>
@@ -599,7 +628,7 @@ export default function PartsImportForm({
                   {rows.length.toLocaleString()} {rows.length === 1 ? "row" : "rows"}
                   {attempted && invalid ? ` · ${invalid} need attention` : ""}
                 </span>
-                {attempted && invalid > 0 && (
+                {attempted && invalid > 0 && source !== "file" && (
                   <button
                     onClick={() =>
                       setPage(Math.floor(Number(Object.keys(errors)[0]) / 50))
@@ -608,16 +637,16 @@ export default function PartsImportForm({
                     Show first issue
                   </button>
                 )}
-                {rows.length > 50 && (
+                {visibleIndexes.length > 50 && (
                   <>
                     <button disabled={!page} onClick={() => setPage(page - 1)}>
                       Previous
                     </button>
                     <span>
-                      Page {page + 1} of {Math.ceil(rows.length / 50)}
+                      Page {page + 1} of {Math.ceil(visibleIndexes.length / 50)}
                     </span>
                     <button
-                      disabled={(page + 1) * 50 >= rows.length}
+                      disabled={(page + 1) * 50 >= visibleIndexes.length}
                       onClick={() => setPage(page + 1)}
                     >
                       Next
@@ -706,10 +735,12 @@ export default function PartsImportForm({
             >
               Back
             </button>
+            {stage === "mapping" && <p className={importStyles.footerStatus} role="status">{mappingIssue || `${sourceRows.length.toLocaleString()} ${sourceRows.length === 1 ? "part" : "parts"}${skipped ? ` · ${skipped} ${skipped === 1 ? "column" : "columns"} skipped` : " · Columns matched"}`}</p>}
             <div className={styles.actions}>
-              {stage === "entry" && (
+              {stage === "file" && pasteMode && <button className={styles.primary} disabled={!pastedTable.trim()} onClick={() => void run(async () => {loadTable(readPartsCsv(pastedTable, {delimiter: "\t", preserveEmptyRows: true})); setSheets([]); setFileName("Pasted cells");})}>Check columns</button>}
+              {stage === "entry" && source === "file" && preview ? <button className={styles.primary} onClick={() => void run(() => save())}>{busy ? "Importing…" : `Import ${populated.length.toLocaleString()} ${populated.length === 1 ? "part" : "parts"}`}</button> : stage === "entry" && (
                 <button className={styles.primary} onClick={continueEntry}>
-                  {editSnapshot ? "Review changes" : "Continue"}
+                  {busy ? "Checking…" : editSnapshot ? "Review changes" : source === "file" ? "Check import" : "Continue"}
                 </button>
               )}
               {stage === "mapping" && raw.length > 0 && (
@@ -718,7 +749,7 @@ export default function PartsImportForm({
                   disabled={!!mappingIssue}
                   onClick={() => void run(async () => mapTable())}
                 >
-                  Continue to editable table
+                  Review parts
                 </button>
               )}
               {stage === "settings" && (
