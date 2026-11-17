@@ -19226,7 +19226,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : assetSettingsView === 'usage' ? assetSettingsUsageHeading(settingsUsageMode) : assetSettingsView === 'average' ? 'Average usage settings' : 'Advanced settings'}</h3>
+                <h3 id="asset-settings-title">{assetSettingsView === 'tracking' ? 'Asset tracking' : isManageMapLocationFlow ? 'Map asset' : assetSettingsView === 'usage' ? assetSettingsUsageHeading(settingsUsageMode) : assetSettingsView === 'average' ? 'Average usage settings' : 'Advanced settings'}</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
@@ -19234,7 +19234,7 @@ export default function AssetRegisterClient({
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAssetSettingsModal}
-                aria-label={isManageMapLocationFlow ? 'Close map asset' : assetSettingsView === 'usage' ? 'Close reading editor' : 'Close advanced settings'}
+                aria-label={assetSettingsView === 'tracking' ? 'Close asset tracking' : isManageMapLocationFlow ? 'Close map asset' : assetSettingsView === 'usage' ? 'Close reading editor' : 'Close advanced settings'}
                 disabled={isAssetSettingsBusy}
                 data-modal-close="true"
               >
@@ -19343,7 +19343,7 @@ export default function AssetRegisterClient({
 
               {assetSettingsView === 'average' && !desktopAccess && ['hours','km'].includes(resolveAssetUsage(editingAsset).metric) ? <AssetAverageUsage assetId={editingAsset.id}/> : null}
 
-              {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel assetId={editingAsset.id}/> : null}
+              {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel key={editingAsset.id} assetId={editingAsset.id} assetTitle={editingAsset.title}/> : null}
 
               {assetSettingsView === 'lifetime' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>

@@ -8,8 +8,11 @@ import { trackerPairingUrl } from "../../lib/asset-tracking-links";
 import TrackerInstallShareDialog from "./TrackerInstallShareDialog";
 import styles from "./AssetTrackingPanel.module.css";
 import AssetTrackingUsage from "./AssetTrackingUsage";
-export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
-  const [showMovement,setShowMovement]=useState(false),[replace,setReplace]=useState(false),[title,setTitle]=useState('Tracked asset');
+import AssetTrackingOptions, { PhoneTrackingRequirements } from "./AssetTrackingOptions";
+export default function AssetTrackingPanel({ assetId, assetTitle }: { assetId: string; assetTitle?: string }) {
+  const [view, setView] = useState<'auto' | 'options' | 'phone'>('auto');
+  const phoneHeading = useRef<HTMLHeadingElement>(null);
+  const [showMovement,setShowMovement]=useState(false),[replace,setReplace]=useState(false),[title,setTitle]=useState(assetTitle || 'Tracked asset');
   const [expiresAt,setExpiresAt]=useState(0),[now,setNow]=useState(Date.now()),[copied,setCopied]=useState(false),[loading,setLoading]=useState(true);
   const pairingCardRef=useRef<HTMLDivElement>(null);
   const pairingDevice=useRef<string|null|undefined>(undefined);
@@ -47,7 +50,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
         .then(async (r) => {
           const d = await r.json();
           if (!r.ok) throw Error(d.error);
-          if (!gone) { setDevice(d.device);setTitle(d.assetTitle||'Tracked asset');setError('');
+          if (!gone) { setDevice(d.device);setTitle(d.assetTitle||assetTitle||'Tracked asset');setError('');
             if(d.device && pairingDevice.current!==undefined && d.device.id!==pairingDevice.current){setCode('');setReplace(false);pairingDevice.current=undefined;}
           }
         })
@@ -60,7 +63,9 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       gone = true;
       clearInterval(timer);
     };
-  }, [endpoint]);
+  }, [endpoint, assetTitle]);
+  const screen = view === 'auto' ? (device ? 'phone' : 'options') : view;
+  useEffect(() => { if (!loading && screen === 'phone') phoneHeading.current?.focus({ preventScroll: true }); }, [screen, loading]);
   async function action(method: "POST" | "DELETE") {
     if(busy)return;
     setBusy(true);
@@ -71,7 +76,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       if (!r.ok) throw Error(d.error);
       setCode(d.code || "");setCopied(false);setNow(Date.now());setExpiresAt(Date.now()+(d.expiresInMinutes||15)*60000);
       if(method==='POST')pairingDevice.current=device?.id||null;
-      if (method === "DELETE") {setDevice(null);setReplace(false);setShowManage(false);setConfirmDisconnect(false);pairingDevice.current=undefined;}
+      if (method === "DELETE") {setDevice(null);setView('options');setReplace(false);setShowManage(false);setConfirmDisconnect(false);pairingDevice.current=undefined;}
     } catch (e) {
       setError(e instanceof Error ? e.message : "Please try again.");
     } finally {
@@ -80,6 +85,10 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
   }
     async function copyCode(){try{await navigator.clipboard.writeText(code);setCopied(true);}catch{setError('Select the pairing code and copy it manually.');}}
   if(loading)return <p role="status">Loading tracking device…</p>;
+  if (screen === 'options') return <>
+    <AssetTrackingOptions assetTitle={title} connected={Boolean(device)} onPhone={() => setView('phone')}/>
+    {error && <p role="alert" className={styles.error}>{error}</p>}
+  </>;
   return (
     <section className={`${styles.panel} ${styles.setupPanel}`} aria-label="Tracking device" data-tracker-setup data-tracker-connected={device && !replace ? true : undefined}>
       {showMovement&&<LocationHistory assetId={assetId} title={title} initialTab="movement" onClose={()=>setShowMovement(false)}/>}
@@ -101,9 +110,10 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
           </div>
         </div>
       </AssetAccessSettingsDialog>}
+      <button type="button" className={styles.manageBack} disabled={busy} onClick={() => {setView('options');setShowManage(false);setReplace(false);}}>Tracking options</button>
       <div className={styles.setupHeading}>
         <span className={styles.phoneIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 5h4M10 18.5h4"/></svg></span>
-        <div><h3>{device ? "Equipment phone" : "Connect your phone"}</h3>
+        <div><h3 ref={phoneHeading} tabIndex={-1}>{device ? "Equipment phone" : "Connect your phone"}</h3>
           <p>{device ? device.name : "Use the Android phone kept on this asset."}</p>
         </div>
         {device && <span className={styles.connectionStatus}>{device.status}</span>}
@@ -127,6 +137,7 @@ export default function AssetTrackingPanel({ assetId }: { assetId: string }) {
       </div>}
       {device && !replace && !showManage && <AssetTrackingUsage assetId={assetId}/>}
       {(!device||replace)&&<>
+      <PhoneTrackingRequirements/>
       <div className={styles.setupSteps}>
         <div className={styles.setupStep}>
           <div className={styles.stepLabel}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4"/></svg><span>Step 1</span></div>
