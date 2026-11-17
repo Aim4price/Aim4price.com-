@@ -6,8 +6,8 @@
 
 .label {
   color: #52645d;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -54,8 +54,8 @@
   min-width: 0;
   overflow: hidden;
   color: #17362c;
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -119,8 +119,8 @@
   color: #17362c;
   background: #f9fbfa;
   font: inherit;
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .searchRow input:focus {
@@ -158,9 +158,9 @@
 
 .groupLabel {
   padding: 0.48rem 0.65rem 0.3rem;
-  color: #74837d;
-  font-size: 0.61rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -202,8 +202,8 @@
   background: #176c50;
   display: grid;
   place-items: center;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .option:not(.optionSelected) .check {
@@ -213,7 +213,7 @@
 .noResults {
   min-height: 7rem;
   padding: 1rem;
-  color: #667871;
+  color: #52665d;
   display: grid;
   place-content: center;
   gap: 0.2rem;
@@ -222,11 +222,11 @@
 
 .noResults strong {
   color: #31574a;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 
 .noResults span {
-  font-size: 0.68rem;
+  font-size: 0.95rem;
   font-weight: 650;
 }
 
@@ -241,5 +241,16 @@
 
 .root { grid-template-columns: minmax(0, 1fr); }
 .trigger { min-width: 0; min-height: 42px; border-radius: .5rem; }
-.label { font-size: .68rem; text-transform: none; letter-spacing: 0; font-weight: 500; }
-.triggerCopy strong, .optionCopy strong { font-weight: 500; font-size: .76rem; }
+.label { font-size: 0.95rem; text-transform: none; letter-spacing: 0; font-weight: 650; }
+.triggerCopy strong, .optionCopy strong { font-weight: 650; font-size: 0.95rem; }
+
+/* The same comfortable selector proportions as Owner accounts. */
+.trigger { min-height: 3.35rem; border-radius: .9rem; background: #f3f8f5; }
+.triggerCopy strong, .optionCopy strong { font-size: 1rem; font-weight: 700; line-height: 1.4; }
+.triggerCopy strong { overflow-x: auto; text-overflow: clip; scrollbar-width: none; }
+.options { overflow-x: auto; }
+.option { width: max-content; min-width: 100%; min-height: 3.35rem; }
+.optionCopy strong { overflow: visible; text-overflow: clip; }
+.searchRow input { min-height: 3rem; font-size: 1rem; }
+.label, .groupLabel { color: #52665d; text-transform: none; letter-spacing: 0; }
+.chevron { width: 1.15rem; height: 1.15rem; }

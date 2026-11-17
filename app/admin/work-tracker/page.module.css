@@ -26,9 +26,9 @@
 
 .eyebrow {
   margin: 0 0 0.18rem;
-  color: #60716a;
-  font-size: 0.7rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -45,8 +45,8 @@
 .titleBlock span {
   display: inline-block;
   margin-top: 0.42rem;
-  color: #697973;
-  font-size: 0.93rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -70,8 +70,8 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -98,8 +98,8 @@
 
 .notice {
   padding: 0.82rem 1rem;
-  font-size: 0.86rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .noticeSuccess {
@@ -149,14 +149,14 @@
   margin: 0;
   color: #17362c;
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.025em;
 }
 
 .liveTime {
   color: #176047;
   font-size: 1.35rem;
-  font-weight: 600;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -177,8 +177,8 @@
 
 .noteField > span {
   color: #52645d;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -196,8 +196,8 @@
 }
 
 .startAction small {
-  color: #74837d;
-  font-size: 0.62rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   text-align: center;
 }
@@ -210,8 +210,8 @@
   padding: 0 1rem;
   border-radius: 0.82rem;
   font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -268,9 +268,9 @@
 }
 
 .activeDetails span {
-  color: #6d7d77;
-  font-size: 0.64rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -278,8 +278,8 @@
 .activeDetails strong {
   overflow: hidden;
   color: #17362c;
-  font-size: 0.77rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -294,15 +294,15 @@
   color: #17362c;
   background: #ffffff;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 670;
   line-height: 1.45;
   box-sizing: border-box;
 }
 
 .noteField small {
-  color: #74837d;
-  font-size: 0.66rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 680;
 }
 
@@ -326,8 +326,8 @@
 .reportOptions summary {
   padding: 0.7rem 0.78rem;
   color: #36584c;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   list-style: none;
   cursor: pointer;
 }
@@ -344,7 +344,7 @@
   content: "⌄";
   flex: 0 0 auto;
   color: #176047;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1;
   transition: transform 150ms ease;
 }
@@ -372,8 +372,8 @@
 }
 
 .historyToolbar > div:first-child > span {
-  color: #71817b;
-  font-size: 0.74rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -403,8 +403,8 @@
   color: #51645c;
   background: transparent;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -432,9 +432,9 @@
 
 .reportBar small {
   align-self: center;
-  color: #708079;
-  font-size: 0.67rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.35;
 }
 
@@ -455,9 +455,9 @@
 }
 
 .summaryGrid span {
-  color: #687a73;
-  font-size: 0.64rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -465,7 +465,7 @@
 .summaryGrid strong {
   color: #17362c;
   font-size: 1.15rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .reportableSummary {
@@ -497,7 +497,7 @@
 }
 
 .summaryFacts strong {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .sessionList {
@@ -528,14 +528,14 @@
 
 .sessionHeader strong {
   color: #17362c;
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .sessionHeader span {
-  color: #6e7e78;
-  font-size: 0.68rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -547,8 +547,8 @@
 
 .sessionMeta b {
   color: #176047;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -556,8 +556,8 @@
 .excludedBadge {
   padding: 0;
   border-radius: 0;
-  font-size: 0.59rem !important;
-  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
   white-space: nowrap;
 }
 
@@ -567,7 +567,7 @@
 }
 
 .excludedBadge {
-  color: #65756f !important;
+  color: #52665d !important;
   background: transparent;
 }
 
@@ -604,8 +604,8 @@
   border-right: 1px solid #d9e5df;
   color: #31574a;
   background: transparent;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -618,8 +618,8 @@
 }
 
 .pagePills small {
-  color: #7b8984;
-  font-size: 0.67rem;
+  color: #52665d;
+  font-size: 0.95rem;
 }
 
 .sessionMainControls,
@@ -642,8 +642,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -663,8 +663,8 @@
   color: #31574a;
   background: #ffffff;
   font: inherit;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -694,8 +694,8 @@
   border-style: solid;
   border-width: 1px;
   font: inherit;
-  font-size: 0.61rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -715,9 +715,9 @@
   padding: 1.5rem;
   border: 1px dashed #d2ddd7;
   border-radius: 0.9rem;
-  color: #71817b;
+  color: #52665d;
   background: #fafcfb;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 740;
   text-align: center;
 }
@@ -837,10 +837,10 @@
 
 .activeCard, .historyCard { background: #fff; border: 1px solid #e2e9e5; border-radius: .85rem; box-shadow: none; padding: 1.3rem; }
 .activeCardRunning { border-color: #9fbea9; background: #f7fbf8; }
-.sectionHeading h2 { font-size: .95rem; font-weight: 600; }
-.startButton, .stopButton, .secondaryButton, .reportButton { font-size: .75rem; font-weight: 500; min-height: 40px; border-radius: .5rem; box-shadow: none; }
+.sectionHeading h2 { font-size: .95rem; font-weight: 650; }
+.startButton, .stopButton, .secondaryButton, .reportButton { font-size: 0.95rem; font-weight: 650; min-height: 40px; border-radius: .5rem; box-shadow: none; }
 .sessionCard { border: 1px solid #e7ede9; border-radius: .7rem; box-shadow: none; background: #fff; padding: 1.1rem; }
-.sessionMeta { color: #809087; font-size: .72rem; }
+.sessionMeta { color: #52665d; font-size: 0.95rem; }
 .periodToggle { background: #f3f6f4; border-color: #e3eae5; }
-.emptyState { background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .7rem; padding: 2.5rem 1.5rem; color: #849188; font-size: .8rem; }
+.emptyState { background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .7rem; padding: 2.5rem 1.5rem; color: #52665d; font-size: 0.95rem; }
 @media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .startRow, :global(:where(html:not(:has([data-website-canvas])))) .activeDetails, :global(:where(html:not(:has([data-website-canvas])))) .reportBar, :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid { grid-template-columns: minmax(0, 1fr); } :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { flex-wrap: wrap; } }

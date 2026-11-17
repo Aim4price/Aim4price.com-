@@ -1,0 +1,16 @@
+.root { display: block; min-width: 0; width: 100%; }
+.native { display: none !important; }
+.root .trigger { min-height: 3.35rem; border-radius: .9rem; font-size: 1rem; font-weight: 700; line-height: 1.4; }
+.value { min-width: 0; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.value::-webkit-scrollbar { display: none; }
+.menu { display: flex; flex-direction: column; padding: .5rem; gap: .4rem; overflow: hidden; color: #173c31; }
+.options { overflow: auto; min-height: 0; overscroll-behavior: contain; scrollbar-color: #9bbcaf #eff5f2; }
+.menu .option { width: max-content; min-width: 100%; min-height: 3.35rem; padding: .8rem; font-size: 1rem; font-weight: 700; line-height: 1.4; white-space: nowrap; transform: none; }
+.menu .active { outline: 2px solid #8aba9f; outline-offset: -2px; background: #edf6f0; }
+.menu .option:disabled { opacity: .55; cursor: not-allowed; }
+.search { width: 100%; min-height: 3rem; flex-shrink: 0; padding: .7rem .8rem; border: 1px solid #b7ccbf; border-radius: .75rem; background: #f3f8f5; color: #173c31; font: 650 1rem var(--font-body, 'Montserrat'), sans-serif; }
+.search:focus-visible { outline: 2px solid #7cae93; outline-offset: -2px; }
+.empty { margin: 0; padding: 1rem; font-size: 1rem; font-weight: 650; white-space: nowrap; }
+.menu:focus { outline: none; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.options:focus { outline: none; }

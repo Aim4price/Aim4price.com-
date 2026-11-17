@@ -30,6 +30,8 @@ on:
       - 'app/marketplace/marketplace-client.tsx'
       - 'components/AdminNavigation*'
       - 'components/AdminWorkspace*'
+      - 'components/AdminSelect*'
+      - 'app/account/friendly-select.module.css'
       - 'components/AppHeader.tsx'
       - 'components/AccountantAssetManageModal.tsx'
       - 'components/MarketplaceOutcomeModal*'
@@ -170,6 +172,9 @@ jobs:
 
       - name: Verify responsive Admin workspace
         run: ADMIN_CANONICAL_QA=1 node scripts/verify-admin-review.cjs
+
+      - name: Verify Owner-style Admin dropdowns
+        run: ADMIN_OWNER_STYLE_QA=1 node scripts/verify-admin-review.cjs
 
       - name: Save Admin browser evidence
         if: always()

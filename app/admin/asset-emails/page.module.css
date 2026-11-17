@@ -8,11 +8,11 @@
 
 .page { max-width: none; padding: 0; }
 .header { padding-bottom: 1.2rem; border-bottom: 1px solid #e2e9e5; }
-.header p { font-size: .8rem; color: #7b8b81; }
+.header p { font-size: 0.95rem; color: #52665d; }
 .card { border-color: #e2e9e5; border-radius: .85rem; padding: 1.4rem; }
-.card h2 { font-size: .95rem; font-weight: 600; }
-.card p { font-size: .78rem; color: #78887e; line-height: 1.7; }
+.card h2 { font-size: .95rem; font-weight: 650; }
+.card p { font-size: 0.95rem; color: #52665d; line-height: 1.7; }
 .totals { gap: 1rem; }
-.totals strong { font-size: 2rem; font-weight: 600; letter-spacing: -.05em; }
-.totals span { font-size: .75rem; color: #7b8b81; }
+.totals strong { font-size: 2rem; font-weight: 650; letter-spacing: -.05em; }
+.totals span { font-size: 0.95rem; color: #52665d; }
 .entry { padding: 1rem 0; }

@@ -1,4 +1,5 @@
 "use client";
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import Link from "next/link";
 import { adminQueueFilter, ADMIN_CAPTURE_PAGE_SIZE } from "../../../lib/admin-operations-shared";
@@ -1060,7 +1061,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
           </label>
           <label>
             <span>Status</span>
-            <select value={statusFilter} onChange={(event) => { setPage(1); setStatusFilter(event.target.value); }}>
+            <AdminSelect value={statusFilter} onChange={(event) => { setPage(1); setStatusFilter(event.target.value); }}>
               <option value="open">All open</option>
               <option value="unassigned">Unclaimed</option>
               <option value="all">All requests</option>
@@ -1076,25 +1077,25 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
               <option value="declined">Declined by owner</option>
               <option value="rejected">Rejected</option>
               <option value="cancelled">Deleted</option>
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>Document</span>
-            <select value={typeFilter} onChange={(event) => { setPage(1); setTypeFilter(event.target.value); }}>
+            <AdminSelect value={typeFilter} onChange={(event) => { setPage(1); setTypeFilter(event.target.value); }}>
               <option value="all">Invoices and fuel slips</option>
               <option value="invoice">Invoices</option>
               <option value="fuel_slip">Fuel slips</option>
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>Source</span>
-            <select value={channelFilter} onChange={(event) => { setPage(1); setChannelFilter(event.target.value); }}>
+            <AdminSelect value={channelFilter} onChange={(event) => { setPage(1); setChannelFilter(event.target.value); }}>
               <option value="all">All sources</option>
               <option value="owner_upload">Owner uploads</option>
               <option value="accountant_upload">Accountant uploads</option>
               <option value="dealer_upload">Dealer uploads</option>
               <option value="public_drop">Public drops</option>
-            </select>
+            </AdminSelect>
           </label>
           {hasActiveFilters ? (
             <button
@@ -1114,7 +1115,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
           ) : null}
         </div>
 
-        <div className={styles.queueTableWrap}>
+        <div className={styles.queueTableWrap} tabIndex={0} role="region" aria-label="Scrollable results">
           {queueError ? <div className={styles.emptyCell} role="alert"><p>{queueError}</p><button type="button" className={styles.clearButton} onClick={() => void loadQueue()}>Try again</button></div> : isLoading || rows.length || hasActiveFilters ? <table className={styles.queueTable}>
             <thead>
               <tr>
@@ -1396,7 +1397,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                 {detail.requestType === "fuel_slip" ? (
                   <>
                     <label><span>Litres</span><input inputMode="decimal" value={draft.litres} onChange={(event) => updateDraft("litres", event.target.value)} /></label>
-                    <label><span>Fuel type</span><select value={draft.fuelType} onChange={(event) => updateDraft("fuelType", event.target.value)}><option value="">Select fuel type</option><option>Diesel</option><option>Petrol</option><option>Other</option></select></label>
+                    <label><span>Fuel type</span><AdminSelect value={draft.fuelType} onChange={(event) => updateDraft("fuelType", event.target.value)}><option value="">Select fuel type</option><option>Diesel</option><option>Petrol</option><option>Other</option></AdminSelect></label>
                     <label><span>Price per litre</span><input inputMode="decimal" value={draft.pricePerLitre} onChange={(event) => updateDraft("pricePerLitre", event.target.value)} placeholder="R 0.00" /></label>
                     <label><span>VAT</span><input inputMode="decimal" value={draft.vatAmount} onChange={(event) => updateDraft("vatAmount", event.target.value)} placeholder="R 0.00" /></label>
                     <label><span>Total</span><input inputMode="decimal" value={draft.totalAmount} onChange={(event) => updateDraft("totalAmount", event.target.value)} placeholder="R 0.00" /></label>
@@ -1454,12 +1455,12 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                     <label><span>Total incl. VAT</span><input inputMode="decimal" value={draft.totalIncVat} onChange={(event) => updateDraft("totalIncVat", event.target.value)} placeholder="R 0.00" /></label>
                     <label>
                       <span>Usage metric</span>
-                      <select value={draft.usageMetric} onChange={(event) => updateDraft("usageMetric", event.target.value)} disabled={draft.usageNotApplicable}>
+                      <AdminSelect value={draft.usageMetric} onChange={(event) => updateDraft("usageMetric", event.target.value)} disabled={draft.usageNotApplicable}>
                         <option value="none">No usage metric</option>
                         <option value="hours">Hours</option>
                         <option value="km">Kilometres</option>
                         <option value="percentage">Percentage</option>
-                      </select>
+                      </AdminSelect>
                     </label>
                     <label><span>Usage reading</span><input inputMode="decimal" value={draft.usageReading} onChange={(event) => updateDraft("usageReading", event.target.value)} disabled={draft.usageNotApplicable || draft.usageMetric === "none"} /></label>
                     <label className={`${styles.naControl} ${styles.fullField}`}>

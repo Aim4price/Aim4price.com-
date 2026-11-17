@@ -55,9 +55,9 @@
 }
 
 .metrics span {
-  color: #60716a;
-  font-size: 0.69rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -67,16 +67,16 @@
   overflow: hidden;
   color: #176047;
   font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem);
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .metrics small {
-  color: #7a8883;
-  font-size: 0.65rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -114,8 +114,8 @@
   align-items: center;
   gap: 0.4rem;
   font: inherit;
-  font-size: 0.69rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -152,7 +152,7 @@
 .filterTitle h2 {
   margin: 0;
   color: #12362d;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   letter-spacing: -0.025em;
   white-space: nowrap;
 }
@@ -172,9 +172,9 @@
 }
 
 .filters label > span {
-  color: #66766f;
-  font-size: 0.62rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
@@ -193,8 +193,8 @@
   background: #fafcfb;
   padding: 0 0.65rem;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .filters input:focus,
@@ -218,7 +218,7 @@
   color: #ffffff;
   border-color: #176c50;
   background: #176c50;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -241,8 +241,8 @@
   border-bottom: 1px solid #f0cfcc;
   color: #9b3129;
   background: #fff4f2;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .loadingBar {
@@ -271,10 +271,10 @@
 
 .tableScroller th {
   padding: 0.7rem 0.72rem;
-  color: #6c7a75;
+  color: #52665d;
   background: #f7faf8;
-  font-size: 0.61rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.045em;
   text-align: left;
   text-transform: uppercase;
@@ -284,8 +284,8 @@
   padding: 0.76rem 0.72rem;
   border-top: 1px solid #edf1ef;
   color: #344b42;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -303,29 +303,29 @@
 
 .tableScroller td strong {
   color: #17362c;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .tableScroller td span {
   margin-left: 0.3rem;
-  color: #687a72;
-  font-size: 0.65rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .tableScroller td small {
   margin-top: 0.2rem;
-  color: #82908b;
-  font-size: 0.6rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.35;
 }
 
 .tableScroller td a {
   color: #176047;
-  font-size: 0.68rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   text-decoration: underline;
   text-decoration-color: #9bc8b5;
@@ -343,8 +343,8 @@
 
 .moneyCell {
   color: #176047 !important;
-  font-size: 0.76rem !important;
-  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
   white-space: nowrap;
 }
 
@@ -354,7 +354,7 @@
 
 .interestCell > strong {
   color: #16664b !important;
-  font-size: 0.84rem !important;
+  font-size: 0.95rem !important;
 }
 
 .repeatFlag {
@@ -369,9 +369,9 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.62rem;
+  font-size: 0.95rem;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .activityButton {
@@ -383,8 +383,8 @@
   color: #ffffff;
   background: #176d51;
   font: inherit;
-  font-size: 0.62rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -398,8 +398,8 @@
   padding: 0;
   border-radius: 0;
   background: transparent !important;
-  font-size: 0.66rem !important;
-  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  font-weight: 650 !important;
   white-space: nowrap;
 }
 
@@ -421,8 +421,8 @@
   color: #1a6048;
   background: #edf7f2;
   font: inherit;
-  font-size: 0.62rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
   cursor: pointer;
 }
@@ -430,7 +430,7 @@
 .emptyState {
   min-height: 10rem;
   padding: 1rem;
-  color: #72817b;
+  color: #52665d;
   display: grid;
   place-content: center;
   gap: 0.2rem;
@@ -439,12 +439,12 @@
 
 .emptyState strong {
   color: #385249;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
 .emptyState span {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .pagination {
@@ -465,9 +465,9 @@
 
 .pagination label span,
 .pagination > span {
-  color: #687a73;
-  font-size: 0.66rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .pagination select {
@@ -484,7 +484,7 @@
   min-height: 2.15rem;
   color: #1c6149;
   background: #eef7f2;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -616,9 +616,9 @@
 }
 
 .activitySummary span {
-  color: #71817c;
-  font-size: 0.72rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .repeatBanner {
@@ -634,7 +634,7 @@
 }
 
 .repeatBanner strong {
-  font-size: 0.84rem;
+  font-size: 0.95rem;
 }
 
 .viewerSection,
@@ -685,8 +685,8 @@
   background: #2c8163;
   display: grid;
   place-items: center;
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .viewerList article > div:nth-child(2) {
@@ -698,7 +698,7 @@
 .viewerList article > div:nth-child(2) strong {
   overflow: hidden;
   color: #21483c;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -706,8 +706,8 @@
 .viewerList article > div:nth-child(2) span,
 .viewerList article > div:nth-child(2) small {
   overflow: hidden;
-  color: #71827c;
-  font-size: 0.67rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 630;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -722,9 +722,9 @@
 .viewerCount em {
   margin-bottom: 0.18rem;
   color: #a06917;
-  font-size: 0.62rem;
+  font-size: 0.95rem;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .viewerCount strong {
@@ -734,8 +734,8 @@
 }
 
 .viewerCount > span {
-  color: #7d8b86;
-  font-size: 0.63rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 680;
 }
 
@@ -778,18 +778,18 @@
 
 .timeline strong {
   color: #21493c;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
 }
 
 .timeline article > div span {
-  color: #74847f;
-  font-size: 0.68rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 620;
 }
 
 .timeline time {
-  color: #5e736b;
-  font-size: 0.68rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
   white-space: nowrap;
 }
@@ -803,8 +803,8 @@
   color: #1b6048;
   background: #f0f8f4;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -838,7 +838,7 @@
 .activityLoading strong {
   grid-column: 1 / -1;
   color: #526a61;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
 }
 
 .activityError strong {
@@ -847,8 +847,8 @@
 
 .activityError span,
 .activityEmpty span {
-  color: #7c8581;
-  font-size: 0.75rem;
+  color: #52665d;
+  font-size: 0.95rem;
 }
 
 .activityError button {
@@ -859,8 +859,8 @@
   color: #1c654c;
   background: #eef8f3;
   font: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -940,8 +940,8 @@
 .detailColumns h3 {
   margin: 0 0 0.55rem;
   color: #194b3a;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .detailColumns dl {
@@ -964,17 +964,17 @@
 }
 
 .detailColumns dt {
-  color: #7a8883;
-  font-size: 0.62rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .detailColumns dd {
   min-width: 0;
   margin: 0;
   color: #2b493f;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   overflow-wrap: anywhere;
 }
 
@@ -994,8 +994,8 @@
   border-radius: 0.66rem;
   color: #983229;
   background: #fff4f2;
-  font-size: 0.67rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .modalActions button,
@@ -1011,8 +1011,8 @@
   align-items: center;
   justify-content: center;
   font: inherit;
-  font-size: 0.67rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-decoration: none;
   cursor: pointer;
 }
@@ -1224,7 +1224,7 @@
 .tableScroller td span,
 .tableScroller td small,
 .tableScroller td a {
-  white-space: normal;
+  white-space: nowrap;
   overflow-wrap: anywhere;
 }
 .tableScroller td > strong,
@@ -1250,13 +1250,13 @@
 /* Shared ledger rhythm with page-specific filters and actions preserved. */
 .metrics { gap: .75rem; }
 .metrics > * { box-shadow: none; border-color: #e2e9e5; border-radius: .75rem; background: #fff; padding: 1rem; }
-.metrics strong { font-size: 1.35rem; font-weight: 600; letter-spacing: -.035em; }
-.metrics span { font-size: .7rem; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.metrics strong { font-size: 1.35rem; font-weight: 650; letter-spacing: -.035em; }
+.metrics span { font-size: 0.95rem; font-weight: 650; text-transform: none; letter-spacing: 0; }
 .discoveryCard { border: 1px solid #e2e9e5; border-radius: .85rem; background: #fff; box-shadow: none; overflow: hidden; }
 .filters { gap: .75rem; padding: 1rem 1.2rem; background: #fafcfb; }
-.filters input, .filters select { min-height: 40px; font-size: .75rem; font-weight: 500; border-color: #dfe7e2; border-radius: .5rem; }
-.tableScroller th { font-size: .68rem; font-weight: 500; background: #f8faf9; color: #7e8e83; text-transform: none; letter-spacing: 0; }
-.tableScroller td { padding: 1rem; font-size: .76rem; border-color: #edf1ee; }
+.filters input, .filters select { min-height: 40px; font-size: 0.95rem; font-weight: 650; border-color: #dfe7e2; border-radius: .5rem; }
+.tableScroller th { font-size: 0.95rem; font-weight: 650; background: #f8faf9; color: #52665d; text-transform: none; letter-spacing: 0; }
+.tableScroller td { padding: 1rem; font-size: 0.95rem; border-color: #edf1ee; }
 .tableScroller tbody tr:hover { background: #f6faf7; }
-.tableScroller td strong { font-weight: 550; }
-.tableScroller td small { font-size: .68rem; color: #7e8e83; }
+.tableScroller td strong { font-weight: 650; }
+.tableScroller td small { font-size: 0.95rem; color: #52665d; }

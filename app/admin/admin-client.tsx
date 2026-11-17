@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSelect from "../../components/AdminSelect";
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import ListPagination from '../../components/ListPagination';
 import pickerStyles from '../../components/AssetPicker.module.css';
@@ -1621,13 +1622,13 @@ export default function AdminClient({
 
           <label className={styles.signupFilter}>
             <span>Status</span>
-            <select value={statusFilter} onChange={event => setStatusFilter(adminAccountStatusFilter(event.target.value))}>
+            <AdminSelect value={statusFilter} onChange={event => setStatusFilter(adminAccountStatusFilter(event.target.value))}>
               <option value="all">All statuses</option><option value="pending_payment">Pending payment</option><option value="active">Active</option><option value="suspended">Suspended</option>
-            </select>
+            </AdminSelect>
           </label>
           <label className={styles.signupFilter}>
             <span>Signups</span>
-            <select
+            <AdminSelect
               value={signupDateFilter}
               onChange={(event) =>
                 setSignupDateFilter(event.target.value as SignupDateFilter)
@@ -1641,12 +1642,12 @@ export default function AdminClient({
                   </option>
                 ),
               )}
-            </select>
+            </AdminSelect>
           </label>
 
           <label className={`${styles.signupFilter} ${styles.provinceFilter}`}>
             <span>Province</span>
-            <select
+            <AdminSelect
               value={provinceFilter}
               onChange={(event) =>
                 setProvinceFilter(event.target.value as ProvinceFilter)
@@ -1658,12 +1659,12 @@ export default function AdminClient({
                   {option.label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
 
           <label className={styles.signupFilter}>
             <span>Sort</span>
-            <select
+            <AdminSelect
               value={accountSort}
               onChange={(event) =>
                 setAccountSort(event.target.value as AccountSort)
@@ -1675,7 +1676,7 @@ export default function AdminClient({
                   {label}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
         </div>
       </section>
@@ -1690,7 +1691,7 @@ export default function AdminClient({
       ) : null}
 
       <section className={styles.tableCard} aria-label="User accounts">
-        <div className={styles.tableWrap}>
+        <div className={styles.tableWrap} tabIndex={0} role="region" aria-label="Scrollable results">
           <table className={styles.userTable}>
             <thead>
               <tr>

@@ -1,5 +1,6 @@
 'use client';
 
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -323,7 +324,7 @@ export default function AdminMarketplaceOutcomesClient({
             </label>
             <label>
               <span>Outcome</span>
-              <select
+              <AdminSelect
                 value={reason}
                 onChange={(event) => {
                   setReason(event.target.value as 'all' | AdminMarketplaceOutcomeReason);
@@ -334,11 +335,11 @@ export default function AdminMarketplaceOutcomesClient({
                 {Object.entries(REASON_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Helped</span>
-              <select
+              <AdminSelect
                 value={helped}
                 onChange={(event) => {
                   setHelped(event.target.value as HelpFilter);
@@ -348,11 +349,11 @@ export default function AdminMarketplaceOutcomesClient({
                 <option value="all">Yes and No</option>
                 <option value="yes">Yes</option>
                 <option value="no">No</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Source</span>
-              <select
+              <AdminSelect
                 value={source}
                 onChange={(event) => {
                   setSource(event.target.value as SourceFilter);
@@ -362,11 +363,11 @@ export default function AdminMarketplaceOutcomesClient({
                 <option value="all">Marketplace and Showroom</option>
                 <option value="marketplace">Marketplace</option>
                 <option value="showroom">My Showroom</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Closed</span>
-              <select
+              <AdminSelect
                 value={closed}
                 onChange={(event) => {
                   setClosed(event.target.value as ClosedFilter);
@@ -379,11 +380,11 @@ export default function AdminMarketplaceOutcomesClient({
                 {closedYears.map((year) => (
                   <option key={year} value={`year:${year}`}>{year}</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sort</span>
-              <select
+              <AdminSelect
                 value={sort}
                 onChange={(event) => {
                   setSort(event.target.value as OutcomeSort);
@@ -395,13 +396,13 @@ export default function AdminMarketplaceOutcomesClient({
                 <option value="final-value-high">Highest final value</option>
                 <option value="final-value-low">Lowest final value</option>
                 <option value="asset-az">Asset A-Z</option>
-              </select>
+              </AdminSelect>
             </label>
             {filtersActive ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
           </div> : null}
         </header>
 
-        {report.outcomes.length ? <div className={styles.tableScroller}>
+        {report.outcomes.length ? <div className={styles.tableScroller} tabIndex={0} role="region" aria-label="Scrollable results">
           <table>
             <thead>
               <tr>

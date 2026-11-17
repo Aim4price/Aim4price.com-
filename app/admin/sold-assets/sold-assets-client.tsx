@@ -1,5 +1,6 @@
 'use client';
 
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
@@ -375,7 +376,7 @@ export default function SoldAssetsClient({
               </label>
               <label>
                 <span>Outcome</span>
-                <select
+                <AdminSelect
                   value={outcomeFilter}
                   onChange={(event) => {
                     setOutcomeFilter(event.target.value as OutcomeFilter);
@@ -386,11 +387,11 @@ export default function SoldAssetsClient({
                   <option value="sold">Sold</option>
                   <option value="traded_in">Traded</option>
                   <option value="scrapped">Scrapped</option>
-                </select>
+                </AdminSelect>
               </label>
               <label>
                 <span>Helped</span>
-                <select
+                <AdminSelect
                   value={influenceFilter}
                   onChange={(event) => {
                     setInfluenceFilter(event.target.value as InfluenceFilter);
@@ -402,11 +403,11 @@ export default function SoldAssetsClient({
                   <option value="no">No</option>
                   <option value="unsure">Not sure</option>
                   <option value="unknown">Not recorded</option>
-                </select>
+                </AdminSelect>
               </label>
               <label>
                 <span>Allocation</span>
-                <select
+                <AdminSelect
                   value={transferFilter}
                   onChange={(event) => {
                     setTransferFilter(event.target.value as TransferFilter);
@@ -419,11 +420,11 @@ export default function SoldAssetsClient({
                   <option value="claimed">Allocated</option>
                   <option value="cancelled">Closed</option>
                   <option value="expired">Expired</option>
-                </select>
+                </AdminSelect>
               </label>
               <label>
                 <span>Sort</span>
-                <select
+                <AdminSelect
                   value={sort}
                   onChange={(event) => {
                     setSort(event.target.value as OutcomeSort);
@@ -435,7 +436,7 @@ export default function SoldAssetsClient({
                   <option value="amount-high">Highest value</option>
                   <option value="amount-low">Lowest value</option>
                   <option value="asset-az">Asset A-Z</option>
-                </select>
+                </AdminSelect>
               </label>
               {filtersActive ? (
                 <button type="button" onClick={clearFilters}>Clear filters</button>
@@ -445,7 +446,7 @@ export default function SoldAssetsClient({
         </header>
 
         {report.outcomes.length ? (
-          <div className={styles.tableScroller}>
+          <div className={styles.tableScroller} tabIndex={0} role="region" aria-label="Scrollable results">
             <table aria-label="Asset register outcomes">
               <thead>
                 <tr>

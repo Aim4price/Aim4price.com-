@@ -1,5 +1,6 @@
 "use client";
 
+import AdminSelect from "../../../components/AdminSelect";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -553,58 +554,58 @@ export default function AdminAssetMapClient({
           </label>
           <label>
             <span>Owner</span>
-            <select value={ownerUserId} onChange={(event) => setOwnerUserId(event.target.value)}>
+            <AdminSelect value={ownerUserId} onChange={(event) => setOwnerUserId(event.target.value)}>
               <option value="">All accounts</option>
               {report.options.owners.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label} ({option.count})
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>Province</span>
-            <select value={province} onChange={(event) => setProvince(event.target.value)}>
+            <AdminSelect value={province} onChange={(event) => setProvince(event.target.value)}>
               <option value="">All provinces</option>
               {report.options.provinces.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label} ({option.count})
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>Sector</span>
-            <select value={sector} onChange={(event) => setSector(event.target.value)}>
+            <AdminSelect value={sector} onChange={(event) => setSector(event.target.value)}>
               <option value="">All sectors</option>
               {report.options.sectors.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label} ({option.count})
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>Location</span>
-            <select
+            <AdminSelect
               value={location}
               onChange={(event) => setLocation(event.target.value as AdminAssetLocationFilter)}
             >
               <option value="all">All locations</option>
               <option value="mapped">Mapped</option>
               <option value="missing">Missing GPS</option>
-            </select>
+            </AdminSelect>
           </label>
           <label>
             <span>State</span>
-            <select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}>
+            <AdminSelect value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}>
               <option value="">All states</option>
               {report.options.lifecycleStates.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label} ({option.count})
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </label>
           {filtersActive ? (
             <div className={styles.filterActions}>

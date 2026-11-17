@@ -1,5 +1,6 @@
 'use client';
 
+import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -435,7 +436,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
             </label>
             <label>
               <span>Status</span>
-              <select
+              <AdminSelect
                 value={status}
                 onChange={(event) => {
                   setStatus(event.target.value as AdminMarketplaceFilters['status']);
@@ -447,11 +448,11 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 <option value="withdrawn">Withdrawn</option>
                 <option value="draft">Draft</option>
                 <option value="other">Other</option>
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sector</span>
-              <select
+              <AdminSelect
                 value={sector}
                 onChange={(event) => {
                   setSector(event.target.value);
@@ -462,11 +463,11 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 {sectorOptions.map((option) => (
                   <option key={option.key} value={option.key}>{option.label}</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Advertised</span>
-              <select
+              <AdminSelect
                 aria-label="Last advertised"
                 value={advertised}
                 onChange={(event) => {
@@ -480,11 +481,11 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 {advertisedYears.map((year) => (
                   <option key={year} value={`year:${year}`}>{year}</option>
                 ))}
-              </select>
+              </AdminSelect>
             </label>
             <label>
               <span>Sort</span>
-              <select
+              <AdminSelect
                 value={sort}
                 onChange={(event) => {
                   setSort(event.target.value as AdminMarketplaceSort);
@@ -499,13 +500,13 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 <option value="value-high">Highest value</option>
                 <option value="value-low">Lowest value</option>
                 <option value="asset-az">Asset A-Z</option>
-              </select>
+              </AdminSelect>
             </label>
             {filtersActive ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
           </div>
         </header>
 
-        <div className={styles.tableScroller}>
+        <div className={styles.tableScroller} tabIndex={0} role="region" aria-label="Scrollable results">
           <table>
             <thead>
               <tr>

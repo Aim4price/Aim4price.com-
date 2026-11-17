@@ -78,8 +78,8 @@ test("loading and summary surfaces contain no decorative copy", () => {
   assert.match(loading, /aria-label="Loading Admin"/);
   assert.doesNotMatch(loading, /Opening your Admin workspace|Loading Admin data|styles\.pill|styles\.subtitle|styles\.status/);
   assert.doesNotMatch(dashboard, /item\.detail/);
-  assert.match(foundation, /\[class\*="titleBlock"\] h1\)[\s\S]*?white-space: normal/);
-  assert.match(foundation, /\[class\*="pill"\][\s\S]*?border-radius: 0 !important/);
+  assert.match(foundation, /white-space: nowrap/);
+  assert.match(foundation, /--admin-control-radius: \.9rem/);
 });
 
 test("map and lifecycle remove redundant labels while preserving their actions", () => {

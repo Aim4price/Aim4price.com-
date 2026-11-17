@@ -59,9 +59,9 @@
 }
 
 .metrics span {
-  color: #60716a;
-  font-size: 0.68rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -69,7 +69,7 @@
   overflow: hidden;
   color: #176047;
   font-size: clamp(1.18rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.48rem);
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: -0.04em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -101,9 +101,9 @@
 }
 
 .filterBar label > span {
-  color: #66766f;
-  font-size: 0.59rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   letter-spacing: 0.045em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -121,8 +121,8 @@
   background: #fafcfb;
   padding: 0 0.65rem;
   font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .filterBar input:focus,
@@ -140,7 +140,7 @@
 .filterActions button {
   color: #1b6149;
   background: #edf7f2;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -155,8 +155,8 @@
   border-bottom: 1px solid #f0cfcc;
   color: #9b3129;
   background: #fff4f2;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .mapWorkspace {
@@ -193,8 +193,8 @@
 
 .assetSidebar > header strong {
   color: #17563f;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -254,14 +254,14 @@
 
 .assetRowCopy strong {
   color: #193b30;
-  font-size: 0.76rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .assetRowCopy small {
   color: #536c62;
-  font-size: 0.64rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .mappedBadge,
@@ -269,8 +269,8 @@
   padding: 0;
   color: #176047;
   background: transparent;
-  font-size: 0.6rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -282,8 +282,8 @@
 .listLimitNote {
   margin: 0;
   padding: 1rem 0.72rem;
-  color: #71817a;
-  font-size: 0.69rem;
+  color: #52665d;
+  font-size: 0.95rem;
   font-weight: 720;
   line-height: 1.5;
   text-align: center;
@@ -330,7 +330,7 @@
 .mapCanvas :global(.leaflet-control-zoom a) {
   color: #1c5e48;
   border-color: #e0e7e3;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 .mapCanvas :global(.leaflet-tooltip) {
@@ -338,7 +338,7 @@
   border-radius: 0.6rem;
   color: #18372e;
   box-shadow: 0 8px 24px rgba(13, 40, 31, 0.2);
-  font-size: 0.69rem;
+  font-size: 0.95rem;
   line-height: 1.35;
 }
 
@@ -357,8 +357,8 @@
   box-shadow: 0 6px 18px rgba(14, 67, 49, 0.32);
   display: grid;
   place-items: center;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   transform: rotate(-45deg);
 }
 
@@ -381,8 +381,8 @@
 .mapCanvas :global(.marker-cluster-large div) {
   color: #ffffff;
   background: #176c50;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .mapCanvas :global(.marker-cluster-small),
@@ -411,7 +411,7 @@
 
 .mapEmpty strong {
   color: #28483d;
-  font-size: 0.74rem;
+  font-size: 0.95rem;
 }
 
 .mapMode {
@@ -435,8 +435,8 @@
   color: #547067;
   background: transparent;
   font: inherit;
-  font-size: 0.64rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   cursor: pointer;
 }
 
@@ -509,17 +509,17 @@
 }
 
 .assetDetailGrid small {
-  color: #7b8984;
-  font-size: 0.55rem;
-  font-weight: 600;
+  color: #52665d;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
 }
 
 .assetDetailGrid strong {
   overflow-wrap: anywhere;
   color: #23463a;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .ownerContact {
@@ -536,15 +536,15 @@
 .ownerContact strong {
   grid-column: 1 / -1;
   color: #176047;
-  font-size: 0.62rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-transform: uppercase;
 }
 
 .ownerContact span {
   overflow-wrap: anywhere;
   color: #49665c;
-  font-size: 0.64rem;
+  font-size: 0.95rem;
   font-weight: 720;
 }
 
@@ -568,8 +568,8 @@
   align-items: center;
   justify-content: center;
   font: inherit;
-  font-size: 0.63rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 650;
   text-decoration: none;
   cursor: pointer;
 }
@@ -745,7 +745,7 @@
 }
 .assetRowCopy strong,
 .assetRowCopy small {
-  white-space: normal;
+  white-space: nowrap;
   overflow-wrap: anywhere;
 }
 .assetRow { align-items: start; }
@@ -761,7 +761,7 @@
 .assetSidebar { background: #fff; border-color: #e2e9e5; }
 .assetRow { border-color: #e8eeea; padding: 1rem; background: #fff; }
 .assetRowActive { background: #edf5ef; border-color: #a6c4b1; }
-.assetRowCopy strong { font-size: .78rem; font-weight: 550; }
-.assetRowCopy span { font-size: .69rem; color: #7e8e83; }
+.assetRowCopy strong { font-size: 0.95rem; font-weight: 650; }
+.assetRowCopy span { font-size: 0.95rem; color: #52665d; }
 .filterBar { gap: .8rem; padding: 1.1rem; }
-.filterBar input, .filterBar select { min-height: 40px; font-size: .76rem; font-weight: 500; }
+.filterBar input, .filterBar select { min-height: 40px; font-size: 0.95rem; font-weight: 650; }
