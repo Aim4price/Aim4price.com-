@@ -9,6 +9,7 @@ on:
       - 'components/PartsDescription.tsx'
       - 'components/PartsEnquireButton.tsx'
       - 'components/PartsEnquiryDialog.tsx'
+      - 'components/PartsListOwner.tsx'
       - 'app/parts-share/**'
       - 'app/api/parts-share/**'
       - 'tests/parts-share.test.cjs'
