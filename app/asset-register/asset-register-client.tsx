@@ -6354,6 +6354,7 @@ export default function AssetRegisterClient({
   const [bulkFinanceAssetSearch, setBulkFinanceAssetSearch] = useState('');
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [assetDetailsPage, setAssetDetailsPage] = useState('identity');
   const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
   const [assetSettingsTypeDraft, setAssetSettingsTypeDraft] = useState<AssetKind>('equipment');
   const [assetSettingsUsageInput, setAssetSettingsUsageInput] = useState('');
@@ -8563,6 +8564,21 @@ export default function AssetRegisterClient({
   const isShareModalFocusOpen = isRegisterShareModalOpen || isQuoteModalOpen;
 
   useEffect(() => {
+    if (!anyModalOpen) return;
+    const previousOverflow = document.body.style.getPropertyValue('overflow');
+    const previousPriority = document.body.style.getPropertyPriority('overflow');
+    const previousHtmlOverflow = document.documentElement.style.getPropertyValue('overflow');
+    const previousHtmlPriority = document.documentElement.style.getPropertyPriority('overflow');
+    document.body.style.setProperty('overflow', 'hidden', 'important');
+    document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+
+    return () => {
+      document.body.style.setProperty('overflow', previousOverflow, previousPriority);
+      document.documentElement.style.setProperty('overflow', previousHtmlOverflow, previousHtmlPriority);
+    };
+  }, [anyModalOpen]);
+
+  useEffect(() => {
     if (!isShareModalFocusOpen) {
       return undefined;
     }
@@ -8654,9 +8670,6 @@ export default function AssetRegisterClient({
     if (!anyModalOpen) {
       return undefined;
     }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
 
     const handleEscape = (event: KeyboardEvent) => {
       if (photoViewer) {
@@ -8835,7 +8848,6 @@ export default function AssetRegisterClient({
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
   }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, isCreatingUmbrellaFromMove, isCreatingRegisterFromMove, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, assetDocumentListId, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
@@ -9286,6 +9298,20 @@ export default function AssetRegisterClient({
   }, [assetDraft.propertyAssetSubtype, assetFormKind]);
 
   const showLifeWorkedPercentField = false;
+  const assetDetailsPages = [
+    { id: 'identity', label: 'Asset identity' },
+    ...(['manual', 'property', 'stock'].includes(assetFormKind) ? [{ id: 'classification', label: 'Asset classification' }] : []),
+    ...(assetFormKind !== 'stock' ? [{ id: 'condition', label: assetFormKind === 'property' ? 'Property details' : 'Year, usage and condition' }] : []),
+    { id: 'values', label: 'Asset values' },
+    { id: 'notes', label: 'Asset notes' },
+  ];
+  const assetDetailsPageIndex = Math.max(0, assetDetailsPages.findIndex(page => page.id === assetDetailsPage));
+  const isPagedAssetDetails = Boolean(editingAsset) && manualAssetStep === 2 && !showAssetUpdateMenu;
+  useEffect(() => {
+    if (!isPagedAssetDetails || assetDetailFocusTarget) return;
+    const frame = requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-details-page-heading]')?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [isPagedAssetDetails, assetDetailsPage]);
 
   useEffect(() => {
     if (!isAssetModalOpen || manualAssetStep !== 2 || !assetDetailFocusTarget) {
@@ -9659,6 +9685,7 @@ export default function AssetRegisterClient({
   }, [assetGroupMemberships, assets, isShowingAllAssets, numericPageSize, standalonePaginationEntries]);
 
   function resetEditor() {
+    setAssetDetailsPage('identity');
     if (assetAutosaveTimerRef.current) {
       clearTimeout(assetAutosaveTimerRef.current);
       assetAutosaveTimerRef.current = null;
@@ -9879,6 +9906,7 @@ export default function AssetRegisterClient({
   }
 
   function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
+    setAssetDetailsPage(focusTarget === 'notes' ? 'notes' : focusTarget === 'replacement' ? 'values' : ['year', 'usage', 'condition'].includes(focusTarget ?? '') ? 'condition' : 'identity');
     setUsageTypeDialogOpen(false);
     setUsageTypeChangeConfirmed(false);
     setAssetUpdateMenuEnabled(!focusTarget);
@@ -11214,6 +11242,7 @@ export default function AssetRegisterClient({
     }
 
     setShowAssetUpdateMenu(false);
+    setAssetDetailsPage('identity');
     setAssetStatusEditView('hub');
     setAssetStatusError('');
     setManualAssetStep(step);
@@ -18249,7 +18278,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${isPagedAssetDetails ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -18307,7 +18336,7 @@ export default function AssetRegisterClient({
                 </div>
               </div>
             ) : (
-            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
+            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${isPagedAssetDetails ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               {manualAssetStep > 1 && !assetUpdateMenuEnabled ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
@@ -18425,8 +18454,12 @@ export default function AssetRegisterClient({
                       </section>
                     ) : null}
 
-                    <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`}>
-                      <div className={styles.assetTitleRow}>
+                    {isPagedAssetDetails && <div className={updateStyles.pageHeading}>
+                      <h4 tabIndex={-1} data-details-page-heading>{assetDetailsPages[assetDetailsPageIndex].label}</h4>
+                      <span>{assetDetailsPageIndex + 1} of {assetDetailsPages.length}</span>
+                    </div>}
+                    <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`} data-details-page={isPagedAssetDetails ? assetDetailsPages[assetDetailsPageIndex].id : undefined}>
+                      <div className={styles.assetTitleRow} data-details-section="identity">
                         <label className={`${styles.field} ${styles.manualTitleField}`} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                           <span>Asset title</span>
                           <input
@@ -18444,13 +18477,11 @@ export default function AssetRegisterClient({
                       </div>
 
                       {assetFormKind === 'manual' || assetFormKind === 'property' || assetFormKind === 'stock' ? (
-                        <div className={styles.assetInsuranceClassificationCard} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
+                        <div className={styles.assetInsuranceClassificationCard} data-details-section="classification" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                           <div className={styles.assetInsuranceClassificationIntro}>
                             <strong>Tell us more about this asset</strong>
                             <p>
-                              These details help Aim4price organise the asset correctly and prepare clearer records and reports.
-                              If the register is shared for insurance, Aim4price may suggest areas for a broker to review, but the
-                              broker still confirms the final classification and cover.
+                              Choose the closest match for accurate records. Your broker confirms any insurance classification and cover.
                             </p>
                           </div>
 
@@ -18632,7 +18663,7 @@ export default function AssetRegisterClient({
                       ) : null}
 
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
-                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
+                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} data-details-section="identity">
                           <label className={styles.field} data-asset-detail-edit-target="serial" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                             <span>Serial / reference</span>
                             <input
@@ -18677,6 +18708,7 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
+                      <div data-details-section="condition">
                       {assetFormKind === 'property' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           {!isLandPropertyDraft ? (
@@ -18805,7 +18837,8 @@ export default function AssetRegisterClient({
                         />
                       ) : null}
 
-                      <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
+                      </div>
+                      <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`} data-details-section="values" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                         <AssetVatValueField
                           key={`${editingAssetId ?? 'new'}-value`}
                           onOpen={editingAsset?()=>openConfirmedValue(editingAsset,'override',true):undefined}
@@ -18853,7 +18886,7 @@ export default function AssetRegisterClient({
                       </div>
 
                       {showLifeWorkedPercentField ? (
-                        <div className={styles.assetAuxiliaryGrid}>
+                        <div className={styles.assetAuxiliaryGrid} data-details-section="condition">
                           <label className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.updateUsage));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.updateUsage) ? "true" : undefined}>
                             <span>Usage %</span>
                             <input
@@ -18874,7 +18907,7 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`} data-asset-detail-edit-target="notes" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`} data-asset-detail-edit-target="notes" data-details-section="notes" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
                         <span>Notes</span>
                         <textarea
                           rows={3}
@@ -19177,7 +19210,11 @@ export default function AssetRegisterClient({
                     </button>
                   ) : null}
 
-                  {assetUpdateMenuEnabled ? (
+                  {isPagedAssetDetails ? <>
+                    {assetDetailsPageIndex > 0 && <button type="button" className={styles.secondaryButton} onClick={() => setAssetDetailsPage(assetDetailsPages[assetDetailsPageIndex - 1].id)}>Back</button>}
+                    {assetDetailsPageIndex < assetDetailsPages.length - 1 ? <button type="button" className={styles.primaryButton} onClick={() => setAssetDetailsPage(assetDetailsPages[assetDetailsPageIndex + 1].id)}>Next</button>
+                      : <button type="button" className={styles.primaryButton} onClick={assetUpdateMenuEnabled ? returnToAssetUpdateMenu : closeAssetModal} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>}
+                  </> : assetUpdateMenuEnabled ? (
                     <button type="button" className={styles.primaryButton} onClick={returnToAssetUpdateMenu} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>
                   ) : manualAssetStep < 4 ? (
                     <button
@@ -19219,7 +19256,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal} ${styles.managementAccountModal} ${!['location', 'locationManual', 'locationMap'].includes(assetSettingsView) ? advancedStyles.dialog : ''} ${accountStyles.modalTheme} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView === 'tracking' ? updateStyles.trackingDialog : ''} ${styles.managementAccountModal} ${!['location', 'locationManual', 'locationMap'].includes(assetSettingsView) ? advancedStyles.dialog : ''} ${accountStyles.modalTheme} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
@@ -19243,7 +19280,7 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody} ${advancedStyles.body}`}>
-              {assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && assetSettingsView !== 'average' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
+              {assetSettingsView !== 'menu' && assetSettingsView !== 'usage' && assetSettingsView !== 'average' && assetSettingsView !== 'tracking' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
                 <button
                   type="button"
                   className={styles.assetSettingsBackButton}
@@ -19343,7 +19380,7 @@ export default function AssetRegisterClient({
 
               {assetSettingsView === 'average' && !desktopAccess && ['hours','km'].includes(resolveAssetUsage(editingAsset).metric) ? <AssetAverageUsage assetId={editingAsset.id}/> : null}
 
-              {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel key={editingAsset.id} assetId={editingAsset.id} assetTitle={editingAsset.title}/> : null}
+              {assetSettingsView === 'tracking' && editingAsset ? <AssetTrackingPanel key={editingAsset.id} assetId={editingAsset.id} assetTitle={editingAsset.title} onBack={goBackFromAssetSettingsSubView}/> : null}
 
               {assetSettingsView === 'lifetime' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection} ${advancedStyles.form}`}>

@@ -307,3 +307,9 @@
 .dialog.compactDialog .body > * { flex-shrink:0; }
 .dialog.compactDialog .footer { margin:0; padding:1rem 0 0; background:transparent; }
 .dialog.compactDialog .footer [data-access-actions] { justify-content:space-between; }
+
+/* Tracking is a sequence of short screens; retain overflow access only for
+   unusually short viewports, without drawing nested scrollbar chrome. */
+.dialog:has([data-tracking-options], [data-tracker-setup]) { width:min(var(--website-dialog-reference-width,100%),64rem) !important; }
+.dialog:has([data-tracking-options], [data-tracker-setup]) .body { scrollbar-width:none !important; }
+.dialog:has([data-tracking-options], [data-tracker-setup]) .body::-webkit-scrollbar { display:none !important; }
