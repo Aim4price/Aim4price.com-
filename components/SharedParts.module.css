@@ -10,7 +10,7 @@
 }
 .accessDialog.accessDialog>header{gap:1rem;align-items:center}
 .accessDialog.accessDialog h2{font-size:1.65rem!important;line-height:1.25!important;letter-spacing:-.035em;font-weight:800}
-.accessDialog .accessIntro{margin:0;color:var(--app-muted,#657b72);font-size:1rem;line-height:1.55}
+.accessDialog .accessIntro{margin:0;color:var(--app-text,#173f31);font-size:1rem;font-weight:550;line-height:1.55}
 .accountContent{display:grid;gap:1.5rem;padding-top:1.25rem}
 .accountActions{display:grid;grid-template-columns:1fr 1.25fr;gap:.75rem}
 .accountActions>a:only-child{grid-column:1/-1}
@@ -21,23 +21,20 @@
  text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;
 }
 .accessDialog .accountActions>.accessPrimary,.passwordFooter .unlockButton{background:var(--app-accent,#176d53);border-color:var(--app-accent,#176d53);color:#fff;box-shadow:0 5px 12px #176d5314}
+.accessDialog .accountActions>.accessCreate{background:color-mix(in srgb,var(--app-accent,#176d53) 18%,var(--app-surface,#fff));border-color:var(--app-accent,#176d53);color:var(--app-text,#173f31);box-shadow:inset 0 0 0 1px var(--app-accent,#176d53)}
 .accessDialog .accountActions>a:hover,.passwordFooter button:hover{border-color:var(--app-accent,#176d53);box-shadow:0 4px 12px #173f3118}
-.accountActions svg,.accountRefresh svg,.passwordFooter svg{width:1.2rem;height:1.2rem;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.accountFooter{display:flex;justify-content:center;padding-top:1rem;border-top:1px solid var(--app-line,#d8e5de)}
-.accessDialog .accountRefresh{display:flex;align-items:center;justify-content:center;gap:.65rem;min-height:2.75rem;padding:.5rem .75rem;border:0;border-radius:.6rem;background:transparent;box-shadow:none;color:var(--app-text,#173f31);font:inherit;font-size:.9rem;font-weight:650;cursor:pointer}
-.accessDialog .accountRefresh:hover{background:var(--app-surface-soft,#edf6f1)}
-.accessNotice{margin:0;padding:.85rem 1rem;border-radius:.8rem;background:var(--app-surface-soft,#edf6f1);font-size:.9rem;line-height:1.5;color:var(--app-text,#173f31)}
+.accountActions svg{width:1.2rem;height:1.2rem;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .passwordForm{display:grid;gap:1.25rem;padding-top:1.5rem}
 .protectedList{display:flex;align-items:center;gap:.9rem;padding:1rem;border:1px solid var(--app-line,#cee0d7);border-radius:1rem;background:var(--app-surface-soft,#f0f7f3)}
-.protectedList>div{display:grid;gap:.3rem;min-width:0}.protectedList strong{font-size:1rem;font-weight:750;line-height:1.4;overflow-wrap:anywhere}.protectedList span{font-size:.85rem;line-height:1.4;color:var(--app-muted,#657b72);overflow-wrap:anywhere}
+.protectedList>div{display:grid;gap:.3rem;min-width:0}.protectedList strong{font-size:1rem;font-weight:750;line-height:1.4;overflow-wrap:anywhere}.protectedList span{font-size:.95rem;font-weight:600;line-height:1.4;color:var(--app-text,#173f31);overflow-wrap:anywhere}
 .lockIcon{display:grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:.85rem;background:var(--app-surface,#fff);border:1px solid var(--app-line,#cee0d7)}.lockIcon svg{width:22px;height:22px;color:var(--app-accent,#176d53)}
-.passwordField{display:grid;gap:.6rem}.passwordField label{font-size:.95rem;font-weight:700}.passwordField>small{font-size:.8rem;line-height:1.5;color:var(--app-muted,#657b72)}
+.passwordField{display:grid;gap:.6rem}.passwordField label{font-size:.95rem;font-weight:700}.passwordField>small{font-size:.85rem;font-weight:550;line-height:1.5;color:var(--app-text,#173f31)}
 .passwordInput{display:flex;align-items:center;border:1px solid var(--app-line,#c8ddd3);border-radius:.9rem;background:var(--app-surface,#fff);overflow:hidden}
 .passwordDialog .passwordInput input{min-width:0;width:100%;flex:1;border:0;outline:0;box-shadow:none;border-radius:0;background:transparent;min-height:3.4rem;box-sizing:border-box;padding:.9rem 1rem;font:inherit;font-size:1rem;color:inherit}
 .passwordDialog .passwordInput button{display:grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;min-height:0;margin:0 .3rem 0 0;padding:0;border:0;border-radius:.65rem;background:transparent;box-shadow:none;color:inherit;cursor:pointer}.passwordInput button:hover{background:var(--app-surface-soft,#edf6f1)}.passwordInput svg{width:22px;height:22px}
 .passwordInput:focus-within{outline:2px solid var(--app-accent,#168461);outline-offset:2px}.passwordInput button:focus-visible{outline:2px solid var(--app-accent,#176d53);outline-offset:-3px}
 .accessDialog .passwordError{padding:.85rem 1rem;margin:0;border:1px solid var(--app-danger-border,#e4b8b8);border-radius:.8rem;background:var(--app-danger-soft,#fbefef);color:var(--app-danger,#a32e35);font-size:.9rem;line-height:1.5}
-.passwordFooter{display:flex;justify-content:space-between;gap:.75rem;border-top:1px solid var(--app-line,#d8e5de);padding-top:1.25rem;margin-top:.25rem}.passwordFooter .unlockButton{gap:.75rem}
+.passwordFooter{display:flex;justify-content:space-between;gap:.75rem;border-top:1px solid var(--app-line,#d8e5de);padding-top:1.25rem;margin-top:.25rem}
 .accessDialog button:disabled{opacity:.6;cursor:wait}
 .accessDialog :is(a,button):focus-visible{outline:3px solid #74ac92;outline-offset:3px}
 @media(max-width:540px){

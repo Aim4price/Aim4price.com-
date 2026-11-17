@@ -1240,11 +1240,14 @@ const appCode =
     await page.click('button[aria-label^="Enquire about"]');
     await page.waitForSelector('dialog');
     assert.ok(await page.$eval('dialog',el=>el.innerText.includes('Sign in to continue')));
-    await click('I’ve signed in');
-    await page.waitForFunction(()=>document.querySelector('dialog')?.innerText.includes('Please sign in to your Aim4price account'));
+    assert.ok(!(await page.$eval('dialog',el=>el.innerText)).includes('I’ve signed in'),'Account prompt only offers sign-in and registration');
+    const viewsBefore=sharedActions.filter(a=>a.action==='view').length;
+    await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await page.waitForFunction(()=>!document.querySelector('form button[type=submit]')?.disabled);
+    assert.ok(sharedActions.filter(a=>a.action==='view').length>viewsBefore,'Returning to the tab rechecks sign-in');
     assert.equal(await page.$('textarea'),null,'Signed-out readers cannot enter an enquiry');
     await page.screenshot({path:path.join(output,'shared-parts-sign-in-modal.png')});
-    shareAccess='active';await click('I’ve signed in');
+    shareAccess='active';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
     await page.waitForSelector('dialog textarea');
     assert.ok(await page.$eval('dialog textarea',el=>el.value.includes('001-ABC')),'Sign-in resumes the selected part enquiry');
     await page.screenshot({path:path.join(output,'shared-parts-contact-modal.png')});
@@ -1257,7 +1260,7 @@ const appCode =
     const downloadsBefore=sharedActions.filter(a=>a.action==='download').length;
     await click('Download PDF');await page.waitForSelector('dialog');
     assert.equal(sharedActions.filter(a=>a.action==='download').length,downloadsBefore);
-    shareAccess='active';await click('I’ve signed in');
+    shareAccess='active';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
     await page.waitForFunction(()=>!document.querySelector('dialog'));
     assert.equal(sharedActions.filter(a=>a.action==='download').length,downloadsBefore+1,'Sign-in resumes download');
     shareAccess='sign-in';
