@@ -1823,8 +1823,9 @@
 .detailFieldChoices span { font-size:12px; font-weight:500; color:var(--app-muted,#60776b); }
 .detailFieldSettings { display:grid; gap:18px; padding-top:24px; }
 .detailFieldSettings p { margin:0; line-height:1.6; }
-.partExtraDetails { display:grid; gap:4px 8px; grid-template-columns:fit-content(45%) minmax(0,1fr); margin:8px 0 0; font-size:1rem; line-height:1.5; text-align:left; }
+.partExtraDetails { display:grid; gap:6px 8px; grid-template-columns:fit-content(45%) minmax(0,1fr); margin:8px 0 0; font-size:1rem; line-height:1.5; text-align:left; }
 .partDetailRow { display:contents; }
+.partDetailRow::before { content:""; grid-column:1/-1; height:1px; background:color-mix(in srgb,var(--app-border,#cbded4) 60%,transparent); }
 .partDetailRow dt,.partDetailRow dd { min-width:0; margin:0; overflow-wrap:anywhere; color:var(--app-text,#173e32); }
 .partDetailRow dt { font-weight:600; }
 .partDetailRow dd { font-weight:450; }
