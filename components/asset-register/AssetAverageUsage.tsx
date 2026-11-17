@@ -35,11 +35,11 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
   const toggle=<button type="button" role="switch" aria-label="Average usage" aria-checked={active||setup} aria-describedby={!active&&setup?`${id}-pending`:undefined} className={styles.toggle} disabled={busy} onClick={()=>{if(active){void save('pause');}else{setSetup(!setup);setScreen('reading');setError('');setSuccess('');}}}><span className={styles.toggleTrack} aria-hidden="true"><span/></span><span>{busy?'Saving…':active||setup?'On':'Off'}</span></button>;
   const title=screen==='reading'?'Meter reading':screen==='usage'?'Usual usage':screen==='calculator'?'Calculate average':'Review settings';
   return <section className={styles.panel} aria-label="Average usage settings">
-    {!active&&!setup?<><div className={styles.heading}><h4>Usage estimates</h4>{toggle}</div><p>Turn on to set up daily usage estimates.</p></>:overview?<>
+    {!active&&!setup?<><div className={styles.heading}><h4>Keep your asset up to date</h4>{toggle}</div><p>Estimate daily usage to support current valuations, plan maintenance and keep people you share with informed.</p><p className={styles.notice}><strong>Actual readings always take priority.</strong> Manual, fuel and maintenance readings replace the estimate. Estimates then continue from that reading.</p></>:overview?<>
       <div className={styles.heading}><h4>Usage estimates</h4>{toggle}</div>
-      <div className={styles.summary}><div><span>{usage.estimated?'Estimated current usage':'Current meter reading'}</span><strong>{number(usage.reading)} {usage.metric}</strong></div>{usage.baselineAt&&<div><span>Last confirmed reading</span><strong>{number(usage.baselineValue)} {usage.metric}</strong><small>{new Date(usage.baselineAt).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</small></div>}</div>
-      <p>{number(usage.dailyUsage)} {usage.metric} per working day · {workingDays.map(d=>labels[d].slice(0,3)).join(', ')}.</p>
-      <p>Actual fuel, service and manual readings replace the estimate.</p>
+      <div className={styles.summary}><div><span>{usage.estimated?'Estimated now':'Actual reading'}</span><strong>{number(usage.reading)} {usage.metric}</strong></div>{usage.baselineAt&&<div><span>Last actual reading</span><strong>{number(usage.baselineValue)} {usage.metric}</strong><small>{new Date(usage.baselineAt).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</small></div>}</div>
+      <p><strong>Daily average:</strong> {number(usage.dailyUsage)} {usage.metric} per working day · {workingDays.map(d=>labels[d].slice(0,3)).join(', ')}.</p>
+      <p>Manual, fuel and maintenance readings replace the estimate. Estimates then continue from that reading.</p>
       <div className={styles.actions}><button onClick={()=>begin(true)} disabled={busy}>Correct meter reading</button><button onClick={()=>begin(false)} disabled={busy}>Change average usage</button></div>
     </>:<form className={styles.form} onSubmit={e=>{e.preventDefault();if(screen==='reading'&&validReading){if(correction)void save('confirm');else navigate('usage');}else if(screen==='usage'&&valid)navigate('review');else if(screen==='review'&&valid)void save('enable');}}>
       <div className={styles.heading}><h5 ref={screenHeading} tabIndex={-1} className={styles.screenTitle}>{correction?'Correct reading':title}</h5>{toggle}</div>
@@ -53,7 +53,8 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
       {screen==='usage'&&<>
         <label htmlFor={`${id}-daily`}>{unit==='hours'?'Hours':'Kilometres'} per working day<input id={`${id}-daily`} type="number" min="0.0001" max={usage.metric==='hours'?24:10000} step="0.0001" inputMode="decimal" required value={daily} onChange={e=>setDaily(e.target.value)} placeholder={usage.metric==='hours'?'For example, 8':'For example, 100'} disabled={busy}/>{usage.metric==='hours'&&<small>Maximum 24 hours.</small>}</label>
         <fieldset disabled={busy}><legend>Working days</legend><div className={styles.days}>{[1,2,3,4,5,6,0].map(day=><label key={day} title={labels[day]}><input type="checkbox" aria-label={labels[day]} checked={days.includes(day)} onChange={e=>setDays(e.target.checked?[...days,day].sort():days.filter(d=>d!==day))}/>{labels[day].slice(0,3)}</label>)}</div>{!days.length&&<small>Choose at least one day.</small>}</fieldset>
-        <button className={styles.suggest} type="button" disabled={busy||!days.length} onClick={()=>navigate('calculator')}>Help calculate average</button>
+        {valid&&<small aria-live="polite">{number(Number(daily))} {usage.metric} × {days.length} working {days.length===1?'day':'days'} = <strong>{number(Number(daily)*days.length)} estimated {usage.metric} per week.</strong></small>}
+        <button className={styles.suggest} type="button" disabled={busy||!days.length} onClick={()=>navigate('calculator')}>Suggest from asset age</button>
       </>}
       {screen==='calculator'&&<>
         <label htmlFor={`${id}-service`}>First used on<input id={`${id}-service`} type="date" min="1900-01-01" max={date} value={serviceDate} onChange={e=>setServiceDate(e.target.value)} disabled={busy}/><small>Model-year estimate. Adjust if needed.</small></label>
@@ -62,7 +63,7 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
       </>}
       {screen==='review'&&<>
         <dl className={styles.review}><div><dt>Actual reading</dt><dd>{number(Number(reading))} {usage.metric} · {date.split('-').reverse().join('/')}</dd></div><div><dt>Per working day</dt><dd>{number(Number(daily))} {usage.metric}</dd></div><div><dt>Working days</dt><dd>{workingDays.map(d=>labels[d].slice(0,3)).join(', ')}</dd></div><div><dt>Per week (estimated)</dt><dd>{number(Number(daily)*days.length)} {usage.metric}</dd></div></dl>
-        <p className={styles.notice}>Actual readings take priority. Authorised dealers and businesses can correct them.</p>
+        <p className={styles.notice}>Actual manual, fuel and maintenance readings replace estimates. Authorised dealers and businesses can correct readings.</p>
 
         {usage.mode==='tracking'&&usage.enabled&&<p className={styles.notice}>This replaces GPS-based usage estimates. Location tracking stays on.</p>}
       </>}
