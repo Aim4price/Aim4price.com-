@@ -31,9 +31,18 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
   const [trim, setTrim] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bulkStep,setBulkStep]=useState(0);
-  const [fieldPage,setFieldPage]=useState(0);
   const [previewPage,setPreviewPage]=useState(0);
-  const bulkSteps=["Choose rows","Choose field","Set change","Review changes"];
+  const fieldDrafts = useRef<Record<number, { operation: string; value: string }>>({});
+  const chooseField = (index: number) => {
+    if (index === field) return;
+    fieldDrafts.current[field] = { operation, value };
+    const draft = fieldDrafts.current[index];
+    setField(index);
+    setOperation(draft?.operation || "replace");
+    setValue(draft?.value || "");
+  };
+  const fieldIcon = (index: number) => ["partNumber", "description", "quantity", "price", "brand"][index] || extraFields[index - 5]?.id || "custom";
+  const fieldLabel = field === 0 ? "Part numbers" : labels[field];
   const fieldOptions=[1,2,4,3,0,...labels.slice(5).map((_,i)=>i+5)];
   const goToStep=(step:number)=>{setBulkStep(step);setShowPreview(step===3);setPreviewPage(0);};
   useEffect(()=>{if(tool.kind==="bulk"){dialog.current?.querySelector<HTMLElement>("[data-bulk-heading]")?.focus();const body=dialog.current?.querySelector("[data-bulk-body]");if(body)body.scrollTop=0;}},[bulkStep,tool.kind]);
@@ -67,6 +76,7 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
     return row.map((cell, j) => j !== field || (operation === "fill" && cell.trim()) ? cell : operation === "clear" ? "" : value);
   });
   const changed = targets.filter(i => next[i][field] !== rows[i][field]);
+  const hasChange = field === 0 ? !!(prefix || suffix || trim) : operation === "clear" || !!value.trim();
   const bulkErrors = tool.kind === "bulk" && showPreview ? partCellErrors(next) : {};
   const invalid = changed.filter(i => (field === 0 && !next[i][0].trim()) || !!bulkErrors[i]?.[field]);
   const applyBulk = () => {
@@ -102,7 +112,7 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
   };
   const title = tool.kind === "columns" ? "Manage columns" : tool.kind === "bulk" ? "Bulk edit parts" : rowMode === "delete" ? "Delete row?" : "Part actions";
   return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${tool.kind === "bulk" ? styles.bulkWizard : ""} ${tool.kind === "columns" ? styles.columnsDialog : ""} ${tool.kind === "row" && rowMode === "choose" ? styles.marketplaceChoiceModal : ""}`} aria-label={title} onCancel={e => { e.preventDefault(); onClose(); }}>
-    <header className={styles.sheetToolHeader}><div><h2>{title}</h2>{tool.kind === "row" && <p>{rows[tool.index][0] || `Row ${tool.index + 1}`}</p>}</div><ShareModalCloseButton aria-label="Close sheet tool" onClick={onClose} /></header>
+    <header className={styles.sheetToolHeader}><div><h2>{title}</h2>{tool.kind === "row" && <p>{rows[tool.index][0] || `Row ${tool.index + 1}`}</p>}{tool.kind === "bulk" && <p className={styles.bulkContext}>{listName && <><span>{listName}</span><span aria-hidden="true">·</span></>}<span>{targets.length} {targets.length === 1 ? "part" : "parts"}</span></p>}</div><ShareModalCloseButton aria-label="Close sheet tool" onClick={onClose} /></header>
     <div className={styles.sheetToolBody} data-columns-body={tool.kind==="columns" || undefined} data-bulk-body={tool.kind==="bulk" || undefined}>
       {tool.kind === "columns" && <>
         {columnAction ? <section className={styles.columnActionStage}>
@@ -123,23 +133,64 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
         </>}
 
       </>}
-      {tool.kind === "bulk" && <section className={styles.bulkStage}>
-        <h3 tabIndex={-1} data-bulk-heading>{bulkSteps[bulkStep]}</h3>
-        {bulkStep===0 && <><p>Which parts should change?</p><PartsChoice label="Apply to" value={scope} onChange={setScope} options={[{value:"selected",label:`Selected rows (${selected.length})`,disabled:!selected.length},{value:"all",label:`All rows (${rows.length})`}]} /></>}
-        {bulkStep===1 && <><p>Choose one field for {targets.length} {targets.length===1 ? "row" : "rows"}.</p><PartsChoice label="Field to change" value={String(field)} onChange={v=>{setField(Number(v));setOperation("replace");setValue("");}} options={fieldOptions.slice(fieldPage*6,fieldPage*6+6).map(i=>({value:String(i),label:i===0 ? "Part numbers" : labels[i]}))}/>{fieldOptions.length>6 && <div className={styles.bulkPager}><button disabled={!fieldPage} onClick={()=>setFieldPage(fieldPage-1)}>Previous fields</button><span>{fieldPage+1} / {Math.ceil(fieldOptions.length/6)}</span><button disabled={(fieldPage+1)*6>=fieldOptions.length} onClick={()=>setFieldPage(fieldPage+1)}>More fields</button></div>}</>}
-        {bulkStep===2 && <><p>{labels[field]} · {targets.length} {targets.length===1 ? "row" : "rows"}</p>{field!==0 ? <><PartsChoice label="How to change it" value={operation} onChange={setOperation} options={[{value:"replace",label:"Replace value",hint:"Set a new value"},{value:"fill",label:"Fill empty cells",hint:"Keep existing values"},...(field!==2 ? [{value:"clear",label:"Clear field",hint:"Remove values"}] : [])]}/>{operation!=="clear" && <label className={styles.bulkValue}>{field===3 ? `Unit price (R, ${vatIncluded ? "incl." : "excl."} VAT)` : "New value"}<input autoFocus value={value} inputMode={field===2 ? "numeric" : field===3 ? "decimal" : undefined} onChange={e=>setValue(e.target.value)}/></label>}</> : <><div className={styles.bulkCleanup}><label>Remove prefix<input value={prefix} placeholder="e.g. 01." onChange={e=>setPrefix(e.target.value)}/></label><label>Remove suffix<input value={suffix} placeholder="e.g. .1" onChange={e=>setSuffix(e.target.value)}/></label></div><label className={styles.sheetCheck}><input type="checkbox" checked={trim} onChange={e=>setTrim(e.target.checked)}/>Trim surrounding spaces</label></>}<p className={styles.bulkHint}>{changed.length ? `${changed.length} ${changed.length===1 ? "row will" : "rows will"} change.` : "Enter a change to preview."}</p></>}
-        {bulkStep===3 && <><p>{labels[field]} · {changed.length} {changed.length===1 ? "row will" : "rows will"} change</p><div className={styles.bulkReview}>{changed.slice(previewPage*3,previewPage*3+3).map(i=><div key={i}><strong title={rows[i][0]}>{rows[i][0] || `Row ${i+1}`}</strong><span><small>Before</small><span title={rows[i][field]}>{rows[i][field] || "Empty"}</span></span><span><small>After</small><span title={next[i][field]}>{next[i][field] || "Empty"}</span></span></div>)}</div>{changed.length>3 && <div className={styles.bulkPager}><button disabled={!previewPage} onClick={()=>setPreviewPage(previewPage-1)}>Previous</button><span>{previewPage+1} / {Math.ceil(changed.length/3)}</span><button disabled={(previewPage+1)*3>=changed.length} onClick={()=>setPreviewPage(previewPage+1)}>Next</button></div>}{!!invalid.length && <p role="alert" className={styles.error}>Check row {invalid[0]+1}: {bulkErrors[invalid[0]]?.[field] || "Part number cannot be empty."}</p>}<p className={styles.bulkHint}>This updates your draft. Save the sheet when ready.</p></>}
+      {tool.kind === "bulk" && <section className={styles.bulkStage} data-bulk-stage={bulkStep}>
+        <div className={styles.bulkStageHeading}>
+          <h3 tabIndex={-1} data-bulk-heading>
+            {bulkStep === 0 ? "Which parts should change?" : bulkStep === 1 ? "What would you like to change?" : bulkStep === 2 ? <><DetailIcon kind={fieldIcon(field)}/>{fieldLabel}</> : "Review changes"}
+          </h3>
+          {bulkStep === 2 && <button type="button" onClick={() => goToStep(1)}>Change field</button>}
+          {bulkStep === 3 && <span className={styles.bulkFieldTag}>{fieldLabel}</span>}
+        </div>
+        {bulkStep === 0 && <PartsChoice hideLabel label="Which parts should change?" value={scope} onChange={setScope} options={[
+          {value:"selected",label:`Selected parts (${selected.length})`,disabled:!selected.length},
+          {value:"all",label:`All parts (${rows.length})`},
+        ]}/>}
+        {bulkStep === 1 && <div className={styles.bulkFieldChoices}><PartsChoice hideLabel label="Field to change" value={String(field)} onChange={v => chooseField(Number(v))} options={fieldOptions.map(i => ({value:String(i),label:i === 0 ? "Part numbers" : labels[i],icon:<DetailIcon kind={fieldIcon(i)}/>}))}/></div>}
+        {bulkStep === 2 && <>
+          {field !== 0 ? <>
+            <PartsChoice hideLabel label={`How to change ${fieldLabel}`} value={operation} onChange={setOperation} options={[
+              {value:"replace",label:"Replace value",hint:"Set a new value"},
+              {value:"fill",label:"Fill empty cells",hint:"Keep existing values"},
+              ...(field !== 2 ? [{value:"clear",label:"Clear field",hint:"Remove values"}] : []),
+            ]}/>
+            {operation !== "clear" && <label className={styles.bulkValue}>{field === 3 ? `Unit price (R, ${vatIncluded ? "incl." : "excl."} VAT)` : "New value"}<input value={value} inputMode={field === 2 ? "numeric" : field === 3 ? "decimal" : undefined} onChange={e => setValue(e.target.value)}/></label>}
+          </> : <>
+            <div className={styles.bulkCleanup}><label>Remove prefix<input value={prefix} placeholder="e.g. 01." onChange={e => setPrefix(e.target.value)}/></label><label>Remove suffix<input value={suffix} placeholder="e.g. .1" onChange={e => setSuffix(e.target.value)}/></label></div>
+            <label className={styles.sheetCheck}><input type="checkbox" checked={trim} onChange={e => setTrim(e.target.checked)}/>Trim surrounding spaces</label>
+          </>}
+          <p className={styles.bulkHint} role="status">{!hasChange ? "Enter a change to preview." : changed.length ? `${changed.length} ${changed.length === 1 ? "part will" : "parts will"} change.` : "No parts will change."}</p>
+        </>}
+        {bulkStep === 3 && <>
+          <div className={styles.bulkReview}><table aria-label={`${fieldLabel} changes`}>
+            <thead><tr><th scope="col">Part number</th><th scope="col">Current value</th><th scope="col">New value</th></tr></thead>
+            <tbody>{changed.slice(previewPage * 3, previewPage * 3 + 3).map(i => <tr key={i}>
+              <th scope="row">{rows[i][0] || `Row ${i + 1}`}</th>
+              <td data-label="Current value">{rows[i][field] || "Empty"}</td>
+              <td data-label="New value">{next[i][field] || "Empty"}</td>
+            </tr>)}</tbody>
+          </table></div>
+          {changed.length > 3 && <nav className={styles.bulkPager} aria-label="Changes preview"><button disabled={!previewPage} onClick={() => setPreviewPage(previewPage - 1)}>Previous</button><span>{previewPage + 1} / {Math.ceil(changed.length / 3)}</span><button disabled={(previewPage + 1) * 3 >= changed.length} onClick={() => setPreviewPage(previewPage + 1)}>Next</button></nav>}
+          {!!invalid.length && <p role="alert" className={styles.error}>Check row {invalid[0] + 1}: {bulkErrors[invalid[0]]?.[field] || "Part number cannot be empty."}</p>}
+        </>}
       </section>}
       {tool.kind === "row" && rowMode === "choose" && <div className={styles.sheetRowChoices}><button type="button" data-detail="edit" onClick={() => setRowMode("edit")}><DetailIcon kind="edit"/><span><strong>Edit part</strong><small>Update this part’s details in the sheet.</small></span></button><button type="button" data-detail="delete" onClick={() => setRowMode("delete")}><DetailIcon kind="delete"/><span><strong>Delete row</strong><small>Remove this part from the draft sheet.</small></span></button></div>}
 
       {tool.kind === "row" && rowMode === "delete" && <p>Remove this row from your draft sheet? The saved parts list changes only after you review and save. You can undo this removal in the sheet.</p>}
       {error && <p role="alert" className={styles.error}>{error}</p>}
     </div>
-    <footer className={styles.sheetToolFooter}>
+    {tool.kind === "bulk" ? <footer className={styles.sheetToolFooter}>
+      {bulkStep === 3 && <p className={styles.bulkDraftHint}>Draft only. Save the sheet when ready.</p>}
+      <div className={styles.bulkFooterActions}>
+        <button onClick={onClose}>Cancel</button>
+        {bulkStep > 0 && <button onClick={() => goToStep(bulkStep - 1)}>Back</button>}
+        {bulkStep === 3
+          ? <button className={styles.primary} disabled={!changed.length || !!invalid.length} onClick={applyBulk}>Apply to {changed.length} {changed.length === 1 ? "part" : "parts"}</button>
+          : <button className={styles.primary} disabled={!targets.length || (bulkStep === 2 && (!changed.length || (field !== 0 && operation !== "clear" && !value.trim())))} onClick={() => goToStep(bulkStep + 1)}>{bulkStep === 2 ? "Preview changes" : "Continue"}</button>}
+      </div>
+    </footer> : <footer className={styles.sheetToolFooter}>
       {tool.kind==="columns" && columnAction ? <><button onClick={()=>setColumnAction(null)}>Back</button><button className={styles.sheetDelete} disabled={columnAction.kind==="clear" && !columnValueCount} onClick={applyColumnAction}>{columnAction.kind==="delete" ? "Delete column from sheet" : "Clear values in sheet"}</button></> : <button className={tool.kind==="columns" ? styles.primary : undefined} onClick={onClose}>{tool.kind === "columns" ? "Done" : "Cancel"}</button>}
-      {tool.kind === "bulk" && <>{bulkStep>0 && <button onClick={()=>goToStep(bulkStep-1)}>Back</button>}{bulkStep===3 ? <button className={styles.primary} disabled={!changed.length || !!invalid.length} onClick={applyBulk}>Apply to {changed.length} {changed.length===1 ? "part" : "parts"}</button> : <button className={styles.primary} disabled={!targets.length || (bulkStep===2 && (!changed.length || (field!==0 && operation!=="clear" && !value.trim())))} onClick={()=>goToStep(bulkStep+1)}>{bulkStep===2 ? "Preview changes" : "Continue"}</button>}</>}
       {tool.kind === "row" && rowMode === "delete" && <button className={styles.sheetDelete} onClick={() => {onApply(rows.filter((_, i) => i !== tool.index), true);onClose();}}>Delete row from sheet</button>}
 
-    </footer>
+    </footer>}
   </dialog>, document.body);
 }

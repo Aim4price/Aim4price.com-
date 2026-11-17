@@ -2102,30 +2102,80 @@
 
 .modal .independentRows tbody tr:not([data-extra-details]) { scrollbar-width:none; }
 
-.modal.bulkWizard { width:min(960px,calc(100vw - 40px)); }
-.bulkWizard .sheetToolHeader { padding-bottom:18px; }
-.bulkWizard .sheetToolBody { padding:2px 12px 16px 2px; flex:0 1 auto; }
-.bulkStage { display:grid; gap:20px; min-width:0; }
-.bulkStage h3 { margin:0; font-size:1.3rem; font-weight:750; outline:none; }
-.bulkStage p { margin:0; }
-.bulkStage .partsChoiceOptions { grid-template-columns:repeat(3,minmax(0,1fr)); }
-.bulkStage .partsChoiceOptions label { min-height:66px; padding:14px; }
-.bulkStage .partsChoiceOptions strong, .bulkStage .partsChoiceOptions small { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bulkStage .partsChoiceOptions label > span { min-width:0; }
+/* Bulk editing keeps a steady frame, with one clear instruction per view. */
+.modal.bulkWizard { width:min(960px,calc(100vw - 40px)); height:min(640px,calc(100dvh - 48px)); max-height:calc(100dvh - 48px); padding:32px; }
+.bulkWizard .sheetToolHeader { padding-bottom:20px; align-items:flex-start; }
+.bulkWizard .sheetToolHeader > div { min-width:0; }
+.bulkWizard .sheetToolHeader h2 { font-size:28px; line-height:1.25; }
+.bulkWizard .sheetToolHeader .bulkContext { display:flex; flex-wrap:wrap; gap:6px 10px; margin-top:8px; font-size:16px; font-weight:600; line-height:1.5; color:var(--app-text,#163f32); }
+.bulkContext span { overflow-wrap:anywhere; }
+.bulkWizard .sheetToolBody { display:block; flex:1 1 auto; padding:26px 16px 24px 4px; scroll-padding-block:24px; scrollbar-gutter:stable; }
+.bulkStage { display:grid; align-content:start; gap:22px; min-width:0; }
+.bulkStageHeading { display:flex; justify-content:space-between; align-items:center; gap:16px; min-height:32px; }
+.bulkWizard .bulkStageHeading h3 { display:flex; align-items:center; gap:12px; margin:0; font-size:19px; font-weight:750; line-height:1.4; color:var(--app-text,#163f32); outline:none; }
+.bulkStageHeading h3 .detailIcon { background:transparent; width:24px; height:24px; flex-basis:24px; }
+.bulkWizard .bulkStageHeading button { min-height:40px; padding:8px 14px; font-size:15px; font-weight:700; flex-shrink:0; background:var(--app-surface-soft,#edf5f1); }
+.bulkFieldTag { padding:5px 12px; border-radius:8px; background:var(--app-success-soft,#e1f2e9); color:var(--app-text,#163f32); font-size:15px; font-weight:650; }
+.modal .partsChoice .choiceLabelHidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.bulkWizard .partsChoice { margin:0; }
+.bulkWizard .partsChoiceOptions { grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.bulkWizard .partsChoiceOptions:has(> label:nth-child(2):last-child),
+.bulkWizard .bulkFieldChoices .partsChoiceOptions { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.bulkWizard .partsChoiceOptions label { min-height:64px; padding:14px 16px; border-radius:14px; gap:12px; background:var(--app-surface-soft,#f4f8f6); }
+.bulkWizard .partsChoiceOptions label > span { min-width:0; }
+.bulkWizard .partsChoiceOptions strong { font-family:inherit; font-size:16px; font-weight:700; line-height:1.4; }
+.bulkWizard .partsChoiceOptions small { font-size:15px; font-weight:500; line-height:1.4; color:var(--app-text,#36564a); }
+.bulkWizard .partsChoiceOptions label:has(input:checked) { background:var(--app-success-soft,#e1f2e9); }
+.bulkWizard .partsChoiceOptions label:not([data-disabled]):hover { border-color:var(--app-primary,#17654c); }
+.bulkWizard .bulkFieldChoices .partsChoiceOptions label { min-height:60px; padding:12px 16px; gap:14px; }
+.bulkWizard .bulkFieldChoices .detailIcon { display:flex; width:24px; height:24px; flex:0 0 24px; background:transparent; border-radius:0; }
+.bulkFieldChoices .detailIcon svg { width:22px; height:22px; }
+.bulkWizard .bulkFieldChoices input { order:2; margin-left:auto; }
 .bulkCleanup { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-.bulkValue { width:100%; }
-.bulkHint { color:var(--app-text-muted,#61766c); font-size:.85rem; }
-.bulkPager { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:.85rem; }
-.bulkReview { display:grid; gap:10px; }
-.bulkReview > div { display:grid; grid-template-columns:1fr 1fr 1fr; align-items:center; gap:20px; padding:14px 18px; border:1px solid var(--app-border,#cbded4); border-radius:14px; background:var(--app-surface-soft,#f4f8f6); }
-.bulkReview strong, .bulkReview span { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.bulkReview > div > span { display:grid; gap:4px; }
-.bulkReview small { color:var(--app-text-muted,#61766c); font-size:.75rem; }
-.bulkWizard .sheetToolFooter { margin-top:12px; }
-.bulkWizard .sheetToolFooter > button:first-child { margin-right:auto; }
-@media(max-width:600px) { .modal.bulkWizard { width:calc(100vw - 24px); } .bulkStage .partsChoiceOptions { grid-template-columns:repeat(2,minmax(0,1fr)); } .bulkCleanup { grid-template-columns:1fr; } .bulkReview > div { gap:10px; padding:12px; } }
-
-.bulkStage .partsChoiceOptions:has(> label:nth-child(2):last-child) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.bulkWizard .bulkValue, .bulkWizard .bulkCleanup label { display:grid; gap:10px; min-width:0; width:100%; font-size:16px; font-weight:650; }
+.bulkWizard :is(.bulkValue,.bulkCleanup) input { min-height:48px; font-family:inherit; font-size:16px; font-weight:500; }
+.bulkWizard .sheetCheck { display:flex; flex-direction:row; align-items:center; gap:12px; font-size:16px; }
+.bulkHint, .bulkWizard .bulkHint { color:var(--app-text,#36564a); font-size:16px; }
+.bulkPager { display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:16px; }
+.bulkWizard .bulkPager button { font-family:inherit; font-size:15px; font-weight:650; padding:9px 14px; min-height:40px; }
+.bulkWizard .bulkPager > span { color:var(--app-text,#163f32); font-weight:650; }
+.bulkReview { min-width:0; overflow:hidden; border:1px solid var(--app-border,#cbded4); border-radius:14px; }
+.bulkReview table { width:100%; min-width:0; table-layout:fixed; border-collapse:collapse; color:var(--app-text,#163f32); }
+.bulkWizard .bulkReview :is(th,td) { padding:14px 16px; text-align:left; font-size:16px; font-weight:500; line-height:1.45; overflow-wrap:anywhere; border:0; }
+.bulkWizard .bulkReview th { font-weight:700; }
+.bulkWizard .bulkReview thead { background:var(--app-surface-soft,#edf5f1); }
+.bulkWizard .bulkReview thead th { padding-block:12px; font-size:15px; }
+.bulkWizard .bulkReview tbody tr { border-top:1px solid var(--app-border,#cbded4); }
+.bulkWizard .bulkReview td:last-child { background:var(--app-success-soft,#e1f2e9); font-weight:650; }
+.bulkWizard .sheetToolFooter { display:grid; justify-content:stretch; gap:14px; margin:0; padding-top:20px; }
+.bulkWizard .bulkDraftHint { margin:0; font-size:15px; line-height:1.5; color:var(--app-text,#36564a); }
+.bulkFooterActions { display:flex; align-items:center; justify-content:flex-end; gap:12px; }
+.bulkFooterActions > button:first-child { margin-right:auto; }
+.bulkWizard .bulkFooterActions button { min-height:44px; padding:11px 18px; font-family:inherit; font-size:16px; font-weight:700; }
+@media(max-width:600px) {
+  .modal.bulkWizard { width:calc(100vw - 24px); height:min(680px,calc(100dvh - 24px)); max-height:calc(100dvh - 24px); padding:20px; }
+  .bulkWizard .sheetToolHeader { padding-bottom:18px; }
+  .bulkWizard .sheetToolHeader h2 { font-size:24px; }
+  .bulkWizard .sheetToolHeader .bulkContext { font-size:15px; }
+  .bulkWizard .sheetToolBody { padding:22px 12px 20px 4px; }
+  .bulkStage { gap:20px; }
+  .bulkWizard .bulkStageHeading h3 { font-size:18px; }
+  .bulkWizard .partsChoiceOptions,
+  .bulkWizard .partsChoiceOptions:has(> label:nth-child(2):last-child),
+  .bulkWizard .bulkFieldChoices .partsChoiceOptions { grid-template-columns:1fr; gap:12px; }
+  .bulkCleanup { grid-template-columns:1fr; }
+  .bulkWizard .bulkFooterActions { display:grid; grid-template-columns:auto 1fr; gap:10px; }
+  .bulkWizard .bulkFooterActions > button:first-child:not(:nth-last-child(2)) { grid-column:1/-1; justify-self:start; }
+  .bulkWizard .bulkFooterActions > button:first-child { margin-right:0; }
+  .bulkWizard .bulkFooterActions > button:last-child { justify-self:end; }
+  .bulkWizard .bulkFooterActions button { padding-inline:14px; }
+  .bulkReview thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .bulkReview tbody { display:block; }
+  .bulkReview tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .bulkWizard .bulkReview tbody th { grid-column:1/-1; padding-bottom:8px; }
+  .bulkWizard .bulkReview td { padding-top:8px; }
+  .bulkReview td::before { content:attr(data-label); display:block; margin-bottom:6px; font-size:14px; font-weight:650; }
+}
 
 /* Compact column cards and focused confirmation stages match the parts wizard. */
 .modal.columnsDialog { width:min(1120px,calc(100vw - 40px)); }
@@ -2171,32 +2221,6 @@
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-thumb:active { background-color:var(--app-primary,#17654c); }
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-button { display:none; width:0; height:0; }
 .entryModal .stockSheet :is(.stageBody,.independentRows tr[data-extra-details])::-webkit-scrollbar-corner { background:transparent; }
-
-/* Bulk editing shares the calm, semibold typography of Manage columns. */
-.bulkWizard .bulkStage :is(h3,p,legend,label,input,strong,small),
-.bulkWizard .bulkPager > span,
-.bulkWizard .bulkReview > div > span > span {
-  font-family:inherit; font-size:1rem; font-weight:650; line-height:1.45;
-}
-.bulkWizard .bulkStage { gap:14px; }
-.bulkWizard .bulkStage > h3 { color:var(--app-text,#163f32); }
-.bulkWizard .bulkStage > p { color:var(--app-text-muted,#64766c); }
-.bulkWizard .partsChoice { margin:0; }
-.bulkWizard .partsChoice legend { margin-bottom:10px; }
-.bulkWizard .partsChoiceOptions { gap:12px; }
-.bulkWizard .partsChoiceOptions label { min-height:64px; padding:14px 16px; border-radius:16px; background:linear-gradient(120deg,var(--app-surface,#fff),var(--app-surface-soft,#edf5f1)); }
-.bulkWizard .partsChoiceOptions label:has(input:checked) { background:var(--app-success-soft,#e1f2e9); }
-.bulkWizard .partsChoiceOptions label:not([data-disabled]):hover { border-color:var(--app-primary,#17654c); }
-.bulkWizard .bulkReview { gap:8px; }
-.bulkWizard .bulkReview > div { padding:10px 16px; gap:16px; border-radius:16px; }
-.bulkWizard .bulkReview > div > span { gap:2px; }
-.bulkWizard .sheetToolBody { padding:2px 14px 10px 2px; }
-.bulkWizard .sheetToolFooter { margin-top:8px; }
-.bulkWizard .bulkPager button { font-family:inherit; font-size:1rem; font-weight:650; padding:9px 14px; }
-@media(max-width:600px) {
-  .bulkWizard .bulkStage .partsChoiceOptions { grid-template-columns:1fr; }
-  .bulkWizard .bulkReview > div { gap:10px; padding:10px; }
-}
 
 /* Keep column navigation outside the vertically scrolling sheet. */
 .entryModal .stockSheet .independentRows tbody tr,

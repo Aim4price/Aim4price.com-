@@ -7,6 +7,11 @@ import styles from "../app/dealer/parts/parts.module.css";
 
 export function DetailIcon({kind}:{kind:string}) {
   const paths: Record<string,string> = {
+    description:"M4 6h16M4 12h16M4 18h10",
+    quantity:"M8 3 6 21M18 3l-2 18M3 8h18M2 16h18",
+    brand:"M12 3 3 8l9 5 9-5-9-5ZM3 12l9 5 9-5M3 16l9 5 9-5",
+    price:"M4 5h16v14H4V5Zm8 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM7 12h.01M17 12h.01",
+    partNumber:"M4 4v16M8 4v16M12 4v16M17 4v16M20 4v16",
     alternative:"M4 7h14l-3-3m3 13H4l3 3M18 7l-3 3M4 17l3-3",
     compatibility:"M9 7H6a4 4 0 0 0 0 8h3m6-8h3a4 4 0 0 1 0 8h-3M7 11h10",
     condition:"m4 12 5 5L20 6",
