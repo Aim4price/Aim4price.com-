@@ -9,6 +9,7 @@ import {
 type AdBrandKitRow = {
   id: string;
   user_id: string;
+  custom_design: unknown;
   name: string;
   template_id: string;
   logo_url: string | null;
@@ -63,6 +64,8 @@ export async function ensureAdStudioSchema(): Promise<void> {
       on ad_brand_kits(user_id)
       where is_default;
 
+    alter table ad_brand_kits add column if not exists custom_design jsonb;
+
     alter table ad_brand_kits
       add column if not exists logo_background boolean not null default true;
 
@@ -75,6 +78,7 @@ export async function ensureAdStudioSchema(): Promise<void> {
 
 function mapAdBrandKit(row: AdBrandKitRow): AdBrandKit {
   const clean = sanitizeAdBrandKitInput({
+    customDesign: row.custom_design,
     name: row.name,
     templateId: row.template_id,
     logoUrl: row.logo_url,
@@ -183,6 +187,7 @@ export async function saveAdBrandKit(
       kit.vatLabel,
       makeDefault,
       kit.logoBackground !== false,
+      JSON.stringify(kit.customDesign ?? null),
     ];
     const result = requestedId
       ? await client.query<AdBrandKitRow>(
@@ -193,9 +198,9 @@ export async function saveAdBrandKit(
                 contact_name = $9, phone = $10, email = $11, website = $12,
                 language = $13, vat_label = $14,
                 is_default = case when $15::boolean then true else is_default end,
-                logo_background = $16,
+                logo_background = $16, custom_design = $17::jsonb,
                 updated_at = now()
-            where user_id = $1 and id = $17::uuid
+            where user_id = $1 and id = $18::uuid
             returning *
           `,
           [...values, requestedId],
@@ -205,9 +210,9 @@ export async function saveAdBrandKit(
             insert into ad_brand_kits (
               user_id, name, template_id, logo_url, primary_color, secondary_color,
               accent_color, business_name, contact_name, phone, email, website,
-              language, vat_label, is_default, logo_background
+              language, vat_label, is_default, logo_background, custom_design
             ) values (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb
             )
             returning *
           `,

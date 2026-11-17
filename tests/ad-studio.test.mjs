@@ -13,6 +13,8 @@ async function loadTypeScriptModule(path, dependencies = {}) {
   }).outputText;
   const module = { exports: {} };
   const loadDependency = (specifier) => {
+    if (specifier === './ad-custom-design') return loadTs('lib/ad-custom-design.ts');
+    if (specifier === './ad-custom-renderer') return loadTs('lib/ad-custom-renderer.ts');
     if (specifier === './selling-price') return loadTs('lib/selling-price.ts');
     if (Object.prototype.hasOwnProperty.call(dependencies, specifier)) return dependencies[specifier];
     throw new Error(`Unexpected test dependency: ${specifier}`);
@@ -1208,8 +1210,8 @@ test('saved logo background preference is persisted for new and existing templat
   assert.equal((await api.saveAdBrandKit('owner', { id: 'kit', logoBackground: false })).logoBackground, false);
   assert.equal(writes[0].values[15], false);
   assert.equal(writes[1].values[15], false);
-  assert.equal(writes[1].values[16], 'kit');
+  assert.equal(writes[1].values[17], 'kit');
   assert.match(writes[1].sql, /logo_background = \$16/);
-  assert.match(writes[1].sql, /id = \$17::uuid/);
+  assert.match(writes[1].sql, /id = \$18::uuid/);
   assert.equal((await api.listAdBrandKits('owner'))[0].logoBackground, false);
 });

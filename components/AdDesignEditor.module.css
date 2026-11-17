@@ -1,0 +1,54 @@
+.launch { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 24px; border: 1px solid #7a55b4; border-radius: 16px; background: #f0e9f8; color: #56348a; font: inherit; font-weight: 750; cursor: pointer; }
+.launch svg { width: 24px; height: 24px; }
+.dialog { width: min(1560px, calc(var(--website-design-vw, 1vw) * 97)); max-width: calc(var(--website-design-vw, 1vw) * 97); height: calc(var(--website-visible-height, 100dvh) * .94); max-height: calc(var(--website-visible-height, 100dvh) * .94); margin: auto; padding: 0; border: 1px solid #cbdcd4; border-radius: 24px; background: #f5f8f6; color: #183e30; box-shadow: 0 24px 100px #001b2044; font: 500 16px/1.45 Arial, sans-serif; }
+.dialog[open] { display: flex; flex-direction: column; }
+.dialog::backdrop { background: #102a2877; backdrop-filter: blur(5px); }
+.dialog * { box-sizing: border-box; }
+.dialog button { display: inline-flex; justify-content: center; align-items: center; gap: 7px; padding: 10px 13px; border: 1px solid #c7d8d0; border-radius: 11px; background: white; color: #244c3e; font: inherit; font-weight: 700; cursor: pointer; }
+.dialog button:disabled, .launch:disabled { opacity: .45; cursor: not-allowed; }
+.dialog button[aria-pressed=true] { background: #e0eee7; border-color: #217354; color: #174f3a; }
+.dialog button:focus-visible, .element:focus-visible { outline: 3px solid #367cdb; outline-offset: 3px; }
+.dialog svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.dialog h2, .dialog h3, .dialog p { margin: 0; }
+.dialog h2 { font-size: 27px; letter-spacing: -.5px; }
+.dialog h3 { font-size: 18px; }
+.dialog p { color: #4e685d; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 26px; background: white; }
+.header > div { min-width: 0; }
+.header button { flex-shrink: 0; font-size: 27px; width: 44px; height: 44px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 24px; border-block: 1px solid #d6e2db; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.workspace { flex: 1; min-height: 0; display: grid; grid-template-columns: 235px minmax(260px, 1fr) 260px; overflow: auto; }
+.panel { display: flex; flex-direction: column; gap: 14px; padding: 20px 16px; background: white; overflow: auto; }
+.panel h3:not(:first-child) { margin-top: 8px; }
+.panel p { font-size: 14px; }
+.addGrid, .fields { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.fields button { justify-content: flex-start; }
+.layers { display: flex; flex-direction: column; gap: 6px; }
+.layers button { display: block; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workarea { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; min-width: 0; overflow: auto; background: radial-gradient(#b8cfc3 1px, transparent 1px) 0 0 / 16px 16px; }
+.hint { font-size: 14px; text-align: center; background: #f5f8f6dd; padding: 5px 9px; border-radius: 8px; }
+.stage { position: relative; width: 100%; flex-shrink: 0; box-shadow: 0 8px 28px #204b3026; background: white; isolation: isolate; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.empty { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 12px; padding: 24px; pointer-events: none; color: #486459; }
+.empty svg { width: 42px; height: 42px; color: #7954aa; }
+.element { position: absolute; cursor: move; touch-action: none; outline: 1px solid transparent; }
+.element:hover { outline: 1px dashed #6773d2; }
+.element.selected { outline: 2px solid #6b4db2; z-index: 1; }
+.resize { position: absolute; bottom: -7px; right: -7px; width: 15px; height: 15px; background: white; border: 2px solid #6b4db2; border-radius: 3px; cursor: nwse-resize; touch-action: none; }
+.guideX, .guideY { position: absolute; pointer-events: none; background: #cb4894; z-index: 2; }
+.guideX { top: 0; bottom: 0; left: 50%; width: 1px; }
+.guideY { left: 0; right: 0; top: 50%; height: 1px; }
+.dialog label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.dialog input, .dialog textarea { min-width: 0; width: 100%; padding: 9px 10px; border: 1px solid #bed2c8; border-radius: 9px; color: #234535; background: #fff; font: inherit; }
+.dialog input[type=color] { padding: 3px; width: 46px; height: 36px; cursor: pointer; }
+.dialog input[type=range] { padding: 0; accent-color: #7153a8; }
+.dialog .color { flex-direction: row; align-items: center; gap: 12px; }
+.numbers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dialog .delete { color: #ab3131; }
+.footer { display: flex; justify-content: flex-end; align-items: center; gap: 12px; padding: 16px 24px; border-top: 1px solid #d2e0d8; background: white; }
+.footer > div { flex: 1; font-size: 14px; }
+.dialog .primary { background: #17664c; color: white; border-color: #17664c; padding-inline: 22px; }
+.dialog .error { color: #a23030; }
+@media (max-width: 1050px) { :global(:where(html:not(:has([data-website-canvas])))) .workspace { grid-template-columns: 190px minmax(240px, 1fr) 215px; } :global(:where(html:not(:has([data-website-canvas])))) .workarea { padding: 18px; } }
+@media (max-width: 760px) { :global(:where(html:not(:has([data-website-canvas])))) .dialog { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; } :global(:where(html:not(:has([data-website-canvas])))) .workspace { display: flex; flex-direction: column; } :global(:where(html:not(:has([data-website-canvas])))) .panel { overflow: visible; flex-shrink: 0; } :global(:where(html:not(:has([data-website-canvas])))) .workarea { order: -1; min-height: 300px; overflow: visible; flex-shrink: 0; } :global(:where(html:not(:has([data-website-canvas])))) .fields, :global(:where(html:not(:has([data-website-canvas])))) .addGrid { grid-template-columns: 1fr 1fr; } :global(:where(html:not(:has([data-website-canvas])))) .header, :global(:where(html:not(:has([data-website-canvas])))) .toolbar, :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 12px; } :global(:where(html:not(:has([data-website-canvas])))) .header p { display: none; } :global(:where(html:not(:has([data-website-canvas])))) .footer { flex-wrap: wrap; } :global(:where(html:not(:has([data-website-canvas])))) .footer > div { flex-basis: 100%; } }

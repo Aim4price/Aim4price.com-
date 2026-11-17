@@ -1,4 +1,5 @@
 'use client';
+import { renderCustomAd } from './ad-custom-renderer';
 import { sellingPriceComparison } from './selling-price';
 
 import {
@@ -1165,6 +1166,11 @@ export async function renderMarketplaceAdCanvas(
 ): Promise<AdTemplateId> {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas is unavailable.');
+  if (content.design !== 'aim4price-marketplace' && content.brand.customDesign) {
+    if (typeof document !== 'undefined' && 'fonts' in document) await document.fonts.ready.catch(() => undefined);
+    await renderCustomAd(canvas, content, loadImage, options);
+    return content.brand.templateId;
+  }
   canvas.width = MARKETPLACE_AD_WIDTH;
   canvas.height = MARKETPLACE_AD_HEIGHT + (content.design !== 'aim4price-marketplace' && content.brand.templateId === 'photo-first' && hasValueStrip(content) ? 84 : 0);
   context.imageSmoothingEnabled = true;

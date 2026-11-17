@@ -1,3 +1,4 @@
+import { normalizeAdCustomDesign, type AdCustomDesign } from './ad-custom-design';
 export const AD_TEMPLATE_OPTIONS = [
   {
     id: 'showcase',
@@ -70,6 +71,7 @@ export type AdLanguage = 'en' | 'af';
 export type AdVatLabel = 'plus-vat' | 'vat-included' | 'no-vat';
 
 export type AdBrandSnapshot = {
+  customDesign?: AdCustomDesign | null;
   brandKitId?: string;
   name: string;
   templateId: AdTemplateId;
@@ -152,6 +154,7 @@ export function normalizeAdBrandSnapshot(
   const exposeContact = options.exposeContact !== false;
 
   return {
+    customDesign: normalizeAdCustomDesign(record.customDesign ?? record.custom_design),
     brandKitId: asText(record.brandKitId ?? record.brand_kit_id, 120) || undefined,
     name: asText(record.name, 100) || 'Default style',
     templateId: normalizeAdTemplateId(record.templateId ?? record.template_id),
@@ -192,6 +195,7 @@ export function sanitizeAdBrandKitInput(input: unknown): AdBrandSnapshot {
 
 export function toAdBrandSnapshot(kit: AdBrandKit): AdBrandSnapshot {
   return {
+    customDesign: kit.customDesign ?? null,
     brandKitId: kit.id,
     name: kit.name,
     templateId: kit.templateId,

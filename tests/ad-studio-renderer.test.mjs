@@ -30,6 +30,7 @@ async function loadRenderer() {
   }).outputText;
   const module = { exports: {} };
   const dependencies = {
+    './ad-custom-renderer': loadTs('lib/ad-custom-renderer.ts'),
     './selling-price': loadTs('lib/selling-price.ts'),
     './ad-studio': {
       AD_TEMPLATE_OPTIONS: TEMPLATE_OPTIONS,
