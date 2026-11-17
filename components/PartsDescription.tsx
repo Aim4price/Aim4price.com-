@@ -7,11 +7,12 @@ export default function PartsDescription({ description, details }: { description
   const visible = details.filter(detail => detail.value?.trim());
   return <>
     <strong className={styles.partName}>{description || '—'}</strong>
-    {!!visible.length && <div className={styles.partExtraDetails}>{visible.map(detail => {
+    {!!visible.length && <dl className={styles.partExtraDetails}>{visible.map(detail => {
       const condition = detail.id === 'condition' || detail.label.toLowerCase() === 'condition';
-      return condition
-        ? <span key={detail.id} className={styles.conditionBadge} data-condition={detail.value.trim().toLowerCase()} aria-label={`Condition${detail.private ? ' (private)' : ''}: ${detail.value}`}>{detail.value}{detail.private ? ' (private)' : ''}</span>
-        : <span key={detail.id}><strong>{detail.label}{detail.private ? ' (private)' : ''}:</strong> {detail.value}</span>;
-    })}</div>}
+      return <div key={detail.id} className={styles.partDetailRow}>
+        <dt>{condition ? 'Condition' : detail.label}{detail.private ? ' (private)' : ''}:</dt>
+        <dd>{detail.value}</dd>
+      </div>;
+    })}</dl>}
   </>;
 }
