@@ -341,6 +341,10 @@ function MapIcon({ className }: IconProps) {
   );
 }
 
+function LocationOptionArrow() {
+  return <span className={cardActions.optionArrow} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m9 5 7 7-7 7"/></svg></span>;
+}
+
 function CloseIcon({ className }: IconProps) {
   return (
     <svg
@@ -1623,10 +1627,22 @@ export default function AssetMapClient() {
       {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
       {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Tracking device" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel assetId={locationDialog.asset.id}/></AssetAccessSettingsDialog>}
       {locationDialog?.view==='more'&&<AssetAccessSettingsDialog locationLayout title="Location options" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <div className={cardActions.options}>
-          <button type="button" data-tone="green" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}><span className={cardActions.optionIcon} aria-hidden="true"><MapIcon/></span><span><strong>Update location</strong><small>Save a position manually</small></span></button>
-          <a data-tone="blue" href={buildGoogleMapsHref(locationDialog.asset)||'#'} target="_blank" rel="noreferrer"><span className={cardActions.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 3-6.5 18-3.8-7.7L3 9.5 21 3Z"/><path d="m10.7 13.3 4-4"/></svg></span><span><strong>Open Google Maps</strong><small>View this saved position</small></span></a>
-          <Link data-tone="amber" href={buildAssetRegisterHref(locationDialog.asset)}><span className={cardActions.optionIcon} aria-hidden="true"><RegisterIcon/></span><span><strong>Open asset register</strong><small>View the full asset details</small></span></Link>
+        <div className={cardActions.options} data-location-options>
+          <button type="button" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}>
+            <span className={cardActions.optionIcon} aria-hidden="true"><MapIcon/></span>
+            <span className={cardActions.optionText}><strong>Update location</strong><small>Save a position manually</small></span>
+            <LocationOptionArrow/>
+          </button>
+          <a href={buildGoogleMapsHref(locationDialog.asset)||'#'} target="_blank" rel="noreferrer">
+            <span className={cardActions.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 3-6.5 18-3.8-7.7L3 9.5 21 3Z"/><path d="m10.7 13.3 4-4"/></svg></span>
+            <span className={cardActions.optionText}><strong>Open Google Maps</strong><small>View this saved position</small></span>
+            <LocationOptionArrow/>
+          </a>
+          <Link href={buildAssetRegisterHref(locationDialog.asset)}>
+            <span className={cardActions.optionIcon} aria-hidden="true"><RegisterIcon/></span>
+            <span className={cardActions.optionText}><strong>Open asset register</strong><small>View the full asset details</small></span>
+            <LocationOptionArrow/>
+          </Link>
         </div>
       </AssetAccessSettingsDialog>}
       {locationDialog?.view==='history' &&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
