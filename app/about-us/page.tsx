@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Aim4price - Asset Intelligence & Management. Connecting asset records, trusted businesses, reports and AI to help owners understand costs and protect long-term value.",
+    "Aim4price - Asset Intelligence & Management. Connecting asset records, trusted businesses, reports and AI to help asset owners understand costs and protect long-term value.",
 };
 
 export default async function AboutUsPage() {
@@ -34,12 +34,12 @@ export default async function AboutUsPage() {
                 <p>
                   Aim4price began by helping agricultural machinery dealers
                   determine fair trade-in values. Our first tool focused on
-                  second-hand tractors, giving dealers and owners a clearer
+                  second-hand tractors, giving dealers and asset owners a clearer
                   starting point for understanding what an asset could be worth.
                 </p>
                 <p>
                   As we developed, we recognised that a valuation was only one
-                  part of a much bigger picture. Owners also needed to know what
+                  part of a much bigger picture. Asset owners also needed to know what
                   they owned, how its value changed over time and what it really
                   cost to keep it working.
                 </p>
@@ -70,8 +70,8 @@ export default async function AboutUsPage() {
             </figure>
 
             <p className={styles.storyFocus}>
-              Today, our focus is helping people understand, manage and protect
-              the long-term value of what they own.
+              Today, our focus is helping asset owners across industries understand,
+              manage and protect the long-term value of what they own.
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default async function AboutUsPage() {
             the picture.
           </p>
           <p>
-            Aim4price lets owners share assets with trusted businesses and choose
+            Aim4price lets asset owners share assets with trusted businesses and choose
             what they can view or update. From adding maintenance records and
             invoices to updating asset information, those contributions help build
             a more complete record and support better decisions.
@@ -101,7 +101,7 @@ export default async function AboutUsPage() {
           </h2>
           <p>
             Reports bring asset values, running costs, fuel, maintenance and
-            budgets into a clearer view, helping owners review their records,
+            budgets into a clearer view, helping asset owners review their records,
             understand costs and share useful information with trusted partners.
           </p>
           <p>
@@ -126,7 +126,7 @@ export default async function AboutUsPage() {
           </div>
           <div className={styles.valuePerspectives}>
             <p>
-              <strong>For owners,</strong> that helps guide decisions about
+              <strong>For asset owners,</strong> that helps guide decisions about
               maintaining, repairing, replacing or selling.
             </p>
             <p>
@@ -151,12 +151,12 @@ export default async function AboutUsPage() {
               </h2>
               <p>
                 We’re working towards using better asset information to deliver
-                practical benefits for owners, from supplying the right parts and
+                practical benefits for asset owners, from supplying the right parts and
                 negotiating with suppliers and service providers to helping
-                owners achieve the best possible price when it is time to sell.
+                asset owners achieve the best possible price when it is time to sell.
               </p>
               <p>
-                We also believe that reliable asset records can help owners
+                We also believe that reliable asset records can help asset owners
                 present a clearer picture to insurers and financiers,
                 strengthening their position when seeking suitable cover and
                 competitive terms.
@@ -164,9 +164,11 @@ export default async function AboutUsPage() {
             </div>
             <div className={styles.directionClosing}>
               <p>
-                Our ambition is simple: help owners get more from their assets,
-                and help the dealers and businesses around them deliver greater
-                value throughout ownership.
+                Our ambition is simple.
+                <br />
+                Help all asset owners to get more from their assets, and help
+                the dealers and businesses around them deliver greater value
+                throughout ownership.
               </p>
               <div className={styles.heroActions}>
                 <Link href="/auth#signup" className={styles.primaryAction}>
