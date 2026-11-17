@@ -825,6 +825,7 @@
   text-align: center;
   min-height: 176px;
 }
+.manageGrid button[data-tone="amber"],
 .shareChoices button[data-tone="amber"] {
   --action-tint: var(--app-warning-soft, color-mix(in srgb, var(--app-surface, #fff) 94%, #d6a44c));
   --action-line: var(--app-warning-line, #efd0a5);
@@ -1675,6 +1676,7 @@
 .manageGrid button[data-tone="blue"],
 .shareChoices button[data-tone="blue"] { --choice-colour: #347bc4; }
 .entryModal .entryMethods button[data-tone="amber"],
+.manageGrid button[data-tone="amber"],
 .shareChoices button[data-tone="amber"] { --choice-colour: #c47b23; }
 .manageGrid .deleteAction { --choice-colour: #b34242; }
 .entryModal .entryMethods button small,

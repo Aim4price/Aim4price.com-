@@ -949,7 +949,7 @@ export default function PartsClient({
                   <small>Manage invitations and access.</small>
                 </span>
               </button>
-              <button type="button" onClick={() => setModal("share")}>
+              <button type="button" data-tone="amber" onClick={() => setModal("share")}>
                 <Icon kind="share" />
                 <span>
                   <strong>Share</strong>
