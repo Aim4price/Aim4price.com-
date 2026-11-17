@@ -254,7 +254,7 @@ const appCode =
           };
         else if (longPickerFixture && url.searchParams.get("view") === "mine" && url.searchParams.get("download") === "true") {
           const rows = [row, ...Array.from({length: 41}, (_, i) => ({...row, part_number: "TEST-" + i}))];
-          data = {rows, total: rows.length, member: {...network, revision: 0}};
+          data = {rows:rows.map(row=>({...row,details:{condition:'New',notes:''}})), fields:[{id:'condition',label:'Condition',private:false},{id:'notes',label:'Notes',private:false}], total: rows.length, member: {...network, revision: 0}};
         }
         else if (paginationFixture) {
           const all = Array.from({length:65}, (_, i) => ({...row, part_number:`PAGE-${String(i).padStart(3, "0")}`}));
@@ -727,14 +727,42 @@ const appCode =
     await click("Bulk edit");
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
     await page.setViewport({width:1440,height:720});
+    const bulkFrame=await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}));
     for(let stage=0;stage<3;stage++) {
       assert.equal(await page.$('[aria-label="Bulk edit progress"]'),null);
+      assert.ok(await page.$eval('dialog[open]',e=>{const header=e.querySelector('header').getBoundingClientRect(),heading=e.querySelector('[data-bulk-heading]').getBoundingClientRect();return heading.top-header.bottom>=24;}),'The heading has breathing room below the header');
+      assert.deepEqual(await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height})),bulkFrame,'Bulk navigation keeps the modal frame steady');
+      assert.ok(await page.$eval('dialog[open]',e=>Math.abs(e.querySelector('footer button').getBoundingClientRect().left-e.querySelector('header').getBoundingClientRect().left)<2),'Cancel stays aligned with the left edge');
       assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk stage fits without scrolling');
+      if(stage===1) {
+        assert.deepEqual(await page.$$eval('dialog input[type=radio]',els=>els.map(e=>e.closest('label').querySelector('strong').textContent)),['Description','Quantity','Brand','Unit price','Part numbers','Condition','Notes']);
+        assert.ok(await page.$eval('dialog',e=>!e.textContent.includes('More fields')&&!e.textContent.includes('Previous fields')),'Fields are together without pagination');
+        await page.setViewport({width:390,height:844});
+        assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollWidth<=e.clientWidth+1),'Field choices fit the phone width');
+        await page.$eval('[data-bulk-body]',e=>e.scrollTop=e.scrollHeight);
+        await page.screenshot({path:path.join(output,'bulk-fields-phone.png')});
+        await page.setViewport({width:1440,height:720});
+        await page.$eval('[data-bulk-body]',e=>e.scrollTop=0);
+      }
       await page.screenshot({path:path.join(output,`bulk-stage-${stage+1}.png`)});
       if(stage<2) await click('Continue');
     }
     await page.type('dialog input:not([type=checkbox]):not([type=radio])', 'Test brand');
+    await click('Change field');
+    await page.click('dialog input[type=radio][value="6"]');
+    await click('Continue');
+    assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'','A new field starts with its own value');
+    await page.click('dialog input[type=radio][value="fill"]');
+    await page.type('dialog input:not([type=checkbox]):not([type=radio])','Keep this note');
+    await click('Change field');await page.click('dialog input[type=radio][value="4"]');await click('Continue');
+    assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'Test brand','Switching fields restores the previous draft');
+    assert.ok(await page.$eval('dialog input[value="replace"]',e=>e.checked));
+    await click('Back');await page.click('dialog input[type=radio][value="6"]');await click('Continue');
+    assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'Keep this note');
+    assert.ok(await page.$eval('dialog input[value="fill"]',e=>e.checked),'Switching fields restores its operation');
+    await click('Change field');await page.click('dialog input[type=radio][value="4"]');await click('Continue');
     await click("Preview changes");
+    assert.deepEqual(await page.$$eval('dialog table thead th',els=>els.map(e=>e.textContent)),['Part number','Current value','New value']);
     assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk review fits without scrolling');
     await click('Back');
     assert.equal(await page.$eval('dialog input:not([type=checkbox]):not([type=radio])',e=>e.value),'Test brand','Going back preserves the change');
@@ -749,6 +777,23 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Brand 1"]', e => e.value), 'Test brand');
     await click("Undo");
     assert.equal(await page.$eval('[aria-label="Brand 1"]', e => e.value), originalBrand);
+    await click('Bulk edit');await click('Continue');await click('Continue');
+    await page.type('dialog input:not([type=checkbox]):not([type=radio])','Replacement brand');
+    await click('Preview changes');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Three-row review and paging fit without scrolling');
+    assert.equal(await page.$$eval('dialog table tbody tr',els=>els.length),3);
+    await page.screenshot({path:path.join(output,'bulk-review-all-parts.png')});
+    await click('Next');
+    assert.equal(await page.$eval('dialog table tbody th',e=>e.textContent),'TEST-2');
+    await click('Previous');
+    assert.equal(await page.$eval('dialog table tbody th',e=>e.textContent),'001-ABC');
+    const bulkDark=await page.addStyleTag({content:':root{--app-text:#e1eee6;--app-text-muted:#b4c8bc;--app-surface:#15251d;--app-surface-soft:#1d3025;--app-success-soft:#234535;--app-primary:#74cba2;--app-border:#42644f}'});
+    await page.screenshot({path:path.join(output,'bulk-review-dark.png')});
+    await bulkDark.evaluate(el=>el.remove());
+    await click('Cancel');
+    assert.equal(await page.$eval('[aria-label="Brand 1"]',e=>e.value),originalBrand,'Cancelling review leaves the sheet unchanged');
+    await page.setViewport({width:1440,height:1000});
     await page.click('[aria-label="Select row 1"]');
     await click("Bulk edit");
     await page.click('dialog input[type=radio][value=selected]');
