@@ -1,97 +1,80 @@
-.actions {
-  display: grid;
-  gap: .8rem;
-  padding-top: .15rem;
-}
 .primaryRow {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1.25fr 1.2fr .7fr;
   gap: .7rem;
 }
 .button {
+  --button-ink: var(--app-info, #245f8e);
+  --button-soft: var(--app-info-soft, #e5eef7);
+  --button-line: var(--app-info-line, #85b0dc);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: .55rem;
+  gap: .6rem;
   min-width: 0;
-  min-height: 2.75rem;
-  padding: .6rem .75rem;
-  border: 1px solid #d7e4de;
-  border-radius: .8rem;
-  background: #f8fbf9;
-  color: #244b3e;
+  min-height: 3.65rem;
+  padding: .65rem .8rem;
+  border: 1.5px solid var(--button-line);
+  border-radius: .95rem;
+  background: linear-gradient(135deg, var(--app-surface, #fff), var(--button-soft));
+  color: var(--button-ink);
   font-family: var(--font-heading, "Montserrat"), sans-serif;
-  font-size: .8rem;
+  font-size: .95rem;
   font-weight: 750;
   line-height: 1.35;
   text-decoration: none;
   text-align: center;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 4px 12px rgba(16, 42, 34, .07), inset 0 1px 0 rgba(255, 255, 255, .45);
   transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
-}
-.button svg {
-  width: 1.1rem;
-  height: 1.1rem;
-  flex: 0 0 auto;
-}
-.primaryRow .button {
-  justify-content: flex-start;
-  gap: .75rem;
-  padding: .7rem .85rem;
-  min-height: 3.4rem;
-  font-size: .9rem;
-  font-weight: 800;
 }
 .icon {
   display: grid;
   place-items: center;
-  width: 2.05rem;
-  height: 2.05rem;
+  width: 2.1rem;
+  height: 2.1rem;
   flex: 0 0 auto;
+  border: 1px solid var(--button-line);
   border-radius: .65rem;
-  background: rgba(255,255,255,.15);
+  background: var(--button-soft);
 }
-.icon svg { width: 1.25rem; height: 1.25rem; }
+.icon svg { width: 1.3rem; height: 1.3rem; }
 .button.update {
-  background: #17684e;
-  color: #fff;
-  border-color: #17684e;
+  --button-ink: #fff;
+  --button-line: #11553f;
+  --button-soft: rgba(255, 255, 255, .12);
+  border-color: #11553f;
+  background: linear-gradient(135deg, #1c7659, #11553f);
 }
-.button.history {
-  background: #edf5fa;
-  color: #245776;
-  border-color: #c7dce9;
+.update .icon { border-color: rgba(255, 255, 255, .3); }
+.button.tracking {
+  --button-ink: var(--app-text, #65438b);
+  --button-soft: var(--app-purple-soft, #eee8f5);
+  --button-line: var(--app-purple-line, #af96d3);
 }
-.history .icon { background: #dcecf6; }
-.secondaryRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .55rem;
-  padding-top: .8rem;
-  border-top: 1px solid #e1e9e5;
+.button:hover:not(:disabled) {
+  background: var(--button-soft);
+  border-color: var(--button-ink);
+  box-shadow: 0 6px 16px rgba(16, 42, 34, .13);
 }
-.secondaryRow .button { flex: 1 1 8rem; }
-.button:hover:not(:disabled) { background: #eaf3ee; border-color: #a5c3b3; }
-.button.update:hover:not(:disabled) { background: #10563f; border-color: #10563f; }
-.button.history:hover:not(:disabled) { background: #e1eef7; border-color: #9abdd3; }
-.button:focus-visible { outline: 3px solid #64ad91; outline-offset: 3px; }
+.button.update:hover:not(:disabled) { background: #104e3b; border-color: #104e3b; }
+.button:focus-visible { outline: 3px solid var(--button-ink); outline-offset: 3px; }
+.button.update:focus-visible { outline-color: #398767; }
 .button:disabled { opacity: .55; cursor: wait; }
 
-.primaryRow { grid-template-columns:1.25fr 1.15fr .65fr; gap:.65rem; }
-.primaryRow .button { justify-content:center; min-height:3rem; padding:.75rem .6rem; font-size:.85rem; }
-/* Selected map card: compact identity, location and action rows. */
-.metadata { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem 1.1rem; margin-top:.65rem; color:#5b6b7d; font-size:.88rem; font-weight:650; line-height:1.4; }
+/* Keep the selected asset's details as readable as its actions. */
+.metadata { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem 1.1rem; margin-top:.65rem; color:#34564b; font-size:.95rem; font-weight:650; line-height:1.45; }
 .metadata > span { display:inline-flex; align-items:center; gap:.5rem; min-width:0; }
-.metadata svg { width:1.1rem; height:1.1rem; flex:0 0 auto; color:#536d81; }
-.status { display:flex; align-items:center; gap:.65rem; padding:.75rem .85rem; border:1px solid #d3e5da; border-radius:.85rem; background:#f0f7f3; color:#234c3b; }
-.statusIcon { width:1.2rem; height:1.2rem; flex:0 0 auto; }
-.status > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.35rem .8rem; flex:1; min-width:0; }
-.status strong { font-size:.92rem; line-height:1.4; }
-.status span,.status small { font-size:.78rem; color:#536d60; line-height:1.5; }
+.metadata svg { width:1.2rem; height:1.2rem; flex:0 0 auto; color:#34564b; }
+.status { display:flex; align-items:center; gap:.75rem; padding:.8rem .9rem; border:1px solid var(--app-success-line,#99c3af); border-radius:.95rem; background:var(--app-surface-soft,#e8f2ed); color:var(--app-text,#234c3b); }
+.statusIcon { width:1.4rem; height:1.4rem; flex:0 0 auto; }
+.status > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.45rem .9rem; flex:1; min-width:0; }
+.status strong { font-size:1rem; font-weight:750; line-height:1.4; }
+.status span,.status small { font-size:.95rem; font-weight:650; color:var(--app-text,#244d40); line-height:1.5; font-variant-numeric:tabular-nums; }
 .status small { flex-basis:100%; }
-.status[data-warning="true"] { border-color:#ead9b9; background:#fff9ef; }
-.status[data-warning="true"] .statusIcon { color:#a56a19; }
+.status[data-warning="true"] { border-color:var(--app-warning-line,#dcb075); background:var(--app-warning-soft,#f7eee2); }
+.status[data-warning="true"] .statusIcon { color:var(--app-warning,#996019); }
 /* Match the Add asset cost chooser: neutral cards, green icons and a trailing arrow. */
 .options { display:grid; gap:.85rem; padding:.15rem 0 .25rem; }
 .options > :is(button,a) {
@@ -141,4 +124,8 @@
 }
 @media(max-width:600px) {
  :global(:where(html:not(:has([data-website-canvas])))) .primaryRow { grid-template-columns:1fr; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .button { transition:none; }
 }
