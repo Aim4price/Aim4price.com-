@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal } from './WebsitePortal';
 import { AD_DESIGN_FIELDS, AD_DESIGN_SIZES, MAX_DESIGN_ELEMENTS, createStarterAdDesign, createAdCustomDesign, createAdDesignElement, normalizeAdCustomDesign, resizeAdDesign, type AdCustomDesign, type AdDesignElement, type AdDesignField } from '../lib/ad-custom-design';
 import { downloadMarketplaceAd, renderMarketplaceAdCanvas, type MarketplaceAdContent } from '../lib/marketplace-ad-renderer';
 import StudioIcon from './StudioIcon';
