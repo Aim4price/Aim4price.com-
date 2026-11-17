@@ -1144,7 +1144,11 @@ export default function AssetMapClient() {
           attributionControl: true,
         });
 
-        L.control.zoom({ position: "topleft" }).addTo(map);
+        L.control.zoom({
+          position: "topleft",
+          zoomInText: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg>',
+          zoomOutText: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+        }).addTo(map);
         // Use the top-level site tooltip layer, outside Leaflet's stacking context.
         mapElementRef.current.querySelectorAll<HTMLElement>('.leaflet-control-zoom a').forEach(control => {
           control.dataset.tooltip = control.getAttribute('title') || control.getAttribute('aria-label') || 'Zoom';

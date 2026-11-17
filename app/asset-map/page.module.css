@@ -1489,22 +1489,12 @@
   transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-/* Draw equally weighted, centred symbols without font-dependent alignment. */
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a span) {
-  display: none;
-}
-
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a::before) {
-  content: "";
-  width: 1rem;
-  height: 1rem;
-  background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
-}
-
-.assetMapShell :global(.leaflet-bar.leaflet-control-zoom .leaflet-control-zoom-in::before) {
-  background:
-    linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
-    linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat;
+/* Real icons remain visible when the shared tooltip layer hides fallback labels. */
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom svg) {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  pointer-events: none;
 }
 
 .assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:hover:not(.leaflet-disabled)) {
