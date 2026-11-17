@@ -60,9 +60,28 @@ async function assertFits(label){
 async function zoomButton(label){await page.click('[aria-label="'+label+'"]');}
 await assertFits('Initial landscape');
 await page.screenshot({path:path.join(temp,'blank-workspace.png')});
+await click('Business');await click('Contact name');
+if(!await page.$('[aria-label="Move Contact name"]'))throw Error('Contact fields are not directly accessible');
+await click('Delete');await click('Asset');await click('Asking price');await click('Delete');await click('Basics');
+await click('Asset photo');
+const newPhoto=await page.$('[aria-label="Move photo"]');
+if(await newPhoto.evaluate(e=>parseFloat(e.style.width))<59)throw Error('First photo frame is too small');
+if(await newPhoto.evaluate(e=>e.querySelectorAll('[data-resize-corner]').length)!==4)throw Error('Resize handles are missing');
+// A pointer selection must give the canvas keyboard focus, without an extra Tab.
+const npBox=await newPhoto.boundingBox();await page.mouse.click(npBox.x+npBox.width/2,npBox.y+npBox.height/2);
+const npLeft=await newPhoto.evaluate(e=>parseFloat(e.style.left));await page.keyboard.press('ArrowRight');
+if(await newPhoto.evaluate(e=>parseFloat(e.style.left))<=npLeft)throw Error('Clicking an element did not enable keyboard nudging');
+await click('Arrange');
+await page.waitForSelector('[aria-label="Element settings"] input[type="number"]');
+const alignLabels=await page.$$eval('[aria-label="Element settings"] button',els=>els.map(e=>e.textContent));
+if(!alignLabels.some(t=>t.includes('Centre horizontally')))throw Error('Arrange controls missing');
+await click('Delete');
+
 for(const size of ['Portrait','Square','Landscape']){await click(size);await assertFits(size);}
-for(const size of [{width:1920,height:900},{width:1366,height:768},{width:1500,height:1000}]){
+for(const size of [{width:1920,height:850},{width:1366,height:768},{width:1500,height:1000}]){
  await page.setViewport(size);await assertFits(size.width+'px window');
+ const available=await page.$eval('[aria-label="Scrollable advert canvas"]',e=>e.getBoundingClientRect().height);
+ if(available<450)throw Error('Toolbars leave too little canvas height: '+available);
  if(size.width===1366)await page.screenshot({path:path.join(temp,'short-window.png')});
 }
 // Zoom is a view preference: it must not affect Undo or the document.
@@ -140,7 +159,8 @@ await click('Undo');await page.waitForFunction(()=>document.querySelector('dialo
 await click('Redo');await page.waitForFunction(()=>document.querySelector('dialog[open] canvas').width===1080);
 // Selecting a layer exposes its controls; multi-digit inputs commit on blur rather than clamping each keystroke.
 await click('Layers');await page.evaluate(()=>[...document.querySelectorAll('[aria-label="Design tools"] button')].find(b=>b.textContent.trim()==='Asset title').click());
-await page.evaluate(()=>[...document.querySelectorAll('summary')].find(e=>e.textContent.includes('Size & position')).click());
+
+await click('Appearance');
 const fontSummary=await page.$('[aria-label="Element settings"] details:not([class*="disclosure"]) summary');
 await fontSummary.focus();await page.keyboard.press('Enter');await click('Montserrat');
 if(!await fontSummary.evaluate(e=>e.textContent.includes('Montserrat')&&!e.closest('details').open))throw Error('Font picker did not select and close');
@@ -148,6 +168,7 @@ await page.keyboard.press('Enter');await click('Arial');
 const numeric=await page.$('[aria-label="Element settings"] input[type="number"]');
 await numeric.click({clickCount:3});await page.keyboard.type('72');await page.keyboard.press('Tab');
 if(await numeric.evaluate(e=>e.value)!=='72')throw Error('Text size could not be typed naturally');
+await page.waitForFunction(()=>!document.querySelector('dialog[open]').innerText.includes('Updating preview'));
 await page.screenshot({path:path.join(temp,'selected-element.png')});
 await click('Undo');
 await click('Use design');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));

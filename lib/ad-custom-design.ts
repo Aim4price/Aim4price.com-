@@ -83,3 +83,13 @@ export function createStarterAdDesign(primary = '#165340', accent = '#f2b84b'): 
     { ...block('text', 1060, 770, 490, 70, 'phone'), fontSize: 36 },
   ] };
 }
+
+/** Resize from a corner while keeping the opposite corner fixed and the frame on the advert. */
+export function resizeAdElementFromCorner(element: AdDesignElement, corner: 'nw' | 'ne' | 'sw' | 'se', dx: number, dy: number, canvasWidth: number, canvasHeight: number): AdDesignElement {
+  const right = element.x + element.width, bottom = element.y + element.height;
+  const x = corner.endsWith('w') ? Math.max(0, Math.min(right - 24, element.x + dx)) : element.x;
+  const y = corner.startsWith('n') ? Math.max(0, Math.min(bottom - 24, element.y + dy)) : element.y;
+  const nextRight = corner.endsWith('e') ? Math.max(x + 24, Math.min(canvasWidth, right + dx)) : right;
+  const nextBottom = corner.startsWith('s') ? Math.max(y + 24, Math.min(canvasHeight, bottom + dy)) : bottom;
+  return { ...element, x, y, width: nextRight - x, height: nextBottom - y };
+}
