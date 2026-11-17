@@ -41,7 +41,6 @@ export default function PartsEnquiryDialog({dealer, listName, parts, owned = fal
     <section ref={ref} className={`${styles.modal} ${styles.enquiryModal}`} role="dialog" aria-modal="true" aria-label="Parts enquiry">
       <div className={styles.closeWrap}><ShareModalCloseButton onClick={onClose} disabled={busy}/></div>
       <header className={`${styles.dialogHeader} ${styles.enquiryHeader}`}>
-        <span className={styles.enquiryHeadingIcon}><PartsMessageIcon/></span>
         <div><h2>Parts enquiry</h2>{listName && <p>{listName}</p>}</div>
       </header>
       <div className={styles.enquiryBody}>

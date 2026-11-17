@@ -191,7 +191,10 @@ const appCode =
           if(!shareContactAllowed)return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The owner has not allowed this action.'})});
           return r.respond({contentType:'application/json',body:JSON.stringify({contact:{business_name:row.business_name,town:row.town,uploaded_at:row.uploaded_at,phone:shareContactDetails?row.phone:'',email:shareContactDetails?row.email:'',owned:false}})});
         }
-        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Condition:'New',Notes:'Compatible asset models'}}]})});
+        const sharedRows=input.search==='not-found'||input.search==='slow' ? [] : [{...row,details:{Condition:'New',Notes:'Compatible asset models'}}];
+        const response={contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',town:'George',updatedAt:row.uploaded_at,total:sharedRows.length,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:sharedRows})};
+        if(input.search==='slow'){setTimeout(()=>r.respond(response).catch(()=>{}),900);return;}
+        return r.respond(response);
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
         pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
@@ -532,13 +535,14 @@ const appCode =
     await page.goto('https://example.test/parts/44444444-4444-4444-8444-444444444444');
     await page.waitForSelector('tbody tr');
     assert.equal(await page.$$eval('button',els=>els.filter(e=>e.textContent.trim()==='Edit').length),0);
-    await click("Enquire");
+    await page.click('tbody button[aria-label^="Open "]');
     await page.waitForSelector("[role=dialog]");
     assert.equal(
       await page.$eval('a[href^="tel:"]', (e) => e.getAttribute("href")),
       "tel:0821234567",
     );
     assert.equal(await page.$eval('[role=dialog] h2',e=>e.textContent),'Parts enquiry');
+    assert.equal(await page.$('[class*=enquiryHeader] svg'),null,'Enquiry heading has no decorative icon');
     await page.addStyleTag({content: `@font-face{font-family:PartsPreview;src:url(data:font/woff;base64,${fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64')})} :root{--font-body:PartsPreview;--font-heading:PartsPreview}`});
     await page.evaluate(()=>document.fonts.ready);
     await page.setViewport({width:1440,height:700});
@@ -1408,9 +1412,28 @@ const appCode =
     await click('Open parts list');
     await page.waitForSelector('tbody tr');
     assert.equal(await page.$('[aria-label="Stocklist actions"]'),null,'Shared list has no owner action bar');
-    assert.ok(await page.$('form button[type="button"]'),'Download is beside search');
-    assert.ok(await page.$eval('form',el=>el.getBoundingClientRect().height<120),'Search toolbar stays compact');
-    assert.ok(await page.$('button[aria-label^="Enquire about"]'),'Shared rows offer enquiries');
+    assert.ok(await page.$('[role=search] button[type="button"]'),'Download is beside search');
+    assert.ok(await page.$eval('[role=search]',el=>el.getBoundingClientRect().height<120),'Search toolbar stays compact');
+    assert.ok(await page.$('button[aria-label^="Open "]'),'Shared rows offer enquiries');
+    assert.equal(await page.$eval('thead th:last-child',e=>e.textContent.trim()),'','The action column does not repeat a label');
+    assert.ok(await page.$eval('button[aria-label^="Open "]',e=>e.textContent.trim()==='Open'&&!!e.querySelector('svg')),'Rows show an icon and Open');
+    assert.equal(await page.$$eval('[role=search] button',els=>els.some(e=>e.textContent.trim()==='Search')),false);
+    const setSharedSearch=async value=>page.$eval('[role=search] input',(e,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));},value);
+    await setSharedSearch('not-found');
+    await page.waitForFunction(()=>document.body.innerText.includes('No parts match your search.'));
+    assert.ok(sharedActions.some(a=>a.action==='view'&&a.search==='not-found'&&a.page===0),'Typing applies the filter on page one');
+    await setSharedSearch('001');await page.waitForSelector('tbody tr');
+    // Replace an in-flight request before its slower response returns.
+    await setSharedSearch('slow');
+    await page.waitForRequest(r=>r.url().includes('/api/parts-share/')&&JSON.parse(r.postData()||'{}').search==='slow');
+    await setSharedSearch('Landini');
+    await page.waitForResponse(r=>r.url().includes('/api/parts-share/')&&JSON.parse(r.request().postData()||'{}').search==='Landini');
+    await page.waitForFunction(()=>!document.body.innerText.includes('Searching…'));
+    await new Promise(resolve=>setTimeout(resolve,1000));
+    assert.equal(await page.$$eval('tbody tr',els=>els.length),1,'A cancelled slower search cannot replace the latest results');
+    await setSharedSearch('');
+    await page.waitForResponse(r=>r.url().includes('/api/parts-share/')&&JSON.parse(r.request().postData()||'{}').search==='');
+    await page.waitForFunction(()=>!document.body.innerText.includes('Searching…'));
     await page.screenshot({path:path.join(output,'shared-parts-owner-layout.png')});
     assert.equal(await page.$('dialog'),null,'Account gate is hidden until an action is selected');
     await click('Download PDF');
@@ -1430,13 +1453,13 @@ const appCode =
     await click('Open parts list');await page.waitForSelector('tbody tr');
     assert.equal(await page.$('dialog'),null,'Signed-out readers can browse without an account prompt');
     assert.ok(!(await page.evaluate(()=>document.body.innerText)).includes('Verify your email'));
-    await page.click('button[aria-label^="Enquire about"]');
+    await page.click('button[aria-label^="Open "]');
     await page.waitForSelector('dialog');
     assert.ok(await page.$eval('dialog',el=>el.innerText.includes('Sign in to continue')));
     assert.ok(!(await page.$eval('dialog',el=>el.innerText)).includes('I’ve signed in'),'Account prompt only offers sign-in and registration');
     const viewsBefore=sharedActions.filter(a=>a.action==='view').length;
     await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-    await page.waitForFunction(()=>!document.querySelector('form button[type=submit]')?.disabled);
+    await page.waitForFunction(()=>!document.querySelector('button[aria-label^="Open "]')?.disabled);
     assert.ok(sharedActions.filter(a=>a.action==='view').length>viewsBefore,'Returning to the tab rechecks sign-in');
     assert.equal(await page.$('textarea'),null,'Signed-out readers cannot enter an enquiry');
     await page.screenshot({path:path.join(output,'shared-parts-sign-in-modal.png')});
@@ -1463,12 +1486,12 @@ const appCode =
     await click('Aim4price');await click('Send via Aim4price');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
     assert.ok(sharedActions.some(a=>a.action==='enquire'&&a.message.includes('001-ABC — quantity 2')));
     shareContactDetails=false;
-    await page.click('button[aria-label^="Enquire about"]');await page.waitForSelector('[role=dialog]');
+    await page.click('button[aria-label^="Open "]');await page.waitForSelector('[role=dialog]');
     assert.equal(await page.$('a[href^="tel:"]'),null);assert.equal(await page.$('a[href^="mailto:"]'),null);
     assert.ok(await page.$('[aria-label="Contact dealer"] button'),'Aim4price is available when no phone or email is supplied');
     await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
     shareContactDetails=true;shareContactAllowed=false;
-    await page.click('button[aria-label^="Enquire about"]');
+    await page.click('button[aria-label^="Open "]');
     await page.waitForFunction(()=>document.body.innerText.includes('The owner has not allowed this action.'));
     assert.equal(await page.$('[role=dialog]'),null,'Changed enquiry permissions are checked before contact disclosure');
     shareContactAllowed=true;

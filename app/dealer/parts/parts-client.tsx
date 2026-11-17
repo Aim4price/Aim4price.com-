@@ -792,7 +792,7 @@ export default function PartsClient({
                           <th className={`${styles.numeric} ${styles.quantityColumn}`}>Quantity</th>
                           <th className={`${styles.numeric} ${styles.priceColumn}`}>Unit price</th>
                           {!singleDealer && <><th className={styles.dealerColumn}>Dealer</th><th className={styles.updatedColumn}>Last updated</th></>}
-                          <th className={styles.contactColumn}>{current?.owned && canUpload ? "Edit" : "Enquiry"}</th>
+                          <th className={styles.contactColumn} aria-label={current?.owned && canUpload ? undefined : "Open part"}>{current?.owned && canUpload ? "Edit" : ""}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -828,13 +828,13 @@ export default function PartsClient({
                                 onClick={() => startPartEdit(r, rowRevision!, false)}>
                                 <Icon kind="edit" />Edit
                               </button> : <PartsEnquireButton
-                                title="Enquire about this part"
-                                aria-label={`Contact ${r.business_name} about ${r.part_number}`}
+                                title="Open part details and contact options"
+                                aria-label={`Open ${r.part_number} from ${r.business_name}`}
                                 onClick={() => {
                                   startEnquiry([r]);
                                 }}
                               >
-                                {current?.owned ? "Contact" : "Enquire"}
+                                Open
                               </PartsEnquireButton>}
                             </td>
                           </tr>
