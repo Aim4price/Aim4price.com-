@@ -132,6 +132,7 @@ const appCode =
     let emptyFixture = false;
     let longPickerFixture = false;
     let viewerFixture = false;
+    let tableReadability = false;
     let accessInvites = [];
     const network = {
       id: "11111111-1111-4111-8111-111111111111",
@@ -184,7 +185,7 @@ const appCode =
         if(input.action==='landing')return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1})});
         if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{}}]})});}
         if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
-        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Notes:'Compatible asset models'}}]})});
+        return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Condition:'New',Notes:'Compatible asset models'}}]})});
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
         pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);
@@ -263,6 +264,7 @@ const appCode =
           data = {rows: filtered.slice(start, start + size), total:filtered.length, member:{...network,revision:0}};
         }
         else data = emptyFixture || url.searchParams.get("search") === "not-found" ? { rows: [], total: 0 } : url.searchParams.get("network") === "44444444-4444-4444-8444-444444444444" ? {rows:[row,{...row,part_number:"002-XYZ"},{...row,part_number:"003-PAGE"}],total:3} : { rows: [row], total: 1, member:{...network,revision:0} };
+        if(tableReadability && data.rows){data.rows=Array.from({length:4},(_,i)=>({...row,part_number:`01.14235${79+i}`,description:'Hydraulic filter assembly',details:{condition:i%2?'Used':'New',notes:'Fits Landini 100 series. Check the model before ordering.'}}));data.total=4;data.fields=[{id:'condition',label:'Condition',private:false},{id:'notes',label:'Notes',private:false}];}
         if (paginationFixture && data.networks) data.networks.push(...Array.from({length:15}, (_,i)=>({...network,id:`extra-${i}`,name:`Extra stocklist ${i}`})));
         return r.respond({
           contentType: "application/json",
@@ -413,7 +415,17 @@ const appCode =
     await page.reload({waitUntil:"domcontentloaded"});
     await page.waitForSelector("tbody tr");
     await page.screenshot({ path: path.join(output, "table-desktop.png") });
-    assert.ok(await page.$$eval('thead th',els=>els.every(e=>getComputedStyle(e).textAlign==='center')));
+    tableReadability=true;
+    await page.reload({waitUntil:'domcontentloaded'});await page.waitForSelector('[data-condition="new"]');
+    assert.deepEqual(await page.$$eval('thead th',els=>els.map(e=>getComputedStyle(e).textAlign)),['left','left','left','center','right','center']);
+    assert.ok(await page.$eval('[aria-label="Parts results"]',el=>el.scrollWidth<=el.clientWidth+1),'Desktop table fits its existing width');
+    assert.ok(await page.$eval('[class*=partExtraDetails]',el=>parseFloat(getComputedStyle(el).fontSize)>=15),'Condition and notes remain readable');
+    assert.ok(await page.$eval('td[data-label="Quantity"]',el=>Number(getComputedStyle(el).fontWeight)>=700),'Quantity stands out at a glance');
+    await page.screenshot({path:path.join(output,'parts-readable-desktop.png')});
+    await page.evaluate(()=>{const body=document.querySelector('tbody');for(let i=0;i<5;i++)body.append(...[...body.children].slice(0,4).map(el=>el.cloneNode(true)));window.scrollTo(0,document.querySelector('table').getBoundingClientRect().top+scrollY+200);});
+    assert.ok(await page.$eval('thead th',el=>Math.abs(el.getBoundingClientRect().top)<2),'Column headings stick while scrolling');
+    await page.screenshot({path:path.join(output,'parts-readable-sticky.png')});
+    tableReadability=false;await page.reload({waitUntil:'domcontentloaded'});await page.waitForSelector('tbody tr');
     await page.evaluate(()=>{URL.createObjectURL=blob=>{window.exportBlob=blob;return 'blob:fixture';};HTMLAnchorElement.prototype.click=function(){};});
     await click('Download');
     assert.equal(await page.$$eval('[data-download-option]', els=>els.length),2);
@@ -446,11 +458,8 @@ const appCode =
     assert.deepEqual(await page.$$eval("thead th", cells => cells.map(c => c.textContent.trim())), ["Part number", "Description", "Brand", "Quantity", "Unit price", "Edit"]);
     assert.deepEqual(await page.$$eval("tbody tr:first-child td", cells => cells.slice(0, 3).map(c => c.textContent.trim())), ["001-ABC", "Diff washer domed", "Landini"]);
     await page.setViewport({ width: 390, height: 844 });
-    assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollWidth > el.clientWidth), "Extra columns scroll inside the table on phones");
-    await page.$eval('[aria-label="Parts results"]', el => { el.scrollLeft = el.scrollWidth; });
-    assert.ok(await page.$eval('[aria-label="Parts results"]', el => el.scrollLeft > 0), "Horizontal scrolling reaches the enquiry column");
-    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 2), "The page itself does not overflow");
-    await page.$eval('[aria-label="Parts results"]', el => { el.scrollLeft = 0; });
+    assert.ok(await page.$eval('[aria-label="Parts results"]',el=>el.scrollWidth<=el.clientWidth+1),'Narrow rows reflow without horizontal scrolling');
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'The page fits the phone');
     assert.equal(await page.$eval('[aria-label="Stocklist actions"]',e=>getComputedStyle(e).gridTemplateColumns.split(' ').length),2,"Phone actions use two columns");
     await page.screenshot({ path: path.join(output, "table-columns-phone.png") });
     await page.setViewport({ width: 1440, height: 1000 });
@@ -1227,7 +1236,7 @@ const appCode =
     assert.ok(await page.$eval('dialog',d=>d.scrollHeight<=d.clientHeight+2),'Sign-in fits without scrolling on desktop');
     await page.setViewport({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
-    assert.ok(await page.$eval('table',table=>table.getBoundingClientRect().width>=1100),'Shared table preserves readable columns on phone');
+    assert.ok(await page.$eval('[aria-label="Parts results"]',el=>el.scrollWidth<=el.clientWidth+1),'Shared rows fit the phone without horizontal scrolling');
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
     assert.ok(await page.$eval('dialog',d=>d.scrollWidth<=d.clientWidth+2&&d.scrollHeight<=d.clientHeight+2),'Sign-in fits on phone');
     await page.setViewport({width:1440,height:900});

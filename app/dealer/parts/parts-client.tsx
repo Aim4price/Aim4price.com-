@@ -21,6 +21,8 @@ import PartsImportForm from "../../../components/PartsImportForm";
 import ListPagination, { type ListPageSize } from "../../../components/ListPagination";
 import PartsShareFlow from "../../../components/PartsShareFlow";
 import PartsChoice from "../../../components/PartsChoice";
+import PartsDescription from "../../../components/PartsDescription";
+import PartsTableRegion from "../../../components/PartsTableRegion";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import PartEditDialog from "../../../components/PartEditDialog";
@@ -335,7 +337,6 @@ export default function PartsClient({
   const current = networks.find((n) => n.id === network);
   const singleDealer = Boolean(current?.list_mode);
   const showBrand = rows.some((row) => row.brand?.trim());
-  const tableMinWidth = 1000 + (showBrand ? 160 : 0) + (!current?.owned ? 70 : 0) + (!singleDealer ? 420 : 0);
   const dealerName = singleDealer ? current?.owner_business_name || (current?.owned ? current.business_name : "") : "";
   const dealerTown = singleDealer ? current?.owner_town || (current?.owned ? current.town : "") : "";
   const uploadedAt = singleDealer ? current?.owner_uploaded_at || (current?.owned ? current.last_updated : "") : current?.last_updated;
@@ -785,13 +786,8 @@ export default function PartsClient({
                     {!!selectedParts.length && <button onClick={()=>setSelectedParts([])}>Clear selection</button>}
                   </div>}
 
-                  <div
-                    className={`${styles.tableWrap} ${styles.stockTableScroll}`}
-                    tabIndex={0}
-                    role="region"
-                    aria-label="Parts results"
-                  >
-                    <table className={styles.stockTable} style={{ minWidth: tableMinWidth }}>
+                  <PartsTableRegion>
+                    <table className={`${styles.stockTable} ${!singleDealer ? styles.multiDealerTable : ''}`}>
                       <thead>
                         <tr>
                           {!current?.owned && <th className={styles.selectColumn}>Select</th>}
@@ -807,14 +803,14 @@ export default function PartsClient({
                       <tbody>
                         {rows.map((r, i) => (
                           <tr key={`${r.part_number}-${i}`}>
-                            {!current?.owned && <td><input type="checkbox" aria-label={`Select ${r.part_number}`} checked={selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} disabled={selectedParts.length>0 && selectedParts[0].dealer_id!==r.dealer_id || selectedParts.length>=50 && !selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} onChange={e=>setSelectedParts(e.target.checked?[...selectedParts,r]:selectedParts.filter(p=>p.dealer_id!==r.dealer_id||p.part_number!==r.part_number))}/></td>}
-                            <td className={styles.partIdentity}>
-                              <strong>{r.part_number}</strong>
+                            {!current?.owned && <td data-label="Select"><input type="checkbox" aria-label={`Select ${r.part_number}`} checked={selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} disabled={selectedParts.length>0 && selectedParts[0].dealer_id!==r.dealer_id || selectedParts.length>=50 && !selectedParts.some(p=>p.dealer_id===r.dealer_id&&p.part_number===r.part_number)} onChange={e=>setSelectedParts(e.target.checked?[...selectedParts,r]:selectedParts.filter(p=>p.dealer_id!==r.dealer_id||p.part_number!==r.part_number))}/></td>}
+                            <td data-label="Part number" className={styles.partIdentity}>
+                              <strong title={r.part_number}>{r.part_number}</strong>
                             </td>
-                            <td className={styles.partDescription}><span className={styles.priceOnRequest}>{r.description || "—"}{detailFields.some(f=>r.details?.[f.id]) && <div className={styles.partExtraDetails}>{detailFields.filter(f=>r.details?.[f.id]).map(f=><span key={f.id}><strong>{f.label}{f.private ? " (private)" : ""}:</strong> {r.details![f.id]}</span>)}</div>}</span></td>
-                            {showBrand && <td className={styles.partBrand}>{r.brand || "—"}</td>}
-                            <td className={styles.numeric}>{r.quantity}</td>
-                            <td className={styles.numeric}>
+                            <td data-label="Description" className={styles.partDescription}><PartsDescription description={r.description} details={detailFields.map(f=>({...f,value:r.details?.[f.id] || ''}))}/></td>
+                            {showBrand && <td data-label="Brand" className={styles.partBrand}>{r.brand || "—"}</td>}
+                            <td data-label="Quantity" className={`${styles.numeric} ${styles.partQuantity}`}>{r.quantity}</td>
+                            <td data-label="Unit price" className={styles.numeric}>
                               <span className={r.price === null ? styles.priceOnRequest : styles.partPrice}>
                                 {r.price === null ? "Price on request" : displayedPrice(r).toLocaleString("en-ZA", {
                                   style: "currency",
@@ -822,16 +818,16 @@ export default function PartsClient({
                                 })}
                               </span>
                             </td>
-                            {!singleDealer && <><td>
+                            {!singleDealer && <><td data-label="Dealer">
                               {r.business_name}
                               <small>{r.town}</small>
                             </td>
-                            <td>
+                            <td data-label="Last updated">
                               {date(r.uploaded_at)}
                               {Date.now() - new Date(r.uploaded_at).getTime() >
                                 45 * 86400000 && <small>Update overdue</small>}
                             </td></>}
-                            <td>
+                            <td className={styles.partAction}>
                               {current?.owned && canUpload && view === "mine" ? <button className={styles.partContactButton} disabled={rowRevision === null}
                                 title="Edit this part" aria-label={`Edit ${r.part_number}`}
                                 onClick={() => startPartEdit(r, rowRevision!, false)}>
@@ -860,7 +856,7 @@ export default function PartsClient({
                         {!loading && search.trim() && <button onClick={() => { setSearch(""); setPage(0); }}>Clear search</button>}
                       </div>
                     )}
-                  </div>
+                  </PartsTableRegion>
                   </div>
                   <div className={styles.topline}>
                     <small>
