@@ -1224,10 +1224,12 @@ const appCode =
     await page.waitForSelector('dialog a[href^="/business/join?"]');
     assert.ok(await page.$eval('a[href^="/business/join?"]',a=>decodeURIComponent(a.href).includes('/parts-share/')));
     await page.screenshot({path:path.join(output,'shared-parts-account-gate.png')});
+    assert.ok(await page.$eval('dialog',d=>d.scrollHeight<=d.clientHeight+2),'Sign-in fits without scrolling on desktop');
     await page.setViewport({width:390,height:844});
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
     assert.ok(await page.$eval('table',table=>table.getBoundingClientRect().width>=1100),'Shared table preserves readable columns on phone');
     await page.screenshot({path:path.join(output,'shared-parts-phone.png')});
+    assert.ok(await page.$eval('dialog',d=>d.scrollWidth<=d.clientWidth+2&&d.scrollHeight<=d.clientHeight+2),'Sign-in fits on phone');
     await page.setViewport({width:1440,height:900});
     shareAccess='sign-in';
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
@@ -1267,6 +1269,15 @@ const appCode =
     await page.screenshot({path:path.join(output,'shared-parts-protected-landing.png')});
     await page.waitForSelector('input[type=password]');
     assert.equal(await page.$('tbody tr'),null,'Locked links do not render parts');
+    assert.ok(await page.$eval('dialog',d=>d.scrollHeight<=d.clientHeight+2),'Password modal fits on desktop');
+    await page.screenshot({path:path.join(output,'parts-password-desktop.png')});
+    await page.setViewport({width:390,height:740});
+    assert.ok(await page.$eval('dialog',d=>d.scrollWidth<=d.clientWidth+2&&d.scrollHeight<=d.clientHeight+2),'Password modal fits on phone');
+    await page.screenshot({path:path.join(output,'parts-password-phone.png')});
+    const accessDark=await page.addStyleTag({content:':root{--app-text:#e1eee6;--app-muted:#b6c9be;--app-surface:#15251d;--app-surface-soft:#1d3025;--app-line:#375345;--app-accent:#23775b}'});
+    await page.screenshot({path:path.join(output,'parts-password-dark.png')});
+    await accessDark.evaluate(el=>el.remove());
+    await page.setViewport({width:1440,height:900});
     await page.type('input[type=password]','wrong-password');
     await page.$eval('dialog form',form=>form.requestSubmit());
     await page.waitForFunction(()=>document.body.innerText.includes('The password is incorrect.'));
