@@ -30,6 +30,8 @@ import {
 } from '../lib/marketplace-ad-renderer';
 import styles from './AdStudioClient.module.css';
 import AdvertCreator from './AdvertCreator';
+import AdDesignEditor from './AdDesignEditor';
+import { customDesignPhotoCount } from '../lib/ad-custom-design';
 import StudioIcon, { type StudioIconName } from './StudioIcon';
 import registerStyles from '../app/asset-register/page.module.css';
 import valuationStyles from '../app/valuation/page.module.css';
@@ -98,6 +100,7 @@ const EMPTY_KIT: EditableBrandKit = {
   id: '',
   name: 'My advert template',
   templateId: 'showcase',
+  customDesign: null,
   logoUrl: '',
   logoBackground: true,
   primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
@@ -130,6 +133,7 @@ function editableKit(kit: AdBrandKit): EditableBrandKit {
     id: kit.id,
     name: kit.name,
     templateId: kit.templateId,
+    customDesign: kit.customDesign ?? null,
     logoUrl: kit.logoUrl,
     logoBackground: kit.logoBackground !== false,
     primaryColor: kit.primaryColor,
@@ -207,6 +211,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     brand: {
       name: draft.name,
       templateId: draft.templateId,
+      customDesign: draft.customDesign,
       logoUrl: draft.logoUrl,
       logoBackground: draft.logoBackground !== false,
       primaryColor: draft.primaryColor,
@@ -238,6 +243,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     })
       .then(() => {
         if (!active) return;
+        canvas.width = renderCanvas.width; canvas.height = renderCanvas.height;
         const context = canvas.getContext('2d');
         if (!context) return;
         context.clearRect(0, 0, canvas.width, canvas.height);
@@ -319,6 +325,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     const source = previewCanvasRef.current;
     const target = enlargedCanvasRef.current;
     if (!source || !target) return;
+    target.width = source.width; target.height = source.height;
     target.getContext('2d')?.drawImage(source, 0, 0);
     previewDialogRef.current?.showModal();
     previewDialogRef.current?.querySelector<HTMLButtonElement>('[data-modal-close]')?.focus();
@@ -652,7 +659,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                         <div className={styles.kitCardTitle}>
                           <div>
                             <strong>{kit.name}</strong>
-                            <span>{template.name} · up to {template.photoCount} photo{template.photoCount === 1 ? '' : 's'}</span>
+                            <span>{kit.customDesign ? `Custom design · ${customDesignPhotoCount(kit.customDesign)} asset photo slots` : `${template.name} · up to ${template.photoCount} photos`}</span>
                           </div>
                           {kit.isDefault ? <b>Default</b> : null}
                         </div>
@@ -781,7 +788,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <section aria-labelledby="studio-layout-title">
                   <div className={styles.stepIntro}>
                     <h2 id="studio-layout-title">Choose a layout</h2>
-                    <p>Layouts adapt to the number of listing photos.</p>
+                    <p>Choose a ready-made layout or arrange your own advert.</p>
+                    <AdDesignEditor value={draft.customDesign} content={previewContent} disabled={!canManage || saving} onChange={design => update('customDesign', design)} />
+                    {draft.customDesign ? <p>Your custom design is selected. Open the editor to change it, or choose a layout below.</p> : null}
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
@@ -790,9 +799,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                         <button
                           key={template.id}
                           type="button"
-                          className={`${styles.templateChoice} ${draft.templateId === template.id ? styles.templateChoiceActive : ''}`}
-                          onClick={() => update('templateId', template.id)}
-                          aria-pressed={draft.templateId === template.id}
+                          className={`${styles.templateChoice} ${!draft.customDesign && draft.templateId === template.id ? styles.templateChoiceActive : ''}`}
+                          onClick={() => setDraft(current => ({ ...current, templateId: template.id, customDesign: null }))}
+                          aria-pressed={!draft.customDesign && draft.templateId === template.id}
                           style={{
                             '--brand-primary': draft.primaryColor,
                             '--brand-secondary': draft.secondaryColor,
@@ -804,7 +813,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                           </span>
                           <span className={styles.templateTitle}>
                             <strong>{template.name}</strong>
-                            <b>{draft.templateId === template.id ? 'Selected' : template.recommended ? 'Recommended' : template.purpose}</b>
+                            <b>{!draft.customDesign && draft.templateId === template.id ? 'Selected' : template.recommended ? 'Recommended' : template.purpose}</b>
                           </span>
                           <small>{template.description}</small>
                           <span className={styles.photoCountBadge}>{template.photoCount} photo{template.photoCount === 1 ? '' : 's'}</span>
@@ -819,7 +828,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <section aria-labelledby="studio-style-title">
                   <div className={styles.stepIntro}>
                     <h2 id="studio-style-title">Colours and wording</h2>
-                    <p>Make each advert feel like your business.</p>
+                    <p>{draft.customDesign ? 'Choose the language and price wording here. Change your custom colours inside the design editor.' : 'Make each advert feel like your business.'}</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert colours and wording</legend>
@@ -901,8 +910,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <article>
                       <span>Layout</span>
                       <button className={styles.reviewEdit} type="button" onClick={() => moveToStep(2)} aria-label="Edit layout"><StudioIcon name="edit" /></button>
-                      <strong>{selectedTemplate.name}</strong>
-                      <small>Up to {selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}.</small>
+                      <strong>{draft.customDesign ? 'Custom design' : selectedTemplate.name}</strong>
+                      <small>{draft.customDesign ? `${customDesignPhotoCount(draft.customDesign)} asset photo slots · ${draft.customDesign.size}` : `Up to ${selectedTemplate.photoCount} photos.`}</small>
                     </article>
                     <article>
                       <span>Wording</span>
@@ -1010,7 +1019,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               className={styles.adCanvasPreview}
               width="1600"
               height="900"
-              aria-label={`${selectedTemplate.name} template preview with ${previewRating.label.toLowerCase()} rating`}
+              aria-label={`${draft.customDesign ? 'Custom design' : selectedTemplate.name} template preview with ${previewRating.label.toLowerCase()} rating`}
             />
             </button>
             <div className={styles.previewNote}>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { customDesignPhotoCount } from '../lib/ad-custom-design';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { AD_TEMPLATE_OPTIONS, type AdBrandKit, type AdBrandSnapshot, type AdTemplateId } from '../lib/ad-studio';
 import { advertDetailsError, advertStepErrors, type AdvertFieldErrors, estimateMatchesAdvert, type AdvertDetails, type AdvertEstimate } from '../lib/advert-creator';
@@ -35,6 +36,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const [brandId, setBrandId] = useState(defaultKit?.id ?? '');
   const selectedKit = kits.find(kit => kit.id === brandId) ?? defaultKit;
   const brand = selectedKit ?? fallbackBrand;
+  const [useCustomDesign, setUseCustomDesign] = useState(Boolean((defaultKit ?? fallbackBrand).customDesign));
   const [template, setTemplate] = useState<AdTemplateId>(defaultKit?.templateId ?? fallbackBrand.templateId);
   const [details, setDetails] = useState<AdvertDetails>(() => ({
     title: '', year: '', usage: '', usageUnit: 'hours', condition: 'good', askingPrice: '',
@@ -75,7 +77,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   const [province, setProvince] = useState('');
   const [area, setArea] = useState('');
   const hasEstimate = estimateMatchesAdvert(estimate, details);
-  const hasEnoughPhotos = photos.length >= (AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.photoCount ?? 1);
+  const hasEnoughPhotos = photos.length >= (useCustomDesign && brand.customDesign ? customDesignPhotoCount(brand.customDesign) : (AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.photoCount ?? 1));
   const content = useMemo<MarketplaceAdContent>(() => ({
     title: details.title, year: details.year,
     usage: details.usage && details.usageUnit !== 'none' ? `${Number(details.usage).toLocaleString('en-ZA')}${details.usageUnit === 'percent' ? '% worked' : ` ${details.usageUnit}`}` : '',
@@ -89,8 +91,8 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     showDealRating: hasEstimate && showRating,
     sellerName: details.contactName, sellerPhone: details.phone, sellerCompany: details.businessName,
     location: [area, province].filter(Boolean).join(', '), imageUrls: photos,
-    brand: { ...brand, templateId: template, vatLabel: details.vatLabel, contactName: details.contactName, phone: details.phone, email: details.email, businessName: details.businessName },
-  }), [details, brand, template, photos, hasEstimate, estimate, showRating, area, province]);
+    brand: { ...brand, customDesign: useCustomDesign ? brand.customDesign : null, templateId: template, vatLabel: details.vatLabel, contactName: details.contactName, phone: details.phone, email: details.email, businessName: details.businessName },
+  }), [details, brand, template, useCustomDesign, photos, hasEstimate, estimate, showRating, area, province]);
   const rating = getMarketplaceAdRating(content);
   const availableLayouts = AD_TEMPLATE_OPTIONS.filter(item => item.photoCount <= photos.length);
   const additionalLayouts = AD_TEMPLATE_OPTIONS.filter(item => item.photoCount > photos.length);
@@ -98,13 +100,13 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     const missingPhotos = Math.max(0, item.photoCount - photos.length);
     return <button type="button" key={item.id}
       className={`${studioStyles.templateChoice} ${styles.layoutChoice}`}
-      aria-pressed={template === item.id} disabled={missingPhotos > 0 || publishing}
-      onClick={() => setTemplate(item.id)}
+      aria-pressed={!useCustomDesign && template === item.id} disabled={missingPhotos > 0 || publishing}
+      onClick={() => { setUseCustomDesign(false); setTemplate(item.id); }}
       style={{ '--brand-primary': brand.primaryColor, '--brand-secondary': brand.secondaryColor, '--brand-accent': brand.accentColor } as CSSProperties}>
       <span className={`${studioStyles.miniTemplate} ${TEMPLATE_CLASSES[item.id]}`} aria-hidden="true"><i /><b /><em /><u /></span>
       <strong>{item.name}</strong>
       <small>{missingPhotos ? `Add ${missingPhotos} photo${missingPhotos === 1 ? '' : 's'}` : `${item.photoCount} photo${item.photoCount === 1 ? '' : 's'}`}</small>
-      {template === item.id ? <span className={styles.layoutSelected} aria-hidden="true"><StudioIcon name="check" /></span> : null}
+      {!useCustomDesign && template === item.id ? <span className={styles.layoutSelected} aria-hidden="true"><StudioIcon name="check" /></span> : null}
     </button>;
   }
 
@@ -121,7 +123,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
       const canvas = canvasRef.current;
       canvas.width = scratch.width; canvas.height = scratch.height;
       canvas.getContext('2d')?.drawImage(scratch, 0, 0);
-      if (dialogRef.current?.open && largeCanvasRef.current) largeCanvasRef.current.getContext('2d')?.drawImage(scratch, 0, 0);
+      if (dialogRef.current?.open && largeCanvasRef.current) { largeCanvasRef.current.width = scratch.width; largeCanvasRef.current.height = scratch.height; largeCanvasRef.current.getContext('2d')?.drawImage(scratch, 0, 0); }
     }).catch(() => { if (active) setError('Could not render a photo. Remove it and upload it again.'); })
       .finally(() => { if (active) setRendering(false); });
     return () => { active = false; };
@@ -135,6 +137,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
     const chosen = kits.find(kit => kit.id === id);
     if (!chosen) return;
     setBrandId(chosen.id);
+    setUseCustomDesign(Boolean(chosen.customDesign));
     setDetails(current => ({ ...current, contactName: chosen.contactName, phone: chosen.phone, email: chosen.email, businessName: chosen.businessName, vatLabel: chosen.vatLabel }));
     setTemplate(AD_TEMPLATE_OPTIONS.find(item => item.id === chosen.templateId)!.photoCount <= photos.length ? chosen.templateId : 'photo-first');
   }
@@ -152,7 +155,10 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
         }
       }
     }
-    if (next === 3 && !hasEnoughPhotos) setTemplate('photo-first');
+    if (next === 3 && !hasEnoughPhotos) {
+      if (useCustomDesign) { setError(`Your custom design needs ${customDesignPhotoCount(brand.customDesign)} asset photos. Add them in Photos.`); return; }
+      setTemplate('photo-first');
+    }
     setFurthestStep(current => Math.max(current, next));
     setStep(next);
   }
@@ -205,6 +211,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }
   function openPreview() {
     if (!canvasRef.current || !largeCanvasRef.current || rendering) return;
+    largeCanvasRef.current.width = canvasRef.current.width; largeCanvasRef.current.height = canvasRef.current.height;
     largeCanvasRef.current.getContext('2d')?.drawImage(canvasRef.current, 0, 0);
     dialogRef.current?.showModal(); dialogRef.current?.querySelector<HTMLButtonElement>('[data-modal-close]')?.focus();
   }
@@ -230,6 +237,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
   }
   async function publishAdvert() {
     if (publishLock.current) return;
+    if (!hasEnoughPhotos) { setError('Add the asset photos required by your design.'); return; }
     const errors = {...advertStepErrors(details,1),...advertStepErrors(details,2,photos.length)};
     if (Object.keys(errors).length) {setError(Object.values(errors)[0] || 'Check your advert.');return;}
     publishLock.current = true; setPublishing(true);setError('');setStatus('');
@@ -356,6 +364,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
           }}><StudioIcon name="edit" />Edit branding</button> : null}
         </section> : null}
         <h3 className={styles.layoutHeading}>Layout</h3>
+        {brand.customDesign ? <button type="button" className={styles.secondary} aria-pressed={useCustomDesign} disabled={publishing} onClick={() => setUseCustomDesign(true)}><StudioIcon name="palette" />Use my custom design</button> : null}
         <div className={styles.layoutGrid} aria-label="Advert layouts">{availableLayouts.map(layoutChoice)}</div>
         {additionalLayouts.length ? <details className={styles.moreLayouts}>
           <summary>More layouts <span>({additionalLayouts.length})</span></summary>
@@ -363,7 +372,7 @@ export default function AdvertCreator({ kits, fallbackBrand, estimateHref, estim
           <div className={styles.layoutGrid} aria-label="Layouts needing more photos">{additionalLayouts.map(layoutChoice)}</div>
           <button type="button" className={styles.secondary} disabled={publishing} onClick={() => goTo(2)}><StudioIcon name="image" />Add photos</button>
         </details> : null}
-        <p className={styles.layoutHelp}>{AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.description}</p>
+        <p className={styles.layoutHelp}>{useCustomDesign ? 'Your saved design, filled with this asset’s photos and details.' : AD_TEMPLATE_OPTIONS.find(item => item.id === template)?.description}</p>
       </div><div className={styles.previewPanel}><div className={styles.previewToolbar}><h3>Advert preview</h3><button type="button" className={`${styles.secondary} ${marketplaceStyles.secondaryButton}`} disabled={rendering} onClick={openPreview}><StudioIcon name="preview" />Enlarge</button></div><button className={styles.canvasButton} disabled={rendering} onClick={openPreview} aria-label="Open advert preview"><canvas ref={canvasRef} className={styles.canvas} width={1600} height={900} aria-label="Your advert preview" /></button>
         {rendering ? <p className={styles.previewStatus} role="status">Updating preview…</p> : null}
       </div></div>

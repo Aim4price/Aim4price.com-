@@ -43,3 +43,12 @@ test('listing-only publication uses stable identity, owner-scoped updates and ne
  const specs=JSON.parse(params[13]);assert.equal(specs.showDealRating,false);assert.equal(specs.lifeWorkedPercent,30);
  blocked=true;await assert.rejects(publish('other',value));
 });
+test('custom advert publication preserves design and rejects missing bound photo slots',()=>{
+ const {createAdCustomDesign,createAdDesignElement}=load('lib/ad-custom-design.ts');
+ const photo=createAdDesignElement('photo');
+ const customDesign={...createAdCustomDesign(),elements:[photo]};
+ const result=normalizeAdvertPublication({...body,brand:{...body.brand,customDesign}});
+ assert.deepEqual(result.brand.customDesign,customDesign);
+ photo.photoIndex=3;
+ assert.throws(()=>normalizeAdvertPublication({...body,brand:{...body.brand,customDesign}}),/required by your custom design/);
+});

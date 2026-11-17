@@ -1,4 +1,5 @@
 import { advertStepErrors, type AdvertDetails } from './advert-creator';
+import { customDesignPhotoCount } from './ad-custom-design';
 import { normalizeAdBrandSnapshot } from './ad-studio';
 
 export function normalizeAdvertPublication(body: unknown) {
@@ -26,6 +27,7 @@ export function normalizeAdvertPublication(body: unknown) {
   if (Number(details.askingPrice) > 999999999999) throw new Error('The asking price is too large.');
   const brand = normalizeAdBrandSnapshot(input.brand);
   if (!brand) throw new Error('Choose advert branding.');
+  if (customDesignPhotoCount(brand.customDesign) > photos.length) throw new Error('Add the asset photos required by your custom design.');
   return {id,details,photos:photos as string[],brand:{...brand,vatLabel:details.vatLabel,contactName:details.contactName,phone:details.phone,email:details.email,businessName:details.businessName},
     province:String(input.province ?? '').trim().slice(0,80),area:String(input.area ?? '').trim().slice(0,80)};
 }
