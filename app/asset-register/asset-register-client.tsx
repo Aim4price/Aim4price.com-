@@ -19289,7 +19289,7 @@ export default function AssetRegisterClient({
                 >
                   <span>{isManageMapLocationFlow
                     ? 'Back to map options'
-                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' || assetSettingsView === 'tracking'
+                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
                       ? 'Back to Location'
                       : 'Back'}</span>
                 </button>
