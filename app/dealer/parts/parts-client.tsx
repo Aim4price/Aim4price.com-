@@ -25,6 +25,7 @@ import PartsDescription from "../../../components/PartsDescription";
 import PartsTableRegion from "../../../components/PartsTableRegion";
 import PartsEnquiryDialog from "../../../components/PartsEnquiryDialog";
 import PartsEnquireButton from "../../../components/PartsEnquireButton";
+import PartsListOwner from "../../../components/PartsListOwner";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import PartEditDialog from "../../../components/PartEditDialog";
@@ -749,7 +750,7 @@ export default function PartsClient({
                 <>
                   <div className={styles.partsPanel}>
                   <div className={styles.listContext}>
-                    {dealerName && <div className={styles.listDealer}><span>{dealerName}{dealerTown && <span className={styles.listTown}> · {dealerTown}</span>}</span></div>}
+                    {dealerName && <PartsListOwner name={dealerName} town={dealerTown} />}
                     <div className={styles.listStatus}>
                       <span aria-live="polite">{loading ? "Loading…" : `${total.toLocaleString()} ${search.trim() ? "matching " : ""}${total === 1 ? "part" : "parts"}`}</span>
                       {uploadedAt && <span>Updated {date(uploadedAt)}</span>}
