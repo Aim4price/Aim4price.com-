@@ -2284,6 +2284,21 @@
 .detailPage .stockTable tbody tr:nth-child(even) { background:color-mix(in srgb,var(--app-surface-soft,#f0f7f3) 55%,var(--app-surface,#fff)); }
 .detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 6%,var(--app-surface,#fff)); }
 .detailPage .stockTable .partContactButton { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; font-size:1rem; flex-wrap:wrap; }
+/* Enquiry uses its own contact treatment, shared by both recipient tables. */
+.page .stockTable .partEnquireButton {
+  display:inline-flex; align-items:center; justify-content:center; flex-wrap:nowrap; gap:8px;
+  min-width:0; min-height:44px; padding:10px 12px; border-radius:12px;
+  border-color:color-mix(in srgb,var(--app-accent,#176d53) 34%,var(--app-border,#d5e3db));
+  background:color-mix(in srgb,var(--app-accent,#176d53) 9%,var(--app-surface,#fff));
+  color:var(--app-text,#173e32); box-shadow:none; white-space:nowrap;
+}
+.page .stockTable .partEnquireButton:hover {
+  border-color:var(--app-accent,#176d53);
+  background:color-mix(in srgb,var(--app-accent,#176d53) 16%,var(--app-surface,#fff));
+  box-shadow:none;
+}
+.page .stockTable .partEnquireButton:focus-visible { outline-color:var(--app-accent,#176d53); }
+
 .detailPage .stockTable .partAction button { margin-inline:auto; }
 .detailPage .stockTable.multiDealerTable .partNumberColumn { width:14%; }
 .detailPage .stockTable.multiDealerTable .brandColumn { width:9%; }

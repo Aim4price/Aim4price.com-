@@ -16,6 +16,7 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await db.query("INSERT INTO parts_networks(id,name,created_by,list_mode) VALUES($1,'Parts list','owner',true)",[network]);
  await db.query(`INSERT INTO parts_network_members(network_id,dealer_id,role,status,business_name,extra_fields) VALUES($1,'owner','admin','active','Owner business',$2)`,[network,JSON.stringify([{id:'notes',label:'Notes',private:false},{id:'bin',label:'Bin',private:true}])]);
  await db.query(`INSERT INTO parts_network_rows(network_id,dealer_id,part_number,part_key,quantity,price,details) VALUES($1,'owner','001','001',2,0,'{"notes":"Public","bin":"Secret"}')`,[network]);
+ await db.query("UPDATE parts_network_members SET phone='0821234567',email='parts@example.test' WHERE network_id=$1",[network]);
  const create=(input={})=>api.managePartsShare(owner,network,{action:'create-share',channel:'link',accepted:true,...input});
  await assert.rejects(()=>create({accepted:false}),/Accept/);
  await assert.rejects(()=>create({password:'short'}),/8–128/);
@@ -26,6 +27,7 @@ test('managed shares enforce passwords, permissions, directory identity, private
  assert.deepEqual(Object.keys(landing).sort(),['name','owner','total']);
  assert.equal(landing.total,1);
  await assert.rejects(()=>api.openPartsShare(token,null,'',{}),e=>e.status===423);
+ await assert.rejects(()=>api.openPartsShare(token,{id:'viewer',email:'viewer@example.test'},'',{action:'contact'}),e=>e.status===423);
  await assert.rejects(()=>api.openPartsShare(token,null,'',{action:'unlock',password:'wrong'}),/incorrect/);
  const {proof}=await api.openPartsShare(token,null,'',{action:'unlock',password:'first-password'});
  const data=await api.openPartsShare(token,null,proof,{});
@@ -35,7 +37,12 @@ test('managed shares enforce passwords, permissions, directory identity, private
  assert.equal((await api.openPartsShare(token,null,proof,{action:'view',search:'%'})).total,0);
  await assert.rejects(()=>api.openPartsShare(token,null,proof,{action:'download'}),e=>e.status===401);
  await assert.rejects(()=>api.openPartsShare(token,null,proof,{action:'enquire',message:'Hi'}),e=>e.status===401);
+ await assert.rejects(()=>api.openPartsShare(token,null,proof,{action:'contact'}),e=>e.status===401);
+ assert.ok(!('contact' in data) && !JSON.stringify(data).includes('parts@example.test'),'Browsing never discloses dealer contact details');
  const viewer={id:'viewer',email:'viewer@example.test'};
+ const contact=await api.openPartsShare(token,viewer,proof,{action:'contact'});
+ assert.equal(contact.contact.phone,'0821234567');assert.equal(contact.contact.email,'parts@example.test');assert.equal(contact.contact.owned,false);
+ assert.equal((await api.openPartsShare(token,owner,'',{action:'contact'})).contact.owned,true);
  assert.equal((await api.openPartsShare(token,viewer,proof,{action:'download'})).rows.length,1);
  await api.openPartsShare(token,viewer,proof,{action:'enquire',message:'Need two of part 001'});
  assert.equal((await db.query('SELECT * FROM parts_enquiries')).rows[0].recipient_id,'owner');
@@ -72,10 +79,12 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:'new-password'});
  const next=await api.openPartsShare(token,null,'',{action:'unlock',password:'new-password'});
  await assert.rejects(()=>api.openPartsShare(token,viewer,next.proof,{action:'download'}),e=>e.status===403);
+ await assert.rejects(()=>api.openPartsShare(token,viewer,next.proof,{action:'contact'}),e=>e.status===403);
  await api.managePartsShare(owner,network,{action:'update-share',id:link.id,password:'',allowDownload:false,allowEnquiry:false});
  assert.equal((await api.openPartsShare(token,null,'',{})).total,1);
  await api.managePartsShare(owner,network,{action:'revoke-share',id:link.id});
  await assert.rejects(()=>api.openPartsShare(token,owner,'',{}),e=>e.status===404);
+ await assert.rejects(()=>api.openPartsShare(token,viewer,'',{action:'contact'}),e=>e.status===404);
  await api.managePartsShare(owner,network,{action:'delete-share',id:link.id});
  assert.equal((await api.managePartsShare(owner,network,{action:'share-history'})).links.length,0);
  await db.exec(`INSERT INTO "user" VALUES('buyer','buyer@example.test'); INSERT INTO account_profiles VALUES('buyer','Buyer','active','business','');`);
@@ -85,10 +94,12 @@ test('managed shares enforce passwords, permissions, directory identity, private
  await db.exec(`UPDATE business_network SET status='active',accepted_at=null;`);
  await assert.rejects(()=>create({channel:'direct',email:'buyer@example.test'}),/approved/);
  await db.exec(`UPDATE business_network SET accepted_at=now();`);
- const direct=(await create({channel:'direct',email:'buyer@example.test'})).url.split('/').at(-1);
+ const direct=(await create({channel:'direct',email:'buyer@example.test',allowEnquiry:true})).url.split('/').at(-1);
  await assert.rejects(()=>api.openPartsShare(direct,null,'',{}),e=>e.status===401);
  await assert.rejects(()=>api.openPartsShare(direct,viewer,'',{}),e=>e.status===401);
  assert.equal((await api.openPartsShare(direct,{id:'buyer',email:'buyer@example.test'},'',{})).total,1);
+ await assert.rejects(()=>api.openPartsShare(direct,viewer,'',{action:'contact'}),e=>e.status===401);
+ assert.equal((await api.openPartsShare(direct,{id:'buyer',email:'buyer@example.test'},'',{action:'contact'})).contact.email,'parts@example.test');
  await db.query('UPDATE parts_networks SET archived=true WHERE id=$1',[network]);
  await assert.rejects(()=>api.openPartsShare(direct,owner,'',{}),e=>e.status===404);
  await db.close();
@@ -110,7 +121,7 @@ test('public share API passes signed-in, non-suspended identities without requir
  user={id:'viewer',email:'viewer@example.test',emailVerified:false};
  response=await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');assert.equal((await response.json()).access,'active');
  delete user.emailVerified;await route.POST(request(),{params:{token}});assert.equal(seen.viewer.id,'viewer');
- for(const action of ['download','enquire']){
+ for(const action of ['download','contact','enquire']){
   const result=await route.POST(request('https://example.test',action),{params:{token}});
   assert.equal(result.status,200);assert.equal(seen.viewer.id,'viewer');assert.equal(seen.input.action,action);
  }

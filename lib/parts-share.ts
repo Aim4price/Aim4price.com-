@@ -78,7 +78,7 @@ export type PartsShareViewer = {id:string;email:string} | null;
 async function linkFor(token: string, viewer: PartsShareViewer) {
  await ensure();
  if(!/^[a-f0-9]{64}$/.test(token)) throw new PartsError('This parts link is unavailable.',404);
- const link=(await getDb().query(`SELECT s.*,n.name,m.business_name,m.town,m.uploaded_at,m.vat_included,m.extra_fields FROM parts_share_links s JOIN parts_networks n ON n.id=s.network_id JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=n.created_by WHERE s.token=$1 AND s.revoked_at IS NULL AND NOT n.archived AND m.visible AND m.status='active'`,[token])).rows[0];
+ const link=(await getDb().query(`SELECT s.*,n.name,m.business_name,m.town,m.phone,m.email,m.uploaded_at,m.vat_included,m.extra_fields FROM parts_share_links s JOIN parts_networks n ON n.id=s.network_id JOIN parts_network_members m ON m.network_id=n.id AND m.dealer_id=n.created_by WHERE s.token=$1 AND s.revoked_at IS NULL AND NOT n.archived AND m.visible AND m.status='active'`,[token])).rows[0];
  if(!link) throw new PartsError('This parts link is unavailable or has been revoked.',404);
  if(link.recipient_id && viewer?.id!==link.recipient_id && viewer?.id!==link.owner_id) throw new PartsError('Sign in with the business account this list was shared with.',401);
  return link;
@@ -108,11 +108,13 @@ export async function openPartsShare(token:string, viewer:PartsShareViewer, sess
   if(!valid) throw new PartsError('Enter the password from the list owner.',423);
  }
  const action=String(input.action||'view');
- if(!['view','download','enquire'].includes(action)) throw new PartsError('Unknown action.');
+ if(!['view','download','contact','enquire'].includes(action)) throw new PartsError('Unknown action.');
  if(action!=='view') {
   if(!viewer) throw new PartsError('Create a free account or sign in to continue.',401);
   if(!(action==='download'?link.allow_download:link.allow_enquiry)) throw new PartsError('The owner has not allowed this action.',403);
  }
+ // Contact details are only disclosed after the same access checks as sending an enquiry.
+ if(action==='contact') return {contact:{business_name:link.business_name,town:link.town,phone:link.phone,email:link.email,uploaded_at:link.uploaded_at,owned:viewer!.id===link.owner_id}};
  if(action==='enquire') {
   const message=typeof input.message==='string'?input.message.trim():'';
   if(!message||message.length>2000) throw new PartsError('Enter an enquiry of up to 2,000 characters.');

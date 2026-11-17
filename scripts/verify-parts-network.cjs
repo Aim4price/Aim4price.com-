@@ -173,6 +173,7 @@ const appCode =
     let pdfRequest;
     let shareLocked=false;
     let shareAccess='sign-in';
+    let shareContactAllowed=true,shareContactDetails=true;
     const sharedActions=[];
     let shareLinks=[{id:"share-1",url:"https://example.test/parts-share/"+"a".repeat(64),created_at:"2026-11-16",protected:true,allow_download:true,allow_enquiry:true,recipient_name:"",revoked_at:null}];
     page.on("request", (r) => {
@@ -185,6 +186,11 @@ const appCode =
         if(input.action==='landing')return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1})});
         if(input.action==='unlock'){if(input.password!=='example-password')return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The password is incorrect.'})});shareLocked=false;return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{}}]})});}
         if(shareLocked)return r.respond({status:423,contentType:'application/json',body:JSON.stringify({error:'Enter the password from the list owner.'})});
+        if(input.action==='contact'){
+          if(shareAccess!=='active')return r.respond({status:401,contentType:'application/json',body:JSON.stringify({error:'Sign in to continue.',access:shareAccess})});
+          if(!shareContactAllowed)return r.respond({status:403,contentType:'application/json',body:JSON.stringify({error:'The owner has not allowed this action.'})});
+          return r.respond({contentType:'application/json',body:JSON.stringify({contact:{business_name:row.business_name,town:row.town,uploaded_at:row.uploaded_at,phone:shareContactDetails?row.phone:'',email:shareContactDetails?row.email:'',owned:false}})});
+        }
         return r.respond({contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',total:1,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:[{...row,details:{Condition:'New',Notes:'Compatible asset models'}}]})});
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
@@ -1436,11 +1442,37 @@ const appCode =
     assert.equal(await page.$('textarea'),null,'Signed-out readers cannot enter an enquiry');
     await page.screenshot({path:path.join(output,'shared-parts-sign-in-modal.png')});
     shareAccess='active';await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
-    await page.waitForSelector('dialog textarea');
-    assert.ok(await page.$eval('dialog textarea',el=>el.value.includes('001-ABC')),'Sign-in resumes the selected part enquiry');
+    await page.waitForSelector('[role="dialog"][aria-label="Parts enquiry"]');
+    assert.equal(await page.$eval('[aria-label="Requested quantity for 001-ABC"]',e=>e.value),'1','Sign-in resumes the selected part in the existing contact modal');
+    assert.equal(await page.$('textarea'),null,'The channel chooser opens before composing a message');
+    assert.equal(await page.$eval('a[href^="tel:"]',e=>e.getAttribute('href')),'tel:0821234567');
+    const setSharedQuantity=async(value)=>page.$eval('[aria-label="Requested quantity for 001-ABC"]',(e,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));},value);
+    await setSharedQuantity('0');
+    assert.equal(await page.$eval('a[href^="mailto:"]',e=>e.getAttribute('aria-disabled')),'true');
+    await click('Aim4price');
+    assert.ok(await page.$eval('[role=dialog] footer button:last-child',e=>e.disabled),'Invalid quantities cannot be sent');
+    await click('Back');await setSharedQuantity('2');
+    assert.ok(await page.$eval('a[href^="mailto:"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 2')));
+    assert.ok(await page.$eval('a[href^="https://wa.me/"]',e=>decodeURIComponent(e.href).includes('001-ABC — quantity 2')));
     await page.screenshot({path:path.join(output,'shared-parts-contact-modal.png')});
-    await click('Send enquiry');await page.waitForFunction(()=>!document.querySelector('dialog'));
-    assert.ok(sharedActions.some(a=>a.action==='enquire'&&a.message.includes('001-ABC')));
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth+1),'Shared contact modal fits the phone');
+    await page.screenshot({path:path.join(output,'shared-parts-contact-phone.png')});
+    await page.setViewport({width:1440,height:900});
+    await click('Aim4price');await page.waitForSelector('[role=dialog] textarea');
+    await click('Back');assert.equal(await page.$eval('[aria-label="Requested quantity for 001-ABC"]',e=>e.value),'2');
+    await click('Aim4price');await click('Send via Aim4price');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+    assert.ok(sharedActions.some(a=>a.action==='enquire'&&a.message.includes('001-ABC — quantity 2')));
+    shareContactDetails=false;
+    await page.click('button[aria-label^="Enquire about"]');await page.waitForSelector('[role=dialog]');
+    assert.equal(await page.$('a[href^="tel:"]'),null);assert.equal(await page.$('a[href^="mailto:"]'),null);
+    assert.ok(await page.$('[aria-label="Contact dealer"] button'),'Aim4price is available when no phone or email is supplied');
+    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+    shareContactDetails=true;shareContactAllowed=false;
+    await page.click('button[aria-label^="Enquire about"]');
+    await page.waitForFunction(()=>document.body.innerText.includes('The owner has not allowed this action.'));
+    assert.equal(await page.$('[role=dialog]'),null,'Changed enquiry permissions are checked before contact disclosure');
+    shareContactAllowed=true;
     shareAccess='sign-in';
     await page.goto('https://example.test/parts-share/'+'a'.repeat(64));
     await page.waitForFunction(()=>document.body.innerText.includes('Open parts list'));
