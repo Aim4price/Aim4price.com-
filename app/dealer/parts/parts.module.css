@@ -1234,64 +1234,75 @@
 }
 .entryModal .editorTable td:first-child small { display: inline; margin-left: 4px; }
 
-/* A focused enquiry dialog, with a compact request and clear contact routes. */
-.enquiryModal { width: min(960px, 100%); padding: 24px; display: flex; flex-direction: column; overflow: hidden; }
-.enquiryModal .dialogHeader { flex: 0 0 auto; margin-bottom: 16px; padding-bottom: 14px; }
-.enquiryModal .dialogHeader h2 { font-size: 30px; letter-spacing: -0.035em; }
-.enquiryModal .dialogHeader p { margin-top: 5px; font-size: .95rem; font-weight: 650; }
-.enquiryBody { min-height: 0; overflow-y: auto; padding: 0 3px 3px; display: flex; flex-direction: column; gap: 16px; }
-.enquiryDealer { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 12px 16px; background: var(--app-surface-soft, #f1f7f4); border: 1px solid var(--app-border, #dce5df); border-radius: 14px; }
-.enquiryDealer > div { min-width: 0; }
-.enquiryModal .enquiryDealer h3 { margin: 0; font-size: 18px; line-height: 1.4; overflow-wrap: anywhere; }
-.enquiryModal .enquiryDealer p { margin: 5px 0 0; font-size: 14px; }
-.enquiryDealer > span { flex-shrink: 0; text-align: right; color: var(--app-text-muted, #61766c); font-size: 12px; line-height: 1.6; }
-.enquiryDealer > span strong { font-weight: 550; }
-.enquirySectionHeading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
-.enquiryModal .enquirySectionHeading h3 { margin: 0; color: var(--app-text, #173e31); font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: 1.15rem; font-weight: 800; line-height: 1.08; letter-spacing: -.04em; }
-.enquirySectionHeading > span { font-size: 12px; color: var(--app-text-muted, #61766c); }
-.enquiryTableWrap { border: 1px solid var(--app-border, #dce5df); border-radius: 12px; overflow: auto; max-height: 240px; }
-.enquiryTable { color: var(--app-text, #173e32); width: 100%; border-collapse: collapse; table-layout: fixed; }
-.enquiryTable th { position: sticky; top: 0; padding: 8px 16px; background: var(--app-surface-soft, #f1f7f4); color: var(--app-text, #304d46); font-size: .9rem; font-weight: 700; text-align: left; }
-.enquiryTable th:last-child { width: 128px; text-align: right; }
-.enquiryTable td { padding: 10px 16px; border-top: 1px solid var(--app-border, #dce5df); }
-.enquiryTable td:first-child { overflow-wrap: anywhere; }
-.enquiryTable td strong { font-size: 16px; font-weight: 650; }
-.enquiryTable td small { display: block; margin-top: 4px; font-size: .95rem; color: var(--app-text, #304d46); line-height: 1.5; }
-.enquiryModal .enquiryTable input { width: 100%; min-height: 42px; padding: 9px 12px; text-align: center; font-size: 15px; border-radius: 9px; background: var(--app-surface, #fff); }
-.enquiryTable input[aria-invalid='true'] { border-color: #c44646; }
-.enquiryModal .enquiryMessage { gap: 10px; font-size: 1.15rem; font-weight: 800; }
-.enquiryModal .enquiryMessage textarea { margin: 0; min-height: 72px; padding: 12px 14px; font-size: 14px; line-height: 1.6; border-radius: 12px; background: var(--app-surface, #fff); }
-.enquiryContactGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
-.enquiryContact, .enquiryModal button.enquiryContact { display: flex; align-items: flex-start; gap: 10px; min-width: 0; padding: 12px 16px; text-align: left; justify-content: flex-start; font-family: inherit; box-shadow: none; border: 1px solid var(--app-border, #dce5df); border-radius: 12px; background: var(--app-surface, #fff); text-decoration: none; color: var(--app-text, #173e32); transition: border-color .18s, box-shadow .18s; }
-.enquiryContact:hover { border-color: #46a579; box-shadow: 0 3px 12px #173e3210; }
-.enquiryContact:focus-visible, .enquiryLedger:focus-visible { outline: 3px solid #46a579; outline-offset: 3px; }
-.enquiryContact[aria-disabled='true'] { opacity: .65; cursor: not-allowed; }
-.enquiryContactIcon { display: grid; place-items: center; flex: 0 0 32px; height: 32px; border-radius: 9px; background: var(--app-surface-soft, #f1f7f4); }
-.enquiryContact[data-tone='blue'] .enquiryContactIcon { background: #eaf3ff; color: #245b93; }
-.enquiryContact[data-tone='green'] .enquiryContactIcon { background: #e5f7ed; color: #196441; }
-.enquiryContact > span:last-child { min-width: 0; }
-.enquiryContact strong { display: block; font-size: 1rem; font-weight: 750; line-height: 1.6; }
-.enquiryContact small { display: block; margin-top: 3px; font-size: .88rem; font-weight: 500; line-height: 1.5; color: var(--app-text, #304d46); overflow-wrap: anywhere; }
-.enquiryModal .enquiryHint { margin: 8px 0 0; font-size: 12px; }
-.enquiryFooter { flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--app-border, #dce5df); }
-.enquiryLedger { margin-right: auto; display: inline-flex; gap: 10px; align-items: center; color: var(--app-text-muted, #61766c); font-size: 13px; text-decoration: none; }
-.enquiryLedger:hover { text-decoration: underline; }
-.enquiryModal .enquiryFooter button { min-height: 44px; font-size: 14px; padding: 11px 18px; }
-@media(max-width: 600px) {
-  .enquiryModal { padding: 20px; }
-  .enquiryModal .dialogHeader h2 { font-size: 25px; }
-  .enquiryBody { gap: 14px; }
-  .enquiryDealer { padding: 12px; flex-direction: column; gap: 8px; }
-  .enquiryDealer > span { text-align: left; }
-  .enquiryDealer > span br { display: none; }
-  .enquiryDealer > span strong { margin-left: 5px; }
-  .enquiryContactGrid { grid-template-columns: 1fr; gap: 8px; }
-  .enquiryContact { align-items: center; padding: 10px 12px; }
-  .enquiryContact small { margin-top: 0; font-size: 12px; }
-  .enquiryTable th, .enquiryTable td { padding: 12px; }
-  .enquiryTable th:last-child { width: 96px; }
-  .enquiryFooter { margin-top: 12px; }
-  .enquiryModal .enquiryFooter button { width: 100%; }
+/* Parts enquiries: one request card and clearly aligned contact choices. */
+.enquiryModal { width:min(1100px,100%); padding:28px; display:flex; flex-direction:column; overflow-y:auto; }
+.enquiryModal .enquiryHeader { display:flex; align-items:center; gap:14px; flex:0 0 auto; margin-bottom:20px; padding-bottom:18px; }
+.enquiryModal .enquiryHeader h2 { font-size:30px; line-height:1.2; letter-spacing:-.035em; }
+.enquiryModal .enquiryHeader p { margin:6px 0 0; font-size:1rem; font-weight:600; color:var(--app-text,#173e32); }
+.enquiryHeadingIcon { display:grid; place-items:center; width:46px; height:46px; flex:0 0 46px; border-radius:14px; color:var(--app-accent,#176d53); background:color-mix(in srgb,var(--app-accent,#176d53) 11%,var(--app-surface,#fff)); }
+.enquiryHeadingIcon svg { width:24px; height:24px; }
+.enquiryBody { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:24px; min-height:0; flex-shrink:0; overflow:visible; }
+.enquiryRequest,.enquiryChannels,.enquiryMessage { min-width:0; }
+.enquirySectionHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:26px; margin-bottom:14px; }
+.enquiryModal .enquirySectionHeading h3 { margin:0; font:750 1.1rem/1.4 var(--font-heading,'Montserrat'),sans-serif; letter-spacing:-.02em; color:var(--app-text,#173e32); }
+.enquirySectionHeading>span { color:var(--app-text,#173e32); font-size:.9rem; font-weight:600; white-space:nowrap; }
+.enquiryRequestCard { overflow:hidden; border:1px solid var(--app-border,#cddfd5); border-radius:16px; background:var(--app-surface,#fff); }
+.enquiryDealer { padding:18px 20px; background:color-mix(in srgb,var(--app-accent,#176d53) 7%,var(--app-surface,#fff)); border-bottom:1px solid var(--app-border,#cddfd5); }
+.enquiryModal .enquiryDealer h3 { margin:0; font-size:1.1rem; font-weight:750; line-height:1.4; color:var(--app-text,#173e32); overflow-wrap:anywhere; }
+.enquiryDealerMeta { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 18px; margin-top:8px; color:var(--app-text,#304d46); font-size:.9rem; line-height:1.5; font-weight:550; }
+.enquiryTableWrap { overflow:hidden; }
+.enquiryTable { width:100%; table-layout:fixed; border-collapse:collapse; color:var(--app-text,#173e32); }
+.enquiryTable th { padding:12px 20px; text-align:left; font-size:.9rem; font-weight:650; background:var(--app-surface-soft,#f7faf8); }
+.enquiryTable th:last-child { width:112px; text-align:center; }
+.enquiryTable td { padding:18px 20px; border-top:1px solid var(--app-border,#dce5df); }
+.enquiryTable td:first-child { overflow-wrap:anywhere; }
+.enquiryTable td strong { font-size:1rem; font-weight:750; }
+.enquiryTable td small { display:block; margin-top:6px; color:var(--app-text,#304d46); font-size:.95rem; font-weight:500; line-height:1.5; }
+.enquiryModal .enquiryTable input { width:100%; min-height:44px; padding:10px; margin:0; border-radius:10px; text-align:center; font-size:1rem; font-weight:700; color:var(--app-text,#173e32); background:var(--app-surface,#fff); border:1px solid var(--app-border-strong,#8fb7a6); }
+.enquiryTable input[aria-invalid='true'] { border-color:var(--app-danger,#c44646); }
+.enquiryModal .enquiryMessage { display:flex; flex-direction:column; align-self:stretch; gap:14px; margin:0; font-size:1.1rem; font-weight:750; }
+.enquiryModal .enquiryMessage textarea { flex:1; width:100%; margin:0; min-height:180px; padding:16px; border:1px solid var(--app-border-strong,#8fb7a6); border-radius:16px; font-size:1rem; font-weight:500; line-height:1.6; color:var(--app-text,#173e32); background:var(--app-surface,#fff); }
+.enquiryContactGrid { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+.enquiryContact,.enquiryModal button.enquiryContact { display:flex; align-items:center; justify-content:flex-start; min-width:0; min-height:58px; gap:12px; padding:11px 16px; border:1px solid var(--app-border,#cddfd5); border-radius:14px; background:var(--app-surface,#fff); color:var(--app-text,#173e32); text-align:left; text-decoration:none; box-shadow:0 2px 5px #153b2e05; font-family:inherit; transition:background .15s,border-color .15s,box-shadow .15s; }
+.enquiryContactIcon { display:grid; place-items:center; flex:0 0 34px; width:34px; height:34px; border-radius:11px; color:var(--app-accent,#176d53); background:color-mix(in srgb,var(--app-accent,#176d53) 11%,var(--app-surface,#fff)); }
+.enquiryContact[data-tone='blue'] .enquiryContactIcon { color:var(--app-info,#245b93); background:color-mix(in srgb,var(--app-info,#245b93) 11%,var(--app-surface,#fff)); }
+.enquiryContact>span:last-child { display:flex; align-items:center; justify-content:space-between; flex:1; min-width:0; gap:12px; }
+.enquiryContact strong { font-size:1rem; line-height:1.4; font-weight:750; white-space:nowrap; }
+.enquiryContact small { margin:0; font-size:.9rem; line-height:1.4; font-weight:500; color:var(--app-text,#304d46); white-space:nowrap; }
+.enquiryModal button.enquiryContact:disabled { opacity:1; cursor:default; background:var(--app-surface-soft,#f5f8f6); border-style:dashed; box-shadow:none; }
+.enquiryContact[aria-disabled='true'] { cursor:not-allowed; background:var(--app-surface-soft,#f5f8f6); }
+.enquiryContact:not(:disabled):not([aria-disabled='true']):hover { border-color:var(--app-accent,#176d53); background:color-mix(in srgb,var(--app-accent,#176d53) 5%,var(--app-surface,#fff)); box-shadow:0 4px 12px #153b2e0c; }
+.enquiryContact:focus-visible,.enquiryLedger:focus-visible { outline:3px solid var(--app-accent,#176d53); outline-offset:3px; }
+.enquiryModal .enquiryHint { margin:14px 0 0; color:var(--app-text,#304d46); font-size:.85rem; font-weight:500; line-height:1.5; }
+.enquiryPagination { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:14px; font-size:.9rem; font-weight:600; }
+.enquiryModal .enquiryPagination button { min-height:38px; padding:8px 12px; font-size:.9rem; }
+.enquiryFooter { display:flex; align-items:center; justify-content:flex-end; flex:0 0 auto; flex-wrap:wrap; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid var(--app-border,#dce5df); }
+.enquiryLedger { display:inline-flex; align-items:center; gap:8px; margin-right:auto; color:var(--app-text,#304d46); font-size:.9rem; font-weight:550; text-decoration:none; }
+.enquiryLedger:hover { text-decoration:underline; }
+.enquiryModal .enquiryFooter button { min-height:44px; padding:11px 18px; font-size:.95rem; }
+.enquiryBody>.error { grid-column:1/-1; margin:0; }
+@media(max-width:1000px) {
+  .enquiryContact>span:last-child { display:block; }
+  .enquiryContact small { display:block; margin-top:3px; }
+}
+@media(max-width:760px) {
+  .enquiryModal { padding:20px; }
+  .enquiryModal .enquiryHeader { gap:10px; margin-bottom:20px; padding-bottom:16px; }
+  .enquiryModal .enquiryHeader h2 { font-size:24px; }
+  .enquiryModal .enquiryHeader p { font-size:.95rem; }
+  .enquiryHeadingIcon { width:36px; height:36px; flex-basis:36px; border-radius:11px; }
+  .enquiryHeadingIcon svg { width:21px; height:21px; }
+  .enquiryBody { grid-template-columns:minmax(0,1fr); gap:20px; }
+  .enquirySectionHeading { margin-bottom:12px; }
+  .enquiryDealer { padding:16px; }
+  .enquiryDealerMeta { gap:4px 12px; font-size:.85rem; }
+  .enquiryTable th,.enquiryTable td { padding:12px 16px; }
+  .enquiryTable th:last-child { width:100px; }
+  .enquiryContact,.enquiryModal button.enquiryContact { min-height:58px; padding:10px 12px; gap:10px; }
+  .enquiryContact small { margin-top:2px; font-size:.85rem; }
+  .enquiryModal .enquiryHint { font-size:.85rem; }
+  .enquiryModal .enquiryMessage textarea { min-height:110px; }
+  .enquiryFooter { margin-top:18px; padding-top:16px; }
 }
 
 /* Stocklist results: align quantities, prices and enquiry actions as a ledger. */
@@ -1343,72 +1354,6 @@
 }
 /* Use Maintenance's action typography in the stocklist toolbar. */
 .detailPage .detailActions button { font-size: .96rem; font-weight: 700; }
-
-.enquiryModal button.enquiryContact:disabled { opacity: 1; background: var(--app-surface-soft, #f1f7f4); cursor: default; }
-
-/* Give the request and contact choices their own space without nested scrollers. */
-.enquiryModal { width: min(1100px, 100%); padding: 28px; overflow-y: auto; }
-.enquiryBody { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 24px 28px; overflow: visible; flex-shrink: 0; padding: 0; }
-.enquiryDealer { grid-column: 1 / -1; padding: 14px 18px; align-items: center; }
-.enquiryItems, .enquiryChannels, .enquiryMessage { min-width: 0; }
-.enquirySectionHeading { min-height: 24px; margin-bottom: 12px; }
-.enquiryTableWrap { max-height: none; overflow: hidden; }
-.enquiryTable th:last-child { width: 100px; }
-.enquiryContactGrid { gap: 12px; }
-.enquiryContact, .enquiryModal button.enquiryContact { padding: 14px; min-height: 98px; gap: 10px; }
-.enquiryContact strong { line-height: 1.3; }
-.enquiryContact small { margin-top: 6px; line-height: 1.4; }
-.enquiryModal .enquiryHint { margin-top: 12px; line-height: 1.4; }
-.enquiryFooter { margin-top: 22px; padding-top: 16px; }
-.enquiryPagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 13px; }
-.enquiryModal .enquiryPagination button { padding: 8px 12px; min-height: 36px; font-size: 13px; }
-@media (max-width: 760px) {
-  .enquiryModal { padding: 20px; }
-  .enquiryBody { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .enquiryDealer { grid-column: auto; padding: 12px; }
-  .enquiryContactGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .enquiryContact, .enquiryModal button.enquiryContact { padding: 10px; min-height: 88px; gap: 8px; }
-  .enquiryContactIcon { flex-basis: 26px; height: 26px; }
-  .enquiryContact strong { font-size: .9rem; }
-  .enquiryContact small { font-size: .78rem; }
-  .enquiryFooter { margin-top: 16px; }
-}
-
-@media (min-width: 761px) {
-  .enquiryBody { grid-template-areas: "dealer contact" "parts contact"; grid-template-rows: auto 1fr; }
-  .enquiryDealer { grid-area: dealer; }
-  .enquiryItems { grid-area: parts; }
-  .enquiryChannels, .enquiryMessage { grid-area: contact; }
-}
-
-/* Full-width contact rows keep addresses and supporting copy intact. */
-.enquiryContactGrid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.enquiryContact, .enquiryModal button.enquiryContact { min-height: 56px; padding: 10px 14px; align-items: center; }
-.enquiryContact > span:last-child { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 12px; }
-.enquiryContact strong { flex-shrink: 0; white-space: nowrap; }
-.enquiryContact small { margin: 0; white-space: nowrap; overflow-wrap: normal; text-align: right; }
-@media (max-width: 1000px) {
-  .enquiryContact > span:last-child { display: block; }
-  .enquiryContact small { margin-top: 2px; text-align: left; }
-}
-@media (max-width: 760px) {
-  .enquiryContact, .enquiryModal button.enquiryContact { min-height: 54px; padding: 8px 12px; }
-  .enquiryDealer { align-items: flex-start; }
-}
-
-/* Share grid tracks so both columns begin and finish on the same baselines. */
-@media (min-width: 761px) {
-  .enquiryBody:has(.enquiryChannels) {
-    grid-template-areas: ". heading" "dealer contacts" "parts contacts" ". hint";
-    grid-template-rows: auto auto 1fr auto;
-    row-gap: 12px;
-  }
-  .enquiryChannels { display: contents; }
-  .enquiryChannels .enquirySectionHeading { grid-area: heading; margin-bottom: 0; }
-  .enquiryContactGrid { grid-area: contacts; align-self: stretch; align-content: stretch; }
-  .enquiryBody:has(.enquiryChannels) .enquiryItems { align-self: end; }
-  .enquiryChannels .enquiryHint { grid-area: hint; margin: 0; }
-}
 
 .partEditFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; margin:24px 0; }
 .partEditDescription { grid-column:1 / -1; }
@@ -2284,18 +2229,19 @@
 .detailPage .stockTable tbody tr:nth-child(even) { background:color-mix(in srgb,var(--app-surface-soft,#f0f7f3) 55%,var(--app-surface,#fff)); }
 .detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 6%,var(--app-surface,#fff)); }
 .detailPage .stockTable .partContactButton { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; font-size:1rem; flex-wrap:wrap; }
-/* Enquiry uses its own contact treatment, shared by both recipient tables. */
+/* Enquiry stays compact in the existing action column. */
 .page .stockTable .partEnquireButton {
   display:inline-flex; align-items:center; justify-content:center; flex-wrap:nowrap; gap:8px;
-  min-width:0; min-height:44px; padding:10px 12px; border-radius:12px;
-  border-color:color-mix(in srgb,var(--app-accent,#176d53) 34%,var(--app-border,#d5e3db));
-  background:color-mix(in srgb,var(--app-accent,#176d53) 9%,var(--app-surface,#fff));
-  color:var(--app-text,#173e32); box-shadow:none; white-space:nowrap;
+  min-width:0; min-height:46px; padding:7px 11px 7px 8px; border-radius:13px;
+  border-color:color-mix(in srgb,var(--app-accent,#176d53) 42%,var(--app-border,#d5e3db));
+  background:linear-gradient(135deg,var(--app-surface,#fff),var(--app-surface-soft,#f1f7f4));
+  color:var(--app-text,#173e32); box-shadow:0 2px 5px #153b2e08; white-space:nowrap;
 }
+.partEnquireIcon { display:grid; place-items:center; width:28px; height:28px; flex:0 0 28px; border-radius:9px; color:var(--app-accent,#176d53); background:color-mix(in srgb,var(--app-accent,#176d53) 12%,var(--app-surface,#fff)); }
 .page .stockTable .partEnquireButton:hover {
   border-color:var(--app-accent,#176d53);
-  background:color-mix(in srgb,var(--app-accent,#176d53) 16%,var(--app-surface,#fff));
-  box-shadow:none;
+  background:color-mix(in srgb,var(--app-accent,#176d53) 9%,var(--app-surface,#fff));
+  box-shadow:0 3px 8px #153b2e10;
 }
 .page .stockTable .partEnquireButton:focus-visible { outline-color:var(--app-accent,#176d53); }
 
