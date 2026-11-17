@@ -45,7 +45,6 @@
 .detailsContent p { margin: 0; color: #52645d; font-size: .9rem; line-height: 1.7; }
 .detailsContent strong { color: #184d3d; }
 
-.introduction .eyebrow { margin: 0 0 .75rem; color: #184d3d; font-size: .95rem; line-height: 1.5; font-weight: 650; }
 .introduction .subtitle { font-size: 1.1rem; line-height: 1.65; text-wrap: pretty; }
 .introduction .purpose { max-width: 68rem; text-wrap: pretty; }
 .contactAction { display: grid; justify-items: stretch; gap: .75rem; max-width: 20rem; }
