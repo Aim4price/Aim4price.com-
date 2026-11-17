@@ -60,7 +60,10 @@ const root=path.resolve(__dirname,'..'),fixture=path.join(root,'app/desktop-vali
  await page.waitForSelector('[data-asset-update-section="2"]');
  assert(await page.$('[data-asset-update-section="3"][data-access-restricted="true"]'));
  await page.$eval('[data-asset-update-section="2"]',e=>e.click());
- await page.waitForSelector('[data-asset-detail-edit-target="year"] input');
+ await page.waitForSelector('[data-details-page="identity"]');
+ await page.$$eval('[role="dialog"] button',buttons=>buttons.find(b=>b.textContent.trim()==='Next').click());
+ await page.waitForSelector('[data-details-page="condition"]');
+ await page.waitForSelector('[data-asset-detail-edit-target="year"] input',{visible:true});
  assert.equal(await page.$eval('[data-asset-detail-edit-target="year"]',e=>e.inert),false);
  assert(await page.$('[role="dialog"] label[inert][data-access-restricted="true"]')); assert(await page.$$eval('[role="dialog"] [data-access-restricted="true"][inert]',els=>els.some(e=>e.textContent.includes('Insured Value'))));
  await page.screenshot({path:`.next/desktop-validation/update-${width}.png`});

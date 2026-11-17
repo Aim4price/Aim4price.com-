@@ -38,13 +38,21 @@ export default function Page(){const [mounted,setMounted]=useState(false);useEff
       if(u.hostname!=='127.0.0.1')return r.abort();
       return r.continue();
     });
-    async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text).click(),text);}
+    async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim().replace(/\s*→$/, '')===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim().replace(/\s*→$/, '')===text||b.querySelector('strong')?.textContent===text).click(),text);}
+    async function assertFits(name){
+      for(const viewport of [{width:1440,height:900},{width:1366,height:768},{width:390,height:844}]) {
+        await page.setViewport(viewport);await new Promise(r=>setTimeout(r,200));
+        const overflow=await page.$eval('[role="dialog"]',e=>({horizontal:e.scrollWidth-e.clientWidth,vertical:Math.max(0,...[e,...e.querySelectorAll('div')].filter(n=>['auto','scroll'].includes(getComputedStyle(n).overflowY)).map(n=>n.scrollHeight-n.clientHeight))}));
+        assert(overflow.horizontal<=2 && overflow.vertical<=2,name+' fits '+JSON.stringify({viewport,overflow}));
+      }
+      await page.setViewport({width:1440,height:900});
+    }
     const output=path.join(root,'.next/tracking-options-validation');await fs.mkdir(output,{recursive:true});
     await page.setViewport({width:1440,height:1000});
     await page.goto('http://127.0.0.1:3048/tracking-options-validation',{waitUntil:'networkidle0',timeout:120000});
     await page.waitForSelector('[data-tracking-options="choice"]');
     assert.equal(mutations.length,0,'Opening the chooser never starts pairing');
-    await page.screenshot({path:path.join(output,'choices-desktop.png')});
+    await assertFits('tracking choice');await page.screenshot({path:path.join(output,'choices-desktop.png')});
     await click('Connect an existing tracker');
     await page.waitForSelector('[data-tracking-options="existing"]');
     const hrefs=await page.$$eval('[data-tracking-options] a',links=>links.map(a=>a.href));
@@ -53,22 +61,25 @@ export default function Page(){const [mounted,setMounted]=useState(false);useEff
     assert.equal(mutations.length,0,'Contact choices never mutate tracking');
     assert.equal(await page.$eval('[data-tracking-options] h4',h=>h===document.activeElement),true,'Screen transition moves focus to its heading');
     await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent.includes('WhatsApp')),true,'Contact buttons work with keyboard navigation');
-    await page.screenshot({path:path.join(output,'existing-desktop.png')});
+    await assertFits('existing tracker');await page.screenshot({path:path.join(output,'existing-desktop.png')});
     await page.setViewport({width:390,height:844});assert(await page.$eval('[role="dialog"]',e=>e.scrollWidth<=e.clientWidth+1));await page.screenshot({path:path.join(output,'existing-mobile.png')});
     await page.setViewport({width:1440,height:1000});
-    await click('Back to tracking options');await click('Use a tracking phone');
+    await click('Back');await click('Use a tracking phone');
     await page.waitForSelector('[aria-label="Tracking phone requirements"]');
     assert.equal(mutations.length,0,'Choosing a phone waits for an explicit pairing request');
-    assert(await page.evaluate(()=>document.body.textContent.includes('The app runs in the background')));
+    assert.equal(await page.$('[data-tracker-pairing]'), null);
+    await assertFits('phone preparation');
     await page.screenshot({path:path.join(output,'phone-desktop.png')});
+    await click('Next');await assertFits('phone installation');await page.screenshot({path:path.join(output,'install-desktop.png')});
     await click('Share app link');await page.waitForSelector('[data-tracker-install]');await page.click('[aria-label="Close Install Tracker"]');
+    await click('Next');await assertFits('phone connection');
     await click('Create pairing code');await page.waitForSelector('[data-tracker-pairing]');assert.deepEqual(mutations,['POST']);
-    await click('Tracking options');await click('Use a tracking phone');assert(await page.$('[data-tracker-pairing]'),'Back navigation retains the pending pairing code');
+    await assertFits('pairing code');await page.screenshot({path:path.join(output,'pair-desktop.png')});await click('Back');await click('Back');await click('Back');await click('Use a tracking phone');await click('Next');await click('Next');assert(await page.$('[data-tracker-pairing]'),'Back navigation retains the pending pairing code');assert.deepEqual(mutations,['POST']);
     device={id:'paired-phone',name:'Equipment phone',status:'Connected',lastSeenAt:'2026-11-17T12:00:00Z',lastCapturedAt:'2026-11-17T11:59:00Z'};
     await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-tracker-connected]');assert.equal(await page.$('[data-tracking-options]'),null,'Connected phones open their controls directly');
     await click('Tracking options');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
     await click('Manage device');await click('Replace phone');await page.waitForSelector('[aria-label="Tracking phone requirements"]');assert.deepEqual(mutations,['POST'],'Replacement is not paired automatically');
-    await click('Back to connected phone');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
+    await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
     await click('Disconnect phone');await page.$$eval('button',buttons=>buttons.filter(b=>b.textContent.trim()==='Disconnect phone').at(-1).click());await page.waitForSelector('[data-tracking-options="choice"]');assert.deepEqual(mutations,['POST','DELETE']);
     await page.evaluate(()=>document.documentElement.dataset.appTheme='dark');await page.screenshot({path:path.join(output,'choices-dark.png')});
     assert.deepEqual(errors,[]);console.log('PASS chooser, encoded contact messages, keyboard navigation, mobile overflow, phone requirements, app sharing, explicit pairing, connected controls, replacement and confirmed disconnect');

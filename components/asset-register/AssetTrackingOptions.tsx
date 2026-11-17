@@ -16,8 +16,8 @@ function TrackingIcon({ kind }: { kind: IconKind }) {
   </svg>;
 }
 
-export default function AssetTrackingOptions({ assetTitle, connected, onPhone }: {
-  assetTitle: string; connected: boolean; onPhone: () => void;
+export default function AssetTrackingOptions({ assetTitle, connected, onPhone, onBack }: {
+  assetTitle: string; connected: boolean; onPhone: () => void; onBack?: () => void;
 }) {
   const [existing, setExisting] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -27,10 +27,9 @@ export default function AssetTrackingOptions({ assetTitle, connected, onPhone }:
 
   return <section className={styles.flow} data-tracking-options={existing ? 'existing' : 'choice'} aria-label="Asset tracking options">
     {existing ? <>
-      <button type="button" className={styles.back} onClick={() => setExisting(false)}>Back to tracking options</button>
       <div className={styles.intro}>
         <h4 ref={heading} tabIndex={-1}>Connect an existing tracker</h4>
-        <p>Choose a contact option below and we’ll check whether your tracker can connect to Aim4price.</p>
+        <p>Contact us to check compatibility with your tracking provider.</p>
       </div>
       <div className={styles.message}>
         <strong>Your message</strong>
@@ -47,33 +46,31 @@ export default function AssetTrackingOptions({ assetTitle, connected, onPhone }:
           <span className={styles.icon}><TrackingIcon kind="call"/></span><span><strong>Call</strong><small>062 572 1650</small></span>
         </a>
       </div>
-      <p className={styles.note}>WhatsApp and Email open a prepared message for you to review and send. Have your tracking provider’s name ready. Connection depends on the provider’s compatibility.</p>
+      <p className={styles.note}>WhatsApp and Email prepare this message for you to review and send.</p>
     </> : <>
       <div className={styles.intro}>
-        <h4 ref={heading} tabIndex={-1}>Choose how to track this asset</h4>
-        <p>We can check whether your existing tracker can connect to Aim4price, or help you set up a dedicated Android phone with the Aim4price tracking app.</p>
+        <h4 ref={heading} tabIndex={-1}>How would you like to track it?</h4>
+        <p>Connect a compatible tracker or use a dedicated Android phone.</p>
       </div>
       <div className={styles.choices}>
         <button type="button" className={`${styles.choice} ${styles.purple}`} onClick={() => setExisting(true)}>
-          <span className={styles.icon}><TrackingIcon kind="tracker"/></span><span><strong>Connect an existing tracker</strong><small>Ask us to check your tracker’s compatibility.</small></span>
+          <span className={styles.icon}><TrackingIcon kind="tracker"/></span><span><strong>Connect an existing tracker</strong><small>Let us check if it can connect.</small></span>
         </button>
         <button type="button" className={`${styles.choice} ${styles.green}`} onClick={onPhone}>
-          <span className={styles.icon}><TrackingIcon kind="phone"/></span><span><strong>{connected ? 'View connected phone' : 'Use a tracking phone'}</strong><small>{connected ? 'Open your phone’s tracking status and controls.' : 'Set up an Android phone to track this asset.'}</small></span>
+          <span className={styles.icon}><TrackingIcon kind="phone"/></span><span><strong>{connected ? 'View connected phone' : 'Use a tracking phone'}</strong><small>{connected ? 'Open your phone’s tracking status and controls.' : 'Track with the Aim4price app.'}</small></span>
         </button>
       </div>
-      <p className={styles.note}>For phone tracking, you’ll need an Android smartphone with GPS, a SIM card with mobile data, and a reliable power supply. The phone stays with the asset.</p>
     </>}
+    {(existing || onBack) && <div className={styles.footer}><button type="button" className={styles.back} onClick={existing ? () => setExisting(false) : onBack}>Back</button></div>}
   </section>;
 }
 
 export function PhoneTrackingRequirements() {
   return <section className={styles.requirements} aria-label="Tracking phone requirements">
-    <h4>What you’ll need</h4>
     <ul>
       <li><TrackingIcon kind="phone"/><span><strong>Android phone</strong><span>GPS enabled, kept with the asset.</span></span></li>
-      <li><TrackingIcon kind="sim"/><span><strong>SIM and mobile data</strong><span>Send recorded locations to Aim4price.</span></span></li>
+      <li><TrackingIcon kind="sim"/><span><strong>SIM with data</strong><span>Sends locations to Aim4price.</span></span></li>
       <li><TrackingIcon kind="power"/><span><strong>Reliable power</strong><span>Keep the phone charged.</span></span></li>
     </ul>
-    <p>The app runs in the background after you activate tracking. Allow precise location and unrestricted battery use. If Android stops Tracker, reopen it to resume.</p>
   </section>;
 }

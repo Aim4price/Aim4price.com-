@@ -249,3 +249,31 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
 
 .setupPanel > .manageBack { justify-self:start; }
 .setupHeading h3:focus { outline:none; }
+
+/* Phone setup is paged so instructions and actions stay together. */
+.setupPanel { gap:1.25rem; color:var(--app-text,#173d31); }
+.wizardHeading { display:grid; gap:.55rem; }
+.wizardStep { color:var(--app-accent,#176b52); font-size:.95rem; font-weight:750; }
+.wizardHeading h3 { margin:0; color:var(--app-text,#123c2f); font-size:1.45rem; font-weight:800; line-height:1.25; letter-spacing:-.035em; }
+.wizardHeading h3:focus { outline:none; }
+.wizardHeading p,.installCard p,.activationNote { color:var(--app-text,#34564b); font-size:1rem; font-weight:600; line-height:1.5; }
+.installCard { display:flex; align-items:center; gap:1.2rem; padding:1.5rem; border:1px solid var(--app-line,#bfdccf); border-radius:1.15rem; background:linear-gradient(135deg,var(--app-surface,#fff),var(--app-success-soft,#e8f3ed)); }
+.installCard > div { flex:1; }
+.installCard h4 { margin:0 0 .4rem; font-size:1.12rem; font-weight:800; }
+.installIcon { display:grid; place-items:center; width:3.5rem; height:3.5rem; flex-shrink:0; border-radius:1rem; color:var(--app-accent,#176b52); background:var(--app-success-soft,#dbece3); }
+.installIcon svg { width:1.9rem; height:1.9rem; }
+.installCard .secondaryAction { margin:0; }
+.wizardFooter { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding-top:1.1rem; border-top:1px solid var(--app-line,#d9e5df); }
+.wizardFooter button { min-width:7.5rem; font-size:1rem !important; font-weight:750; padding:.85rem 1.15rem; margin:0 !important; }
+.setupPanel .pairingCard { padding:1rem 1.2rem; background:var(--app-success-soft,#edf6f0); border-color:var(--app-line,#bfdccf); }
+.setupPanel .pairingLayout { grid-template-columns:8.5rem minmax(0,1fr); gap:1.2rem; margin:.8rem 0; }
+.setupPanel .pairingQr { width:auto; }
+.setupPanel .pairingCode { padding:.45rem 0; font-size:1.3rem; letter-spacing:.08em; }
+.setupPanel .codeHeading,.setupPanel .codeHeading span,.setupPanel .pairingCard p { color:var(--app-text,#34564b); font-size:.95rem; font-weight:650; }
+.setupPanel .activationNote { padding:0; font-size:.95rem; }
+@media(max-width:620px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .installCard { flex-wrap:wrap; padding:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .installCard > button { width:100%; }
+ :global(:where(html:not(:has([data-website-canvas])))) .setupPanel .pairingLayout { grid-template-columns:5.5rem minmax(0,1fr); gap:.75rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .pairingCode { font-size:1rem; letter-spacing:0; }
+}

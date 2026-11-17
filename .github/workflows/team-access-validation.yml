@@ -7,6 +7,7 @@ on:
       - 'lib/team-register.ts'
       - 'app/asset-register/**'
       - 'scripts/verify-desktop-register.cjs'
+      - 'scripts/verify-compact-asset-details.cjs'
       - 'app/api/team-*/**'
       - 'app/account/team-access/**'
       - 'app/team/**'
@@ -49,6 +50,7 @@ jobs:
       - run: node scripts/verify-team-access.cjs
       - run: node scripts/verify-sharing-usage.cjs
       - run: node scripts/verify-desktop-register.cjs
+      - run: node scripts/verify-compact-asset-details.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -56,3 +58,4 @@ jobs:
           path: |
             .next/team-access-validation
             .next/desktop-validation
+            .next/compact-details-validation
