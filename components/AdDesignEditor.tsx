@@ -11,7 +11,15 @@ type Props = { value?: AdCustomDesign | null; content: MarketplaceAdContent; dis
 export default function AdDesignEditor(props: Props) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" disabled={props.disabled} className={styles.launch} onClick={() => setOpen(true)}><StudioIcon name="palette" />{props.value ? 'Open design editor' : 'Create your own'}</button>
+    <button type="button" disabled={props.disabled} className={styles.launch}
+      aria-label={props.value ? 'Open design editor' : 'Create your own'} onClick={() => setOpen(true)}>
+      <span className={styles.launchIcon} aria-hidden="true"><StudioIcon name="palette" /></span>
+      <span className={styles.launchCopy}>
+        <strong>{props.value ? 'Open design editor' : 'Create your own'}</strong>
+        <span>{props.value ? 'Move, resize and style your advert.' : 'Start blank or customise a starter layout.'}</span>
+      </span>
+      <span className={styles.launchArrow} aria-hidden="true"><StudioIcon name="next" /></span>
+    </button>
     {open && createPortal(<DesignWorkspace {...props} onClose={() => setOpen(false)} />, document.body)}
   </>;
 }

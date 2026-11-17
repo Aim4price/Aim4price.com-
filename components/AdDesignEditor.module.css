@@ -1,5 +1,31 @@
-.launch { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 16px 24px; border: 1px solid #7a55b4; border-radius: 16px; background: #f0e9f8; color: #56348a; font: inherit; font-weight: 750; cursor: pointer; }
-.launch svg { width: 24px; height: 24px; }
+.launch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: 5.25rem;
+  box-sizing: border-box;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--app-purple-line, #d9c8ee);
+  border-radius: 1rem;
+  background: var(--app-purple-soft, #f5effc);
+  color: var(--app-purple, #7955a1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.launchIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid var(--app-purple-line, #d9c8ee); border-radius: .85rem; background: var(--app-surface, #fff); }
+.launch .launchIcon svg { width: 1.5rem; height: 1.5rem; }
+.launchCopy { display: grid; gap: .35rem; min-width: 0; }
+.launchCopy strong { color: var(--app-text, #173f31); font-size: 1rem; font-weight: 800; line-height: 1.3; letter-spacing: -.015em; }
+.launchCopy > span { color: var(--app-text, #294b3d); font-size: .88rem; font-weight: 650; line-height: 1.45; }
+.launchArrow { display: grid; place-items: center; width: 1.5rem; }
+.launch .launchArrow svg { width: 1.25rem; height: 1.25rem; }
+.launch:hover:not(:disabled) { border-color: var(--app-purple, #7955a1); box-shadow: 0 4px 14px var(--app-shadow-colour, #50377812); }
+.launch:focus-visible { outline: 3px solid var(--app-purple, #7955a1); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .launch { transition: none; } }
 .dialog { width: min(1560px, calc(var(--website-design-vw, 1vw) * 97)); max-width: calc(var(--website-design-vw, 1vw) * 97); height: calc(var(--website-visible-height, 100dvh) * .94); max-height: calc(var(--website-visible-height, 100dvh) * .94); margin: auto; padding: 0; border: 1px solid #cbdcd4; border-radius: 24px; background: #f5f8f6; color: #183e30; box-shadow: 0 24px 100px #001b2044; font: 500 16px/1.45 Arial, sans-serif; }
 .dialog[open] { display: flex; flex-direction: column; }
 .dialog::backdrop { background: #102a2877; backdrop-filter: blur(5px); }

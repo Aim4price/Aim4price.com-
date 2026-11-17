@@ -861,3 +861,8 @@
   :global(:where(html:not(:has([data-website-canvas])))) .kitVisual { max-width: 18rem; width: calc(100% - 1.5rem); justify-self: center; }
   :global(:where(html:not(:has([data-website-canvas])))) .kitCardBody { padding: 1rem; }
 }
+
+/* A distinct custom-design choice with room above the ready-made layouts. */
+.customDesignOption { display: grid; gap: .8rem; margin: .35rem 0 1.4rem; }
+.customDesignStatus { display: flex; align-items: center; gap: .55rem; margin: 0; color: var(--app-success, #247357); font-size: .9rem; font-weight: 700; line-height: 1.45; }
+.customDesignStatus svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }

@@ -789,8 +789,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   <div className={styles.stepIntro}>
                     <h2 id="studio-layout-title">Choose a layout</h2>
                     <p>Choose a ready-made layout or arrange your own advert.</p>
+                  </div>
+                  <div className={styles.customDesignOption}>
                     <AdDesignEditor value={draft.customDesign} content={previewContent} disabled={!canManage || saving} onChange={design => update('customDesign', design)} />
-                    {draft.customDesign ? <p>Your custom design is selected. Open the editor to change it, or choose a layout below.</p> : null}
+                    {draft.customDesign ? <p className={styles.customDesignStatus}><StudioIcon name="check" />Your custom design is selected.</p> : null}
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
