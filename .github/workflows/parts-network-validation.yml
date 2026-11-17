@@ -6,6 +6,7 @@ on:
       - 'lib/parts-share.ts'
       - 'components/PartsShareFlow*'
       - 'components/SharedParts*'
+      - 'components/PartsDescription.tsx'
       - 'app/parts-share/**'
       - 'app/api/parts-share/**'
       - 'tests/parts-share.test.cjs'

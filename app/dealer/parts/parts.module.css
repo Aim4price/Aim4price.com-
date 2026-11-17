@@ -1823,9 +1823,11 @@
 .detailFieldChoices span { font-size:12px; font-weight:500; color:var(--app-muted,#60776b); }
 .detailFieldSettings { display:grid; gap:18px; padding-top:24px; }
 .detailFieldSettings p { margin:0; line-height:1.6; }
-.partExtraDetails { display:grid; gap:6px; margin-top:10px; font-size:12px; text-align:left; }
-.partExtraDetails span { overflow-wrap:anywhere; }
-.partExtraDetails strong { font-weight:700; }
+.partExtraDetails { display:grid; gap:4px 8px; grid-template-columns:fit-content(45%) minmax(0,1fr); margin:8px 0 0; font-size:1rem; line-height:1.5; text-align:left; }
+.partDetailRow { display:contents; }
+.partDetailRow dt,.partDetailRow dd { min-width:0; margin:0; overflow-wrap:anywhere; color:var(--app-text,#173e32); }
+.partDetailRow dt { font-weight:600; }
+.partDetailRow dd { font-weight:450; }
 @media(max-width:600px) { .detailFieldChoices { grid-template-columns:1fr; } }
 
 /* Keep nested part tools inside the physical viewport, with actions always in reach. */
@@ -2253,7 +2255,7 @@
 .detailPage .partsPanel .stockTable th,
 .detailPage .partsPanel .stockTable td { text-align:left; padding:20px 16px; color:var(--app-text,#173e32); line-height:1.55; font-size:1.08rem; }
 .detailPage .partsPanel .stockTable th { position:sticky; top:var(--parts-header-offset,0px); z-index:2; padding-block:16px; font-size:1rem; font-weight:750; background:var(--app-surface-soft,#edf5f0); box-shadow:0 1px 0 var(--app-border,#cbded4); }
-.detailPage .partsPanel .stockTable td { font-weight:500; border-top:1px solid var(--app-border,#d5e3db); }
+.detailPage .partsPanel .stockTable td { padding-block:18px; font-weight:500; border-top:1px solid var(--app-border,#d5e3db); }
 .detailPage .stockTable .partNumberColumn { width:16%; }
 .detailPage .stockTable .descriptionColumn { min-width:0; }
 .detailPage .stockTable .brandColumn { width:11%; }
@@ -2270,15 +2272,11 @@
 .detailPage .stockTable .partBrand { font-weight:500; }
 .detailPage .partsPanel .stockTable :is(.partPrice,.partQuantity) { font-size:1.08rem; font-weight:750; overflow-wrap:anywhere; }
 .detailPage .stockTable .priceOnRequest { white-space:normal; font-size:1rem; font-weight:600; }
-.detailPage .stockTable .partExtraDetails { gap:10px; margin-top:12px; font-size:.98rem; line-height:1.5; }
-.detailPage .stockTable .partExtraDetails strong { font-weight:650; }
-.detailPage .stockTable .conditionBadge { justify-self:start; display:inline-flex; align-items:center; padding:3px 11px; border:1px solid var(--app-border,#cbded4); border-radius:7px; color:var(--app-text,#173e32); background:var(--app-surface-soft,#edf4f0); font-size:.95rem; font-weight:650; }
-.detailPage .stockTable .conditionBadge[data-condition="new"] { background:color-mix(in srgb,#25805b 12%,var(--app-surface,#fff)); border-color:color-mix(in srgb,#25805b 35%,var(--app-surface,#fff)); }
-.detailPage .stockTable .conditionBadge[data-condition="used"] { background:color-mix(in srgb,#b77a2c 12%,var(--app-surface,#fff)); border-color:color-mix(in srgb,#b77a2c 40%,var(--app-surface,#fff)); }
+.detailPage .stockTable .partExtraDetails { margin-top:8px; font-size:1rem; line-height:1.5; }
 .detailPage .stockTable th+th,.detailPage .stockTable td+td { border-left:1px solid color-mix(in srgb,var(--app-border,#d5e3db) 45%,transparent); }
 .detailPage .stockTable tbody tr { background:var(--app-surface,#fff); }
-.detailPage .stockTable tbody tr:nth-child(even) { background:var(--app-surface-soft,#f0f7f3); }
-.detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 10%,var(--app-surface,#fff)); }
+.detailPage .stockTable tbody tr:nth-child(even) { background:color-mix(in srgb,var(--app-surface-soft,#f0f7f3) 55%,var(--app-surface,#fff)); }
+.detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 6%,var(--app-surface,#fff)); }
 .detailPage .stockTable .partContactButton { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; font-size:1rem; flex-wrap:wrap; }
 .detailPage .stockTable .partAction button { margin-inline:auto; }
 .detailPage .stockTable.multiDealerTable .partNumberColumn { width:14%; }
