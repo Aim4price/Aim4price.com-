@@ -179,6 +179,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
+  const [previewUnlocked, setPreviewUnlocked] = useState(false);
+  const previewLocked = kits.length === 0 && !draft.id && !previewUnlocked;
   const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
   const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
   const photoHelpDialogRef = useRef<HTMLDialogElement | null>(null);
@@ -284,6 +286,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       setProfileDefaults(nextDefaults);
       setCanManage(payload.canManage !== false);
       setDraft(selected ? editableKit(selected) : kitFromDefaults(nextDefaults));
+      setPreviewUnlocked(Boolean(selected));
+      if (!selected) setActiveStep(1);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Advert templates could not be loaded.');
     } finally {
@@ -302,7 +306,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   async function downloadPreviewPng() {
-    if (downloadingPreview) return;
+    if (previewLocked || downloadingPreview) return;
     setDownloadingPreview(true);
     setPreviewDownloadError('');
     try {
@@ -322,6 +326,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   function openPreview() {
+    if (previewLocked) return;
     const source = previewCanvasRef.current;
     const target = enlargedCanvasRef.current;
     if (!source || !target) return;
@@ -339,6 +344,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     const selected = kits.find((kit) => kit.id === kitId);
     if (selected) {
       setDraft(editableKit(selected));
+      setPreviewUnlocked(true);
       setActiveStep(1);
       setFeedback('');
       setError('');
@@ -347,6 +353,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   function startNewKit() {
+    setPreviewUnlocked(kits.length > 0);
     setDraft({ ...kitFromDefaults(profileDefaults), name: `Advert template ${kits.length + 1}`, isDefault: kits.length === 0 });
     setActiveStep(1);
     setFeedback('New advert template ready to customise.');
@@ -361,6 +368,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       return;
     }
 
+    if (step === 2) setPreviewUnlocked(true);
     setActiveStep(step);
     editorRef.current?.querySelector(`.${styles.stepContent}`)?.scrollTo({ top: 0 });
     revealEditor();
@@ -428,6 +436,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   }
 
   function requestPreviewPhotos() {
+    if (previewLocked) return;
     photoHelpDialogRef.current?.showModal();
   }
 
@@ -789,8 +798,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   <div className={styles.stepIntro}>
                     <h2 id="studio-layout-title">Choose a layout</h2>
                     <p>Choose a ready-made layout or arrange your own advert.</p>
+                  </div>
+                  <div className={styles.customDesignOption}>
                     <AdDesignEditor value={draft.customDesign} content={previewContent} disabled={!canManage || saving} onChange={design => update('customDesign', design)} />
-                    {draft.customDesign ? <p>Your custom design is selected. Open the editor to change it, or choose a layout below.</p> : null}
+                    {draft.customDesign ? <p className={styles.customDesignStatus}><StudioIcon name="check" />Your custom design is selected.</p> : null}
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
@@ -953,15 +964,16 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             </div>
           </form>
 
-          <aside className={styles.previewPanel}>
+          <aside className={`${styles.previewPanel} ${previewLocked ? styles.previewPanelLocked : ''}`} data-preview-locked={previewLocked || undefined}>
+            <div className={styles.previewContent} aria-hidden={previewLocked || undefined} ref={node => { if (node) node.inert = previewLocked; }}>
             <div className={styles.previewHeading}>
               <div className={styles.previewTitle}>
                 <strong>Template preview</strong>
               </div>
               <div className={styles.previewTools}>
-                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" onClick={requestPreviewPhotos}><StudioIcon name="image-add" />Add photo</button>
+                <button className={styles.secondaryButton} type="button" title="Up to four photos · Preview only" disabled={previewLocked} onClick={requestPreviewPhotos}><StudioIcon name="image-add" />Add photo</button>
                 {previewPhotos.length ? <button className={styles.ghostButton} type="button" onClick={clearPreviewPhotos}><StudioIcon name="delete" />Clear</button> : null}
-                <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
+                <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={previewLocked || downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
               </div>
             </div>
             {previewDownloadError ? <p role="alert">{previewDownloadError}</p> : null}
@@ -1013,7 +1025,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 </div>
               ) : null}
             </div>
-            <button type="button" className={styles.expandPreview} onClick={openPreview} aria-label="Enlarge template preview">
+            <button type="button" className={styles.expandPreview} disabled={previewLocked} onClick={openPreview} aria-label="Enlarge template preview">
             <canvas
               ref={previewCanvasRef}
               className={styles.adCanvasPreview}
@@ -1025,6 +1037,16 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             <div className={styles.previewNote}>
               <p>Sample details for testing your template. Click to enlarge.</p>
             </div>
+            </div>
+            {previewLocked ? (
+              <div className={styles.previewGuidance} role="status">
+                <div className={styles.previewGuidanceCard}>
+                  <span className={styles.previewGuidanceIcon} aria-hidden="true"><StudioIcon name="details" /></span>
+                  <strong>Start with your details</strong>
+                  <p>Complete the details on the left, then select <b>Layout</b> or <b>Continue</b> to reveal your preview.</p>
+                </div>
+              </div>
+            ) : null}
             <dialog ref={photoHelpDialogRef} className={styles.photoHelpDialog} aria-labelledby="template-photo-help-title" aria-describedby="template-photo-help-description" onClick={(event) => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
               <div className={styles.dialogHeading}>
                 <div className={styles.photoHelpTitle}><span className={styles.photoHelpIcon}><StudioIcon name="image-add" /></span><h2 id="template-photo-help-title">Test your template</h2></div>
@@ -1037,7 +1059,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               <div className={styles.dialogHeading}>
                 <h2 id="studio-large-preview-title">Template preview</h2>
                 <div className={styles.dialogTools}>
-                  <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
+                  <button className={styles.primaryButton} type="button" onClick={downloadPreviewPng} disabled={previewLocked || downloadingPreview}><StudioIcon name="download" />{downloadingPreview ? 'Downloading…' : 'Download PNG'}</button>
                   <button type="button" data-modal-close="true" aria-label="Close template preview" autoFocus title="Close template preview (Esc)" onClick={() => previewDialogRef.current?.close()}>×</button>
                 </div>
               </div>

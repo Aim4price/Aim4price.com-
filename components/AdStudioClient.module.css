@@ -861,3 +861,19 @@
   :global(:where(html:not(:has([data-website-canvas])))) .kitVisual { max-width: 18rem; width: calc(100% - 1.5rem); justify-self: center; }
   :global(:where(html:not(:has([data-website-canvas])))) .kitCardBody { padding: 1rem; }
 }
+
+/* A distinct custom-design choice with room above the ready-made layouts. */
+.customDesignOption { display: grid; gap: .8rem; margin: .35rem 0 1.4rem; }
+.customDesignStatus { display: flex; align-items: center; gap: .55rem; margin: 0; color: var(--app-success, #247357); font-size: .9rem; font-weight: 700; line-height: 1.45; }
+.customDesignStatus svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
+
+/* Keep a first template's preview secondary until the user chooses Layout. */
+.previewPanelLocked { overflow: hidden; }
+.previewPanelLocked .previewContent { filter: blur(6px); opacity: .55; pointer-events: none; user-select: none; }
+.previewGuidance { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.5rem; border-radius: inherit; background: var(--app-overlay-soft, #f8fbf95c); }
+.previewGuidanceCard { display: grid; justify-items: center; gap: 1rem; width: min(100%, 23rem); box-sizing: border-box; padding: 1.6rem; border: 1px solid var(--app-info-line, #b8d4f5); border-radius: 1.2rem; background: var(--app-surface, #fff); box-shadow: 0 12px 36px var(--app-shadow-colour, #173b2f18); text-align: center; }
+.previewGuidanceIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid var(--app-info-line, #b8d4f5); border-radius: .9rem; color: var(--app-info, #2466a7); background: var(--app-info-soft, #edf5ff); }
+.previewGuidanceIcon svg { width: 1.6rem; height: 1.6rem; }
+.previewGuidanceCard strong { color: var(--app-text, #173f31); font-size: 1.2rem; font-weight: 800; line-height: 1.3; }
+.previewGuidanceCard p { margin: 0; color: var(--app-text, #294b3d); font-size: .95rem; font-weight: 600; line-height: 1.6; }
+.previewGuidanceCard b { font-weight: 800; }

@@ -1,17 +1,50 @@
 'use client';
 
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from './WebsitePortal';
 import { AD_DESIGN_FIELDS, AD_DESIGN_SIZES, MAX_DESIGN_ELEMENTS, createStarterAdDesign, createAdCustomDesign, createAdDesignElement, normalizeAdCustomDesign, resizeAdDesign, type AdCustomDesign, type AdDesignElement, type AdDesignField } from '../lib/ad-custom-design';
 import { downloadMarketplaceAd, renderMarketplaceAdCanvas, type MarketplaceAdContent } from '../lib/marketplace-ad-renderer';
 import StudioIcon from './StudioIcon';
 import styles from './AdDesignEditor.module.css';
 
+type EditorIconName = 'text' | 'rectangle' | 'circle' | 'layers' | 'undo' | 'redo' | 'minus' | 'fit' | 'hand' | 'select' | 'horizontal' | 'vertical';
+function EditorIcon({ name }: { name: EditorIconName }) {
+  const paths: Record<EditorIconName, string> = {
+    text: 'M4 5h16M12 5v15M8 20h8M4 5v3M20 5v3', rectangle: 'M4 5h16v14H4Z',
+    circle: 'M20 12a8 8 0 1 1-16 0 8 8 0 0 1 16 0', layers: 'm12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5',
+    undo: 'M8 4 3 9l5 5M3 9h10a7 7 0 0 1 0 14', redo: 'm16 4 5 5-5 5M21 9H11a7 7 0 0 0 0 14',
+    minus: 'M5 12h14', fit: 'M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5M8 8h8v8H8Z',
+    hand: 'M8 12V5a2 2 0 0 1 4 0v7-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v8c0 5-3 7-7 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2Z',
+    select: 'm5 3 14 10-7 1-3 7L5 3Z', horizontal: 'M12 3v18M5 8h14v8H5Z', vertical: 'M3 12h18M8 5h8v14H8Z',
+  };
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]} /></svg>;
+}
+function elementLabel(e: AdDesignElement) {
+  return e.field ? AD_DESIGN_FIELDS[e.field] : e.kind === 'text' ? e.text || 'Text' : e.kind === 'photo' ? e.image ? 'Uploaded image' : `Asset photo ${e.photoIndex + 1}` : e.kind.charAt(0).toUpperCase() + e.kind.slice(1);
+}
+
+function NumberField({ label, value, min, max, onCommit }: { label: string; value: number; min: number; max: number; onCommit: (value: number) => void }) {
+  const [draft, setDraft] = useState(String(Math.round(value)));
+  useEffect(() => setDraft(String(Math.round(value))), [value]);
+  return <label>{label}<input type="number" min={min} max={max} value={draft} onChange={e => setDraft(e.target.value)} onBlur={() => {
+    const next = draft.trim() && Number.isFinite(Number(draft)) ? Math.max(min, Math.min(max, Number(draft))) : value;
+    setDraft(String(Math.round(next))); onCommit(next);
+  }} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }} /></label>;
+}
+
 type Props = { value?: AdCustomDesign | null; content: MarketplaceAdContent; disabled?: boolean; onChange: (design: AdCustomDesign) => void };
 export default function AdDesignEditor(props: Props) {
   const [open, setOpen] = useState(false);
   return <>
-    <button type="button" disabled={props.disabled} className={styles.launch} onClick={() => setOpen(true)}><StudioIcon name="palette" />{props.value ? 'Open design editor' : 'Create your own'}</button>
+    <button type="button" disabled={props.disabled} className={styles.launch}
+      aria-label={props.value ? 'Open design editor' : 'Create your own'} onClick={() => setOpen(true)}>
+      <span className={styles.launchIcon} aria-hidden="true"><StudioIcon name="palette" /></span>
+      <span className={styles.launchCopy}>
+        <strong>{props.value ? 'Open design editor' : 'Create your own'}</strong>
+        <span>{props.value ? 'Move, resize and style your advert.' : 'Start blank or customise a starter layout.'}</span>
+      </span>
+      <span className={styles.launchArrow} aria-hidden="true"><StudioIcon name="next" /></span>
+    </button>
     {open && createPortal(<DesignWorkspace {...props} onClose={() => setOpen(false)} />, document.body)}
   </>;
 }
@@ -24,14 +57,61 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [rendering, setRendering] = useState(true);
+  const [toolPanel, setToolPanel] = useState<'add' | 'layers'>('add');
+  const [panMode, setPanMode] = useState(false);
+  const [zoom, setZoom] = useState<number | null>(null);
+  const [viewSize, setViewSize] = useState({ width: 0, height: 0 });
+  const viewport = useRef<HTMLDivElement>(null), settings = useRef<HTMLElement>(null);
+  const pan = useRef<{ x: number; y: number; left: number; top: number; ratio: number } | null>(null);
+  const zoomAnchor = useRef<{ x: number; y: number } | null>(null);
+  const previousView = useRef<{ scale: number; width: number; height: number; viewWidth: number; viewHeight: number } | null>(null);
   const [guides, setGuides] = useState({ x: false, y: false });
   const dialog = useRef<HTMLDialogElement>(null), canvas = useRef<HTMLCanvasElement>(null), stage = useRef<HTMLDivElement>(null), upload = useRef<HTMLInputElement>(null);
   const gesture = useRef<{ before: AdCustomDesign; element: AdDesignElement; clientX: number; clientY: number; scale: number; resize: boolean } | null>(null);
   const [width, height] = AD_DESIGN_SIZES[design.size];
+  const fitScale = Math.max(.01, Math.min((viewSize.width - 64) / width, (viewSize.height - 64) / height, 1));
+  const scale = zoom ?? fitScale;
   const element = design.elements.find(e => e.id === selected);
   const dirty = JSON.stringify(design) !== JSON.stringify(initial.current);
   const previewContent = { ...content, brand: { ...content.brand, customDesign: design } };
   useEffect(() => { dialog.current?.showModal(); }, []);
+  useEffect(() => {
+    const node = viewport.current; if (!node) return;
+    const observer = new ResizeObserver(() => setViewSize({ width: node.clientWidth, height: node.clientHeight }));
+    observer.observe(node); return () => observer.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    const node = viewport.current, old = previousView.current;
+    if (node && old && zoom !== null) {
+      // Keep the point at the centre of the view in place as the user zooms.
+      const x = zoomAnchor.current?.x ?? (node.scrollLeft + old.viewWidth / 2 - Math.max(32, (old.viewWidth - old.width * old.scale) / 2)) / old.scale;
+      const y = zoomAnchor.current?.y ?? (node.scrollTop + old.viewHeight / 2 - Math.max(32, (old.viewHeight - old.height * old.scale) / 2)) / old.scale;
+      node.scrollLeft = x * scale + Math.max(32, (viewSize.width - width * scale) / 2) - viewSize.width / 2;
+      node.scrollTop = y * scale + Math.max(32, (viewSize.height - height * scale) / 2) - viewSize.height / 2;
+    } else if (node) { node.scrollLeft = 0; node.scrollTop = 0; }
+    zoomAnchor.current = null;
+    previousView.current = { scale, width, height, viewWidth: viewSize.width, viewHeight: viewSize.height };
+  }, [scale, zoom, width, height, viewSize]);
+  useEffect(() => { settings.current?.scrollTo({ top: 0 }); }, [selected]);
+  function changeZoom(delta: number) {
+    const node = viewport.current;
+    if (node) zoomAnchor.current = {
+      x: (node.scrollLeft + node.clientWidth / 2 - Math.max(32, (node.clientWidth - width * scale) / 2)) / scale,
+      y: (node.scrollTop + node.clientHeight / 2 - Math.max(32, (node.clientHeight - height * scale) / 2)) / scale,
+    };
+    setZoom(Math.max(.1, Math.min(2, Math.round((scale + delta) * 100) / 100)));
+  }
+  function fitView() { setZoom(null); viewport.current?.scrollTo({ left: 0, top: 0 }); }
+  function starter() {
+    if (design.elements.length && !window.confirm('Replace this canvas with a starter layout? You can undo this.')) return;
+    commit(resizeAdDesign(createStarterAdDesign(content.brand.primaryColor, content.brand.accentColor), design.size)); setSelected(''); fitView();
+  }
+  function selectLayer(e: AdDesignElement) {
+    setSelected(e.id); setPanMode(false);
+    const node = viewport.current; if (!node) return;
+    node.scrollTo({ left: (e.x + e.width / 2) * scale + Math.max(32, (node.clientWidth - width * scale) / 2) - node.clientWidth / 2,
+      top: (e.y + e.height / 2) * scale + Math.max(32, (node.clientHeight - height * scale) / 2) - node.clientHeight / 2 });
+  }
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', handler); return () => window.removeEventListener('beforeunload', handler);
@@ -69,9 +149,12 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
   function add(kind: AdDesignElement['kind'], field?: AdDesignField, image = '') {
     if (design.elements.length >= MAX_DESIGN_ELEMENTS) { setError('This design can contain up to 40 elements.'); return; }
     const next = createAdDesignElement(kind, field); next.image = image;
-    next.x += (design.elements.length % 8) * 24; next.y += (design.elements.length % 8) * 24;
+    next.width = Math.min(next.width, width); next.height = Math.min(next.height, height);
+    next.x = (width - next.width) / 2 + (design.elements.length % 5) * 16;
+    next.y = (height - next.height) / 2 + (design.elements.length % 5) * 16;
     if (kind === 'photo' && !image) next.photoIndex = Math.min(3, design.elements.filter(e => e.kind === 'photo' && !e.image).length);
-    commit({ ...design, elements: [...design.elements, next] }); setSelected(next.id);
+    commit({ ...design, elements: [...design.elements, next] }); setSelected(next.id); setPanMode(false);
+    requestAnimationFrame(() => selectLayer(next));
   }
   function remove() { commit({ ...design, elements: design.elements.filter(e => e.id !== selected) }); setSelected(''); }
   function duplicate() {
@@ -85,7 +168,7 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
     [elements[index], elements[target]] = [elements[target], elements[index]]; commit({ ...design, elements });
   }
   function start(event: PointerEvent, e: AdDesignElement, resize = false) {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || panMode) return;
     event.preventDefault(); event.stopPropagation(); setSelected(e.id);
     event.currentTarget.setPointerCapture(event.pointerId);
     gesture.current = { before: current.current, element: e, clientX: event.clientX, clientY: event.clientY, scale: width / (stage.current?.getBoundingClientRect().width || width), resize };
@@ -135,56 +218,78 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
     } catch { setError('The PNG could not be downloaded. Check your images and try again.'); }
     finally { setBusy(false); }
   }
-  const numberControl = (label: string, key: 'x' | 'y' | 'width' | 'height' | 'fontSize', max: number) => element && <label>{label}<input type="number" min={key === 'x' || key === 'y' ? 0 : key === 'fontSize' ? 12 : 24} max={max} value={Math.round(element[key])} onChange={e => { if (e.target.value !== '') patch({ [key]: Number(e.target.value) }); }} /></label>;
+  const numberControl = (label: string, key: 'x' | 'y' | 'width' | 'height' | 'fontSize', max: number) => element && <NumberField key={`${element.id}-${key}`} label={label} min={key === 'x' || key === 'y' ? 0 : key === 'fontSize' ? 12 : 24} max={max} value={element[key]} onCommit={value => patch({ [key]: value })} />;
   return <dialog ref={dialog} className={styles.dialog} aria-labelledby="design-title" onCancel={e => { e.preventDefault(); close(); }} onKeyDown={e => {
     if ((e.target as HTMLElement).matches('input, textarea, select')) return;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); }
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); changeZoom(.1); }
+      if (e.key === '-') { e.preventDefault(); changeZoom(-.1); }
+      if (e.key === '0') { e.preventDefault(); fitView(); }
+    }
   }}>
-    <header className={styles.header}><div><h2 id="design-title">Make it your own</h2><p>Arrange your advert. Save the layout and reuse it for any asset.</p></div><button type="button" data-modal-close="true" aria-label="Close design editor" onClick={close}>×</button></header>
+    <header className={styles.header}>
+      <div className={styles.titleGroup}><span className={styles.titleIcon}><StudioIcon name="palette" /></span><div><h2 id="design-title">Make it your own</h2><p>Add, arrange and style your advert.</p></div></div>
+      <button type="button" data-modal-close="true" aria-label="Close design editor" onClick={close}>×</button>
+    </header>
     <div className={styles.toolbar}>
-      <div className={styles.choices} aria-label="Advert size">{Object.keys(AD_DESIGN_SIZES).map(size => <button type="button" key={size} aria-pressed={design.size === size} onClick={() => commit(resizeAdDesign(design, size as AdCustomDesign['size']))}>{size.charAt(0).toUpperCase() + size.slice(1)}</button>)}</div>
-      <button type="button" onClick={() => {
-        if (design.elements.length && !window.confirm('Replace this canvas with a starter layout? You can undo this.')) return;
-        commit(resizeAdDesign(createStarterAdDesign(content.brand.primaryColor, content.brand.accentColor), design.size)); setSelected('');
-      }}>Starter layout</button>
+      <div className={styles.toolbarGroup}><span className={styles.controlLabel}>Format</span><div className={styles.segmented} role="group" aria-label="Advert size">{Object.keys(AD_DESIGN_SIZES).map(size => <button type="button" key={size} aria-pressed={design.size === size} onClick={() => { commit(resizeAdDesign(design, size as AdCustomDesign['size'])); fitView(); }}>{size.charAt(0).toUpperCase() + size.slice(1)}</button>)}</div></div>
       <label className={styles.color}>Background<input type="color" value={design.background} onChange={e => commit({ ...design, background: e.target.value })} /></label>
-      <button type="button" disabled={!history.current.length} onClick={() => undo()}>Undo</button><button type="button" disabled={!future.current.length} onClick={() => undo(true)}>Redo</button>
+      <button type="button" onClick={starter}><StudioIcon name="layout" />Starter layout</button>
+      <div className={styles.history} role="group" aria-label="Edit history"><button type="button" title="Undo (Ctrl+Z)" disabled={!history.current.length} onClick={() => undo()}><EditorIcon name="undo" />Undo</button><button type="button" title="Redo (Ctrl+Shift+Z)" disabled={!future.current.length} onClick={() => undo(true)}><EditorIcon name="redo" />Redo</button></div>
     </div>
     <div className={styles.workspace}>
-      <aside className={styles.panel}><h3>Add an element</h3><div className={styles.addGrid}>
-        <button type="button" onClick={() => add('text')}><StudioIcon name="details" />Text</button>
-        <button type="button" onClick={() => add('photo')}><StudioIcon name="image" />Asset photo</button>
-        <button type="button" onClick={() => add('logo')}><StudioIcon name="image" />Logo</button>
-        <button type="button" disabled={busy} onClick={() => upload.current?.click()}><StudioIcon name="image" />Upload image</button>
-        <button type="button" onClick={() => add('rectangle')}>▭ Rectangle</button><button type="button" onClick={() => add('circle')}>○ Circle</button>
-      </div><input ref={upload} type="file" hidden accept="image/png,image/jpeg,image/webp" onChange={e => void uploadImage(e.target.files?.[0])} />
-      <h3>Asset & contact details</h3><p>These fields fill in when you create an advert.</p><div className={styles.fields}>{Object.entries(AD_DESIGN_FIELDS).map(([key, label]) => <button type="button" key={key} onClick={() => add('text', key as AdDesignField)}>+ {label}</button>)}</div>
-      <h3>Layers</h3><p>Top items appear in front. Select any layer to edit it.</p><div className={styles.layers}>{[...design.elements].reverse().map(e => <button type="button" key={e.id} aria-pressed={e.id === selected} onClick={() => setSelected(e.id)}>{e.field ? AD_DESIGN_FIELDS[e.field] : e.kind === 'text' ? e.text || 'Text' : e.kind === 'photo' ? e.image ? 'Uploaded image' : `Asset photo ${e.photoIndex + 1}` : e.kind}</button>)}</div></aside>
-      <main className={styles.workarea}>
-        <p className={styles.hint}>Drag to move · Drag the corner to resize · Arrow keys for fine adjustments</p>
-        <div className={styles.stage} ref={stage} style={{ aspectRatio: `${width}/${height}`, maxWidth: design.size === 'portrait' ? 520 : design.size === 'square' ? 640 : 960 }} onPointerDown={e => { if (e.target === e.currentTarget || e.target === canvas.current) setSelected(''); }}>
+      <aside className={styles.library} aria-label="Design tools">
+        <div className={styles.panelTabs} role="group" aria-label="Tool panel"><button type="button" aria-pressed={toolPanel === 'add'} onClick={() => setToolPanel('add')}><StudioIcon name="plus" />Add elements</button><button type="button" aria-pressed={toolPanel === 'layers'} onClick={() => setToolPanel('layers')}><EditorIcon name="layers" />Layers</button></div>
+        <div className={styles.panelScroll}>
+        {toolPanel === 'add' ? <>
+          <section className={styles.section}><h3>The basics</h3><div className={styles.addGrid}>
+            <button type="button" onClick={() => add('text')}><EditorIcon name="text" />Text</button>
+            <button type="button" onClick={() => add('photo')}><StudioIcon name="image" />Asset photo</button>
+            <button type="button" onClick={() => add('logo')}><StudioIcon name="star" />Logo</button>
+            <button type="button" aria-label="Upload image" disabled={busy} onClick={() => upload.current?.click()}><StudioIcon name="image-add" />Upload</button>
+            <button type="button" onClick={() => add('rectangle')}><EditorIcon name="rectangle" />Rectangle</button><button type="button" onClick={() => add('circle')}><EditorIcon name="circle" />Circle</button>
+          </div></section>
+          <section className={styles.section}><h3>Asset details</h3><p>These fill in for each advert.</p><div className={styles.fields}>{(['title','price','year','usage','condition'] as const).map(key => <button type="button" key={key} onClick={() => add('text', key)}><StudioIcon name={key === 'price' ? 'price' : 'plus'} />{AD_DESIGN_FIELDS[key]}</button>)}</div></section>
+          <details className={styles.disclosure}><summary>Business & contact<StudioIcon name="chevron" /></summary><div className={styles.fields}>{(['business','contact','phone','email','website'] as const).map(key => <button type="button" key={key} onClick={() => add('text', key)}><StudioIcon name="plus" />{AD_DESIGN_FIELDS[key]}</button>)}</div></details>
+        </> : <section className={styles.section}><h3>Layers <span className={styles.count}>{design.elements.length}</span></h3><p>Top items appear in front. Select one to edit it.</p><div className={styles.layers}>{[...design.elements].reverse().map(e => <button type="button" key={e.id} aria-pressed={e.id === selected} onClick={() => selectLayer(e)}><span className={styles.layerIcon}>{e.kind === 'text' ? <EditorIcon name="text" /> : e.kind === 'rectangle' || e.kind === 'circle' ? <EditorIcon name={e.kind} /> : <StudioIcon name="image" />}</span><span>{elementLabel(e)}</span></button>)}</div>{!design.elements.length ? <div className={styles.panelEmpty}><EditorIcon name="layers" /><strong>Your elements will appear here</strong><p>Add a photo or text to get started.</p><button type="button" onClick={() => setToolPanel('add')}>Add elements</button></div> : null}</section>}
+        </div><input ref={upload} type="file" hidden accept="image/png,image/jpeg,image/webp" onChange={e => void uploadImage(e.target.files?.[0])} />
+      </aside>
+      <main className={styles.workarea} aria-label="Advert workspace">
+        <div className={styles.viewbar}>
+          <div className={styles.segmented} role="group" aria-label="Canvas tool"><button type="button" aria-label="Select elements" title="Select and move elements" aria-pressed={!panMode} onClick={() => setPanMode(false)}><EditorIcon name="select" /></button><button type="button" aria-label="Pan canvas" title="Drag to move around the canvas" aria-pressed={panMode} onClick={() => setPanMode(true)}><EditorIcon name="hand" /></button></div>
+          <div className={styles.zoomControls} role="group" aria-label="Canvas zoom"><button type="button" aria-label="Zoom out" title="Zoom out (Ctrl+−)" disabled={scale <= .1} onClick={() => changeZoom(-.1)}><EditorIcon name="minus" /></button><output aria-label="Zoom level">{Math.round(scale * 100)}%</output><button type="button" aria-label="Zoom in" title="Zoom in (Ctrl++)" disabled={scale >= 2} onClick={() => changeZoom(.1)}><StudioIcon name="plus" /></button><button type="button" title="Fit the whole advert (Ctrl+0)" aria-pressed={zoom === null} onClick={fitView}><EditorIcon name="fit" />Fit</button></div>
+        </div>
+        <div ref={viewport} className={`${styles.viewport} ${panMode ? styles.panning : ''}`} tabIndex={0} aria-label="Scrollable advert canvas" onPointerDown={event => {
+          if (!panMode || event.button !== 0) return;
+          event.preventDefault(); const node = event.currentTarget; node.setPointerCapture(event.pointerId);
+          pan.current = { x: event.clientX, y: event.clientY, left: node.scrollLeft, top: node.scrollTop, ratio: node.clientWidth / node.getBoundingClientRect().width };
+        }} onPointerMove={event => { const p = pan.current; if (p) { event.currentTarget.scrollLeft = p.left - (event.clientX - p.x) * p.ratio; event.currentTarget.scrollTop = p.top - (event.clientY - p.y) * p.ratio; } }} onPointerUp={() => { pan.current = null; }} onPointerCancel={() => { pan.current = null; }} onLostPointerCapture={() => { pan.current = null; }}>
+        <div className={styles.stageSurround} style={{ width: `max(100%, ${width * scale + 64}px)`, height: `max(100%, ${height * scale + 64}px)` }}>
+        <div className={styles.stage} ref={stage} style={{ width: width * scale, height: height * scale }} onPointerDown={e => { if (e.target === e.currentTarget || e.target === canvas.current) setSelected(''); }}>
           <canvas ref={canvas} width={width} height={height} aria-label="Custom advert preview" />
-          {!design.elements.length ? <div className={styles.empty}><StudioIcon name="palette" /><strong>Your advert starts here</strong><span>Add a photo, a price or some text from the panel.</span></div> : null}
-          {design.elements.map(e => <div key={e.id} role="button" tabIndex={0} aria-label={`Move ${e.field ? AD_DESIGN_FIELDS[e.field] : e.kind}`} aria-pressed={selected === e.id} className={`${styles.element} ${selected === e.id ? styles.selected : ''}`} style={{ left: `${e.x / width * 100}%`, top: `${e.y / height * 100}%`, width: `${e.width / width * 100}%`, height: `${e.height / height * 100}%` }} onFocus={() => setSelected(e.id)} onPointerDown={event => start(event, e)} onPointerMove={move} onPointerUp={() => end()} onPointerCancel={() => end(true)} onLostPointerCapture={() => end()} onKeyDown={event => {
+          {!design.elements.length ? <div className={`${styles.empty} ${width * scale < 400 || height * scale < 240 ? styles.emptyCompact : ''}`}><StudioIcon name="palette" /><strong>Your advert starts here</strong><span>Add your first element from the left, or begin with a starter layout.</span><button type="button" className={styles.primary} onClick={starter}><StudioIcon name="layout" />Start with a layout</button></div> : null}
+          {design.elements.map(e => <div key={e.id} role="button" tabIndex={panMode ? -1 : 0} aria-label={`Move ${e.field ? AD_DESIGN_FIELDS[e.field] : e.kind}`} aria-pressed={selected === e.id} className={`${styles.element} ${selected === e.id ? styles.selected : ''}`} style={{ left: `${e.x / width * 100}%`, top: `${e.y / height * 100}%`, width: `${e.width / width * 100}%`, height: `${e.height / height * 100}%` }} onFocus={() => setSelected(e.id)} onDoubleClick={() => { if (e.kind === 'text' && !e.field) settings.current?.querySelector('textarea')?.focus(); }} onPointerDown={event => start(event, e)} onPointerMove={move} onPointerUp={() => end()} onPointerCancel={() => end(true)} onLostPointerCapture={() => end()} onKeyDown={event => {
             const delta = event.shiftKey ? 10 : 1;
             const arrows: Record<string, [number, number]> = { ArrowLeft: [-delta, 0], ArrowRight: [delta, 0], ArrowUp: [0, -delta], ArrowDown: [0, delta] };
             if (arrows[event.key]) { event.preventDefault(); const [x, y] = arrows[event.key]; patch({ x: e.x + x, y: e.y + y }); }
             if (event.key === 'Delete' || event.key === 'Backspace') { event.preventDefault(); remove(); }
           }}>{selected === e.id ? <span className={styles.resize} aria-hidden="true" onPointerDown={event => start(event, e, true)} /> : null}</div>)}
           {guides.x ? <i className={styles.guideX} /> : null}{guides.y ? <i className={styles.guideY} /> : null}
-        </div>
-        <p className={styles.hint} role="status">{rendering ? 'Updating preview…' : `${width} × ${height} px · ${design.elements.length} elements`}</p>
+        </div></div></div>
+        <div className={styles.canvasStatus}><span>{panMode ? 'Drag the canvas to move around' : 'Drag to move · Corner to resize'}</span><span role="status">{rendering ? 'Updating preview…' : `${width} × ${height} px`}</span></div>
       </main>
-      <aside className={styles.panel}><h3>{element ? 'Edit selected element' : 'Element settings'}</h3>{element ? <>
+      <aside ref={settings} className={styles.panel} aria-label="Element settings"><div className={styles.settingsHeading}><StudioIcon name="styles" /><h3>{element ? elementLabel(element) : 'Element settings'}</h3></div>{element ? <>
+        <div className={styles.elementActions}><button type="button" disabled={design.elements.length >= MAX_DESIGN_ELEMENTS} onClick={duplicate}><StudioIcon name="copy" />Duplicate</button><button type="button" className={styles.delete} onClick={remove}><StudioIcon name="delete" />Delete</button></div>
+        <section className={styles.section}>
         {element.field ? <p><strong>{AD_DESIGN_FIELDS[element.field]}</strong> updates for each advert.</p> : null}
         {element.kind === 'text' ? <>
           {!element.field ? <label>Wording<textarea value={element.text} maxLength={1000} rows={3} onChange={e => patch({ text: e.target.value })} /></label> : null}
-          {numberControl('Text size', 'fontSize', 240)}
-          <div className={styles.choices} aria-label="Font">{(['Arial', 'Georgia', 'Montserrat'] as const).map(font => <button type="button" key={font} aria-pressed={element.font === font} onClick={() => patch({ font })}>{font}</button>)}</div>
-          <button type="button" aria-pressed={element.bold} onClick={() => patch({ bold: !element.bold })}>Bold</button>
-          <div className={styles.choices} aria-label="Text alignment">{(['left', 'center', 'right'] as const).map(align => <button type="button" key={align} aria-pressed={element.align === align} onClick={() => patch({ align })}>{align}</button>)}</div>
-          <p>Long wording automatically reduces to fit the box.</p>
+          <details className={styles.fontPicker}><summary><span>Font</span><strong>{element.font}</strong><StudioIcon name="chevron" /></summary><div className={styles.fontOptions} role="group" aria-label="Font">{(['Arial', 'Georgia', 'Montserrat'] as const).map(font => <button type="button" key={font} style={{ fontFamily: font }} aria-pressed={element.font === font} onClick={event => { patch({ font }); const picker = event.currentTarget.closest('details'); if (picker) { picker.open = false; picker.querySelector('summary')?.focus(); } }}>{font}{element.font === font ? <StudioIcon name="check" /> : null}</button>)}</div></details>
+          <div className={styles.typeTools}>{numberControl('Text size', 'fontSize', 240)}<button type="button" aria-pressed={element.bold} onClick={() => patch({ bold: !element.bold })}>Bold</button></div>
+          <div className={styles.alignment} role="group" aria-label="Text alignment">{(['left', 'center', 'right'] as const).map(align => <button type="button" key={align} aria-pressed={element.align === align} onClick={() => patch({ align })}>{align === 'center' ? 'Centre' : align === 'left' ? 'Left' : 'Right'}</button>)}</div>
+          <p>Text adjusts to fit its box.</p>
         </> : null}
         {['text', 'rectangle', 'circle'].includes(element.kind) ? <label className={styles.color}>Colour<input type="color" value={element.color} onChange={e => patch({ color: e.target.value })} /></label> : null}
         {element.kind === 'photo' || element.kind === 'logo' ? <>
@@ -193,12 +298,12 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
           <div className={styles.choices}><button type="button" aria-pressed={element.fit === 'cover'} onClick={() => patch({ fit: 'cover' })}>Fill frame</button><button type="button" aria-pressed={element.fit === 'contain'} onClick={() => patch({ fit: 'contain' })}>Fit image</button></div>
           <label>Horizontal crop<input type="range" min={0} max={100} value={element.cropX} onChange={e => patch({ cropX: Number(e.target.value) })} /></label><label>Vertical crop<input type="range" min={0} max={100} value={element.cropY} onChange={e => patch({ cropY: Number(e.target.value) })} /></label>
         </> : null}
-        <div className={styles.numbers}>{numberControl('Left', 'x', width - element.width)}{numberControl('Top', 'y', height - element.height)}{numberControl('Width', 'width', width)}{numberControl('Height', 'height', height)}</div>
-        <div className={styles.choices}><button type="button" onClick={() => patch({ x: (width - element.width) / 2 })}>Centre horizontally</button><button type="button" onClick={() => patch({ y: (height - element.height) / 2 })}>Centre vertically</button></div>
-        <div className={styles.choices}><button type="button" onClick={() => layer(true)}>Bring forward</button><button type="button" onClick={() => layer(false)}>Send backward</button></div>
-        <div className={styles.choices}><button type="button" disabled={design.elements.length >= MAX_DESIGN_ELEMENTS} onClick={duplicate}>Duplicate</button><button type="button" className={styles.delete} onClick={remove}>Delete</button></div>
-      </> : <p>Select an element on the advert or in Layers to change its appearance.</p>}</aside>
+        </section>
+        <section className={styles.section}><h3>Arrange</h3><div className={styles.arrangeGrid}><button type="button" title="Centre horizontally" onClick={() => patch({ x: (width - element.width) / 2 })}><EditorIcon name="horizontal" />Centre across</button><button type="button" title="Centre vertically" onClick={() => patch({ y: (height - element.height) / 2 })}><EditorIcon name="vertical" />Centre down</button></div>
+        <div className={styles.choices}><button type="button" disabled={design.elements.at(-1)?.id === selected} onClick={() => layer(true)}>Bring forward</button><button type="button" disabled={design.elements[0]?.id === selected} onClick={() => layer(false)}>Send backward</button></div></section>
+        <details className={styles.disclosure}><summary>Size & position<StudioIcon name="chevron" /></summary><div className={styles.numbers}>{numberControl('Left', 'x', width - element.width)}{numberControl('Top', 'y', height - element.height)}{numberControl('Width', 'width', width)}{numberControl('Height', 'height', height)}</div><p>Arrow keys move 1 px. Shift + arrow moves 10 px.</p></details>
+      </> : <div className={styles.panelEmpty}><StudioIcon name="edit" /><strong>Select an element</strong><p>Select anything on your advert to change its colour, size or position.</p><div className={styles.quickTips}><span><b>1</b> Add an element</span><span><b>2</b> Drag it into place</span><span><b>3</b> Make it yours here</span></div></div>}</aside>
     </div>
-    <footer className={styles.footer}><div>{error ? <p role="alert" className={styles.error}>{error}</p> : <p>Sample asset details are for preview. Choose “Use design”, then save your template.</p>}</div><button type="button" disabled={busy || !design.elements.length} onClick={() => void download()}><StudioIcon name="download" />Download preview</button><button type="button" className={styles.primary} disabled={busy || !design.elements.length} onClick={() => { onChange(normalizeAdCustomDesign(design)!); onClose(); }}>Use design</button></footer>
+    <footer className={styles.footer}><div>{error ? <p role="alert" className={styles.error}>{error}</p> : <p>Preview uses sample details. Choose “Use design”, then save your template.</p>}</div><button type="button" disabled={busy || !design.elements.length} onClick={() => void download()}><StudioIcon name="download" />Download preview</button><button type="button" className={styles.primary} disabled={busy || !design.elements.length} onClick={() => { onChange(normalizeAdCustomDesign(design)!); onClose(); }}><StudioIcon name="check" />Use design</button></footer>
   </dialog>;
 }
