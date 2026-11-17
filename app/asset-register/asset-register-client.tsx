@@ -19226,7 +19226,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : assetSettingsView === 'usage' ? assetSettingsUsageHeading(settingsUsageMode) : 'Advanced settings'}</h3>
+                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : assetSettingsView === 'usage' ? assetSettingsUsageHeading(settingsUsageMode) : assetSettingsView === 'average' ? 'Average usage settings' : 'Advanced settings'}</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
