@@ -28,14 +28,6 @@
   min-width: 0;
 }
 
-.pageLabel {
-  margin: 0 0 0.4rem;
-  color: var(--brand-700);
-  font-size: 0.95rem;
-  line-height: 1.5;
-  font-weight: 650;
-}
-
 .heroTitle {
   margin: 0;
   color: var(--brand-900);
@@ -67,7 +59,7 @@
 
 .contactLink {
   display: grid;
-  grid-template-columns: 3rem minmax(0, 1fr);
+  grid-template-columns: 3.25rem minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
   min-width: 0;
@@ -91,22 +83,44 @@
 .contactIcon {
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border: 1px solid #e1e9e3;
-  border-radius: 0.8rem;
-  color: var(--brand-700);
-  background: #ffffff;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid;
+  border-radius: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 3px 8px rgba(16, 42, 34, 0.05);
 }
 
 .contactIcon svg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.65rem;
+  height: 1.65rem;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.7;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.phoneIcon {
+  color: #245f8e;
+  border-color: #a8c9e5;
+  background: linear-gradient(145deg, #f0f7fd, #dcebf7);
+}
+
+.emailIcon {
+  color: #95601d;
+  border-color: #e7c48c;
+  background: linear-gradient(145deg, #fff8ed, #f5e7cf);
+}
+
+.whatsAppIcon {
+  color: #17704f;
+  border-color: #9fcdb9;
+  background: linear-gradient(145deg, #eef9f3, #d7ecdf);
+}
+
+.contactIcon .whatsAppMark {
+  fill: currentColor;
+  stroke: none;
 }
 
 .contactValue {
