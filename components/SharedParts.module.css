@@ -1,14 +1,50 @@
 .page{background:transparent;color:var(--app-text,#123b2e)}.panel{max-width:1400px;margin:auto;background:#fff;border:1px solid #d3e3db;border-radius:26px;padding:clamp(20px,calc(var(--website-design-vw, 1vw) * 3),40px);display:grid;gap:24px;box-shadow:0 18px 55px #173d3212}.panel h1{font-size:clamp(26px,calc(var(--website-design-vw, 1vw) * 3),40px);font-weight:750;margin:0 0 10px}.heading{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.open{font:inherit;border:0;cursor:pointer}.table{overflow:auto;border:1px solid #c8ddd3;border-radius:14px;scrollbar-width:thin;scrollbar-color:#6d9788 #edf4f0}.table table{width:100%;border-collapse:collapse;text-align:left;font-size:.95rem}.table th,.table td{padding:16px;border-bottom:1px solid #d8e5de;vertical-align:top;min-width:110px}.table thead{background:#edf6f1}.table tbody tr:nth-child(even){background:#f8fbf9}.detail{margin-top:10px;font-size:.85rem;line-height:1.5}.message{display:block;width:100%;min-height:100px;box-sizing:border-box;border:1px solid #c8ddd3;border-radius:12px;padding:16px;font:inherit;margin:12px 0;background:white;color:inherit}
 
-.passwordForm{display:grid;gap:1rem;padding-top:1rem}.passwordForm p{margin:0;line-height:1.6;color:var(--app-muted,#657b72)}.passwordInput{display:flex;align-items:center;border:1px solid var(--app-line,#c8ddd3);border-radius:14px;background:var(--app-surface,#edf6f1)}.passwordInput input{min-width:0;flex:1;border:0;background:transparent;padding:1rem;font:inherit;color:inherit}.passwordInput button{display:grid;place-items:center;flex-shrink:0;width:3rem;height:3rem;margin-right:.4rem;border:0;background:transparent;color:inherit;cursor:pointer}.passwordInput svg{width:24px;height:24px}.passwordInput:focus-within{outline:2px solid #168461;outline-offset:2px}
-
-.passwordDialog.passwordDialog{width:min(38rem,calc(var(--website-visible-width,100vw) - 2rem))!important;padding:1.6rem!important;border-radius:1.6rem!important;background:var(--app-surface,#fff)!important;font-family:var(--font-heading,'Montserrat'),sans-serif;color:var(--app-text,#173f31)}
-.passwordDialog.passwordDialog h2{font-size:1.65rem!important;line-height:1.2!important;letter-spacing:-.035em}
-.passwordDialog .passwordForm{gap:1.2rem;padding-top:1.25rem}.passwordDialog .passwordForm>p{font-size:.88rem;line-height:1.6}
-.protectedList{display:flex;align-items:center;gap:.9rem;padding:1rem;border:1px solid var(--app-line,#cee0d7);border-radius:1rem;background:var(--app-surface-soft,#f0f7f3)}.protectedList>div{display:grid;gap:.3rem;min-width:0}.protectedList strong{font-size:1.02rem;overflow-wrap:anywhere}.protectedList small,.protectedList span{font-size:.78rem;color:var(--app-muted,#657b72)}.lockIcon{display:grid;place-items:center;flex-shrink:0;width:2.8rem;height:2.8rem;border-radius:.85rem;background:var(--app-surface,#fff);border:1px solid var(--app-line,#cee0d7)}.lockIcon svg{width:23px;height:23px;color:var(--app-accent,#176d53)}
-.passwordField{display:grid;gap:.6rem}.passwordField label{font-size:.9rem;font-weight:700}.passwordField>small{font-size:.75rem;color:var(--app-muted,#657b72)}.passwordDialog .passwordInput{background:var(--app-surface,#fff);overflow:hidden}.passwordDialog .passwordInput input{width:100%;outline:0;min-height:3.2rem;box-sizing:border-box;padding:.85rem 1rem;font-size:.95rem}.passwordInput button:focus-visible{outline:2px solid var(--app-accent,#176d53);outline-offset:-3px;border-radius:10px}
-.passwordDialog .passwordError{padding:.75rem 1rem;border:1px solid var(--app-danger-border,#e4b8b8);border-radius:.75rem;background:var(--app-danger-soft,#fbefef);color:var(--app-danger,#a32e35)!important;font-size:.85rem}
-.passwordFooter{display:flex;justify-content:space-between;gap:.8rem;border-top:1px solid var(--app-line,#d8e5de);padding-top:1rem}.passwordFooter button{font:inherit;font-size:.9rem;font-weight:700;min-height:3rem;padding:.7rem 1.15rem;border:1px solid var(--app-line,#c8ddd3);border-radius:.85rem;background:var(--app-surface,#fff);color:inherit;cursor:pointer}.passwordFooter .unlockButton{display:flex;align-items:center;gap:1rem;background:var(--app-accent,#176d53);border-color:var(--app-accent,#176d53);color:#fff}.passwordFooter button:disabled{opacity:.6;cursor:wait}.passwordDialog .passwordHelp{font-size:.75rem!important;text-align:center}
+/* Shared-parts access: compact sign-in and password surfaces. */
+.accessDialog.accessDialog {
+ width:min(36rem,calc(var(--website-visible-width,100vw) - 2rem))!important;
+ padding:1.75rem!important;border-radius:1.5rem!important;
+ background:linear-gradient(145deg,var(--app-surface,#fff) 55%,var(--app-surface-soft,#f0f7f3))!important;
+ color:var(--app-text,#173f31);font-family:var(--font-heading,'Montserrat'),sans-serif;
+ scrollbar-width:thin;scrollbar-color:var(--app-line,#c8ddd3) transparent;
+}
+.accessDialog.accessDialog>header{gap:1rem;align-items:center}
+.accessDialog.accessDialog h2{font-size:1.65rem!important;line-height:1.25!important;letter-spacing:-.035em;font-weight:800}
+.accessDialog .accessIntro{margin:0;color:var(--app-muted,#657b72);font-size:1rem;line-height:1.55}
+.accountContent{display:grid;gap:1.5rem;padding-top:1.25rem}
+.accountActions{display:grid;grid-template-columns:1fr 1.25fr;gap:.75rem}
+.accountActions>a:only-child{grid-column:1/-1}
+.accessDialog .accountActions>a,.passwordFooter button{
+ display:flex;align-items:center;justify-content:center;gap:.6rem;box-sizing:border-box;
+ min-height:3.25rem;padding:.85rem 1rem;border:1px solid var(--app-line,#c8ddd3);border-radius:.9rem;
+ color:inherit;background:var(--app-surface,#fff);font:inherit;font-size:.95rem;font-weight:750;line-height:1.25;
+ text-decoration:none;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.accessDialog .accountActions>.accessPrimary,.passwordFooter .unlockButton{background:var(--app-accent,#176d53);border-color:var(--app-accent,#176d53);color:#fff;box-shadow:0 5px 12px #176d5314}
+.accessDialog .accountActions>a:hover,.passwordFooter button:hover{border-color:var(--app-accent,#176d53);box-shadow:0 4px 12px #173f3118}
+.accountActions svg,.accountRefresh svg,.passwordFooter svg{width:1.2rem;height:1.2rem;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.accountFooter{display:flex;justify-content:center;padding-top:1rem;border-top:1px solid var(--app-line,#d8e5de)}
+.accessDialog .accountRefresh{display:flex;align-items:center;justify-content:center;gap:.65rem;min-height:2.75rem;padding:.5rem .75rem;border:0;border-radius:.6rem;background:transparent;box-shadow:none;color:var(--app-text,#173f31);font:inherit;font-size:.9rem;font-weight:650;cursor:pointer}
+.accessDialog .accountRefresh:hover{background:var(--app-surface-soft,#edf6f1)}
+.accessNotice{margin:0;padding:.85rem 1rem;border-radius:.8rem;background:var(--app-surface-soft,#edf6f1);font-size:.9rem;line-height:1.5;color:var(--app-text,#173f31)}
+.passwordForm{display:grid;gap:1.25rem;padding-top:1.5rem}
+.protectedList{display:flex;align-items:center;gap:.9rem;padding:1rem;border:1px solid var(--app-line,#cee0d7);border-radius:1rem;background:var(--app-surface-soft,#f0f7f3)}
+.protectedList>div{display:grid;gap:.3rem;min-width:0}.protectedList strong{font-size:1rem;font-weight:750;line-height:1.4;overflow-wrap:anywhere}.protectedList span{font-size:.85rem;line-height:1.4;color:var(--app-muted,#657b72);overflow-wrap:anywhere}
+.lockIcon{display:grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;border-radius:.85rem;background:var(--app-surface,#fff);border:1px solid var(--app-line,#cee0d7)}.lockIcon svg{width:22px;height:22px;color:var(--app-accent,#176d53)}
+.passwordField{display:grid;gap:.6rem}.passwordField label{font-size:.95rem;font-weight:700}.passwordField>small{font-size:.8rem;line-height:1.5;color:var(--app-muted,#657b72)}
+.passwordInput{display:flex;align-items:center;border:1px solid var(--app-line,#c8ddd3);border-radius:.9rem;background:var(--app-surface,#fff);overflow:hidden}
+.passwordDialog .passwordInput input{min-width:0;width:100%;flex:1;border:0;outline:0;box-shadow:none;border-radius:0;background:transparent;min-height:3.4rem;box-sizing:border-box;padding:.9rem 1rem;font:inherit;font-size:1rem;color:inherit}
+.passwordDialog .passwordInput button{display:grid;place-items:center;flex-shrink:0;width:2.75rem;height:2.75rem;min-height:0;margin:0 .3rem 0 0;padding:0;border:0;border-radius:.65rem;background:transparent;box-shadow:none;color:inherit;cursor:pointer}.passwordInput button:hover{background:var(--app-surface-soft,#edf6f1)}.passwordInput svg{width:22px;height:22px}
+.passwordInput:focus-within{outline:2px solid var(--app-accent,#168461);outline-offset:2px}.passwordInput button:focus-visible{outline:2px solid var(--app-accent,#176d53);outline-offset:-3px}
+.accessDialog .passwordError{padding:.85rem 1rem;margin:0;border:1px solid var(--app-danger-border,#e4b8b8);border-radius:.8rem;background:var(--app-danger-soft,#fbefef);color:var(--app-danger,#a32e35);font-size:.9rem;line-height:1.5}
+.passwordFooter{display:flex;justify-content:space-between;gap:.75rem;border-top:1px solid var(--app-line,#d8e5de);padding-top:1.25rem;margin-top:.25rem}.passwordFooter .unlockButton{gap:.75rem}
+.accessDialog button:disabled{opacity:.6;cursor:wait}
+.accessDialog :is(a,button):focus-visible{outline:3px solid #74ac92;outline-offset:3px}
+@media(max-width:540px){
+ :global(body:not(:has([data-website-canvas]))) .accessDialog.accessDialog{padding:1.25rem!important;border-radius:1.25rem!important}
+ :global(body:not(:has([data-website-canvas]))) .accountActions{grid-template-columns:1fr}
+ :global(body:not(:has([data-website-canvas]))) .accessDialog.accessDialog h2{font-size:1.4rem!important}
+}
 
 .feedback:empty{display:none}.feedback:not(:empty){padding:0 24px 20px;display:grid;gap:16px}
 
