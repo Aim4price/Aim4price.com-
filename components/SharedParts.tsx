@@ -10,7 +10,7 @@ import stock from '../app/dealer/parts/parts.module.css';
 import { WorkspaceTitlePanel, workspaceStyles } from './WorkspacePrimitives';
 type Data={access?:string;name:string;owner:string;town?:string;updatedAt?:string;total:number;page:number;signedIn:boolean;allowDownload:boolean;allowEnquiry:boolean;vatIncluded:boolean;rows:{part_number:string;description:string;brand:string;quantity:number;price:string|null;details:Record<string,string>}[]};
 export default function SharedParts({token}:{token:string}) {
- const [data,setData]=useState<Data|null>(null),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(0),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[sent,setSent]=useState(false),[showEnquiry,setShowEnquiry]=useState(false),[gate,setGate]=useState(false),[accountAccess,setAccountAccess]=useState('sign-in'),[accountNotice,setAccountNotice]=useState('');
+ const [data,setData]=useState<Data|null>(null),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(0),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[sent,setSent]=useState(false),[showEnquiry,setShowEnquiry]=useState(false),[gate,setGate]=useState(false),[accountAccess,setAccountAccess]=useState('sign-in');
  const [summary,setSummary]=useState<Pick<Data,'name'|'owner'|'total'>|null>(null);
  const [passwordOpen,setPasswordOpen]=useState(false),[showPassword,setShowPassword]=useState(false),[capsLock,setCapsLock]=useState(false);
  const passwordTitle=useId(), passwordId=useId(), accountTitle=useId(), enquiryTitle=useId();
@@ -23,22 +23,29 @@ export default function SharedParts({token}:{token:string}) {
  async function load(page=0,filter=query){const response=await request({action:'view',page,search:filter});const data=await response.json();setData(data);setAccountAccess(data.access||'sign-in');setStatus(0);return data as Data;}
  async function download(){const response=await request({action:'download',vatIncluded:vat});const url=URL.createObjectURL(await response.blob());const a=document.createElement('a');a.href=url;a.download='Shared-parts.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setPendingAction(null);}
  function startAction(action:'download'|'enquire',row?:Data['rows'][number]){
-  setError('');setAccountNotice('');setSent(false);setPendingAction(action);
+  setError('');setSent(false);setPendingAction(action);
   if(row)setMessage(`Part: ${row.part_number}${row.description?' — '+row.description:''}\nQuantity required: `);
   if(!data?.signedIn){setGate(true);return;}
   if(action==='download')void run(download);else setShowEnquiry(true);
  }
- function closeAccount(){setGate(false);setPendingAction(null);setShowEnquiry(false);setError('');setAccountNotice('');}
+ function closeAccount(){setGate(false);setPendingAction(null);setShowEnquiry(false);setError('');}
  async function checkSignIn(){
   const fresh=await load(data?.page||0);
-  if(!fresh.signedIn){setAccountNotice('Please sign in to your Aim4price account, then try again.');return;}
-  setGate(false);setAccountNotice('');
+  if(!fresh.signedIn)return;
+  setGate(false);
   if(pendingAction==='download')await download();
   else if(pendingAction==='enquire'){
    if(!fresh.allowEnquiry){setPendingAction(null);throw Error('The owner has not allowed enquiries.');}
    setShowEnquiry(true);
   }
  }
+ // Returning from signing in in another tab resumes the selected action without a confirmation button.
+ useEffect(()=>{
+  if(!gate||accountAccess!=='sign-in'||busy||passwordOpen)return;
+  const resume=()=>{if(document.visibilityState==='visible')void run(checkSignIn);};
+  window.addEventListener('focus',resume);
+  return ()=>window.removeEventListener('focus',resume);
+ },[gate,accountAccess,busy,passwordOpen,pendingAction,data?.page,query]);
  async function openList(){await load();setOpened(true);setPasswordOpen(false);}
  function closePassword(){setPasswordOpen(false);setPassword('');setShowPassword(false);setCapsLock(false);setError('');openButton.current?.focus();}
  useEffect(()=>{setData(null);setSummary(null);setOpened(false);setPasswordOpen(false);setGate(false);setShowEnquiry(false);setPendingAction(null);void run(async()=>{const response=await request({action:'landing'});setSummary(await response.json());});},[token]); // Every page request rechecks the current link settings.
@@ -47,11 +54,9 @@ export default function SharedParts({token}:{token:string}) {
   <div className={shared.accountActions}>
    {accountAccess==='sign-in'?<>
     <a className={shared.accessPrimary} href={`/auth?returnTo=${encodeURIComponent(returnTo)}#login`}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h5v16h-5M3 12h12m-4-4 4 4-4 4"/></svg>Sign in</a>
-    <a href={`/business/join?returnTo=${encodeURIComponent(returnTo)}`}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M19 8v6m-3-3h6"/></svg>Create free account</a>
+    <a className={shared.accessCreate} href={`/business/join?returnTo=${encodeURIComponent(returnTo)}`}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M19 8v6m-3-3h6"/></svg>Create free account</a>
    </>:<a className={shared.accessPrimary} href={`/auth?switchAccount=1&returnTo=${encodeURIComponent(returnTo)}`}>Use another account</a>}
   </div>
-  {accountAccess==='sign-in'?<div className={shared.accountFooter}><button type="button" className={shared.accountRefresh} disabled={busy} onClick={()=>void run(checkSignIn)}>{busy?'Checking…':'I’ve signed in'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></div>:null}
-  {accountNotice?<p role="status" className={shared.accessNotice}>{accountNotice}</p>:null}
  </div>;
  return <main className={opened&&data?`${stock.page} ${stock.detailPage}`:`${landing.page} ${shared.page}`}>
   {!summary?<section className={shared.panel}><h1>Parts shared with you.</h1>{busy?<p role="status">Opening shared parts…</p>:null}{error&&!gate?<p role="alert">{error}</p>:null}</section>:!opened||!data?<div className={landing.layout}><section className={landing.copy}><h1><span>Parts details.</span><span>Shared with you.</span></h1><p className={landing.sender}><strong>{summary.owner||'An Aim4price business'}</strong> would like to share parts with you.</p><div className={landing.summary}><span className={landing.assetIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></svg></span><div><h2>{summary.total} {summary.total===1?"part":"parts"} shared</h2><p className={landing.umbrella}>{summary.name}</p></div></div></section><button ref={openButton} type="button" disabled={busy} className={`${landing.action} ${gateStyles.openButton}`} onClick={()=>void run(openList)}><span className={landing.actionIcon} aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 9a2 2 0 0 1 2-2h7l3 3h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="m12 21 8-8m-7 0h7v7"/></svg></span><strong>Open parts list</strong><span className={landing.actionHint}>View the shared parts details</span></button></div>:<div className={`${workspaceStyles.shell} ${stock.shell}`}>
@@ -76,7 +81,7 @@ export default function SharedParts({token}:{token:string}) {
     <div className={shared.passwordInput}><input id={passwordId} name="linkPassword" autoFocus autoComplete="current-password" autoCapitalize="none" spellCheck={false} type={showPassword?'text':'password'} value={password} onChange={e=>{setPassword(e.target.value);setError('');}} onKeyUp={e=>setCapsLock(e.getModifierState('CapsLock'))} onKeyDown={e=>setCapsLock(e.getModifierState('CapsLock'))} aria-invalid={!!error&&status===403} aria-describedby={`${passwordId}-hint`} required maxLength={128} placeholder="Enter the link password"/><button type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} aria-controls={passwordId} onClick={()=>setShowPassword(!showPassword)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{showPassword?<path d="m3 3 18 18"/>:null}</svg></button></div>
     <small id={`${passwordId}-hint`}>{capsLock?'Caps Lock is on.':password!==password.trim()?'Your password includes a space at the beginning or end.':'Passwords are case-sensitive.'}</small></div>
     {error&&status!==423?<p role="alert" className={shared.passwordError}>{error}</p>:null}
-    <div className={shared.passwordFooter}><button type="button" disabled={busy} onClick={closePassword}>Back</button><button className={shared.unlockButton} disabled={busy} type="submit">{busy?'Opening…':'Open parts list'}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></div>
+    <div className={shared.passwordFooter}><button type="button" disabled={busy} onClick={closePassword}>Back</button><button className={shared.unlockButton} disabled={busy} type="submit">{busy?'Opening…':'Open parts list'}</button></div>
    </form>
   </ShareDisclosureDialog>:null}
  </main>;
