@@ -23,7 +23,7 @@ async function main() {
   await page.evaluateOnNewDocument(()=>{
    Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');window.tileRedraws=0;
    const layers=new Set();
-   window.L={control:{zoom:()=>({addTo(){const controls=document.createElement('div');controls.className='leaflet-bar leaflet-control-zoom';controls.style.cssText='position:absolute;left:.88rem;top:.88rem';controls.innerHTML='<a class="leaflet-control-zoom-in" title="Zoom in" aria-label="Zoom in" href="#"><span>+</span></a><a class="leaflet-control-zoom-out" title="Zoom out" aria-label="Zoom out" href="#"><span>−</span></a>';window.fixtureMapElement.append(controls);}})},divIcon:o=>o,layerGroup:()=>({addTo(){return this;},clearLayers(){}}),
+   window.L={control:{zoom:options=>({addTo(){const controls=document.createElement('div');controls.className='leaflet-bar leaflet-control-zoom';controls.style.cssText='position:absolute;left:.88rem;top:.88rem';controls.innerHTML=`<a class="leaflet-control-zoom-in" title="Zoom in" aria-label="Zoom in" href="#">${options.zoomInText}</a><a class="leaflet-control-zoom-out" title="Zoom out" aria-label="Zoom out" href="#">${options.zoomOutText}</a>`;window.fixtureMapElement.append(controls);}})},divIcon:o=>o,layerGroup:()=>({addTo(){return this;},clearLayers(){}}),
     map:element=>(window.fixtureMapElement=element,{setView(){return this;},on(){return this;},off(){return this;},fitBounds(){},getZoom:()=>13,getSize:()=>({y:700}),project:p=>({add:()=>p}),unproject:p=>p,panTo(){},hasLayer:l=>layers.has(l),removeLayer:l=>layers.delete(l),invalidateSize(){},remove(){}}),
     tileLayer:()=>({addTo(){layers.add(this);return this;},on(){return this;},off(){return this;},redraw(){window.tileRedraws++;}}),
     marker:p=>({addTo(){return this;},on(){return this;},bindTooltip(){return this;},getLatLng:()=>p})};
@@ -38,6 +38,10 @@ async function main() {
     const selector=`.leaflet-control-zoom a[aria-label="${name}"]`;
     assert.equal(await page.$eval(selector,e=>e.hasAttribute('title')),false,'Remove competing native tooltip');
     await page.hover(selector);await page.waitForSelector('[role="tooltip"]',{visible:true});
+    const icon=await page.$eval(selector,e=>{const svg=e.querySelector('svg'),path=svg?.querySelector('path');if(!svg||!path)return null;const rect=svg.getBoundingClientRect(),style=getComputedStyle(svg);return {width:rect.width,height:rect.height,display:style.display,visibility:style.visibility,stroke:style.stroke,path:path.getAttribute('d'),tooltipLayer:document.documentElement.dataset.hoverLabels};});
+    assert(icon && icon.width>10 && icon.height>10 && icon.display!=='none' && icon.visibility==='visible' && icon.stroke!=='none','Zoom symbol stays visible with shared hover labels');
+    assert.equal(icon.tooltipLayer,'true');
+    assert.equal(icon.path,name==='Zoom in'?'M5 12h14M12 5v14':'M5 12h14','Correct plus/minus symbol');
     assert.equal(await page.$eval('[role="tooltip"]',e=>e.textContent),name);
     assert.equal(await page.$eval('[role="tooltip"]',e=>Boolean(e.closest('[data-website-canvas]'))),false,'Tooltip escapes the map and canvas stacking contexts');
     assert.equal(await page.$eval('[role="tooltip"]',e=>getComputedStyle(e).zIndex),'2147483647');
