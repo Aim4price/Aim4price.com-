@@ -2114,8 +2114,9 @@
 
 .modal .independentRows tbody tr:not([data-extra-details]) { scrollbar-width:none; }
 
-/* Bulk editing keeps a steady frame, with one clear instruction per view. */
+/* Keep the opening choice compact; later editing views share a steady frame. */
 .modal.bulkWizard { width:min(960px,calc(100vw - 40px)); height:min(640px,calc(100dvh - 48px)); max-height:calc(100dvh - 48px); padding:32px; }
+.modal.bulkWizard:has([data-bulk-stage="0"]) { height:fit-content; }
 .bulkWizard .sheetToolHeader { padding-bottom:20px; align-items:flex-start; }
 .bulkWizard .sheetToolHeader > div { min-width:0; }
 .bulkWizard .sheetToolHeader h2 { font-size:28px; line-height:1.25; }

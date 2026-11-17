@@ -737,11 +737,27 @@ const appCode =
     await click("Bulk edit");
     await page.waitForSelector('dialog[open][aria-label="Bulk edit parts"]');
     await page.setViewport({width:1440,height:720});
-    const bulkFrame=await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}));
+    const assertCompactBulkChoice=async()=>assert.ok(await page.$eval('dialog[open]',e=>{
+      const rect=e.getBoundingClientRect(),choices=e.querySelector('[data-bulk-stage="0"]').getBoundingClientRect(),footer=e.querySelector('footer').getBoundingClientRect();
+      const gap=footer.top-choices.bottom;
+      return gap>=16 && gap<=32 && rect.top>=0 && rect.bottom<=innerHeight && Math.abs(rect.top-(innerHeight-rect.bottom))<2;
+    }),'The opening choice is centred with a compact gap before its visible actions');
+    let bulkFrame;
     for(let stage=0;stage<3;stage++) {
       assert.equal(await page.$('[aria-label="Bulk edit progress"]'),null);
       assert.ok(await page.$eval('dialog[open]',e=>{const header=e.querySelector('header').getBoundingClientRect(),heading=e.querySelector('[data-bulk-heading]').getBoundingClientRect();return heading.top-header.bottom>=24;}),'The heading has breathing room below the header');
-      assert.deepEqual(await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height})),bulkFrame,'Bulk navigation keeps the modal frame steady');
+      if(stage===0) {
+        await assertCompactBulkChoice();
+        await page.setViewport({width:390,height:844});
+        await assertCompactBulkChoice();
+        await page.screenshot({path:path.join(output,'bulk-opening-phone.png')});
+        await page.setViewport({width:1440,height:720});
+      } else if(stage===1) {
+        bulkFrame=await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}));
+        await click('Back');await assertCompactBulkChoice();await click('Continue');
+      } else {
+        assert.deepEqual(await page.$eval('dialog[open]',e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height})),bulkFrame,'Field and value views keep the modal frame steady');
+      }
       assert.ok(await page.$eval('dialog[open]',e=>Math.abs(e.querySelector('footer button').getBoundingClientRect().left-e.querySelector('header').getBoundingClientRect().left)<2),'Cancel stays aligned with the left edge');
       assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Bulk stage fits without scrolling');
       if(stage===1) {
