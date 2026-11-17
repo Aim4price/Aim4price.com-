@@ -1,4 +1,4 @@
-/* Verify Add asset chooses a register without navigation or server mutations. */
+/* Exercise the real register dialogs, including tracking at the user’s 106% page size. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -74,7 +74,7 @@ async function click(page, text) {
       const url = new URL(request.url());
       if (url.pathname.startsWith('/api/')) {
         if(request.method() !== 'GET') mutations.push(request.method()+' '+url.pathname);
-        const body = {asset:assets[0],ok:true,signedIn:true,user:{id:'test',accountType:'owner'},
+        const body = url.pathname.endsWith('/tracking') ? (request.method()==='POST' ? {code:'ABCD-EF01-2345-6789',expiresInMinutes:15} : {device:null,assetTitle:assets[0].title}) : {asset:assets[0],ok:true,signedIn:true,user:{id:'test',accountType:'owner'},
           profile:{userId:'test',accountType:'owner',name:'Test owner'},
           items:empty?[]:assets,assets:empty?[]:assets,groups:[],
           register:empty?null:combined?{id:'__combined_asset_registers__',businessName:'Combined'}:registers[0],
@@ -88,17 +88,26 @@ async function click(page, text) {
       Object.defineProperty(window,'outerWidth',{get:()=>innerWidth});
       localStorage.setItem('aim4price.website-canvas.v2.intro','seen');
     });
-    for(const {width,kind} of [{width:1920,kind:'vehicle'},{width:1366,kind:'vehicle'},{width:430,kind:'vehicle'},{width:1366,kind:'manual'},{width:1366,kind:'property'},{width:1366,kind:'stock'}]) {
+    for(const {width,kind} of [{width:1920,kind:'vehicle'},{width:1536,kind:'vehicle'},{width:1366,kind:'vehicle'},{width:430,kind:'vehicle'},{width:1366,kind:'manual'},{width:1366,kind:'property'},{width:1366,kind:'stock'}]) {
       assets[0].kind=kind;
       const sections=['identity',...(['manual','property','stock'].includes(kind)?['classification']:[]),...(kind==='stock'?[]:['condition']),'values','notes'];
-      await page.setViewport({width,height:width===1366?768:900});
+      await page.setViewport({width,height:width===1536?696:width===1366?768:width===1920?870:900,deviceScaleFactor:width===1536?1.25:1});
       await page.goto('http://localhost:3036/compact-details-validation?registerId=farm',{waitUntil:'networkidle2',timeout:120000});
       await page.waitForSelector('#asset-card-1 [data-tooltip="Manage asset"]');
+      if(width===1920||width===1536) {
+        await page.click('[aria-label="Zoom in"]');
+        await page.waitForSelector('#website-zoom-slider',{visible:true});
+        await page.$eval('#website-zoom-slider',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'106');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+        await page.click('[aria-label="Close page size"]');
+        await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===1.06);
+      }
       await page.$eval('#asset-card-1 [data-tooltip="Manage asset"]',e=>e.click());
       await page.waitForSelector('[data-manage-action="details"]');
       await page.$eval('[data-manage-action="details"]',e=>e.click());
       await page.waitForSelector('[data-asset-update-section="2"]');
       await page.$eval('[data-asset-update-section="2"]',e=>e.click());
+      // The browser-zoom case targets the tracking dialog; Details retains its existing viewport matrix.
+      if(width!==1536) {
       for(const section of sections) {
         await page.waitForSelector(`[data-details-page="${section}"]`);
         const fits=await page.$eval('[role="dialog"][aria-label="Update asset"]',dialog=>{
@@ -112,6 +121,7 @@ async function click(page, text) {
         if(section!=='notes')await click(page,'Next');
       }
       for(const section of sections.slice(0,-1).reverse()){await click(page,'Back');await page.waitForSelector(`[data-details-page="${section}"]`);}
+      }
       assert.equal(await page.$eval('[data-details-section="identity"] input',e=>e.value),'Vehicle 01');
       await page.click('[aria-label="Advanced asset settings"]');
       await page.waitForSelector('[data-settings-action="location"]');
@@ -121,10 +131,33 @@ async function click(page, text) {
       const backs=await page.$$eval('[aria-labelledby="asset-settings-title"] button',els=>els.filter(e=>e.getBoundingClientRect().width&&/^Back/.test(e.textContent.trim())).length);
       assert.equal(backs,1,'One back action in the register tracking chooser');
       await page.screenshot({path:path.join(output,'tracking-'+width+'.png')});
+      if(kind==='vehicle') {
+        async function checkTracking(stage) {
+          await delay(600); // Also catch unintended smooth scrolling after code creation.
+          const geometry=await page.evaluate(()=>{
+            const dialog=[...document.querySelectorAll('[role="dialog"]')].filter(e=>e.getBoundingClientRect().width).at(-1);
+            const box=dialog.getBoundingClientRect(), header=dialog.firstElementChild.getBoundingClientRect();
+            const step=dialog.querySelector('[data-tracker-step]');
+            const scrollers=[dialog,...dialog.querySelectorAll('div')].filter(e=>e.getBoundingClientRect().width&&['auto','scroll'].includes(getComputedStyle(e).overflowY));
+            return {top:box.top,bottom:box.bottom,height:innerHeight,horizontal:dialog.scrollWidth-dialog.clientWidth,overflow:Math.max(0,...scrollers.map(e=>e.scrollHeight-e.clientHeight)),scrollTop:Math.max(0,...scrollers.map(e=>e.scrollTop)),headingVisible:!step||step.getBoundingClientRect().top>=header.bottom};
+          });
+          await page.screenshot({path:path.join(output,stage+'-'+width+'.png')});
+          assert(geometry.overflow<=2&&geometry.horizontal<=2&&geometry.top>=-2&&geometry.bottom<=geometry.height+2,stage+' fits '+JSON.stringify(geometry));
+          assert(geometry.headingVisible&&geometry.scrollTop<=2,stage+' keeps its heading visible '+JSON.stringify(geometry));
+        }
+        await click(page,'Use a tracking phone');await checkTracking('prepare');
+        await click(page,'Next');await checkTracking('install');
+        await click(page,'Share app link');await page.waitForSelector('[data-tracker-install]');await checkTracking('share-install');
+        await page.click('[aria-label="Close Install Tracker"]');await checkTracking('install-return');
+        await click(page,'Next');await checkTracking('connect');
+        await click(page,'Create pairing code');await page.waitForSelector('[data-tracker-pairing]');await checkTracking('pairing');
+        assert.equal(await page.$eval('[data-tracker-pairing]',e=>e===document.activeElement),true,'Pairing card receives focus without scrolling');
+        await click(page,'Back');await checkTracking('pairing-back');await click(page,'Next');await checkTracking('pairing-return');
+      }
     }
-    assert.deepEqual(mutations,[],'Moving between pages does not alter asset data');
+    assert.deepEqual(mutations,Array(4).fill('POST /api/asset-register/1/tracking'),'Only explicit pairing requests mutate data');
     assert.deepEqual(errors,[]);
-    console.log('PASS details pages, visible controls, no scrolling at 1920/1366/430, back navigation, one tracking back action and no accidental mutations');
+    console.log('PASS details pages, visible controls, no scrolling at 1920/1366/430, back navigation, 106% tracking setup including 125% browser sizing, visible pairing headings, app sharing, back navigation and no accidental mutations');
   } finally {
     if(browser)await browser.close();
     if(server&&server.exitCode===null){const stopped=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await stopped;}

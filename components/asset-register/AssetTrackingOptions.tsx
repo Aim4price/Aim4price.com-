@@ -68,7 +68,7 @@ export default function AssetTrackingOptions({ assetTitle, connected, onPhone, o
 export function PhoneTrackingRequirements() {
   return <section className={styles.requirements} aria-label="Tracking phone requirements">
     <ul>
-      <li><TrackingIcon kind="phone"/><span><strong>Android phone</strong><span>GPS enabled, kept with the asset.</span></span></li>
+      <li><TrackingIcon kind="phone"/><span><strong>Android phone</strong><span>GPS switched on.</span></span></li>
       <li><TrackingIcon kind="sim"/><span><strong>SIM with data</strong><span>Sends locations to Aim4price.</span></span></li>
       <li><TrackingIcon kind="power"/><span><strong>Reliable power</strong><span>Keep the phone charged.</span></span></li>
     </ul>
