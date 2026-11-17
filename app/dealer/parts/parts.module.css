@@ -2212,3 +2212,61 @@
 .entryModal .stockSheet .sheetHorizontalScroll::-webkit-scrollbar-thumb:hover { background-color:var(--app-accent,#648b7a); }
 .entryModal .stockSheet .sheetHorizontalScroll::-webkit-scrollbar-thumb:active { background-color:var(--app-primary,#17654c); }
 .entryModal .stockSheet .sheetHorizontalScroll::-webkit-scrollbar-button { display:none; width:0; height:0; }
+
+/* Readable stocklists keep the existing panel width, with no horizontal scroller. */
+.detailPage .partsPanel { overflow:clip; }
+.detailPage .partsPanel .stockTableScroll { overflow:visible; }
+.detailPage .partsPanel .stockTable { width:100%; min-width:0; table-layout:fixed; border-collapse:separate; border-spacing:0; }
+.detailPage .partsPanel .stockTable th,
+.detailPage .partsPanel .stockTable td { text-align:left; padding:20px 16px; color:var(--app-text,#173e32); line-height:1.55; font-size:1.08rem; }
+.detailPage .partsPanel .stockTable th { position:sticky; top:var(--parts-header-offset,0px); z-index:2; padding-block:16px; font-size:1rem; font-weight:750; background:var(--app-surface-soft,#edf5f0); box-shadow:0 1px 0 var(--app-border,#cbded4); }
+.detailPage .partsPanel .stockTable td { font-weight:500; border-top:1px solid var(--app-border,#d5e3db); }
+.detailPage .stockTable .partNumberColumn { width:16%; }
+.detailPage .stockTable .descriptionColumn { min-width:0; }
+.detailPage .stockTable .brandColumn { width:11%; }
+.detailPage .stockTable .quantityColumn { width:9%; }
+.detailPage .stockTable .priceColumn { width:16%; }
+.detailPage .stockTable .contactColumn { width:12%; }
+.detailPage .stockTable .selectColumn { width:5%; }
+.detailPage .partsPanel .stockTable td:last-child { width:auto; }
+.detailPage .partsPanel .stockTable .numeric { text-align:right; font-variant-numeric:tabular-nums; }
+.detailPage .partsPanel .stockTable :is(.quantityColumn,.partQuantity,.contactColumn,.partAction,.selectColumn),
+.detailPage .stockTable td[data-label="Select"] { text-align:center; }
+.detailPage .stockTable .partIdentity strong { display:block; font-size:1.08rem; font-weight:750; overflow-wrap:anywhere; }
+.detailPage .stockTable .partName { display:block; font-size:1.08rem; font-weight:700; line-height:1.5; overflow-wrap:anywhere; }
+.detailPage .stockTable .partBrand { font-weight:500; }
+.detailPage .partsPanel .stockTable :is(.partPrice,.partQuantity) { font-size:1.08rem; font-weight:750; overflow-wrap:anywhere; }
+.detailPage .stockTable .priceOnRequest { white-space:normal; font-size:1rem; font-weight:600; }
+.detailPage .stockTable .partExtraDetails { gap:10px; margin-top:12px; font-size:.98rem; line-height:1.5; }
+.detailPage .stockTable .partExtraDetails strong { font-weight:650; }
+.detailPage .stockTable .conditionBadge { justify-self:start; display:inline-flex; align-items:center; padding:3px 11px; border:1px solid var(--app-border,#cbded4); border-radius:7px; color:var(--app-text,#173e32); background:var(--app-surface-soft,#edf4f0); font-size:.95rem; font-weight:650; }
+.detailPage .stockTable .conditionBadge[data-condition="new"] { background:color-mix(in srgb,#25805b 12%,var(--app-surface,#fff)); border-color:color-mix(in srgb,#25805b 35%,var(--app-surface,#fff)); }
+.detailPage .stockTable .conditionBadge[data-condition="used"] { background:color-mix(in srgb,#b77a2c 12%,var(--app-surface,#fff)); border-color:color-mix(in srgb,#b77a2c 40%,var(--app-surface,#fff)); }
+.detailPage .stockTable th+th,.detailPage .stockTable td+td { border-left:1px solid color-mix(in srgb,var(--app-border,#d5e3db) 45%,transparent); }
+.detailPage .stockTable tbody tr { background:var(--app-surface,#fff); }
+.detailPage .stockTable tbody tr:nth-child(even) { background:var(--app-surface-soft,#f0f7f3); }
+.detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 10%,var(--app-surface,#fff)); }
+.detailPage .stockTable .partContactButton { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; font-size:1rem; flex-wrap:wrap; }
+.detailPage .stockTable .partAction button { margin-inline:auto; }
+.detailPage .stockTable.multiDealerTable .partNumberColumn { width:14%; }
+.detailPage .stockTable.multiDealerTable .brandColumn { width:9%; }
+.detailPage .stockTable.multiDealerTable .quantityColumn { width:8%; }
+.detailPage .stockTable.multiDealerTable .priceColumn { width:14%; }
+.detailPage .stockTable.multiDealerTable .dealerColumn { width:14%; }
+.detailPage .stockTable.multiDealerTable .updatedColumn { width:12%; }
+.detailPage .stockTable.multiDealerTable .contactColumn { width:12%; }
+.detailPage .stockTable.multiDealerTable th,.detailPage .stockTable.multiDealerTable td { padding-inline:10px; overflow-wrap:anywhere; }
+.detailPage .stockTable td small { font-size:.95rem; font-weight:500; color:var(--app-text,#173e32); }
+
+/* Native narrow screens reflow within each row; the website canvas keeps its desktop table. */
+@media(max-width:1000px) {
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable thead { position:absolute; width:1px; height:1px; padding:0; clip-path:inset(50%); overflow:hidden; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable tbody { display:block; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable tbody tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 20px; padding:22px 20px; border-top:1px solid var(--app-border,#d5e3db); }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .partsPanel .stockTable td { display:block; min-width:0; width:auto; padding:0; border:0; text-align:left; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable :is(.partIdentity,.partDescription) { grid-column:1/-1; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable td[data-label]::before { content:attr(data-label); display:block; margin-bottom:5px; font-size:.85rem; font-weight:650; color:var(--app-text,#173e32); }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable td.partDescription[data-label]::before { display:none; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable .partAction { display:flex; align-items:end; justify-content:end; }
+ :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable .partAction button { margin:0; }
+}
