@@ -26,6 +26,21 @@ export const EDITOR_COLUMNS: PartColumns = {
   brand: 4,
 };
 export const blankPart = () => ["", "", "", "", ""];
+export function changePartNumber(value: string, change: {
+  mode: "add" | "remove";
+  prefix: string;
+  suffix: string;
+  trim: boolean;
+}) {
+  let number = change.trim ? value.trim() : value;
+  if (change.mode === "add") {
+    // Empty sheet rows must not become parts made only from a prefix or suffix.
+    return number.trim() ? `${change.prefix}${number}${change.suffix}` : number;
+  }
+  if (change.prefix && number.startsWith(change.prefix)) number = number.slice(change.prefix.length);
+  if (change.suffix && number.endsWith(change.suffix)) number = number.slice(0, -change.suffix.length);
+  return number;
+}
 export function pastePartsCells(
   rows: string[][],
   text: string,

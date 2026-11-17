@@ -1725,7 +1725,9 @@
 
 .sheetToolbar { display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:0 3px 16px; flex:0 0 auto; }
 .sheetToolbar > span { margin-right:auto; font-weight:650; color:var(--app-text-muted, #61766c); }
-.entryModal .sheetToolbar button { min-height:40px; padding:9px 16px; font-size:14px; }
+.entryModal .sheetToolbar button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:9px 16px; font-size:14px; white-space:nowrap; }
+.entryModal .sheetToolbar .detailIcon { width:18px; height:18px; flex:0 0 18px; border:0; border-radius:0; background:transparent; color:inherit; }
+.entryModal .sheetToolbar .detailIcon svg { width:18px; height:18px; }
 .entryModal .stockSheet .editorTable th:first-child { width:100px; }
 .entryModal .stockSheet .editorTable td:first-child { white-space:nowrap; }
 .entryModal .stockSheet .editorTable .sheetRowAction { display:inline-flex; align-items:center; justify-content:center; padding:5px; margin:0 0 0 5px; min-height:30px; width:30px; height:30px; border-radius:8px; color:var(--app-text, #175442); }

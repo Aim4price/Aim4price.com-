@@ -840,6 +840,45 @@ const appCode =
     await click("Apply to 1 part");
     assert.equal(await page.$eval('[aria-label="Part number 1"]', e => e.value), 'ABC');
     await click("Undo");
+    const readSheetNumbers=()=>page.$$eval('[aria-label="Parts spreadsheet"] input[aria-label^="Part number "]',inputs=>inputs.map(input=>input.value));
+    const numbersBeforeAffixes=await readSheetNumbers();
+    async function openNumberTools() {
+      await click('Bulk edit');await click('Continue');
+      await page.click('dialog input[type=radio][value="0"]');await click('Continue');
+    }
+    await page.click('[aria-label="Select row 1"]');
+    await openNumberTools();await page.click('dialog input[type=radio][value="add"]');
+    await page.type('dialog [aria-label="Add prefix"]','LAN-');await page.type('dialog [aria-label="Add suffix"]','-A');
+    await page.click('dialog input[type=radio][value="remove"]');
+    assert.equal(await page.$eval('[aria-label="Remove prefix"]',e=>e.value),'','Add and remove keep separate drafts');
+    await page.type('[aria-label="Remove prefix"]','001-');
+    await page.click('dialog input[type=radio][value="add"]');
+    assert.equal(await page.$eval('[aria-label="Add prefix"]',e=>e.value),'LAN-');
+    await click('Change field');await page.click('dialog input[type=radio][value="4"]');await click('Continue');
+    await click('Change field');await page.click('dialog input[type=radio][value="0"]');await click('Continue');
+    assert.equal(await page.$eval('[aria-label="Add suffix"]',e=>e.value),'-A','Switching fields preserves the part number draft');
+    await page.setViewport({width:1440,height:720});
+    assert.ok(await page.$eval('[data-bulk-body]',e=>e.scrollHeight<=e.clientHeight+1),'Part number actions fit on desktop');
+    await page.screenshot({path:path.join(output,'bulk-add-affixes.png')});
+    await page.setViewport({width:390,height:844});
+    assert.ok(await page.$eval('dialog[open]',e=>e.scrollWidth<=e.clientWidth+1 && e.querySelector('footer').getBoundingClientRect().bottom<=innerHeight),'Affix controls fit the phone and keep actions visible');
+    await page.screenshot({path:path.join(output,'bulk-add-affixes-phone.png')});
+    await page.setViewport({width:1440,height:1000});
+    await click('Preview changes');
+    assert.equal(await page.$eval('dialog tbody td:last-child',e=>e.textContent),'LAN-001-ABC-A');
+    await click('Back');assert.equal(await page.$eval('[aria-label="Add prefix"]',e=>e.value),'LAN-');
+    await click('Cancel');assert.deepEqual(await readSheetNumbers(),numbersBeforeAffixes,'Cancel keeps every identifier unchanged');
+    await openNumberTools();await page.click('dialog input[type=radio][value="add"]');
+    await page.type('[aria-label="Add prefix"]','LAN-');await page.type('[aria-label="Add suffix"]','-A');
+    await click('Preview changes');await click('Apply to 1 part');
+    assert.deepEqual(await readSheetNumbers(),numbersBeforeAffixes.map((number,i)=>i ? number : `LAN-${number}-A`),'Only the selected part receives both affixes');
+    await click('Undo');assert.deepEqual(await readSheetNumbers(),numbersBeforeAffixes);
+    await openNumberTools();await page.click('dialog input[type=radio][value="add"]');
+    await page.type('[aria-label="Add suffix"]','.1');await click('Preview changes');await click(`Apply to ${numbersBeforeAffixes.length} parts`);
+    assert.deepEqual(await readSheetNumbers(),numbersBeforeAffixes.map(number=>`${number}.1`),'All-parts scope adds the suffix to every identifier');
+    await openNumberTools();await page.type('[aria-label="Remove suffix"]','.1');await click('Preview changes');
+    assert.equal(await page.$eval('dialog tbody td:last-child',e=>e.textContent),'001-ABC','Suffix removal previews the original identifier');
+    await click('Cancel');await click('Undo');assert.deepEqual(await readSheetNumbers(),numbersBeforeAffixes);
     await page.click('[aria-label="Actions for row 1"]');
     await page.focus('[data-detail="delete"]');
     assert.ok(await page.$eval('[data-detail="delete"]',button=>{const r=button.getBoundingClientRect(),p=button.closest('[class*=sheetToolBody]').getBoundingClientRect();return r.left-p.left>=16 && p.right-r.right>=16;}),'Focus halo has space on both sides');
@@ -878,7 +917,7 @@ const appCode =
     }
     await click("Add / edit parts"); await click("Add parts");
     await click("Add in a sheet");
-    await click('+ Add column');
+    await click('Add column');
     assert.deepEqual(await page.$$eval('dialog[open] [data-detail]',cards=>cards.map(c=>c.dataset.detail)),detailChoices.map(c=>c.id),'Sheet and individual detail pickers have the same seven cards');
     await page.screenshot({path:path.join(output,'add-column-grid.png')});
     await click('Custom field');
@@ -1064,7 +1103,7 @@ const appCode =
     assert.equal(await page.$eval('[aria-label="Notes 1"]',e=>e.value),'Keep dry');
     assert.equal(await page.$eval('[aria-label="Dimension 1"]',e=>e.value),'10 mm');
     await page.$$eval('summary',summaries=>summaries.find(s=>s.textContent==='Editing tools').click());
-    await click('+ Add column');await page.click('dialog [data-detail="custom"]');await page.type('[aria-label="Custom field name"]','Pack size');await click('Next');
+    await click('Add column');await page.click('dialog [data-detail="custom"]');await page.type('[aria-label="Custom field name"]','Pack size');await click('Next');
     await paste('[aria-label="Pack size 1"]','6');
     await click('Back');await click('Review parts');
     assert.equal(await page.$eval('[aria-label="Pack size 1"]',e=>e.value),'6','Review-only fields and edits survive checking an unchanged mapping');

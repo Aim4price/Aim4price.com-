@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import ShareModalCloseButton from "./asset-register/ShareModalCloseButton";
 import { createPortal } from "react-dom";
-import { PART_LABELS, partCellErrors } from "../lib/parts-editor";
+import { PART_LABELS, partCellErrors, changePartNumber } from "../lib/parts-editor";
 import { DetailIcon } from "./PartsDetailFields";
 import PartEditDialog, { type PartEditValue } from "./PartEditDialog";
 import { parsePartsSnapshot, partsTableCsv, type PartDetailField } from "../lib/parts-network-csv";
@@ -26,8 +26,10 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
   const [field, setField] = useState(4);
   const [operation, setOperation] = useState("replace");
   const [value, setValue] = useState("");
-  const [prefix, setPrefix] = useState("");
-  const [suffix, setSuffix] = useState("");
+  const [numberMode, setNumberMode] = useState<"add" | "remove">("remove");
+  const [numberDrafts, setNumberDrafts] = useState({add: {prefix: "", suffix: ""}, remove: {prefix: "", suffix: ""}});
+  const {prefix, suffix} = numberDrafts[numberMode];
+  const setNumberText = (key: "prefix" | "suffix", text: string) => setNumberDrafts(drafts => ({...drafts, [numberMode]: {...drafts[numberMode], [key]: text}}));
   const [trim, setTrim] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [bulkStep,setBulkStep]=useState(0);
@@ -68,10 +70,7 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
   const next = rows.map((row, i) => {
     if (!targetSet.has(i)) return row;
     if (field === 0) {
-      let number = trim ? row[0].trim() : row[0];
-      if (prefix && number.startsWith(prefix)) number = number.slice(prefix.length);
-      if (suffix && number.endsWith(suffix)) number = number.slice(0, -suffix.length);
-      return [number, ...row.slice(1)];
+      return [changePartNumber(row[0], {mode: numberMode, prefix, suffix, trim}), ...row.slice(1)];
     }
     return row.map((cell, j) => j !== field || (operation === "fill" && cell.trim()) ? cell : operation === "clear" ? "" : value);
   });
@@ -155,7 +154,14 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
             ]}/>
             {operation !== "clear" && <label className={styles.bulkValue}>{field === 3 ? `Unit price (R, ${vatIncluded ? "incl." : "excl."} VAT)` : "New value"}<input value={value} inputMode={field === 2 ? "numeric" : field === 3 ? "decimal" : undefined} onChange={e => setValue(e.target.value)}/></label>}
           </> : <>
-            <div className={styles.bulkCleanup}><label>Remove prefix<input value={prefix} placeholder="e.g. 01." onChange={e => setPrefix(e.target.value)}/></label><label>Remove suffix<input value={suffix} placeholder="e.g. .1" onChange={e => setSuffix(e.target.value)}/></label></div>
+            <PartsChoice hideLabel label="Part number action" value={numberMode} onChange={mode => setNumberMode(mode === "add" ? "add" : "remove")} options={[
+              {value:"add",label:"Add text",hint:"Before or after the number"},
+              {value:"remove",label:"Remove text",hint:"From the start or end"},
+            ]}/>
+            <div className={styles.bulkCleanup}>
+              <label>{numberMode === "add" ? "Add prefix" : "Remove prefix"}<input aria-label={numberMode === "add" ? "Add prefix" : "Remove prefix"} value={prefix} placeholder={numberMode === "add" ? "e.g. LAN-" : "e.g. 01."} onChange={e => setNumberText("prefix",e.target.value)}/></label>
+              <label>{numberMode === "add" ? "Add suffix" : "Remove suffix"}<input aria-label={numberMode === "add" ? "Add suffix" : "Remove suffix"} value={suffix} placeholder={numberMode === "add" ? "e.g. -A" : "e.g. .1"} onChange={e => setNumberText("suffix",e.target.value)}/></label>
+            </div>
             <label className={styles.sheetCheck}><input type="checkbox" checked={trim} onChange={e => setTrim(e.target.checked)}/>Trim surrounding spaces</label>
           </>}
           <p className={styles.bulkHint} role="status">{!hasChange ? "Enter a change to preview." : changed.length ? `${changed.length} ${changed.length === 1 ? "part will" : "parts will"} change.` : "No parts will change."}</p>

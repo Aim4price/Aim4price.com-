@@ -653,6 +653,30 @@ test('clipboard pastes preserve row alignment, punctuation, blanks and existing 
  assert.match(duplicates[0],/Duplicate/);assert.match(duplicates[1],/Duplicate/);
  assert.deepEqual(editor.partRowErrors([['001','','1','','']]),{});
 });
+test('part number additions preserve identifiers and removals only match the ends',()=>{
+ const {changePartNumber}=load('lib/parts-editor.ts',{'./parts-network-csv':csv});
+ const change=(value,options)=>changePartNumber(value,{mode:'add',prefix:'',suffix:'',trim:false,...options});
+ assert.equal(change('00123',{prefix:'LAN-'}),'LAN-00123');
+ assert.equal(change('00123',{suffix:'.1'}),'00123.1');
+ assert.equal(change('00123',{prefix:'LAN-',suffix:'-A'}),'LAN-00123-A');
+ assert.equal(change(' 00123 ',{prefix:'LAN-',suffix:'-A',trim:true}),'LAN-00123-A');
+ assert.equal(change(' 00123 ',{prefix:'LAN-'}),'LAN- 00123 ');
+ assert.equal(change('LAN-00123',{prefix:'LAN-'}),'LAN-LAN-00123');
+ assert.equal(change('',{prefix:'LAN-',suffix:'-A'}),'');
+ assert.equal(change('   ',{prefix:'LAN-'}),'   ');
+ assert.equal(change('01.00123.1',{mode:'remove',prefix:'01.',suffix:'.1'}),'00123');
+ assert.equal(change('X01.00123.1Y',{mode:'remove',prefix:'01.',suffix:'.1'}),'X01.00123.1Y');
+ assert.equal(change('A+B.01[1]',{mode:'remove',prefix:'A+B.',suffix:'[1]'}),'01');
+ assert.equal(change(' 01.00123.1 ',{mode:'remove',prefix:'01.',suffix:'.1',trim:true}),'00123');
+});
+test('part number changes still reject duplicates, empty results and invalid codes',()=>{
+ const {changePartNumber,partCellErrors}=load('lib/parts-editor.ts',{'./parts-network-csv':csv});
+ const change=(value,options)=>changePartNumber(value,{mode:'add',prefix:'',suffix:'',trim:false,...options});
+ const row=number=>[number,'','1','',''];
+ assert.match(partCellErrors([row(change('001',{prefix:'LAN-'})),row('LAN-001')])[0][0],/Duplicate/);
+ assert.ok(partCellErrors([row(change('001',{mode:'remove',prefix:'001'}))])[0][0]);
+ assert.ok(partCellErrors([row(change('001',{suffix:'\n'}))])[0][0]);
+});
 test('parts signup continuations stay local and narrowly scoped',()=>{
  const {sharedEnquiryReturnTo:back}=load('lib/external-share-permissions.ts');
  assert.equal(back('/parts-share/'+'a'.repeat(64)), '/parts-share/'+'a'.repeat(64));
