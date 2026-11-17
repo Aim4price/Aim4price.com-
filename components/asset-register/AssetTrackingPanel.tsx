@@ -34,11 +34,7 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       const card = pairingCardRef.current;
       if (!card) return;
       card.focus({ preventScroll: true });
-      card.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-        block: 'start',
-        inline: 'nearest',
-      });
+      // Keep the step heading visible when the pairing card receives focus.
     });
     return () => cancelAnimationFrame(frame);
   }, [code]);
@@ -138,9 +134,9 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       </div>}
       {device && !replace && !showManage && <AssetTrackingUsage assetId={assetId}/>}
       {(!device||replace)&&<>
-      <div className={styles.wizardHeading}>
+      <div className={styles.wizardHeading} data-tracker-step={phoneStep + 1}>
         <span className={styles.wizardStep}>Step {phoneStep + 1} of 3</span>
-        <h3 ref={phoneHeading} tabIndex={-1}>{['Prepare your phone', 'Install Aim4price Tracker', 'Connect to this asset'][phoneStep]}</h3>
+        <h4 ref={phoneHeading} tabIndex={-1}>{['Prepare your phone', 'Install Aim4price Tracker', 'Connect to this asset'][phoneStep]}</h4>
         <p>{['A simple Android phone stays with the asset. Here’s what it needs.', 'Send the app link to the phone you’ll keep with this asset.', 'Open Tracker on the phone and scan or enter your pairing code.'][phoneStep]}</p>
       </div>
       {phoneStep === 0 && <PhoneTrackingRequirements/>}
@@ -155,12 +151,12 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       </div>}
       {phoneStep === 2 && code && (
         <div ref={pairingCardRef} data-tracker-pairing className={styles.pairingCard} tabIndex={-1} role="region" aria-label="Your pairing code">
-          <div className={styles.codeHeading}><strong>Your pairing code</strong><span>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
-          {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div><h4 className={styles.scanTitle}>Scan to connect</h4><p>Use the phone’s camera, open Tracker, then tap Connect.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
-          <p>Or enter this code in Tracker.{device && " Connecting replaces the current phone."}</p>
+          <div className={styles.codeHeading}><strong>Your pairing code</strong><span className={styles.expiry}>{remaining?`Expires in ${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,'0')}`:'Code expired'}</span></div>
+          {remaining>0?<><div className={styles.pairingLayout}><div className={styles.pairingQr}><QrCodePreview value={trackerPairingUrl(code)} label="Scan to connect the equipment phone"/></div><div className={styles.pairingInstructions}><h4 className={styles.scanTitle}>Scan to connect</h4><p>Scan with the phone’s camera, or enter this code in Tracker.</p><output className={styles.pairingCode}>{code}</output><div className={styles.codeActions}><button type="button" className={styles.secondaryAction} onClick={()=>void copyCode()}>{copied?'Code copied':'Copy code'}</button><span className={styles.waitingStatus} role="status">Waiting for phone…</span></div></div></div></>:<p role="status">Create a new code to connect the phone.</p>}
+          {device && <p>Connecting replaces the current phone.</p>}
         </div>
       )}
-      {phoneStep === 2 && <p className={styles.activationNote}>On the phone, allow precise location and unrestricted battery use, then tap Activate. If Android stops Tracker, reopen it to resume.</p>}
+      {phoneStep === 2 && <p className={styles.activationNote}>Allow precise location and unrestricted battery use, then tap Activate. Reopen Tracker if it stops.</p>}
       <div className={styles.wizardFooter}>
         <button type="button" className={styles.secondaryAction} disabled={busy} onClick={() => {
           if (phoneStep > 0) setPhoneStep(phoneStep - 1);
