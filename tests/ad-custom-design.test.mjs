@@ -75,3 +75,20 @@ test('starter layouts stay editable and bound fields resolve per asset', () => {
   assert.equal(customElementText(title, { title: 'Tractor A', brand }), 'Tractor A');
   assert.equal(customElementText(title, { title: 'Tractor B', brand }), 'Tractor B');
 });
+
+test('all resize corners keep the opposite corner fixed and respect canvas bounds', () => {
+  const source = { ...createAdDesignElement('photo'), x: 100, y: 80, width: 200, height: 120 };
+  const expected = { se: [100,80,230,140], sw: [130,80,170,140], ne: [100,100,230,100], nw: [130,100,170,100] };
+  for (const corner of ['se','sw','ne','nw']) {
+    const result = designApi.resizeAdElementFromCorner(source, corner, 30, 20, 1600, 900);
+    assert.deepEqual([result.x,result.y,result.width,result.height], expected[corner]);
+    for (const delta of [-10000,10000]) {
+      const bounded = designApi.resizeAdElementFromCorner(source, corner, delta, delta, 1600, 900);
+      assert.ok(bounded.x >= 0 && bounded.y >= 0 && bounded.width >= 24 && bounded.height >= 24);
+      assert.ok(bounded.x + bounded.width <= 1600 && bounded.y + bounded.height <= 900);
+      assert.equal(corner.endsWith('w') ? bounded.x + bounded.width : bounded.x, corner.endsWith('w') ? 300 : 100);
+      assert.equal(corner.startsWith('n') ? bounded.y + bounded.height : bounded.y, corner.startsWith('n') ? 200 : 80);
+    }
+  }
+  assert.deepEqual([source.x,source.y,source.width,source.height], [100,80,200,120]);
+});
