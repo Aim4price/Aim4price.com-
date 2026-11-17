@@ -23,6 +23,8 @@ import PartsShareFlow from "../../../components/PartsShareFlow";
 import PartsChoice from "../../../components/PartsChoice";
 import PartsDescription from "../../../components/PartsDescription";
 import PartsTableRegion from "../../../components/PartsTableRegion";
+import PartsEnquiryDialog from "../../../components/PartsEnquiryDialog";
+import PartsEnquireButton from "../../../components/PartsEnquireButton";
 import PartsInbox from "../../../components/PartsInbox";
 import WorkspaceViewSwitch from "../../../components/WorkspaceViewSwitch";
 import PartEditDialog from "../../../components/PartEditDialog";
@@ -295,7 +297,6 @@ export default function PartsClient({
     [channel, setChannel] = useState("direct"),
     [listSearch, setListSearch] = useState(""),
     [opened, setOpened] = useState(Boolean(listId)),
-    [enquiry, setEnquiry] = useState(""),
     [inviteUrl, setInviteUrl] = useState(""),
     [name, setName] = useState("");
   const [recipients, setRecipients] = useState<{email:string;business_name:string;town_city:string;account_type?:string;can_contribute?:boolean}[]>([]);
@@ -314,8 +315,6 @@ export default function PartsClient({
   const [partQuery, setPartQuery] = useState("");
   const [fromPicker, setFromPicker] = useState(false);
   const [editingPart, setEditingPart] = useState<{originalPartNumber:string;partNumber:string;quantity:string;price:string;brand:string;description:string;revision:number;priceIncluded:boolean;storedVatIncluded:boolean;details:Record<string,string>;extraFields:PartDetailField[]} | null>(null);
-  const [enquiryCompose, setEnquiryCompose] = useState(false);
-  const [enquiryPage, setEnquiryPage] = useState(0);
   const [selectedParts, setSelectedParts] = useState<Row[]>([]);
   const [requestedParts, setRequestedParts] = useState<{partNumber:string;quantity:string}[]>([]);
   useEffect(() => { setSelectedParts([]); }, [network, view]);
@@ -324,12 +323,7 @@ export default function PartsClient({
     if (!parts.length) return;
     setContact(parts[0]);
     setRequestedParts(parts.map(r=>({partNumber:r.part_number,quantity:'1'})));
-    setEnquiryCompose(false);
-    setEnquiryPage(0);
-    setEnquiry('Please confirm price and availability for these parts.');
   }
-  const enquiryValid = requestedParts.length > 0 && requestedParts.every(r=>/^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999);
-  const enquiryText = requestedParts.map(r=>`${r.partNumber} — quantity ${r.quantity}`).join('\n') + '\n\n' + enquiry;
   const basePath = website ? "/parts" : "/dealer/parts";
   function openList(id: string) {
     window.location.assign(`${basePath}/${encodeURIComponent(id)}${window.location.search}`);
@@ -832,17 +826,15 @@ export default function PartsClient({
                                 title="Edit this part" aria-label={`Edit ${r.part_number}`}
                                 onClick={() => startPartEdit(r, rowRevision!, false)}>
                                 <Icon kind="edit" />Edit
-                              </button> : <button
-                                className={styles.partContactButton}
+                              </button> : <PartsEnquireButton
                                 title="Enquire about this part"
                                 aria-label={`Contact ${r.business_name} about ${r.part_number}`}
                                 onClick={() => {
                                   startEnquiry([r]);
                                 }}
                               >
-                                <Icon kind="message" />
                                 {current?.owned ? "Contact" : "Enquire"}
-                              </button>}
+                              </PartsEnquireButton>}
                             </td>
                           </tr>
                         ))}
@@ -1351,71 +1343,12 @@ export default function PartsClient({
             await api({action:"edit-part",network,...editingPart,price:editingPart.price.trim() ? (Number(editingPart.price) * (editingPart.storedVatIncluded ? 1.15 : 1)).toFixed(2) : ""});
             setEditingPart(null);setRefresh(n=>n+1);await loadNetworks();setNotice("Part updated successfully.");
           })}/>}
-        {contact && (
-          <Modal enquiry title="Parts enquiry" subtitle={current?.name} onClose={close} busy={busy}>
-            <div className={styles.enquiryBody}>
-              <section className={styles.enquiryDealer} aria-label="Dealer details">
-                <div><h3>{contact.business_name}</h3>{contact.town && <p>{contact.town}</p>}</div>
-                {contact.uploaded_at && <span>Stocklist updated<br /><strong>{date(contact.uploaded_at)}</strong></span>}
-              </section>
-              <section className={styles.enquiryItems} aria-label="Requested parts">
-                <div className={styles.enquirySectionHeading}><h3>Requested parts</h3><span>{requestedParts.length} {requestedParts.length === 1 ? "part" : "parts"}</span></div>
-                <div className={styles.enquiryTableWrap}>
-                  <table className={styles.enquiryTable}>
-                    <thead><tr><th scope="col">Part number</th><th scope="col">Quantity</th></tr></thead>
-                    <tbody>{requestedParts.slice(enquiryPage * 2, enquiryPage * 2 + 2).map((r,i)=>{
-                      const valid = /^\d+$/.test(r.quantity) && Number(r.quantity)>0 && Number(r.quantity)<=999999999;
-                      return <tr key={r.partNumber}>
-                        <td><strong>{r.partNumber}</strong>{requestedParts.length === 1 && contact.description && <small>{contact.description}</small>}</td>
-                        <td><input aria-label={`Requested quantity for ${r.partNumber}`} aria-invalid={!valid} aria-describedby={!valid ? "parts-enquiry-quantity-error" : undefined} inputMode="numeric" value={r.quantity} onChange={e=>setRequestedParts(requestedParts.map((p,n)=>n===enquiryPage * 2 + i?{...p,quantity:e.target.value}:p))}/></td>
-                      </tr>;
-                    })}</tbody>
-                  </table>
-                </div>
-                {requestedParts.length > 2 && <nav className={styles.enquiryPagination} aria-label="Requested parts pages">
-                  <button disabled={enquiryPage === 0} onClick={()=>setEnquiryPage(p=>p-1)}>Previous</button>
-                  <span>{enquiryPage + 1} / {Math.ceil(requestedParts.length / 2)}</span>
-                  <button disabled={(enquiryPage + 1) * 2 >= requestedParts.length} onClick={()=>setEnquiryPage(p=>p+1)}>Next</button>
-                </nav>}
-                {!enquiryValid && <p id="parts-enquiry-quantity-error" role="alert" className={styles.error}>Enter a positive whole quantity for each part.</p>}
-              </section>
-              {enquiryCompose && !current?.owned && <label className={styles.enquiryMessage}>
-                Message to dealer
-                <textarea value={enquiry} maxLength={2000} rows={3} onChange={e=>setEnquiry(e.target.value)} />
-              </label>}
-              {!enquiryCompose && <section className={styles.enquiryChannels} aria-label="Contact dealer">
-                <div className={styles.enquirySectionHeading}><h3>Contact dealer</h3></div>
-                <div className={styles.enquiryContactGrid}>
-                  <button type="button" className={styles.enquiryContact} data-tone="green" disabled={Boolean(current?.owned) || desktop}
-                    onClick={()=>setEnquiryCompose(true)}>
-                    <span className={styles.enquiryContactIcon}><Icon kind="message" /></span><span><strong>Aim4price</strong><small>{current?.owned ? "For other dealers" : desktop ? "Account holder only" : "Send to dealer’s Leads"}</small></span>
-                  </button>
-                  {contact.phone && <a className={styles.enquiryContact} href={"tel:" + contact.phone.replace(/[^+0-9]/g, "")}>
-                    <span className={styles.enquiryContactIcon}><Icon kind="phone" /></span><span><strong>Call</strong><small>{contact.phone}</small></span>
-                  </a>}
-                  {contact.email && <a className={styles.enquiryContact} data-tone="blue" onClick={e=>{if(!enquiryValid)e.preventDefault();}} aria-disabled={!enquiryValid}
-                    href={`mailto:${encodeURIComponent(contact.email)}?subject=${encodeURIComponent("Parts enquiry: " + current?.name)}&body=${encodeURIComponent(enquiryText)}`}>
-                    <span className={styles.enquiryContactIcon}><Icon kind="mail" /></span><span><strong>Email</strong><small>{contact.email}</small></span>
-                  </a>}
-                  {contact.phone && <a className={styles.enquiryContact} data-tone="green" target="_blank" rel="noopener noreferrer" onClick={e=>{if(!enquiryValid)e.preventDefault();}} aria-disabled={!enquiryValid}
-                    href={"https://wa.me/" + contact.phone.replace(/\D/g, "").replace(/^0/, "27") + "?text=" + encodeURIComponent(enquiryText)}>
-                    <span className={styles.enquiryContactIcon}><Icon kind="message" /></span><span><strong>WhatsApp</strong><small>Message dealer</small></span>
-                  </a>}
-                </div>
-                <p className={styles.enquiryHint}>Confirm availability and price with the dealer.</p>
-              </section>}
-              {feedback}
-            </div>
-            {(!current?.owned || (contribute && website)) && <footer className={styles.enquiryFooter}>
-              {contribute && website && <a className={styles.enquiryLedger} href="/dealer-costs">Open client cost ledger <span aria-hidden="true">→</span></a>}
-              {enquiryCompose && <button disabled={busy} onClick={()=>setEnquiryCompose(false)}>Back</button>}
-              {enquiryCompose && !current?.owned && <button className={styles.primary} disabled={desktop || busy || !enquiry.trim() || !enquiryValid} onClick={()=>void run(async()=>{
-                await api({action:"enquire",network,dealerId:contact.dealer_id,items:requestedParts.map(r=>({partNumber:r.partNumber,quantity:Number(r.quantity)})),message:enquiry});
-                setContact(null);setSelectedParts([]);setNotice("Enquiry sent. The dealer can find it in Leads.");
-              })}><Icon kind="message" />{busy ? "Sending…" : "Send via Aim4price"}</button>}
-            </footer>}
-          </Modal>
-        )}
+        {contact && <PartsEnquiryDialog dealer={contact} listName={current?.name} parts={requestedParts}
+          owned={Boolean(current?.owned)} desktop={desktop} ledgerHref={contribute && website ? "/dealer-costs" : undefined}
+          busy={busy} error={error} onClose={close} onSend={({items,message})=>void run(async()=>{
+            await api({action:"enquire",network,dealerId:contact.dealer_id,items,message});
+            setContact(null);setSelectedParts([]);setNotice("Enquiry sent. The dealer can find it in Leads.");
+          })}/>}
         {confirm && (
           <Modal title="Update member access" onClose={() => { if (!busy) { setConfirm(null); setError(""); } }} busy={busy}>
             <p>

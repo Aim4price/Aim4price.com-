@@ -5,6 +5,8 @@ import gateStyles from './SharedEnquiryLanding.module.css';
 import landing from '../app/business-network/accept/page.module.css';
 import styles from './PartsShareFlow.module.css';
 import shared from './SharedParts.module.css';
+import PartsEnquiryDialog, { type PartsEnquiryDealer } from './PartsEnquiryDialog';
+import PartsEnquireButton from './PartsEnquireButton';
 import PartsDescription from './PartsDescription';
 import PartsTableRegion from './PartsTableRegion';
 import ListPagination from './ListPagination';
@@ -12,10 +14,12 @@ import stock from '../app/dealer/parts/parts.module.css';
 import { WorkspaceTitlePanel, workspaceStyles } from './WorkspacePrimitives';
 type Data={access?:string;name:string;owner:string;town?:string;updatedAt?:string;total:number;page:number;signedIn:boolean;allowDownload:boolean;allowEnquiry:boolean;vatIncluded:boolean;rows:{part_number:string;description:string;brand:string;quantity:number;price:string|null;details:Record<string,string>}[]};
 export default function SharedParts({token}:{token:string}) {
- const [data,setData]=useState<Data|null>(null),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(0),[password,setPassword]=useState(''),[message,setMessage]=useState(''),[sent,setSent]=useState(false),[showEnquiry,setShowEnquiry]=useState(false),[gate,setGate]=useState(false),[accountAccess,setAccountAccess]=useState('sign-in');
+ const [data,setData]=useState<Data|null>(null),[opened,setOpened]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[status,setStatus]=useState(0),[password,setPassword]=useState(''),[sent,setSent]=useState(false),[showEnquiry,setShowEnquiry]=useState(false),[gate,setGate]=useState(false),[accountAccess,setAccountAccess]=useState('sign-in');
  const [summary,setSummary]=useState<Pick<Data,'name'|'owner'|'total'>|null>(null);
  const [passwordOpen,setPasswordOpen]=useState(false),[showPassword,setShowPassword]=useState(false),[capsLock,setCapsLock]=useState(false);
- const passwordTitle=useId(), passwordId=useId(), accountTitle=useId(), enquiryTitle=useId();
+ const passwordTitle=useId(), passwordId=useId(), accountTitle=useId();
+ const [enquiryPart,setEnquiryPart]=useState<Data['rows'][number]|null>(null);
+ const [enquiryContact,setEnquiryContact]=useState<PartsEnquiryDealer|null>(null);
  const [pendingAction,setPendingAction]=useState<'download'|'enquire'|null>(null);
  const openButton=useRef<HTMLButtonElement>(null);
  const [search,setSearch]=useState(''),[query,setQuery]=useState(''),[vat,setVat]=useState(false);
@@ -24,11 +28,13 @@ export default function SharedParts({token}:{token:string}) {
  async function run(fn:()=>Promise<unknown>){setBusy(true);setError('');try{await fn();}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
  async function load(page=0,filter=query){const response=await request({action:'view',page,search:filter});const data=await response.json();setData(data);setAccountAccess(data.access||'sign-in');setStatus(0);return data as Data;}
  async function download(){const response=await request({action:'download',vatIncluded:vat});const url=URL.createObjectURL(await response.blob());const a=document.createElement('a');a.href=url;a.download='Shared-parts.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);setPendingAction(null);}
+ async function openEnquiry(){const response=await request({action:'contact'});const result=await response.json();setEnquiryContact(result.contact);setShowEnquiry(true);}
  function startAction(action:'download'|'enquire',row?:Data['rows'][number]){
+  if(busy)return;
   setError('');setSent(false);setPendingAction(action);
-  if(row)setMessage(`Part: ${row.part_number}${row.description?' — '+row.description:''}\nQuantity required: `);
+  if(row){setEnquiryPart(row);setEnquiryContact(null);}
   if(!data?.signedIn){setGate(true);return;}
-  if(action==='download')void run(download);else setShowEnquiry(true);
+  if(action==='download')void run(download);else void run(openEnquiry);
  }
  function closeAccount(){setGate(false);setPendingAction(null);setShowEnquiry(false);setError('');}
  async function checkSignIn(){
@@ -38,7 +44,7 @@ export default function SharedParts({token}:{token:string}) {
   if(pendingAction==='download')await download();
   else if(pendingAction==='enquire'){
    if(!fresh.allowEnquiry){setPendingAction(null);throw Error('The owner has not allowed enquiries.');}
-   setShowEnquiry(true);
+   await openEnquiry();
   }
  }
  // Returning from signing in in another tab resumes the selected action without a confirmation button.
@@ -69,12 +75,17 @@ export default function SharedParts({token}:{token:string}) {
    <div className={shared.feedback}>
    {error&&!gate&&!showEnquiry&&!passwordOpen?<p role="alert" className={styles.error}>{error}</p>:null}
 {sent?<p role="status">Your enquiry has been sent to the list owner.</p>:null}
-   </div><PartsTableRegion><table className={stock.stockTable}><thead><tr><th className={stock.partNumberColumn}>Part number</th><th className={stock.descriptionColumn}>Description</th><th className={stock.brandColumn}>Brand</th><th className={`${stock.numeric} ${stock.quantityColumn}`}>Quantity</th><th className={`${stock.numeric} ${stock.priceColumn}`}>Unit price</th>{data.allowEnquiry?<th className={stock.contactColumn}>Enquire</th>:null}</tr></thead><tbody>{data.rows.map(row=><tr key={row.part_number}><td data-label="Part number" className={stock.partIdentity}><strong title={row.part_number}>{row.part_number}</strong></td><td data-label="Description" className={stock.partDescription}><PartsDescription description={row.description} details={Object.entries(row.details).map(([label,value])=>({id:label,label,value}))}/></td><td data-label="Brand" className={stock.partBrand}>{row.brand||'—'}</td><td data-label="Quantity" className={`${stock.numeric} ${stock.partQuantity}`}>{row.quantity}</td><td data-label="Unit price" className={stock.numeric}><span className={row.price===null?stock.priceOnRequest:stock.partPrice}>{row.price===null?'Price on request':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format(Number(row.price)*(data.vatIncluded===vat?1:vat?1.15:1/1.15))}</span></td>{data.allowEnquiry?<td className={stock.partAction}><button className={stock.partContactButton} aria-label={`Enquire about ${row.part_number}`} onClick={()=>startAction('enquire',row)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 4h16v13H9l-5 4V4Z M8 8h8M8 12h5"/></svg>Enquire</button></td>:null}</tr>)}</tbody></table>{!data.rows.length?<p className={stock.empty}>No parts match your search.</p>:null}</PartsTableRegion>
+   </div><PartsTableRegion><table className={stock.stockTable}><thead><tr><th className={stock.partNumberColumn}>Part number</th><th className={stock.descriptionColumn}>Description</th><th className={stock.brandColumn}>Brand</th><th className={`${stock.numeric} ${stock.quantityColumn}`}>Quantity</th><th className={`${stock.numeric} ${stock.priceColumn}`}>Unit price</th>{data.allowEnquiry?<th className={stock.contactColumn}>Enquire</th>:null}</tr></thead><tbody>{data.rows.map(row=><tr key={row.part_number}><td data-label="Part number" className={stock.partIdentity}><strong title={row.part_number}>{row.part_number}</strong></td><td data-label="Description" className={stock.partDescription}><PartsDescription description={row.description} details={Object.entries(row.details).map(([label,value])=>({id:label,label,value}))}/></td><td data-label="Brand" className={stock.partBrand}>{row.brand||'—'}</td><td data-label="Quantity" className={`${stock.numeric} ${stock.partQuantity}`}>{row.quantity}</td><td data-label="Unit price" className={stock.numeric}><span className={row.price===null?stock.priceOnRequest:stock.partPrice}>{row.price===null?'Price on request':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format(Number(row.price)*(data.vatIncluded===vat?1:vat?1.15:1/1.15))}</span></td>{data.allowEnquiry?<td className={stock.partAction}><PartsEnquireButton disabled={busy} aria-label={`Enquire about ${row.part_number}`} onClick={()=>startAction('enquire',row)}/></td>:null}</tr>)}</tbody></table>{!data.rows.length?<p className={stock.empty}>No parts match your search.</p>:null}</PartsTableRegion>
    </section><div className={stock.topline}><small>Confirm availability and price with the dealer.</small></div><ListPagination label="Parts pagination" page={data.page+1} pageCount={Math.max(1,Math.ceil(data.total/30))} disabled={busy} onPageChange={next=>void run(()=>load(next-1))}/>
   </div>}
   {summary&&!opened&&!passwordOpen&&!gate&&error?<p role="alert" className={styles.error}>{error}</p>:null}
   {gate&&!passwordOpen?<ShareDisclosureDialog title={accountAccess==='wrong-recipient'?'Use the invited business account':accountAccess==='suspended'?'Your account is paused':'Sign in to continue'} titleId={accountTitle} descriptionId={`${accountTitle}-help`} closeLabel="Close account prompt" className={`${gateStyles.dialog} ${shared.accessDialog}`} onClose={closeAccount}>{account}{error?<p role="alert" className={shared.passwordError}>{error}</p>:null}</ShareDisclosureDialog>:null}
-  {showEnquiry&&!gate&&!passwordOpen?<ShareDisclosureDialog title="Contact the list owner" titleId={enquiryTitle} closeLabel="Close enquiry" className={`${gateStyles.dialog} ${shared.actionDialog}`} onClose={()=>{setShowEnquiry(false);setPendingAction(null);setError('');}}><p className={shared.enquiryOwner}>{data?.owner} · {data?.name}</p><form className={styles.notice} onSubmit={e=>{e.preventDefault();if(busy)return;void run(async()=>{await request({action:'enquire',message});setSent(true);setMessage('');setShowEnquiry(false);setPendingAction(null);});}}><label className={styles.field}>Your enquiry<textarea autoFocus className={shared.message} value={message} onChange={e=>setMessage(e.target.value)} maxLength={2000} required placeholder="Include the part numbers and quantities you need."/></label><div className={styles.actions}><button type="button" onClick={()=>{setShowEnquiry(false);setPendingAction(null);setError('');}}>Cancel</button><button disabled={busy||!message.trim()}>Send enquiry</button></div></form>{error?<p role="alert" className={shared.passwordError}>{error}</p>:null}</ShareDisclosureDialog>:null}
+  {showEnquiry&&enquiryPart&&enquiryContact&&!gate&&!passwordOpen?<PartsEnquiryDialog
+    dealer={{...enquiryContact,description:enquiryPart.description}} listName={data?.name}
+    parts={[{partNumber:enquiryPart.part_number,quantity:'1'}]} owned={enquiryContact.owned}
+    busy={busy} error={error} combinedMessageLimit={2000}
+    onClose={()=>{if(busy)return;setShowEnquiry(false);setPendingAction(null);setError('');}}
+    onSend={({text})=>{if(busy)return;void run(async()=>{await request({action:'enquire',message:text});setSent(true);setShowEnquiry(false);setPendingAction(null);});}}/>:null}
   {summary&&passwordOpen?<ShareDisclosureDialog title="Open shared parts" titleId={passwordTitle} descriptionId={`${passwordId}-help`} closeLabel="Back to shared parts" className={`${gateStyles.dialog} ${shared.accessDialog} ${shared.passwordDialog}`} onClose={closePassword}>
    <form className={shared.passwordForm} onSubmit={e=>{e.preventDefault();if(busy)return;const entered=String(new FormData(e.currentTarget).get('linkPassword')||'');void run(async()=>{const response=await request({action:'unlock',password:entered});const unlocked=await response.json();setData(unlocked);setAccountAccess(unlocked.access||'sign-in');setStatus(0);setGate(false);setOpened(true);setPasswordOpen(false);setPassword('');setShowPassword(false);});}}>
     <div className={shared.protectedList}><span className={shared.lockIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><div><strong>{summary.name}</strong><span>{summary.owner||'Shared by the list owner'}</span></div></div>
