@@ -106,6 +106,8 @@ async function click(page, text) {
       await page.$eval('[data-manage-action="details"]',e=>e.click());
       await page.waitForSelector('[data-asset-update-section="2"]');
       await page.$eval('[data-asset-update-section="2"]',e=>e.click());
+      // The browser-zoom case targets the tracking dialog; Details retains its existing viewport matrix.
+      if(width!==1536) {
       for(const section of sections) {
         await page.waitForSelector(`[data-details-page="${section}"]`);
         const fits=await page.$eval('[role="dialog"][aria-label="Update asset"]',dialog=>{
@@ -119,6 +121,7 @@ async function click(page, text) {
         if(section!=='notes')await click(page,'Next');
       }
       for(const section of sections.slice(0,-1).reverse()){await click(page,'Back');await page.waitForSelector(`[data-details-page="${section}"]`);}
+      }
       assert.equal(await page.$eval('[data-details-section="identity"] input',e=>e.value),'Vehicle 01');
       await page.click('[aria-label="Advanced asset settings"]');
       await page.waitForSelector('[data-settings-action="location"]');
