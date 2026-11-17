@@ -13,6 +13,7 @@ const server=require('child_process').spawn(process.execPath,['node_modules/next
 for(let i=0;i<120;i++){try{const r=await fetch('http://localhost:3147/designer-qa');if(r.ok)break;}catch{}await new Promise(r=>setTimeout(r,500));}
 const browser=await puppeteer.launch({executablePath:await requireApp('@sparticuz/chromium').executablePath(),headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
 const page=await browser.newPage();await page.setViewport({width:1500,height:1000});
+await page.evaluateOnNewDocument(()=>Object.defineProperty(window,'outerWidth',{get:()=>window.innerWidth,configurable:true}));
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 let kits=[];await page.setRequestInterception(true);
 page.on('request',req=>{
@@ -29,7 +30,23 @@ async function click(text){console.log('click',text);await page.waitForFunction(
 await page.goto('http://localhost:3147/designer-qa',{waitUntil:'networkidle2',timeout:120000});
 await page.waitForFunction(()=>document.body.innerText.includes('Advert Template'));
 await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Set your branding')).click());
-await click('Layout');await click('Create your own');await page.waitForSelector('dialog[open]');
+await page.waitForSelector('[data-preview-locked]');
+const locked=await page.evaluate(()=>{
+ const panel=document.querySelector('[data-preview-locked]'),content=panel.querySelector('[inert]');
+ const buttons=[...panel.querySelectorAll('button')].filter(b=>!b.closest('dialog'));
+ buttons[0].focus();
+ return !!content && content.getAttribute('aria-hidden')==='true' && buttons.every(b=>b.disabled) && !panel.contains(document.activeElement);
+});if(!locked)throw Error('First template preview must block pointer, keyboard and screen-reader access');
+await page.screenshot({path:path.join(temp,'first-template-guidance.png')});
+await click('Style');if(!await page.$('[data-preview-locked]'))throw Error('Only Layout or Continue should reveal the first preview');
+await click('Details');await click('Continue');
+if(await page.$('[data-preview-locked]'))throw Error('Continue should reveal the preview');
+await click('Details');if(await page.$('[data-preview-locked]'))throw Error('Returning to Details must keep the revealed preview visible');
+await page.reload({waitUntil:'networkidle2'});
+await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Set your branding')).click());
+await page.waitForSelector('[data-preview-locked]');
+await click('Layout');if(await page.$('[data-preview-locked]'))throw Error('Layout should reveal the preview');
+await click('Create your own');await page.waitForSelector('dialog[open]');
 await click('Starter layout');
 // Real pointer drag and keyboard nudge on the title layer.
 const titleLayer=await page.$('[aria-label="Move Asset title"]');
@@ -72,6 +89,7 @@ if(!kits[0]?.customDesign)throw Error('Custom design not saved');
 console.log('saved',kits[0].customDesign.size,kits[0].customDesign.elements.length);
 await page.reload({waitUntil:'networkidle2'});
 await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Set your branding')).click());
+if(await page.$('[data-preview-locked]'))throw Error('Saved templates must open with a visible preview');
 await click('Layout');await click('Open design editor');await page.waitForSelector('dialog[open]');
 await page.waitForFunction(()=>document.querySelector('dialog[open] canvas').width===1080);
 await page.evaluate(()=>sessionStorage.setItem('aim4price.website-landscape-entry.v1','portrait'));
