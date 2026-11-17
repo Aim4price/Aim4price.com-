@@ -1,7 +1,7 @@
 name: Asset tracking
 on:
   pull_request:
-    paths: ['android/tracker/**', 'app/tracker/**', 'public/downloads/aim4price-tracker*.apk', 'public/downloads/tracker-release.json', 'components/asset-register/TrackerInstallShareDialog*', 'lib/asset-tracking*', 'lib/asset-movement-report*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', '.github/workflows/asset-tracking-pilot.yml']
+    paths: ['android/tracker/**', 'app/tracker/**', 'public/downloads/aim4price-tracker*.apk', 'public/downloads/tracker-release.json', 'components/asset-register/TrackerInstallShareDialog*', 'lib/asset-tracking*', 'lib/asset-movement-report*', 'app/api/tracking/**', 'app/api/asset-register/**/tracking/**', 'components/asset-register/Asset*Tracking*', 'components/asset-register/AssetMovementHistory*', 'tests/asset-tracking*', 'scripts/verify-tracking-options.cjs', '.github/workflows/asset-tracking-pilot.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -17,6 +17,13 @@ jobs:
       - run: npm ci
       - run: node --experimental-strip-types --test tests/asset-tracking*.test.mjs
       - run: npm run typecheck
+      - name: Tracking options and connected phone browser checks
+        run: node scripts/verify-tracking-options.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracking-options-browser-evidence
+          path: .next/tracking-options-validation/*.png
   android:
     runs-on: ubuntu-latest
     steps:

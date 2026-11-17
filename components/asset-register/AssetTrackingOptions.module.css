@@ -1,0 +1,41 @@
+.flow { display:grid; gap:1.3rem; color:var(--app-text,#173d31); }
+.intro { display:grid; gap:.55rem; }
+.intro h4,.requirements h4 { margin:0; color:var(--app-text,#12352d); font-size:1.2rem; font-weight:800; line-height:1.35; letter-spacing:-.025em; }
+.intro h4:focus { outline:none; }
+.intro p,.note,.message p { margin:0; color:var(--app-muted,#34564b); font-size:1rem; font-weight:600; line-height:1.6; }
+.choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; }
+.green { --tracking-ink:var(--app-success,#146d58); --tracking-soft:var(--app-success-soft,#e1efea); --tracking-line:var(--app-success-line,#74b59f); }
+.purple { --tracking-ink:var(--app-text,#7045a0); --tracking-soft:var(--app-purple-soft,#eee8f5); --tracking-line:var(--app-purple-line,#af96d3); }
+.blue { --tracking-ink:var(--app-info,#245f9a); --tracking-soft:var(--app-info-soft,#e5eef7); --tracking-line:var(--app-info-line,#85b0dc); }
+.amber { --tracking-ink:var(--app-warning,#996019); --tracking-soft:var(--app-warning-soft,#f7eee2); --tracking-line:var(--app-warning-line,#dcb075); }
+.choice,.contact { box-sizing:border-box; display:grid; grid-template-columns:3rem minmax(0,1fr); align-items:center; gap:1rem; min-width:0; padding:1.35rem; border:2px solid var(--tracking-line); border-radius:1rem; background:linear-gradient(135deg,var(--app-surface,#fff),var(--tracking-soft)); text-decoration:none; text-align:left; font:inherit; cursor:pointer; box-shadow:0 10px 22px rgba(16,31,28,.04); transition:border-color .15s ease,box-shadow .15s ease; }
+.choice { min-height:8rem; }
+.choice > span:last-child,.contact > span:last-child { display:grid; gap:.35rem; min-width:0; }
+.choice strong,.contact strong { color:var(--app-text,#12352d); font-size:1rem; font-weight:800; line-height:1.35; letter-spacing:-.025em; }
+.choice small,.contact small { color:var(--app-muted,#34564b); font-size:.95rem; font-weight:650; line-height:1.5; }
+.icon { display:grid; place-items:center; width:3rem; height:3rem; border:1px solid var(--tracking-line); border-radius:.9rem; color:var(--tracking-ink); background:var(--tracking-soft); }
+.icon svg { width:1.65rem; height:1.65rem; }
+.choice:hover,.contact:hover { border-color:var(--tracking-ink); box-shadow:0 12px 24px rgba(16,31,28,.1); }
+.choice:focus-visible,.contact:focus-visible,.back:focus-visible { outline:3px solid var(--tracking-ink,#287856); outline-offset:3px; }
+.back { justify-self:start; min-height:2.8rem; padding:.6rem 1rem; border:1px solid var(--app-border,#b5cfc3); border-radius:.8rem; background:var(--app-surface,#fff); color:var(--app-text,#174c38); font:inherit; font-weight:700; cursor:pointer; }
+.message { display:grid; gap:.6rem; padding:1.25rem; border:1px solid var(--app-border,#c8dcd3); border-radius:1rem; background:var(--app-surface-soft,#edf5f1); }
+.message strong { font-size:1rem; font-weight:750; color:var(--app-text,#174c38); }
+.message p { overflow-wrap:anywhere; }
+.contacts { display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:.8rem; }
+.contact { padding:1rem; gap:.7rem; grid-template-columns:2.5rem minmax(0,1fr); border-width:1.5px; }
+.contact .icon { width:2.5rem; height:2.5rem; border-radius:.75rem; }
+.contact small { overflow-wrap:anywhere; }
+.requirements { display:grid; gap:1rem; padding:1.2rem; border:1px solid var(--app-border,#bdd9cb); border-radius:1rem; background:var(--app-surface-soft,#edf5f1); color:var(--app-text,#173d31); }
+.requirements ul { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; padding:0; margin:0; list-style:none; }
+.requirements li { display:flex; align-items:flex-start; gap:.6rem; }
+.requirements li > span { display:grid; gap:.25rem; }
+.requirements svg { flex:0 0 1.4rem; width:1.4rem; height:1.4rem; margin-top:.1rem; color:var(--app-accent,#187456); }
+.requirements strong { font-size:.95rem; font-weight:750; }
+.requirements li span span,.requirements p { font-size:.95rem; font-weight:600; line-height:1.5; color:var(--app-muted,#34564b); }
+.requirements p { margin:0; padding-top:.9rem; border-top:1px solid var(--app-border,#c8dcd3); }
+@media(max-width:620px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .choices,
+ :global(:where(html:not(:has([data-website-canvas])))) .contacts,
+ :global(:where(html:not(:has([data-website-canvas])))) .requirements ul { grid-template-columns:minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) { .choice,.contact { transition:none; } }

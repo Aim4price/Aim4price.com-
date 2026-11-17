@@ -1625,7 +1625,7 @@ export default function AssetMapClient() {
         }}
       />}
       {photoViewer&&<LeadPhotoViewerModal assetKey={photoViewer.assetId} title={photoViewer.title} urls={photoViewer.urls} initialIndex={photoViewer.index} onClose={closePhotoViewer}/>}
-      {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Tracking device" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel assetId={locationDialog.asset.id}/></AssetAccessSettingsDialog>}
+      {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel key={locationDialog.asset.id} assetId={locationDialog.asset.id} assetTitle={locationDialog.asset.title}/></AssetAccessSettingsDialog>}
       {locationDialog?.view==='more'&&<AssetAccessSettingsDialog locationLayout title="Location options" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <div className={cardActions.options} data-location-options>
           <button type="button" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}>
@@ -1647,7 +1647,7 @@ export default function AssetMapClient() {
       </AssetAccessSettingsDialog>}
       {locationDialog?.view==='history' &&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <AssetLocationEditor trackingAssetId={desktop.workspace ? undefined : locationDialog.asset.id} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
+        <AssetLocationEditor onTracking={desktop.workspace ? undefined : () => setLocationDialog({...locationDialog, view:'tracking'})} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await desktop.request('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
           setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));

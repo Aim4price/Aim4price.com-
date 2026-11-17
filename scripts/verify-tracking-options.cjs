@@ -1,0 +1,80 @@
+// Exercise the real tracking chooser and phone controls against isolated API fixtures.
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const { spawn } = require('node:child_process');
+const puppeteer = require('puppeteer-core');
+const root = path.resolve(__dirname, '..');
+const fixture = path.join(root, 'app/tracking-options-validation');
+(async () => {
+  let server, browser;
+  try {
+    await fs.mkdir(fixture);
+    await fs.writeFile(path.join(fixture, 'page.tsx'), `'use client';
+import {useEffect,useState} from 'react';
+import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
+import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
+export default function Page(){const [mounted,setMounted]=useState(false);useEffect(()=>setMounted(true),[]);if(!mounted)return null;return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle="Trailer & tank / #12 – 50%" onClose={()=>{}}><AssetTrackingPanel assetId="fixture" assetTitle="Trailer & tank / #12 – 50%"/></AssetAccessSettingsDialog>;}`);
+    server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3048'], {cwd:root, env:{...process.env, PGHOST:'127.0.0.1', PGPORT:'5432', PGUSER:'fixture', PGPASSWORD:'fixture-only', PGDATABASE:'fixture'}, stdio:['ignore','pipe','pipe']});
+    await new Promise((resolve,reject) => {const timer=setTimeout(()=>reject(Error('Startup timeout')),90000); server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited'));});});
+    browser = await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH || await require('@sparticuz/chromium').executablePath(), args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'], headless:true});
+    const page=await browser.newPage(), errors=[], mutations=[];
+    let device=null;
+    const title='Trailer & tank / #12 – 50%';
+    const message=`Hello Aim4price, my ${title} already has a tracker. Could you check whether it can connect to Aim4price? Please let me know what information you need.`;
+    page.on('pageerror',e=>errors.push(e.message));
+    await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');});
+    await page.setRequestInterception(true);
+    page.on('request',r=>{
+      const u=new URL(r.url());
+      if(u.pathname==='/api/asset-register/fixture/tracking'){
+        let body={device,assetTitle:title};
+        if(r.method()==='POST'){mutations.push('POST');body={code:'ABCD-EF01-2345-6789',expiresInMinutes:15};}
+        if(r.method()==='DELETE'){mutations.push('DELETE');device=null;body={ok:true};}
+        return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
+      }
+      if(u.pathname.endsWith('/tracking/usage'))return r.respond({status:200,contentType:'application/json',body:JSON.stringify({metric:'not_applicable',enabled:false})});
+      if(u.pathname.startsWith('/api/'))return r.respond({status:200,contentType:'application/json',body:'{}'});
+      if(u.hostname!=='127.0.0.1')return r.abort();
+      return r.continue();
+    });
+    async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text).click(),text);}
+    const output=path.join(root,'.next/tracking-options-validation');await fs.mkdir(output,{recursive:true});
+    await page.setViewport({width:1440,height:1000});
+    await page.goto('http://127.0.0.1:3048/tracking-options-validation',{waitUntil:'networkidle0',timeout:120000});
+    await page.waitForSelector('[data-tracking-options="choice"]');
+    assert.equal(mutations.length,0,'Opening the chooser never starts pairing');
+    await page.screenshot({path:path.join(output,'choices-desktop.png')});
+    await click('Connect an existing tracker');
+    await page.waitForSelector('[data-tracking-options="existing"]');
+    const hrefs=await page.$$eval('[data-tracking-options] a',links=>links.map(a=>a.href));
+    const whatsapp=new URL(hrefs[0]);assert.equal(whatsapp.origin,'https://wa.me');assert.equal(whatsapp.pathname,'/27625721650');assert.equal(whatsapp.searchParams.get('text'),message);
+    const email=new URL(hrefs[1]);assert.equal(email.protocol,'mailto:');assert.equal(email.pathname,'aim4price@gmail.com');assert.equal(email.searchParams.get('body'),message);assert.equal(email.searchParams.get('subject'),`Tracker connection enquiry — ${title}`);assert.equal(hrefs[2],'tel:+27625721650');
+    assert.equal(mutations.length,0,'Contact choices never mutate tracking');
+    assert.equal(await page.$eval('[data-tracking-options] h4',h=>h===document.activeElement),true,'Screen transition moves focus to its heading');
+    await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent.includes('WhatsApp')),true,'Contact buttons work with keyboard navigation');
+    await page.screenshot({path:path.join(output,'existing-desktop.png')});
+    await page.setViewport({width:390,height:844});assert(await page.$eval('[role="dialog"]',e=>e.scrollWidth<=e.clientWidth+1));await page.screenshot({path:path.join(output,'existing-mobile.png')});
+    await page.setViewport({width:1440,height:1000});
+    await click('Back to tracking options');await click('Use a tracking phone');
+    await page.waitForSelector('[aria-label="Tracking phone requirements"]');
+    assert.equal(mutations.length,0,'Choosing a phone waits for an explicit pairing request');
+    assert(await page.evaluate(()=>document.body.textContent.includes('The app runs in the background')));
+    await page.screenshot({path:path.join(output,'phone-desktop.png')});
+    await click('Share app link');await page.waitForSelector('[data-tracker-install]');await page.click('[aria-label="Close Install Tracker"]');
+    await click('Create pairing code');await page.waitForSelector('[data-tracker-pairing]');assert.deepEqual(mutations,['POST']);
+    await click('Tracking options');await click('Use a tracking phone');assert(await page.$('[data-tracker-pairing]'),'Back navigation retains the pending pairing code');
+    device={id:'paired-phone',name:'Equipment phone',status:'Connected',lastSeenAt:'2026-11-17T12:00:00Z',lastCapturedAt:'2026-11-17T11:59:00Z'};
+    await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-tracker-connected]');assert.equal(await page.$('[data-tracking-options]'),null,'Connected phones open their controls directly');
+    await click('Tracking options');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
+    await click('Manage device');await click('Replace phone');await page.waitForSelector('[aria-label="Tracking phone requirements"]');assert.deepEqual(mutations,['POST'],'Replacement is not paired automatically');
+    await click('Back to connected phone');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
+    await click('Disconnect phone');await page.$$eval('button',buttons=>buttons.filter(b=>b.textContent.trim()==='Disconnect phone').at(-1).click());await page.waitForSelector('[data-tracking-options="choice"]');assert.deepEqual(mutations,['POST','DELETE']);
+    await page.evaluate(()=>document.documentElement.dataset.appTheme='dark');await page.screenshot({path:path.join(output,'choices-dark.png')});
+    assert.deepEqual(errors,[]);console.log('PASS chooser, encoded contact messages, keyboard navigation, mobile overflow, phone requirements, app sharing, explicit pairing, connected controls, replacement and confirmed disconnect');
+  } finally {
+    if(browser)await browser.close();
+    if(server&&server.exitCode===null){const stopped=new Promise(resolve=>server.once('exit',resolve));server.kill('SIGTERM');await stopped;}
+    await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/tracking-options-validation'),{recursive:true,force:true});
+  }
+})().catch(e=>{console.error(e);process.exitCode=1;});
