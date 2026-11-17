@@ -73,7 +73,7 @@ async function main() {
   await page.screenshot({path:'/tmp/map-refresh-desktop.png'});
   await click('More');await click('Update location');await page.waitForSelector('[data-location-view="choice"]');
   const metrics=await page.evaluate(()=>{const editor=document.querySelector('[data-location-view]'),dialog=editor.closest('[role="dialog"]');return {width:parseFloat(getComputedStyle(dialog).width),weight:getComputedStyle(editor.querySelector('[data-location-action] strong')).fontWeight,overflow:editor.scrollWidth>editor.clientWidth+1};});
-  assert(metrics.width>=820,'Location dialog has the wider 52rem layout');assert.equal(metrics.weight,'650');assert.equal(metrics.overflow,false);
+  assert(metrics.width>=950,'Location chooser has the umbrella-style 60rem layout');assert.equal(metrics.weight,'800');assert.equal(metrics.overflow,false);
   await page.screenshot({path:'/tmp/map-location-choices.png'});
   await click('Enter coordinates');assert.equal(await page.$eval('[data-location-view] input',e=>getComputedStyle(e).fontWeight),'500');await page.screenshot({path:'/tmp/map-location-coordinates.png'});
   await page.setViewport({width:390,height:844});await page.screenshot({path:'/tmp/map-location-phone.png'});

@@ -1,7 +1,17 @@
 /* Shared by the map, register and partner location flows. */
 .editor.editor.editor { font-family: var(--font-heading, 'Montserrat'), sans-serif; gap: 1.15rem !important; }
-.editor.editor.editor [data-location-action] strong { font-size: 1rem !important; font-weight: 650 !important; line-height: 1.45 !important; letter-spacing: -.015em !important; }
-.editor.editor.editor [data-location-action] { min-height: 5.5rem !important; }
+.editor.editor.editor [data-location-action] strong { font-size: 1rem !important; font-weight: 800 !important; line-height: 1.35 !important; letter-spacing: -.025em !important; }
+/* Give the initial chooser the same open, roomy layout as Manage umbrella. */
+:global([role="dialog"]):has(.editor[data-location-view="choice"]) {
+  width:min(60rem,var(--website-dialog-reference-width,calc(var(--website-visible-width,100vw) - 3rem))) !important;
+}
+:global([role="dialog"]):has(.editor[data-location-view="choice"]) h3 {
+  font-size:2rem !important; font-weight:800 !important; letter-spacing:-.04em; line-height:1.08 !important;
+}
+.editor.editor.editor[data-location-view="choice"] {
+  padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important;
+  gap:1.5rem !important;
+}
 .editor.editor.editor strong { font-weight: 650; }
 .editor.editor.editor p { margin: .35rem 0 0; font-size: .95rem; font-weight: 500; line-height: 1.6; font-variant-numeric: tabular-nums; }
 .editor.editor.editor label > span { font-size: .85rem !important; font-weight: 600 !important; line-height: 1.5; letter-spacing: 0 !important; text-transform: none !important; }

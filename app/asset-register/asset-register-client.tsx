@@ -19298,7 +19298,7 @@ export default function AssetRegisterClient({
                       <button
                         type="button"
                         className={styles.assetSettingsOptionButton}
-                        onClick={openAssetSettingsConversionView}
+                        data-settings-action="valuation" onClick={openAssetSettingsConversionView}
                         disabled={isAssetSettingsBusy}
                       >
                         <TrendIcon className={styles.assetSettingsOptionIcon} />
