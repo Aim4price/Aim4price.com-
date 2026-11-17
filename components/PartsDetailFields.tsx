@@ -21,6 +21,9 @@ export function DetailIcon({kind}:{kind:string}) {
     edit:"m16 3 5 5-12 12-6 1 1-6L16 3Zm-1 1 5 5",
     delete:"M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7",
     custom:"M12 4v16M4 12h16",
+    addColumn:"M3 4h10v16H3V4Zm5 0v16M18 8v8m-4-4h8",
+    columns:"M3 4h18v16H3V4Zm6 0v16m6-16v16",
+    undo:"m9 5-5 5 5 5M4 10h10a5 5 0 0 1 0 10h-3",
     restore:"M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l3 2",
   };
   return <span className={styles.detailIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={paths[kind] || paths.custom}/></svg></span>;
@@ -32,7 +35,7 @@ export function PartInput({children,label,required=false,onRemove}:{children:Rea
 
 export function AddPartField({ fields, onAdd, column = false, restorableFields = [], restoreInputs = [], onRestoreInput }: { restoreInputs?:{id:string;label:string}[];onRestoreInput?:(id:string)=>void; restorableFields?:PartDetailField[]; fields: PartDetailField[]; onAdd: (field:PartDetailField)=>void; column?:boolean }) {
   const [open,setOpen] = useState(false);
-  return <><button type="button" disabled={fields.length >= 12 && !restoreInputs.length && !restorableFields.length} onClick={()=>setOpen(true)}>+ {column ? "Add column" : "Add detail"}</button>{open && <FieldPicker restoreInputs={restoreInputs} onRestoreInput={id=>{onRestoreInput?.(id);setOpen(false);}} restorableFields={restorableFields} fields={fields} onClose={()=>setOpen(false)} onAdd={f=>{onAdd(f);setOpen(false);}} column={column}/>}</>;
+  return <><button type="button" disabled={fields.length >= 12 && !restoreInputs.length && !restorableFields.length} onClick={()=>setOpen(true)}>{column ? <><DetailIcon kind="addColumn"/>Add column</> : "+ Add detail"}</button>{open && <FieldPicker restoreInputs={restoreInputs} onRestoreInput={id=>{onRestoreInput?.(id);setOpen(false);}} restorableFields={restorableFields} fields={fields} onClose={()=>setOpen(false)} onAdd={f=>{onAdd(f);setOpen(false);}} column={column}/>}</>;
 }
 function FieldPicker({fields,onAdd,onClose,column,restorableFields,restoreInputs,onRestoreInput}:{restoreInputs:{id:string;label:string}[];onRestoreInput:(id:string)=>void;restorableFields:PartDetailField[];fields:PartDetailField[];onAdd:(field:PartDetailField)=>void;onClose:()=>void;column:boolean}) {
   const dialog = useRef<HTMLDialogElement>(null);

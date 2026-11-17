@@ -16,7 +16,7 @@ import {
   partCellErrors,
   EXAMPLE_PARTS,
 } from "../lib/parts-editor";
-import { AddPartField, PartDetailInputs, PartInput } from "./PartsDetailFields";
+import { AddPartField, PartDetailInputs, PartInput, DetailIcon } from "./PartsDetailFields";
 import VatPriceInput from "./VatPriceInput";
 import PartsChoice from "./PartsChoice";
 import ModalSelect from "./AssetModalSelect";
@@ -330,9 +330,9 @@ export default function PartsImportForm({
   const sheetTools = <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
         <AddPartField column fields={extraFields} onAdd={addField}/>
-        <button disabled={busy} onClick={() => setTool({kind: "columns"})}>Manage columns</button>
-        <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}>Bulk edit</button>
-        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo.rows);setExtraFields(undo.fields);setHiddenColumns(undo.hidden);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}>Undo</button>
+        <button disabled={busy} onClick={() => setTool({kind: "columns"})}><DetailIcon kind="columns"/>Manage columns</button>
+        <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}><DetailIcon kind="edit"/>Bulk edit</button>
+        <button disabled={busy || !undo} onClick={() => {if (undo) {setRows(undo.rows);setExtraFields(undo.fields);setHiddenColumns(undo.hidden);setUndo(null);setSelected([]);setPage(0);setError("");setPreview(null);}}}><DetailIcon kind="undo"/>Undo</button>
       </div>;
   return (
     <div data-parts-import={fileFlow || undefined} className={`${styles.importForm} ${sheetEntry ? styles.stockSheet : ""}`}>
