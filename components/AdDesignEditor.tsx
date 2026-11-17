@@ -141,7 +141,7 @@ function DesignWorkspace({ value, content, onChange, onClose }: Props & { onClos
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(e.shiftKey); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); undo(true); }
   }}>
-    <header className={styles.header}><div><h2 id="design-title">Make it your own</h2><p>Arrange your advert. Save the layout and reuse it for any asset.</p></div><button type="button" aria-label="Close design editor" onClick={close}>×</button></header>
+    <header className={styles.header}><div><h2 id="design-title">Make it your own</h2><p>Arrange your advert. Save the layout and reuse it for any asset.</p></div><button type="button" data-modal-close="true" aria-label="Close design editor" onClick={close}>×</button></header>
     <div className={styles.toolbar}>
       <div className={styles.choices} aria-label="Advert size">{Object.keys(AD_DESIGN_SIZES).map(size => <button type="button" key={size} aria-pressed={design.size === size} onClick={() => commit(resizeAdDesign(design, size as AdCustomDesign['size']))}>{size.charAt(0).toUpperCase() + size.slice(1)}</button>)}</div>
       <button type="button" onClick={() => {
