@@ -13,10 +13,16 @@
 .form label,.form legend { font-weight:600; }
 .form small { font-weight:500; line-height:1.5; }
 .form input:not([type=checkbox]) { width:100%; min-width:0; box-sizing:border-box; min-height:3rem; padding:.65rem .8rem; font:inherit; color:inherit; border:1px solid var(--app-border,#bfd8ce); border-radius:.65rem; background:var(--app-input-bg,#fff); }
-.form fieldset { border:1px solid var(--app-border,#cfdfd7); border-radius:1rem; padding:.65rem .8rem; min-width:0; }
-.days { display:flex; flex-wrap:wrap; gap:.5rem 1rem; margin:.25rem 0; }
-.days label { display:flex; align-items:center; gap:.4rem; font-size:1rem; }
-.days input { accent-color:#176b52; width:1.1rem; height:1.1rem; }
+.form fieldset { border:0; padding:0; margin:.2rem 0 0; min-width:0; }
+.form legend { display:block; width:100%; padding:0; margin-bottom:.6rem; line-height:1.5; }
+.days { display:flex; flex-wrap:wrap; gap:.35rem .9rem; margin:0; padding:.45rem .7rem; border:1px solid var(--app-border,#cfdfd7); border-radius:.85rem; background:var(--app-input-bg,#fff); }
+.days label { display:flex; align-items:center; gap:.55rem; min-height:2.25rem; padding:0 .15rem; font-size:1rem; cursor:pointer; }
+.days input { appearance:none; -webkit-appearance:none; display:grid; place-content:center; flex:0 0 auto; width:1.35rem; height:1.35rem; margin:0; border:2px solid #6c8d7f; border-radius:.35rem; background:var(--app-input-bg,#fff); cursor:pointer; }
+.days input:checked { border-color:#176b52; background:#176b52; }
+.days input:checked::after { content:""; width:.3rem; height:.6rem; border:solid #fff; border-width:0 2px 2px 0; transform:translateY(-.08rem) rotate(45deg); }
+.days label:hover input:not(:disabled) { border-color:#176b52; box-shadow:0 0 0 2px #176b521a; }
+.days input:disabled { opacity:.55; cursor:not-allowed; }
+.days label:has(input:disabled) { cursor:not-allowed; }
 .actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.65rem; }
 .panel button { font:inherit; font-weight:600; padding:.7rem 1rem; min-height:2.8rem; border:1px solid var(--app-border,#bfd8ce); border-radius:.7rem; background:var(--app-surface-soft,#edf5f1); color:inherit; cursor:pointer; }
 .actions button[type=submit],.actions .primary { background:#176b52; color:white; border-color:#176b52; }
