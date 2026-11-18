@@ -55,6 +55,19 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
       }
       await page.setViewport({width:1440,height:900});
     }
+    async function assertSingleLine(selector) {
+      for (const width of [1920, 1366, 390]) {
+        await page.setViewport({width, height: 860});
+        await page.waitForSelector(selector);
+        const wrapped = await page.$$eval(selector, elements => elements.flatMap(element => {
+          const range = document.createRange();
+          range.selectNodeContents(element.lastChild);
+          return range.getClientRects().length === 1 ? [] : [element.textContent];
+        }));
+        assert.deepEqual(wrapped, [], 'Single-line copy at width ' + width);
+      }
+      await page.setViewport({width:1440,height:900});
+    }
     const output=path.join(root,'.next/tracking-options-validation');await fs.mkdir(output,{recursive:true});
     await page.setViewport({width:1440,height:1000});
     await page.goto('http://127.0.0.1:3048/tracking-options-validation',{waitUntil:'networkidle0',timeout:120000});
@@ -88,9 +101,9 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
     await page.waitForSelector('[data-tracker-connected] form, [data-tracker-connected] section h4');
     await assertFits('connected phone and automatic kilometres',[{width:1920,height:870},{width:1366,height:768}]);
     await page.screenshot({path:path.join(output,'connected-desktop.png')});
-    await click('Tracking options');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
+    await click('Tracking options');await assertSingleLine('[data-tracking-options="choice"] h4, [data-tracking-options="choice"] strong, [data-tracking-options="choice"] small');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
     await click('Manage device');await click('Replace phone');await page.waitForSelector('[aria-label="Tracking phone requirements"]');assert.deepEqual(mutations,['POST'],'Replacement is not paired automatically');
-    await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
+    await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');await assertSingleLine('[role="dialog"]:has([aria-label="Close Disconnect phone?"]) p');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
     await click('Disconnect phone');await page.$$eval('button',buttons=>buttons.filter(b=>b.textContent.trim()==='Disconnect phone').at(-1).click());await page.waitForSelector('[data-tracking-options="choice"]');assert.deepEqual(mutations,['POST','DELETE']);
     await page.evaluate(()=>document.documentElement.dataset.appTheme='dark');await page.screenshot({path:path.join(output,'choices-dark.png')});
     device={id:'paired-phone'};
