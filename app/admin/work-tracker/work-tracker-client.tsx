@@ -631,12 +631,12 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
         </div>
 
         <section className={styles.summaryGrid} aria-label="Work period summary">
-          <article><span>Tracked</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong></article>
+          {isLoading || loadError || !history ? <p role="status">{isLoading ? "Loading work totals…" : "Work totals unavailable."}</p> : <><article><span>Tracked</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong></article>
           <article className={styles.reportableSummary}><span>Reportable</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong></article>
           <div className={styles.summaryFacts}>
             <span><strong>{displaySummary.includedSessionCount} / {displaySummary.sessionCount}</strong> sessions included</span>
             <span><strong>{displaySummary.pageCount}</strong> platform areas</span>
-          </div>
+          </div></> }
         </section>
 
         <div className={styles.sessionList} aria-live="polite">

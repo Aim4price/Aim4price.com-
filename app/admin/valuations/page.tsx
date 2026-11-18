@@ -1,6 +1,6 @@
 import AdminNavigation from '../../../components/AdminNavigation';
 import { requireAdminPageAccess } from '../../../lib/account-access';
-import { getAdminValuationReport } from '../../../lib/admin-valuations';
+import { normalizeAdminValuationFilters } from '../../../lib/admin-valuations';
 import type {
   AdminValuationAccountFilter,
   AdminValuationModeFilter,
@@ -25,7 +25,7 @@ export default async function AdminValuationsPage({
   searchParams?: PageSearchParams;
 }) {
   await requireAdminPageAccess();
-  const report = await getAdminValuationReport({
+  const filters = normalizeAdminValuationFilters({
     search: first(searchParams.search),
     recordType: first(searchParams.type) as AdminValuationRecordFilter,
     valuationMode: first(searchParams.mode) as AdminValuationModeFilter,
@@ -47,7 +47,7 @@ export default async function AdminValuationsPage({
           <AdminNavigation active="valuations" />
         </header>
 
-        <AdminValuationsClient initialReport={report} />
+        <AdminValuationsClient key={JSON.stringify(filters)} initialFilters={filters} />
       </section>
     </main>
   );

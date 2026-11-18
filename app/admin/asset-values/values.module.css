@@ -8,6 +8,7 @@
 .filters input { width: 100%; min-height: 40px; padding: .65rem .8rem; border: 1px solid #dfe7e2; border-radius: .5rem; background: #fff; color: #274735; font: inherit; font-size: 0.95rem; }
 .panel button { min-height: 36px; padding: .5rem .85rem; border: 1px solid #dce7df; border-radius: .5rem; color: #376348; background: #fff; font: inherit; font-size: 0.95rem; font-weight: 650; cursor: pointer; white-space: nowrap; }
 .panel button:hover { background: #f0f7f2; }
+.filters button[aria-pressed="true"] { background: #e1f0e6; border-color: #729d7d; color: #244c33; }
 .tableWrap { overflow: auto; }
 .tableWrap table { width: 100%; border-collapse: collapse; min-width: 680px; text-align: left; }
 .tableWrap th { background: #f8faf9; padding: .85rem 1.2rem; font-size: 0.95rem; color: #52665d; font-weight: 650; }

@@ -434,6 +434,12 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
   const [loadedDraft, setLoadedDraft] = useState<CaptureDraft>(EMPTY_DRAFT);
   const [actionNote, setActionNote] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
+  const confirmationDialog = useRef<HTMLDialogElement>(null);
+  const [completion, setCompletion] = useState<"complete" | "complete_direct" | null>(null);
+  const [approvalNote, setApprovalNote] = useState("");
+  useEffect(() => {
+    if (completion) confirmationDialog.current?.showModal();
+  }, [completion]);
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [busyFileSecurity, setBusyFileSecurity] = useState(false);
   const [matchSearch, setMatchSearch] = useState("");
@@ -471,6 +477,10 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
   }, [currentTargetKey, events, requiresTargetReconfirmation]);
   const isExternalSubmission = detail?.submissionChannel === "dealer_upload"
     || detail?.submissionChannel === "public_drop";
+  const needsOwnerApproval = isExternalSubmission && !events.some(event => event.eventType === "owner_approved");
+  const completionLabel = needsOwnerApproval ? "Send to owner for approval" : "Save to owner’s ledger";
+  const completionTarget = [detail?.publicReference, selectedTarget?.ownerDisplayName || detail?.ownerDisplayName,
+    selectedTarget?.targetDisplayName || detail?.assetDisplayName || detail?.fuelStorageDisplayName].filter(Boolean).join(" · ");
   const isTerminalRequest = Boolean(
     detail && ["completed", "declined", "rejected", "cancelled"].includes(detail.status),
   );
@@ -565,6 +575,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
       .sort((left, right) => left.pageOrder - right.pageOrder);
     const nextDraft = normaliseDraft(data.request);
     isDraftDirtyRef.current = false;
+    setCompletion(null);
     setDetail(data.request);
     setFiles(nextFiles);
     setEvents(data.events ?? []);
@@ -850,7 +861,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
     setMatchTargets([]);
   }
 
-  async function runAction(action: Exclude<BusyAction, null>) {
+  async function runAction(action: Exclude<BusyAction, null>, confirmed = false) {
     if (!selectedId || busyAction) return;
     let requestNote = actionNote.trim();
     if (["request_information", "mark_duplicate", "reject"].includes(action) && !actionNote.trim()) {
@@ -878,17 +889,18 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
         `Update this asset from ${fromReading} to ${toReading}? This is a separate action from ledger completion, and recorded usage will never be lowered.`,
       )) return;
     }
-    if (action === "complete" && !window.confirm("Use these verified details to create the ledger record or send it to the owner for approval?")) {
-      return;
-    }
-    if (action === "complete_direct") {
-      requestNote = window.prompt(
-        "How was the owner's approval confirmed? This reason will be saved in the audit history.",
-      )?.trim() || "";
-      if (!requestNote) return;
-      if (!window.confirm(
-        "Save this verified document directly to the owner's ledger without asking them to approve it again?",
-      )) return;
+    if (action === "complete" || action === "complete_direct") {
+      if (!confirmed) {
+        setApprovalNote("");
+        setCompletion(action);
+        return;
+      }
+      if (completion !== action) return;
+      if (action === "complete_direct") {
+        requestNote = approvalNote.trim();
+        if (!requestNote) return;
+      }
+      setCompletion(null);
     }
     if (action === "reject" && !window.confirm(
       "Reject this document request? Its audit metadata will remain and its source file will be scheduled for secure removal.",
@@ -1029,7 +1041,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
             aria-pressed={statusFilter === kpi.filter}
           >
             <span>{kpi.label}</span>
-            <strong>{kpi.value}</strong>
+            <strong>{isLoading ? "Loading…" : queueError ? "Unavailable" : kpi.value}</strong>
           </button>
         ))}
       </section>
@@ -1487,9 +1499,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                 <button type="button" className={styles.completeButton} disabled={Boolean(busyAction) || !isRequestEditable || !isMatchConfirmed} onClick={() => void runAction("complete")}>
                   {busyAction === "complete"
                     ? "Completing…"
-                    : detail.submissionChannel === "owner_upload" || detail.submissionChannel === "accountant_upload"
-                      ? "Create verified ledger record"
-                      : "Verify & send to owner"}
+                    : completionLabel}
                 </button>
                 {isExternalSubmission && !isTerminalRequest ? (
                   <button
@@ -1503,6 +1513,19 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                 ) : null}
               </div>
 
+              {completion && <dialog className={styles.completionDialog} ref={confirmationDialog}
+                aria-labelledby="capture-completion-heading" onCancel={() => setCompletion(null)}>
+                <form onSubmit={event => { event.preventDefault(); void runAction(completion,true); }}>
+                  <h3 id="capture-completion-heading">{completion === "complete_direct" ? "Save to owner’s ledger" : completionLabel}</h3>
+                  <p>{completionTarget}</p>
+                  {completion === "complete_direct" ? <label>How was the owner's approval confirmed?
+                    <textarea required maxLength={1000} value={approvalNote} onChange={event => setApprovalNote(event.target.value)}/>
+                  </label> : <p>{needsOwnerApproval ? "The owner will review the document before a ledger entry is created." : "The verified document will create a ledger entry for this destination."}</p>}
+                  <footer><button type="button" className={styles.secondaryButton} autoFocus onClick={() => setCompletion(null)}>Cancel</button>
+                    <button className={styles.completeButton} disabled={completion === "complete_direct" && !approvalNote.trim()}>
+                      {completion === "complete_direct" ? "Save to owner’s ledger" : completionLabel}</button></footer>
+                </form>
+              </dialog>}
               <details className={styles.exceptionPanel}>
                 <summary>Other actions</summary>
                 <label><span>Reason or message</span><textarea rows={3} value={actionNote} onChange={(event) => setActionNote(event.target.value)} placeholder="Required for information requests, duplicates and rejections." /></label>

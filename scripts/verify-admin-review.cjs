@@ -104,7 +104,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
    if(url.endsWith('/brand/aim4price-mark-black.png')) return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});
    if(url.includes('/api/admin/asset-values') && failValues) return respond({error:'Value search unavailable'},503);
-   if(url.includes('/api/admin/asset-values')) return respond({items:[{id:'fixture',user_id:'owner',title:'2022 New Holland TT4.90',email:'owner@example.test',value:327133,pending:2}]});
+   if(url.includes('/api/admin/asset-values')) return respond({total:1,page:1,items:[{id:'fixture',user_id:'owner',title:'2022 New Holland TT4.90',email:'owner@example.test',value:327133,pending:2}]});
    if(url.includes('/api/admin/users/owner/qr-labels'))return respond({ok:true,assets:[{...asset,hasQr:true,registerName:'Farm equipment'}]});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
