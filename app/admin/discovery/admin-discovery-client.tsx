@@ -130,6 +130,11 @@ export default function AdminDiscoveryClient({
     filtersFromReport(initialReport),
   );
   const [searchDraft, setSearchDraft] = useState(initialReport.filters.search);
+  const initial = initialReport.filters;
+  const [showFilters, setShowFilters] = useState(Boolean(
+    initial.ownerUserId || initial.province || initial.sector || initial.lifecycleState ||
+    initial.participation !== "all" || initial.location !== "all"
+  ));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<AdminGlobalAsset | null>(null);
@@ -541,97 +546,6 @@ export default function AdminDiscoveryClient({
               <button type="submit" disabled={loading}>Search</button>
             </form>
             <label>
-              <span>Owner</span>
-              <AdminSelect
-                value={filters.ownerUserId}
-                onChange={(event) => updateFilter("ownerUserId", event.target.value)}
-                disabled={loading}
-              >
-                <option value="">All owners</option>
-                {report.options.owners.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label} ({option.count})
-                  </option>
-                ))}
-              </AdminSelect>
-            </label>
-            <label>
-              <span>Province</span>
-              <AdminSelect
-                value={filters.province}
-                onChange={(event) => updateFilter("province", event.target.value)}
-                disabled={loading}
-              >
-                <option value="">All provinces</option>
-                {report.options.provinces.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label} ({option.count})
-                  </option>
-                ))}
-              </AdminSelect>
-            </label>
-            <label>
-              <span>Sector</span>
-              <AdminSelect
-                value={filters.sector}
-                onChange={(event) => updateFilter("sector", event.target.value)}
-                disabled={loading}
-              >
-                <option value="">All sectors</option>
-                {report.options.sectors.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label} ({option.count})
-                  </option>
-                ))}
-              </AdminSelect>
-            </label>
-            <label>
-              <span>Participation</span>
-              <AdminSelect
-                value={filters.participation}
-                onChange={(event) =>
-                  updateFilter(
-                    "participation",
-                    event.target.value as AdminAssetParticipationFilter,
-                  )
-                }
-                disabled={loading}
-              >
-                <option value="all">All participation</option>
-                <option value="enabled">Enabled</option>
-                <option value="disabled">Admin only</option>
-              </AdminSelect>
-            </label>
-            <label>
-              <span>GPS status</span>
-              <AdminSelect
-                value={filters.location}
-                onChange={(event) =>
-                  updateFilter("location", event.target.value as AdminAssetLocationFilter)
-                }
-                disabled={loading}
-              >
-                <option value="all">All GPS</option>
-                <option value="mapped">Mapped</option>
-                <option value="missing">Missing</option>
-              </AdminSelect>
-            </label>
-            <label>
-              <span>Lifecycle</span>
-              <AdminSelect
-                value={filters.lifecycleState}
-                onChange={(event) => updateFilter("lifecycleState", event.target.value)}
-                disabled={loading}
-              >
-                <option value="">All states</option>
-                {report.options.lifecycleStates.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label} ({option.count})
-                  </option>
-                ))}
-              </AdminSelect>
-            </label>
-            <label>
               <span>Sort</span>
               <AdminSelect
                 value={filters.sort}
@@ -648,6 +562,103 @@ export default function AdminDiscoveryClient({
                 <option value="asset">Asset A-Z</option>
               </AdminSelect>
             </label>
+            <button type="button" className={styles.filterToggle} aria-expanded={showFilters}
+              aria-controls="discovery-extra-filters" onClick={() => setShowFilters(!showFilters)}>
+              {showFilters ? "Hide filters" : "More filters"}
+            </button>
+            <div id="discovery-extra-filters" className={styles.extraFilters} hidden={!showFilters}>
+              <label>
+                <span>Owner</span>
+                <AdminSelect
+                  value={filters.ownerUserId}
+                  onChange={(event) => updateFilter("ownerUserId", event.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">All owners</option>
+                  {report.options.owners.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count})
+                    </option>
+                  ))}
+                </AdminSelect>
+              </label>
+              <label>
+                <span>Province</span>
+                <AdminSelect
+                  value={filters.province}
+                  onChange={(event) => updateFilter("province", event.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">All provinces</option>
+                  {report.options.provinces.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count})
+                    </option>
+                  ))}
+                </AdminSelect>
+              </label>
+              <label>
+                <span>Sector</span>
+                <AdminSelect
+                  value={filters.sector}
+                  onChange={(event) => updateFilter("sector", event.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">All sectors</option>
+                  {report.options.sectors.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count})
+                    </option>
+                  ))}
+                </AdminSelect>
+              </label>
+              <label>
+                <span>Participation</span>
+                <AdminSelect
+                  value={filters.participation}
+                  onChange={(event) =>
+                    updateFilter(
+                      "participation",
+                      event.target.value as AdminAssetParticipationFilter,
+                    )
+                  }
+                  disabled={loading}
+                >
+                  <option value="all">All participation</option>
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Admin only</option>
+                </AdminSelect>
+              </label>
+              <label>
+                <span>GPS status</span>
+                <AdminSelect
+                  value={filters.location}
+                  onChange={(event) =>
+                    updateFilter("location", event.target.value as AdminAssetLocationFilter)
+                  }
+                  disabled={loading}
+                >
+                  <option value="all">All GPS</option>
+                  <option value="mapped">Mapped</option>
+                  <option value="missing">Missing</option>
+                </AdminSelect>
+              </label>
+              <label>
+                <span>Lifecycle</span>
+                <AdminSelect
+                  value={filters.lifecycleState}
+                  onChange={(event) => updateFilter("lifecycleState", event.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">All states</option>
+                  {report.options.lifecycleStates.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} ({option.count})
+                    </option>
+                  ))}
+                </AdminSelect>
+              </label>
+            </div>
             {activeFilterCount ? (
               <button
                 type="button"
@@ -670,36 +681,26 @@ export default function AdminDiscoveryClient({
               <tr>
                 <th>Asset</th>
                 <th>Owner</th>
-                <th>Contact</th>
-                <th>Location</th>
+
                 <th>Value excl. VAT</th>
                 <th>Views</th>
-                <th>Access</th>
-                <th>Updated</th>
-                <th>Action</th>
+
               </tr>
             </thead>
             <tbody>
               {report.assets.map((asset) => {
-                const mapped = hasAdminAssetCoordinates(asset);
                 return (
                   <tr key={asset.id}>
                     <td>
-                      <strong>{asset.title}</strong>
+                      <button type="button" className={styles.assetLink}
+                        onClick={(event) => openDetails(asset, event.currentTarget)}>
+                        {asset.title}
+                      </button>
                       <span>{asset.assetTypeLabel} · {asset.sectorLabel}</span>
                     </td>
                     <td>
                       <strong>{asset.owner.label}</strong>
-                    </td>
-                    <td>
-                      {asset.owner.email ? (
-                        <a href={`mailto:${asset.owner.email}`}>{asset.owner.email}</a>
-                      ) : null}
-                      {asset.owner.phone ? <a href={`tel:${asset.owner.phone}`}>{asset.owner.phone}</a> : null}
-                      {!asset.owner.email && !asset.owner.phone ? <span>—</span> : null}
-                    </td>
-                    <td>
-                      {[asset.owner.townCity, asset.owner.province].filter(Boolean).join(" · ") || "—"}
+                      <small>{[asset.owner.townCity, asset.owner.province].filter(Boolean).join(" · ")}</small>
                     </td>
                     <td className={styles.moneyCell}>{formatAdminAssetValue(asset)}</td>
                     <td className={styles.interestCell}>
@@ -716,21 +717,6 @@ export default function AdminDiscoveryClient({
                         onClick={(event) => openActivityModal(asset, event.currentTarget)}
                       >
                         Activity
-                      </button>
-                    </td>
-                    <td>
-                      <span className={asset.owner.discoveryParticipationEnabled && mapped ? styles.enabledBadge : styles.disabledBadge}>
-                        {asset.owner.discoveryParticipationEnabled ? "Enabled" : "Admin only"} · {mapped ? "Mapped" : "No GPS"}
-                      </span>
-                    </td>
-                    <td>{formatDate(asset.updatedAtIso)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className={styles.viewButton}
-                        onClick={(event) => openDetails(asset, event.currentTarget)}
-                      >
-                        View
                       </button>
                     </td>
                   </tr>
@@ -936,8 +922,8 @@ export default function AdminDiscoveryClient({
                 <h3>Owner and account</h3>
                 <dl>
                   <div><dt>Name</dt><dd>{selectedAsset.owner.name || "Not saved"}</dd></div>
-                  <div><dt>Email</dt><dd>{selectedAsset.owner.email || "Not saved"}</dd></div>
-                  <div><dt>Phone</dt><dd>{selectedAsset.owner.phone || "Not saved"}</dd></div>
+                  <div><dt>Email</dt><dd>{selectedAsset.owner.email ? <a href={`mailto:${selectedAsset.owner.email}`}>{selectedAsset.owner.email}</a> : "Not saved"}</dd></div>
+                  <div><dt>Phone</dt><dd>{selectedAsset.owner.phone ? <a href={`tel:${selectedAsset.owner.phone}`}>{selectedAsset.owner.phone}</a> : "Not saved"}</dd></div>
                   <div><dt>Business</dt><dd>{selectedAsset.owner.businessName || "Not saved"}</dd></div>
                   <div><dt>Account</dt><dd>{titleCase(selectedAsset.owner.accountType)} · {titleCase(selectedAsset.owner.accountSubtype || "Not specified")}</dd></div>
                   <div><dt>Status</dt><dd>{titleCase(selectedAsset.owner.accountStatus)}</dd></div>
@@ -968,6 +954,8 @@ export default function AdminDiscoveryClient({
                   <div><dt>Condition</dt><dd>{titleCase(selectedAsset.condition || "Not saved")}</dd></div>
                   <div><dt>Usage</dt><dd>{formatUsage(selectedAsset)}</dd></div>
                   <div><dt>Lifecycle</dt><dd>{titleCase(selectedAsset.lifecycleState)}</dd></div>
+                  <div><dt>GPS status</dt><dd>{hasAdminAssetCoordinates(selectedAsset) ? "Mapped" : "No GPS"}</dd></div>
+                  <div><dt>Updated</dt><dd>{formatDate(selectedAsset.updatedAtIso)}</dd></div>
                   <div><dt>GPS text</dt><dd>{selectedAsset.lastKnownLocationText || "Not saved"}</dd></div>
                   <div><dt>Last scanned</dt><dd>{formatDate(selectedAsset.lastScannedAtIso)}</dd></div>
                 </dl>
