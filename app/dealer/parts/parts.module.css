@@ -1236,11 +1236,9 @@
 
 /* Parts enquiries: one request card and clearly aligned contact choices. */
 .enquiryModal { width:min(1100px,100%); padding:28px; display:flex; flex-direction:column; overflow-y:auto; }
-.enquiryModal .enquiryHeader { display:flex; align-items:center; gap:14px; flex:0 0 auto; margin-bottom:20px; padding-bottom:18px; }
+.enquiryModal .enquiryHeader { display:flex; align-items:center; flex:0 0 auto; margin-bottom:20px; padding-bottom:18px; }
 .enquiryModal .enquiryHeader h2 { font-size:30px; line-height:1.2; letter-spacing:-.035em; }
 .enquiryModal .enquiryHeader p { margin:6px 0 0; font-size:1rem; font-weight:600; color:var(--app-text,#173e32); }
-.enquiryHeadingIcon { display:grid; place-items:center; width:46px; height:46px; flex:0 0 46px; border-radius:14px; color:var(--app-accent,#176d53); background:color-mix(in srgb,var(--app-accent,#176d53) 11%,var(--app-surface,#fff)); }
-.enquiryHeadingIcon svg { width:24px; height:24px; }
 .enquiryBody { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:24px; min-height:0; flex-shrink:0; overflow:visible; }
 .enquiryRequest,.enquiryChannels,.enquiryMessage { min-width:0; }
 .enquirySectionHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:26px; margin-bottom:14px; }
@@ -1290,8 +1288,6 @@
   .enquiryModal .enquiryHeader { gap:10px; margin-bottom:20px; padding-bottom:16px; }
   .enquiryModal .enquiryHeader h2 { font-size:24px; }
   .enquiryModal .enquiryHeader p { font-size:.95rem; }
-  .enquiryHeadingIcon { width:36px; height:36px; flex-basis:36px; border-radius:11px; }
-  .enquiryHeadingIcon svg { width:21px; height:21px; }
   .enquiryBody { grid-template-columns:minmax(0,1fr); gap:20px; }
   .enquirySectionHeading { margin-bottom:12px; }
   .enquiryDealer { padding:16px; }
@@ -1340,7 +1336,10 @@
 .page .stockTable .partContactButton svg { width: 18px; height: 18px; flex-shrink: 0; }
 .page .stockTable .partContactButton:hover { border-color: #8eb4d6; background: #e8f2ff; box-shadow: 0 3px 10px #204f7912; }
 .page .stockTable .partContactButton:focus-visible { outline: 3px solid #699eca; outline-offset: 3px; }
-.detailPage .tableToolbar { gap: 16px; padding-top: 20px; padding-bottom: 24px; }
+.detailPage .tableToolbar { gap: 16px; padding-top: 24px; padding-bottom: 24px; }
+.detailPage .tableToolbar > button { flex-shrink:0; min-height:56px; padding-inline:20px; white-space:nowrap; }
+.detailPage .tableToolbar .search { min-height:56px; }
+.detailPage .listStatus > span { white-space:nowrap; }
 .detailPage .listContext { padding-top: 24px; }
 .detailPage .tableToolbar .search { background: var(--app-surface-soft, #f6faf8); }
 .detailPage .tableToolbar .search:focus-within { border-color: #6aa58d; box-shadow: 0 0 0 3px #4cbd8315; }
@@ -2203,9 +2202,9 @@
 .detailPage .partsPanel .stockTableScroll { overflow:visible; }
 .detailPage .partsPanel .stockTable { width:100%; min-width:0; table-layout:fixed; border-collapse:separate; border-spacing:0; }
 .detailPage .partsPanel .stockTable th,
-.detailPage .partsPanel .stockTable td { text-align:left; padding:20px 16px; color:var(--app-text,#173e32); line-height:1.55; font-size:1.08rem; }
-.detailPage .partsPanel .stockTable th { position:sticky; top:var(--parts-header-offset,0px); z-index:2; padding-block:16px; font-size:1rem; font-weight:750; background:var(--app-surface-soft,#edf5f0); box-shadow:0 1px 0 var(--app-border,#cbded4); }
-.detailPage .partsPanel .stockTable td { padding-block:18px; font-weight:500; border-top:1px solid var(--app-border,#d5e3db); }
+.detailPage .partsPanel .stockTable td { text-align:left; padding:20px; color:var(--app-text,#173e32); line-height:1.55; font-size:1.08rem; }
+.detailPage .partsPanel .stockTable th { position:sticky; top:var(--parts-header-offset,0px); z-index:2; padding-block:18px; font-size:1rem; font-weight:750; background:var(--app-surface-soft,#edf5f0); box-shadow:0 1px 0 var(--app-border,#cbded4); }
+.detailPage .partsPanel .stockTable td { padding-block:22px; font-weight:500; border-top:1px solid var(--app-border,#d5e3db); }
 .detailPage .stockTable .partNumberColumn { width:16%; }
 .detailPage .stockTable .descriptionColumn { min-width:0; }
 .detailPage .stockTable .brandColumn { width:11%; }
@@ -2222,13 +2221,13 @@
 .detailPage .stockTable .partBrand { font-weight:500; }
 .detailPage .partsPanel .stockTable :is(.partPrice,.partQuantity) { font-size:1.08rem; font-weight:750; overflow-wrap:anywhere; }
 .detailPage .stockTable .priceOnRequest { white-space:normal; font-size:1rem; font-weight:600; }
-.detailPage .stockTable .partExtraDetails { margin-top:8px; font-size:1rem; line-height:1.5; }
+.detailPage .stockTable .partExtraDetails { margin-top:12px; gap:10px 14px; font-size:1rem; line-height:1.5; }
 .detailPage .stockTable th+th,.detailPage .stockTable td+td { border-left:1px solid color-mix(in srgb,var(--app-border,#d5e3db) 45%,transparent); }
 .detailPage .stockTable tbody tr { background:var(--app-surface,#fff); }
 .detailPage .stockTable tbody tr:nth-child(even) { background:color-mix(in srgb,var(--app-surface-soft,#f0f7f3) 55%,var(--app-surface,#fff)); }
 .detailPage .stockTable tbody tr:is(:hover,:focus-within) { background:color-mix(in srgb,var(--app-accent,#176d53) 6%,var(--app-surface,#fff)); }
 .detailPage .stockTable .partContactButton { min-width:0; max-width:100%; min-height:44px; padding:10px 12px; font-size:1rem; flex-wrap:wrap; }
-/* Enquiry stays compact in the existing action column. */
+/* Open actions stay compact in the existing action column. */
 .page .stockTable .partEnquireButton {
   display:inline-flex; align-items:center; justify-content:center; flex-wrap:nowrap; gap:8px;
   min-width:0; min-height:46px; padding:7px 11px 7px 8px; border-radius:13px;
