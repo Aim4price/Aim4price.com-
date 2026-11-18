@@ -1292,12 +1292,12 @@
 }
 .extraFilters[hidden] { display: none; }
 .extraFilters label { display: grid; min-width: 0; gap: .28rem; }
-.tableScroller table { min-width: 0; }
-.tableScroller th:first-child { width: 36%; }
-.tableScroller th:nth-child(2) { width: 28%; }
-.tableScroller th:nth-child(3) { width: 19%; }
-.tableScroller td:nth-child(n) { min-width: 0; white-space: normal; }
-.tableScroller .assetLink {
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller table { width: 100%; min-width: 0; table-layout: fixed; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:first-child { width: 36%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:nth-child(2) { width: 28%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:nth-child(3) { width: 19%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller td:nth-child(n) { min-width: 0; white-space: normal; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller .assetLink {
   padding: 0;
   border: 0;
   background: transparent;
@@ -1312,7 +1312,7 @@
   overflow-wrap: anywhere;
   cursor: pointer;
 }
-.tableScroller td :is(strong, small, span) { white-space: normal; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller td :is(strong, small, span) { white-space: normal; }
 .detailColumns dd a { color: #176047; }
 @media (max-width: 620px) {
   :global(:where(html:not(:has([data-website-canvas])))) .tableScroller thead {
