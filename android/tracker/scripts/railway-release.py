@@ -22,10 +22,10 @@ data = apk.read_bytes()
 sha = hashlib.sha256(data).hexdigest()
 manifest_path = root / 'public/downloads/tracker-release.json'
 manifest = json.loads(manifest_path.read_text())
-manifest.update(version='0.9', versionCode=9, sha256=sha)
+manifest.update(version='0.10', versionCode=10, sha256=sha)
 manifest_path.write_text(json.dumps(manifest))
 subprocess.run(['python3','android/tracker/scripts/verify-release.py',str(apk)],check=True)
-print('RELEASE_META '+json.dumps(dict(version='0.9',versionCode=9,sha256=sha,bytes=len(data))),flush=True)
+print('RELEASE_META '+json.dumps(dict(version='0.10',versionCode=10,sha256=sha,bytes=len(data))),flush=True)
 encoded=base64.b64encode(data).decode()
 chunks=[encoded[i:i+3000] for i in range(0,len(encoded),3000)]
 for i,chunk in enumerate(chunks):

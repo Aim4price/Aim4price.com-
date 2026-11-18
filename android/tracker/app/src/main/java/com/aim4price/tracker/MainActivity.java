@@ -77,9 +77,9 @@ public class MainActivity extends Activity {
     p.edit().putBoolean("active",false).apply();UploadJobService.schedule(this);stopService(new Intent(this,TrackingService.class));
     var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});
    });
-   Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Phone settings").setItems(new String[]{"Sync saved readings","Restart recovery","Battery & permissions","Back up saved readings"},(dialog,which)->{if(which==0)syncSaved();else if(which==1)restartSettings();else if(which==2)openSettings();else backupSaved();}).setNegativeButton("Close",null).show());
+   Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v -> showPhoneSettings());
    box.addView(text("Records every 10 seconds while moving. Uploads in batches every minute.",14,MUTED));
-   TextView note=text("Keep this phone on the equipment. In Phone settings, allow unrestricted battery use. Allow location all the time for restart recovery. If Android blocks recovery, open Tracker to resume.",14,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
+   TextView note=text("Keep this phone on the equipment. Open Phone settings and choose Allow all permissions for guided setup. If Android blocks recovery, open Tracker to resume.",14,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
   }
   try(TrackerStore store=new TrackerStore(this)){if(!pairedScreen&&store.pending()>0){Button backup=new Button(this);backup.setText("Back up saved readings");page.addView(backup);styleButton(backup,false);backup.setOnClickListener(v->backupSaved());}}
   String installedVersion="";try{installedVersion=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}catch(Exception ignored){}
@@ -87,16 +87,120 @@ public class MainActivity extends Activity {
   page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",14,MUTED));
   handler.removeCallbacks(refresh);refresh.run();
  }
- void openSettings(){startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}
- void restartSettings(){new AlertDialog.Builder(this).setTitle("Resume after restarting").setMessage("To resume equipment tracking after a restart, allow location all the time in Android settings. You can continue using Tracker without this while its recording service is running.").setPositiveButton("Open settings",(d,w)->openSettings()).setNegativeButton("Not now",null).show();}
+ private static final int SETUP_LOCATION = 40, SETUP_NOTIFICATIONS = 41, SETUP_BACKGROUND = 42;
+ static final int SETTINGS_LOCATION = 43, SETTINGS_NOTIFICATIONS = 44, SETTINGS_BACKGROUND = 45, SETTINGS_BATTERY = 46;
+
+ void showPhoneSettings() {
+  LinearLayout menu = new LinearLayout(this);
+  menu.setOrientation(LinearLayout.VERTICAL);
+  menu.setPadding(dp(20), 0, dp(20), dp(12));
+  ScrollView scroll = new ScrollView(this);
+  scroll.addView(menu);
+  AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Phone settings")
+    .setView(scroll).setNegativeButton("Close", null).create();
+  settingsButton(menu, dialog, "Allow all permissions", true, this::continuePermissionSetup);
+  settingsButton(menu, dialog, "Sync saved readings", false, this::syncSaved);
+  settingsButton(menu, dialog, "Android app settings", false, this::openSettings);
+  settingsButton(menu, dialog, "Back up saved readings", false, this::backupSaved);
+  dialog.show();
+ }
+
+ private void settingsButton(LinearLayout menu, AlertDialog dialog, String label, boolean primary, Runnable action) {
+  Button button = new Button(this);
+  menu.addView(button);
+  styleButton(button, primary);
+  button.setText(label);
+  button.setOnClickListener(v -> { dialog.dismiss(); action.run(); });
+ }
+
+ private boolean granted(String permission) {
+  return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+ }
+
+ private boolean batteryExempt() {
+  return getSystemService(PowerManager.class).isIgnoringBatteryOptimizations(getPackageName());
+ }
+
+ private Intent appSettings() {
+  return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:" + getPackageName()));
+ }
+
+ void openSettings() { startActivity(appSettings()); }
+
+ private void settingsStep(String title, String message, int request) {
+  new AlertDialog.Builder(this).setTitle(title).setMessage(message)
+    .setPositiveButton("Open settings", (d,w) -> startActivityForResult(appSettings(), request))
+    .setNegativeButton("Not now", null).show();
+ }
+
+ void continuePermissionSetup() {
+  if (!granted(Manifest.permission.ACCESS_FINE_LOCATION)) {
+   requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION}, SETUP_LOCATION);
+  } else if (Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)) {
+   requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, SETUP_NOTIFICATIONS);
+  } else if (Build.VERSION.SDK_INT >= 29 && !granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+   String reason = "Allow location all the time so Tracker can resume after a phone restart. While tracking is active, this phone shares its location with the asset owner.";
+   if (Build.VERSION.SDK_INT == 29) {
+    new AlertDialog.Builder(this).setTitle("Restart recovery").setMessage(reason)
+      .setPositiveButton("Continue", (d,w) -> requestPermissions(new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION}, SETUP_BACKGROUND))
+      .setNegativeButton("Not now", null).show();
+   } else {
+    settingsStep("Restart recovery", reason + " Open Permissions, then Location, and choose Allow all the time.", SETTINGS_BACKGROUND);
+   }
+  } else if (!batteryExempt()) {
+   settingsStep("Battery use", "To keep recording with the screen locked, open Battery and select Unrestricted if your phone offers it. Then return to Tracker.", SETTINGS_BATTERY);
+  } else {
+   Toast.makeText(this, "Tracking permissions are ready.", Toast.LENGTH_LONG).show();
+  }
+ }
+
+ private boolean handleSetupPermission(int code) {
+  switch (code) {
+   case SETUP_LOCATION:
+    if (!granted(Manifest.permission.ACCESS_FINE_LOCATION)) {
+     settingsStep("Precise location", "For accurate routes, open Permissions, then Location. Allow access while using the app and turn on precise location.", SETTINGS_LOCATION);
+     return true;
+    }
+    break;
+   case SETUP_NOTIFICATIONS:
+    if (Build.VERSION.SDK_INT >= 33 && !granted(Manifest.permission.POST_NOTIFICATIONS)) {
+     settingsStep("Tracking notifications", "Open Notifications and allow Tracker to show its recording status.", SETTINGS_NOTIFICATIONS);
+     return true;
+    }
+    break;
+   case SETUP_BACKGROUND:
+    if (Build.VERSION.SDK_INT >= 29 && !granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
+     settingsStep("Restart recovery", "To enable restart recovery, open Permissions, then Location, and select Allow all the time.", SETTINGS_BACKGROUND);
+     return true;
+    }
+    break;
+   default: return false;
+  }
+  continuePermissionSetup();
+  return true;
+ }
+
+ private boolean handleSetupSettingsReturn(int code) {
+  boolean ready;
+  switch (code) {
+   case SETTINGS_LOCATION: ready = granted(Manifest.permission.ACCESS_FINE_LOCATION); break;
+   case SETTINGS_NOTIFICATIONS: ready = Build.VERSION.SDK_INT < 33 || granted(Manifest.permission.POST_NOTIFICATIONS); break;
+   case SETTINGS_BACKGROUND: ready = Build.VERSION.SDK_INT < 29 || granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION); break;
+   case SETTINGS_BATTERY: ready = batteryExempt(); break;
+   default: return false;
+  }
+  if (ready) continuePermissionSetup();
+  else Toast.makeText(this, "Setup paused. You can continue from Phone settings.", Toast.LENGTH_LONG).show();
+  return true;
+ }
  void backupSaved(){Intent save=new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"aim4price-tracking-backup.json");startActivityForResult(save,8);}
  void syncSaved(){Toast.makeText(this,"Syncing saved readings…",Toast.LENGTH_SHORT).show();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try(TrackerStore store=new TrackerStore(this)){store.retryConnections();TrackerApi.flush(this,store);TrackerApi.prefs(this).edit().putString("issue","").apply();}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).remove("token").putString("issue",e.getMessage()).apply();}catch(Exception e){TrackerApi.prefs(this).edit().putString("issue","Upload pending. Your readings remain saved.").apply();UploadJobService.schedule(this);}finally{executor.shutdown();}});}
- public void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(request!=8||result!=RESULT_OK||data==null||data.getData()==null)return;var uri=data.getData();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try(TrackerStore store=new TrackerStore(this);var output=getContentResolver().openOutputStream(uri)){if(output==null)throw new java.io.IOException();store.export(output);runOnUiThread(()->Toast.makeText(this,"Backup saved. Original readings remain on this phone.",Toast.LENGTH_LONG).show());}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"Could not save backup. Please try again.",Toast.LENGTH_LONG).show());}finally{executor.shutdown();}});}
+ public void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(handleSetupSettingsReturn(request))return;if(request!=8||result!=RESULT_OK||data==null||data.getData()==null)return;var uri=data.getData();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try(TrackerStore store=new TrackerStore(this);var output=getContentResolver().openOutputStream(uri)){if(output==null)throw new java.io.IOException();store.export(output);runOnUiThread(()->Toast.makeText(this,"Backup saved. Original readings remain on this phone.",Toast.LENGTH_LONG).show());}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"Could not save backup. Please try again.",Toast.LENGTH_LONG).show());}finally{executor.shutdown();}});}
  void activate(){
   if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},1);return;}
   if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},2);return;}
   android.location.LocationManager lm=(android.location.LocationManager)getSystemService(LOCATION_SERVICE);if(!lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)){startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));return;}
   var p=TrackerApi.prefs(this);if(!p.getBoolean("active",false))p.edit().putString("session",UUID.randomUUID().toString()).apply();p.edit().putBoolean("active",true).putString("issue","").apply();try{startForegroundService(new Intent(this,TrackingService.class));}catch(RuntimeException e){p.edit().putBoolean("active",false).putString("issue","Could not start. Check phone permissions and tap Activate again.").apply();}
  }
- public void onRequestPermissionsResult(int code,String[] permissions,int[] grants){super.onRequestPermissionsResult(code,permissions,grants);if(grants.length>0&&grants[0]==PackageManager.PERMISSION_GRANTED)activate();else status.setText("Location and notification permissions are needed. Enable them in Android app settings, then Activate.");}
+ public void onRequestPermissionsResult(int code,String[] permissions,int[] grants){super.onRequestPermissionsResult(code,permissions,grants);if(handleSetupPermission(code))return;if((code==1||code==2)&&grants.length>0&&grants[0]==PackageManager.PERMISSION_GRANTED)activate();else status.setText("Location and notification permissions are needed. Enable them in Android app settings, then Activate.");}
 }
