@@ -1,15 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import AdminNavigation from "../../../components/AdminNavigation";
 import DirectoryAdminAccess from "../../../components/business-network/DirectoryAdminAccess";
 import BusinessInvite from "../../../components/business-network/BusinessInvite";
-import BusinessVerification from "../business-accounts/verification-client";
-import adminStyles from "../page.module.css";
-import layout from "./businesses.module.css";
+import layout from "./listing-reviews.module.css";
 import BusinessJoin from "../../business-network/join/join-client";
 import type { AdminBusiness } from "../../../lib/admin-business-network";
 import styles from "../../../components/business-network/BusinessNetwork.module.css";
-export default function AdminBusinesses({ initialVerificationOpen = false }: { initialVerificationOpen?: boolean }) {
+function ReviewControls() {
   const [rows, setRows] = useState<AdminBusiness[]>([]),
     [editing, setEditing] = useState<AdminBusiness>(),
     [notice, setNotice] = useState(""),
@@ -42,16 +39,6 @@ export default function AdminBusinesses({ initialVerificationOpen = false }: { i
       .includes(search.toLowerCase()),
   );
   return (
-    <main className={adminStyles.page}>
-      <section className={adminStyles.shell}>
-        <header className={adminStyles.topBar}>
-          <div className={adminStyles.titleBlock}>
-            <h1>Business Directory</h1>
-          </div>
-          <div className={adminStyles.headerActions}>
-            <AdminNavigation active="businesses" businessVerification={<BusinessVerification />} initialVerificationOpen={initialVerificationOpen} />
-          </div>
-        </header>
         <div className={layout.workspace}>
           {editing !== undefined ? (
             <>
@@ -142,7 +129,17 @@ export default function AdminBusinesses({ initialVerificationOpen = false }: { i
             </>
           )}
         </div>
-      </section>
-    </main>
+  );
+}
+
+export default function ListingReviews() {
+  const [opened, setOpened] = useState(false);
+  return (
+    <details className={layout.invitationTools} onToggle={event => {
+      if (event.currentTarget.open) setOpened(true);
+    }}>
+      <summary>Listing reviews &amp; guest access</summary>
+      {opened && <div className={layout.invitationBody}><ReviewControls /></div>}
+    </details>
   );
 }

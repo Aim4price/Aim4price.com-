@@ -4,5 +4,5 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export default async function BusinessAccountsAdmin() {
   await requireAdminPageAccess();
-  redirect('/admin/businesses?verify=1');
+  redirect('/admin?verify=1');
 }
