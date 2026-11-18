@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 12279)
+Total output lines: 435
+
 /* Local component fixtures and intercepted APIs only. Never sends email or writes production data. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -103,6 +106,7 @@ export default function Validation(){
   assert.ok(cards.every(c=>Math.abs(c.width-cards[0].width)<1&&Math.abs(c.y-cards[0].y)<1));
   await page.screenshot({path:path.join(output,'send-link-options.png')});
   await click('Copy link');await click('Choose permissions');await click('Continue view only');
+  await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
@@ -165,83 +169,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`enquiry-expanded-${width}.png`),fullPage:true});
    const layout=await page.$eval(manageCard,button=>{
     const card=button.closest('[class*="leadAssetCard"]');
-    const value=card.querySelector('[class*="leadValueBlock"]');
-    const shell=card.closest('[class*="shell"]');
-    const b=button.getBoundingClientRect(),v=value.getBoundingClientRect(),c=shell.getBoundingClientRect();
-    const canvas=document.querySelector('[data-website-canvas]').getBoundingClientRect();
-    return {rightGap:Math.abs(b.right-v.right),below:b.top>=v.bottom,leftGutter:c.left-canvas.left,rightGutter:canvas.right-c.right};
-   });
-   assert.ok(layout.rightGap<3&&layout.below,'Manage sits at the far right below the value');
-   assert.ok(layout.leftGutter>0&&Math.abs(layout.leftGutter-layout.rightGutter)<3,'Standard shell has equal side gutters');
-   await page.click(manageCard);await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]');
-   await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
-   await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
-   await click('Send an invoice or quote');await page.waitForFunction(()=>document.body.textContent.includes('does not upload files'));
-   await page.screenshot({path:path.join(output,`enquiry-example-${width}.png`),fullPage:true});
-   assert.equal(requests.filter(r=>r.method==='POST').length,writesBefore,'Demo never sends or uploads anything');
-   assert.equal(await page.$eval('a[href^="/business-network/accept"]',a=>new URL(a.href).searchParams.get('from')),'X Farms');
-   await page.keyboard.press('Escape');await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]',{hidden:true});
-   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Manage Example Toyota Hilux','Closing Manage restores focus');
-   await page.click(closeCard);await page.waitForSelector(openCard);
-   assert.equal(await page.$(manageCard),null,'Closing the card hides its management controls');
-   await page.goto('http://127.0.0.1:3033/business-network/guest-validation',{waitUntil:'networkidle2'});
-   await page.waitForSelector('[data-hydrated=true]');
-   await page.screenshot({path:path.join(output,`acceptance-${width}.png`),fullPage:true});
-   await page.type('input[placeholder="e.g. S Haddad, George"]','George Workshop');await click('Search Google');
-   await page.waitForSelector('[aria-label="Google search results"] button');
-   await page.click('[aria-label="Google search results"] button');await click('Yes, this is my business');
-   assert.equal(await page.$eval('[name=businessName]',el=>el.value),'George Workshop');
-   assert.equal(await page.$eval('[name=googleMapsUrl]',el=>el.value),'https://maps.google.com/?cid=123');
-   await page.type('[name=town]','George');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Submit my free listing');
-   await page.waitForFunction(()=>[...document.querySelectorAll('[role="status"] h2')].some(heading => /your acceptance is recorded/i.test(heading.textContent)));
-   const acceptance=requests.filter(r=>r.path==='/api/business-network/accept').at(-1);
-   assert.equal(JSON.parse(acceptance.data).googlePlaceId,'fixture-place');
-   assert.equal(JSON.parse(acceptance.data).googleConfirmed,true);
-   await click('find');
-   assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
-   const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
-   await click('Continue view only');
-   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
-   assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
-   assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
-   if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Invitation fits desktop without scrolling');
-   await page.screenshot({path:path.join(output,`invitation-disclosure-${width}.png`),fullPage:true});
-   await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
-   const links=await page.$$eval('dialog a[href^="mailto:"],dialog a[href^="https://wa.me/"]',nodes=>nodes.map(a=>a.href));
-   assert.equal(links.length,2);
-   for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(message.includes('Saved Business Ltd'));assert.ok(!message.includes('X Farms'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
-   assert.ok(links.some(href=>href.startsWith('mailto:?')),'Email lets the owner choose a recipient');
-   assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
-   await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
-   await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
-   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?share='+token);
-   assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
-   await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
-   await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
-   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
-   assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
-   assert.ok(await page.evaluate(()=>document.querySelector('[data-asset-link-dialog]').textContent.includes('Asset link settings')));
-   assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
-   assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
-   await page.click('[data-asset-link-dialog] [data-permission-toolbar] input[type=checkbox]');
-   await page.waitForFunction(()=>{const inputs=Array.from(document.querySelectorAll('[data-permission-grid] input[type=checkbox]'));return inputs.length>0&&inputs.every(input=>input.checked);});
-   assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('[data-permission-grid] label')).find(label=>label.textContent.includes('Update market price'))?.querySelector('input')?.checked),true,'Select all includes market price editing');
-   if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
-   assert.equal(await page.$$eval('[data-permission-grid] small',nodes=>nodes.length),0,'Permission choices show titles only');
-   const overflowingTitles=await page.$$eval('[data-permission-grid] strong',nodes=>nodes.filter(node=>node.getBoundingClientRect().height>parseFloat(getComputedStyle(node).lineHeight)+1||node.scrollWidth>node.clientWidth+1).map(node=>node.textContent));
-   assert.deepEqual(overflowingTitles,[], 'Permission titles fit one line without clipping');
-   await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
-   await click('Continue');
-   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
-   assert.equal(await page.$('dialog input[type=email]'),null);
-   assert.equal(await page.$('dialog input[type=file]'),null);
-   assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Disclaimer fits without scrolling');
-   await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
-   await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
-   const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{marketPrice:true,viewParts:true,addParts:true,history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
+    const value=card.querySelector('[class*="leadValue…2279 tokens truncated…rue,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
