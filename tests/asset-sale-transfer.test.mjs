@@ -180,7 +180,7 @@ test('Account exposes modal-based incoming and outgoing transfer management', ()
   assert.match(transferPage, /activeFlow === 'incoming'/);
   assert.match(transferPage, /activeFlow === 'outgoing'/);
   assert.match(transferPage, />Receive an asset</);
-  assert.match(transferPage, />Manage outgoing transfers</);
+  assert.match(transferPage, />Outgoing</);
   assert.match(transferPage, /Claim an asset/);
   assert.match(transferPage, /Replace code/);
   assert.match(transferPage, /Cancel & archive/);
