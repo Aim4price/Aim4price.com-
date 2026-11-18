@@ -160,22 +160,26 @@ export function buildAim4priceResetPasswordEmail(input: {
   to: string;
   name?: string | null;
   resetUrl: string;
+  setup?: boolean;
 }) {
   const displayName = normalizeTextValue(input.name) || "there";
   const safeName = escapeHtml(displayName);
   const safeUrl = escapeHtml(input.resetUrl);
   const logoUrl = getPublicAssetUrl(AIM4PRICE_EMAIL_LOGO_PATH);
-  const subject = "Reset your Aim4price.com password";
+  const subject = input.setup ? "Set up your Aim4price.com password" : "Reset your Aim4price.com password";
+  const action = input.setup ? "Set your password" : "Reset password";
+  const introduction = input.setup ? "Your administrator created your Aim4price account. Choose your password to sign in." : "Choose a new password for your Aim4price.com account";
+  const safety = input.setup ? "Keep your setup link private." : "Keep this link private. Only use it if you requested a password reset.";
   const text = [
     `Hi ${displayName},`,
     "",
-    "Choose a new password for your Aim4price.com account using the link below.",
+    input.setup ? introduction : introduction + " using the link below.",
     "",
-    "Reset password:",
+    action + ":",
     input.resetUrl,
     "",
-    "Didn't request this? You can ignore this email. Your password will stay the same.",
-    "Keep this link private. Only use it if you requested a password reset.",
+    input.setup ? "If you were not expecting an account, you can ignore this invitation." : "Didn't request this? You can ignore this email. Your password will stay the same.",
+    safety,
     "",
     "Aim4price.com",
     "Asset Intelligence & Management",
@@ -204,7 +208,7 @@ export function buildAim4priceResetPasswordEmail(input: {
     </style>
   </head>
   <body style="margin:0;padding:0;background:#f2f6f3;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-    <div style="display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;font-size:1px;line-height:1px;mso-hide:all;">Your link to choose a new Aim4price password. Didn’t request it? You can ignore this email.</div>
+    <div style="display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;font-size:1px;line-height:1px;mso-hide:all;">${input.setup ? "Your Aim4price account is ready for password setup." : "Your link to choose a new Aim4price password. Didn’t request it? You can ignore this email."}</div>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#f2f6f3" style="width:100%;border-collapse:collapse;">
       <tr>
         <td align="center" class="email-shell" style="padding:28px 12px;">
@@ -213,13 +217,13 @@ export function buildAim4priceResetPasswordEmail(input: {
             ${buildEmailBrandHeader(logoUrl)}
             <tr>
               <td class="email-body" style="padding:30px;background:#ffffff;border-radius:0 0 12px 12px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};">
-                <h1 class="email-title" style="margin:0 0 22px;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:25px;line-height:1.3;font-weight:700;letter-spacing:-0.8px;">Reset your password</h1>
+                <h1 class="email-title" style="margin:0 0 22px;color:#173c32;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:25px;line-height:1.3;font-weight:700;letter-spacing:-0.8px;">${input.setup ? action : "Reset your password"}</h1>
                 <p style="margin:0 0 10px;color:#173c32;font-size:15px;line-height:1.6;overflow-wrap:anywhere;">Hi ${safeName},</p>
-                <p style="margin:0;color:#64786f;font-size:15px;line-height:1.6;">Choose a new password for your Aim4price.com account using the button below.</p>
+                <p style="margin:0;color:#64786f;font-size:15px;line-height:1.6;">${input.setup ? introduction : introduction + " using the button below."}</p>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" class="email-button" style="border-collapse:separate;margin:24px 0;">
                   <tr>
                     <td align="center" bgcolor="#1a654d" style="background:#1a654d;border:1px solid #1a654d;border-radius:6px;mso-padding-alt:15px 24px;">
-                      <a href="${safeUrl}" style="display:inline-block;padding:15px 24px;color:#ffffff;background:#1a654d;border-radius:6px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:14px;line-height:20px;font-weight:700;text-align:center;text-decoration:none;mso-padding-alt:0;">Reset password</a>
+                      <a href="${safeUrl}" style="display:inline-block;padding:15px 24px;color:#ffffff;background:#1a654d;border-radius:6px;font-family:${AIM4PRICE_EMAIL_FONT_STACK};font-size:14px;line-height:20px;font-weight:700;text-align:center;text-decoration:none;mso-padding-alt:0;">${action}</a>
                     </td>
                   </tr>
                 </table>
@@ -232,8 +236,8 @@ export function buildAim4priceResetPasswordEmail(input: {
                   </tr>
                   <tr>
                     <td style="padding:20px 0 0;border-top:1px solid #e2ebe5;">
-                      <p style="margin:0 0 8px;color:#64786f;font-size:13px;line-height:1.6;"><strong style="color:#173c32;">Didn’t request this?</strong> You can ignore this email. Your password will stay the same.</p>
-                      <p style="margin:0;color:#64786f;font-size:12px;line-height:1.6;">Keep this link private. Only use it if you requested a password reset.</p>
+                      <p style="margin:0 0 8px;color:#64786f;font-size:13px;line-height:1.6;">${input.setup ? "If you were not expecting an account, you can ignore this invitation." : "Didn’t request this? You can ignore this email. Your password will stay the same."}</p>
+                      <p style="margin:0;color:#64786f;font-size:12px;line-height:1.6;">${safety}</p>
                     </td>
                   </tr>
                 </table>
@@ -251,6 +255,6 @@ export function buildAim4priceResetPasswordEmail(input: {
   return { subject, html, text };
 }
 
-export async function sendAim4priceResetPasswordEmail(input: {to:string;name?:string|null;resetUrl:string}): Promise<void> {
+export async function sendAim4priceResetPasswordEmail(input: {to:string;name?:string|null;resetUrl:string;setup?:boolean}): Promise<void> {
   await sendAim4priceEmail({to:input.to,...buildAim4priceResetPasswordEmail(input)});
 }

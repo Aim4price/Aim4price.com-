@@ -50,7 +50,12 @@ export async function POST(request: Request) {
         const added = await db.query(`INSERT INTO "user"(id,name,email,"emailVerified","createdAt","updatedAt")
           SELECT $1,$2,$3,false,now(),now() WHERE NOT EXISTS (SELECT 1 FROM "user" WHERE lower(email)=$3)
           ON CONFLICT DO NOTHING RETURNING id`, [userId,name,email]);
-        if (!added.rowCount) throw new InvalidChange("An account already uses this email.", 409);
+        if (!added.rowCount) {
+          const duplicate = (await db.query('SELECT id FROM "user" WHERE lower(email)=$1', [email])).rows[0];
+          const [existing] = duplicate ? await withDatabaseClient(db, () => listAdminUsers(duplicate.id)) : [];
+          await db.query("ROLLBACK");
+          return NextResponse.json({error:"An account already uses this email.",existing}, {status:409});
+        }
         await db.query(`INSERT INTO account_profiles(user_id,display_name,account_type,account_subtype,account_status,introduced_by_option)
           VALUES($1,$2,$3,$4,$5,'direct')`, [userId,name,storedType,input.subtype,input.status]);
       } else {

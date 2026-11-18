@@ -24,7 +24,7 @@ import {
   sendAdminGroupNotification,
 } from "../../../../lib/admin-account-notifications";
 import { auth } from "../../../../lib/auth";
-import { getResetPasswordRedirectUrl } from "../../../../lib/email";
+import { getResetPasswordRedirectUrl, sendAim4priceResetPasswordEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,6 +39,7 @@ type AdminAction =
   | "activate"
   | "pending"
   | "suspend"
+  | "send_setup"
   | "send_reset"
   | "send_notification"
   | "send_group_notification"
@@ -271,6 +272,18 @@ export async function POST(request: Request) {
         users,
         message: "Account deleted.",
       });
+    }
+
+    if (action === "send_setup") {
+      const { sendSetupInvitation } = await import("../../../../lib/admin-setup-invitation");
+      const { isTrustedRequestOrigin } = await import("../../../../lib/trusted-request-origin");
+      if (!isTrustedRequestOrigin(request.headers.get("origin"),new URL(request.url).origin)) return jsonError("Use the Aim4price Admin page.",403);
+      const [user] = await listAdminUsers(userId);
+      if (!user || isAim4priceAdminEmail(user.email) || user.passwordStatus === "Set") return jsonError("Choose a client who still needs to set a password.",409);
+      await sendSetupInvitation(user.email,
+        () => auth.api.requestPasswordReset({body:{email:user.email,redirectTo:getResetPasswordRedirectUrl()}}),
+        url => sendAim4priceResetPasswordEmail({to:user.email,name:user.name,resetUrl:url,setup:true}));
+      return NextResponse.json({ok:true});
     }
 
     if (action === "send_reset") {

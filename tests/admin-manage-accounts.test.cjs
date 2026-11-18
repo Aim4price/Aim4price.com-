@@ -38,7 +38,9 @@ test('manual creation and workspace changes preserve the login, status and clien
     const response = await post(create);
     assert.equal(response.status,201);
     const {user:{user_id:id}} = await response.json();
-    assert.equal((await post(create)).status,409);
+    const duplicate = await post(create);
+    assert.equal(duplicate.status,409);
+    assert.equal((await duplicate.json()).existing.user_id,id);
     await db.query('INSERT INTO saved_assets VALUES($1,$2)',['tractor',id]);
     let previousType = 'business', previousSubtype = 'finance-services';
     for (const [type,subtype,stored] of [['middleman','equipment-middleman','dealer'],['owner','farmer','owner'],['dealer','auctioneer','dealer'],['business','contributor','business']]) {
@@ -59,4 +61,18 @@ test('manual creation and workspace changes preserve the login, status and clien
     assert.equal((await db.query('SELECT * FROM sharing_admin_events')).rows.length,5);
     assert.equal((await post({...create,email:'aim4price@gmail.com'})).status,409);
   } finally { await pg.close(); }
+});
+
+test('setup invitation uses the link for its recipient and surfaces delivery failures', async () => {
+  const {sendSetupInvitation,captureSetupLink} = load('lib/admin-setup-invitation.ts');
+  const email = 'client@example.test';
+  const generate = async () => {
+    assert.equal(captureSetupLink('other@example.test','other'),false);
+    assert.equal(captureSetupLink(email,'client-link'),true);
+  };
+  const delivered = [];
+  await assert.rejects(sendSetupInvitation(email,generate,async () => {throw Error('Delivery failed');}),/Delivery failed/);
+  await sendSetupInvitation(email,generate,async url => delivered.push(url));
+  assert.deepEqual(delivered,['client-link']);
+  assert.equal(captureSetupLink(email,'unrelated'),false);
 });

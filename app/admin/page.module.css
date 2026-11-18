@@ -2356,3 +2356,7 @@
 }
 .accountEditor > :is(h2, p, div) { grid-column: 1 / -1; margin: 0; }
 .accountEditor .notificationField { min-width: 0; }
+.accountEditor .fixedCategory { grid-column: auto; display: grid; gap: .6rem; }
+.typePreview { grid-column: 1 / -1; min-width: 0; overflow-x: auto; }
+.typePreview table { min-width: 100%; border-collapse: collapse; text-align: left; }
+.typePreview :is(th, td) { padding: .6rem .75rem; border-bottom: 1px solid #dce7e1; }

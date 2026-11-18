@@ -47,3 +47,8 @@ export const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
     { value: "auctioneer", label: "Auctioneer / broker" },
   ],
 };
+
+export function workspaceLabel(type: string, subtype: string) {
+  if (type === "dealer" && ["equipment-middleman", "machinery-middleman", "middleman"].includes(subtype)) return "Middleman";
+  return SIGNUP_ACCOUNT_TYPE_OPTIONS.find(option => option.value === type)?.label ?? type;
+}
