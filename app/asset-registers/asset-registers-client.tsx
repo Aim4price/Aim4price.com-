@@ -3,7 +3,6 @@ import { PageHelpHeading } from '../../components/PageHelp';
 import ValueInclusionControl from '../../components/asset-register/ValueInclusionControl';
 import { decorateAssetsWithGroups, assetCountsTowardRegisterTotalFromMeta, type AssetGroup, type AssetGroupExportMeta } from '../../lib/asset-groups-shared';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
-import ShareNextIcon from '../../components/asset-register/ShareNextIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import SettingsDetailIcon from '../../components/SettingsDetailIcon';
@@ -1354,7 +1353,9 @@ export default function AssetRegistersClient({
   const [managedAssets, setManagedAssets] = useState<RegisterAsset[]>([]);
   const [managedAssetSearchTerm, setManagedAssetSearchTerm] = useState("");
   const [isEditDetailsModalOpen, setIsEditDetailsModalOpen] = useState(false);
-  const [moveCandidate, setMoveCandidate] = useState<RegisterAsset | null>(null);
+  const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(new Set());
+  const [isChoosingDestination, setIsChoosingDestination] = useState(false);
+  const assetSearchRef = useRef<HTMLInputElement>(null);
   const [moveRegisterSearch, setMoveRegisterSearch] = useState("");
   const [moveTargetId, setMoveTargetId] = useState("");
   const [moveError, setMoveError] = useState("");
@@ -1377,7 +1378,7 @@ export default function AssetRegistersClient({
   const [selectingRegisterId, setSelectingRegisterId] = useState<string | null>(
     null,
   );
-  const [movingAssetId, setMovingAssetId] = useState<string | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
   const [openTargetDropdownId, setOpenTargetDropdownId] = useState<
     string | null
   >(null);
@@ -1443,23 +1444,25 @@ export default function AssetRegistersClient({
         : [],
     [managedRegister, registers],
   );
+  const selectedAssets = managedAssets.filter((asset) => selectedAssetIds.has(asset.id));
+  const assetsToMove = selectedAssets.filter((asset) => asset.registerId !== moveTargetId);
   const moveRegisterOptions = registers.filter((register) =>
-    register.id !== moveCandidate?.registerId && matchesRegisterSearch(register, moveRegisterSearch),
+    selectedAssets.some((asset) => asset.registerId !== register.id) && matchesRegisterSearch(register, moveRegisterSearch),
   );
 
   function closeMoveDialog() {
-    if (movingAssetId) return;
-    setMoveCandidate(null);
+    if (isMoving) return;
+    setIsChoosingDestination(false);
     window.requestAnimationFrame(() => moveTriggerRef.current?.focus());
   }
 
   useEffect(() => {
-    if (!moveCandidate) return;
+    if (!isChoosingDestination) return;
     const frame = window.requestAnimationFrame(() => {
       moveDialogRef.current?.querySelector<HTMLInputElement>('input')?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [moveCandidate]);
+  }, [isChoosingDestination]);
 
   const visibleManagedAssets = useMemo(
     () =>
@@ -1635,7 +1638,7 @@ export default function AssetRegistersClient({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        if (moveCandidate) {
+        if (isChoosingDestination) {
           closeMoveDialog();
           return;
         }
@@ -1669,7 +1672,7 @@ export default function AssetRegistersClient({
           return;
         }
 
-        if (managedRegister && !isSavingDetails && !movingAssetId) {
+        if (managedRegister && !isSavingDetails && !isMoving) {
           closeManagePanel();
         }
       }
@@ -1694,8 +1697,8 @@ export default function AssetRegistersClient({
     isQrModalOpen,
     isSavingDetails,
     managedRegister,
-    movingAssetId,
-    moveCandidate,
+    isMoving,
+    isChoosingDestination,
     openTargetDropdownId,
     removingRegisterId,
   ]);
@@ -1704,7 +1707,8 @@ export default function AssetRegistersClient({
     setIsLoadingManagedAssets(true);
     setManagedAssets([]);
     setManagedAssetSearchTerm("");
-    setMoveCandidate(null);
+    setSelectedAssetIds(new Set());
+    setIsChoosingDestination(false);
 
     try {
       const targetRegisters = register.id === COMBINED_REGISTER_ID ? registers : [register];
@@ -1779,13 +1783,14 @@ export default function AssetRegistersClient({
   }
 
   function closeManagePanel() {
-    if (isSavingDetails || movingAssetId) return;
+    if (isSavingDetails || isMoving) return;
     setManagedRegisterId("");
     setEditDraft(emptyRegisterDraft);
     setManageSaveState("idle");
     setManagedAssets([]);
     setManagedAssetSearchTerm("");
-    setMoveCandidate(null);
+    setSelectedAssetIds(new Set());
+    setIsChoosingDestination(false);
     setIsEditDetailsModalOpen(false);
     setOpenTargetDropdownId(null);
   }
@@ -2579,19 +2584,13 @@ export default function AssetRegistersClient({
     }
   }
 
-  async function handleMoveAsset(asset: RegisterAsset, targetRegisterId: string) {
-    if (!managedRegister) return;
+  async function handleMoveAssets() {
+    if (!managedRegister || !moveTargetId || !assetsToMove.length || isMoving) return;
 
-    if (!targetRegisterId || targetRegisterId === asset.registerId || movingAssetId) {
-      setNotice({
-        tone: "error",
-        message: "Choose the target asset register first.",
-      });
-      return;
-    }
-
+    const targetRegisterId = moveTargetId;
+    const assetIds = assetsToMove.map((asset) => asset.id);
     setMoveError("");
-    setMovingAssetId(asset.id);
+    setIsMoving(true);
     const targetRegister = registers.find((target) => target.id === targetRegisterId);
 
     try {
@@ -2600,42 +2599,45 @@ export default function AssetRegistersClient({
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ assetId: asset.id, targetRegisterId }),
+        body: JSON.stringify({ assetIds, targetRegisterId }),
       });
       const payload = await readJsonPayload(response);
       const data = (payload ?? null) as AssetRegistersApiResponse | null;
 
       if (!response.ok || !data?.ok) {
-        throw new Error(extractErrorMessage(payload, "Failed to move asset."));
+        throw new Error(extractErrorMessage(payload, "Failed to move the selected assets."));
       }
 
+      if (data.movedCount !== assetIds.length) {
+        await loadManagedAssets(managedRegister);
+        await refreshRegisters(false);
+        setNotice({ tone: "error", message: `${data.movedCount ?? 0} of ${assetIds.length} assets moved. Review the refreshed list.` });
+        return;
+      }
+
+      const movedIds = new Set(assetIds);
       setManagedAssets((current) => isManagingCombined
-        ? current.map((entry) => entry.id === asset.id
-          ? {
-              ...entry,
-              registerId: targetRegisterId,
-              registerName: targetRegister?.businessName ?? entry.registerName,
-            }
+        ? current.map((entry) => movedIds.has(entry.id)
+          ? { ...entry, registerId: targetRegisterId, registerName: targetRegister?.businessName ?? entry.registerName }
           : entry)
-        : current.filter((entry) => entry.id !== asset.id));
-      setMoveCandidate(null);
-      window.requestAnimationFrame(() => moveTriggerRef.current?.focus());
-      await refreshRegisters(false);
+        : current.filter((entry) => !movedIds.has(entry.id)));
+      setIsChoosingDestination(false);
+      setSelectedAssetIds(new Set());
+      window.requestAnimationFrame(() => assetSearchRef.current?.focus());
       setNotice({
         tone: "success",
-        message: targetRegister
-          ? `${asset.title} moved successfully to ${targetRegister.businessName}.`
-          : "Asset moved successfully.",
+        message: `${assetIds.length === 1 ? assetsToMove[0].title : `${assetIds.length} assets`} moved to ${targetRegister?.businessName ?? "the selected register"}.`,
       });
+      await refreshRegisters(false);
     } catch (error) {
-      setMoveError(error instanceof Error ? error.message : "Failed to move asset.");
+      setMoveError(error instanceof Error ? error.message : "Failed to move the selected assets.");
       setNotice({
         tone: "error",
         message:
-          error instanceof Error ? error.message : "Failed to move asset.",
+          error instanceof Error ? error.message : "Failed to move the selected assets.",
       });
     } finally {
-      setMovingAssetId(null);
+      setIsMoving(false);
     }
   }
 
@@ -3351,7 +3353,7 @@ export default function AssetRegistersClient({
       {managedRegister ? (
         <div
           className={`${styles.modalOverlay} ${styles.manageModalOverlay}`} data-website-overlay
-          style={moveCandidate ? { display: "none" } : undefined}
+          style={isChoosingDestination ? { display: "none" } : undefined}
           role="dialog"
           aria-modal="true"
           aria-labelledby="manage-register-title"
@@ -3363,16 +3365,14 @@ export default function AssetRegistersClient({
                   {managedRegister.businessName}
                 </h2>
                 <p className={styles.modalIntro}>
-                  {isManagingCombined
-                    ? "View and manage assets across your registers."
-                    : "Update register details or move assets from this register to another register on the same account."}
+                  To move assets, select them below and choose a destination register.
                 </p>
               </div>
               <button
                 type="button"
                 className={styles.closeButton}
                 onClick={closeManagePanel}
-                disabled={isSavingDetails || Boolean(movingAssetId)}
+                disabled={isSavingDetails || isMoving}
                 aria-label="Close manage asset register modal"
                 data-modal-close="true"
               >
@@ -3387,16 +3387,18 @@ export default function AssetRegistersClient({
                     <button
                       type="button"
                       className={`${styles.manageActionButton} ${styles.manageEditAction}`}
+                      title="Edit register details and inclusion in combined totals"
                       onClick={openManagedEditModal}
-                      disabled={isSavingDetails || Boolean(movingAssetId)}
+                      disabled={isSavingDetails || isMoving}
                     >
                       <EditIcon className={styles.manageActionIcon} />
-                      <span>Edit</span>
+                      <span>Edit register</span>
                     </button>
                   ) : null}
 
                   <button
                     type="button"
+                    title="Open the register summary as a PDF"
                     className={`${styles.manageActionButton} ${styles.manageSummaryAction}`}
                     onClick={() => isManagingCombined
                       ? void handleSummaryPdfExport("all", registers, { closeFlowOnSuccess: false })
@@ -3409,6 +3411,18 @@ export default function AssetRegistersClient({
 
                   <button
                     type="button"
+                    className={`${styles.manageActionButton} ${styles.manageQrAction}`}
+                    title="Create printable QR labels for assets"
+                    onClick={() => void openQrModal()}
+                    disabled={isLoadingQrAssets || isLoadingManagedAssets}
+                  >
+                    <QrCodeIcon className={styles.manageActionIcon} />
+                    <span>QR Codes</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Export register data as PDF or Excel"
                     className={`${styles.manageActionButton} ${styles.manageDownloadAction}`}
                     onClick={() => isManagingCombined
                       ? openCombinedDownload()
@@ -3418,22 +3432,13 @@ export default function AssetRegistersClient({
                     <DownloadIcon className={styles.manageActionIcon} />
                     <span>Download</span>
                   </button>
-
-                  {<button
-                    type="button"
-                    className={`${styles.manageActionButton} ${styles.manageQrAction}`}
-                    onClick={() => void openQrModal()}
-                    disabled={isLoadingQrAssets || isLoadingManagedAssets}
-                  >
-                    <QrCodeIcon className={styles.manageActionIcon} />
-                    <span>QR Codes</span>
-                  </button>}
                 </div>
 
                 <label className={`${styles.searchWrap} ${styles.manageAssetSearchWrap}`}>
                   <SearchIcon className={styles.searchIcon} />
                   <input
                     className={styles.searchInput}
+                    ref={assetSearchRef}
                     value={managedAssetSearchTerm}
                     onChange={(event) => setManagedAssetSearchTerm(event.target.value)}
                     placeholder="Search assets..."
@@ -3466,15 +3471,16 @@ export default function AssetRegistersClient({
                         type="button"
                         className={`${styles.assetMoveRow} ${styles.standardAssetChoice}`}
                         data-asset-choice-row="true"
-                        aria-label={`Move ${asset.title}`}
-                        disabled={Boolean(movingAssetId) || !registers.some((register) => register.id !== asset.registerId)}
-                        onClick={(event) => {
-                          moveTriggerRef.current = event.currentTarget;
-                          setMoveRegisterSearch("");
-                          setMoveTargetId("");
-                          setMoveError("");
-                          setMoveCandidate(asset);
-                        }}
+                        role="checkbox"
+                        aria-checked={selectedAssetIds.has(asset.id)}
+                        aria-label={`Select ${asset.title}${asset.serialNumber ? `, ${asset.serialNumber}` : ""}`}
+                        disabled={isMoving || registers.length < 2}
+                        onClick={() => setSelectedAssetIds((current) => {
+                          const next = new Set(current);
+                          if (next.has(asset.id)) next.delete(asset.id);
+                          else next.add(asset.id);
+                          return next;
+                        })}
                       >
                         <span className={styles.assetMoveCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
@@ -3488,7 +3494,7 @@ export default function AssetRegistersClient({
                             <span>{asset.registerName || managedRegister.businessName}</span>
                           </small> : null}
                         </span>
-                        <ShareNextIcon />
+                        <span className={styles.assetSelectionCheck} aria-hidden="true">{selectedAssetIds.has(asset.id) ? "✓" : ""}</span>
                       </button>
                     ))}
                     </div>
@@ -3505,12 +3511,27 @@ export default function AssetRegistersClient({
 
 
               </div>
+              {registers.length > 1 && managedAssets.length > 0 ? (
+                <div className={styles.moveSelectionBar}>
+                  <strong aria-live="polite">{selectedAssetIds.size} selected</strong>
+                  <button type="button" ref={moveTriggerRef} className={styles.primaryButton}
+                    disabled={!selectedAssetIds.size}
+                    onClick={() => {
+                      setMoveRegisterSearch("");
+                      setMoveTargetId("");
+                      setMoveError("");
+                      setIsChoosingDestination(true);
+                    }}>
+                    Choose destination
+                  </button>
+                </div>
+              ) : null}
             </div>
           </section>
         </div>
       ) : null}
 
-      {moveCandidate && managedRegister ? (
+      {isChoosingDestination && managedRegister ? (
         <div className={`${styles.modalOverlay} ${styles.manageModalOverlay}`} data-website-overlay
           role="dialog" aria-modal="true" aria-labelledby="move-register-title">
           <section ref={moveDialogRef} className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.moveDestinationModal}`}
@@ -3523,8 +3544,8 @@ export default function AssetRegistersClient({
               else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
             }}>
             <div className={styles.modalHeader}>
-              <div><h2 id="move-register-title">Change Asset Register</h2><p className={styles.modalIntro}>{moveCandidate.title}</p></div>
-              <button type="button" className={styles.closeButton} onClick={closeMoveDialog} disabled={Boolean(movingAssetId)} aria-label="Close register selection" data-modal-close="true">×</button>
+              <div><h2 id="move-register-title">Choose destination register</h2><p className={styles.modalIntro}>{selectedAssets.length === 1 ? selectedAssets[0].title : `${selectedAssets.length} assets selected`}</p></div>
+              <button type="button" className={styles.closeButton} onClick={closeMoveDialog} disabled={isMoving} aria-label="Close register selection" data-modal-close="true">×</button>
             </div>
             <div className={styles.moveDestinationBody}>
               <label className={styles.searchWrap}>
@@ -3534,7 +3555,7 @@ export default function AssetRegistersClient({
               <div className={styles.moveDestinationList} role="group" aria-label="Destination registers">
                 {moveRegisterOptions.map((register) => (
                   <button key={register.id} type="button" className={styles.moveDestinationOption} aria-pressed={moveTargetId === register.id}
-                    disabled={Boolean(movingAssetId)} onClick={() => { setMoveTargetId(register.id); setMoveError(""); }}>
+                    disabled={isMoving} onClick={() => { setMoveTargetId(register.id); setMoveError(""); }}>
                     <RegisterFolderIcon />
                     <span><strong>{register.businessName}</strong><small>{register.assetCount} asset{register.assetCount === 1 ? "" : "s"}</small></span>
                     <span aria-hidden="true" className={styles.moveDestinationCheck}>{moveTargetId === register.id ? "✓" : ""}</span>
@@ -3542,12 +3563,15 @@ export default function AssetRegistersClient({
                 ))}
                 {!moveRegisterOptions.length ? <p className={styles.muted}>No destination registers match your search.</p> : null}
               </div>
+              {moveTargetId && selectedAssets.length > assetsToMove.length ? (
+                <p className={styles.muted}>{selectedAssets.length - assetsToMove.length} already in this register.</p>
+              ) : null}
               {moveError ? <p role="alert" className={styles.moveDestinationError}>{moveError}</p> : null}
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeMoveDialog} disabled={Boolean(movingAssetId)}>Back</button>
-              <button type="button" className={styles.primaryButton} disabled={!moveTargetId || Boolean(movingAssetId)} onClick={() => void handleMoveAsset(moveCandidate, moveTargetId)}>
-                {movingAssetId ? "Moving..." : "Move asset"}
+              <button type="button" className={styles.secondaryButton} onClick={closeMoveDialog} disabled={isMoving}>Back</button>
+              <button type="button" className={styles.primaryButton} disabled={!moveTargetId || isMoving} onClick={() => void handleMoveAssets()}>
+                {isMoving ? "Moving..." : `Move ${assetsToMove.length} asset${assetsToMove.length === 1 ? "" : "s"}`}
               </button>
             </div>
           </section>
