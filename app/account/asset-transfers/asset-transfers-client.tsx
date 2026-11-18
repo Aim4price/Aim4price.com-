@@ -726,7 +726,7 @@ export default function AssetTransfersClient({
         <section className={`${launcherStyles.launcher} ${styles.transferLauncher}`} aria-labelledby="asset-transfers-title">
           <div className={launcherStyles.launcherIntro}>
             <PageHelpHeading topic="transfers"><h1 id="asset-transfers-title">{isDealerContext ? 'Inventory transfers' : 'Asset transfers'}</h1></PageHelpHeading>
-            <p>{isDealerContext ? 'Bring trade-ins into stock or manage inventory moving to its next owner.' : 'To send an asset, open it in your asset register and choose “Dispose or remove asset”. Select “Sold” then “Send to buyer”, or “Traded in” then “Send to dealer inventory”.'}</p>
+            <p>{isDealerContext ? 'Receive trade-ins or manage transfers.' : 'To send an asset, choose “Dispose or remove asset” in your register.'}</p>
           </div>
 
           <div className={launcherStyles.actionGrid} aria-label="Choose an asset transfer direction">
@@ -734,15 +734,15 @@ export default function AssetTransfersClient({
               <span className={launcherStyles.actionIcon}><IncomingIcon /></span>
               <span className={launcherStyles.actionCopy}>
                 <strong>Receive an asset</strong>
-                <small>{isDealerContext ? 'Claim a trade-in into dealer inventory.' : 'Enter the asset identifier and one-time code from the seller.'}</small>
+                <small>{isDealerContext ? 'Claim a trade-in.' : 'Enter the asset ID and code.'}</small>
               </span>
             </button>
 
             <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonManage}`} onClick={() => openFlow('outgoing')}>
               <span className={launcherStyles.actionIcon}><OutgoingIcon /></span>
               <span className={launcherStyles.actionCopy}>
-                <strong>Manage outgoing transfers</strong>
-                <small>Review pending transfers, replace a code or cancel a transfer.</small>
+                <strong>Outgoing</strong>
+                <small>Manage transfers and codes.</small>
               </span>
               <span className={launcherStyles.actionMeta}>
                 <span className={launcherStyles.countPill}>{loading ? '…' : outgoing.length}</span>
@@ -752,7 +752,7 @@ export default function AssetTransfersClient({
 
           <div className={styles.transferGuide}>
             <span className={styles.guideIcon}><ShieldIcon /></span>
-            <div><strong>Only the portable asset record moves</strong><p>Asset details, valuation, maintenance, scans, photos and saved asset documents can move. Private invoices, finance, insurance and account access stay with the source account.</p></div>
+            <div><strong>What transfers?</strong><p>The asset record and history transfer. Private records stay with the sender.</p></div>
           </div>
         </section>
 

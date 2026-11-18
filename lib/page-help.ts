@@ -205,7 +205,7 @@ export const pageHelp = {
     purpose: "Let useful asset history follow equipment when it changes hands.",
     actions: [
       "Choose Receive an asset and enter the identifier and one-time code from the sender.",
-      "Choose Manage outgoing transfers to replace a code or cancel a pending transfer.",
+      "Choose Outgoing to replace a code or cancel a pending transfer.",
       "Check which records can transfer. Private invoices, finance and insurance stay with the source account.",
     ],
     start: "To send an asset, open it in your asset register and choose Dispose or remove asset. Select Sold or Traded in, then choose who will receive it.",
