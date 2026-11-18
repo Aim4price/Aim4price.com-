@@ -1,9 +1,22 @@
-export const MAX_TUTORIAL_VIDEO_BYTES = 100 * 1024 * 1024;
-export function tutorialVideoType(bytes: Uint8Array): 'video/mp4' | 'video/webm' | null {
-  if(bytes.length >= 12 && String.fromCharCode(...bytes.slice(4,8)) === 'ftyp') return 'video/mp4';
-  if(bytes.length >= 4 && bytes[0]===0x1a && bytes[1]===0x45 && bytes[2]===0xdf && bytes[3]===0xa3) return 'video/webm';
-  return null;
+/** Accept a YouTube video URL or its copied iframe. Only the video ID is retained. */
+export function youtubeEmbed(input: string): string | null {
+  const text = input.trim();
+  if (!text || text.length > 4096) return null;
+  const iframe = /^<iframe\b[^>]*?\ssrc\s*=\s*(["'])([^"']+)\1[^>]*>\s*<\/iframe>$/i.exec(text);
+  try {
+    const url = new URL(iframe ? iframe[2] : text);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const host = url.hostname;
+    let id: string | null = null;
+    if (host === 'youtu.be') id = url.pathname.slice(1);
+    if (['youtube.com', 'www.youtube.com', 'm.youtube.com', 'www.youtube-nocookie.com'].includes(host)) {
+      id = url.pathname === '/watch' ? url.searchParams.get('v')
+        : /^\/(?:embed|shorts|live)\/([^/]+)\/?$/.exec(url.pathname)?.[1] ?? null;
+    }
+    return id && /^[a-zA-Z0-9_-]{11}$/.test(id) ? `https://www.youtube-nocookie.com/embed/${id}` : null;
+  } catch { return null; }
 }
+
 export function videoByteRange(header:string|null,size:number): {start:number;end:number}|null {
   if(!header) return {start:0,end:size-1};
   const m=/^bytes=(\d*)-(\d*)$/.exec(header);

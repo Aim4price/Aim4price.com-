@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { tutorialCatalogue, type TutorialAudience } from './tutorial-catalogue';
-import { MAX_TUTORIAL_VIDEO_BYTES, tutorialVideoType } from './tutorial-video-policy';
+import { youtubeEmbed } from './tutorial-video-policy';
 export type VideoSlot = { audience:string; feature:string; draft_id:string|null; published_id:string|null; revision:number; draft_name:string|null; published_name:string|null };
 let ready:Promise<void>|undefined;
 export function ensureTutorialVideos(){
@@ -12,24 +12,27 @@ export function validVideoSlot(audience:unknown,feature:unknown):audience is Tut
  return typeof audience==='string' && Object.prototype.hasOwnProperty.call(tutorialCatalogue,audience) && typeof feature==='string' && (feature==='welcome'||tutorialCatalogue[audience as TutorialAudience].features.some(f=>f.id===feature));
 }
 export async function listVideoSlots():Promise<VideoSlot[]> {
- await ensureTutorialVideos();return (await getDb().query(`SELECT s.audience,s.feature,s.draft_id,s.published_id,s.revision,d.name AS draft_name,p.name AS published_name FROM tutorial_video_slots s LEFT JOIN tutorial_video_files d ON d.id=s.draft_id LEFT JOIN tutorial_video_files p ON p.id=s.published_id`)).rows;
+ await ensureTutorialVideos();return (await getDb().query(`SELECT s.audience,s.feature,s.draft_id,s.published_id,s.revision,CASE WHEN d.content_type='text/uri-list' THEN d.name END AS draft_name,CASE WHEN p.content_type='text/uri-list' THEN p.name END AS published_name FROM tutorial_video_slots s LEFT JOIN tutorial_video_files d ON d.id=s.draft_id LEFT JOIN tutorial_video_files p ON p.id=s.published_id`)).rows;
 }
 export async function publishedTutorialVideos(audience:TutorialAudience):Promise<Record<string,string>> {
- await ensureTutorialVideos();const rows=await getDb().query('SELECT feature,published_id FROM tutorial_video_slots WHERE audience=$1 AND published_id IS NOT NULL',[audience]);
- return Object.fromEntries(rows.rows.map(r=>[r.feature,`/api/tutorial-videos/${r.published_id}`]));
+ await ensureTutorialVideos();const rows=await getDb().query('SELECT s.feature,s.published_id,f.name,f.content_type FROM tutorial_video_slots s JOIN tutorial_video_files f ON f.id=s.published_id WHERE s.audience=$1',[audience]);
+ return Object.fromEntries(rows.rows.map(r=>[r.feature,r.content_type === 'text/uri-list' ? r.name : `/api/tutorial-videos/${r.published_id}`]));
 }
 export class VideoConflict extends Error {}
-export async function saveTutorialVideo(input:{audience:string;feature:string;revision:number;actor:string;action:'upload'|'publish'|'unpublish'|'discard';bytes?:Buffer;name?:string;draftId?:string}) {
+export async function saveTutorialVideo(input:{audience:string;feature:string;revision:number;actor:string;action:'link'|'publish'|'unpublish'|'discard';link?:string;draftId?:string}) {
  if(!validVideoSlot(input.audience,input.feature)||!Number.isSafeInteger(input.revision)||input.revision<0)throw Error('Choose a valid video slot.');
- const type=input.bytes?tutorialVideoType(input.bytes):null;
- if(input.action==='upload'&&(!input.bytes||!type||input.bytes.length>MAX_TUTORIAL_VIDEO_BYTES))throw Error('Choose an MP4 or WebM video up to 100 MB.');
+ const link=input.action==='link' ? youtubeEmbed(input.link || '') : null;
+ if(input.action==='link' && !link)throw Error('Enter a YouTube video link or embed code.');
  await ensureTutorialVideos();const db=await getDb().connect();
  try {await db.query('BEGIN');
   await db.query('INSERT INTO tutorial_video_slots(audience,feature,updated_by) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[input.audience,input.feature,input.actor]);
   const row=(await db.query('SELECT * FROM tutorial_video_slots WHERE audience=$1 AND feature=$2 FOR UPDATE',[input.audience,input.feature])).rows[0];
   if(row.revision!==input.revision)throw new VideoConflict('This video changed in another session. Refresh and try again.');
   let draft=row.draft_id, published=row.published_id;
-  if(input.action==='upload') {draft=randomUUID();await db.query('INSERT INTO tutorial_video_files(id,name,content_type,byte_size,data,created_by) VALUES($1,$2,$3,$4,$5,$6)',[draft,(input.name||'Video').slice(0,180),type,input.bytes!.length,input.bytes,input.actor]);}
+  if(input.action==='link') {
+   draft=randomUUID();
+   await db.query("INSERT INTO tutorial_video_files(id,name,content_type,byte_size,data,created_by) VALUES($1,$2,'text/uri-list',0,''::bytea,$3)",[draft,link,input.actor]);
+  }
   else if(input.action==='publish'){if(!draft||draft!==input.draftId)throw new VideoConflict('Preview the current draft before publishing.');published=draft;draft=null;}
   else if(input.action==='unpublish'){draft=draft||published;published=null;}
   else if(input.action==='discard')draft=null;

@@ -68,20 +68,18 @@ function loadNode(file,deps={}){const code=ts.transpileModule(fs.readFileSync(pa
  for(const width of [1440,390]){
   await page.goto('about:blank');await page.setViewport({width,height:900});await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font:16px Arial;background:#193e30}'+sheets.join('\n')+'</style><div id="app" style="padding:24px"></div>');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/admin/videos/video-manager").default,{initialSlots:[]}));'});
   await page.waitForSelector('input[type="search"]');await page.type('input[type="search"]','fuel');assert.ok(await page.$$eval('nav button',els=>els.length>0&&els.every(e=>e.textContent.toLowerCase().includes('fuel'))));
-  await page.$$eval('nav button',els=>els[0].click());assert.equal(await page.$eval('input[type="file"]',e=>e.accept),'video/mp4,video/webm,.mp4,.webm');
+  await page.$$eval('nav button',els=>els[0].click());assert.ok(await page.$('#tutorial-link'));
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Admin has no horizontal overflow');await page.screenshot({path:path.join(dir,'admin-'+width+'.png'),fullPage:true});
  }
 
- // Exercise the upload/preview/publish controls with a synthetic recording and API.
+ // Exercise the link/preview/publish controls with a synthetic video and API.
  let slot={audience:'owners',feature:'welcome',revision:0,draft_id:null,published_id:null,draft_name:null,published_name:null};
- const video=Buffer.from('GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAQyEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEfTbuMU6uEHFO7a1OsggQc7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNjAuMTYuMTAwV0GNTGF2ZjYwLjE2LjEwMESJiECPQAAAAAAAFlSua8KuAQAAAAAAADnXgQFzxYitqw6IgQ6teZyBACK1nIN1bmSIgQCGhVZfVlA5g4EBI+ODhAJiWgDgirCCAUC6gbSagQISVMNnQIBzc6BjwIBnyJpFo4dFTkNPREVSRIeNTGF2ZjYwLjE2LjEwMHNz2mPAi2PFiK2rDoiBDq15Z8ilRaOHRU5DT0RFUkSHmExhdmM2MC4zMS4xMDIgbGlidnB4LXZwOWfIoUWjiERVUkFUSU9ORIeTMDA6MDA6MDEuMDAwMDAwMDAwAB9DtnVCceeBAKOsgQAAgIJJg0IAE/ALNgA4JBwYSgAAUGH2MAAAZwn1ho///shOoqUZuqIwBoCjloEAKACGAECSnABQAAADIAAAWjUXrhCjloEAUACGAECSnABO4AADIAAAWjUXrhCjloEAeACGAECSnABQAAADIAAAWjUXrhCjloEAoACGAECSnABNQAADIAAAWjUXrhCjloEAyACGAECSnABQAAADIAAAWjUXrhCjloEA8ACGAECSnABO4AADIAAAWjUXrhCjloEBGACGAECSnABQAAADIAAAWjUXrhCjloEBQACGAECSnABKIAADIAAAWjUXrhCjloEBaACGAECSnABQAAADIAAAWjUXrhCjloEBkACGAMCSnABKIAADIAAAWjUXrhCjloEBuACGAECSnABQAAADIAAAWjUXrhCjloEB4ACGAECSnABNQAADIAAAWjUXrhCjloECCACGAECSnABQAAADIAAAWjUXrhCjloECMACGAECSnABO4AADIAAAWjUXrhCjloECWACGAECSnABQAAADIAAAWjUXrhCjloECgACGAECSnABKIAADIAAAWjUXrhCjloECqACGAECSnABQAAADIAAAWjUXrhCjloEC0ACGAECSnABO4AADIAAAWjUXrhCjloEC+ACGAECSnABQAAADIAAAWjUXrhCjloEDIACGAMCSnABKIAADIAAAWjUXrhCjloEDSACGAECSnABQAAADIAAAWjUXrhCjloEDcACGAECSnABO4AADIAAAWjUXrhCjloEDmACGAECSnABQAAADIAAAWjUXrhCjloEDwACGAECSnABKIAADIAAAWjUXrhAcU7trkbuPs4EAt4r3gQHxggGl8IED','base64');
- const samplePath=path.join(dir,'sample.webm');fs.writeFileSync(samplePath,video);
  await page.setRequestInterception(true);page.on('request',async req=>{
   const url=new URL(req.url());
-  if(url.pathname.startsWith('/api/tutorial-videos/'))return req.respond({status:200,contentType:'video/webm',body:video});
+
   if(url.pathname==='/api/admin/videos'){
    const action=url.searchParams.get('action');
-   if(action==='upload')slot={...slot,revision:slot.revision+1,draft_id:'11111111-1111-4111-8111-111111111111',draft_name:'tutorial-test.webm'};
+   if(action==='link')slot={...slot,revision:slot.revision+1,draft_id:'11111111-1111-4111-8111-111111111111',draft_name:url.searchParams.get('link')};
    if(action==='publish')slot={...slot,revision:slot.revision+1,published_id:slot.draft_id,published_name:slot.draft_name,draft_id:null,draft_name:null};
    if(action==='unpublish')slot={...slot,revision:slot.revision+1,draft_id:slot.published_id,draft_name:slot.published_name,published_id:null};
    return req.respond({status:200,contentType:'application/json',body:JSON.stringify({slots:[slot]})});
@@ -89,14 +87,33 @@ function loadNode(file,deps={}){const code=ts.transpileModule(fs.readFileSync(pa
   return req.respond({status:200,contentType:'text/html',body:'<html><body></body></html>'});
  });
  await page.goto('https://video.test/');await page.setViewport({width:1440,height:1000});await page.setContent('<style>*{box-sizing:border-box}body{font:16px Arial;background:#193e30}'+sheets.join('\n')+'</style><div id="app"></div>');await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/admin/videos/video-manager").default,{initialSlots:[]}));'});
- await page.waitForSelector('input[type="file"]');await (await page.$('input[type="file"]')).uploadFile(samplePath);
+ await page.waitForSelector('#tutorial-link');
+ await page.type('#tutorial-link','https://youtu.be/ABCDEFGHIJK');
+ await page.click('button[type="submit"],#tutorial-link + button');
+ await page.waitForSelector('iframe[src="https://www.youtube-nocookie.com/embed/ABCDEFGHIJK"]');
+ await page.$$eval('button',els=>els.find(b=>b.textContent==='Save draft').click());
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Publish video'&&!b.disabled));
  await page.$$eval('button',els=>els.find(b=>b.textContent==='Publish video').click());assert.equal(slot.published_id,null,'Confirmation precedes publishing');
  await page.$$eval('button',els=>els.find(b=>b.textContent==='Confirm').click());
  await page.waitForFunction(()=>document.body.textContent.includes('Published to the private guide.'));assert.ok(slot.published_id);assert.equal(slot.draft_id,null);
  await page.$$eval('button',els=>els.find(b=>b.textContent==='Unpublish').click());await page.$$eval('button',els=>els.find(b=>b.textContent==='Confirm').click());
  await page.waitForFunction(()=>document.body.textContent.includes('Video unpublished.'));assert.equal(slot.published_id,null);assert.ok(slot.draft_id);
- console.log('PASS upload, native video preview, explicit publish confirmation and reversible unpublish');
+ console.log('PASS YouTube draft, embed preview, explicit publish confirmation and reversible unpublish');
+ const guideSource='https://www.youtube-nocookie.com/embed/ABCDEFGHIJK';
+ await page.evaluate((source)=>{
+  const library=require('app/tutorials/tutorial-library').default;
+  const first=require('lib/tutorial-catalogue').tutorialCatalogue.owners.features[0].id;
+  const root=document.createElement('div');document.body.replaceChildren(root);
+  ReactDOM.createRoot(root).render(React.createElement(library,{audience:'owners',videos:{welcome:source,[first]:source}}));
+ },guideSource);
+ await page.waitForSelector('iframe[title="Introduction to Aim4price"]');
+ await page.$$eval('nav button',els=>els[0].click());
+ await page.click('button[aria-haspopup="dialog"]');
+ await page.waitForSelector('dialog[open] iframe');
+ assert.equal(await page.$eval('dialog iframe',frame=>frame.src),guideSource);
+ await page.click('[aria-label="Close dialog"]');
+ await page.waitForFunction(()=>!document.querySelector('dialog iframe'));
+ console.log('PASS published welcome and feature embeds, and stopping playback on close');
  assert.deepEqual(errors,[]);console.log('PASS all audience guides and admin video manager at desktop and mobile sizes');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1)});
