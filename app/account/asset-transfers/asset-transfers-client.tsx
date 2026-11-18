@@ -700,7 +700,7 @@ export default function AssetTransfersClient({
       `Transfer code: ${receipt.transferCode}`,
       receipt.transferReason === 'traded_in'
         ? 'Open Dealer → My Inventory → Claim asset in Aim4price.'
-        : 'Open Account → Asset transfers in Aim4price and choose Incoming.',
+        : 'Open Account → Asset transfers in Aim4price and choose Receive an asset.',
     ].join('\n');
     try {
       await navigator.clipboard.writeText(message);
@@ -726,23 +726,23 @@ export default function AssetTransfersClient({
         <section className={`${launcherStyles.launcher} ${styles.transferLauncher}`} aria-labelledby="asset-transfers-title">
           <div className={launcherStyles.launcherIntro}>
             <PageHelpHeading topic="transfers"><h1 id="asset-transfers-title">{isDealerContext ? 'Inventory transfers' : 'Asset transfers'}</h1></PageHelpHeading>
-            <p>{isDealerContext ? 'Bring trade-ins into stock or manage inventory moving to its next owner.' : 'Bring an asset into your register or manage one moving to its next owner.'}</p>
+            <p>{isDealerContext ? 'Bring trade-ins into stock or manage inventory moving to its next owner.' : 'To send an asset, open it in your asset register and choose “Dispose or remove asset”. Select “Sold” then “Send to buyer”, or “Traded in” then “Send to dealer inventory”.'}</p>
           </div>
 
           <div className={launcherStyles.actionGrid} aria-label="Choose an asset transfer direction">
             <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonNew} ${styles.actionButtonWithoutMeta}`} onClick={() => openFlow('incoming')}>
               <span className={launcherStyles.actionIcon}><IncomingIcon /></span>
               <span className={launcherStyles.actionCopy}>
-                <strong>Incoming</strong>
-                <small>{isDealerContext ? 'Claim a trade-in into dealer inventory.' : 'Claim an asset into this account.'}</small>
+                <strong>Receive an asset</strong>
+                <small>{isDealerContext ? 'Claim a trade-in into dealer inventory.' : 'Enter the asset identifier and one-time code from the seller.'}</small>
               </span>
             </button>
 
             <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonManage}`} onClick={() => openFlow('outgoing')}>
               <span className={launcherStyles.actionIcon}><OutgoingIcon /></span>
               <span className={launcherStyles.actionCopy}>
-                <strong>Outgoing</strong>
-                <small>Manage sent assets and one-time codes.</small>
+                <strong>Manage outgoing transfers</strong>
+                <small>Review pending transfers, replace a code or cancel a transfer.</small>
               </span>
               <span className={launcherStyles.actionMeta}>
                 <span className={launcherStyles.countPill}>{loading ? '…' : outgoing.length}</span>
@@ -761,7 +761,7 @@ export default function AssetTransfersClient({
 
       <TransferModal
         open={activeFlow === 'incoming'}
-        title="Incoming asset"
+        title="Receive an asset"
         description={isDealerAccount ? 'Choose exactly which Asset Register should receive this asset.' : 'Claim an asset into your selected Asset Register.'}
         closeDisabled={Boolean(busyAction)}
         onClose={closeFlow}
