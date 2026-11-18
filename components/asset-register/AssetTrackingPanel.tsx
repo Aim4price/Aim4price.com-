@@ -12,7 +12,6 @@ import AssetTrackingOptions, { PhoneTrackingRequirements } from "./AssetTracking
 const controlPaths = {
   history: 'M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7M12 7v5l3 2',
   settings: 'M3 7h4m6 0h8M3 17h10m6 0h2M7 7a3 3 0 1 0 6 0 3 3 0 1 0-6 0M13 17a3 3 0 1 0 6 0 3 3 0 1 0-6 0',
-  activity: 'M2 12h5l3-8 4 16 3-8h5',
   replace: 'M4 8h15l-4-4m5 12H5l4 4',
   disconnect: 'm9 5 2-2a4 4 0 0 1 6 6l-2 2M9 13l-2 2a4 4 0 1 0 6 6l2-2M3 4l18 16',
 } as const;
@@ -130,7 +129,7 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       </div>}
       {device && !replace && !showManage && <div className={styles.dashboard}>
         <div className={styles.connectedSummary}>
-        <h4 className={styles.cardTitle}><ControlIcon name="activity"/>Phone activity</h4>
+        <h4 className={styles.cardTitle}>Phone activity</h4>
         {!device.lastCapturedAt && <p>Allow precise location on the phone, then tap Activate outdoors.</p>}
         <dl className={styles.connectionFacts}>
           <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
@@ -183,7 +182,7 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       {error && !confirmDisconnect && <p role="alert" className={styles.error}>{error}</p>}
       {device && showManage && <div className={styles.deviceManagement}>
         <div className={styles.manageHeader}>
-          <h4 ref={manageHeadingRef} tabIndex={-1}><ControlIcon name="settings"/>Manage device</h4>
+          <h4 ref={manageHeadingRef} tabIndex={-1}>Manage device</h4>
           <button type="button" className={styles.manageBack} onClick={()=>{setShowManage(false);requestAnimationFrame(()=>manageButtonRef.current?.focus());}}>Back</button>
         </div>
         <div className={styles.manageOptions}>
