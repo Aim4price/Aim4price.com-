@@ -13,8 +13,11 @@ const fixture = path.join(root, 'app/tracking-options-validation');
     await fs.writeFile(path.join(fixture, 'page.tsx'), `'use client';
 import {useEffect,useState} from 'react';
 import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPanel';
+import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
-export default function Page(){const [mounted,setMounted]=useState(false);useEffect(()=>setMounted(true),[]);if(!mounted)return null;return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle="Trailer & tank / #12 – 50%" onClose={()=>{}}><AssetTrackingPanel assetId="fixture" assetTitle="Trailer & tank / #12 – 50%"/></AssetAccessSettingsDialog>;}`);
+export default function Page(){const [mounted,setMounted]=useState(false),[fixed,setFixed]=useState(false);useEffect(()=>setMounted(true),[]);if(!mounted)return null;
+if(window.location.search==='?editor')return <AssetAccessSettingsDialog locationLayout title="Update location" assetTitle="Solar panels" onClose={()=>{}}><AssetLocationEditor location={{latitude:-34,longitude:22,locationText:null}} fixedLocation={fixed} modeAssetId="fixture" onModeChange={item=>setFixed(item.fixedLocation)} onTracking={()=>{}} onSave={async()=>{}}/></AssetAccessSettingsDialog>;
+return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle="Trailer & tank / #12 – 50%" onClose={()=>{}}><AssetTrackingPanel assetId="fixture" assetTitle="Trailer & tank / #12 – 50%"/></AssetAccessSettingsDialog>;}`);
     server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3048'], {cwd:root, env:{...process.env, PGHOST:'127.0.0.1', PGPORT:'5432', PGUSER:'fixture', PGPASSWORD:'fixture-only', PGDATABASE:'fixture'}, stdio:['ignore','pipe','pipe']});
     await new Promise((resolve,reject) => {const timer=setTimeout(()=>reject(Error('Startup timeout')),90000); server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited'));});});
     browser = await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH || await require('@sparticuz/chromium').executablePath(), args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'], headless:true});
@@ -29,6 +32,11 @@ export default function Page(){const [mounted,setMounted]=useState(false);useEff
       const u=new URL(r.url());
       if(u.pathname==='/api/asset-register/fixture/tracking'){
         let body={device,assetTitle:title};
+        if(r.method()==='PATCH'){
+          const update=JSON.parse(r.postData());
+          if(update.fixedLocation && device && device.id!==update.confirmedDeviceId)return r.respond({status:409,contentType:'application/json',body:JSON.stringify({confirmDeviceId:device.id})});
+          device=null;body={item:{fixedLocation:update.fixedLocation,lastKnownLat:-34,lastKnownLng:22,lastKnownLocationText:''}};
+        }
         if(r.method()==='POST'){mutations.push('POST');body={code:'ABCD-EF01-2345-6789',expiresInMinutes:15};}
         if(r.method()==='DELETE'){mutations.push('DELETE');device=null;body={ok:true};}
         return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
@@ -82,6 +90,18 @@ export default function Page(){const [mounted,setMounted]=useState(false);useEff
     await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
     await click('Disconnect phone');await page.$$eval('button',buttons=>buttons.filter(b=>b.textContent.trim()==='Disconnect phone').at(-1).click());await page.waitForSelector('[data-tracking-options="choice"]');assert.deepEqual(mutations,['POST','DELETE']);
     await page.evaluate(()=>document.documentElement.dataset.appTheme='dark');await page.screenshot({path:path.join(output,'choices-dark.png')});
+    device={id:'paired-phone'};
+    await page.goto('http://127.0.0.1:3048/tracking-options-validation?editor',{waitUntil:'networkidle0'});
+    const mode='button[role="switch"][aria-label="Fixed location"]';
+    await page.waitForSelector(mode);
+    await page.click(mode);await page.waitForSelector('[aria-label="Confirm stopping tracking"]');
+    await click('Cancel');assert(await page.$('[data-location-action="tracking"]'));
+    await page.click(mode);await click('Stop tracking and use fixed location');
+    await page.waitForSelector(mode+'[aria-checked="true"]');
+    assert.equal(await page.$('[data-location-action="tracking"]'),null);
+    assert.equal((await page.$$('[data-location-action]')).length,3);
+    await page.click(mode);await page.waitForSelector(mode+'[aria-checked="false"]');
+    assert(await page.$('[data-location-action="tracking"]'));
     assert.deepEqual(errors,[]);console.log('PASS chooser, encoded contact messages, keyboard navigation, mobile overflow, phone requirements, app sharing, explicit pairing, connected controls, replacement and confirmed disconnect');
   } finally {
     if(browser)await browser.close();

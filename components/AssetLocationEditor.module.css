@@ -25,3 +25,15 @@
     .editor.editor.editor.editor :is(input, textarea) { font-weight: 500 !important; }
   }
 }
+
+.modeCard { border:1px solid var(--app-line,#c9dcd3); border-radius:1rem; background:var(--app-surface,#fff); }
+.modeSwitch { display:flex; align-items:center; justify-content:space-between; gap:1rem; width:100%; padding:1rem 1.2rem; border:0; border-radius:inherit; background:transparent; color:var(--app-text,#173d31); text-align:left; cursor:pointer; }
+.modeSwitch strong,.modeSwitch small { display:block; }
+.modeSwitch small { margin-top:.25rem; font-size:.95rem; line-height:1.45; }
+.switchTrack { flex:none; width:3rem; padding:.2rem; border-radius:2rem; background:#687971; }
+.switchTrack::after { content:''; display:block; width:1.3rem; height:1.3rem; background:white; border-radius:50%; }
+.modeSwitch[aria-checked=true] .switchTrack { background:#17664a; }
+.modeSwitch[aria-checked=true] .switchTrack::after { margin-left:auto; }
+.confirm { border-top:1px solid var(--app-line,#c9dcd3); padding:1rem 1.2rem; }
+.confirm button { min-height:2.75rem; margin:.6rem .5rem 0 0; padding:.5rem .85rem; border-radius:.65rem; border:1px solid var(--app-line,#c9dcd3); color:var(--app-text,#173d31); background:var(--app-surface,#fff); }
+.confirm button:last-child { background:#195d43; color:white; }

@@ -69,6 +69,9 @@ type AssetMapItem = {
   typedModelName: string;
   yearModel: number | null;
   lastScannedAtIso: string | null;
+  fixedLocation?: boolean;
+  hasSavedPins?: boolean;
+  hasPastRoutes?: boolean;
   lastKnownLat: number | null;
   lastKnownLng: number | null;
   lastKnownLocationText: string;
@@ -1628,7 +1631,7 @@ export default function AssetMapClient() {
       {locationDialog?.view==='tracking'&&<AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}><AssetTrackingPanel key={locationDialog.asset.id} assetId={locationDialog.asset.id} assetTitle={locationDialog.asset.title}/></AssetAccessSettingsDialog>}
       {locationDialog?.view==='more'&&<AssetAccessSettingsDialog locationLayout title="Location options" assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
         <div className={cardActions.options} data-location-options>
-          <button type="button" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}>
+          {!locationDialog.asset.fixedLocation && <><button type="button" onClick={()=>desktop.allow('updateLocation') && setLocationDialog({...locationDialog,view:'update'})}>
             <span className={cardActions.optionIcon} aria-hidden="true"><MapIcon/></span>
             <span className={cardActions.optionText}><strong>Update location</strong><small>Save a position manually</small></span>
             <LocationOptionArrow/>
@@ -1637,7 +1640,10 @@ export default function AssetMapClient() {
             <span className={cardActions.optionIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m21 3-6.5 18-3.8-7.7L3 9.5 21 3Z"/><path d="m10.7 13.3 4-4"/></svg></span>
             <span className={cardActions.optionText}><strong>Open Google Maps</strong><small>View this saved position</small></span>
             <LocationOptionArrow/>
-          </a>
+          </a></>}
+          {locationDialog.asset.fixedLocation && (locationDialog.asset.hasSavedPins || locationDialog.asset.hasPastRoutes) && !desktop.workspace && <button type="button" onClick={()=>setLocationDialog({...locationDialog,view:'history'})}>
+            <span className={cardActions.optionIcon}><LocationHistoryIcon/></span><span className={cardActions.optionText}><strong>Location history</strong><small>Review saved location records</small></span><LocationOptionArrow/>
+          </button>}
           <Link href={buildAssetRegisterHref(locationDialog.asset)}>
             <span className={cardActions.optionIcon} aria-hidden="true"><RegisterIcon/></span>
             <span className={cardActions.optionText}><strong>Open asset register</strong><small>View the full asset details</small></span>
@@ -1645,9 +1651,14 @@ export default function AssetMapClient() {
           </Link>
         </div>
       </AssetAccessSettingsDialog>}
-      {locationDialog?.view==='history' &&<AssetLocationHistoryDialog assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
+      {locationDialog?.view==='history' &&<AssetLocationHistoryDialog savedPinsOnly={locationDialog.asset.fixedLocation && !locationDialog.asset.hasPastRoutes} initialTab={locationDialog.asset.fixedLocation ? (locationDialog.asset.hasSavedPins ? 'observations' : 'movement') : undefined} assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <AssetLocationEditor onTracking={desktop.workspace ? undefined : () => setLocationDialog({...locationDialog, view:'tracking'})} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
+        <AssetLocationEditor modeAssetId={desktop.workspace ? undefined : locationDialog.asset.id} fixedLocation={locationDialog.asset.fixedLocation} onModeChange={item=>{
+          const id=locationDialog.asset.id;
+          const update=(asset:AssetMapItem)=>({...asset,...item,trackingStatus:undefined,lastTrackedAtIso:undefined,lastTrackingContactAtIso:null});
+          setAssets(current=>current.map(asset=>asset.id===id?update(asset):asset));
+          setLocationDialog(current=>current?.asset.id===id?{...current,asset:update(current.asset)}:current);
+        }} onTracking={desktop.workspace ? undefined : () => setLocationDialog({...locationDialog, view:'tracking'})} key={locationDialog.asset.id} location={{latitude:locationDialog.asset.lastKnownLat,longitude:locationDialog.asset.lastKnownLng,locationText:locationDialog.asset.lastKnownLocationText}} onSave={async value=>{
           const response=await desktop.request('/api/asset-register/location',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...value,assetId:locationDialog.asset.id,clientCapturedAt:new Date().toISOString()})});
           const data=await response.json();if(!response.ok||!data.ok)throw Error(data.error||'Could not save location.');
           setAssets(current=>current.map(asset=>asset.id===locationDialog.asset.id?{...asset,lastKnownLat:data.item.lastKnownLat,lastKnownLng:data.item.lastKnownLng,lastKnownLocationText:data.item.lastKnownLocationText,updatedAtIso:data.item.updatedAtIso||new Date().toISOString()}:asset));
@@ -2083,13 +2094,18 @@ export default function AssetMapClient() {
 
                       <div className={cardActions.status} data-warning={['Offline','No recent GPS','Waiting'].includes(selectedAsset.trackingStatus||'')}>
                         <svg className={cardActions.statusIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-                        <div><strong>{selectedAsset.trackingStatus==='No recent GPS'?'GPS signal missing':selectedAsset.trackingStatus==='Offline'?'Phone offline':selectedAsset.trackingStatus==='Waiting'?'Waiting for first location':selectedAsset.trackingStatus==='Deactivated'?'Tracking paused':selectedAsset.trackingStatus==='Stopped'?'Stationary':selectedAsset.trackingStatus||'Saved location'}</strong>
+                        <div><strong>{selectedAsset.fixedLocation?'Fixed location':selectedAsset.trackingStatus==='No recent GPS'?'GPS signal missing':selectedAsset.trackingStatus==='Offline'?'Phone offline':selectedAsset.trackingStatus==='Waiting'?'Waiting for first location':selectedAsset.trackingStatus==='Deactivated'?'Tracking paused':selectedAsset.trackingStatus==='Stopped'?'Stationary':selectedAsset.trackingStatus||'Saved location'}</strong>
                         <span>{selectedAsset.trackingStatus?`Last GPS location: ${selectedAsset.lastTrackedAtIso?formatDate(selectedAsset.lastTrackedAtIso):'Not received yet'}`:formatDate(selectedAsset.lastScannedAtIso || selectedAsset.updatedAtIso)}</span>
                         {selectedAsset.trackingStatus&&<small>Phone contact: {selectedAsset.lastTrackingContactAtIso?formatDate(selectedAsset.lastTrackingContactAtIso):'Not received yet'}</small>}</div>
                       </div>
                       <div className={cardActions.primaryRow}>
+                        {selectedAsset.fixedLocation ? <>
+                          {hasCoordinates(selectedAsset) && <a className={`${cardActions.button} ${cardActions.update}`} href={buildGoogleMapsHref(selectedAsset)!} target="_blank" rel="noreferrer"><span className={cardActions.icon}><MapIcon/></span>Open Google Maps</a>}
+                          <button type="button" className={cardActions.button} onClick={event=>{if(desktop.allow('updateLocation')){locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'update'});}}}><span className={cardActions.icon}><MapIcon/></span>{hasCoordinates(selectedAsset)?'Update location':'Set location'}</button>
+                        </> : <>
                         <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.update}`} onClick={event=>{if (desktop.workspace) {desktop.unavailable();return;} locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'history'});}}><span className={cardActions.icon} aria-hidden="true"><LocationHistoryIcon/></span><span>Routes &amp; history</span></button>
                         <button type="button" aria-haspopup="dialog" className={`${cardActions.button} ${cardActions.tracking}`} onClick={event=>{if (desktop.workspace) {desktop.unavailable();return;} locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'tracking'});}}><span className={cardActions.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></span><span>Tracking device</span></button>
+                        </>}
                         <button type="button" aria-haspopup="dialog" className={cardActions.button} onClick={event=>{locationTrigger.current=event.currentTarget;setLocationDialog({asset:selectedAsset,view:'more'});}}><span className={cardActions.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><span>More</span></button>
                       </div>
                     </div>

@@ -528,7 +528,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       from public.asset_registers
       where false
     ), item_schema as (
-      select id, user_id, register_id, lifecycle_state,
+      select id, user_id, register_id, lifecycle_state, fixed_location,
              license_renewal_alert_noted_for_date,
              license_renewal_alert_noted_at
       from public.asset_register_items
@@ -592,6 +592,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   await db.query(`
     alter table if exists public.asset_register_items
       add column if not exists register_id uuid,
+      add column if not exists fixed_location boolean not null default false,
       add column if not exists lifecycle_state text not null default 'active',
       add column if not exists license_renewal_alert_noted_for_date date,
       add column if not exists license_renewal_alert_noted_at timestamptz

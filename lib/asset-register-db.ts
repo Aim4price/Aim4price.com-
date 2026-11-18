@@ -100,6 +100,7 @@ export type AssetRegisterItem = {
   plateLabel: string;
   qrStatus: AssetRegisterQrStatus;
   lastScannedAtIso: string | null;
+  fixedLocation?: boolean;
   lastKnownLat: number | null;
   lastKnownLng: number | null;
   lastKnownLocationText: string;
@@ -264,6 +265,7 @@ type AssetRegisterRow = {
   plate_label: string | null;
   qr_status: string | null;
   last_scanned_at: string | null;
+  fixed_location?: boolean;
   last_known_lat: string | number | null;
   last_known_lng: string | number | null;
   last_known_location_text: string | null;
@@ -1809,6 +1811,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     plateLabel: asText(row.plate_label),
     qrStatus: normalizeQrStatus(row.qr_status),
     lastScannedAtIso: buildNullableIsoDate(row.last_scanned_at),
+    fixedLocation: row.fixed_location === true,
     lastKnownLat: asNumber(row.last_known_lat),
     lastKnownLng: asNumber(row.last_known_lng),
     lastKnownLocationText: asText(row.last_known_location_text),
@@ -2073,6 +2076,7 @@ function buildSelectList(schema: TableSchema): string {
     plateLabelColumn ? `${plateLabelColumn} as plate_label` : `''::text as plate_label`,
     qrStatusColumn ? `${qrStatusColumn} as qr_status` : `'active'::text as qr_status`,
     lastScannedAtColumn ? `${lastScannedAtColumn} as last_scanned_at` : 'null::timestamptz as last_scanned_at',
+    schema.columnNames.has('fixed_location') ? 'fixed_location' : 'false as fixed_location',
     lastKnownLatColumn ? `${lastKnownLatColumn} as last_known_lat` : 'null::numeric as last_known_lat',
     lastKnownLngColumn ? `${lastKnownLngColumn} as last_known_lng` : 'null::numeric as last_known_lng',
     lastKnownLocationTextColumn ? `${lastKnownLocationTextColumn} as last_known_location_text` : 'null::text as last_known_location_text',
@@ -2625,6 +2629,8 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['register_id'], activeRegister.id);
   pushField(fields, schema, ['valuation_run_id', 'run_id'], null);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
+  const propertySubtype = incomingSpecsJson.propertyAssetSubtype ?? incomingSpecsJson.property_asset_subtype;
+  pushField(fields, schema, ['fixed_location'], nextKind === 'property' && ['land', 'building_structure', 'fixed_improvement'].includes(String(propertySubtype)));
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
   pushField(fields, schema, ['brand_name', 'brand'], asText(input.brandName) || null);
   pushField(fields, schema, ['model_name', 'model'], asText(input.modelName) || null);

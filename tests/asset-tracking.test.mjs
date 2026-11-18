@@ -72,7 +72,7 @@ test("time calculation uses timestamps, never assumed point count", () => {
 });
 const db = new PGlite();
 await db.exec(
-  "CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text,hours numeric(14,2),kind text DEFAULT 'tractor',specs_json jsonb DEFAULT '{}',updated_at timestamptz DEFAULT now())",
+  "CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text,hours numeric(14,2),last_known_lat double precision,last_known_lng double precision,last_known_location_text text,last_scanned_at timestamptz,kind text DEFAULT 'tractor',specs_json jsonb DEFAULT '{}',updated_at timestamptz DEFAULT now())",
 );
 const asset = "11111111-1111-4111-8111-111111111111";
 await db.query("INSERT INTO asset_register_items(id,user_id,title) VALUES($1,$2,$3)", [
@@ -332,4 +332,30 @@ test('partial uploads isolate expired readings without blocking valid readings',
  const other=await api.pairDevice((await api.createPairing('recovery-owner',different)).replaceAll('-',''),'Other');
  await assert.rejects(api.ingestTracking(other.token,api.validateUpload({...payload,points:[missing],recoveryToken:paired.token})),/RECOVERY_UNAVAILABLE/);
  await assert.rejects(api.ingestTracking(replacement.token,api.validateUpload({...payload,points:[missing],recoveryToken:'0'.repeat(64)})),/RECOVERY_UNAVAILABLE/);
+});
+
+test('fixed location freezes the displayed pin, requires confirmation, and preserves previous routes', async () => {
+  const id = crypto.randomUUID(), owner = 'fixed-owner';
+  await db.query('INSERT INTO asset_register_items(id,user_id,title) VALUES ($1,$2,$3)', [id,owner,'Solar panels']);
+  const phone = await api.pairDevice((await api.createPairing(owner,id)).replaceAll('-',''),'Equipment phone');
+  const capturedAt = new Date().toISOString();
+  const point = {id:crypto.randomUUID(),sessionId:crypto.randomUUID(),capturedAt,latitude:-34,longitude:22,accuracy:5,motion:'moving'};
+  const upload = api.validateUpload({points:[point],active:true,stateAt:capturedAt});
+  await api.ingestTracking(phone.token,upload);
+  const pending = await api.createPairing(owner,id);
+  await assert.rejects(api.setFixedLocation('other',id,true),/ASSET_UNAVAILABLE/);
+  assert.equal((await api.setFixedLocation(owner,id,true)).confirmDeviceId,phone.deviceId);
+  assert.equal((await api.trackingStatus(owner,id)).id,phone.deviceId);
+  const {item} = await api.setFixedLocation(owner,id,true,phone.deviceId);
+  assert.equal(item.fixedLocation,true);
+  assert.equal(item.lastKnownLat,-34);
+  assert.equal(item.lastKnownLng,22);
+  assert.equal((await api.latestTrackingPositions(owner)).has(id),false);
+  await assert.rejects(api.createPairing(owner,id),/FIXED_LOCATION/);
+  await assert.rejects(api.pairDevice(pending.replaceAll('-',''),'Replacement'),/INVALID_PAIRING/);
+  await assert.rejects(api.ingestTracking(phone.token,upload),/DEVICE_REVOKED/);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM asset_tracking_points WHERE device_id=$1',[phone.deviceId])).rows[0].n,1);
+  assert.equal((await api.setFixedLocation(owner,id,false)).item.fixedLocation,false);
+  assert.equal(await api.trackingStatus(owner,id),null);
+  await api.createPairing(owner,id);
 });

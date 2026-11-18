@@ -36,6 +36,7 @@ export async function POST(request: NextRequest, {params}: Context) {
     return trackingJson(status);
   } catch (e) {
     await client.query('ROLLBACK');
+    if (e instanceof Error && e.message === 'FIXED_LOCATION') return trackingJson({error:'Turn off Fixed location to use tracking-based readings.'}, 409);
     const unsupported = e instanceof Error && e.message === 'USAGE_METRIC_UNSUPPORTED';
     return trackingJson({error: unsupported ? 'Choose hours or kilometres for this asset first.' : 'Could not save usage settings.'}, unsupported ? 400 : 500);
   } finally { client.release(); }
