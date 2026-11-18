@@ -1,9 +1,9 @@
-import Link from 'next/link';
+import { redirect } from "next/navigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
-import AdminBusinesses from "./businesses-client";
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export default async function Page({ searchParams }: { searchParams?: { verify?: string } }) {
+
+export default async function RetiredBusinessDirectory({ searchParams }: {
+  searchParams: Promise<{ verify?: string }>;
+}) {
   await requireAdminPageAccess();
-  return <><div style={{marginBottom:"1rem",fontSize:"0.8rem"}}><Link href="/admin/sharing">Sharing usage & access</Link></div><AdminBusinesses initialVerificationOpen={searchParams?.verify === "1"} /></>;
+  redirect((await searchParams).verify === "1" ? "/admin?verify=1" : "/admin");
 }

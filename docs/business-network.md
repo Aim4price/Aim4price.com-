@@ -2,7 +2,7 @@
 
 ## Manage directory listings
 
-Use **Accounts → Add account** to create a Business account. In **Admin → Business Directory**, search existing listings, review submissions, approve them for publication, or hide a listing.
+Use **Accounts → Add account** to create a Business account. In **Admin → Sharing & access → Listing reviews & guest access**, search existing listings, review submissions, approve them for publication, or hide a listing.
 
 Publishing is an explicit admin decision, recorded in the admin audit table. A business cannot publish itself through an old management link.
 
@@ -12,7 +12,7 @@ Copy `/business-network/join` from the Acceptance link panel. Send it yourself t
 
 The form asks for business name, contact name, email, optional phone and consent. It records the acceptance; it does not publish, charge, send an invitation or create a full account. Duplicate submissions cannot overwrite an earlier acceptance.
 
-In the admin directory, expand **Business acceptances**, choose **Prepare listing**, complete the listing, save and then **Approve and publish**. Refresh acceptances after someone submits. Submitted email addresses are not verified by this form: check their details before publication.
+In Listing reviews & guest access, expand **Business acceptances**, choose **Prepare listing**, complete the listing, save and then **Approve and publish**. Refresh acceptances after someone submits. Submitted email addresses are not verified by this form: check their details before publication.
 
 ## Share outside Aim4price
 
@@ -37,7 +37,7 @@ The receiving business pays. There is no automated checkout in this release.
 ## Activate paid access manually
 
 1. Have the business confirm its email on its lead page.
-2. Open the admin directory and refresh **Guest report access**.
+2. Open Listing reviews & guest access and refresh **Guest report access**.
 3. After receiving payment, choose the expiry date, enter a payment reference/note and select **Activate paid access**.
 4. Ask the business to select **Check access again** on its lead page.
 5. **Suspend access** blocks subsequent report downloads immediately. Access also ends at the selected expiry (end of that date in UTC).
