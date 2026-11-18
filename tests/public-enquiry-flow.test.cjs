@@ -16,6 +16,8 @@ test('invitation shows every selected asset, opens the real enquiry and has no s
   const Page = load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
     '../../../lib/guest-leads':{readLeadPage:async value=>{assert.equal(value,token);return {share,details:null};}},
+    '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>null},
+    '../../../components/SharedAssetPasswordGate':()=>null,
   }).default;
   const html=renderToStaticMarkup(await Page({searchParams:{share:token,from:'Combined Asset Registers'}}));
   for(const asset of share.assets)assert.ok(html.includes(asset.title));
@@ -30,6 +32,8 @@ test('revoked and missing invitations do not offer a fabricated enquiry',async()
   const Page=load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
     '../../../lib/guest-leads':{readLeadPage:async()=>{reads++;return null;}},
+    '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>null},
+    '../../../components/SharedAssetPasswordGate':()=>null,
   }).default;
   const revoked=renderToStaticMarkup(await Page({searchParams:{share:token}}));
   assert.match(revoked,/no longer available/);
@@ -106,6 +110,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       assert.equal(sent,undefined,'Opening the invite does not publish asset data');
       assert.ok(!button('Create invitation link'),'Permission selection comes first');
       button('Continue view only').props.onClick();render();
+      button('Continue').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true);
       await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       assert.equal(sent,undefined,'Handler also enforces consent');
@@ -119,6 +124,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       walk(view,node=>node.type==='dialog').props.onClose();render();
       walk(view,node=>node.type==='button').props.onClick();render();
       button('Continue view only').props.onClick();render();
+      button('Continue').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true,'Reopening requires fresh consent');
     }
   }finally{Object.assign(global,previous);}
@@ -128,6 +134,8 @@ test('invitation requires consent, freezes all selected assets and handles failu
   const Page=load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
     '../../../lib/guest-leads':{readLeadPage:async()=>({share:{...share,umbrellaName:'Harvest fleet'},details:null})},
+    '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>null},
+    '../../../components/SharedAssetPasswordGate':()=>null,
   }).default;
   const html=renderToStaticMarkup(await Page({searchParams:{share:token}}));
   assert.match(html,/Harvest fleet/);
@@ -163,6 +171,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    const button=text=>walk(view,n=>n.type==='button'&&React.Children.toArray(n.props.children).includes(text));
    render();assert.equal(sent,undefined);
    button('Continue view only').props.onClick();render();
+   button('Continue').props.onClick();render();
    await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
    assert.equal(sent,undefined);assert.equal(button('Create asset link').props.disabled,true);
    walk(view,n=>n.type===Disclaimer).props.onChange(true);render();

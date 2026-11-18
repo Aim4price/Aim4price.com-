@@ -8,11 +8,11 @@ function load(file,mocks){const exports={};new Function('require','exports',ts.t
 test('owner can edit a live link in place, preserving recipient and non-editable policies',async()=>{
  const pg=new PGlite();
  try {
-  await pg.exec('CREATE TABLE asset_share_links(token text,user_id text,revoked_at timestamptz,history_deleted_at timestamptz,lead_details jsonb)');
+  await pg.exec('CREATE TABLE asset_share_links(token text,user_id text,revoked_at timestamptz,history_deleted_at timestamptz,lead_details jsonb,password_hash text); CREATE TABLE asset_share_sessions(share_token text)');
   const token='a'.repeat(43),revoked='b'.repeat(43),deleted='c'.repeat(43);
   const details={recipientEmail:'recipient@example.test',accessMode:'signed-in',permissions:{addPhotos:true,reports:true,documents:true,directUpdates:false,allReports:false}};
-  await pg.query('INSERT INTO asset_share_links VALUES($1,$2,NULL,NULL,$3)',[token,'owner',details]);
-  await pg.query('INSERT INTO asset_share_links VALUES($1,$2,now(),NULL,$3),($4,$2,NULL,now(),$3)',[revoked,'owner',details,deleted]);
+  await pg.query('INSERT INTO asset_share_links(token,user_id,revoked_at,history_deleted_at,lead_details) VALUES($1,$2,NULL,NULL,$3)',[token,'owner',details]);
+  await pg.query('INSERT INTO asset_share_links(token,user_id,revoked_at,history_deleted_at,lead_details) VALUES($1,$2,now(),NULL,$3),($4,$2,NULL,now(),$3)',[revoked,'owner',details,deleted]);
   let session={user:{id:'owner'}};
   const route=load('app/api/asset-share-links/history/route.ts',{
    'next/server':require('next/server'),
@@ -23,6 +23,7 @@ test('owner can edit a live link in place, preserving recipient and non-editable
    '../../../../lib/asset-share-snapshot':{parseShareAssetIds:()=>[]},
    '../../../../lib/business-network-api':{businessBody:r=>r.json(),requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('origin');}},
    '../../../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
+   '../../../../lib/asset-share-links':{hashAssetSharePassword:async value=>value?`test-hash:${value}`:null},
   });
   const call=(input,origin='https://aim4price.test')=>route.PATCH(new NextRequest('https://aim4price.test/api/asset-share-links/history',{method:'PATCH',headers:{origin},body:JSON.stringify(input)}));
   const input={token,permissions:{history:true,addPhotos:false,addCosts:true,directUpdates:true,reports:false,documents:false,allReports:true}};
@@ -40,6 +41,10 @@ test('owner can edit a live link in place, preserving recipient and non-editable
   assert.equal(saved.lead_details.permissions.history,true);
   assert.equal((await call({...input,permissions:{...input.permissions,history:false}})).status,200);
   assert.equal((await pg.query('SELECT lead_details FROM asset_share_links WHERE token=$1',[token])).rows[0].lead_details.permissions.history,false);
+  const protectedResponse=await call({...input,password:'shared-secret'});assert.equal(protectedResponse.status,200);assert.equal((await protectedResponse.json()).protected,true);
+  assert.equal((await pg.query('SELECT password_hash FROM asset_share_links WHERE token=$1',[token])).rows[0].password_hash,'test-hash:shared-secret');
+  const unprotectedResponse=await call({...input,password:''});assert.equal(unprotectedResponse.status,200);assert.equal((await unprotectedResponse.json()).protected,false);
+  assert.equal((await pg.query('SELECT password_hash FROM asset_share_links WHERE token=$1',[token])).rows[0].password_hash,null);
   assert.deepEqual(Object.fromEntries(['addPhotos','addCosts','reports','documents','directUpdates','allReports'].map(k=>[k,saved.lead_details.permissions[k]])),{addPhotos:false,addCosts:true,reports:true,documents:true,directUpdates:false,allReports:false});
   assert.equal((await response.json()).permissions.addCosts,true);
  } finally {await pg.close();}

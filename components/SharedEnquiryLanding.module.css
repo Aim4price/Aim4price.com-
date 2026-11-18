@@ -1,6 +1,6 @@
 /* The global Aim4price photo background remains visible at every canvas zoom. */
 .page { background:transparent; color:var(--app-text,#123b2e); }
-.passwordPage { min-height:calc(100vh - 7rem); display:grid; align-content:center; }
+.passwordPage { min-height:calc(var(--website-visible-height, 100dvh) - 7rem); display:grid; align-content:center; }
 .dialog.dialog { width:min(45rem,calc(var(--website-design-vw,1vw) * 100 - 2rem)); }
 .passwordBody { display:grid; gap:1rem; padding-top:.5rem; color:var(--app-text,#123b2e); }
 .passwordSummary { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid var(--app-line,#c8ddd1); border-radius:1rem; background:var(--app-surface-soft,#f3f8f5); }

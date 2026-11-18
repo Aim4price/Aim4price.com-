@@ -8,9 +8,11 @@ const mocks={
  '../../../components/SharedEnquiryLive':{default:'Live'},
  '../../../components/SharedEnquiryLanding':{default:'Landing'},
  '../../../components/AppHeader':{default:'Header'},
+ '../../../components/SharedAssetPasswordGate':{default:'PasswordGate'},
  '../../../components/asset-register/SharedEnquiryRequest':{default:'Request'},
  '../../../components/asset-register/SharedAssetCards':{default:'AssetCards'},
  '../../../lib/guest-leads':{readLeadPage:async()=>lead},
+ '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>({exists:false,protected:false,unlocked:true})},
  './page.module.css':{},
 };
 test('protected enquiry page keeps asset data behind access checks and shows the landing before opening',async()=>{

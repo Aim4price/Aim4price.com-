@@ -90,4 +90,4 @@
 .passwordInputPanel button { display:grid; place-items:center; width:48px; flex:none; border:0; border-left:1px solid var(--app-line,#c9ddd3); background:#fff; color:inherit; cursor:pointer; }
 .passwordInputPanel svg { width:22px; height:22px; }
 .passwordInputPanel small { color:var(--app-muted,#657b72); }
-@media(max-width:560px) { .passwordChoices { grid-template-columns:1fr; } }
+@media(max-width:560px) { :global(body:not(:has([data-website-canvas]))) .passwordChoices { grid-template-columns:1fr; } }
