@@ -1,8 +1,9 @@
 .primaryRow {
   display: grid;
-  grid-template-columns: 1.25fr 1.2fr .7fr;
+  grid-template-columns: var(--action-columns, repeat(3, minmax(0, 1fr)));
   gap: .7rem;
 }
+.primaryRow[data-fixed] { --action-columns: 1.25fr 1.2fr .7fr; }
 .button {
   --button-ink: var(--app-info, #245f8e);
   --button-soft: var(--app-info-soft, #e5eef7);

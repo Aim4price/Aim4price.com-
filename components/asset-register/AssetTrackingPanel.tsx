@@ -9,6 +9,18 @@ import TrackerInstallShareDialog from "./TrackerInstallShareDialog";
 import styles from "./AssetTrackingPanel.module.css";
 import AssetTrackingUsage from "./AssetTrackingUsage";
 import AssetTrackingOptions, { PhoneTrackingRequirements } from "./AssetTrackingOptions";
+const controlPaths = {
+  history: 'M3 12a9 9 0 1 1 2.6 6.4M3 5v7h7M12 7v5l3 2',
+  settings: 'M3 7h4m6 0h8M3 17h10m6 0h2M7 7a3 3 0 1 0 6 0 3 3 0 1 0-6 0M13 17a3 3 0 1 0 6 0 3 3 0 1 0-6 0',
+  activity: 'M2 12h5l3-8 4 16 3-8h5',
+  replace: 'M4 8h15l-4-4m5 12H5l4 4',
+  disconnect: 'm9 5 2-2a4 4 0 0 1 6 6l-2 2M9 13l-2 2a4 4 0 1 0 6 6l2-2M3 4l18 16',
+} as const;
+
+function ControlIcon({name}: {name: keyof typeof controlPaths}) {
+  return <svg className={styles.controlIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={controlPaths[name]}/></svg>;
+}
+
 export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { assetId: string; assetTitle?: string; onBack?: () => void }) {
   const [view, setView] = useState<'auto' | 'options' | 'phone'>('auto');
   const [phoneStep, setPhoneStep] = useState(0);
@@ -114,11 +126,11 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
           <p>{device ? device.name : "Use the Android phone kept on this asset."}</p>
         </div>
         <span className={styles.connectionStatus} data-offline={device.status==='Offline'}>{device.status}</span>
-        <button type="button" className={styles.manageBack} disabled={busy} onClick={() => {setView('options');setShowManage(false);setReplace(false);}}>Tracking options</button>
+        <button type="button" className={styles.manageBack} disabled={busy} onClick={() => {setView('options');setShowManage(false);setReplace(false);}}><ControlIcon name="settings"/>Tracking options</button>
       </div>}
       {device && !replace && !showManage && <div className={styles.dashboard}>
         <div className={styles.connectedSummary}>
-        <h4 className={styles.cardTitle}>Phone activity</h4>
+        <h4 className={styles.cardTitle}><ControlIcon name="activity"/>Phone activity</h4>
         {!device.lastCapturedAt && <p>Allow precise location on the phone, then tap Activate outdoors.</p>}
         <dl className={styles.connectionFacts}>
           <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
@@ -129,8 +141,8 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
           {device.diagnostics?<><p>Tracker {device.diagnostics.version||'Unknown version'} · {device.diagnostics.provider||'Unknown location source'}</p><p>Awaiting upload at last contact: {device.diagnostics.pending??'Unknown'} readings</p>{device.diagnostics.retained>0&&<p>{device.diagnostics.retained} readings retained on the phone for recovery or review.</p>}{typeof device.diagnostics.batteryPercent==='number'&&<p>Phone battery at last contact: {device.diagnostics.batteryPercent}%</p>}{device.diagnostics.backgroundLocation===0&&<p>Restart recovery needs location set to ‘Allow all the time’ on the phone.</p>}<p>Rejected GPS fixes since installation: {device.diagnostics.rejectedFixes??'Unknown'}</p></>:<p>This phone does not send recording diagnostics yet. Its tracker version cannot be verified remotely.</p>}
           <p>Last contact confirms an upload connection; latest GPS confirms a recorded location.</p>
         </details>
-        <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports</button>
-        <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>Manage device</button></div>
+        <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><ControlIcon name="history"/>History</button>
+        <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><ControlIcon name="settings"/>Manage device</button></div>
         </div>
         <AssetTrackingUsage assetId={assetId}/>
       </div>}
@@ -170,11 +182,13 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       </>}
       {error && !confirmDisconnect && <p role="alert" className={styles.error}>{error}</p>}
       {device && showManage && <div className={styles.deviceManagement}>
-        <button type="button" className={styles.manageBack} onClick={()=>{setShowManage(false);requestAnimationFrame(()=>manageButtonRef.current?.focus());}}>Back</button>
-        <h4 ref={manageHeadingRef} tabIndex={-1}>Manage device</h4>
+        <div className={styles.manageHeader}>
+          <h4 ref={manageHeadingRef} tabIndex={-1}><ControlIcon name="settings"/>Manage device</h4>
+          <button type="button" className={styles.manageBack} onClick={()=>{setShowManage(false);requestAnimationFrame(()=>manageButtonRef.current?.focus());}}>Back</button>
+        </div>
         <div className={styles.manageOptions}>
-          <button type="button" className={styles.secondaryAction} disabled={busy} onClick={()=>{setShowManage(false);setReplace(true);setPhoneStep(0);}}>Replace phone</button>
-          <button type="button" className={styles.disconnectAction} disabled={busy} onClick={()=>{setError("");setConfirmDisconnect(true);}}>{busy?'Please wait…':'Disconnect phone'}</button>
+          <button type="button" className={styles.secondaryAction} disabled={busy} onClick={()=>{setShowManage(false);setReplace(true);setPhoneStep(0);}}><ControlIcon name="replace"/>Replace phone</button>
+          <button type="button" className={styles.disconnectAction} disabled={busy} onClick={()=>{setError("");setConfirmDisconnect(true);}}><ControlIcon name="disconnect"/>{busy?'Please wait…':'Disconnect phone'}</button>
         </div>
         <p>Saved routes will remain.</p>
       </div>}
