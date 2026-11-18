@@ -1,9 +1,11 @@
+import { ensureFuelLedgerTables } from "../../../../../lib/fuel-ledger";
 import { NextRequest, NextResponse } from "next/server";
 import {
   trackingOwner,
   trackingJson,
 } from "../../../../../lib/asset-tracking-api";
 import {
+  setFixedLocation,
   createPairing,
   trackingStatus,
   disconnectTrackingDevice,
@@ -31,7 +33,8 @@ export async function POST(request: NextRequest, { params }: Context) {
       code: await createPairing(access.ownerId, params.assetId),
       expiresInMinutes: 15,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "FIXED_LOCATION") return trackingJson({error:"Turn off Fixed location to pair a tracker."}, 409);
     return trackingJson({ error: "Could not create pairing code." }, 500);
   }
 }
@@ -43,5 +46,19 @@ export async function DELETE(request: NextRequest, { params }: Context) {
     return trackingJson({ ok: true });
   } catch {
     return trackingJson({ error: "Could not disconnect device." }, 500);
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: Context) {
+  try {
+    const access = await trackingOwner(request, params.assetId);
+    if (access instanceof NextResponse) return access;
+    const body = await request.json().catch(() => null);
+    if (typeof body?.fixedLocation !== 'boolean') return trackingJson({error:'Choose a location setting.'}, 400);
+    await ensureFuelLedgerTables();
+    const result = await setFixedLocation(access.ownerId, params.assetId, body.fixedLocation, body.confirmedDeviceId);
+    return trackingJson(result, result.confirmDeviceId ? 409 : 200);
+  } catch {
+    return trackingJson({ error: 'Could not update the location setting.' }, 500);
   }
 }

@@ -98,6 +98,7 @@ export async function configureTrackingUsage(client: PoolClient, ownerId: string
   input: {enabled: boolean; reading?: number; action: 'enable' | 'pause' | 'confirm'}) {
   const asset = (await client.query('SELECT * FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE', [assetId, ownerId])).rows[0];
   if (!asset) throw Error('ASSET_UNAVAILABLE');
+  if (asset.fixed_location && input.action !== 'pause') throw Error('FIXED_LOCATION');
   const config = (await client.query('SELECT mode,enabled FROM public.asset_tracking_usage WHERE asset_id=$1', [assetId])).rows[0];
   if (config?.mode === 'average' && (config.enabled || input.action !== 'enable')) throw Error('AVERAGE_USAGE_ACTIVE');
   if (input.action === 'pause') {

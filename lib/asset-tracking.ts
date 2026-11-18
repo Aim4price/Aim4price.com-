@@ -9,6 +9,7 @@ export function ensureTrackingTables() {
     schema = getDb()
       .query(
         `
+ ALTER TABLE public.asset_register_items ADD COLUMN IF NOT EXISTS fixed_location boolean NOT NULL DEFAULT false;
  CREATE TABLE IF NOT EXISTS public.asset_tracking_devices(
  id uuid PRIMARY KEY, asset_id uuid NOT NULL REFERENCES public.asset_register_items(id) ON DELETE CASCADE,
  owner_id text NOT NULL, token_hash text UNIQUE, pair_hash text UNIQUE, pair_expires_at timestamptz,
@@ -50,10 +51,11 @@ export async function createPairing(ownerId: string, assetId: string) {
   try {
     await client.query("BEGIN");
     const owned = await client.query(
-      "SELECT id FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE",
+      "SELECT id,fixed_location FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE",
       [assetId, ownerId],
     );
     if (!owned.rowCount) throw Error("ASSET_UNAVAILABLE");
+    if (owned.rows[0].fixed_location) throw Error("FIXED_LOCATION");
     await client.query(
       "DELETE FROM public.asset_tracking_devices WHERE asset_id=$1 AND paired_at IS NULL",
       [assetId],
@@ -295,7 +297,7 @@ export async function latestTrackingPositions(ownerId: string) {
     `SELECT assets.asset_id,current_phone.id AS connected_device_id,current_phone.active,current_phone.last_seen_at,current_phone.diagnostics,p.*
      FROM (SELECT DISTINCT d.asset_id FROM public.asset_tracking_devices d
        JOIN public.asset_register_items a ON a.id=d.asset_id AND a.user_id=d.owner_id
-       WHERE d.owner_id=$1 AND d.paired_at IS NOT NULL) assets
+       WHERE d.owner_id=$1 AND d.paired_at IS NOT NULL AND NOT a.fixed_location) assets
      LEFT JOIN LATERAL (
        SELECT d.id,d.active,d.last_seen_at,d.diagnostics FROM public.asset_tracking_devices d
        WHERE d.asset_id=assets.asset_id AND d.owner_id=$1 AND d.revoked_at IS NULL AND d.paired_at IS NOT NULL
@@ -324,6 +326,44 @@ export async function disconnectTrackingDevice(ownerId: string, assetId: string)
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/** Serialize mode changes with pairing and uploads so the displayed pin and device change together. */
+export async function setFixedLocation(ownerId: string, assetId: string, fixed: boolean, confirmedDeviceId?: string) {
+  await ensureTrackingTables();
+  const client = await getDb().connect();
+  try {
+    await client.query('BEGIN');
+    const args = [assetId, ownerId];
+    const asset = await client.query('SELECT fixed_location FROM public.asset_register_items WHERE id=$1 AND user_id=$2 FOR UPDATE', args);
+    if (!asset.rowCount) throw Error('ASSET_UNAVAILABLE');
+    if (fixed && !asset.rows[0].fixed_location) {
+      const paired = await client.query('SELECT id FROM public.asset_tracking_devices WHERE asset_id=$1 AND owner_id=$2 AND paired_at IS NOT NULL AND revoked_at IS NULL', args);
+      if (paired.rowCount && paired.rows[0].id !== confirmedDeviceId) {
+        await client.query('ROLLBACK');
+        return { confirmDeviceId: String(paired.rows[0].id) };
+      }
+      await client.query("UPDATE public.asset_tracking_usage SET enabled=false,updated_at=now() WHERE asset_id=$1 AND owner_id=$2 AND mode='tracking' AND enabled", args);
+      // Freeze the same position the map currently displays, including a disconnected phone's last fix.
+      await client.query(`UPDATE public.asset_register_items a
+        SET last_known_lat=p.latitude,last_known_lng=p.longitude,last_scanned_at=p.captured_at,last_known_location_text='Fixed location'
+        FROM (SELECT p.* FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id
+          WHERE d.asset_id=$1 AND d.owner_id=$2 AND d.paired_at IS NOT NULL AND p.accuracy<=50
+          ORDER BY p.captured_at DESC,p.received_at DESC,p.sample_id DESC LIMIT 1) p
+        WHERE a.id=$1 AND a.user_id=$2 AND (a.last_scanned_at IS NULL OR p.captured_at>=a.last_scanned_at)`, args);
+      await client.query('UPDATE public.asset_tracking_devices SET revoked_at=now(),active=false,pair_hash=NULL,pair_expires_at=NULL WHERE asset_id=$1 AND owner_id=$2 AND revoked_at IS NULL', args);
+    }
+    const result = await client.query(`UPDATE public.asset_register_items SET fixed_location=$3, updated_at=now()
+      WHERE id=$1 AND user_id=$2 RETURNING fixed_location AS "fixedLocation",last_known_lat AS "lastKnownLat",
+      last_known_lng AS "lastKnownLng",COALESCE(last_known_location_text,'') AS "lastKnownLocationText" `, [...args, fixed]);
+    await client.query('COMMIT');
+    return { item: result.rows[0] };
+  } catch (error) {
+    await client.query('ROLLBACK');
     throw error;
   } finally {
     client.release();

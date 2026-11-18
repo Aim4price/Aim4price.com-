@@ -1,5 +1,7 @@
 import {resolveAssetUsage, formatResolvedAssetUsage} from '../../../lib/asset-usage';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../lib/owner-workspace-access';
+import {getDb} from '../../../lib/db';
+import {ensureLocationHistorySchema} from '../../../lib/asset-location-history-db';
 import {latestTrackingPositions} from '../../../lib/asset-tracking';
 import { NextResponse } from "next/server";
 import { getServerSession } from "../../../lib/auth-session";
@@ -59,6 +61,9 @@ type AssetMapItem = {
   typedModelName: string;
   yearModel: number | null;
   lastScannedAtIso: string | null;
+  fixedLocation?: boolean;
+  hasSavedPins?: boolean;
+  hasPastRoutes?: boolean;
   lastKnownLat: number | null;
   lastKnownLng: number | null;
   lastKnownLocationText: string;
@@ -293,6 +298,7 @@ function mapAssetForMap(
     typedModelName: item.typedModelName,
     yearModel: item.yearModel,
     lastScannedAtIso: item.lastScannedAtIso,
+    fixedLocation: item.fixedLocation,
     lastKnownLat: item.lastKnownLat,
     lastKnownLng: item.lastKnownLng,
     lastKnownLocationText: item.lastKnownLocationText,
@@ -330,6 +336,22 @@ export async function GET(request: Request) {
       items.filter(item => !allowedIds || allowedIds.has(item.id)).map((item) => mapAssetForMap(item, register)),
     );
     const byAsset=await latestTrackingPositions(session.user.id);
+    const fixedAssets = assets.filter(asset => asset.fixedLocation);
+    if (fixedAssets.length && !workspace.team) {
+      await ensureLocationHistorySchema();
+      const {rows} = await getDb().query(`SELECT a.id,
+        EXISTS (SELECT 1 FROM public.asset_scan_events e WHERE e.asset_id=a.id AND e.location_history_deleted_at IS NULL
+          AND e.latitude BETWEEN -90 AND 90 AND e.longitude BETWEEN -180 AND 180) AS pins,
+        EXISTS (SELECT 1 FROM public.asset_tracking_devices d JOIN public.asset_tracking_points p ON p.device_id=d.id
+          WHERE d.asset_id=a.id AND d.owner_id=a.user_id AND p.history_deleted_at IS NULL AND p.accuracy<=50) AS routes
+        FROM public.asset_register_items a WHERE a.user_id=$1 AND a.id=ANY($2::uuid[])`,
+        [session.user.id,fixedAssets.map(asset=>asset.id)]);
+      const history = new Map(rows.map(row=>[row.id,row]));
+      for (const asset of fixedAssets) {
+        asset.hasSavedPins = history.get(asset.id)?.pins === true;
+        asset.hasPastRoutes = history.get(asset.id)?.routes === true;
+      }
+    }
     for(const asset of assets){
       const point=byAsset.get(asset.id);if(!point)continue;
       asset.lastTrackingContactAtIso=point.last_seen_at?new Date(point.last_seen_at).toISOString():null;

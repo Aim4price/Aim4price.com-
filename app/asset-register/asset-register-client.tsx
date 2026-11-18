@@ -811,6 +811,7 @@ export type RegisterAsset = {
   plateLabel: string;
   qrStatus: string;
   lastScannedAtIso: string | null;
+  fixedLocation?: boolean;
   lastKnownLat: number | null;
   lastKnownLng: number | null;
   lastKnownLocationText: string;
@@ -19408,7 +19409,7 @@ export default function AssetRegisterClient({
               ) : null}
 
               {['location','locationManual','locationMap'].includes(assetSettingsView) ? (
-                <AssetLocationEditor onTracking={() => setAssetSettingsView('tracking')} viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
+                <AssetLocationEditor modeAssetId={canUseOwnerOnlyAssetActions ? editingAsset.id : undefined} fixedLocation={editingAsset.fixedLocation} onModeChange={item=>setAssets(current=>current.map(asset=>asset.id===editingAsset.id?{...asset,...item}:asset))} onTracking={canUseOwnerOnlyAssetActions ? () => setAssetSettingsView('tracking') : undefined} viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
                   onSave={async input => { await persistAssetSettingsGpsPosition({...input,assetId:editingAsset.id,clientCapturedAt:new Date().toISOString()}); }} />
               ) : null}
 
