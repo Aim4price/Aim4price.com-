@@ -225,8 +225,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R999/);
      await clickText('Monthly');
      await clickText('Need help uploading?');
-     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R100 per asset.*R50 per asset.*R7.50\/km/);
-     await clickText('Explore visit options');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R250\/hour.*R450\/hour.*R7.50\/km/);
+     await clickText('Explore help options');
      await choose('[aria-label="Visit type"] button');
      await choose('[data-pricing-content] + div button:last-child');
      assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /Asset recording visit.*Separate quote/);
@@ -235,18 +235,18 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.screenshot({path:path.join(evidence,`owner-admin-options-${width}.png`)});
      await choose('[aria-label="Admin package"] button');
      await choose('[data-pricing-content] + div button:last-child');
-     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month included.*R598\/month total/);
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R598/month total');
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R399\/month included.*R498\/month total/);
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R498/month total');
      await clickText('Yearly');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year subscription');
-     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R499\/month for admin help, billed separately/);
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year hosting');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R399\/month for admin help, billed separately/);
      await clickText('Remove');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year subscription');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year hosting');
      await clickText('Monthly');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month subscription');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month hosting');
      // Review the same setup-only, combined-service and detail layouts customers see.
      await clickText('Need help uploading?');
-     await clickText('Explore visit options');
+     await clickText('Explore help options');
      await choose('[aria-label="Visit type"] button:last-child');
      await choose('[data-pricing-content] + div button:last-child');
      await page.screenshot({path:path.join(evidence,`owner-inspection-${width}.png`)});
@@ -263,7 +263,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/Sold and archived assets are excluded/);
      await page.screenshot({path:path.join(evidence,`owner-billing-notes-${width}.png`)});
      await clickText('Back to package');
-     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent),/R598\/month total/);
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent),/R498\/month total/);
      await clickText('Change asset range');
      await page.$$eval('[aria-label="Number of active assets"] button',els=>els[3].click());
      await choose('[data-pricing-content] + div button:last-child');

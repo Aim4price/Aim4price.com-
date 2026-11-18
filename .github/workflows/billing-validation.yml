@@ -19,6 +19,8 @@ on:
       - 'lib/admin-users.ts'
       - 'app/**/billing/**'
       - 'app/auth/**'
+      - 'app/pricing/**'
+      - 'lib/hosting-pricing.ts'
       - 'app/api/auth/**'
       - 'lib/auth.ts'
       - 'lib/signup-workspace-context.ts'
