@@ -13056,7 +13056,7 @@ export default function AssetRegisterClient({
       `Transfer code: ${assetTransferReceipt.transferCode}`,
       assetTransferReceipt.transferReason === 'traded_in'
         ? 'Open Dealer → Asset Register → Claim asset in Aim4price.'
-        : 'Open Account → Claim or send an asset in Aim4price and choose Claim an asset.',
+        : 'Open Account → Asset transfers in Aim4price and choose Receive an asset.',
     ].join('\n');
     try {
       await navigator.clipboard.writeText(message);
@@ -21150,9 +21150,9 @@ export default function AssetRegisterClient({
           >
             <div className={styles.modalHeader}>
               <div className={styles.modalHeaderText}>
-                <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
+                <h3 id="delete-confirm-title">Record an asset outcome</h3>
                 <p id="delete-confirm-copy">
-                  Continue to tell Aim4price what happened to <strong>{deleteCandidateAsset.title}</strong>. Genuine disposals are archived and kept for reports and history; only mistakes or duplicates are permanently removed.
+                  Choose what happened to <strong>{deleteCandidateAsset.title}</strong>. If you sold it or traded it in, you can send its record to the buyer or dealer. You’ll review the details before saving.
                 </p>
               </div>
               <button
@@ -21184,7 +21184,7 @@ export default function AssetRegisterClient({
                 onClick={() => void handleConfirmDeleteAsset()}
                 disabled={busyDeleteId === deleteCandidateAsset.id}
               >
-                <span>Yes, delete asset</span>
+                <span>Continue to choose an outcome</span>
               </button>
             </div>
           </div>
