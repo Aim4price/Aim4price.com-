@@ -356,20 +356,18 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
   box-shadow: 0 6px 16px rgba(16, 42, 34, .16);
 }
 
-.manageHeader, .manageHeader h4, .cardTitle {
+.manageHeader {
   display: flex;
   align-items: center;
   gap: .65rem;
 }
 .manageHeader { justify-content: space-between; }
 .controlIcon { width: 1.2rem; height: 1.2rem; flex: none; }
-.manageHeader h4 .controlIcon, .cardTitle .controlIcon, .manageOptions button .controlIcon {
+.manageOptions button .controlIcon {
   box-sizing: content-box;
   padding: .45rem;
   border: 1px solid currentColor;
   border-radius: .65rem;
 }
-.manageHeader h4 .controlIcon { color: #654387; background: #f1eaf8; }
-.cardTitle .controlIcon { color: #176348; background: #e7f3eb; }
 .manageBack, .manageOptions button { gap: .65rem; }
 .deviceManagement p { font-weight: 600; color: var(--app-text,#34584a); }
