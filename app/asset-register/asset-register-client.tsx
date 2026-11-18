@@ -157,6 +157,7 @@ import {
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
 import futureStyles from './future-value.module.css';
+import revalueStyles from './recalculate-value.module.css';
 import actionColours from '../../components/leads/ManageActionGrid.module.css';
 import accountStyles from '../account/page.module.css';
 import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
@@ -15947,7 +15948,7 @@ export default function AssetRegisterClient({
     ? pricingPreview.replacementMode === 'custom'
       ? pricingPreviewShouldSaveReplacement
         ? 'New price will also be saved'
-        : 'New price used for preview only'
+        : 'Used for this calculation only'
       : 'Using saved price'
     : null;
   const pricingPreviewUsesPercentUsage = pricingPreview ? assetUsesPercentUsage(pricingPreview.asset) : false;
@@ -16013,8 +16014,8 @@ export default function AssetRegisterClient({
     const lifetimeShortUnit = getLifetimeShortUnit(usageMetric);
 
     return (
-      <div className={styles.revalueCustomReplacementCard}>
-        <label className={styles.revalueReplacementField}>
+      <div className={revalueStyles.field}>
+        <label className={revalueStyles.field}>
           <span>Expected lifetime ({lifetimeShortUnit})</span>
           <input
             type="text"
@@ -20649,9 +20650,9 @@ export default function AssetRegisterClient({
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingPreviewDialog} />
 
-          <div className={`${styles.modalCard} ${styles.pricingResultModal} ${styles.revalueQuestionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
-            <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
-              <div className={styles.modalHeaderText}>
+          <div className={`${styles.modalCard} ${revalueStyles.dialog} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
+            <div className={revalueStyles.header}>
+              <div className={revalueStyles.heading}>
                 <h3 id="pricing-preview-title">Recalculate value</h3>
                 <p>{pricingPreview.asset.title}</p>
               </div>
@@ -20668,25 +20669,25 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div ref={revalueQuestionRef} tabIndex={-1} aria-label="Recalculate value" className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
+            <div ref={revalueQuestionRef} tabIndex={-1} aria-label="Recalculate value" className={revalueStyles.body}>
               <>
-                  <div className={styles.revalueContext}><p>{buildAssetMeta(pricingPreview.asset)}</p><PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} /></div>
+                  <div className={revalueStyles.context}><p>{buildAssetMeta(pricingPreview.asset)}</p><PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} /></div>
                   {pricingPreviewWizardStep !== 3 && pricingPreview.method === 'aim4price' ? (
-                    <section key={`${pricingPreview.replacementMode}-${revalueQuestion}`} className={styles.revalueQuestionPanel}>
+                    <section key={`${pricingPreview.replacementMode}-${revalueQuestion}`} className={revalueStyles.question}>
                       {revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? (<>
                         <h4>Use the saved replacement price?</h4>
-                        <div className={styles.revalueSavedReplacementCard}>
+                        <div className={revalueStyles.price}>
                           <span>Replacement price</span>
-                          <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${pricingMoney(pricingPreviewSavedReplacementPriceExVat)} ${pricingVatLabel}` : 'No saved price'}</strong>
+                          <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? <>{pricingMoney(pricingPreviewSavedReplacementPriceExVat)} <small>{pricingVatLabel}</small></> : 'No saved price'}</strong>
                         </div>
-                        <div className={styles.revalueDecisionActions}>
-                          <button type="button" className={styles.revalueCustomReplacementButton} disabled={pricingPreviewSavedReplacementPriceExVat === null} onClick={() => chooseRevaluePrice(pricingPreview.asset)}><ProjectionIcon kind="good" /><span>Use this price</span></button>
-                          <button type="button" className={styles.revalueSecondaryButton} onClick={() => showCustomReplacementStep(pricingPreview.asset)}><ProjectionIcon kind="edit" /><span>Enter different price</span></button>
+                        <div className={revalueStyles.choices}>
+                          <button type="button" className={revalueStyles.choice} disabled={pricingPreviewSavedReplacementPriceExVat === null} onClick={() => chooseRevaluePrice(pricingPreview.asset)}><ProjectionIcon kind="good" /><span>Use this price</span></button>
+                          <button type="button" className={revalueStyles.alternative} onClick={() => showCustomReplacementStep(pricingPreview.asset)}><ProjectionIcon kind="edit" /><span>Enter different price</span></button>
                         </div>
                       </>) : null}
                       {revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom' ? (<>
                         <h4>What is the replacement price?</h4>
-                        <label className={styles.revalueReplacementField}>
+                        <label className={revalueStyles.field}>
                           <span>Replacement price · {pricingVatLabel}</span>
                           <input
                             type="text"
@@ -20701,10 +20702,10 @@ export default function AssetRegisterClient({
                       </>) : null}
                       {revalueQuestion === 'save' ? (<>
                         <h4>Save this replacement price to the asset?</h4>
-                        <p>{pricingMoney(normalizedRevalueReplacementPriceInput ?? 0)} {pricingVatLabel}</p>
-                        <div className={styles.revalueDecisionActions}>
-                          <button type="button" className={styles.revalueCustomReplacementButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, true)}><ProjectionIcon kind="save" /><span>Save with the new value</span></button>
-                          <button type="button" className={styles.revalueSecondaryButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, false)}><ProjectionIcon kind="usage" /><span>Use for this calculation only</span></button>
+                        <div className={revalueStyles.price}><span>Replacement price</span><strong>{pricingMoney(normalizedRevalueReplacementPriceInput ?? 0)} <small>{pricingVatLabel}</small></strong></div>
+                        <div className={revalueStyles.choices}>
+                          <button type="button" className={revalueStyles.choice} onClick={() => chooseRevaluePersistence(pricingPreview.asset, true)}><ProjectionIcon kind="save" /><span>Save with the new value</span></button>
+                          <button type="button" className={revalueStyles.alternative} onClick={() => chooseRevaluePersistence(pricingPreview.asset, false)}><ProjectionIcon kind="usage" /><span>Use for this calculation only</span></button>
                         </div>
                         <p>The asset updates only after you review and save the new value.</p>
                       </>) : null}
@@ -20712,75 +20713,66 @@ export default function AssetRegisterClient({
                         <h4>What is the expected lifetime?</h4>
                         {renderRevalueLifetimeField(pricingPreview.asset)}
                       </>) : null}
-                      {revalueReplacementPriceError ? <p role="alert" className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
-                      {revalueAdvancedError ? <p role="alert" className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
+                      {revalueReplacementPriceError ? <p role="alert" className={revalueStyles.error}>{revalueReplacementPriceError}</p> : null}
+                      {revalueAdvancedError ? <p role="alert" className={revalueStyles.error}>{revalueAdvancedError}</p> : null}
                     </section>
                   ) : null}
 
                   {pricingPreviewWizardStep === 3 ? (
                     isLoadingPricingPreview ? (
-                      <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
+                      <div className={revalueStyles.status}>Calculating new value...</div>
                     ) : pricingPreview.error ? (
-                      <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
+                      <div className={`${revalueStyles.status} ${revalueStyles.error}`}>
                         <strong>{pricingPreviewErrorTitle}</strong>
                         <span>{pricingPreview.error}</span>
                       </div>
                     ) : pricingPreview.result?.item ? (
                       <>
-                        <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
-                          <div className={styles.revalueReplacementHeader}>
-                            <div>
-                              <span>Your new value</span>
-                              <h4>Preview and save</h4>
-                              <p className={styles.revalueStepCopy}>Review the new value before saving it to the Asset Register.</p>
-                            </div>
+                        <section className={revalueStyles.preview} aria-live="polite">
+                          <div className={revalueStyles.intro}>
+                            <h4>Preview and save</h4>
+                            <p className={pricingPreview.result.warning ? revalueStyles.warning : undefined}>{pricingPreview.result.warning || 'Review the change before updating your asset.'}</p>
                           </div>
 
-                          <div className={styles.pricingResultHero}>
-                            <span>New asset value</span>
-                            <strong>{pricingMoney(pricingPreviewNewValueExVat)}</strong>
-                            <p>{pricingVatLabel} · Save to update the asset.</p>
-                          </div>
-
-                          <div className={styles.pricingCompareGrid}>
-                            <div>
-                              <span><ProjectionIcon kind="value" />Current value</span>
-                              <strong>{pricingMoney(pricingPreviewOldValueExVat)}</strong>
-                            </div>
-                            <div>
-                              <span><ProjectionIcon kind="value" />New value</span>
+                          <div className={revalueStyles.comparison}>
+                            <div className={revalueStyles.result}>
+                              <span>New asset value</span>
                               <strong>{pricingMoney(pricingPreviewNewValueExVat)}</strong>
+                              <span>{pricingVatLabel}</span>
                             </div>
-                            <div>
-                              <span><ProjectionIcon kind="inflation" />Difference</span>
-                              <strong>{formatMoneyDifference(pricingVatAmount(pricingPreviewNewValueExVat ?? 0, pricingVatIncluded) - pricingVatAmount(pricingPreviewOldValueExVat ?? 0, pricingVatIncluded))}</strong>
-                            </div>
+                            <dl className={revalueStyles.change}>
+                              <div>
+                                <dt><ProjectionIcon kind="value" />Current value</dt>
+                                <dd>{pricingMoney(pricingPreviewOldValueExVat)}</dd>
+                              </div>
+                              <div>
+                                <dt><ProjectionIcon kind="inflation" />Difference</dt>
+                                <dd>{formatMoneyDifference(pricingVatAmount(pricingPreviewNewValueExVat ?? 0, pricingVatIncluded) - pricingVatAmount(pricingPreviewOldValueExVat ?? 0, pricingVatIncluded))}</dd>
+                              </div>
+                            </dl>
                           </div>
 
-                          <div className={styles.revalueReplacementSummary}>
+                          <dl className={revalueStyles.summary}>
                             <div>
-                              <span>Replacement price used:</span>
-                              <strong>{pricingPreviewReplacementPriceExVat !== null ? pricingMoney(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                              <dt>Replacement price used</dt>
+                              <dd>{pricingPreviewReplacementPriceExVat !== null ? pricingMoney(pricingPreviewReplacementPriceExVat) : 'Not set'} <span>{pricingVatLabel}</span></dd>
                             </div>
                             <div>
-                              <span>Replacement price action:</span>
-                              <strong>{pricingPreviewReplacementActionLabel}</strong>
+                              <dt>Replacement price action</dt>
+                              <dd>{pricingPreviewReplacementActionLabel}</dd>
                             </div>
                             {!pricingPreviewUsesPercentUsage ? (
                               <div>
-                                <span>Expected lifetime used:</span>
-                                <strong>{pricingPreviewLifetimeValue !== null ? `${formatPlainNumber(pricingPreviewLifetimeValue)} ${pricingPreviewLifetimeShortUnit}` : 'Not set'}</strong>
+                                <dt>Expected lifetime used</dt>
+                                <dd>{pricingPreviewLifetimeValue !== null ? `${formatPlainNumber(pricingPreviewLifetimeValue)} ${pricingPreviewLifetimeShortUnit}` : 'Not set'}</dd>
                               </div>
                             ) : null}
-                          </div>
+                          </dl>
                         </section>
 
-                        {pricingPreview.result.warning ? (
-                          <p className={styles.pricingPreviewWarning}>{pricingPreview.result.warning}</p>
-                        ) : null}
 
                         {pricingPreviewHasUnpreviewedReplacementInput ? (
-                          <p className={styles.revalueReplacementNotice}>Calculate the changed replacement price before saving.</p>
+                          <p className={revalueStyles.warning}>Calculate the changed replacement price before saving.</p>
                         ) : null}
                       </>
                     ) : null
@@ -20788,28 +20780,24 @@ export default function AssetRegisterClient({
                 </>
             </div>
 
-            <div
-              className={`${styles.pricingPreviewActions} ${
-                pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 1 ? styles.pricingPreviewActionsSingle : ''
-              }`}
-            >
+            <div className={revalueStyles.actions}>
               {pricingPreview.method === 'aim4price' && pricingPreviewWizardStep !== 3 ? (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? closePricingPreviewDialog : handlePreviousRevalueStep}>
+                  <button type="button" className={revalueStyles.secondary} onClick={revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? closePricingPreviewDialog : handlePreviousRevalueStep}>
                     {revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? 'Keep current value' : 'Back'}
                   </button>
                   {revalueQuestion === 'lifetime' || (revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom') ? (
-                    <button type="button" className={styles.primaryButton} onClick={continueRevalueQuestion}>Continue</button>
+                    <button type="button" className={revalueStyles.primary} onClick={continueRevalueQuestion}>Continue</button>
                   ) : null}
                 </>
               ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 3 ? (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
+                  <button type="button" className={revalueStyles.secondary} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
                     Back
                   </button>
                   <button
                     type="button"
-                    className={styles.primaryButton}
+                    className={revalueStyles.primary}
                     onClick={() => void handleSavePricingPreview()}
                     disabled={!canSavePricingPreview}
                   >
@@ -20818,12 +20806,12 @@ export default function AssetRegisterClient({
                 </>
               ) : (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={()=>{if(pricingPreviewShouldSaveReplacement&&pricingPreview.replacementPriceExVat){setValueReviewReplacement(pricingPreview.replacementPriceExVat);setValueReviewAsset(pricingPreview.asset);}closePricingPreviewDialog();}} disabled={isSavingPricingPreview}>
+                  <button type="button" className={revalueStyles.secondary} onClick={()=>{if(pricingPreviewShouldSaveReplacement&&pricingPreview.replacementPriceExVat){setValueReviewReplacement(pricingPreview.replacementPriceExVat);setValueReviewAsset(pricingPreview.asset);}closePricingPreviewDialog();}} disabled={isSavingPricingPreview}>
                     Keep current value
                   </button>
                   <button
                     type="button"
-                    className={styles.primaryButton}
+                    className={revalueStyles.primary}
                     onClick={() => void handleSavePricingPreview()}
                     disabled={!canSavePricingPreview}
                   >
