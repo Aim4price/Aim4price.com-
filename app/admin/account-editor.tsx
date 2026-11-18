@@ -78,7 +78,7 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
       <h3>Review the change for {account.name}</h3>
       <p>{account.email} · {account.accountStatusLabel}</p>
       <table><thead><tr><th scope="col">Account details</th><th scope="col">Current</th><th scope="col">After saving</th></tr></thead>
-        <tbody>{previewRows(account,type,subtype).map(([label,current,next]) => <tr key={label}><th scope="row">{label}</th><td>{current}</td><td>{next}</td></tr>)}</tbody>
+        <tbody>{previewRows(account,type,subtype).map(([label,current,next]) => <tr key={label} data-changed={current !== next}><th scope="row">{label}</th><td>{current}</td><td>{next}</td></tr>)}</tbody>
       </table>
     </section>}
     {duplicate && <div role="alert"><p>This email already belongs to {duplicate.name} ({duplicate.email}).</p><button type="button" className={styles.nameSecondaryButton} onClick={() => onExisting?.(duplicate)}>Open existing account</button></div>}

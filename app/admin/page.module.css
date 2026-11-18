@@ -2241,7 +2241,7 @@
   min-height: 4.4rem; padding: 0.8rem 2rem 0.8rem 1rem;
   border-radius: 0.65rem; background: #f6faf8;
 }
-.accountWorkspaceLinks a::after { content: '›'; position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 1.4rem; }
+
 .accountWorkspaceLinks a strong { font-size: 0.95rem; }
 .accountWorkspaceLinks a span { font-size: 0.95rem; font-weight: 650; color: #52665d; line-height: 1.4; }
 .accountToolSection .accountActionButton { min-height: 3.3rem; font-weight: 650; white-space: nowrap; }
@@ -2319,17 +2319,17 @@
 
 /* Owner account rhythm: readable cards, a spacious filter bar and clear account tools. */
 .shell { gap: 1.4rem; }
-.userSummary article, .userSummary > button { padding: 1.2rem; border-radius: 1rem; }
+.userSummary article, .userSummary > button { padding: .8rem 1rem; min-height: 4.75rem; border-radius: .85rem; }
 .userSummary strong { font-weight: 800; }
 .filterPanel { padding: 1.2rem; border-radius: 1rem; gap: 1rem; }
-.filterBar { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.searchField { grid-column: span 2; }
+.filterBar { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); gap: .8rem 1rem; }
+.searchField { grid-column: 1 / -1; }
 .searchField input { min-height: 3.35rem; border-radius: .9rem; }
 .signupFilter { min-width: 0; }
 .userTable th { color: #52665d; padding: 1rem 1.2rem; }
-.userTable td { padding: 1.2rem; }
+.userTable td { padding: .85rem 1.15rem; }
 .accountToolSection .accountActionButton { min-height: 3.35rem; border-radius: .9rem; white-space: nowrap; }
-.accountWorkspaceLinks a { min-height: 4.75rem; padding: 1rem 2.4rem 1rem 1rem; border-radius: .9rem; overflow-x: auto; }
+.accountActionModal .accountWorkspaceLinks a { min-height: 3rem; padding: .65rem .85rem; border-radius: .7rem; justify-content: start; }
 .accountWorkspaceLinks a strong { font-size: 1rem; }
 .accountActionModal .qrModalHeader h2 { font-size: 1.6rem; font-weight: 800; }
 .accountSectionIntro h3 { font-size: 1.1rem; color: #173c31; }
@@ -2355,8 +2355,41 @@
   color: #17362c;
 }
 .accountEditor > :is(h2, p, div) { grid-column: 1 / -1; margin: 0; }
-.accountEditor .notificationField { min-width: 0; }
+.accountEditor .notificationField { min-width: 0; grid-template-columns: minmax(0, 1fr); gap: .45rem; }
 .accountEditor .fixedCategory { grid-column: auto; display: grid; gap: .6rem; }
 .typePreview { grid-column: 1 / -1; min-width: 0; overflow-x: auto; }
 .typePreview table { min-width: 100%; border-collapse: collapse; text-align: left; }
 .typePreview :is(th, td) { padding: .6rem .75rem; border-bottom: 1px solid #dce7e1; }
+
+/* Account controls share the same label position and field height. */
+.filterBar input, .filterBar [data-admin-select] button, .accountEditor [data-admin-select] button {
+  min-height: 2.9rem;
+  border-radius: .7rem;
+}
+.accountEditor [data-admin-select] { width: 100%; letter-spacing: normal; text-transform: none; }
+.accountEditor .fixedCategory span { padding: .7rem .85rem; background: #f2f6f3; border-radius: .7rem; }
+.accountEditor .notificationSendButton {
+  padding: .65rem 1rem; min-height: 2.75rem; border: 1px solid #174d3e; border-radius: .65rem;
+  background: #174d3e; color: white; font: inherit; font-weight: 700; cursor: pointer;
+}
+.accountEditor .notificationSendButton:disabled { background: #eef2ef; color: #56695e; border-color: #d8e3dc; cursor: default; }
+.typePreview h3 { margin: .2rem 0; }
+.typePreview p { margin: .35rem 0 .8rem; }
+.typePreview thead { background: #f1f6f2; }
+.typePreview tr[data-changed="true"] td:last-child { background: #e5f3e9; color: #174d3e; font-weight: 700; }
+.accountActionModal .accountWorkspaceLinks a:hover, .accountActionModal .accountWorkspaceLinks a:focus-visible {
+  background: #edf5ef; border-color: #91b69e;
+}
+.accountActionModal .accountDisclosure {
+  border: 1px solid #dce7e0; border-radius: .8rem; padding-inline: 1rem;
+}
+.accountDisclosure[open] > summary { margin-bottom: .65rem; border-bottom: 1px solid #e2eae5; }
+.accountDisclosure .accountActionSummary { gap: .5rem; }
+.notificationComposer .notificationField small { grid-row: 1; grid-column: 2; align-self: center; font-variant-numeric: tabular-nums; }
+.notificationComposer .notificationField > span { grid-row: 1; grid-column: 1; }
+.notificationComposer .notificationField textarea { min-height: 6rem; }
+.nameModal { display: flex; flex-direction: column; overflow-y: auto; }
+.nameModal > * { flex-shrink: 0; }
+.nameModal .namePreviewTableWrap { min-height: 0; max-height: calc(var(--website-design-vh, 1vh) * 48); }
+.nameManagerEmpty { min-height: 5rem; }
+.nameModal .qrModalFooter { flex-wrap: wrap; gap: .75rem; }

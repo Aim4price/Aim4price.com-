@@ -1776,7 +1776,7 @@ export default function AdminClient({
           </table>
         </div>
 
-        <ListPagination label="Admin users pagination" page={currentPageNumber} pageCount={pageCount} onPageChange={setCurrentPage} />
+        {pageCount > 1 && <ListPagination label="Admin users pagination" page={currentPageNumber} pageCount={pageCount} onPageChange={setCurrentPage} />}
       </section>
 
       {groupNotificationComposer ? (
@@ -2213,10 +2213,10 @@ export default function AdminClient({
                 </div>
 
                 <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
-                  <Link href={`/admin/billing?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Billing & invoices</strong><span>Payments and subscription</span></Link>
-                  <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Capture requests</strong><span>Uploads needing assistance</span></Link>
-                  <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Work history</strong><span>Recorded time and activity</span></Link>
-                  <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Discovery assets</strong><span>Assets shared for discovery</span></Link>
+                  <Link href={`/admin/billing?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Billing & invoices</strong></Link>
+                  <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Capture requests</strong></Link>
+                  <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Work history</strong></Link>
+                  <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Discovery assets</strong></Link>
                 </nav>
               </section>
               <section className={styles.accountToolSection} aria-label="Asset tools">
