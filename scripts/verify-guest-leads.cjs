@@ -203,6 +203,7 @@ export default function Validation(){
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    await click('Continue view only');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
