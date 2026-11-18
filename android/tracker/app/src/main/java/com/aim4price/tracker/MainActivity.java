@@ -45,10 +45,9 @@ public class MainActivity extends Activity {
  int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
  android.graphics.drawable.GradientDrawable surface(int color,int radius){var d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
  void applyFont(TextView view,int weight){
-  view.setTypeface(getResources().getFont(R.font.montserrat));
-  view.setFontVariationSettings("'wght' "+weight);
+  view.setTypeface(getResources().getFont(weight >= 650 ? R.font.montserrat_bold : R.font.montserrat));
  }
- TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);applyFont(t,550);t.setPadding(0,dp(8),0,dp(8));return t;}
+ TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);applyFont(t,600);t.setPadding(0,dp(8),0,dp(8));return t;}
  void styleButton(Button b,boolean primary){applyFont(b,700);b.setAllCaps(false);b.setTextSize(17);b.setTextColor(primary?Color.WHITE:GREEN);b.setBackground(surface(primary?GREEN:SOFT,14));var lp=new LinearLayout.LayoutParams(-1,dp(56));lp.setMargins(0,dp(12),0,0);b.setLayoutParams(lp);}
  void draw(){
   ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);scroll.setBackgroundColor(SOFT);
