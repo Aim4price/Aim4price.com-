@@ -11,6 +11,13 @@ export const validTrackingDay = (value: string | null): value is string =>
 export const validTrackingSnapshot = (value: string | null): value is string =>
   !!value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value && Date.parse(value) <= Date.now();
 export const validTrackingCapture = (value:string|null): value is string => !!value && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString()===value && Date.parse(value)<=Date.now()+120000;
+export const PREVIOUS_TRACKING_DAY_SQL = `
+ SELECT to_char(p.captured_at AT TIME ZONE 'Africa/Johannesburg','YYYY-MM-DD') AS day
+ FROM public.asset_tracking_points p JOIN public.asset_tracking_devices d ON d.id=p.device_id
+ WHERE d.owner_id=$1 AND d.asset_id=$2 AND p.history_deleted_at IS NULL
+ AND p.captured_at < ($3::date::timestamp AT TIME ZONE 'Africa/Johannesburg')
+ AND p.received_at <= $4::timestamptz
+ ORDER BY p.captured_at DESC LIMIT 1`;
 export const TRACKING_HISTORY_DAYS_SQL = `
  SELECT to_char(p.captured_at AT TIME ZONE 'Africa/Johannesburg','YYYY-MM-DD') AS day,
  min(p.captured_at) AS first_captured_at,max(p.captured_at) AS last_captured_at,count(*)::integer AS readings

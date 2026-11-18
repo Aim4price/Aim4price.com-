@@ -9,7 +9,7 @@ import ReportDownloadFlow from '../ReportDownloadFlow';
 import {downloadAssetMapReport} from '../../lib/asset-map-download';
 import type {MovementReport} from '../../lib/asset-movement-report';
 import type {TrackingJourney as TrackingSessionEntry} from '../../lib/asset-tracking-journeys';
-type TrackingSessionPage={items:TrackingSessionEntry[];nextBefore:string|null;snapshotAt:string};
+type TrackingSessionPage={items:TrackingSessionEntry[];nextBefore:string|null;previousDay:string|null;snapshotAt:string};
 import styles from './AssetTrackingPanel.module.css';
 import historyStyles from './AssetLocationHistoryDialog.module.css';
 const date=(v:string)=>new Date(v).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'});
@@ -70,8 +70,8 @@ export default function AssetMovementHistory({assetId,title='Asset',historyTabs}
      </div>
      {isOpen&&<div id={`tracking-route-${entry.id}`} className={historyStyles.trackingRoute}><TrackingRoute key={entryUrl(expanded)} url={entryUrl(expanded)}/></div>}
     </li>;
-   })}</ol>:<div className={historyStyles.empty}><strong>No tracking entries in this period.</strong><p>Choose different dates, or activate the connected phone to start recording.</p></div>}
-   <div className={historyStyles.trackingListFooter}><span>Journeys split after 15 minutes stopped. Signal gaps start a separate record. Routes cover the selected dates. Widen the dates if a journey crosses the boundary.</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}</div>
+   })}</ol>:<div className={historyStyles.empty}><strong>No tracking entries in this period.</strong><p>No readings were found between {dayLabel(from)} and {dayLabel(to)}.</p></div>}
+   <div className={historyStyles.trackingListFooter}><span>Journeys split after 15 minutes stopped. Signal gaps start a separate record. Routes cover the selected dates. Widen the dates if a journey crosses the boundary.</span>{page.nextBefore&&<button type="button" disabled={loadingMore||busy} onClick={()=>void loadMore()}>{loadingMore?'Loading…':'Load earlier entries'}</button>}{page.previousDay && !page.nextBefore && <button type="button" disabled={busy||loadingMore} onClick={()=>{const day=page.previousDay!;setExpanded(null);setPage(null);setFrom(day);setTo(day);}}>View {dayLabel(page.previousDay)} tracking</button>}</div>
   </>}
  </section>;
 }

@@ -72,7 +72,8 @@
 .status > div { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.45rem .9rem; flex:1; min-width:0; }
 .status strong { font-size:1rem; font-weight:750; line-height:1.4; }
 .status span,.status small { font-size:.95rem; font-weight:650; color:var(--app-text,#244d40); line-height:1.5; font-variant-numeric:tabular-nums; }
-.status small { flex-basis:100%; }
+.status[data-warning="true"] > div { display:grid; justify-content:start; gap:.2rem; }
+.status[data-warning="true"] strong { color:var(--app-warning,#794617); }
 .status[data-warning="true"] { border-color:var(--app-warning-line,#dcb075); background:var(--app-warning-soft,#f7eee2); }
 .status[data-warning="true"] .statusIcon { color:var(--app-warning,#996019); }
 /* Match the Add asset cost chooser: neutral cards, green icons and a trailing arrow. */

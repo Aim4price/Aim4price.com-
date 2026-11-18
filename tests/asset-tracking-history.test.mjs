@@ -23,6 +23,10 @@ test('daily history sorts by SAST capture day, paginates, and deletes only the o
  assert.equal((await db.query(lib.DELETE_TRACKING_DAY_SQL,['owner',asset,'2026-10-19',args[5]])).rows.length,0);
  assert.deepEqual((await db.query(lib.TRACKING_HISTORY_DAYS_SQL,args)).rows.map(r=>r.day),['2026-10-18']);
  assert.equal((await db.query(lib.TRACKING_HISTORY_DAYS_SQL,['owner',asset,null,null,null,'2026-10-19T13:00:00Z'])).rows[0].readings,1);
+ // Jump across empty weeks, even when the recent points were deleted or arrived after the snapshot.
+ const previous=(await db.query(lib.PREVIOUS_TRACKING_DAY_SQL,['owner',asset,'2026-11-12',args[5]])).rows;
+ assert.deepEqual(previous.map(r=>r.day),['2026-10-18']);
+ assert.equal((await db.query(lib.PREVIOUS_TRACKING_DAY_SQL,['owner',asset,'2026-10-18',args[5]])).rows.length,0);
  const all=(await db.query('SELECT * FROM asset_tracking_points')).rows;
  assert.equal(all.length,5);assert.equal(all.find(r=>r.sample_id==='other-owner').history_deleted_at,null);assert.equal(all.find(r=>r.sample_id==='late-upload').history_deleted_at,null);
  await db.query("INSERT INTO asset_tracking_points(device_id,sample_id,captured_at,received_at,accuracy) VALUES($1,'latest',now(),now(),5) ON CONFLICT DO NOTHING",[device]);
