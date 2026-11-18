@@ -1,4 +1,5 @@
 import { licenceShareMissingDetails } from './licence-share-readiness';
+import { listExternalBusinesses } from './business-network';
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { getAssetRegisterReportLogoUrl } from './asset-registers';
@@ -1281,7 +1282,16 @@ export async function listPartnerDirectory(input: {
     return left.displayName.localeCompare(right.displayName);
   });
 
-  return genuinePartners.filter(partner => !partner.userId.startsWith('aim4price-assistance-'));
+  // Only real businesses belong in the directory. Managed service-area records
+  // remain intact for historical leads but are never returned as listings.
+  const externalBusinesses = input.includeExternal === false ? [] : await listExternalBusinesses(input);
+  const accounts = genuinePartners.filter(p => !p.userId.startsWith('aim4price-assistance-'));
+  for (const account of accounts) {
+    const linked = externalBusinesses.find(b => account.email && b.email.toLowerCase() === account.email.toLowerCase());
+    if (linked) { account.googlePlaceId = linked.googlePlaceId; account.googleMapsUrl = linked.googleMapsUrl; }
+  }
+  const outsideBusinesses = externalBusinesses.filter(b => !accounts.some(p => p.email && p.email.toLowerCase() === b.email.toLowerCase()));
+  return [...accounts, ...outsideBusinesses];
 }
 
 async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {

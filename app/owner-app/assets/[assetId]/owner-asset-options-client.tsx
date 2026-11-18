@@ -1,6 +1,7 @@
 'use client';
 
 import BusinessListingInvite from '../../../../components/business-network/BusinessListingInvite';
+import BusinessInvite from '../../../../components/business-network/BusinessInvite';
 import BusinessSharePreview from '../../../../components/business-network/BusinessSharePreview';
 import Link from 'next/link';
 import { useMemo, useRef, useState, type FormEvent } from 'react';
@@ -522,6 +523,10 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
               </button>
             )) : <p className={styles.ownerOptionsEmpty}>{selectedOption.emptyText}</p>}
           </div>
+          <details className={styles.ownerDirectoryInvite}>
+            <summary>Business not listed? <span aria-hidden="true">+</span></summary>
+            <BusinessInvite />
+          </details>
           <button type="button" className={styles.ownerDirectoryHelp} onClick={() => shareWithExternalBusiness({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Ask Aim4price for help</button>
 
         </section>

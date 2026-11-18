@@ -28,7 +28,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const [senderName, setSenderName] = useState('');
   const [link, setLink] = useState('');
   const copy = {
-    subject: 'Shared assets on Aim4price',
+    subject: sendLink ? 'Shared assets on Aim4price' : 'An invitation to the Aim4price business directory',
     body: `${senderName || 'We'} would like to share asset details and requests with you through Aim4price. Open the enquiry to view the selected assets.\n\nView the enquiry here:\n${link}`,
   };
 
@@ -80,10 +80,10 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const Dialog = !link && step === 'permissions' ? AssetAccessSettingsDialog : ShareDisclosureDialog;
   return <>
     {!sendLink && <button ref={trigger} type="button" className={styles.trigger} aria-haspopup="dialog" disabled={busy} onClick={() => void open()}>
-      <span>{busy ? 'Preparing enquiry…' : 'Share outside Aim4price'}</span><span aria-hidden="true">+</span>
+      <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && <Dialog linkSettings onViewOnly={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setAccepted(false);setStep('recipient');}} assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? ("Send link") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close} footer={!link && step === 'permissions' ? (<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+    {selection && <Dialog linkSettings onViewOnly={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setAccepted(false);setStep('recipient');}} assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close} footer={!link && step === 'permissions' ? (<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
             <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setStep('recipient');}}>Continue view only</button>
             <button type="button" className={assetStyles.primaryButton} onClick={()=>setStep('recipient')}>Continue</button>
           </div>) : undefined}>
@@ -105,7 +105,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
 
         {error && <p role="alert">{error}</p>}
         {link && <>
-        <ShareLinkDelivery linkLabel="Asset link" copiedMessage="Asset link copied." descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint="Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History." previewLabel="Preview enquiry" />
+        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint="Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History." previewLabel="Preview enquiry" />
         </>}
       </Dialog>}
   </>;

@@ -12,6 +12,7 @@ const icons: Record<string, string> = {
   billing: 'M6 3h12v18l-3-2-3 2-3-2-3 2z M9 8h6 M9 12h6',
   'capture-queue': 'M4 3h10l6 6v12H4z M14 3v6h6 M8 14h8 M8 17h5',
   'work-tracker': 'M12 8v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0',
+  businesses: 'M3 21V7h12v14 M7 7V3h14v18 M6 11h2 M11 11h1 M6 15h2 M11 15h1 M18 7h1 M18 11h1',
   'asset-emails': 'M3 5h18v14H3z M3 5l9 7 9-7',
   marketplace: 'M3 9l2-6h14l2 6 M3 9h18 M5 9v12h14V9 M9 21v-7h6v7',
   discovery: 'M21 21l-5-5 M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',

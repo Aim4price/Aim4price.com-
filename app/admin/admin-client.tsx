@@ -12,7 +12,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { isAim4priceAdminEmail } from "../../lib/account-constants";
 import { adminAccountStatusFilter, adminSignupDateRange, formatAdminAccountDate, formatAdminLastActive, type AdminAccountStatusFilter } from "../../lib/admin-operations-shared";
-import BusinessVerification from "./business-accounts/verification-client";
 import AdminNavigation from "../../components/AdminNavigation";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
@@ -555,13 +554,11 @@ export default function AdminClient({
   initialUsers,
   initialStatus = "all",
   initialAccountId = "",
-  initialVerificationOpen = false,
   canGetEstimate = false,
 }: {
   initialUsers: AdminUserRow[];
   initialStatus?: string;
   initialAccountId?: string;
-  initialVerificationOpen?: boolean;
   canGetEstimate?: boolean;
 }) {
   const [createdAccount, setCreatedAccount] = useState<AdminUserRow | null>(null);
@@ -1527,7 +1524,7 @@ export default function AdminClient({
         </div>
 
         <div className={styles.headerActions}>
-          <AdminNavigation active="accounts" businessVerification={<BusinessVerification />} initialVerificationOpen={initialVerificationOpen} canGetEstimate={canGetEstimate} />
+          <AdminNavigation active="accounts" canGetEstimate={canGetEstimate} />
           <button type="button" className={styles.groupNotificationButton} aria-expanded={addingAccount} onClick={() => {setCreatedAccount(null); setAddingAccount(true);}}>Add account</button>
           <button
             type="button"

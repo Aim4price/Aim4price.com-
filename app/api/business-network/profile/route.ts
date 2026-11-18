@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     requireBusinessOrigin(request);
-    const body = await businessBody(request);
-    if (body.action !== "pause") return businessJson({ error: "Directory listings have closed." }, 410);
-    await saveBusiness(requestBusinessToken(request), body);
+    await saveBusiness(
+      requestBusinessToken(request),
+      await businessBody(request),
+    );
     return businessJson({ ok: true });
   } catch (e) {
     return businessError(e);
