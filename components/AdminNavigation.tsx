@@ -233,7 +233,6 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                 {hasVerification ? (
                   <button type="button" className={styles.link} onClick={() => setShowVerification(true)}>
                     <strong>Business verification</strong>
-                    <span aria-hidden="true">›</span>
                   </button>
                 ) : null}
                 {canGetEstimate ? (
@@ -246,7 +245,6 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                     onClick={() => setIsOpen(false)}
                   >
                     <strong>Value My Asset</strong>
-                    <span aria-hidden="true">›</span>
                   </Link>
                 ) : null}
               </div> : null}
@@ -267,7 +265,6 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                         onClick={() => setIsOpen(false)}
                       >
                         <strong>{item.label}</strong>
-                        <span aria-hidden="true">›</span>
                       </Link>
                     );
                   })}

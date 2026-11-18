@@ -137,13 +137,6 @@
   transform: translateY(-0.05rem);
 }
 
-.optionGrid {
-  padding-top: 1.1rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
 .verificationModal {
   display: flex;
   flex-direction: column;
@@ -187,100 +180,77 @@
   outline-offset: 2px;
 }
 
+/* One compact list per destination group. Only the list area scrolls. */
+.modal {
+  width: min(58rem, var(--website-dialog-reference-width, 100%));
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  box-shadow: 0 24px 80px rgba(14, 46, 35, .2);
+}
+.modalHeader { flex: none; padding: .85rem 1.15rem; }
+.modalHeader h2 { font-size: 1.4rem; font-weight: 800; }
+.navigationGroups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.15rem 1.15rem;
+}
+.navigationGroup { min-width: 0; }
+.navigationGroup h3 {
+  margin: 0 0 .35rem;
+  padding: .6rem .65rem;
+  color: #284f40;
+  background: #edf4ef;
+  border-radius: .55rem;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+.navigationGroups .optionGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .12rem;
+  padding: 0;
+}
+.navigationGroups > .optionGrid {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), max-content));
+  border-bottom: 1px solid #dfe9e3;
+  padding-bottom: .65rem;
+}
 .link {
-  min-height: 4rem;
-  box-sizing: border-box;
-  padding: 0.95rem 1rem;
-  border: 1px solid #dfe7e3;
-  border-radius: 0.75rem;
-  color: #28473d;
-  background: linear-gradient(145deg, #ffffff, #f8fbf9);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .45rem .7rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  color: #214738;
+  background: white;
+  font: inherit;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgba(24, 67, 52, 0.045);
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
 }
-
-.link:hover {
-  border-color: #9fc7b6;
-  background: #f3f9f6;
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(24, 67, 52, 0.09);
-}
-
-.link strong {
-  color: #173e32;
-  font-size: 0.95rem;
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-.link > span {
-  flex: 0 0 auto;
-  color: #287158;
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-.active,
-.active:hover {
-  border-color: #82b79f;
-  background: linear-gradient(145deg, #eef9f3, #e5f4ed);
-}
-
-.active > span {
-  color: #176c50;
-}
-
+.link strong { white-space: nowrap; font-size: 1rem; line-height: 1.35; font-weight: 650; }
+.link:hover, .link:focus-visible { background: #f1f6f2; border-color: #bfcec4; }
+.link.active { background: #deeee3; border-color: #aac7b4; box-shadow: inset 3px 0 #377952; }
+.navigationGroups > .optionGrid .link { border-color: #c9d9cf; }
+.verificationBody { padding: 1rem 1.15rem; }
 @media (max-width: 980px) {
   :global(:where(html:not(:has([data-website-canvas])))) .nav { margin-left:auto; }
-  :global(:where(html:not(:has([data-website-canvas])))) .manageButton { width:auto; }
 }
-
-@media (max-width: 560px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .modalLayer {
-    padding: 0.55rem;
-    place-items: end center;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .modal {
-    width: var(--website-dialog-reference-width, 100%);
-    max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 1.1rem);
-    padding: 0.9rem;
-    border-radius: 1.2rem;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .optionGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media print {
-  .nav {
-    display: none !important;
-  }
-}
-
-.navigationGroups { display: grid; gap: 1.4rem; padding-top: 1.2rem; }
-.navigationGroup h3 { margin: 0; color: #52665d; font-size: 0.95rem; font-weight: 700; }
-.navigationGroups .optionGrid { padding-top: 0.65rem; }
-.navigationGroups > .optionGrid { padding-top: 0; }
-.navigationGroups .link { min-height: 3.5rem; box-shadow: none; }
-.navigationGroups .link strong { white-space: nowrap; }
-.modal { width: min(64rem, var(--website-dialog-reference-width, 100%)); }
-.navigationGroups { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-.navigationGroups > .optionGrid { grid-column: 1 / -1; }
-.navigationGroup .optionGrid { grid-template-columns: 1fr; }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .navigationGroups { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroup .optionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroup .optionGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); }
 }
-@media (max-width: 450px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .navigationGroup .optionGrid { grid-template-columns: 1fr; }
-}
+@media print { .nav { display: none !important; } }
 
 /* Page tools stay available; primary navigation lives in the workspace sidebar. */
 .manageButton { min-width: auto; min-height: 38px; padding: .55rem .8rem; color: #587162; background: #fff; border: 1px solid #e0e7e3; border-radius: .5rem; box-shadow: none; }
@@ -288,9 +258,3 @@
 .manageIcon { background: #eef4f0; width: 1.3rem; height: 1.3rem; }
 .manageIcon i { background: #64816f; }
 .manageCopy { font-size: 0.95rem; font-weight: 650; }
-.modal { box-shadow: 0 28px 100px #14352926; border-radius: 1rem; padding: 1.5rem; }
-.modalHeader h2 { font-size: 1.4rem; font-weight: 800; }
-.navigationGroup h3 { font-weight: 650; font-size: 0.95rem; color: #52665d; }
-.navigationGroups .link { background: #fafcfb; border-color: #e6ece8; border-radius: .6rem; min-height: 3rem; }
-.navigationGroups .link strong { font-size: 0.95rem; font-weight: 650; }
-.active, .active:hover { background: #edf5ef; }
